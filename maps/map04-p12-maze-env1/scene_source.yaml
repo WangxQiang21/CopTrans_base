@@ -1,0 +1,23 @@
+name: P12_env1
+source_pdf: 12_Bao_4WIS_Executable_Trajectories_2026.pdf
+source_page: 9
+source_figure: "Fig. 5, Env1"
+description: "Four-method maze benchmark."
+paper_coordinate_bounds: [0.0, 20.0, 0.0, 20.0]
+map_coordinate_bounds: [1.935165, 18.064835, 1.935165, 18.064835]
+source_plot_pixels: [452, 374, 926, 854]
+source_resolution_m_per_pixel_approx: 0.041930
+map_resolution_m_per_pixel: 0.011272
+robot_scale_factor: 0.806452
+paper_vehicle_width_m: 0.620
+target_robot_width_m: 0.500
+scale_reference: "paper vehicle width mapped to target robot width"
+scale_center: [10.000000, 10.000000]
+obstacle_fill_class: gray166
+ignored_overlays: []
+cleanup_notes: "Reconstructed axis-aligned maze walls and obstacle faces; removed raster teeth and a false wall notch; exported at 3x grid resolution."
+pose_source: not encoded in paper; project-defined test poses are in scene_meta.yaml
+limitations: >-
+  Reconstructed from a printed simulation figure, not the authors'
+  occupancy grid. Boundaries and scale are approximate. Recheck all
+  paths with the vehicle swept-footprint collision checker.

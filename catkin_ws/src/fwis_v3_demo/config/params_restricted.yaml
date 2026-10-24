@@ -1,0 +1,323 @@
+planning:
+  # Current R03 testing default. Select planning_backend:=legacy for comparison.
+  # mode_path_v1 is the R02 constant-action backend; mode_path_v2 is the R03
+  # continuous-motion planner, whose cross-map validation is still in progress.
+  backend: mode_path_v2
+  # New backends compare forward and reverse candidates under one common cost.
+  # legacy preserves its historical direction behavior.
+  direction_policy: bidirectional
+  # No plain forward/reverse cusps or repeated shunting. One reversal needs Spin.
+  allow_shunting: false
+visualization:
+  # Feature-center configuration-space boxes are diagnostic, not vehicle envelopes.
+  show_feature_center_regions: false
+quality:
+  # Explicit simulation limits, not measured vehicle capabilities.
+  limits:
+    profile: kinematic_sim_target2_v1
+    target_v: 2.0
+    v_max: 2.0
+    a_max: 0.6
+    jerk_max: 2.0
+    lateral_a_max: 2.0
+    omega_max: 0.8
+    alpha_max: 0.8
+    angular_jerk_max: 3.0
+    # Spin limits above do not constrain steering-driven translation yaw.
+    translation_omega_max: 2.5
+    # Zero disables these additional translation body-yaw bounds. Steering
+    # rate/acceleration, lateral acceleration and wheel speed remain bounded.
+    translation_alpha_max: 0.0
+    translation_angular_jerk_max: 0.0
+    steer_rate_max: 0.8
+    steer_accel_max: 1.5
+    steer_angle_max: 1.5707963267948966
+    # Outer Ackermann wheels may run faster than the vehicle center.
+    wheel_speed_max: 3.0
+    mode_setup_time: 0.15
+  cost:
+    name: quality_cost_v2_prototype_uncalibrated
+    clearance: 4.0
+    shape: 1.0
+    adjustment: 0.5
+    time: 1.0
+    length: 0.25
+    reverse: 2.0
+    reverse_early: 4.0
+    reverse_start: 3.0
+    reverse_yaw_early: 2.0
+    direction_change: 1.5
+    reference_speed_mps: 2.0
+    reference_spin_omega_radps: 0.8
+    preferred_clearance_factor: 0.20
+    # Clearance cost is sampled at 1 cm; conservative swept checks remain at 5 mm.
+    metric_spacing: 0.01
+    sweep_spacing: 0.005
+  search:
+    budget_s: 8.0
+    nlp_time_s: 2.0
+    max_nlp_calls: 4
+    max_candidates: 20
+    max_window: 8
+    sampling_dt: 0.05
+    validation_reserve_s: 0.5
+    candidate_evaluation_reserve_s: 2.0
+    # High-switch continuous routes receive a bounded anchor-search reserve.
+    mode_anchor_min_switches: 12
+    mode_anchor_extra_budget_s: 15.0
+    mode_anchor_parent_candidates: 2
+    mode_anchor_max_candidates: 12
+    # If no executable incumbent exists, try a short strict geometry recovery
+    # through legacy anchors/local repair before returning no candidate.
+    legacy_geometry_fallback_s: 1.5
+    legacy_geometry_max_candidates: 4
+    # Shape every admitted schedule, including structural A/O replacements.
+    # Centimetre-scale coarse control transitions otherwise force crawling.
+    continuous_smoothing_bandwidth_m: 0.4
+    continuous_control_spacing_m: 0.4
+    max_duration_regression: 0.10
+search:
+  reverse_fallback_max_iter: 30000
+  reverse_fallback_budget_s: 3.0
+  step_len: 0.20
+  xy_res: 0.10
+  yaw_res: 0.174532925199433
+  max_iter: 180000
+  # When no swept-safe route incumbent exists, split the total expansion
+  # budget between distance-field guidance and the independent fallback.
+  guided_iter_without_incumbent: 90000
+  # Optional A/Spin candidate probe when the route graph finds an O segment.
+  # All candidates compete by one cost; O remains available in guided search.
+  ackermann_probe_iter: 30000
+  # The swept-safe route candidate is already a feasible incumbent. Spend a
+  # short anytime budget trying to improve it; never discard it on budget end.
+  max_iter_with_incumbent: 5000
+  route_graph_max_expansions: 8000
+  # Route graph anchors are dense around sharp turns (>= 0.8 rad over the
+  # local window) and otherwise use the base spacing. Switch costs have their
+  # own independent threshold under cost/ below.
+  # WP3 selected defaults. The paired baseline is false with 0.30/0.50 m.
+  route_graph_dense_spacing: 0.30
+  route_graph_sparse_spacing: 1.00
+  route_graph_continuous_adaptive: true
+  route_graph_turn_window: 0.45
+  route_graph_turn_threshold: 0.80
+  route_graph_max_edge_length: 3.0
+  # The waypoint DP and mixed graph supersede this expensive single-heading
+  # greedy seed on tested S09 goals; keep a switch for future ablation.
+  enable_route_heuristic: false
+  terminal_radius: 1.5
+  mode_radius: 5.0
+  goal_xy_tol: 0.16
+  goal_yaw_tol: 0.14
+repair:
+  max_iter: 5000
+  padding: 0.8
+endpoint_replan:
+  # A route hotspot needs high behavior complexity and low downstream
+  # clearance. Candidate windows are ranked by free-space clearance.
+  max_iter: 80
+  tail_length: 4.0
+  # Compare upstream S-O-S with pure-A, A-O-A, and early Spin+A suffix
+  # replans. Shared score, forward-only motion, endpoint, and swept SAT decide.
+  sos_enabled: true
+  # Combined complexity/clearance threshold for all route hotspots.
+  sos_min_hotspot_score: 1.0
+  # Apply goal-yaw demand only inside this terminal route horizon so normal
+  # mid-route turns do not become false end-reorientation hotspots.
+  sos_hotspot_lookahead: 8.0
+  # A hotspot must also lie in a narrow downstream area; the upstream Spin
+  # anchor must have extra clearance beyond the vehicle circumscribed radius.
+  sos_hotspot_clearance: 0.585
+  # Conservative center clearance threshold; exact rotated OBB checks still
+  # decide whether a Spin/O primitive is safe at the selected anchor.
+  sos_upstream_clearance: 0.54
+  sos_upstream_windows: 2
+  sos_replan_max_searches: 3
+  sos_max_iter: 800
+  sos_upstream_distance: 8.0
+  # Permit at most 1.1 score units (roughly 1.1 m of the current proxy) only
+  # when the replanned window removes a maneuver event or steering variation.
+  sos_score_slack: 1.1
+  sos_switch_bonus: 1.0
+joint:
+  # Optional corridor-constrained Bonmin MINLP. N03 showed a standalone
+  # mode-score gain; results are not consistent across the tested scenes yet.
+  enabled: false
+  # Additional short A/O schedule substitutions after a MINLP candidate.
+  # The independent local-stage mode_master also runs before Bonmin.
+  mode_neighborhood_candidates: 1
+  mode_neighborhood_window: 6
+  mode_neighborhood_time_limit: 1.0
+  # Optional single-call initialization from an exact A/O seed substitution.
+  # Require lower common cost, no added complexity, and compressed swept SAT.
+  mode_neighborhood_seed_hint: false
+  # Skip the post-MINLP schedule neighborhood only when a validated Bonmin
+  # result improves common score by this fraction and does not add mode,
+  # oblique-heading, or Spin events. Initial WP2 value: 0.5%.
+  post_neighborhood_skip_relative_improvement: 0.005
+  # Re-run the global MINLP on a lower-cost safe mode-neighborhood result,
+  # rebuilding its corridor around that route. Extra solves are opt-in.
+  global_rounds: 0
+  max_knots: 24
+  time_limit: 1.5
+  # Adaptive MINLP time. Only one-switch seeds up to 10 collapsed knots get
+  # the longer request; larger/multi-switch seeds retain the base limit.
+  adaptive_time_limit: true
+  single_switch_time_limit: 4.0
+  single_switch_max_knots: 10
+  algorithm: B-BB
+  # Fractional branching avoids strong-branch NLP probes on the large binary
+  # horizon; each Bonmin node NLP is also independently wall-time bounded.
+  variable_selection: most-fractional
+  # Keep depth-first until paired probes show a better tree order.
+  node_comparison: depth-first
+  # Base Bonmin node NLP wall cap. The adaptive policy keeps it for one-switch
+  # seeds and tightens zero- and multi-switch searches.
+  subproblem_time_limit: 3.0
+  subproblem_time_adaptive: true
+  # Multi-switch seeds use a short root/node NLP cap to limit time overruns.
+  subproblem_time_multi_switch_limit: 0.75
+  # IPOPT iteration cap for each Bonmin node subproblem; fixed-schedule
+  # collision repairs keep their separate wall/iteration settings.
+  bonmin_subproblem_iteration_limit: 600
+  # Cumulative iterations across Bonmin node NLPs; zero leaves the solver limit off.
+  bonmin_iteration_limit: 0
+  # Keep only candidates whose MINLP objective beats the supplied safe seed.
+  # Paired N05 runs showed no measurable search benefit yet.
+  seed_cutoff: true
+  # Requires tools/build_bonminseed_plugin.sh and CASADIPATH; submits only
+  # a fully validated integer seed to CBC before the Bonmin root search.
+  use_cbc_seed_incumbent: false
+  # Maximum distance between corridor collision stations.
+  collision_spacing: 0.75
+  # Experimental local refinement was less feasible on N03; keep opt-in.
+  adaptive_collision_refinement: false
+  # Shrink only the raster conservatism in MINLP disc corridors; exact sweep
+  # acceptance is unchanged. Zero keeps the fully conservative threshold.
+  corridor_clearance_slack: 0.0
+  # Optional extra clearance relaxation for Bonmin only; all returned paths
+  # still require exact swept-SAT. Zero keeps the existing local corridor.
+  minlp_corridor_clearance_slack: 0.0
+  # MINLP-only reference-path regularizer; excluded from common trajectory score.
+  minlp_track_weight: 0.015
+  # Experimental necessary bounds derived from MINLP corridor geometry.
+  # Keep each mechanism disabled until matched probes preserve N03's gain.
+  geometry_yaw_bounds: false
+  geometry_spin_pruning: false
+  geometry_oblique_bounds: false
+  # Merge similar adjacent same-mode controls before building the MINLP.
+  # Exact replay, terminal, and swept-SAT checks remain required on outputs.
+  minlp_ackermann_merge_tolerance: 0.1
+  minlp_oblique_merge_tolerance_deg: 7.5
+  # Bonmin's feasibility pumps remain enabled in the reference configuration.
+  feasibility_pump: true
+  minlp_pump: true
+  # Retry the continuous root relaxation with another initial point (opt-in).
+  root_resolves: 0
+  # Try a fractional diving heuristic to construct integer candidates.
+  dive_fractional: false
+  # Seed for Bonmin randomized branching/heuristics; fixed for reproducibility.
+  random_seed: 0
+  # Optional matched-experiment tools; blank disables both.
+  # Trace stores the validated selected seed; replay checks map/start/goal and
+  # exact swept safety before using it as the global MINLP input.
+  seed_trace_file: ""
+  seed_replay_file: ""
+  # Project the seed under its fixed mode/gear schedule before Bonmin starts.
+  feasible_seed_warm_start: false
+  # Time allowed for that fixed-schedule projection, independent of SAT repair.
+  warm_start_time_limit: 6.0
+  # Zero always runs Bonmin; a positive threshold can accept a strong safe
+  # fixed-schedule gain before spending time on the mixed-integer search.
+  warm_start_early_accept_improvement: 0.0
+  # Fixed-schedule collision retries while projecting the safe seed for Bonmin.
+  warm_start_collision_retries: 2
+  # Extra solves after exact collision rejection are opt-in; they can double
+  # MINLP latency and did not improve N05 feasibility in retry trials.
+  collision_retries: 0
+  # After a MINLP mode schedule fails exact sweep, iteratively repair only its
+  # continuous geometry with SAT cuts; each repair NLP gets this wall budget.
+  collision_repair_iterations: 12
+  collision_repair_time_limit: 2.0
+  # Longer event intervals reduce the MINLP integer horizon. Every returned
+  # primitive is still replayed and swept with the exact vehicle footprint.
+  max_translation: 3.0
+  # Match the planner's accepted terminal box. High residual weights still
+  # pull solutions toward the requested pose; exact timed swept checks remain
+  # mandatory before publishing a trajectory.
+  terminal_xy_tol: 0.16
+  terminal_yaw_tol: 0.14
+  terminal_xy_weight: 100.0
+  terminal_yaw_weight: 10.0
+  # Default local joint method alternates swept-safe mode/anchor proposals
+  # with continuous refinement while monotonically retaining the incumbent.
+  alternating_iterations: 2
+  # Keep any accepted gain, but skip the next expensive round when this round's
+  # relative score improvement is below the threshold (0.25% by default).
+  min_round_improvement: 0.0025
+optimization:
+  # IPOPT iteration cap; validated candidates still require exact replay and SAT.
+  max_iter: 100
+mode_master:
+  # Compare several swept-safe local schedules; allow at most one NLP refinement.
+  max_candidates: 4
+  refine_slack: 0.0
+  # Try the best short exact A/O schedule substitution on the best local
+  # trajectory; fixed-schedule IPOPT runs even when global MINLP is disabled.
+  schedule_neighbor_candidates: 1
+  schedule_neighbor_window: 6
+  schedule_neighbor_time_limit: 2.0
+  # The continuous stage already refines the incumbent's fixed schedule.
+  # Keep the extra collapsed-schedule NLP configurable for matched ablations.
+  refine_seed_schedule: false
+vehicle:
+  length: 0.738
+  width: 0.500
+  wheelbase: 0.494
+  track: 0.364
+  r_min_ack: 0.810
+collision:
+  margin: 0.04
+  sweep_guard: 0.005
+  # Final timed path is independently checked more densely than coarse edges.
+  timed_sweep_corner_step: 0.0025
+  route_sweep_step: 0.01
+  a_graph_sweep_step: 0.04
+cost:
+  # w_spin defaults to time/v_demo / time/omega_demo (m/rad); set this key
+  # only to override that distance-equivalent time scaling explicitly.
+  w_switch: 2.00
+  # Add a surcharge when A/O switch tangents already align, so mode changes
+  # remain useful around genuine heading changes.
+  w_low_curvature_switch: 0.35
+  switch_turn_threshold: 0.35
+  w_reverse: 1.00
+  # Translation gear is constrained to remain constant for a complete route;
+  # this large score is an additional guard for any externally supplied seed.
+  w_direction: 20.0
+  # Prefer routes with less Ackermann steering variation. O can replace a
+  # curved A section locally; its use charge is intentionally modest, while
+  # repeated changes to O steering angle pay both TV and event costs.
+  w_steer_tv: 0.40
+  w_curvature: 0.01
+  w_oblique_tv: 1.50
+  # Every O steering-angle change pays an event charge plus total variation,
+  # including small changes that would otherwise become free micro-adjustments.
+  w_oblique_event_nlp: 1.50
+  w_oblique_event_score: 1.50
+  # Moderate per-meter preference for A. Constant-angle O can still compete
+  # locally when it reduces Ackermann curvature or steering changes.
+  w_oblique_cruise: 0.45
+  w_oblique_use: 0.55
+  # Soft accuracy terms inside the continuous subproblem. Goal tolerances are
+  # still hard constraints and every accepted result is exactly replayed.
+  w_terminal_xy: 8.0
+  w_terminal_yaw: 2.0
+time:
+  # This is RViz/timed-output playback, not a vehicle-control command.
+  # Smoothstep profile peaks at this rate and averages 2/3 of it per group.
+  # 2.0 gives >1 m/s average on translation groups for legible RViz playback.
+  v_demo: 2.00
+  omega_demo: 2.00
+  dt: 0.10

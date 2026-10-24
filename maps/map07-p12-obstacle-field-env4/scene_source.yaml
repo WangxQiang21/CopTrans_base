@@ -1,0 +1,23 @@
+name: P12_env4
+source_pdf: 12_Bao_4WIS_Executable_Trajectories_2026.pdf
+source_page: 9
+source_figure: "Fig. 5, Env4"
+description: "Four-method obstacle-field benchmark."
+paper_coordinate_bounds: [3.0, 16.5, 0.0, 9.0]
+map_coordinate_bounds: [4.311275, 15.188725, 0.874183, 8.125817]
+source_plot_pixels: [440, 1638, 930, 1972]
+source_resolution_m_per_pixel_approx: 0.027249
+map_resolution_m_per_pixel: 0.007325
+robot_scale_factor: 0.806452
+paper_vehicle_width_m: 0.620
+target_robot_width_m: 0.500
+scale_reference: "paper vehicle width mapped to target robot width"
+scale_center: [9.750000, 4.500000]
+obstacle_fill_class: gray166
+ignored_overlays: []
+cleanup_notes: "Removed small raster traces and reconstructed rectangular obstacle faces; exported at 3x grid resolution."
+pose_source: not encoded in paper; project-defined test poses are in scene_meta.yaml
+limitations: >-
+  Reconstructed from a printed simulation figure, not the authors'
+  occupancy grid. Boundaries and scale are approximate. Recheck all
+  paths with the vehicle swept-footprint collision checker.

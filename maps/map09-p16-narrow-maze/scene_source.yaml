@@ -1,0 +1,23 @@
+name: P16_narrow_maze
+source_pdf: 16_Zhu_Adaptive_Multi_Mode_4WIS_2026.pdf
+source_page: 22
+source_figure: "Figure 19"
+description: "Narrow-maze benchmark."
+paper_coordinate_bounds: [0.0, 30.0, 0.0, 30.0]
+map_coordinate_bounds: [11.249983, 18.750017, 11.249983, 18.750017]
+source_plot_pixels: [958, 1068, 1894, 2000]
+source_resolution_m_per_pixel_approx: 0.032120
+map_resolution_m_per_pixel: 0.008030
+robot_scale_factor: 0.250000
+paper_vehicle_width_m: 2.000
+target_robot_width_m: 0.500
+scale_reference: "paper vehicle width mapped to target robot width"
+scale_center: [15.000000, 15.000000]
+obstacle_fill_class: gray89
+ignored_overlays: []
+cleanup_notes: "Applied a 5-pixel median filter to smooth digitized wall edges while preserving the corridor layout."
+pose_source: not encoded in paper; project-defined test poses are in scene_meta.yaml
+limitations: >-
+  Reconstructed from a printed simulation figure, not the authors'
+  occupancy grid. Boundaries and scale are approximate. Recheck all
+  paths with the vehicle swept-footprint collision checker.

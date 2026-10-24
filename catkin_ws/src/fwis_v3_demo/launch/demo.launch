@@ -1,0 +1,52 @@
+<launch>
+  <arg name="scene" default="S09_underground_garage"/>
+  <arg name="map_dir" default="$(find fwis_v3_demo)/../../../maps/map16-s09-underground-garage"/>
+  <arg name="scene_yaml" default="$(arg map_dir)/scene_source.yaml"/>
+  <arg name="rviz" default="true"/>
+  <arg name="auto_goal" default="false"/>
+  <arg name="config_file" default="$(find fwis_v3_demo)/config/params.yaml"/>
+  <arg name="planning_backend" default=""/>
+  <arg name="target_v" default=""/>
+  <arg name="direction_policy" default=""/>
+  <arg name="allow_reverse_fallback" default=""/>
+  <node name="fwis_map_publisher" pkg="fwis_map_server" type="map_publisher.py" output="screen">
+    <param name="map_dir" value="$(arg map_dir)"/>
+  </node>
+  <node name="fwis_v3_planner" pkg="fwis_v3_planner" type="fwis_v3_planner_node" output="screen">
+    <rosparam command="load" file="$(arg config_file)"/>
+    <param if="$(eval arg('planning_backend') != '')" name="planning/backend" value="$(arg planning_backend)"/>
+    <param if="$(eval arg('target_v') != '')" name="quality/limits/target_v" value="$(arg target_v)" type="double"/>
+    <param if="$(eval arg('target_v') != '')" name="quality/limits/v_max" value="$(arg target_v)" type="double"/>
+    <param if="$(eval arg('direction_policy') != '')" name="planning/direction_policy" value="$(arg direction_policy)"/>
+    <param if="$(eval arg('allow_reverse_fallback') != '' and arg('direction_policy') == '')" name="planning/direction_policy" value="$(eval 'bidirectional' if arg('allow_reverse_fallback') == 'true' else 'forward_only')"/>
+    <param if="$(eval arg('allow_reverse_fallback') != '')" name="planning/allow_reverse_fallback" value="$(arg allow_reverse_fallback)" type="bool"/>
+  </node>
+  <node name="fwis_v3_optimizer" pkg="fwis_v3_optimizer" type="optimizer_node.py" output="screen">
+    <rosparam command="load" file="$(arg config_file)"/>
+    <param if="$(eval arg('planning_backend') != '')" name="planning/backend" value="$(arg planning_backend)"/>
+    <param if="$(eval arg('target_v') != '')" name="quality/limits/target_v" value="$(arg target_v)" type="double"/>
+    <param if="$(eval arg('target_v') != '')" name="quality/limits/v_max" value="$(arg target_v)" type="double"/>
+    <param if="$(eval arg('direction_policy') != '')" name="planning/direction_policy" value="$(arg direction_policy)"/>
+    <param if="$(eval arg('allow_reverse_fallback') != '' and arg('direction_policy') == '')" name="planning/direction_policy" value="$(eval 'bidirectional' if arg('allow_reverse_fallback') == 'true' else 'forward_only')"/>
+    <param if="$(eval arg('allow_reverse_fallback') != '')" name="planning/allow_reverse_fallback" value="$(arg allow_reverse_fallback)" type="bool"/>
+  </node>
+  <node name="fwis_v3_playback" pkg="fwis_v3_playback" type="playback.py" output="screen">
+    <rosparam command="load" file="$(arg config_file)"/>
+    <param if="$(eval arg('target_v') != '')" name="quality/limits/target_v" value="$(arg target_v)" type="double"/>
+    <param if="$(eval arg('target_v') != '')" name="quality/limits/v_max" value="$(arg target_v)" type="double"/>
+  </node>
+  <node name="fwis_scene_hints" pkg="fwis_map_server" type="scene_hints.py" output="screen">
+    <param name="scene" value="$(arg scene)"/>
+  </node>
+  <node if="$(arg auto_goal)" name="fwis_v3_auto_goal" pkg="fwis_v3_demo"
+        type="auto_goal.py" output="screen">
+    <param name="map_dir" value="$(arg map_dir)"/>
+  </node>
+  <node name="fwis_parking_lines" pkg="fwis_map_server" type="parking_lines.py" output="screen">
+    <param name="scene" value="$(arg scene)"/>
+    <param name="scene_yaml" value="$(arg scene_yaml)"/>
+    <param name="scenarios_dir" value="$(arg map_dir)"/>
+  </node>
+  <node if="$(arg rviz)" name="rviz" pkg="rviz" type="rviz"
+        args="-d $(find fwis_v3_demo)/rviz/demo.rviz" output="screen"/>
+</launch>

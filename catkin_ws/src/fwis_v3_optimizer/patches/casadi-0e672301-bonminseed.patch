@@ -1,0 +1,169 @@
+--- a/casadi/interfaces/bonmin/bonmin_interface.cpp
++++ b/casadi/interfaces/bonmin/bonmin_interface.cpp
+@@ -35,13 +35,62 @@
+ #include <iostream>
+ #include <iomanip>
+ #include <chrono>
++#include <algorithm>
++#include <cmath>
++#include <vector>
++#include "CbcHeuristic.hpp"
+ 
+ namespace casadi {
++  class X0IncumbentHeuristic : public CbcHeuristic {
++  public:
++    X0IncumbentHeuristic(const std::vector<double>& seed,
++                         Ipopt::SmartPtr<Bonmin::TMINLP> tminlp)
++      : seed_(seed), tminlp_(tminlp), used_(false), injected_(false) {}
++    X0IncumbentHeuristic(const X0IncumbentHeuristic& other)
++      : CbcHeuristic(other), seed_(other.seed_), tminlp_(other.tminlp_),
++        used_(other.used_), injected_(other.injected_) {}
++    CbcHeuristic* clone() const override {
++      return new X0IncumbentHeuristic(*this);
++    }
++    void resetModel(CbcModel* model) override { setModel(model); }
++    void setModel(CbcModel* model) override {
++      CbcHeuristic::setModel(model);
++      if (injected_ || !model || !model->solver() ||
++          model->solver()->getNumCols() != static_cast<int>(seed_.size()))
++        return;
++      Ipopt::Number value = 0.0;
++      if (!tminlp_->eval_f(static_cast<Ipopt::Index>(seed_.size()),
++                            seed_.data(), true, value)) return;
++      model->setBestSolution(seed_.data(), static_cast<int>(seed_.size()),
++                             value, false);
++      injected_ = true;
++      std::cerr << "BONMINSEED_CBC_INCUMBENT_INSERTED vars=" << seed_.size()
++                << " objective=" << value << std::endl;
++    }
++    int solution(double& objectiveValue, double* newSolution) override {
++      if (used_ || !model_ || !model_->solver() ||
++          model_->solver()->getNumCols() != static_cast<int>(seed_.size()))
++        return 0;
++      used_ = true;
++      Ipopt::Number value = 0.0;
++      if (!tminlp_->eval_f(static_cast<Ipopt::Index>(seed_.size()),
++                            seed_.data(), true, value)) return 0;
++      if (!(value < objectiveValue)) return 0;
++      std::copy(seed_.begin(), seed_.end(), newSolution);
++      objectiveValue = value;
++      return 1;
++    }
++  private:
++    std::vector<double> seed_;
++    Ipopt::SmartPtr<Bonmin::TMINLP> tminlp_;
++    bool used_;
++    bool injected_;
++  };
+   extern "C"
+   int CASADI_NLPSOL_BONMIN_EXPORT
+-  casadi_register_nlpsol_bonmin(Nlpsol::Plugin* plugin) {
++  casadi_register_nlpsol_bonminseed(Nlpsol::Plugin* plugin) {
+     plugin->creator = BonminInterface::creator;
+-    plugin->name = "bonmin";
++    plugin->name = "bonminseed";
+     plugin->doc = BonminInterface::meta_doc.c_str();
+     plugin->version = CASADI_VERSION;
+     plugin->options = &BonminInterface::options_;
+@@ -50,8 +98,8 @@
+   }
+ 
+   extern "C"
+-  void CASADI_NLPSOL_BONMIN_EXPORT casadi_load_nlpsol_bonmin() {
+-    Nlpsol::registerPlugin(casadi_register_nlpsol_bonmin);
++  void CASADI_NLPSOL_BONMIN_EXPORT casadi_load_nlpsol_bonminseed() {
++    Nlpsol::registerPlugin(casadi_register_nlpsol_bonminseed);
+   }
+ 
+   BonminInterface::BonminInterface(const std::string& name, const Function& nlp)
+@@ -73,6 +121,8 @@
+       {"bonmin",
+        {OT_DICT,
+         "Options to be passed to BONMIN"}},
++      {"seed_incumbent",
++       {OT_BOOL, "Submit the validated primal start as a CBC integer heuristic"}},
+       {"var_string_md",
+        {OT_DICT,
+         "String metadata (a dictionary with lists of strings) "
+@@ -136,6 +186,7 @@
+     // Default options
+     pass_nonlinear_variables_ = true;
+     pass_nonlinear_constraints_ = true;
++    seed_incumbent_ = false;
+     Dict hess_lag_options, jac_g_options, grad_f_options;
+ 
+     std::vector< std::vector<int> > sos1_groups;
+@@ -144,6 +195,8 @@
+     for (auto&& op : opts) {
+       if (op.first=="bonmin") {
+         opts_ = op.second;
++      } else if (op.first=="seed_incumbent") {
++        seed_incumbent_ = op.second;
+       } else if (op.first=="pass_nonlinear_variables") {
+         pass_nonlinear_variables_ = op.second;
+       } else if (op.first=="pass_nonlinear_constraints") {
+@@ -465,10 +519,53 @@
+     // Initialize
+     bonmin.initialize(GetRawPtr(tminlp));
+ 
++    // Submit only caller-validated x0 as a candidate integer incumbent.
++    X0IncumbentHeuristic* x0_heuristic = nullptr;
++    if (seed_incumbent_) {
++      std::vector<double> x0(d_nlp->z, d_nlp->z + nx_);
++      x0_heuristic = new X0IncumbentHeuristic(x0, tminlp);
++      x0_heuristic->setWhen(1);
++      Bonmin::BabSetupBase::HeuristicMethod method;
++      method.id = "casadi_validated_x0_incumbent";
++      method.heuristic = x0_heuristic;
++      bonmin.heuristics().push_back(method);
++    }
++
+     // Branch-and-bound
++    Bab bb;
+     try {
+-      Bab bb;
+       bb(bonmin);
++      std::cerr << std::setprecision(12)
++                << "BONMINSEED_BAB_STATS status=" << bb.mipStatus()
++                << " incumbent=" << bb.bestObj()
++                << " bound=" << bb.bestBound()
++                << " nodes=" << bb.numNodes()
++                << " iterations=" << bb.iterationCount() << std::endl;
++      // Bonmin may leave CasADi with the last NLP iterate instead of CBC's
++      // best integer incumbent. Re-evaluate CBC's vector through the original
++      // TMINLP before returning it for exact replay and independent SAT.
++      const double* best_solution = bb.bestSolution();
++      if (best_solution) {
++        Ipopt::Number incumbent_objective = 0.0;
++        bool incumbent_evaluated = tminlp->eval_f(
++            nx_, best_solution, true, incumbent_objective);
++        bool objective_consistent = incumbent_evaluated &&
++            std::fabs(incumbent_objective - bb.bestObj()) <=
++            1e-6 * (1.0 + std::fabs(incumbent_objective)) &&
++            bb.bestObj() < 1e49;
++        std::cerr << std::setprecision(12)
++                  << "BONMINSEED_BEST_INCUMBENT_CHECK cbc=" << bb.bestObj()
++                  << " tminlp=" << incumbent_objective
++                  << " eval_ok=" << incumbent_evaluated
++                  << " consistent=" << objective_consistent << std::endl;
++        if (objective_consistent) {
++          casadi_copy(best_solution, nx_, d_nlp->z);
++          d_nlp->objective = incumbent_objective;
++          if (!tminlp->eval_g(nx_, best_solution, true, ng_, m->gk))
++            casadi_error("Bonmin incumbent constraint evaluation failed");
++          std::cerr << "BONMINSEED_BEST_INCUMBENT_EXPOSED" << std::endl;
++        }
++      }
+     } catch (CoinError& e) {
+       casadi_error("CoinError occured: " + to_str(e));
+     } catch (TNLPSolver::UnsolvedError& e) {
+--- a/casadi/interfaces/bonmin/bonmin_interface.hpp
++++ b/casadi/interfaces/bonmin/bonmin_interface.hpp
+@@ -187,6 +187,7 @@
+ 
+     // Options
+     bool pass_nonlinear_variables_;
++    bool seed_incumbent_;
+     bool pass_nonlinear_constraints_;
+     std::vector<bool> nl_ex_;
+     std::vector<bool> nl_g_;

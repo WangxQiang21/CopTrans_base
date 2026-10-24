@@ -1,0 +1,23 @@
+name: P16_complex_parking
+source_pdf: 16_Zhu_Adaptive_Multi_Mode_4WIS_2026.pdf
+source_page: 24
+source_figure: "Figure 22"
+description: "Complex parking benchmark."
+paper_coordinate_bounds: [0.0, 30.0, 0.0, 30.0]
+map_coordinate_bounds: [12.388497, 17.611503, 12.388497, 17.611503]
+source_plot_pixels: [954, 1010, 1888, 1946]
+source_resolution_m_per_pixel_approx: 0.032086
+map_resolution_m_per_pixel: 0.005586
+robot_scale_factor: 0.174100
+paper_vehicle_width_m: 2.000
+target_robot_width_m: 0.500
+scale_reference: "uniform scale makes the source 5.74 m vertical passage approximately 1.00 m (2x this robot width)"
+scale_center: [15.000000, 15.000000]
+obstacle_fill_class: gray89
+ignored_overlays: []
+cleanup_notes: "Applied a 5-pixel median filter to smooth digitized obstacle edges and remove small raster teeth."
+pose_source: not encoded in paper; project-defined test poses are in scene_meta.yaml
+limitations: >-
+  Reconstructed from a printed simulation figure, not the authors'
+  occupancy grid. Boundaries and scale are approximate. Recheck all
+  paths with the vehicle swept-footprint collision checker.

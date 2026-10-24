@@ -1,0 +1,94 @@
+Panels:
+  - Class: rviz/Displays
+    Name: Displays
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Class: rviz/Grid
+      Enabled: true
+      Name: Grid
+      Value: true
+    - Class: rviz/Map
+      Enabled: true
+      Name: Map
+      Topic: /map
+      Value: true
+    - Class: rviz/Path
+      Enabled: true
+      Name: CoarsePath
+      Topic: /plan/path_coarse
+      Color: 135; 135; 135
+      Line Style: Lines
+      Line Width: 0.025
+      Value: true
+    - Class: rviz/Path
+      Enabled: true
+      Name: FinalPath
+      Topic: /plan/path
+      Color: 245; 245; 245
+      Line Style: Billboards
+      Line Width: 0.035
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Name: Endpoints
+      Marker Topic: /plan/markers
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Name: Coarse mode-colored trajectory (dim A/O/Spin)
+      Marker Topic: /plan/mode_strip_coarse
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Name: Mode-colored trajectory (A cyan / O orange / Spin purple)
+      Marker Topic: /plan/mode_strip
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Name: Corridor
+      Marker Topic: /plan/corridor_markers
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Name: Vehicle
+      Marker Topic: /robot/marker
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Name: Ego heading arrow
+      Marker Topic: /robot/heading_marker
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Name: HUD
+      Marker Topic: /robot/hud
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Name: SceneHints
+      Marker Topic: /scene_hints
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Name: ParkingLines
+      Marker Topic: /parking_lines
+      Value: true
+  Global Options:
+    Fixed Frame: map
+    Background Color: 48; 48; 48
+    Frame Rate: 30
+  Tools:
+    - Class: rviz/Interact
+    - Class: rviz/MoveCamera
+    - Class: rviz/SetInitialPose
+      Topic: /initialpose
+    - Class: rviz/SetGoal
+      Topic: /move_base_simple/goal
+  Views:
+    Current:
+      Class: rviz/TopDownOrtho
+      Name: Current View
+      Scale: 70
+      X: 6
+      Y: 4

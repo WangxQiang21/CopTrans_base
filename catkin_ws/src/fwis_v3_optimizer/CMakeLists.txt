@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.0.2)
+project(fwis_v3_optimizer)
+find_package(catkin REQUIRED COMPONENTS rospy nav_msgs geometry_msgs visualization_msgs std_msgs fwis_v3_msgs)
+catkin_python_setup()
+catkin_package(CATKIN_DEPENDS rospy nav_msgs geometry_msgs visualization_msgs std_msgs fwis_v3_msgs)
+catkin_install_python(PROGRAMS scripts/optimizer_node.py DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})

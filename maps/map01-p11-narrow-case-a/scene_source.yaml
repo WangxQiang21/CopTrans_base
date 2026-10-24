@@ -1,0 +1,23 @@
+name: P11_case_a
+source_pdf: 11_Chang_4WIS_Parking_Mode_Decision_2024.pdf
+source_page: 7
+source_figure: "Fig. 5(a)"
+description: "Narrow scene A; HA result shown in source figure."
+paper_coordinate_bounds: [-3.0, 20.0, 0.0, 12.0]
+map_coordinate_bounds: [5.067781, 11.932219, 4.210314, 7.789686]
+source_plot_pixels: [384, 316, 1244, 768]
+source_resolution_m_per_pixel_approx: 0.026646
+map_resolution_m_per_pixel: 0.007954
+robot_scale_factor: 0.298507
+paper_vehicle_width_m: 1.675
+target_robot_width_m: 0.500
+scale_reference: "paper vehicle width mapped to target robot width"
+scale_center: [8.500000, 6.000000]
+obstacle_fill_class: gray125
+ignored_overlays: []
+cleanup_notes: "Removed isolated raster traces smaller than 250 pixels and restored the two source-figure rectangular obstacle faces."
+pose_source: not encoded in paper; project-defined test poses are in scene_meta.yaml
+limitations: >-
+  Reconstructed from a printed simulation figure, not the authors'
+  occupancy grid. Boundaries and scale are approximate. Recheck all
+  paths with the vehicle swept-footprint collision checker.

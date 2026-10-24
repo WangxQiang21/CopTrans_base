@@ -1,0 +1,18 @@
+# Ranger Mini 2.0 planning geometry from the AGILE-X manual (meters/radians).
+# Control calibration fields below are retained for existing backend compatibility;
+# they are not part of the current perfect-tracking spatial planning assumptions.
+vehicle:
+  length: 0.738
+  width: 0.500
+  height: 0.338
+  wheelbase: 0.494
+  track: 0.364
+  r_min_ack: 0.810
+  ackermann_command_max_abs: 0.6981317007977318  # 40 deg, manual CAN command range
+  oblique_command_max_abs: 1.5707963267948966    # 90 deg, manual; 90 deg is lateral motion
+  supports_spin: true
+  phi_max: 1.5707963267948966
+  # Legacy controller-stage placeholders, not manufacturer specifications.
+  max_wheel_steer: 1.5707963267948966
+  max_wheel_steer_rate: 2.50
+  mesh: ""
