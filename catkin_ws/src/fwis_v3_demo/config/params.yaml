@@ -1,7 +1,6 @@
 planning:
-  # Current R03 testing default. Select planning_backend:=legacy for comparison.
-  # mode_path_v1 is the R02 constant-action backend; mode_path_v2 is the R03
-  # continuous-motion planner, whose cross-map validation is still in progress.
+  # Default backend for branch continuous-mode-path.
+  # Override with planning_backend:=... when comparing the other implementations.
   backend: mode_path_v2
   # New backends compare forward and reverse candidates under one common cost.
   # legacy preserves its historical direction behavior.
