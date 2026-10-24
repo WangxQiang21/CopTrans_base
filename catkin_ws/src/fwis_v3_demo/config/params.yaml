@@ -65,9 +65,10 @@ quality:
     nlp_time_s: 2.0
     max_nlp_calls: 1
     max_candidates: 20
-    # After obtaining a certified route, finish at most three distinct action
-    # neighborhoods. Empty-pool recovery retains the full hard time budget.
-    max_structural_expansions: 3
+    # After obtaining a certified route, inspect at most two distinct action
+    # neighborhoods; the fastest retimed incumbent remains eligible throughout.
+    # Empty-pool recovery retains the full hard time budget.
+    max_structural_expansions: 2
     # Return the certified incumbent after an expansion without a score gain.
     max_stagnant_expansions: 1
     # A certified mode-anchor simplification may finish after local refinement
