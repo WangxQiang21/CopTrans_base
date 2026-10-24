@@ -40,7 +40,7 @@ map09 和 map16 默认按 1.0。
 planning_backend:=mode_path_v1 使用 R02 恒定原语后端；
 planning_backend:=mode_path_v2 使用 R03 连续控制/连续时间原型，
 同模式控制节点连续运行，切模式固定静止 0.3 秒，并复核连续终点和扫掠。
-省略 planning_backend 时默认使用 mode_path_v2；它仍在跨地图验证中。
+省略 planning_backend 时默认使用 mode_path_v1（本分支恒定原语模式路径）。
 目标速度默认 2.0 m/s，可用 target_v:=数值 覆盖；弯道不因曲率主动减速。
 起终点和切模式处保留加减速；短路段可能来不及达到目标速度。
 默认在严格认证通过的候选中选择执行时间最短的路线，净空/平顺性作近乎等时的次级比较。
@@ -251,7 +251,7 @@ if [[ -n "${requested_map_scale}" || "${effective_map_scale}" != "1.0" ]]; then
   echo "[expv3] 地图比例 ${effective_map_scale}，中心点固定；栅格尺寸保持不变。"
 fi
 
-# The demo entry point follows the current planner unless the caller explicitly
+# The demo entry point follows this branch default unless the caller explicitly
 # selects a backend. Keep this explicit so stale params.yaml values cannot make
 # ordinary manual tests silently run the legacy planner.
 has_planning_backend=false
@@ -262,7 +262,7 @@ for arg in "${launch_args[@]}"; do
   fi
 done
 if [[ "${has_planning_backend}" == false ]]; then
-  launch_args+=("planning_backend:=mode_path_v2")
+  launch_args+=("planning_backend:=mode_path_v1")
 fi
 
 if [[ ! -f /opt/ros/noetic/setup.bash ]]; then
