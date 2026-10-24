@@ -39,7 +39,9 @@ from fwis_v3_optimizer.core import (Pose, Action, Grid, refine, time_sample,
 from fwis_v3_optimizer.mode_master import ModeMasterConfig, ModePathMaster
 from fwis_v3_optimizer.quality import QualityProfile, TrajectoryEvaluator
 from fwis_v3_optimizer.retiming import MotionLimits
-from fwis_v3_optimizer.continuous_geometry import replay_continuous
+from fwis_v3_optimizer.continuous_geometry import (
+    fit_continuous_endpoint, plan_from_actions, replay_continuous)
+from fwis_v3_optimizer.continuous_retiming import retime_continuous
 from fwis_v3_optimizer.diagnostics import atomic_write_json
 
 
@@ -2607,6 +2609,79 @@ class OptimizerNode:
                 for actions,source in solver_auxiliary_seeds)
             actions, timed = winner["actions"], winner["timed"]
             continuous = winner.get("continuous_plan")
+            if self.planning_backend == "mode_path_v1":
+                # The graph search keeps its constant-action path and mode
+                # word. Generate the executable path as mode-consistent
+                # continuous segments, then apply the paper-style trapezoidal
+                # timing contract: same-mode primitive boundaries do not add
+                # stationary reconfiguration. Retain the exact-primitive
+                # winner unless the continuous result passes the full audit
+                # and is strictly faster.
+                generation_begin = time.perf_counter()
+                generation = {"status": "not_selected",
+                              "source": "exact_primitive_fallback",
+                              "exact_primitive_duration_s": float(timed.duration)}
+                try:
+                    candidate_plan = plan_from_actions(start, goal, actions)
+                    candidate_plan, fit = fit_continuous_endpoint(
+                        candidate_plan, self.quality_limits.r_min_ack,
+                        max_iterations=40, terminal_xy_tol=.015,
+                        terminal_yaw_tol=math.radians(.75))
+                    generation["endpoint_fit"] = fit
+                    collision = (evaluator.continuous_collision(candidate_plan)
+                                 if fit.get("success") else None)
+                    generation["first_collision"] = collision
+                    if fit.get("success") and collision is None:
+                        candidate_timing = retime_continuous(
+                            candidate_plan, self.quality_limits, dt=.02,
+                            spatial_dt=self.quality_profile.sweep_spacing)
+                        audit = evaluator.evaluate_continuous_geometry(
+                            candidate_plan, candidate_timing,
+                            allow_reverse=self.allow_reverse)
+                        generation["audit_status"] = audit.get("status")
+                        generation["audit_reason"] = audit.get("reason")
+                        generation["candidate_duration_s"] = float(
+                            candidate_timing.duration)
+                        if (audit.get("status") == "FEASIBLE" and
+                                candidate_timing.duration < timed.duration-1e-6):
+                            generation["source"] = (
+                                "mode_path_v1_segmented_trapezoid")
+                            report["mode_master_selected_source"] = report.get(
+                                "selected_source")
+                            report["mode_master_selected_timing"] = report.get(
+                                "selected_timing")
+                            timed = candidate_timing
+                            continuous = candidate_plan
+                            winner["timed"] = candidate_timing
+                            winner["continuous_plan"] = candidate_plan
+                            winner["audit"] = audit
+                            report["selected"] = audit
+                            report["selected_timing"] = candidate_timing.report()
+                            report["selected_source"] = generation["source"]
+                            report["motion_representation"] = (
+                                "mode_path_v1_segmented_trapezoid")
+                            generation["status"] = "selected_faster_certified"
+                            report["execution_trajectory"] = {
+                                "source": generation["source"],
+                                "audit_status": audit.get("status"),
+                                "duration_s": float(candidate_timing.duration),
+                                "mode_word": fit.get("mode_direction_word", []),
+                                "switch_count": candidate_timing.mode_switch_count,
+                                "mode_switch_hold_s":
+                                    candidate_timing.mode_switch_hold_seconds,
+                                "same_mode_hold_s":
+                                    candidate_timing.same_mode_hold_seconds,
+                            }
+                        elif audit.get("status") == "FEASIBLE":
+                            generation["status"] = "certified_but_not_faster"
+                    else:
+                        generation["status"] = "endpoint_fit_or_sweep_rejected"
+                except (ValueError, RuntimeError) as exc:
+                    generation["status"] = "rejected"
+                    generation["reason"] = str(exc).splitlines()[-1]
+                generation["generation_seconds"] = (
+                    time.perf_counter()-generation_begin)
+                report["v1_trajectory_generation"] = generation
             stage_timings = report.setdefault("stage_timings_s", {})
             stage_timings["mode_master_total"] = float(report.get("total_s", 0.0))
             postprocess_begin = time.perf_counter()
@@ -2629,10 +2704,14 @@ class OptimizerNode:
                     self.grid, poses, records=corridor_records,
                     plan_id=int(plan_id), map_hash=map_hash)
                 corridor = "disc" if covered else "mixed_disc_point"
-                meta = {"solver": "mode_path_v2_continuous_motion",
+                v2_continuous = self.planning_backend == "mode_path_v2"
+                meta = {"solver": ("mode_path_v2_continuous_motion" if
+                                   v2_continuous else
+                                   "mode_path_v1_segmented_trapezoid"),
                         "corridor": corridor,
                         "common_score": winner["audit"]["score"],
-                        "continuous_motion_v2": True,
+                        "continuous_motion_v2": v2_continuous,
+                        "continuous_mode_path_timing": not v2_continuous,
                         "corridor_modes": [row[3] if row[3] is not None else
                                            continuous.blocks[0].mode
                                            for row in corridor_rows],
