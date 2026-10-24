@@ -2,8 +2,7 @@ planning:
   # Default backend for branch multimodal-hybrid-astar.
   # Override with planning_backend:=... when comparing the other implementations.
   backend: legacy
-  # New backends compare forward and reverse candidates under one common cost.
-  # legacy preserves its historical direction behavior.
+  # All backends compare forward and reverse candidates under one common cost.
   direction_policy: bidirectional
   # No plain forward/reverse cusps or repeated shunting. One reversal needs Spin.
   allow_shunting: false

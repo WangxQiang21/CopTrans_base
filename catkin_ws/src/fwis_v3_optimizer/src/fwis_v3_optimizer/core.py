@@ -4073,7 +4073,9 @@ def time_sample(start, actions, v_demo=.5, omega_demo=.5, dt=.1):
             # Numeric theta is deliberately unwrapped for downstream control.
             # ROS quaternions remain periodic when rendered by pose_stamped().
             q=Pose(q.x,q.y,result[-1][1].th+wrap(q.th-result[-1][1].th))
-            v=0.0 if group[0].mode==2 else total*(6*tau-6*tau*tau)/duration
+            gear_sign=1.0 if group[0].amount>0 else -1.0
+            v=(0.0 if group[0].mode==2 else
+               gear_sign*total*(6*tau-6*tau*tau)/duration)
             result.append((elapsed+duration*tau,q,v,group[0].mode))
         elapsed+=duration
         p=result[-1][1]

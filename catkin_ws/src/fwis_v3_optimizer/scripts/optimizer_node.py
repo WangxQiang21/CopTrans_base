@@ -37,7 +37,8 @@ from fwis_v3_optimizer.core import (Pose, Action, Grid, refine, time_sample,
                                     upstream_suffix_replan_candidates, wrap,
                                     has_reverse_motion)
 from fwis_v3_optimizer.mode_master import ModeMasterConfig, ModePathMaster
-from fwis_v3_optimizer.quality import QualityProfile, TrajectoryEvaluator
+from fwis_v3_optimizer.quality import (QualityProfile, TrajectoryEvaluator,
+                                       action_shunting_violation)
 from fwis_v3_optimizer.retiming import MotionLimits
 from fwis_v3_optimizer.continuous_geometry import replay_continuous
 from fwis_v3_optimizer.diagnostics import atomic_write_json
@@ -134,6 +135,13 @@ def safe_time_sample(start, actions, grid, v_demo, omega_demo, dt,
     if last_collision:
         raise ValueError("timed_sat_collision_after_adaptive_sampling")
     raise ValueError("empty_timed_trajectory")
+
+
+def legacy_direction_allowed(actions, allow_reverse, allow_shunting):
+    """Apply the configured gear policy and shared Spin-mediated reversal rule."""
+    if has_reverse_motion(actions) and not allow_reverse:
+        return False
+    return allow_shunting or action_shunting_violation(actions) is None
 
 
 def refine_mode_schedule_neighbors(start, goal, base_actions, grid,
@@ -936,9 +944,7 @@ class OptimizerNode:
                 proposal = self._seed_proposals.pop(int(msg.plan_id), None)
             if proposal and proposal["actions"]:
                 auxiliary_seeds.append((proposal["actions"], proposal["source"]))
-        if has_reverse_motion(actions) and not (
-                self.planning_backend in ("mode_path_v1", "mode_path_v2") and
-                self.mode_master_config.allow_reverse):
+        if has_reverse_motion(actions) and not self.allow_reverse:
             self._persist_plan_report({"status":"REJECTED",
                 "failure_stage":"direction_policy",
                 "reason":"reverse_coarse_seed_rejected"},int(msg.plan_id),
@@ -1278,7 +1284,12 @@ class OptimizerNode:
                             for terminal in terminal_options:
                                 proposal=collapse_exact_runs(
                                     prefix+local[0]+terminal)
-                                if sequence_cost(
+                                if self.planning_backend == "legacy":
+                                    if not legacy_direction_allowed(
+                                            proposal,self.allow_reverse,
+                                            self.allow_shunting):
+                                        continue
+                                elif sequence_cost(
                                         proposal,self.cost_weights)[
                                             "direction_switches"]>0:
                                     continue
@@ -1528,10 +1539,15 @@ class OptimizerNode:
                     start,coarse_actions,max_translation=.50,
                     max_rotation=math.radians(15))
                 coarse_end=coarse_poses[-1]
+                coarse_direction_ok=(
+                    legacy_direction_allowed(
+                        coarse_actions,self.allow_reverse,self.allow_shunting)
+                    if self.planning_backend == "legacy" else
+                    (not has_reverse_motion(coarse_actions) and
+                     sequence_cost(coarse_actions,self.cost_weights)[
+                        "direction_switches"]==0))
                 coarse_valid=(
-                    not has_reverse_motion(coarse_actions) and
-                    sequence_cost(coarse_actions,self.cost_weights)[
-                        "direction_switches"]==0 and
+                    coarse_direction_ok and
                     self.grid.trajectory_clear(coarse_poses,coarse_dense) and
                     math.hypot(coarse_end.x-goal.x,
                                coarse_end.y-goal.y)<=self.xy_tol+1e-5 and
@@ -2255,7 +2271,12 @@ class OptimizerNode:
                 coarse_poses,coarse_actions=expand(
                     start,collapse_exact_runs(actions),max_translation=.50,
                     max_rotation=math.radians(15))
-                if sequence_cost(
+                if self.planning_backend == "legacy":
+                    if not legacy_direction_allowed(
+                            coarse_actions,self.allow_reverse,
+                            self.allow_shunting):
+                        raise ValueError("coarse_seed_direction_policy_forbidden")
+                elif sequence_cost(
                         coarse_actions,self.cost_weights)[
                             "direction_switches"]>0:
                     raise ValueError("coarse_seed_direction_switch_forbidden")
@@ -2298,21 +2319,31 @@ class OptimizerNode:
                 candidates.append((score,"repair",
                                    poses,refined,boxes,meta))
             original_candidate_count=len(candidates)
-            candidates=[candidate for candidate in candidates
-                        if sequence_cost(
-                            candidate[3],self.cost_weights)[
-                                "direction_switches"]==0]
-            if len(candidates)<original_candidate_count:
-                rospy.loginfo(
-                    "[v3 optimizer] rejected %d direction-switching proposals",
-                    original_candidate_count-len(candidates))
-            original_candidate_count=len(candidates)
-            candidates=[candidate for candidate in candidates
-                        if not has_reverse_motion(candidate[3])]
-            if len(candidates)<original_candidate_count:
-                rospy.loginfo(
-                    "[v3 optimizer] rejected %d reverse-motion proposals",
-                    original_candidate_count-len(candidates))
+            if self.planning_backend == "legacy":
+                candidates=[candidate for candidate in candidates
+                            if legacy_direction_allowed(
+                                candidate[3],self.allow_reverse,
+                                self.allow_shunting)]
+                if len(candidates)<original_candidate_count:
+                    rospy.loginfo(
+                        "[v3 optimizer] rejected %d direction-policy proposals",
+                        original_candidate_count-len(candidates))
+            else:
+                candidates=[candidate for candidate in candidates
+                            if sequence_cost(
+                                candidate[3],self.cost_weights)[
+                                    "direction_switches"]==0]
+                if len(candidates)<original_candidate_count:
+                    rospy.loginfo(
+                        "[v3 optimizer] rejected %d direction-switching proposals",
+                        original_candidate_count-len(candidates))
+                original_candidate_count=len(candidates)
+                candidates=[candidate for candidate in candidates
+                            if not has_reverse_motion(candidate[3])]
+                if len(candidates)<original_candidate_count:
+                    rospy.loginfo(
+                        "[v3 optimizer] rejected %d reverse-motion proposals",
+                        original_candidate_count-len(candidates))
             candidates.sort(key=lambda item:
                 item[0]-float(item[5].get("sos_selection_bonus",0.0)))
             chosen=None; sample_error=None
@@ -2436,7 +2467,12 @@ class OptimizerNode:
                     coarse_poses,coarse_actions=expand(
                         start,collapse_exact_runs(actions),max_translation=.50,
                         max_rotation=math.radians(15))
-                    if sequence_cost(
+                    if self.planning_backend == "legacy":
+                        if not legacy_direction_allowed(
+                                coarse_actions,self.allow_reverse,
+                                self.allow_shunting):
+                            raise ValueError("coarse_seed_direction_policy_forbidden")
+                    elif sequence_cost(
                             coarse_actions,self.cost_weights)[
                                 "direction_switches"]>0:
                         raise ValueError("coarse_seed_direction_switch_forbidden")

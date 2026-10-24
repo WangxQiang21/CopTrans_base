@@ -226,9 +226,10 @@ class PlannerNode {
       ROS_WARN("planning/allow_reverse_fallback is deprecated; use planning/direction_policy=%s",
                direction_policy.c_str());
     }
-    allow_reverse_=(backend=="mode_path_v1" ||
-                    backend=="mode_path_v2") &&
-                   direction_policy=="bidirectional";
+    // Apply the configured direction policy to every backend. In particular,
+    // the multimodal Hybrid A* backend must be able to compare reverse-capable
+    // candidates when its bidirectional policy is selected.
+    allow_reverse_=direction_policy=="bidirectional";
     bool allow_shunting=false;
     const bool has_shunting_policy=
         pnh_.getParam("planning/allow_shunting",allow_shunting);
