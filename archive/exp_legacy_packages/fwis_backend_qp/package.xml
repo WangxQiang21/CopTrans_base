@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>fwis_backend_qp</name>
+  <version>0.1.0</version>
+  <description>
+    Velocity-profile QP backend for the 4WIS hybrid A* frontend.
+    Given a geometric path with mode labels, solves for time-optimal v(s)
+    with v=0 hard-constrained at every mode-switch point (K01 §4.3).
+  </description>
+  <maintainer email="wangq@whut.edu.cn">WangQ</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>rospy</build_depend>
+  <build_depend>nav_msgs</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>fwis_msgs</build_depend>
+  <build_depend>fwis_common</build_depend>
+
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>fwis_msgs</exec_depend>
+  <exec_depend>fwis_common</exec_depend>
+  <exec_depend>python3-numpy</exec_depend>
+</package>
