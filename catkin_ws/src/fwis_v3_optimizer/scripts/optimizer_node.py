@@ -2702,11 +2702,7 @@ class OptimizerNode:
                                for k in block.knots]}
                     for block in continuous.blocks]
             else:
-                # Sample legacy exact primitives at the same display scale as
-                # the v1/v2 corridor stations. This is post-solve visualization
-                # geometry; it does not change the plan or safety certificate.
-                poses, _ = expand(start, actions, max_translation=.30,
-                                  max_rotation=math.radians(8))
+                poses = replay(start, actions)
                 try:
                     _, boxes, covered = build_corridors(self.grid, poses)
                     corridor = "disc" if covered else "mixed_disc_point"
@@ -2799,12 +2795,48 @@ class OptimizerNode:
         else:
             self.mode_pub.publish(make_mode_strip(
                 actions,poses,header,"v3_modes",.06,.95,colors))
+        corridor_poses = poses
+        corridor_boxes = boxes
+        display_sampling = {
+            "max_spacing": .30,
+            "max_yaw_step": math.radians(8),
+            "narrow_half_width": .08,
+            "narrow_spacing": .12,
+            "extent_change": .06,
+        }
+        legacy_display_resampled = False
+        if self.planning_backend == "legacy":
+            # Legacy's published corridor used action endpoints, which are
+            # much farther apart than the v1/v2 visualization stations. Build
+            # a display-only fine replay here; leave the executable timed path,
+            # mode strip and safety certificate unchanged.
+            try:
+                fine_poses, _ = expand(
+                    start, actions, max_translation=.10,
+                    max_rotation=math.radians(5))
+                _, fine_boxes, _ = build_corridors(self.grid, fine_poses)
+                corridor_poses, corridor_boxes = fine_poses, fine_boxes
+                display_sampling = {
+                    "max_spacing": .12,
+                    "max_yaw_step": math.radians(5),
+                    "narrow_half_width": .08,
+                    "narrow_spacing": .08,
+                    "extent_change": .06,
+                }
+                legacy_display_resampled = True
+            except Exception as exc:
+                rospy.logwarn("[v3 optimizer] legacy display resampling "
+                              "failed; keeping original corridor: %s", exc)
         erase=Marker();erase.header=header;erase.action=Marker.DELETEALL
         corridor_markers=[erase]
         # Points are already in map coordinates: keep marker rotation identity.
         # The corridor row is paired with the actual displayed trajectory pose.
         display_poses=[]
-        for k,row in enumerate(boxes):
+        for k,row in enumerate(corridor_boxes):
+            if (self.planning_backend == "legacy" and
+                    k < len(corridor_poses)):
+                display_poses.append(corridor_poses[k])
+                continue
             if meta.get("continuous_motion_v2") and k<len(poses):
                 display_poses.append(poses[k])
                 continue
@@ -2827,7 +2859,8 @@ class OptimizerNode:
                 display_poses.append(reference)
         # Keep the display independent from optimization and 5 mm safety sampling.
         # Core corridor stations remain complete; only their rendered subset changes.
-        indices=select_corridor_display_stations(display_poses,boxes)
+        indices=select_corridor_display_stations(
+            display_poses, corridor_boxes, **display_sampling)
         edges=((0,1),(1,2),(2,3),(3,0))
         markers={}
         plan_suffix="_plan_%d"%int(plan_id)
@@ -2849,7 +2882,7 @@ class OptimizerNode:
         records={(r.station,r.feature_index):r
                  for r in meta.get("corridor_records",[])}
         for k in indices:
-            row=boxes[k]
+            row=corridor_boxes[k]
             if not row:
                 continue
             body_pose=display_poses[k]
@@ -2878,14 +2911,15 @@ class OptimizerNode:
         return {"schema":"corridor_display_sampling_v1",
                 "plan_id":int(plan_id),
                 "role":"display_only; does_not_change_optimizer_or_sweep",
-                "all_corridor_stations":len(boxes),
+                "all_corridor_stations":len(corridor_boxes),
                 "displayed_stations":len(indices),
                 "station_indices":indices,
-                "sampling":{"max_arc_spacing_m":.30,
-                             "max_accumulated_yaw_rad":math.radians(8),
-                             "narrow_region_min_lateral_half_extent_m":.08,
-                             "narrow_region_spacing_m":.12,
-                             "max_region_half_extent_change_m":.06},
+                "sampling":{"max_arc_spacing_m":display_sampling["max_spacing"],
+                             "max_accumulated_yaw_rad":display_sampling["max_yaw_step"],
+                             "narrow_region_min_lateral_half_extent_m":display_sampling["narrow_half_width"],
+                             "narrow_region_spacing_m":display_sampling["narrow_spacing"],
+                             "max_region_half_extent_change_m":display_sampling["extent_change"]},
+                "legacy_display_resampled":legacy_display_resampled,
                 "vehicle_size_m":[self.length,self.width],
                 "margin_size_m":[2*self.grid.half_l,2*self.grid.half_w],
                 "margin_contract":"total_dimension_increment_half_per_side",
