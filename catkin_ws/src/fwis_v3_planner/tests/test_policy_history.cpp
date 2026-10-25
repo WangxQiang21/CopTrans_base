@@ -94,6 +94,40 @@ TEST(PlannerObstacleSlabs, MatchesPerCellSATOnRotatedBodiesAndIrregularRaster) {
   }
 }
 
+TEST(PlannerModeHeuristic, AccountsForRequiredModeEventsAndInitialChoice) {
+  const Pose p{0.,0.,0.},turn{0.,0.,PI/2},forward{2.,0.,0.};
+  EXPECT_NEAR(mode_motion_lower_bound(p,O,false,turn,0.,0.,.81,1.,2.),
+              .81*PI/2+2.,1e-12);
+  EXPECT_NEAR(mode_motion_lower_bound(p,S,false,forward,0.,0.,.81,1.,2.),4.,1e-12);
+  EXPECT_NEAR(mode_motion_lower_bound(p,O,true,turn,0.,0.,.81,1.,2.),.81*PI/2,1e-12);
+  EXPECT_EQ(mode_motion_lower_bound(p,O,false,p,.16,.14,.81,1.,2.),0.);
+}
+
+TEST(PlannerModeHeuristic, DoesNotOverestimateRandomFeasibleSuffixes) {
+  std::mt19937 generator(6025);
+  std::uniform_real_distribution<double> unit(0.,1.);
+  for(int trial=0;trial<5000;++trial) {
+    const Pose start{0.,0.,(2*unit(generator)-1)*PI};
+    Pose finish=start;
+    const uint8_t initial_mode=generator()%3;
+    uint8_t mode=initial_mode;
+    double actual=0.;
+    for(int edge=0;edge<1+trial%8;++edge) {
+      const uint8_t next=generator()%3;
+      if(next!=mode) actual+=2.;
+      const double amount=(2*unit(generator)-1)*2.;
+      const double control=next==A?(2*unit(generator)-1)/.81:
+                           next==O?(2*unit(generator)-1)*PI/2:0.;
+      finish=advance(finish,Action{next,amount,control});
+      actual+=std::abs(amount); // Spin weight is 1, translation weight is 1.
+      mode=next;
+    }
+    const double bound=mode_motion_lower_bound(start,initial_mode,false,
+        finish,.16,.14,.81,1.,2.);
+    EXPECT_LE(bound,actual+1e-9);
+  }
+}
+
 int main(int argc, char** argv) {
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

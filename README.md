@@ -1,5 +1,23 @@
 # expv3
 
+## 本分支：模式感知的多模式 Hybrid A*
+
+本分支 `multimodal-hybrid-astar` 运行 `legacy`。参考论文 06：Runjiao Bao 等，
+*Hybrid A\* Path Planning with Multi-Modal Motion Extension for Four-Wheel Steering Mobile Robots*
+（[本地论文](papers/06_Wang_4WIS_HybridAstar_2025.pdf)，[arXiv:2509.06115](https://arxiv.org/abs/2509.06115)）。
+借鉴模式进入搜索状态、换模代价参与决策、多模式终端连接三个思路；采用本项目的 A/斜移/Spin 模型，
+保留方向和实际 Spin 历史，以及后端固定结构优化与独立整车扫掠。
+
+本次改进把模式能力写进一个保守代价下界：斜移若还需改变车头方向、Spin 若还需平移，
+至少还要发生一次模式切换；初始模式选择仍免费。只累计已经付出的平移、Spin 和换模成本，
+再加剩余运动下界，提前剪掉无法改善已有可行解的分支，减少无效 SAT 查询。
+队列沿用原探索顺序，障碍栅格引导不参与这种下界剪枝。
+
+流程：拓扑/运动原语候选 → 模式增广 Hybrid A* 与下界剪枝 → 固定模式结构优化 → 独立扫掠 → 发布。
+这是一项基于论文思想的改进，未照搬论文全部多模式 RS 曲线，也不声称有限预算搜索具有全局最优性。
+构建和回归命令为 `catkin_make -C catkin_ws --pkg fwis_v3_planner`、
+`catkin_make -C catkin_ws run_tests_fwis_v3_planner`；配对结果见 [分支评估](evaluation/paper06/REPORT.md)。
+
 本文档列出 `run_demo.sh` 的完整用法。地图目录及预览见[地图总索引](maps/README.md)，可运行地图与旧名称的对应关系见 [`maps/map_index.tsv`](maps/map_index.tsv)。
 
 ## 快速开始

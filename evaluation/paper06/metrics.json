@@ -1,0 +1,192 @@
+{
+  "case": "P12_env1_default",
+  "scope": "one paired ROS case, not a cross-map speed claim",
+  "before": {
+    "expanded_nodes": 225365,
+    "search_seconds": 2.086872,
+    "execution_seconds": 20.543110949,
+    "xy_error_m": 0.045462448616828195,
+    "yaw_error_rad": 0.015613347383065768,
+    "swept_clear": true,
+    "terminal_ok": true,
+    "optimizer_seconds": 10.78
+  },
+  "after": {
+    "expanded_nodes": 170577,
+    "search_seconds": 2.046482,
+    "execution_seconds": 20.543110949,
+    "xy_error_m": 0.045462448616828195,
+    "yaw_error_rad": 0.015613347383065768,
+    "swept_clear": true,
+    "terminal_ok": true,
+    "optimizer_seconds": 11.08
+  },
+  "identical_timed_trace": true,
+  "tests": "8 C++ tests passed, including 5000 random lower-bound cases",
+  "source_state": {
+    "legacy-before": {
+      "catkin_ws/src/fwis_v3_planner/src/planner_node.cpp": {
+        "sha256": "df54400566d9bb90ac63ddb747898e8af5902152b329e56588449fbf882aa3e6",
+        "mtime_ns": 1792906439310131616
+      },
+      "catkin_ws/src/fwis_v3_optimizer/scripts/optimizer_node.py": {
+        "sha256": "58380a3a69be2a4a37f6ee60a56a3456a692655f8c028c737ba8993d9691b0ae",
+        "mtime_ns": 1792906439306131519
+      },
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/core.py": {
+        "sha256": "461eedbe772aacd4f8e0a80be46a9d3d2fb5b7a3daa639d7559f61f197ddda36",
+        "mtime_ns": 1792906439310131616
+      },
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/quality.py": {
+        "sha256": "f47572033fc3b0106020826f215851850777a34adc08c0fb6a4038c51af49afd",
+        "mtime_ns": 1792413942822879545
+      },
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/retiming.py": {
+        "sha256": "7575652cd800449c449c44af1e5439025d489ffeca8af86bfbbbd545811ccc26",
+        "mtime_ns": 1792330514157507391
+      },
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/continuous_geometry.py": {
+        "sha256": "cbf8ce12690865ba05660af427161b26afdd5cc944b66b7c9d8f7d240f4fa27a",
+        "mtime_ns": 1792770457321476102
+      },
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/continuous_retiming.py": {
+        "sha256": "d74667c4c2cffce12ad4dc60ece7347f223ff130b3f847de8e00582a1d22b0c9",
+        "mtime_ns": 1792328850513273871
+      },
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/continuous_optimizer.py": {
+        "sha256": "87b70b957d9b2f9736f1adad1995f1b5d530a65e4b93b3283ad41e6c1dffcabe",
+        "mtime_ns": 1792330362164289245
+      },
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/mode_master.py": {
+        "sha256": "224e110351b89e48f15183f6952fd4aa64ecd83f573ec5530e3ff869a2751511",
+        "mtime_ns": 1792872518785222310
+      },
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/geometry_incumbent.py": {
+        "sha256": "a3792f95e173e0c4166a305cd2b94835aeb198956c05a4edc4f09aff99cd8bd9",
+        "mtime_ns": 1792292788159303785
+      },
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/planning_display.py": {
+        "sha256": "86c0ceec87a8baa7708b912b1cc4eb39af8186b22ed350798c16923675421d35",
+        "mtime_ns": 1792292700181702704
+      },
+      "catkin_ws/src/fwis_v3_playback/scripts/playback.py": {
+        "sha256": "133a2efd0b1450d25a7af8c75eaced77be76ea76b3d1e90b0fdae25740238a30",
+        "mtime_ns": 1792292819805102037
+      },
+      "catkin_ws/src/fwis_v3_demo/launch/demo.launch": {
+        "sha256": "199ff597dd32116a1787a137111e81cbdea3dcd1f061d3f2eb4df8c4c0383c8b",
+        "mtime_ns": 1792842214277730373
+      },
+      "tests/ros_map_probe.py": {
+        "sha256": "2f30736fddb85c770bcce4f100c89e1dcd92e9d2bf7da9c07e4bcdb9b0d72e42",
+        "mtime_ns": 1792328715879477171
+      },
+      "tools/trajectory_direction_audit.py": {
+        "sha256": "dbd771a6c222a22b09b179c91b8ee8d62b177e255445a0a9c9c9f809e38c9b52",
+        "mtime_ns": 1791784441404583017
+      },
+      "tests/ros_parking_goals_smoke.py": {
+        "sha256": "27e8cb30f87c3332e53437aefca9773a17238d7134a2dc402ac22942824d84b1",
+        "mtime_ns": 1790906924999847012
+      },
+      "tools/scale_map_runtime.py": {
+        "sha256": "0a05f4f7d02fdbcbd42311dada7e83cbad1b3e8dd0d8ee6901429857722df465",
+        "mtime_ns": 1791206340944728771
+      },
+      "catkin_ws/src/fwis_v3_demo/config/params.yaml": {
+        "sha256": "97a63cf584082087a8a28c37ecd612faade66abdf01d9358781edd0056534a79",
+        "mtime_ns": 1792906439306131519
+      },
+      "tools/run_expv3_probe.py": {
+        "sha256": "6e63ce61199b7cf89f26370d0bc03e383c522260d0ef69beefd7ea50e72e2f1c",
+        "mtime_ns": 1792840066902558508
+      },
+      "tools/expv3_eval_cases.yaml": {
+        "sha256": "97cb181bd4713343e218470410a6de1200f87f09c535eabc4bf9360e93459a04",
+        "mtime_ns": 1792850821397580854
+      }
+    },
+    "legacy-final": {
+      "catkin_ws/src/fwis_v3_planner/src/planner_node.cpp": {
+        "sha256": "b6e8c9e821f01c21a9cd5fbdad16a744a504855ad5924c856e535e3176f22837",
+        "mtime_ns": 1792918766233141273
+      },
+      "catkin_ws/src/fwis_v3_optimizer/scripts/optimizer_node.py": {
+        "sha256": "58380a3a69be2a4a37f6ee60a56a3456a692655f8c028c737ba8993d9691b0ae",
+        "mtime_ns": 1792906439306131519
+      },
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/core.py": {
+        "sha256": "461eedbe772aacd4f8e0a80be46a9d3d2fb5b7a3daa639d7559f61f197ddda36",
+        "mtime_ns": 1792906439310131616
+      },
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/quality.py": {
+        "sha256": "f47572033fc3b0106020826f215851850777a34adc08c0fb6a4038c51af49afd",
+        "mtime_ns": 1792413942822879545
+      },
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/retiming.py": {
+        "sha256": "7575652cd800449c449c44af1e5439025d489ffeca8af86bfbbbd545811ccc26",
+        "mtime_ns": 1792330514157507391
+      },
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/continuous_geometry.py": {
+        "sha256": "cbf8ce12690865ba05660af427161b26afdd5cc944b66b7c9d8f7d240f4fa27a",
+        "mtime_ns": 1792770457321476102
+      },
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/continuous_retiming.py": {
+        "sha256": "d74667c4c2cffce12ad4dc60ece7347f223ff130b3f847de8e00582a1d22b0c9",
+        "mtime_ns": 1792328850513273871
+      },
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/continuous_optimizer.py": {
+        "sha256": "87b70b957d9b2f9736f1adad1995f1b5d530a65e4b93b3283ad41e6c1dffcabe",
+        "mtime_ns": 1792330362164289245
+      },
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/mode_master.py": {
+        "sha256": "224e110351b89e48f15183f6952fd4aa64ecd83f573ec5530e3ff869a2751511",
+        "mtime_ns": 1792872518785222310
+      },
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/geometry_incumbent.py": {
+        "sha256": "a3792f95e173e0c4166a305cd2b94835aeb198956c05a4edc4f09aff99cd8bd9",
+        "mtime_ns": 1792292788159303785
+      },
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/planning_display.py": {
+        "sha256": "86c0ceec87a8baa7708b912b1cc4eb39af8186b22ed350798c16923675421d35",
+        "mtime_ns": 1792292700181702704
+      },
+      "catkin_ws/src/fwis_v3_playback/scripts/playback.py": {
+        "sha256": "133a2efd0b1450d25a7af8c75eaced77be76ea76b3d1e90b0fdae25740238a30",
+        "mtime_ns": 1792292819805102037
+      },
+      "catkin_ws/src/fwis_v3_demo/launch/demo.launch": {
+        "sha256": "199ff597dd32116a1787a137111e81cbdea3dcd1f061d3f2eb4df8c4c0383c8b",
+        "mtime_ns": 1792842214277730373
+      },
+      "tests/ros_map_probe.py": {
+        "sha256": "2f30736fddb85c770bcce4f100c89e1dcd92e9d2bf7da9c07e4bcdb9b0d72e42",
+        "mtime_ns": 1792328715879477171
+      },
+      "tools/trajectory_direction_audit.py": {
+        "sha256": "dbd771a6c222a22b09b179c91b8ee8d62b177e255445a0a9c9c9f809e38c9b52",
+        "mtime_ns": 1791784441404583017
+      },
+      "tests/ros_parking_goals_smoke.py": {
+        "sha256": "27e8cb30f87c3332e53437aefca9773a17238d7134a2dc402ac22942824d84b1",
+        "mtime_ns": 1790906924999847012
+      },
+      "tools/scale_map_runtime.py": {
+        "sha256": "0a05f4f7d02fdbcbd42311dada7e83cbad1b3e8dd0d8ee6901429857722df465",
+        "mtime_ns": 1791206340944728771
+      },
+      "catkin_ws/src/fwis_v3_demo/config/params.yaml": {
+        "sha256": "97a63cf584082087a8a28c37ecd612faade66abdf01d9358781edd0056534a79",
+        "mtime_ns": 1792906439306131519
+      },
+      "tools/run_expv3_probe.py": {
+        "sha256": "6e63ce61199b7cf89f26370d0bc03e383c522260d0ef69beefd7ea50e72e2f1c",
+        "mtime_ns": 1792840066902558508
+      },
+      "tools/expv3_eval_cases.yaml": {
+        "sha256": "97cb181bd4713343e218470410a6de1200f87f09c535eabc4bf9360e93459a04",
+        "mtime_ns": 1792850821397580854
+      }
+    }
+  }
+}

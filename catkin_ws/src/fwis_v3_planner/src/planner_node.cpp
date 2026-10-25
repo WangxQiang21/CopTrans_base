@@ -112,7 +112,23 @@ geometry_msgs::PoseStamped stamp_pose(const Pose& p, const ros::Time& t) {
 struct Node { Pose p; uint8_t mode=A; int gear=1, control=0, parent=-1;
               bool switched=false,has_translation=false,has_control=false;
               double g=0; Action action; bool has_forward=false;
-              int shunt_reversals=0; bool spun_since_translation=false; };
+              int shunt_reversals=0; bool spun_since_translation=false;
+              double motion_cost_lb=0.; };
+
+// Obstacle-free relaxation in the project's A/O/Spin model. Translation must
+// cover the position deficit; yaw needs Ackermann travel or paid Spin. O
+// cannot change yaw, and Spin cannot translate, so those states sometimes
+// require one additional mode event. The initial choice of mode is free.
+double mode_motion_lower_bound(const Pose& p,uint8_t mode,bool initial,
+                              const Pose& goal,double xy_tol,double yaw_tol,
+                              double radius,double spin_weight,double switch_weight) {
+  const double distance=std::max(0.,std::hypot(p.x-goal.x,p.y-goal.y)-xy_tol);
+  const double angle=std::max(0.,std::abs(wrap(p.th-goal.th))-yaw_tol);
+  const bool needs_switch=(mode==O && angle>1e-10) ||
+                          (mode==S && distance>1e-10);
+  return std::max(distance,std::min(radius,spin_weight)*angle)+
+         ((!initial && needs_switch)?switch_weight:0.);
+}
 struct CellRun { int x0=0,x1=-1;
   bool operator==(const CellRun& other) const {return x0==other.x0 && x1==other.x1;}
 };
@@ -318,7 +334,7 @@ class PlannerNode {
             proposal_search?0:int(n.shunt_reversals==0 &&
                                   n.spun_since_translation)};
   }
-  double heuristic(const Pose& p,bool guided) const {
+  double heuristic(const Pose& p,bool guided,uint8_t mode=A,bool initial=true) const {
     double d=std::max(0.0,std::hypot(p.x-goal_.x,p.y-goal_.y)-xy_tol_);
     if(guided&&!goal_field_.empty()) {
       const double grid_d=map_.sample_distance_field(goal_field_,p.x,p.y);
@@ -329,8 +345,8 @@ class PlannerNode {
         d=std::max(d,.85*std::max(0.0,grid_d-2*map_.resolution()));
       }
     }
-    double a=std::max(0.0,std::abs(wrap(p.th-goal_.th))-yaw_tol_);
-    return std::max(d,std::min(radius_,w_spin_)*a);
+    return std::max(d,mode_motion_lower_bound(p,mode,initial,goal_,
+        xy_tol_,yaw_tol_,radius_,w_spin_,w_switch_));
   }
   double clearance_lower_bound(double x,double y) const {
     int ix,iy;
@@ -1560,6 +1576,11 @@ class PlannerNode {
       Node cur=nodes[qi.id];
       auto it=best.find(key(cur,lattice_xy_res,proposal_search));
       if (it==best.end() || cur.g>it->second+1e-8) continue;
+      // Use only the obstacle-free bound for pruning, never the raster guide.
+      // motion_cost_lb omits all optional penalties, avoiding dependence on
+      // discrepancies between edge scoring and final whole-sequence scoring.
+      if(cur.motion_cost_lb+heuristic(cur.p,false,cur.mode,cur.parent<0)>=
+         best_terminal_cost-1e-8) continue;
       ++iterations;
       auto consider_terminal=[&](const std::vector<Action>& suffix) {
         std::vector<Action> candidate;
@@ -1604,6 +1625,12 @@ class PlannerNode {
       auto push=[&](Node next,double edge_cost) {
         next.parent=qi.id;
         next.g=cur.g+edge_cost;
+        next.motion_cost_lb=cur.motion_cost_lb+
+            (next.action.mode==S?w_spin_*std::abs(next.action.amount):
+                                 std::abs(next.action.amount))+
+            (next.mode!=cur.mode && cur.parent>=0?w_switch_:0.);
+        if(next.motion_cost_lb+heuristic(next.p,false,next.mode,false)>=
+           best_terminal_cost-1e-8) return;
         if(proposal_search && next.shunt_reversals>3)
           next.shunt_reversals=3;
         Key k=key(next,lattice_xy_res,proposal_search);
@@ -1617,6 +1644,9 @@ class PlannerNode {
         if(old!=best.end()) old->second=next.g;
         else best.emplace(k,next.g);
         int id=static_cast<int>(nodes.size()); nodes.push_back(next);
+        // Preserve the established exploration order. The stronger mode-aware
+        // relaxation is used for safe incumbent pruning, not as a new queue
+        // bias that might change a budget-limited search's preferred route.
         open.push({next.g+heuristic(next.p,guided),id});
       };
       if (cur.mode==A) {
