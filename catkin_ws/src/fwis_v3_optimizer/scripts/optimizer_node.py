@@ -42,6 +42,7 @@ from fwis_v3_optimizer.retiming import MotionLimits
 from fwis_v3_optimizer.continuous_geometry import (
     fit_continuous_endpoint, plan_from_actions, replay_continuous)
 from fwis_v3_optimizer.continuous_retiming import retime_continuous
+from fwis_v3_optimizer.segmented_smoothing import improve_segmented_trajectory
 from fwis_v3_optimizer.diagnostics import atomic_write_json
 
 
@@ -813,6 +814,7 @@ class OptimizerNode:
                       "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/quality.py",
                       "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/continuous_geometry.py",
                       "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/continuous_optimizer.py",
+                      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/segmented_smoothing.py",
                       "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/geometry_incumbent.py",
                       "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/planning_display.py",
                       "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/legacy_geometry_provider.py",
@@ -2609,7 +2611,7 @@ class OptimizerNode:
                 for actions,source in solver_auxiliary_seeds)
             actions, timed = winner["actions"], winner["timed"]
             continuous = winner.get("continuous_plan")
-            if self.planning_backend == "mode_path_v1":
+            if self.planning_backend == "mode_path_v1" and continuous is None:
                 # The graph search keeps its constant-action path and mode
                 # word. Generate the executable path as mode-consistent
                 # continuous segments, then apply the paper-style trapezoidal
@@ -2638,6 +2640,12 @@ class OptimizerNode:
                         audit = evaluator.evaluate_continuous_geometry(
                             candidate_plan, candidate_timing,
                             allow_reverse=self.allow_reverse)
+                        if audit.get("status") == "FEASIBLE":
+                            candidate_plan, candidate_timing, audit, qp = (
+                                improve_segmented_trajectory(candidate_plan,
+                                    candidate_timing, audit, evaluator,
+                                    allow_reverse=self.allow_reverse))
+                            generation["segment_qp"] = qp
                         generation["audit_status"] = audit.get("status")
                         generation["audit_reason"] = audit.get("reason")
                         generation["candidate_duration_s"] = float(
@@ -2645,6 +2653,8 @@ class OptimizerNode:
                         if (audit.get("status") == "FEASIBLE" and
                                 candidate_timing.duration < timed.duration-1e-6):
                             generation["source"] = (
+                                "mode_path_v1_segment_qp" if
+                                generation.get("segment_qp", {}).get("selected") else
                                 "mode_path_v1_segmented_trapezoid")
                             report["mode_master_selected_source"] = report.get(
                                 "selected_source")
@@ -2711,6 +2721,7 @@ class OptimizerNode:
                         "corridor": corridor,
                         "common_score": winner["audit"]["score"],
                         "continuous_motion_v2": v2_continuous,
+                        "segmented_continuous_motion": not v2_continuous,
                         "continuous_mode_path_timing": not v2_continuous,
                         "corridor_modes": [row[3] if row[3] is not None else
                                            continuous.blocks[0].mode
@@ -2832,7 +2843,7 @@ class OptimizerNode:
             traj.points.append(point)
             path.poses.append(pose_stamped(p, header.stamp + point.time_from_start))
         colors=((.0,.7,1.0),(1.0,.55,.0),(.8,.2,1.0))
-        if meta.get("continuous_motion_v2"):
+        if meta.get("continuous_motion_v2") or meta.get("segmented_continuous_motion"):
             self.mode_pub.publish(make_timed_mode_strip(
                 timed,header,"v3_modes",.06,.95,colors))
         else:

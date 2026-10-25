@@ -26,6 +26,7 @@ from .continuous_geometry import (fit_continuous_endpoint, fit_continuous_suffix
 from .continuous_optimizer import optimize_continuous_geometry
 from .legacy_geometry_provider import LegacyGeometryCandidateProvider
 from .continuous_retiming import retime_continuous
+from .segmented_smoothing import improve_segmented_trajectory
 from .geometry_incumbent import GeometryIncumbentStore
 
 
@@ -1214,6 +1215,42 @@ class ModePathMaster:
                             timed = retime(self.evaluator.start, actions, self.evaluator.limits,
                                            self.config.sampling_dt/(2**level), allow_reverse=reverse_allowed)
                             audit = self.evaluator.evaluate(actions, timed, allow_reverse=reverse_allowed)
+                    # Paper-08 path-to-trajectory staging: a coarse lattice
+                    # endpoint can satisfy search tolerance but fail release
+                    # tolerance. Project its fixed mode word before discarding
+                    # it; QP smoothing and the independent audit follow.
+                    if (audit.get("reason") == "terminal" and
+                            time.perf_counter()+.2 < search_deadline):
+                        try:
+                            with measured("endpoint_fit"):
+                                projected, projection = fit_continuous_endpoint(
+                                    plan_from_actions(self.evaluator.start,
+                                        self.evaluator.goal, actions),
+                                    self.evaluator.limits.r_min_ack,
+                                    max_iterations=40, terminal_xy_tol=.005,
+                                    terminal_yaw_tol=math.radians(.2),
+                                    deadline=min(search_deadline,
+                                                 time.perf_counter()+.6))
+                            if (projection.get("success") and
+                                    self.evaluator.continuous_collision(projected) is None):
+                                with measured("retime"):
+                                    projected_timed = retime_continuous(projected,
+                                        self.evaluator.limits, self.config.sampling_dt)
+                                with measured("independent_audit"):
+                                    projected_audit = self.evaluator.evaluate_continuous_geometry(
+                                        projected, projected_timed,
+                                        allow_reverse=reverse_allowed)
+                                if projected_audit.get("status") == "FEASIBLE":
+                                    continuous_plan, timed, audit, smoothing = (
+                                        improve_segmented_trajectory(projected,
+                                            projected_timed, projected_audit,
+                                            self.evaluator, allow_reverse=reverse_allowed,
+                                            budget_s=min(.4, max(0.,
+                                                search_deadline-time.perf_counter()))))
+                                    fit_report = {"v1_segmented_recovery": projection,
+                                                  "segment_qp": smoothing}
+                        except (ValueError, RuntimeError):
+                            pass  # The original rejection remains authoritative.
                 if audit["status"] != "FEASIBLE":
                     if audit.get("geometry_status") == "PASS":
                         geometry_store.preserve(actions, source, parent,

@@ -1,5 +1,31 @@
 # expv3
 
+## 本分支：模式搜索与分段二次平滑
+
+本分支 `mode-path-constant-primitive` 运行 `mode_path_v1`。参考论文 08：Zeyu Yang 等，
+*A 4WIS Vehicle Trajectory Planning Approach Incorporating Multiple Motion Mode Sequence Decision-Making*，
+Automotive Innovation 9:158–174 (2026)，[DOI](https://doi.org/10.1007/s42154-025-00369-5)，
+[本地论文](papers/08_Yang_4WIS_Motion_Mode_Sequence_2026.pdf)。
+借鉴“多模式图搜索 → 按模式分段优化 → 速度规划”的结构：搜索使用恒定原语提出模式/方向序列，
+连续处理围绕已提出的模式段展开。
+
+本次加入 [分段二次平滑](catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/segmented_smoothing.py)：
+对 Ackermann 段求解曲率偏差与二阶差分的凸二次问题，限制最大曲率、保持段两端轮配置及曲率积分，
+然后逐段投影回原共享边界，再重定时和独立验碰。Spin/斜移的模式与方向保持原搜索结果。
+粗路径已经满足搜索容差、但不满足发布末端精度时，先执行连续末端投影；通过完整审核后才进入候选池。
+这使路径平滑与时间生成在发布前成为一个完整阶段，避免只因粗格点末端误差就丢弃候选。
+
+已可执行的原候选继续参与比较；新平滑候选只有执行时间更短，或近乎等时且共同评分更低时才替换它。
+投影、验碰或动态审核失败时保留原候选。默认模式切换时间仍为 0.3 秒。
+论文优化的是路径节点，本分支优化曲率控制；速度生成保留现有加速度/jerk合同的连续 S 曲线，
+不是对论文 QP 方程和梯形速度公式的逐式复现。
+
+验证命令：`OPENBLAS_NUM_THREADS=1 python3 -m unittest discover -s tests -p test_segmented_smoothing.py -v`。
+同一起终点的曲率振荡定向用例，在受限动态 profile 下执行时长由 8.63 秒降到 6.20 秒；
+这是针对性收益，不能代替全地图结论。[指标、图片和真实 ROS 检查](evaluation/paper08/REPORT.md)。
+map01 预设任务的真实 ROS 配对也已完成：基线因末端精度拒绝，本分支恢复成功；
+投影后候选由 7.235 秒进一步平滑到 7.092 秒，独立扫掠、动态和方向审核通过。Python 全套 150 项测试通过。
+
 本文档列出 `run_demo.sh` 的完整用法。地图目录及预览见[地图总索引](maps/README.md)，可运行地图与旧名称的对应关系见 [`maps/map_index.tsv`](maps/map_index.tsv)。
 
 ## 快速开始

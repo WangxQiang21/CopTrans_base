@@ -661,6 +661,7 @@ def main() -> int:
             ROOT / "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/continuous_geometry.py",
             ROOT / "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/continuous_retiming.py",
             ROOT / "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/continuous_optimizer.py",
+            ROOT / "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/segmented_smoothing.py",
             ROOT / "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/mode_master.py",
             ROOT / "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/geometry_incumbent.py",
             ROOT / "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/planning_display.py",
