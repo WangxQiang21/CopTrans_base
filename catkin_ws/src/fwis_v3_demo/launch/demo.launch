@@ -13,6 +13,7 @@
     <param name="map_dir" value="$(arg map_dir)"/>
   </node>
   <node name="fwis_v3_planner" pkg="fwis_v3_planner" type="fwis_v3_planner_node" output="screen">
+    <rosparam command="load" file="$(find fwis_common)/config/ranger_mini_2.yaml"/>
     <rosparam command="load" file="$(arg config_file)"/>
     <param if="$(eval arg('planning_backend') != '')" name="planning/backend" value="$(arg planning_backend)"/>
     <param if="$(eval arg('target_v') != '')" name="quality/limits/target_v" value="$(arg target_v)" type="double"/>
@@ -22,6 +23,7 @@
     <param if="$(eval arg('allow_reverse_fallback') != '')" name="planning/allow_reverse_fallback" value="$(arg allow_reverse_fallback)" type="bool"/>
   </node>
   <node name="fwis_v3_optimizer" pkg="fwis_v3_optimizer" type="optimizer_node.py" output="screen">
+    <rosparam command="load" file="$(find fwis_common)/config/ranger_mini_2.yaml"/>
     <rosparam command="load" file="$(arg config_file)"/>
     <param if="$(eval arg('planning_backend') != '')" name="planning/backend" value="$(arg planning_backend)"/>
     <param if="$(eval arg('target_v') != '')" name="quality/limits/target_v" value="$(arg target_v)" type="double"/>
@@ -31,6 +33,7 @@
     <param if="$(eval arg('allow_reverse_fallback') != '')" name="planning/allow_reverse_fallback" value="$(arg allow_reverse_fallback)" type="bool"/>
   </node>
   <node name="fwis_v3_playback" pkg="fwis_v3_playback" type="playback.py" output="screen">
+    <rosparam command="load" file="$(find fwis_common)/config/ranger_mini_2.yaml"/>
     <rosparam command="load" file="$(arg config_file)"/>
     <param if="$(eval arg('target_v') != '')" name="quality/limits/target_v" value="$(arg target_v)" type="double"/>
     <param if="$(eval arg('target_v') != '')" name="quality/limits/v_max" value="$(arg target_v)" type="double"/>

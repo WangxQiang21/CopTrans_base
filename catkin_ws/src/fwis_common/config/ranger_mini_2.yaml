@@ -8,6 +8,10 @@ vehicle:
   wheelbase: 0.494
   track: 0.364
   r_min_ack: 0.810
+  # Shared simulation timing for changing steering modes. The setup event is
+  # included in this duration; it is not an additional pause.
+  mode_switch_duration: 0.3
+  mode_setup_time: 0.15
   ackermann_command_max_abs: 0.6981317007977318  # 40 deg, manual CAN command range
   oblique_command_max_abs: 1.5707963267948966    # 90 deg, manual; 90 deg is lateral motion
   supports_spin: true

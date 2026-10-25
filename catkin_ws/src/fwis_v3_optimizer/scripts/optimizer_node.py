@@ -39,6 +39,7 @@ from fwis_v3_optimizer.core import (Pose, Action, Grid, refine, time_sample,
 from fwis_v3_optimizer.mode_master import ModeMasterConfig, ModePathMaster
 from fwis_v3_optimizer.quality import QualityProfile, TrajectoryEvaluator
 from fwis_v3_optimizer.retiming import MotionLimits
+from fwis_v3_optimizer.mode_switch_timing import mode_switch_events_for_actions
 from fwis_v3_optimizer.continuous_geometry import (
     fit_continuous_endpoint, plan_from_actions, replay_continuous)
 from fwis_v3_optimizer.continuous_retiming import retime_continuous
@@ -122,12 +123,14 @@ def make_timed_mode_strip(timed, header, namespace, width, alpha, colors):
 
 
 def safe_time_sample(start, actions, grid, v_demo, omega_demo, dt,
-                     sweep_corner_step=.0025):
+                     sweep_corner_step=.0025, mode_switch_durations=None,
+                     initial_mode=0):
     """Refine temporal sampling until linear interpolation remains SAT-clear."""
     last_collision=False
     for level in range(7):
         sample_dt=dt/(2**level)
-        timed=time_sample(start,actions,v_demo,omega_demo,sample_dt)
+        timed=time_sample(start,actions,v_demo,omega_demo,sample_dt,
+                          mode_switch_durations,initial_mode)
         if any(t2<=t1 for (t1,_,_,_), (t2,_,_,_) in zip(timed,timed[1:])):
             raise ValueError("non_increasing_timestamps")
         if all(grid.interpolated_clear(p1,p2,sweep_corner_step)
@@ -383,6 +386,10 @@ class OptimizerNode:
         limits_config = dict(rospy.get_param("~quality/limits", {}))
         for name, default in (("wheelbase", .494), ("track", .364), ("r_min_ack", .810)):
             limits_config[name] = float(rospy.get_param("~vehicle/"+name, default))
+        for name, default in (("mode_switch_duration", .3),
+                              ("mode_setup_time", .15)):
+            limits_config[name] = float(rospy.get_param(
+                "~vehicle/"+name, default))
         self.quality_limits = MotionLimits(**limits_config)
         self.quality_profile = QualityProfile(**rospy.get_param("~quality/cost", {}))
         master_config = dict(rospy.get_param("~quality/search", {}))
@@ -2326,7 +2333,10 @@ class OptimizerNode:
                 try:
                     timed,sample_dt=safe_time_sample(
                         start,refined,self.grid,self.v_demo,self.omega_demo,
-                        self.dt,self.timed_sweep_corner_step)
+                        self.dt,self.timed_sweep_corner_step,
+                        [event["duration"] for event in
+                         mode_switch_events_for_actions(
+                             refined,self.quality_limits)])
                     chosen=(source,poses,refined,boxes,meta,timed,sample_dt)
                     break
                 except Exception as exc:
@@ -2406,7 +2416,11 @@ class OptimizerNode:
                                     repaired_timed,repaired_dt=safe_time_sample(
                                         start,repaired_actions,self.grid,
                                         self.v_demo,self.omega_demo,self.dt,
-                                        self.timed_sweep_corner_step)
+                                        self.timed_sweep_corner_step,
+                                        [event["duration"] for event in
+                                         mode_switch_events_for_actions(
+                                             repaired_actions,
+                                             self.quality_limits)])
                                     repair_meta.update({
                                         "solver":"ipopt_time_clearance_repair",
                                         "common_score":repaired_score,
@@ -2452,7 +2466,10 @@ class OptimizerNode:
                         raise ValueError("coarse_seed_terminal_tolerance_failed")
                     timed,sample_dt=safe_time_sample(
                         start,coarse_actions,self.grid,self.v_demo,
-                        self.omega_demo,self.dt,self.timed_sweep_corner_step)
+                        self.omega_demo,self.dt,self.timed_sweep_corner_step,
+                        [event["duration"] for event in
+                         mode_switch_events_for_actions(
+                             coarse_actions,self.quality_limits)])
                     _,coarse_boxes,_=build_corridors(self.grid,coarse_poses)
                     meta={"corridor":"coarse_seed_validated",
                           "solver":"none_safe_incumbent",
@@ -2497,6 +2514,8 @@ class OptimizerNode:
                 refined, timed=None, allow_reverse=self.allow_reverse)
             final_actions = [[int(a.mode), float(a.amount), float(a.control)]
                              for a in refined]
+            mode_switch_events = mode_switch_events_for_actions(
+                refined,self.quality_limits)
             legacy_report = {
                 "status": "LEGACY_NATIVE_PUBLISHED",
                 "geometry_status": geometry_audit.get("geometry_status"),
@@ -2512,9 +2531,13 @@ class OptimizerNode:
                     "strict_geometry_audit": geometry_audit,
                 },
                 "legacy_native_timing": {
-                    "contract": "legacy_native_speed_only",
+                    "contract": "legacy_speed_with_shared_vehicle_mode_events",
                     "restricted_profile_certified": False,
                     "duration_s": float(timed[-1][0]),
+                    "mode_switch_count": len(mode_switch_events),
+                    "mode_switch_hold_seconds": float(sum(
+                        event["duration"] for event in mode_switch_events)),
+                    "mode_switch_events": mode_switch_events,
                     "sample_dt_s": float(sample_dt),
                     "timed_trace": [[float(t), p.x, p.y, p.th,
                                      float(v), int(mode)]

@@ -10,6 +10,7 @@ import math
 import numpy as np
 
 from .core import Action, Pose, advance, collapse_exact_runs, wrap
+from .mode_switch_timing import mode_switch_event
 
 
 @dataclass(frozen=True)
@@ -39,7 +40,7 @@ class MotionLimits:
     # The interactive kinematic demo cruises independently of curvature.
     # Restricted timing remains available for capability-limit comparisons.
     translation_speed_policy: str = "restricted"
-    mode_switch_duration: object = None
+    mode_switch_duration: object = .3
 
     def __post_init__(self):
         if self.translation_speed_policy not in ("restricted", "mode_switch_only"):
@@ -80,6 +81,8 @@ class TimedPlan:
     limits: MotionLimits
 
     def report(self):
+        switch_events = [phase for phase in self.phases
+                         if phase.get("mode_switch_event")]
         return {"profile": asdict(self.limits),
                 "interpolation": "exact_primitive_quintic_v1",
                 "display_interpolation": "linear_pose_samples",
@@ -87,6 +90,9 @@ class TimedPlan:
                 "translation_s": self.moving_seconds,
                 "spin_s": self.spin_seconds,
                 "reconfiguration_s": self.reconfiguration_seconds,
+                "mode_switch_hold_seconds": sum(
+                    float(phase["duration"]) for phase in switch_events),
+                "mode_switch_count": len(switch_events),
                 "other_holds_s": max(0., self.duration-self.moving_seconds-self.spin_seconds-self.reconfiguration_seconds),
                 "reconfiguration_count": self.reconfiguration_count,
                 "phases": self.phases}
@@ -182,10 +188,15 @@ class PrimitiveTimingCache:
             key = (old_mode, action.mode, old_angles, angles)
             if key not in self.transitions:
                 delta = max(abs(a-b) for a,b in zip(old_angles,angles))
-                steering = (bounded_duration(delta,self.limits.steer_rate_max,
-                            self.limits.steer_accel_max) if delta > 1e-8 else 0.)
-                setup = self.limits.mode_setup_time if old_mode != action.mode else 0.
-                self.transitions[key] = steering+setup
+                if old_mode != action.mode:
+                    self.transitions[key] = mode_switch_event(
+                        delta,self.limits)["duration"]
+                elif self.limits.translation_speed_policy == "mode_switch_only":
+                    self.transitions[key] = 0.
+                else:
+                    self.transitions[key] = (bounded_duration(
+                        delta,self.limits.steer_rate_max,
+                        self.limits.steer_accel_max) if delta > 1e-8 else 0.)
                 self.stats["steering_misses"] += 1
             else:
                 self.stats["steering_hits"] += 1
@@ -224,21 +235,38 @@ def retime(start, actions, limits=None, dt=.05, allow_reverse=False,
         if np.max(np.abs(angles)) > limits.steer_angle_max + 1e-9:
             raise ValueError("wheel_angle_limit")
         delta = float(np.max(np.abs(angles - wheel_angles)))
-        steer_time = (bounded_duration(delta, limits.steer_rate_max,
-                                       limits.steer_accel_max)
-                      if delta > 1e-8 else 0.)
-        setup_time = limits.mode_setup_time if a.mode != old_mode else 0.
-        hold_time = steer_time + setup_time  # declared sequential setup
+        mode_changed = a.mode != old_mode
+        if mode_changed:
+            switch = mode_switch_event(delta, limits)
+            steer_time = switch["steering_s"]
+            setup_time = switch["setup_s"]
+            hold_time = switch["duration"]
+        elif limits.translation_speed_policy == "mode_switch_only":
+            switch = None
+            steer_time = setup_time = hold_time = 0.
+        else:
+            switch = None
+            steer_time = (bounded_duration(delta, limits.steer_rate_max,
+                                           limits.steer_accel_max)
+                          if delta > 1e-8 else 0.)
+            setup_time = 0.
+            hold_time = steer_time
         if hold_time > 1e-9:
-            phases.append({"kind": "reconfiguration", "action_index": index,
+            phase = {"kind": "reconfiguration", "action_index": index,
                            "mode": a.mode, "t0": elapsed, "duration": hold_time,
                            "setup_s": setup_time, "steering_s": steer_time,
+                           "mode_switch_event": mode_changed,
                            "wheel_angles_start": wheel_angles.tolist(),
                            "wheel_angles_end": angles.tolist(),
                            "pose": [p.x, p.y, p.th],
                            "steer_rate_peak": 1.875 * delta / max(steer_time, 1e-12),
                            "steer_accel_peak": (10 / math.sqrt(3)) * delta /
-                           max(steer_time ** 2, 1e-12)})
+                           max(steer_time ** 2, 1e-12)}
+            if switch is not None:
+                phase.update(steering_profile=switch["steering_profile"],
+                             setup_overlaps_steering=switch[
+                                 "setup_overlaps_steering"])
+            phases.append(phase)
             if build_samples:
                 n = max(1, math.ceil(hold_time / dt))
                 samples.extend((elapsed + hold_time * i / n, p, 0., a.mode)

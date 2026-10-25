@@ -11,8 +11,8 @@ import numpy as np
 
 from .continuous_geometry import ContinuousPlan, MotionBlock, sample_block
 from .core import Action, Pose
-from .retiming import (MotionLimits, bounded_duration, quintic, wheel_configuration,
-                       steering_rest_to_rest_duration)
+from .retiming import MotionLimits, bounded_duration, quintic, wheel_configuration
+from .mode_switch_timing import mode_switch_event
 
 
 @dataclass
@@ -698,51 +698,40 @@ def retime_continuous(plan, limits=None, dt=.02, spatial_dt=.005):
     if not math.isfinite(dt) or dt <= 0 or not math.isfinite(spatial_dt) or spatial_dt <= 0:
         raise ValueError("continuous_invalid_sampling_interval")
     blocks = plan.blocks
-    samples = [(0., plan.start, 0., blocks[0].mode if blocks else 0)]
+    initial_mode = 0
+    samples = [(0., plan.start, 0., blocks[0].mode if blocks else initial_mode)]
     phases = []
     elapsed = moving = spinning = switch_hold = 0.
     switch_count = 0
     start_pose = plan.start
     previous = None
+    previous_mode = initial_mode
     dynamic_peaks = []
     speed_constraints = []
     global_s = 0.
     for index, block in enumerate(blocks):
-        if previous is not None and block.mode != previous.mode:
-            old_action = Action(previous.mode,
-                                previous.signed_angle if previous.mode == 2 else previous.direction,
-                                _mode_endpoint_control(previous, True))
+        if block.mode != previous_mode:
+            old_action = (Action(previous_mode, 0., 0.) if previous is None else
+                          Action(previous.mode,
+                                 previous.signed_angle if previous.mode == 2 else previous.direction,
+                                 _mode_endpoint_control(previous, True)))
             new_action = Action(block.mode,
                                 block.signed_angle if block.mode == 2 else block.direction,
                                 _mode_endpoint_control(block, False))
             old_angles, _ = wheel_configuration(old_action, limits)
             new_angles, _ = wheel_configuration(new_action, limits)
             delta = float(np.max(np.abs(new_angles-old_angles)))
-            steer = (steering_rest_to_rest_duration(delta, limits.steer_rate_max,
-                                      limits.steer_accel_max) if delta > 1e-8 else 0.)
-            setup = limits.mode_setup_time
-            hold = setup+steer
-            steering_profile = "triangular_trapezoidal_rate_accel"
-            overlap = False
-            steer_rate_peak = min(limits.steer_rate_max,
-                                  math.sqrt(delta*limits.steer_accel_max))
-            steer_accel_peak = limits.steer_accel_max if delta > 1e-8 else 0.
-            if limits.translation_speed_policy == "mode_switch_only":
-                # One complete mode event; do not append another setup delay.
-                hold = steer = float(limits.mode_switch_duration)
-                setup = min(setup, hold)
-                overlap = True
-                steering_profile = "quintic_fixed_duration_kinematic"
-                steer_rate_peak = 1.875*delta/hold
-                steer_accel_peak = (10/math.sqrt(3))*delta/hold**2
-            phases.append({"kind": "mode_switch", "from_mode": previous.mode,
+            timing = mode_switch_event(delta, limits)
+            hold = timing["duration"]
+            phases.append({"kind": "mode_switch", "from_mode": previous_mode,
                            "to_mode": block.mode, "t0": elapsed,
-                           "duration": hold, "setup_s": setup,
-                           "steering_s": steer,
-                           "steering_profile": steering_profile,
-                           "setup_overlaps_steering": overlap,
-                           "steer_rate_peak_radps": steer_rate_peak,
-                           "steer_accel_peak_radps2": steer_accel_peak,
+                           "duration": hold, "setup_s": timing["setup_s"],
+                           "steering_s": timing["steering_s"],
+                           "steering_profile": timing["steering_profile"],
+                           "setup_overlaps_steering": timing[
+                               "setup_overlaps_steering"],
+                           "steer_rate_peak_radps": timing["steer_rate_peak"],
+                           "steer_accel_peak_radps2": timing["steer_accel_peak"],
                            "max_wheel_angle_delta_rad": delta,
                            "wheel_angles_start_rad": old_angles.tolist(),
                            "wheel_angles_end_rad": new_angles.tolist(),
@@ -757,6 +746,7 @@ def retime_continuous(plan, limits=None, dt=.02, spatial_dt=.005):
             duration, peaks = _duration_and_peaks(block, limits)
             if duration <= 1e-9:
                 previous = block
+                previous_mode = block.mode
                 continue
             phase = {"kind": "spin", "block_index": index, "mode": block.mode,
                      "direction": block.direction, "t0": elapsed,
@@ -794,6 +784,7 @@ def retime_continuous(plan, limits=None, dt=.02, spatial_dt=.005):
         if block.mode == 2:
             dynamic_peaks.append(peaks)
         previous = block
+        previous_mode = block.mode
     if not blocks:
         samples.append((dt, plan.start, 0., 0))
         elapsed = dt

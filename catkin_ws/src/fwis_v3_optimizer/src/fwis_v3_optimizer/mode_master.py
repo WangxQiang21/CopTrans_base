@@ -1270,14 +1270,16 @@ class ModePathMaster:
                 if hasattr(timed, "report"):
                     record["timing_diagnostics"] = timed.report()
                 else:
+                    switch_events = [phase for phase in timed.phases
+                                     if phase.get("mode_switch_event")]
                     record["timing_diagnostics"] = {
                         "profile": asdict(self.evaluator.limits),
                         "duration_s": float(timed.duration),
                         "translation_s": float(timed.moving_seconds),
                         "spin_s": float(timed.spin_seconds),
-                        "mode_switch_hold_seconds": float(
-                            timed.configuration_seconds),
-                        "mode_switch_count": int(timed.configuration_count),
+                        "mode_switch_hold_seconds": float(sum(
+                            phase["duration"] for phase in switch_events)),
+                        "mode_switch_count": len(switch_events),
                         "phases": timed.phases}
                 if continuous_plan is not None:
                     record["continuous_plan"] = continuous_plan
