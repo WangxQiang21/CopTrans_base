@@ -1,0 +1,29 @@
+# 安全走廊 CasADi 后端参数 (Ranger Mini 2.0)
+# Vehicle geometry and provisional steering calibration are loaded from
+# fwis_common/config/ranger_mini_2.yaml. Keep optimizer settings here.
+wheel_speed_epsilon: 0.05
+strict_wheel_check:   true
+auto_time_stretch:    true
+# Experimental only: direct atan2 wheel-angle rate constraints are numerically
+# discontinuous at zero wheel speed.  Production uses post-solve validation
+# plus time repair until the segmented mode formulation is in place.
+enforce_wheel_rate_in_ocp: false
+# Geometry may only be relaxed after a full-body corridor is available.  The
+# current front/rear reference-point corridors are insufficient for that.
+lock_verified_geometry: true
+max_velocity:         1.0
+max_acceleration:     2.0
+max_yaw_rate:         0.70
+max_yaw_acceleration: 1.50
+comfort_weight:       0.05
+tracking_weight:      1.00
+ipopt_max_iterations: 200
+ipopt_tol:            0.0001
+infeasibility_tolerance: 0.0001
+
+corridor_max_distance: 3.0
+corridor_fast_step:    0.2
+corridor_fine_step:    0.05
+corridor_axis_aligned: true
+corridor_resample_distance: 0.1
+safety_margin:            0.04

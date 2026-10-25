@@ -1,0 +1,100 @@
+# Hybrid A* planner — 时间等效成本模型 (方案C).
+# 所有模式用 TIME 统一比较：
+#   Ack/Lat/Dia:  cost_step = w_time * (ds / v_cruise)
+#   Spin:         cost_step = w_time * (|dtheta| / omega_spin) * f_spin
+#   Reverse:      cost_step = w_time * (ds / (v_cruise * k_rev))
+# Mode-switch:      C_switch(v) = v·t_switch_servo + v²/a_max_decel
+# f_spin 按距离调制：近终点 → 便宜 (终端 heading 修正)，远 → 贵 (防止巡航 Spin)
+
+search:
+  xy_res:        0.20
+  yaw_res:       0.1745
+  step_len:      0.20
+  n_steer:       5
+  n_phi:         7
+  max_iter:      400000
+  goal_xy_tol:   0.15
+  goal_yaw_tol:  0.30
+  parallel_goal_yaw_tol: 0.35
+  allow_reverse: true
+  smooth_step:   0.05
+  rs_shot_radius: 3.0
+  rs_shot_check_every: 5
+
+  enable_lateral:  true
+  enable_diagonal: true
+  enable_spin:     true
+
+topology:
+  # Generic clearance-aware channel graph.  The following OCP, rather than
+  # this grid search, allocates curvature and 4WIS motion modes.
+  use_macro_frontend: true
+  sample_step:       0.10
+  clearance:         0.22
+  clearance_weight:  0.35
+  candidate_count:   3
+  turn_weight:       0.25
+
+# ============================================================
+# 时间等效成本参数
+# ============================================================
+cost:
+  w_time:            2.0
+  v_cruise:          1.0
+  k_rev:             0.8
+  omega_spin:        0.35
+
+  d_spin:            2.0
+  f_spin_min:        0.5
+  f_spin_max:        2.5
+  k_exit_spin:       0.3
+
+  yaw_snap_threshold: 0.05
+
+  w_dir_change:    1.0
+  w_steer:         0.8
+  w_phi:           1.5
+
+  w_steer_change_ack: 1.5
+  w_phi_change_dia:   1.5
+  w_curv_change:   1.5
+
+  spin_yaw_step:   0.0873
+
+  v_ref:              1.0
+  t_switch_servo:     0.5
+  a_max_decel:        2.0
+  d_slow:             2.0
+  d_slow_obs:         0.8
+  v_floor_frac:       0.4
+
+  w_enter_lateral:    3.0
+  w_enter_diagonal:   0.5
+  w_enter_spin:       1.0
+  w_enter_ackermann:  0.0
+
+# ============================================================
+heuristic:
+  inflation:       1.3
+
+# ============================================================
+corridor:
+  enabled:              true
+  fast_step:            0.2
+  fine_step:            0.05
+  max_distance:         3.0
+  axis_aligned:         true
+  resample_distance:    0.1
+  visualization_stride: 2
+
+# ============================================================
+playback:
+  v_ackermann:     2.0
+  v_lateral:       2.0
+  v_diagonal:      2.0
+  w_spin:          0.5
+  mode_dwell:      0.5
+  fps:             30.0
+  loop:            false
+
+# ============================================================

@@ -1,0 +1,35 @@
+{
+  "seed": 20260930,
+  "pose_samples": 5000,
+  "sweep_samples": 1000,
+  "planning_checker": "inflated raster plus sampled rectangle",
+  "reference_checker": "independent OBB versus occupied-cell SAT, 4 cm overall body margin",
+  "pose_comparison": {
+    "both_clear": 3031,
+    "both_collision": 1916,
+    "planning_false_clear": 0,
+    "planning_conservative_reject": 53
+  },
+  "linear_sweep_comparison": {
+    "both_clear": 544,
+    "both_collision": 450,
+    "planning_false_clear": 0,
+    "planning_conservative_reject": 6
+  },
+  "feature_disc_cover": {
+    "0.0": {
+      "samples": 20000,
+      "uncovered": 0,
+      "max_signed_excess_m": 0.0,
+      "feature_count": 32,
+      "disc_radius_m": 0.07767731731335731
+    },
+    "0.04": {
+      "samples": 20000,
+      "uncovered": 0,
+      "max_signed_excess_m": 0.0,
+      "feature_count": 32,
+      "disc_radius_m": 0.08319038781614135
+    }
+  }
+}

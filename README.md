@@ -17,7 +17,7 @@ bash run_demo.sh --list-maps
 bash run_demo.sh --help
 ```
 
-启动脚本会加载 ROS Noetic、构建 `catkin_ws`，再启动 Demo。未指定规划后端时使用 `mode_path_v1`（本分支默认）。检测到图形桌面时打开 RViz；无图形桌面时自动关闭 RViz。
+启动脚本会加载 ROS Noetic、构建 `catkin_ws`，再启动 Demo。三个算法分支各自锁定对应后端；切换算法请切换 Git 分支。检测到图形桌面时打开 RViz；无图形桌面时自动关闭 RViz。
 
 ## 选择地图
 
@@ -61,7 +61,7 @@ bash run_demo.sh --map-scale=0.8 map_dir:=maps/map01-p11-narrow-case-a
 
 | 参数 | 可用值/格式 | 作用与默认行为 |
 |---|---|---|
-| `planning_backend:=...` | `mode_path_v2`、`mode_path_v1`、`legacy` | 选择规划后端。通过 `run_demo.sh` 启动时默认 `mode_path_v1`（本分支）。 |
+| `planning_backend:=...` | 当前分支绑定的后端 | 三个算法分支不允许用参数切换到其他后端；传入与分支不符的值会报错。要运行其他后端，请切换到对应分支。 |
 | `target_v:=...` | 正数，单位 m/s | 覆盖目标速度；同步设置速度上限。默认配置为 `2.0`。 |
 | `direction_policy:=...` | `bidirectional`、`forward_only` | 新后端方向策略；默认允许正反向候选参与比较。 |
 | `allow_reverse_fallback:=...` | `true`、`false` | 兼容旧参数：映射到双向或仅正向策略。与 `direction_policy` 同时指定时，两者必须一致。 |
@@ -75,11 +75,15 @@ bash run_demo.sh --map-scale=0.8 map_dir:=maps/map01-p11-narrow-case-a
 示例：
 
 ```bash
-# 选择 v1 后端
-bash run_demo.sh --map map01 planning_backend:=mode_path_v1
+# 三个算法分支的 run_demo.sh 各自运行绑定后端
+git switch mode-path-constant-primitive
+bash run_demo.sh --map map01
 
-# 选择 v2，覆盖目标速度和行驶方向策略
-bash run_demo.sh --map map05 planning_backend:=mode_path_v2 target_v:=1.5 direction_policy:=forward_only
+git switch multimodal-hybrid-astar
+bash run_demo.sh --map map01
+
+git switch continuous-mode-path
+bash run_demo.sh --map map05 target_v:=1.5 direction_policy:=forward_only
 
 # 使用受限动态配置
 bash run_demo.sh --map P12_env1 config_file:=/home/wq/whut_thesis/expv3/catkin_ws/src/fwis_v3_demo/config/params_restricted.yaml
@@ -103,4 +107,12 @@ bash run_demo.sh map_dir:=maps/map16-s09-underground-garage scene:=S09_undergrou
 
 ## Algorithm branches
 
-The checked out branch selects `mode_path_v1` by default. Branch purpose and its closest paper reference are documented in [`BRANCH_METHOD.md`](BRANCH_METHOD.md); the full branch-to-paper table is in [`docs/algorithm_paper_branches.md`](docs/algorithm_paper_branches.md). `main` is the shared project snapshot and defaults to `mode_path_v2`. All three backend implementations remain available for explicit comparisons.
+The three algorithm branches lock `run_demo.sh` to one backend each:
+
+| Branch | Backend |
+|---|---|
+| `multimodal-hybrid-astar` | `legacy` |
+| `mode-path-constant-primitive` | `mode_path_v1` |
+| `continuous-mode-path` | `mode_path_v2` |
+
+Switch branches to compare methods; a mismatched `planning_backend:=...` override is rejected. `main` remains the shared project snapshot. The branch and paper development plan is in [`plan/24_单仓库整合与四方法论文开发计划_20261024.md`](plan/24_单仓库整合与四方法论文开发计划_20261024.md).

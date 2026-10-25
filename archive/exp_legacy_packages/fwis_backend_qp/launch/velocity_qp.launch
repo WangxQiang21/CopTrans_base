@@ -1,0 +1,17 @@
+<launch>
+  <!-- Velocity-profile QP backend (K01 §6). Consumes /plan/trajectory, emits
+       /plan/trajectory_optimized with v(s) populated. Standalone-runnable
+       for QP-only ablation; usually included by single_vehicle_demo.launch. -->
+  <arg name="a_max"       default="2.0"/>
+  <arg name="a_lat_max"   default="1.5"/>
+  <arg name="lambda_jerk" default="0.1"/>
+
+  <node name="fwis_velocity_qp"
+        pkg="fwis_backend_qp"
+        type="velocity_qp_node.py"
+        output="screen">
+    <param name="a_max"       value="$(arg a_max)"/>
+    <param name="a_lat_max"   value="$(arg a_lat_max)"/>
+    <param name="lambda_jerk" value="$(arg lambda_jerk)"/>
+  </node>
+</launch>

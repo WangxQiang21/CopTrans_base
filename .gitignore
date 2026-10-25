@@ -1,20 +1,21 @@
-# ROS/catkin build output
+# ROS / catkin build output and machine-local workspace settings
 /build/
 /catkin_ws/build/
 /catkin_ws/devel/
 /catkin_ws/install/
 /catkin_ws/logs/
+/catkin_ws/.catkin_tools/
 
 # Python artifacts
 __pycache__/
 *.py[cod]
 .pytest_cache/
 
-# Local experiments and generated output
+# Local experiment output; raw runs are archived outside the repository
 /relust/
 /result/
 /results/raw/
-/archive/
+/archive/expv2_plan/experiments/results/raw/
 *.bag
 *.log
 
@@ -23,6 +24,3 @@ __pycache__/
 /.codex/
 /.agents/
 *.swp
-
-# Local catkin workspace configuration
-/catkin_ws/.catkin_tools/

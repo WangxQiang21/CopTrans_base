@@ -1,0 +1,20 @@
+name: P16_complex_parking_tight
+source_pdf: 16_Zhu_Adaptive_Multi_Mode_4WIS_2026.pdf
+source_page: 24
+source_figure: "Figure 22"
+description: "Tightened stress variant; a local 1.0 m vertical passage is added while leaving end turning areas and parking goals unchanged."
+coordinate_bounds: [0.0, 30.0, 0.0, 30.0]
+source_plot_pixels: [954, 1010, 1888, 1946]
+digitized_resolution_m_per_pixel_approx: 0.032086
+obstacle_fill_class: gray89
+rectilinear_obstacles: false
+derived_from: P16_complex_parking
+obstacle_inflation_radius_m: 0.000
+map_modification: "1.0 m vertical aisle at x=[2.9,3.95], y=[14.0,21.5]"
+constriction_rectangles: [[0.7, 14.0, 2.9, 21.5], [3.95, 14.0, 9.5, 21.5]]
+ignored_overlays: []
+pose_source: not encoded; set start and goal interactively in RViz
+limitations: >-
+  Reconstructed from a printed simulation figure, not the authors'
+  occupancy grid. Boundaries and scale are approximate. Recheck all
+  paths with the vehicle swept-footprint collision checker.
