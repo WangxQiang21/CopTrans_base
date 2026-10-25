@@ -854,7 +854,7 @@ class TrajectoryEvaluator:
             pose = self._sample_continuous_block(block, pose, .005)[-1][1]
         phase_index, switches = 0, 0
         translation_groups = {}
-        previous_mode = None
+        previous_mode = 0
         for index, block in enumerate(plan.blocks):
             if previous_mode is not None and block.mode != previous_mode:
                 if phase_index >= len(timed.phases):
@@ -864,9 +864,13 @@ class TrajectoryEvaluator:
                         phase.get("from_mode") != previous_mode or
                         phase.get("to_mode") != block.mode):
                     raise ValueError("continuous_phase_sequence")
-                left=plan.blocks[index-1]
-                old=Action(left.mode,left.signed_angle if left.mode==2 else left.direction,
-                           0. if left.mode==2 else left.control(left.length)[0])
+                if index:
+                    left=plan.blocks[index-1]
+                    old=Action(left.mode,
+                               left.signed_angle if left.mode==2 else left.direction,
+                               0. if left.mode==2 else left.control(left.length)[0])
+                else:
+                    old=Action(previous_mode,0.,0.)
                 new=Action(block.mode,block.signed_angle if block.mode==2 else block.direction,
                            0. if block.mode==2 else block.control(0.)[0])
                 old_angles,_=wheel_configuration(old,self.limits)
@@ -1210,9 +1214,25 @@ class TrajectoryEvaluator:
             if phase["kind"] == "reconfiguration":
                 delta = max(abs(a-b) for a, b in zip(phase["wheel_angles_start"], phase["wheel_angles_end"]))
                 st = phase["steering_s"]
-                if delta > 1e-8 and (st <= 0 or 1.875*delta/st > limits.steer_rate_max+1e-8 or
-                        (10/math.sqrt(3))*delta/st**2 > limits.steer_accel_max+1e-8):
+                fixed_kinematic_switch = (
+                    phase.get("mode_switch_event") and
+                    limits.translation_speed_policy == "mode_switch_only")
+                if fixed_kinematic_switch and (
+                        abs(duration-limits.mode_switch_duration)>1e-8 or
+                        abs(st-duration)>1e-8 or
+                        phase.get("setup_overlaps_steering") is not True or
+                        phase.get("steering_profile") !=
+                        "quintic_fixed_duration_kinematic" or
+                        abs(phase.get("setup_s", -1.)-
+                            min(limits.mode_setup_time, duration))>1e-8):
+                    raise ValueError("mode_switch_fixed_duration")
+                if (not fixed_kinematic_switch and delta > 1e-8 and
+                        (st <= 0 or 1.875*delta/st > limits.steer_rate_max+1e-8 or
+                         (10/math.sqrt(3))*delta/st**2 > limits.steer_accel_max+1e-8)):
                     raise ValueError("steering_rate_limit")
+                if (phase.get("mode_switch_event") and
+                        duration+1e-8 < limits.mode_switch_duration):
+                    raise ValueError("mode_switch_below_vehicle_minimum")
                 continue
             amount = abs(phase["amount"])
             expected_angles, expected_factors = wheel_configuration(
