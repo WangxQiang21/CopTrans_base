@@ -1,0 +1,18 @@
+# Ranger Mini 2.0: values are SI unless noted. Distinguish manufacturer data
+# from unresolved actuator assumptions; do not treat assumptions as specs.
+vehicle:
+  length_m: {value: 0.738, source: "AGILE-X Ranger Mini 2.0 manual, Specifications", confidence: manufacturer}
+  width_m: {value: 0.500, source: "AGILE-X Ranger Mini 2.0 manual, Specifications", confidence: manufacturer}
+  height_m: {value: 0.338, source: "AGILE-X Ranger Mini 2.0 manual", confidence: manufacturer}
+  wheelbase_m: {value: 0.494, source: "AGILE-X Ranger Mini 2.0 manual", confidence: manufacturer}
+  track_m: {value: 0.364, source: "AGILE-X Ranger Mini 2.0 manual", confidence: manufacturer}
+  minimum_ackermann_radius_m: {value: 0.810, source: "AGILE-X Ranger Mini 2.0 manual", confidence: manufacturer}
+  frame_origin: {value: body_center, source: "current planner convention", confidence: code_convention}
+  front_axle_from_cog_m: {value: null, source: "CoG/rotation-center offset not specified; do not assume wheelbase/2", confidence: unknown}
+  rear_axle_from_cog_m: {value: null, source: "CoG/rotation-center offset not specified; do not assume wheelbase/2", confidence: unknown}
+  planner_modes:
+    ackermann: {supported: true, steering_range_deg: [-40, 40], source: "manual CAN command range ±4000 × 0.01 degree", confidence: manual}
+    oblique: {supported: true, steering_range_deg: [-90, 90], source: "manual says oblique mode; 90 degrees gives lateral motion; CAN range ±9000 × 0.01 degree", confidence: manual}
+    spin: {supported: true, source: "manual lists 0 mm turning radius and spin mode", confidence: manual}
+  max_vehicle_speed_m_s: {value: 1.5, source: "manual detailed specification 5.4 km/h; spatial planner does not use this limit", confidence: manual}
+  control_assumption: {value: perfect_kinematic_tracking, source: "current study scope; low-level controller deferred", confidence: experiment_assumption}

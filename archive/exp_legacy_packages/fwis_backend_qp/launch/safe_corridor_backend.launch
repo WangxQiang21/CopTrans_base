@@ -1,0 +1,33 @@
+<launch>
+  <arg name="enable_safe_corridor" default="true"/>
+
+  <arg name="a_max"       default="2.0"/>
+  <arg name="a_lat_max"   default="1.5"/>
+  <arg name="lambda_jerk" default="0.1"/>
+
+  <!-- Legacy velocity QP is kept only when continuous corridor optimisation
+       is disabled: both nodes publish the same output topic. -->
+  <node name="fwis_velocity_qp"
+        pkg="fwis_backend_qp"
+        type="velocity_qp_node.py"
+        output="screen"
+        unless="$(arg enable_safe_corridor)">
+    <param name="a_max"       value="$(arg a_max)"/>
+    <param name="a_lat_max"   value="$(arg a_lat_max)"/>
+    <param name="lambda_jerk" value="$(arg lambda_jerk)"/>
+  </node>
+
+  <!-- Continuous 4WIS safe-corridor optimiser -->
+  <node name="fwis_safe_corridor"
+        pkg="fwis_backend_qp"
+        type="safe_corridor_node.py"
+        output="screen"
+        if="$(arg enable_safe_corridor)">
+    <rosparam command="load" file="$(find fwis_common)/config/ranger_mini_2.yaml"/>
+    <param name="casadi_python" value="/usr/bin/python3"/>
+    <param name="casadi_script"
+           value="$(find fwis_backend_qp)/scripts/casadi_safe_corridor_backend.py"/>
+    <rosparam command="load"
+              file="$(find fwis_backend_qp)/config/backend_params.yaml"/>
+  </node>
+</launch>
