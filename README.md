@@ -1,31 +1,21 @@
 # expv3
 
-## 本分支：模式一致的连续轨迹与段级时间求解
+## 本分支：强化学习模式与路径规划（调研方案阶段）
 
-本分支 `continuous-mode-path` 运行 `mode_path_v2`。参考论文 12：Runjiao Bao 等，
-*From Multi-Modal Paths to Executable Trajectories: A Trajectory Planning Framework for 4WIS Robots*
-（[本地论文](papers/12_Bao_4WIS_Executable_Trajectories_2026.pdf)，
-[arXiv:2608.29108](https://arxiv.org/abs/2608.29108)）。
-主要借鉴前端模式路径与后端可执行轨迹衔接、按模式一致的连续段处理、切换时保持静止三个思路。
-本分支用连续曲率/斜移角描述段内控制，连续速度与加速度可以跨过普通控制节点；
-模式事件才添加静止重配置，候选最终按独立整车扫掠与动态审核结果竞争。
+本分支 rl-mode-path 从 continuous-mode-path 的 c90e981 派生，用于第四种方法的开发。
+当前已完成文献调研与执行方案，尚未实现 RL 后端、训练模型或产生 RL 性能结果。
 
-本次把重复的整路径时间计算拆成可复用的模式段局部求解。
-[SegmentTimingCache](catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/continuous_retiming.py)
-以完整的不可变运动段和动态profile为精确键，在同一次规划请求中复用时间包络与多项式，
-再根据新候选重置段索引、时间起点和累计弧长。局部控制、长度、方向或profile变化就重新求解；
-每次取出都是独立副本，最多缓存32段。世界坐标轨迹、模式切换驻留和独立碰撞证书仍逐候选生成、审核。
-诊断JSON的 `segment_timing_cache` 直接报告命中、求解和淘汰次数。
+- [完整文献调研与算法架构](plan/rl/01_文献调研与算法架构.md)
+- [分阶段执行方案与验收标准](plan/rl/02_执行方案与验收标准.md)
 
-流程：有限模式结构候选 → 连续控制/末端投影 → 段级时间求解及复用 → 独立审核 → 最短可执行时间比较。
-论文的迭代安全走廊优化方程没有逐式复现；当前局部连续NLP采用距离场引导，显示走廊并不等于NLP约束，
-整车安全以独立扫掠为准。这是对可执行分段框架的工程扩展，不声称全局联合最优。
+推荐框架：带动作掩码的 PPO 逐段选择 A/斜移/Spin、方向和运动参数，生成完整路径；
+随后复用现有连续化、边界拟合、重定时、车辆切换配置及整车审核。
+主要借鉴 HOPE 的学习路径生成与动作掩码，以及 HALOES 的学习提议与优化后处理分工，
+具体文献、适用边界和来源链接见调研报告。
 
-验证命令：`OPENBLAS_NUM_THREADS=1 python3 -m unittest discover -s tests -p 'test_*.py'`。
-map04真实ROS配对中，重定时耗时从0.807秒降至0.298秒，执行时长均为40.446秒且独立审核通过；
-12组共享段重复计时的重定时中位速度约提升2.4倍。这是本次用例结果，不代表全地图总求解速度。
-完整 Python 回归151项通过，包含5项新增段级复用合同测试。
-详见[指标、图片与测试范围](evaluation/paper12/REPORT.md)。
+**目前执行 run_demo.sh 仍运行继承的 mode_path_v2；它可以用于父版本对照，不能当成强化学习结果。**
+执行方案 P5 完成后，本分支入口才会绑定拟定的 rl_mode_path 后端。
+下方命令说明描述当前继承入口；训练与 RL 命令在执行方案中均明确标为待实现。
 
 本文档列出 `run_demo.sh` 的完整用法。地图目录及预览见[地图总索引](maps/README.md)，可运行地图与旧名称的对应关系见 [`maps/map_index.tsv`](maps/map_index.tsv)。
 
@@ -44,7 +34,7 @@ bash run_demo.sh --list-maps
 bash run_demo.sh --help
 ```
 
-启动脚本会加载 ROS Noetic、构建 `catkin_ws`，再启动 Demo。三个算法分支各自锁定对应后端；切换算法请切换 Git 分支。检测到图形桌面时打开 RViz；无图形桌面时自动关闭 RViz。
+启动脚本会加载 ROS Noetic、构建 `catkin_ws`，再启动 Demo。三个已实现的算法分支各自锁定对应后端；rl-mode-path 当前继承 v2 入口，处于方案阶段。检测到图形桌面时打开 RViz；无图形桌面时自动关闭 RViz。
 
 模式切换时间是车辆配置，不属于某个规划后端：当前 Ranger Mini 2 仿真值统一设为 0.3 秒，来自 [`ranger_mini_2.yaml`](catkin_ws/src/fwis_common/config/ranger_mini_2.yaml)。三个后端在相同配置下使用同一切换事件；受限动态配置只有在转向执行时间更长时才延长事件。搜索评分中的换模惩罚与这段执行时间分开计算。
 
@@ -136,12 +126,14 @@ bash run_demo.sh map_dir:=maps/map16-s09-underground-garage scene:=S09_undergrou
 
 ## Algorithm branches
 
-The three algorithm branches lock `run_demo.sh` to one backend each:
+The three implemented algorithm branches lock their launchers to their respective backends. The fourth branch currently contains the RL research and implementation plan:
 
-| Branch | Backend |
-|---|---|
-| `multimodal-hybrid-astar` | `legacy` |
-| `mode-path-constant-primitive` | `mode_path_v1` |
-| `continuous-mode-path` | `mode_path_v2` |
+| Branch | Backend | Status |
+|---|---|---|
+| multimodal-hybrid-astar | legacy | Implemented |
+| mode-path-constant-primitive | mode_path_v1 | Implemented |
+| continuous-mode-path | mode_path_v2 | Implemented |
+| rl-mode-path | Planned: rl_mode_path | Research plan; current launcher still runs inherited v2 |
 
-Switch branches to compare methods; a mismatched `planning_backend:=...` override is rejected. `main` remains the shared project snapshot. The branch and paper development plan is in [`plan/24_单仓库整合与四方法论文开发计划_20261024.md`](plan/24_单仓库整合与四方法论文开发计划_20261024.md).
+Switch branches to compare the implemented methods. The RL branch will become runnable after implementation stage P5. The shared project snapshot is main.
+See the [RL research report](plan/rl/01_文献调研与算法架构.md) and [implementation plan](plan/rl/02_执行方案与验收标准.md).
