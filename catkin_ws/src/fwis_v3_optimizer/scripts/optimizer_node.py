@@ -2812,15 +2812,15 @@ class OptimizerNode:
             # mode strip and safety certificate unchanged.
             try:
                 fine_poses, _ = expand(
-                    start, actions, max_translation=.10,
-                    max_rotation=math.radians(5))
+                    start, actions, max_translation=.30,
+                    max_rotation=math.radians(8))
                 _, fine_boxes, _ = build_corridors(self.grid, fine_poses)
                 corridor_poses, corridor_boxes = fine_poses, fine_boxes
                 display_sampling = {
-                    "max_spacing": .12,
-                    "max_yaw_step": math.radians(5),
+                    "max_spacing": .30,
+                    "max_yaw_step": math.radians(8),
                     "narrow_half_width": .08,
-                    "narrow_spacing": .08,
+                    "narrow_spacing": .12,
                     "extent_change": .06,
                 }
                 legacy_display_resampled = True
