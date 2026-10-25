@@ -4025,18 +4025,32 @@ def refine(start, goal, seed_actions, grid, xy_tol=.16, yaw_tol=.14,
     raise ValueError("optimized_sat_collision_or_goal_violation")
 
 
-def time_sample(start, actions, v_demo=.5, omega_demo=.5, dt=.1):
-    """Smoothstep per contiguous mode+gear group; center speed is zero in Spin."""
+def time_sample(start, actions, v_demo=.5, omega_demo=.5, dt=.1,
+                mode_switch_durations=None, initial_mode=0):
+    """Smoothstep motion with stationary vehicle-configured mode events."""
     groups=[]
     for a in actions:
         sign=1 if a.amount>0 else -1
         if not groups or groups[-1][0].mode!=a.mode or (groups[-1][0].amount>0)!=(sign>0):
             groups.append([])
         groups[-1].append(a)
-    first_mode=groups[0][0].mode if groups else 0
-    result=[(0.0,start,0.0,first_mode)]
+    result=[(0.0,start,0.0,
+             groups[0][0].mode if groups else int(initial_mode))]
     elapsed=0.0;p=start
+    previous_mode=int(initial_mode)
+    event_index=0
+    mode_switch_durations=list(mode_switch_durations or [])
     for group in groups:
+        mode=group[0].mode
+        if mode!=previous_mode:
+            hold=(float(mode_switch_durations[event_index])
+                  if event_index<len(mode_switch_durations) else 0.)
+            event_index+=1
+            if hold>1e-12:
+                count=max(1,math.ceil(hold/dt))
+                result.extend((elapsed+hold*i/count,p,0.0,mode)
+                              for i in range(1,count+1))
+                elapsed+=hold
         total=sum(abs(a.amount) for a in group)
         rate=omega_demo if group[0].mode==2 else v_demo
         duration=max(dt,1.5*total/rate)
@@ -4079,4 +4093,5 @@ def time_sample(start, actions, v_demo=.5, omega_demo=.5, dt=.1):
             result.append((elapsed+duration*tau,q,v,group[0].mode))
         elapsed+=duration
         p=result[-1][1]
+        previous_mode=mode
     return result
