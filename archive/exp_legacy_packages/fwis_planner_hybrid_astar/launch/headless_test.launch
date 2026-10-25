@@ -1,0 +1,32 @@
+<launch>
+  <arg name="scene"   default="S09_underground_garage"/>
+  <arg name="map_dir" default="$(env HOME)/whut_thesis/exp/maps/$(arg scene)"/>
+  <arg name="config"  default="$(find fwis_planner_hybrid_astar)/config/params.yaml"/>
+  <arg name="scenarios_dir" default="$(env HOME)/whut_thesis/exp/scenarios"/>
+
+  <node name="fwis_map_publisher"
+        pkg="fwis_map_server"
+        type="map_publisher.py"
+        output="screen">
+    <param name="map_dir" value="$(arg map_dir)"/>
+  </node>
+
+  <node name="fwis_planner"
+        pkg="fwis_planner_hybrid_astar"
+        type="fwis_planner_hybrid_astar_node"
+        output="screen">
+    <rosparam command="load" file="$(arg config)"/>
+    <rosparam command="load" file="$(find fwis_common)/config/ranger_mini_2.yaml"/>
+  </node>
+
+  <include file="$(find fwis_backend_qp)/launch/safe_corridor_backend.launch">
+    <arg name="enable_safe_corridor" value="true"/>
+  </include>
+
+  <node name="fwis_scene_hints"
+        pkg="fwis_map_server"
+        type="scene_hints.py"
+        output="screen">
+    <param name="scene" value="$(arg scene)"/>
+  </node>
+</launch>

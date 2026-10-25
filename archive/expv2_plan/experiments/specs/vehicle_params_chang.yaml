@@ -1,0 +1,17 @@
+# Chang paper's 4WID-4WIS running example. Values not present here cannot be
+# filled from Ranger specifications; populate from the PDF's experiment section.
+vehicle:
+  geometry:
+    overall_length_m: {value: 3.91, source: "Chang Table 3: Lf + L + Lrh = 0.5 + 2.91 + 0.5", confidence: derived_from_paper}
+    wheelbase_m: {value: 2.91, source: "Chang Table 3", confidence: paper_table}
+    track_m: {value: 1.675, source: "Chang Table 3", confidence: paper_table}
+    front_axle_from_cog_m: {value: 1.25, source: "Chang Table 3", confidence: paper_table}
+    rear_axle_from_cog_m: {value: 1.66, source: "Chang Table 3", confidence: paper_table}
+    front_overhang_m: {value: 0.5, source: "Chang Table 3", confidence: paper_table}
+    rear_overhang_m: {value: 0.5, source: "Chang Table 3", confidence: paper_table}
+    overall_width_m: {value: null, source: "not listed in Chang Table 3", confidence: unknown}
+  limits:
+    individual_steer_angle_rad: {value: null, source: "locate in paper scenario/config; not in Table 3", confidence: unknown}
+    steer_rate_rad_s: {value: null, source: "paper experiment parameters; extract", confidence: unknown}
+    drive_speed_m_s: {value: null, source: "paper experiment parameters; extract", confidence: unknown}
+  frame_origin: {value: cog, source: "Chang Section 2.1 running example", confidence: paper_text}

@@ -1,0 +1,5 @@
+paper_mode,ranger_candidate,status,reason,required_evidence
+ASM,Ackermann,planning_model,"Manual supports front/rear Ackermann; spatial model uses ideal equivalent bicycle and manual min radius; actuator tracking is assumed perfect","Validate idealized path geometry against documented 0.810 m minimum turning radius; low-level wheel control deferred"
+DMM,Oblique/Diagonal,planning_model,"Manual supports oblique motion with steering range ±90°; zero heading change and arbitrary travel direction represent diagonal and lateral translation","Model as fixed-heading translation with continuous direction/steer angle; low-level wheel mapping deferred"
+DMM,Lateral,planning_subcase,"Pure lateral is DMM at 90° steering angle, according to manual","No separate actuator model needed in current geometric planning stage"
+ZRM,Spin,planning_model,"Manual lists zero-radius spin mode; ideal model rotates in place around the configured vehicle reference point","Use manual-confirmed spin capability; exact wheel configuration and transient omitted under perfect-control spatial abstraction"
