@@ -5,6 +5,8 @@ control knots do not cause zero speed. A mode boundary creates one stationary
 setup phase; a same-mode gear cusp reaches zero speed without a dwell.
 """
 from dataclasses import asdict, dataclass
+from collections import OrderedDict
+from copy import deepcopy
 import math
 
 import numpy as np
@@ -690,7 +692,55 @@ def _append_phase_samples(samples, phase, start_pose, block, dt, spatial_dt,
         samples.append((phase["t0"]+duration*tau, pose, v, block.mode))
 
 
-def retime_continuous(plan, limits=None, dt=.02, spatial_dt=.005):
+class SegmentTimingCache:
+    """Bounded request-local reuse of mode-consistent segment time solves.
+
+    The exact immutable block and complete dynamic profile form the key.
+    Geometry in world coordinates, mode-event holds, sampling and collision
+    certificates are never cached. Cached phases use local time and distance;
+    each caller receives its own mutable copy rebased to the current route.
+    """
+    def __init__(self, max_entries=32):
+        if max_entries < 1:
+            raise ValueError("segment_timing_cache_invalid_capacity")
+        self.max_entries = max_entries
+        self._entries = OrderedDict()
+        self.hits = self.misses = self.evictions = 0
+
+    @property
+    def stats(self):
+        return {"hits": self.hits, "misses": self.misses,
+                "evictions": self.evictions, "entries": len(self._entries),
+                "scope": "one_mode_master_request",
+                "collision_certificates_reused": False}
+
+    def translation(self, block, limits, block_index, start_time, global_s):
+        key = (block, limits)
+        if key in self._entries:
+            self.hits += 1
+            self._entries.move_to_end(key)
+            result = deepcopy(self._entries[key])
+        else:
+            self.misses += 1
+            result = _translation_phases(block, limits, 0, 0., 0.)
+            self._entries[key] = deepcopy(result)
+            if len(self._entries) > self.max_entries:
+                self._entries.popitem(last=False)
+                self.evictions += 1
+        phases, duration, peaks, constraints = result
+        for phase in phases:
+            phase["block_index"] = block_index
+            phase["t0"] += start_time
+        for interval in constraints:
+            if "block_index" in interval:
+                interval["block_index"] = block_index
+            interval["global_s_interval_m"] = [
+                global_s+s for s in interval["local_s_interval_m"]]
+        return phases, duration, peaks, constraints
+
+
+def retime_continuous(plan, limits=None, dt=.02, spatial_dt=.005,
+                      segment_cache=None):
     """Time-scale a continuous plan; only a mode change inserts stationary setup."""
     if not isinstance(plan, ContinuousPlan):
         raise TypeError("continuous_plan_required")
@@ -773,8 +823,12 @@ def retime_continuous(plan, limits=None, dt=.02, spatial_dt=.005):
         else:
             rows = sample_block(block, start_pose, spatial_dt)
             lookup_stations = np.asarray([row[0] for row in rows])
-            block_phases, duration, peaks, block_constraints = _translation_phases(
-                block, limits, index, elapsed, global_s)
+            if segment_cache is None:
+                block_phases, duration, peaks, block_constraints = _translation_phases(
+                    block, limits, index, elapsed, global_s)
+            else:
+                block_phases, duration, peaks, block_constraints = segment_cache.translation(
+                    block, limits, index, elapsed, global_s)
             speed_constraints.extend(block_constraints)
             for phase in block_phases:
                 phase["start_pose"] = [start_pose.x, start_pose.y, start_pose.th]

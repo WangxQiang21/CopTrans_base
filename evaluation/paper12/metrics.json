@@ -1,0 +1,222 @@
+{
+  "benchmark": "12 warm paired retiming calls on shared continuous mode blocks; not full solver speed",
+  "before_median_s": 0.09474451950518414,
+  "after_median_s": 0.03945971649955027,
+  "before_samples_s": [
+    0.09383444600098301,
+    0.08957318299508188,
+    0.09514998600934632,
+    0.09218883099674713,
+    0.10639145600725897,
+    0.09581013199931476,
+    0.09627080900827423,
+    0.10048339200147893,
+    0.09433905300102197,
+    0.09177089700824581,
+    0.0891968049982097,
+    0.09527821700612549
+  ],
+  "after_samples_s": [
+    0.042926074005663395,
+    0.041019250988028944,
+    0.03963484500127379,
+    0.039385508993291296,
+    0.03920028900029138,
+    0.03945674799615517,
+    0.04740105201199185,
+    0.0380497840087628,
+    0.038140018994454294,
+    0.05028503299399745,
+    0.038776418994530104,
+    0.039462685002945364
+  ],
+  "timing_speedup": 2.401044100412226,
+  "duration_s": 32.00704161531918,
+  "max_timed_trace_difference": 1.4210854715202004e-14,
+  "cache": {
+    "hits": 36,
+    "misses": 3,
+    "evictions": 0,
+    "entries": 3,
+    "scope": "one_mode_master_request",
+    "collision_certificates_reused": false
+  },
+  "input_actions": [
+    {
+      "mode": 0,
+      "amount": 3.0,
+      "control": 0.0
+    },
+    {
+      "mode": 0,
+      "amount": 2.0,
+      "control": 0.2
+    },
+    {
+      "mode": 0,
+      "amount": 3.0,
+      "control": -0.2
+    },
+    {
+      "mode": 0,
+      "amount": 2.0,
+      "control": 0.0
+    },
+    {
+      "mode": 1,
+      "amount": 2.0,
+      "control": 0.3
+    },
+    {
+      "mode": 2,
+      "amount": 0.5,
+      "control": 0.0
+    },
+    {
+      "mode": 0,
+      "amount": 3.0,
+      "control": 0.0
+    }
+  ],
+  "profile": {
+    "profile": "kinematic_sim_v1",
+    "v_max": 2.0,
+    "a_max": 0.6,
+    "jerk_max": 2.0,
+    "lateral_a_max": 0.6,
+    "omega_max": 0.8,
+    "alpha_max": 0.8,
+    "angular_jerk_max": 3.0,
+    "steer_rate_max": 0.8,
+    "steer_accel_max": 1.5,
+    "steer_angle_max": 1.5707963267948966,
+    "wheel_speed_max": 1.0,
+    "mode_setup_time": 0.15,
+    "wheelbase": 0.494,
+    "track": 0.364,
+    "r_min_ack": 0.81,
+    "target_v": 2.0,
+    "translation_omega_max": 0.8,
+    "translation_alpha_max": 0.8,
+    "translation_angular_jerk_max": 3.0,
+    "translation_speed_policy": "restricted",
+    "mode_switch_duration": null
+  },
+  "ros_map04": {
+    "before_duration_s": 40.446479532,
+    "after_duration_s": 40.446479532,
+    "before_backend_s": 10.75,
+    "after_backend_s": 9.21,
+    "before_retime_s": 0.8065706139896065,
+    "after_retime_s": 0.297610404988518,
+    "identical_serialized_trace": true,
+    "max_trace_difference": 0.0,
+    "swept_clear": [
+      true,
+      true
+    ],
+    "terminal_ok": [
+      true,
+      true
+    ],
+    "dynamics_pass": [
+      true,
+      true
+    ],
+    "direction_pass": [
+      true,
+      true
+    ],
+    "cache": {
+      "collision_certificates_reused": false,
+      "entries": 14,
+      "evictions": 0,
+      "hits": 45,
+      "misses": 14,
+      "scope": "one_mode_master_request"
+    },
+    "source_state": {
+      "catkin_ws/src/fwis_v3_planner/src/planner_node.cpp": {
+        "sha256": "3acfa41025cd6e5780193c6991a5e3b088033a990f7fd465fb29b1f4941d3c38",
+        "mtime_ns": 1792918878046615940
+      },
+      "catkin_ws/src/fwis_v3_optimizer/scripts/optimizer_node.py": {
+        "sha256": "dba421d1bd8781c7797ac6723098698e2651d37aa40a0e748c812bd041e33453",
+        "mtime_ns": 1792919187742740028
+      },
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/core.py": {
+        "sha256": "a618461f2fb88f1fd183c41a83ae7f8a5045648773ee94ecb3e4c4694d08b55b",
+        "mtime_ns": 1792918878046615940
+      },
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/quality.py": {
+        "sha256": "f47572033fc3b0106020826f215851850777a34adc08c0fb6a4038c51af49afd",
+        "mtime_ns": 1792413942822879545
+      },
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/retiming.py": {
+        "sha256": "7575652cd800449c449c44af1e5439025d489ffeca8af86bfbbbd545811ccc26",
+        "mtime_ns": 1792330514157507391
+      },
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/continuous_geometry.py": {
+        "sha256": "cbf8ce12690865ba05660af427161b26afdd5cc944b66b7c9d8f7d240f4fa27a",
+        "mtime_ns": 1792770457321476102
+      },
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/continuous_retiming.py": {
+        "sha256": "4fa91bb133036467240a7133929f8c79f1830538a17a1d77ab70ccb891587e10",
+        "mtime_ns": 1792919268919827961
+      },
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/continuous_optimizer.py": {
+        "sha256": "87b70b957d9b2f9736f1adad1995f1b5d530a65e4b93b3283ad41e6c1dffcabe",
+        "mtime_ns": 1792330362164289245
+      },
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/mode_master.py": {
+        "sha256": "cbc0b4f7808a0a459b78658596a0c03879c0567f716946ffcb7f01f8b60d7327",
+        "mtime_ns": 1792919244351498460
+      },
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/geometry_incumbent.py": {
+        "sha256": "a3792f95e173e0c4166a305cd2b94835aeb198956c05a4edc4f09aff99cd8bd9",
+        "mtime_ns": 1792292788159303785
+      },
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/planning_display.py": {
+        "sha256": "86c0ceec87a8baa7708b912b1cc4eb39af8186b22ed350798c16923675421d35",
+        "mtime_ns": 1792292700181702704
+      },
+      "catkin_ws/src/fwis_v3_playback/scripts/playback.py": {
+        "sha256": "133a2efd0b1450d25a7af8c75eaced77be76ea76b3d1e90b0fdae25740238a30",
+        "mtime_ns": 1792292819805102037
+      },
+      "catkin_ws/src/fwis_v3_demo/launch/demo.launch": {
+        "sha256": "199ff597dd32116a1787a137111e81cbdea3dcd1f061d3f2eb4df8c4c0383c8b",
+        "mtime_ns": 1792842214277730373
+      },
+      "tests/ros_map_probe.py": {
+        "sha256": "2f30736fddb85c770bcce4f100c89e1dcd92e9d2bf7da9c07e4bcdb9b0d72e42",
+        "mtime_ns": 1792328715879477171
+      },
+      "tools/trajectory_direction_audit.py": {
+        "sha256": "dbd771a6c222a22b09b179c91b8ee8d62b177e255445a0a9c9c9f809e38c9b52",
+        "mtime_ns": 1791784441404583017
+      },
+      "tests/ros_parking_goals_smoke.py": {
+        "sha256": "27e8cb30f87c3332e53437aefca9773a17238d7134a2dc402ac22942824d84b1",
+        "mtime_ns": 1790906924999847012
+      },
+      "tools/scale_map_runtime.py": {
+        "sha256": "0a05f4f7d02fdbcbd42311dada7e83cbad1b3e8dd0d8ee6901429857722df465",
+        "mtime_ns": 1791206340944728771
+      },
+      "catkin_ws/src/fwis_v3_demo/config/params.yaml": {
+        "sha256": "f4542fe9ed05c7b33d2546a2034618bca2fe583f4b1e7b469fe78149a929426a",
+        "mtime_ns": 1792919187742740028
+      },
+      "tools/run_expv3_probe.py": {
+        "sha256": "6e63ce61199b7cf89f26370d0bc03e383c522260d0ef69beefd7ea50e72e2f1c",
+        "mtime_ns": 1792919187746740081
+      },
+      "tools/expv3_eval_cases.yaml": {
+        "sha256": "97cb181bd4713343e218470410a6de1200f87f09c535eabc4bf9360e93459a04",
+        "mtime_ns": 1792850821397580854
+      }
+    }
+  },
+  "tests": "151 Python tests passed, including 5 new segment-reuse tests"
+}

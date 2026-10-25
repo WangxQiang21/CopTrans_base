@@ -825,10 +825,10 @@ class QualityContracts(unittest.TestCase):
         evaluator = self.evaluator(seed)
         original_retime = retime_continuous
 
-        def reject_ackermann(plan, limits, dt=.05):
+        def reject_ackermann(plan, limits, dt=.05, **kwargs):
             if any(block.mode == 0 for block in plan.blocks):
                 raise ValueError("synthetic_seed_timing_rejection")
-            return original_retime(plan, limits, dt)
+            return original_retime(plan, limits, dt, **kwargs)
 
         with patch("fwis_v3_optimizer.mode_master.retime_continuous",
                    side_effect=reject_ackermann), \

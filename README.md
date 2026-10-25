@@ -1,5 +1,32 @@
 # expv3
 
+## 本分支：模式一致的连续轨迹与段级时间求解
+
+本分支 `continuous-mode-path` 运行 `mode_path_v2`。参考论文 12：Runjiao Bao 等，
+*From Multi-Modal Paths to Executable Trajectories: A Trajectory Planning Framework for 4WIS Robots*
+（[本地论文](papers/12_Bao_4WIS_Executable_Trajectories_2026.pdf)，
+[arXiv:2608.29108](https://arxiv.org/abs/2608.29108)）。
+主要借鉴前端模式路径与后端可执行轨迹衔接、按模式一致的连续段处理、切换时保持静止三个思路。
+本分支用连续曲率/斜移角描述段内控制，连续速度与加速度可以跨过普通控制节点；
+模式事件才添加静止重配置，候选最终按独立整车扫掠与动态审核结果竞争。
+
+本次把重复的整路径时间计算拆成可复用的模式段局部求解。
+[SegmentTimingCache](catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/continuous_retiming.py)
+以完整的不可变运动段和动态profile为精确键，在同一次规划请求中复用时间包络与多项式，
+再根据新候选重置段索引、时间起点和累计弧长。局部控制、长度、方向或profile变化就重新求解；
+每次取出都是独立副本，最多缓存32段。世界坐标轨迹、模式切换驻留和独立碰撞证书仍逐候选生成、审核。
+诊断JSON的 `segment_timing_cache` 直接报告命中、求解和淘汰次数。
+
+流程：有限模式结构候选 → 连续控制/末端投影 → 段级时间求解及复用 → 独立审核 → 最短可执行时间比较。
+论文的迭代安全走廊优化方程没有逐式复现；当前局部连续NLP采用距离场引导，显示走廊并不等于NLP约束，
+整车安全以独立扫掠为准。这是对可执行分段框架的工程扩展，不声称全局联合最优。
+
+验证命令：`OPENBLAS_NUM_THREADS=1 python3 -m unittest discover -s tests -p 'test_*.py'`。
+map04真实ROS配对中，重定时耗时从0.807秒降至0.298秒，执行时长均为40.446秒且独立审核通过；
+12组共享段重复计时的重定时中位速度约提升2.4倍。这是本次用例结果，不代表全地图总求解速度。
+完整 Python 回归151项通过，包含5项新增段级复用合同测试。
+详见[指标、图片与测试范围](evaluation/paper12/REPORT.md)。
+
 本文档列出 `run_demo.sh` 的完整用法。地图目录及预览见[地图总索引](maps/README.md)，可运行地图与旧名称的对应关系见 [`maps/map_index.tsv`](maps/map_index.tsv)。
 
 ## 快速开始

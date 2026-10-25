@@ -25,7 +25,7 @@ from .continuous_geometry import (fit_continuous_endpoint, fit_continuous_suffix
                                    smooth_control_candidate)
 from .continuous_optimizer import optimize_continuous_geometry
 from .legacy_geometry_provider import LegacyGeometryCandidateProvider
-from .continuous_retiming import retime_continuous
+from .continuous_retiming import retime_continuous, SegmentTimingCache
 from .geometry_incumbent import GeometryIncumbentStore
 
 
@@ -984,6 +984,7 @@ class ModePathMaster:
         coarse_sweep_counts = {"checked_edges": 0, "reused_edges": 0}
         duration_estimate = PrimitiveTimingCache(self.evaluator.limits,
                                                 allow_reverse=self.config.allow_reverse)
+        segment_timing_cache = SegmentTimingCache()
 
         def coarse_action_clear(pose, action, spacing):
             # Same stations and occupied-cell SAT as Grid.action_clear,
@@ -1197,7 +1198,7 @@ class ModePathMaster:
                     with measured("retime"):
                         timed = retime_continuous(
                             continuous_plan, self.evaluator.limits,
-                            self.config.sampling_dt)
+                            self.config.sampling_dt, segment_cache=segment_timing_cache)
                     with measured("independent_audit"):
                         audit = self.evaluator.evaluate_continuous_geometry(
                             continuous_plan, timed, allow_reverse=reverse_allowed,
@@ -1889,7 +1890,8 @@ class ModePathMaster:
                             # control changes and stops only at mode boundaries.
                             duration = retime_continuous(plan_from_actions(
                                 self.evaluator.start, self.evaluator.goal, actions),
-                                self.evaluator.limits, dt=.2, spatial_dt=.1).duration
+                                self.evaluator.limits, dt=.2, spatial_dt=.1,
+                                segment_cache=segment_timing_cache).duration
                         else:
                             duration = duration_estimate(actions)
                         pref = reverse_preference_actions(actions,
@@ -2071,7 +2073,8 @@ class ModePathMaster:
                     try:
                         duration = retime_continuous(plan_from_actions(
                             self.evaluator.start, self.evaluator.goal, actions),
-                            self.evaluator.limits, dt=.2, spatial_dt=.1).duration
+                            self.evaluator.limits, dt=.2, spatial_dt=.1,
+                            segment_cache=segment_timing_cache).duration
                         ranked.append((duration, actions, details))
                     except ValueError:
                         continue
@@ -2188,6 +2191,7 @@ class ModePathMaster:
                 "stage_timings_s": stage_seconds, "stage_call_counts": stage_counts,
                 "proposal_funnel": funnel, "coarse_sweep_cache": coarse_sweep_counts,
                 "continuous_optimizer": continuous_optimizer_report,
+                "segment_timing_cache": segment_timing_cache.stats,
                 "total_s": time.perf_counter()-begin, "first_feasible_s": first_feasible,
                 "budget_s": effective_budget_s,
                 "configured_budget_s": self.config.budget_s,
@@ -2245,6 +2249,7 @@ class ModePathMaster:
             rejection_reason_counts[reason] = rejection_reason_counts.get(reason, 0)+1
         report = {"backend": ("mode_path_v2" if self.config.continuous_motion_v2 else
                               "mode_path_v1"), "first_feasible_s": first_feasible,
+                  "segment_timing_cache": segment_timing_cache.stats,
                   "selection_objective": self.config.selection_objective,
                   "selection_scope": "fully_certified_candidates_in_this_request",
                   "quality_scores_deferred": sum(item["audit"].get("score_status") ==
