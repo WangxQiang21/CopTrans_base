@@ -2687,14 +2687,11 @@ class OptimizerNode:
             postprocess_begin = time.perf_counter()
             if continuous is not None:
                 spatial_rows = replay_continuous(continuous, .10)
-                corridor_rows = [spatial_rows[0]]
-                for row in spatial_rows[1:-1]:
-                    prior = corridor_rows[-1]
-                    if (row[0]-prior[0] >= .35 or
-                            abs(wrap(row[1].th-prior[1].th)) >= .25 or
-                            row[3] != prior[3]):
-                        corridor_rows.append(row)
-                corridor_rows.append(spatial_rows[-1])
+                # Corridor geometry is display-only here. Keep every 10 cm
+                # replay station so v1/legacy and v2 render the same dense
+                # vehicle envelope in RViz; this does not alter the solver or
+                # the independent swept-footprint certificate.
+                corridor_rows = spatial_rows
                 poses = [row[1] for row in corridor_rows]
                 corridor_records = []
                 map_signature = self._joint_seed_map_signature()
@@ -2745,7 +2742,11 @@ class OptimizerNode:
                                for k in block.knots]}
                     for block in continuous.blocks]
             else:
-                poses = replay(start, actions)
+                # Legacy and exact-primitive plans can have coarse action
+                # knots. Expand the exact primitives for display-only corridor
+                # geometry so their RViz envelope is as readable as v2's.
+                poses, _ = expand(start, actions, max_translation=.10,
+                                  max_rotation=math.radians(5))
                 try:
                     _, boxes, covered = build_corridors(self.grid, poses)
                     corridor = "disc" if covered else "mixed_disc_point"
@@ -2866,7 +2867,10 @@ class OptimizerNode:
                 display_poses.append(reference)
         # Keep the display independent from optimization and 5 mm safety sampling.
         # Core corridor stations remain complete; only their rendered subset changes.
-        indices=select_corridor_display_stations(display_poses,boxes)
+        indices=select_corridor_display_stations(
+            display_poses,boxes,max_spacing=.12,
+            max_yaw_step=math.radians(5),narrow_half_width=.08,
+            narrow_spacing=.08,extent_change=.06)
         edges=((0,1),(1,2),(2,3),(3,0))
         markers={}
         plan_suffix="_plan_%d"%int(plan_id)
@@ -2920,10 +2924,10 @@ class OptimizerNode:
                 "all_corridor_stations":len(boxes),
                 "displayed_stations":len(indices),
                 "station_indices":indices,
-                "sampling":{"max_arc_spacing_m":.30,
-                             "max_accumulated_yaw_rad":math.radians(8),
+                "sampling":{"max_arc_spacing_m":.12,
+                             "max_accumulated_yaw_rad":math.radians(5),
                              "narrow_region_min_lateral_half_extent_m":.08,
-                             "narrow_region_spacing_m":.12,
+                             "narrow_region_spacing_m":.08,
                              "max_region_half_extent_change_m":.06},
                 "vehicle_size_m":[self.length,self.width],
                 "margin_size_m":[2*self.grid.half_l,2*self.grid.half_w],
