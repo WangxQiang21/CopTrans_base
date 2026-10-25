@@ -6,6 +6,10 @@ overlay_dir="${demo_dir}/catkin_ws"
 map_root="${demo_dir}/maps"
 map_index="${map_root}/map_index.tsv"
 
+# This checkout is the mode-path-constant-primitive algorithm version.
+branch_backend="mode_path_v1"
+branch_name="mode-path-constant-primitive"
+
 usage() {
   cat <<'EOF'
 用法：
@@ -23,13 +27,11 @@ usage() {
   ./run_demo.sh --map P12_env1 --map-scale 0.85
   ./run_demo.sh --map map01 -scale 0.7
   ./run_demo.sh --map P12_env2 target_v:=2.0
-  ./run_demo.sh --map P12_env1 planning_backend:=mode_path_v1
-  ./run_demo.sh --map P12_env1 planning_backend:=mode_path_v2
-  ./run_demo.sh --map P12_env1 planning_backend:=legacy
-  ./run_demo.sh --map P12_env1 planning_backend:=mode_path_v2 direction_policy:=forward_only
-  ./run_demo.sh --map P12_env1 planning_backend:=mode_path_v2 allow_reverse_fallback:=false
   ./run_demo.sh --map S09_underground_garage
   ./run_demo.sh --map map015
+  ./run_demo.sh --map P12_env1 planning_backend:=mode_path_v1
+  ./run_demo.sh --map P12_env1 planning_backend:=mode_path_v1 direction_policy:=forward_only
+  ./run_demo.sh --map P12_env1 planning_backend:=mode_path_v1 allow_reverse_fallback:=false
 
 map01 默认按 0.75、map03 按 0.7、map04 按 0.5、map05 按 0.7、
 map07 按 0.8、map08 按 1.2、map15 按 0.8 比例运行；map02、map06、
@@ -37,16 +39,13 @@ map09 和 map16 默认按 1.0。
 用 --map-scale、--scale 或 -scale 覆盖，比例以地图中心为基准，必须大于 0。
 地图栅格不会被重采样。map08 和 map09 的锯齿已做栅格平滑处理。
 
-planning_backend:=mode_path_v1 使用 R02 恒定原语后端；
-planning_backend:=mode_path_v2 使用 R03 连续控制/连续时间原型，
-同模式控制节点连续运行，切模式固定静止 0.3 秒，并复核连续终点和扫掠。
-省略 planning_backend 时默认使用 mode_path_v1（本分支恒定原语模式路径）。
+本分支固定使用 planning_backend:=mode_path_v1（恒定原语模式路径后端）。
+省略后端参数时自动使用本分支后端；指定其他后端会报错，请用 git switch 切换分支。
 目标速度默认 2.0 m/s，可用 target_v:=数值 覆盖；弯道不因曲率主动减速。
 起终点和切模式处保留加减速；短路段可能来不及达到目标速度。
 默认在严格认证通过的候选中选择执行时间最短的路线，净空/平顺性作近乎等时的次级比较。
 受限动态对照可用 config_file:=绝对路径/params_restricted.yaml 启动。
 倒车优先留到后段，极端情况允许提前；同模式连续运行，切模式停车重配置。
-planning_backend:=legacy 使用旧后端作对照；显式设置会覆盖默认值。
 direction_policy:=bidirectional（新后端默认）允许正反向候选按共同代价竞争；
 forward_only 用于只允许正向的对照。旧参数 allow_reverse_fallback:=true/false
 仍可用并会映射到这两个策略；同时指定新旧参数且相互冲突会报配置错误。
@@ -251,18 +250,21 @@ if [[ -n "${requested_map_scale}" || "${effective_map_scale}" != "1.0" ]]; then
   echo "[expv3] 地图比例 ${effective_map_scale}，中心点固定；栅格尺寸保持不变。"
 fi
 
-# The demo entry point follows this branch default unless the caller explicitly
-# selects a backend. Keep this explicit so stale params.yaml values cannot make
-# ordinary manual tests silently run the legacy planner.
+# Keep each algorithm branch tied to its own backend. Reject other backends so
+# changing algorithm versions requires switching the Git branch.
 has_planning_backend=false
 for arg in "${launch_args[@]}"; do
   if [[ "${arg}" == planning_backend:=* ]]; then
+    requested_backend="${arg#planning_backend:=}"
+    if [[ "${requested_backend}" != "${branch_backend}" ]]; then
+      echo "错误：当前分支 ${branch_name} 固定使用 ${branch_backend}，拒绝 ${requested_backend}。请用 git switch 切换算法分支。" >&2
+      exit 2
+    fi
     has_planning_backend=true
-    break
   fi
 done
 if [[ "${has_planning_backend}" == false ]]; then
-  launch_args+=("planning_backend:=mode_path_v1")
+  launch_args+=("planning_backend:=${branch_backend}")
 fi
 
 if [[ ! -f /opt/ros/noetic/setup.bash ]]; then
