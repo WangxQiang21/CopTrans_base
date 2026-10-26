@@ -43,6 +43,7 @@ bash rl/setup_training.sh
 ```
 
 安装使用官方 PyTorch 2.8.0 CUDA 12.8 包、Stable-Baselines3 / sb3-contrib 2.9.0。
+完整运行依赖已锁在 `requirements-training-cu128.lock`，安装脚本同时验证真实 CUDA 运算。
 实现遵循 [MaskablePPO 官方接口](https://sb3-contrib.readthedocs.io/en/master/modules/ppo_mask.html)：环境内部提供掩码，训练和评估均传递掩码。
 
 ### 1. 生成入门课程数据

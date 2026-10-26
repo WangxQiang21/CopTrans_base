@@ -12,9 +12,7 @@ export UV_HTTP_TIMEOUT="${UV_HTTP_TIMEOUT:-120}"
 if [[ ! -x .venv-rl/bin/python ]]; then
   uv venv --python "${COPTRANS_RL_PYTHON:-python3.12}" .venv-rl
 fi
-uv pip install --python .venv-rl/bin/python -r rl/requirements-foundation.lock
-uv pip install --python .venv-rl/bin/python 'torch==2.8.0+cu128' --index-url https://download.pytorch.org/whl/cu128
-uv pip install --python .venv-rl/bin/python 'stable-baselines3==2.9.0' 'sb3-contrib==2.9.0'
+uv pip install --python .venv-rl/bin/python --index-strategy unsafe-best-match -r rl/requirements-training-cu128.lock
 uv pip install --python .venv-rl/bin/python --no-deps -e ./rl
 .venv-rl/bin/python - <<'PY'
 import torch
