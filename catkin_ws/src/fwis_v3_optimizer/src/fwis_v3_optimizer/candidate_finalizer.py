@@ -12,7 +12,8 @@ import time
 
 from .core import Pose, replay, wrap, collapse_exact_runs
 from .continuous_geometry import (
-    plan_from_actions, fit_continuous_endpoint, fit_continuous_suffix)
+    plan_from_actions, fit_continuous_endpoint, fit_continuous_suffix,
+    fit_mode_boundaries)
 from .continuous_retiming import (
     ContinuousTimedPlan, SegmentTimingCache, retime_continuous)
 from .quality import QualityProfile, TrajectoryEvaluator, action_shunting_violation
@@ -42,6 +43,7 @@ class FinalizationConfig:
     fit_max_iterations: int = 40
     max_projection_xy: float = .16
     max_projection_yaw: float = .14
+    boundary_repair: bool = True
     suffix_repair: bool = True
     include_metrics: bool = True
 
@@ -211,7 +213,23 @@ def finalize_candidate(problem, actions, config=None, deadline=None,
         if collision is not None or not fit["success"]:
             original_collision = evaluator.continuous_collision(original)
             attempts = []
-            if config.suffix_repair and original_collision is None:
+            if config.boundary_repair:
+                _expired(deadline)
+                try:
+                    repaired, repair = fit_mode_boundaries(
+                        original, actions, deadline=deadline,
+                        max_iterations=config.fit_max_iterations,
+                        r_min_ack=problem.limits.r_min_ack, stop_on_feasible=True)
+                    issue = evaluator.continuous_collision(repaired)
+                    attempts.append(dict(repair, first_collision=issue))
+                    if repair["success"] and issue is None:
+                        plan, fit, collision = repaired, repair, None
+                except (ValueError, RuntimeError) as exc:
+                    attempts.append({"success": False, "reason": str(exc)})
+            result.detail["boundary_attempts"] = attempts
+            attempts = []
+            if ((collision is not None or not fit["success"]) and
+                    config.suffix_repair and original_collision is None):
                 for tail in (2., 4.):
                     _expired(deadline)
                     repaired, repair = fit_continuous_suffix(
@@ -231,6 +249,11 @@ def finalize_candidate(problem, actions, config=None, deadline=None,
                 result.detail["first_collision"] = collision
                 raise ValueError("continuous_projection_or_sweep_failed")
         result.plan = plan
+        original_word = [(b.mode, b.direction) for b in original.blocks]
+        final_word = [(b.mode, b.direction) for b in plan.blocks]
+        if original_word != final_word:
+            raise ValueError("finalization_changed_mode_direction_word")
+        result.detail["mode_direction_word"] = [list(item) for item in final_word]
         result.detail["final_continuous_sha256"] = _identity(asdict(plan))
         result.detail["audit_sweep_spacing_m"] = audit_profile.sweep_spacing
         enter("retime")

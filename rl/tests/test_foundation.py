@@ -3,6 +3,7 @@ import json
 import math
 import time
 import unittest
+from unittest import mock
 
 import numpy as np
 from gymnasium.utils.env_checker import check_env
@@ -180,6 +181,18 @@ class FoundationTests(unittest.TestCase):
         self.assertEqual(result.timed.mode_switch_count, 1)
         self.assertAlmostEqual(result.timed.mode_switch_hold_seconds, .3, places=10)
         self.assertGreater(result.timed.spin_seconds, 0.)
+
+    def test_boundary_recovery_preserves_mode_word_and_is_audited(self):
+        actions = [Action(0, .738, 0.), Action(1, .738, math.pi/2), Action(0, .738, 0.)]
+        p = self.problem(actions)
+        from fwis_v3_optimizer.continuous_geometry import plan_from_actions
+        failed = (plan_from_actions(p.start, p.goal, actions), {"success": False})
+        with mock.patch("fwis_v3_optimizer.candidate_finalizer.fit_continuous_endpoint", return_value=failed):
+            result = finalize_candidate(p, actions)
+        self.assertTrue(result.feasible, result.reason)
+        self.assertTrue(result.detail["boundary_attempts"][0]["success"])
+        self.assertEqual(result.detail["mode_direction_word"], [[0, 1], [1, 1], [0, 1]])
+        self.assertEqual(result.audit["dynamic_status"], "PASS")
 
     def test_lateral_corridor_requires_oblique_library_action(self):
         occ = np.ones((400, 200), dtype=bool)
