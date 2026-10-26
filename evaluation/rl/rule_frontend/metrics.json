@@ -1,0 +1,3370 @@
+{
+  "date": "2026-10-26",
+  "timezone": "Asia/Shanghai",
+  "evaluations": {
+    "rule_val": {
+      "path": "/home/wq/whut_thesis/expv3_experiment_archive/rl/evaluation/20261026-rule-frontier-val-final",
+      "evaluation_sha256": "203e132d7674b2ca6d52e639bc3dcc10fdb218b58e3bbab53b23cb7e80898f8f",
+      "manifest_sha256": "85e8c8b8be026575055d67ed722ba069a8af78c22d9d5eeba094b35bef2de454",
+      "manifest": {
+        "identity": {
+          "schema": "rule_frontier_mode_path_v1",
+          "contract": "e20964349a7987628a4e64c0f351070e7c5d9863356faa22065cd4386369c397",
+          "sources": {
+            "rl/src/coptrans_rl/rule_candidates.py": "f4087103083e897cccd49ab51d67b6c8ca39786ae1518bf8b442b16d0107b4a5",
+            "rl/src/coptrans_rl/rule_frontend.py": "4f61ee3164fb6609182572c042b1af301152dce8552f7585b5d2717295478ed0",
+            "rl/src/coptrans_rl/rule_learning.py": "29f2bdf8010682b0ecb67392dad6627546eb2bae972580a0273a3d5e8ea22d09",
+            "rl/src/coptrans_rl/local_connections.py": "f1cd6b01b8bf69725e18140cd606cd1ce5e3b2602b9a2e4d609d9c44212c7709",
+            "rl/native/local_connections.cpp": "43622f2ca0d13c15e1e8bdf8b642ed29133259187182857fd840c6a90bcfec45",
+            "catkin_ws/src/fwis_common/include/fwis_common/reeds_shepp.hpp": "904645d5358df1ccb8ed7d5a135e1aa371003f98cda7ea8aea2509f0850402f4"
+          },
+          "features": 27,
+          "direction_policy": {
+            "allow_reverse": true,
+            "allow_shunting": false,
+            "initial_mode": 0,
+            "xy_tol": 0.02,
+            "yaw_tol": 0.017453292519943295
+          }
+        },
+        "config": {
+          "capacity": 64,
+          "max_decisions": 128,
+          "max_finalizations": 4,
+          "budget_s": 5.0,
+          "finalize_reserve_s": 1.0,
+          "max_execution_s": 300.0
+        },
+        "arguments": {
+          "stage": "evaluate",
+          "dataset": "/home/wq/whut_thesis/expv3_experiment_archive/rl/datasets/curriculum-v1-20261026",
+          "output": "/home/wq/whut_thesis/expv3_experiment_archive/rl/evaluation/20261026-rule-frontier-val-final",
+          "model": null,
+          "device": "cpu",
+          "split": "val",
+          "episodes": 20,
+          "maps": false,
+          "steps": 512,
+          "rollout_steps": 128,
+          "ppo_epochs": 4,
+          "learning_rate": 5e-05,
+          "eval_episodes": 8,
+          "seed": 7,
+          "budget": 5.0,
+          "decisions": 128
+        },
+        "dataset_sha256": "0c992e62dac20192eb82df77a7cf4e8f62170518e16a6d68cf6bec06fb143047",
+        "commit": "db12fa31c220df0bfcc1dd513c3e7b3d22ef27a6",
+        "working_tree_dirty": false
+      },
+      "summary": {
+        "tasks": 20,
+        "successes": 20,
+        "success_rate": 1.0,
+        "mean_execution_s": 3.483129783667375,
+        "mean_wall_s": 0.22919385434797732
+      },
+      "tasks": [
+        {
+          "task_id": "val_40ead8324a211fe0",
+          "start": {
+            "x": 1.925,
+            "y": 6.675000000000001,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 0.6354924319499289,
+            "y": 6.643537996139581,
+            "th": 0.9333086623077087
+          },
+          "is_success": true,
+          "execution_s": 6.658281300304373,
+          "wall_s": 0.2162480250117369,
+          "decisions": 7,
+          "expanded": 3,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 0.6354924319499315,
+              "y": 6.643537996139581,
+              "yaw": 0.9333086623077087,
+              "xy_error_m": 2.6645352591003757e-15,
+              "yaw_error_rad": 0.0
+            }
+          },
+          "timing": {
+            "duration_s": 6.658281300304373,
+            "mode_switch_count": 2,
+            "mode_switch_hold_seconds": 0.6,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "val_0db9ef0a366fb402",
+          "start": {
+            "x": 3.625,
+            "y": 3.575,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 3.8095,
+            "y": 3.894563373996458,
+            "th": 0.0
+          },
+          "is_success": true,
+          "execution_s": 2.28027775486131,
+          "wall_s": 0.20119279099162668,
+          "decisions": 12,
+          "expanded": 8,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 3.8095,
+              "y": 3.8945633739964576,
+              "yaw": 0.0,
+              "xy_error_m": 4.440892098500626e-16,
+              "yaw_error_rad": 0.0
+            }
+          },
+          "timing": {
+            "duration_s": 2.28027775486131,
+            "mode_switch_count": 1,
+            "mode_switch_hold_seconds": 0.3,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "val_cd98651279a0885c",
+          "start": {
+            "x": 6.025,
+            "y": 3.075,
+            "th": -1.5707963267948966
+          },
+          "goal": {
+            "x": 5.801870182841039,
+            "y": 2.1213635080136157,
+            "th": -1.4569074379060076
+          },
+          "is_success": true,
+          "execution_s": 3.176252277996337,
+          "wall_s": 0.14588142500724643,
+          "decisions": 7,
+          "expanded": 3,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 5.802497895524284,
+              "y": 2.121097458889068,
+              "yaw": -1.4569074379060076,
+              "xy_error_m": 0.0006817663451497057,
+              "yaw_error_rad": 0.0
+            }
+          },
+          "timing": {
+            "duration_s": 3.176252277996337,
+            "mode_switch_count": 0,
+            "mode_switch_hold_seconds": 0.0,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "val_9335bbb4ea23264d",
+          "start": {
+            "x": 5.325,
+            "y": 4.625,
+            "th": -1.5707963267948966
+          },
+          "goal": {
+            "x": 5.89519178803032,
+            "y": 3.7343328317891697,
+            "th": -0.4319074379060078
+          },
+          "is_success": true,
+          "execution_s": 3.1787232383713917,
+          "wall_s": 0.12741145200561732,
+          "decisions": 5,
+          "expanded": 1,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 5.895189933917042,
+              "y": 3.734335728003842,
+              "yaw": -0.4319074379060077,
+              "xy_error_m": 3.4388654342024718e-06,
+              "yaw_error_rad": 5.551115123125783e-17
+            }
+          },
+          "timing": {
+            "duration_s": 3.1787232383713917,
+            "mode_switch_count": 0,
+            "mode_switch_hold_seconds": 0.0,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "val_aa2f1b0dac1bb7b9",
+          "start": {
+            "x": 3.575,
+            "y": 5.425000000000001,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 2.530649848776272,
+            "y": 4.1283909205710945,
+            "th": -1.1729104989102608
+          },
+          "is_success": true,
+          "execution_s": 11.005400311634569,
+          "wall_s": 0.8979295639728662,
+          "decisions": 59,
+          "expanded": 55,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 2.5302758320445955,
+              "y": 4.129030342847601,
+              "yaw": -1.1729104989102606,
+              "xy_error_m": 0.0007407761897272943,
+              "yaw_error_rad": 2.220446049250313e-16
+            }
+          },
+          "timing": {
+            "duration_s": 11.005400311634569,
+            "mode_switch_count": 3,
+            "mode_switch_hold_seconds": 0.8999999999999999,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "val_42d4d85f12bbfca3",
+          "start": {
+            "x": 1.975,
+            "y": 3.5250000000000004,
+            "th": 3.141592653589793
+          },
+          "goal": {
+            "x": 1.3814287136174304,
+            "y": 3.366187331145759,
+            "th": 2.9138148758120153
+          },
+          "is_success": true,
+          "execution_s": 4.216558897698526,
+          "wall_s": 0.12275239999871701,
+          "decisions": 6,
+          "expanded": 2,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 1.381428713617431,
+              "y": 3.366187331145759,
+              "yaw": 2.9138148758120153,
+              "xy_error_m": 6.661338147750939e-16,
+              "yaw_error_rad": 0.0
+            }
+          },
+          "timing": {
+            "duration_s": 4.216558897698526,
+            "mode_switch_count": 1,
+            "mode_switch_hold_seconds": 0.3,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "val_00dc884363e159cd",
+          "start": {
+            "x": 4.825,
+            "y": 1.225,
+            "th": 3.141592653589793
+          },
+          "goal": {
+            "x": 5.194000000000001,
+            "y": 1.4951267479929156,
+            "th": 3.141592653589793
+          },
+          "is_success": true,
+          "execution_s": 2.4647941918990277,
+          "wall_s": 0.13275914400583133,
+          "decisions": 7,
+          "expanded": 3,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 5.194000000000001,
+              "y": 1.4951267479929156,
+              "yaw": 3.141592653589793,
+              "xy_error_m": 0.0,
+              "yaw_error_rad": 0.0
+            }
+          },
+          "timing": {
+            "duration_s": 2.4647941918990277,
+            "mode_switch_count": 1,
+            "mode_switch_hold_seconds": 0.3,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "val_31f4fc1b2c1e06bb",
+          "start": {
+            "x": 6.325,
+            "y": 1.225,
+            "th": -1.5707963267948966
+          },
+          "goal": {
+            "x": 6.325,
+            "y": 1.0405000000000002,
+            "th": -1.5707963267948966
+          },
+          "is_success": true,
+          "execution_s": 1.769795017272105,
+          "wall_s": 0.12350872400566004,
+          "decisions": 6,
+          "expanded": 2,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 6.325,
+              "y": 1.0405000000000002,
+              "yaw": -1.5707963267948966,
+              "xy_error_m": 0.0,
+              "yaw_error_rad": 0.0
+            }
+          },
+          "timing": {
+            "duration_s": 1.769795017272105,
+            "mode_switch_count": 0,
+            "mode_switch_hold_seconds": 0.0,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "val_5b5d04034591cb32",
+          "start": {
+            "x": 7.025,
+            "y": 3.325,
+            "th": -1.5707963267948966
+          },
+          "goal": {
+            "x": 6.8405000000000005,
+            "y": 3.0054366260035423,
+            "th": -1.5707963267948966
+          },
+          "is_success": true,
+          "execution_s": 2.28027775486131,
+          "wall_s": 0.19368060000124387,
+          "decisions": 7,
+          "expanded": 3,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 6.8405000000000005,
+              "y": 3.0054366260035428,
+              "yaw": -1.5707963267948966,
+              "xy_error_m": 4.440892098500626e-16,
+              "yaw_error_rad": 0.0
+            }
+          },
+          "timing": {
+            "duration_s": 2.28027775486131,
+            "mode_switch_count": 1,
+            "mode_switch_hold_seconds": 0.3,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "val_351bdae6a070ef17",
+          "start": {
+            "x": 1.3250000000000002,
+            "y": 4.9750000000000005,
+            "th": 3.141592653589793
+          },
+          "goal": {
+            "x": 2.5242500000000003,
+            "y": 5.4543450609946875,
+            "th": 3.141592653589793
+          },
+          "is_success": true,
+          "execution_s": 3.707517766220198,
+          "wall_s": 0.9683804299857002,
+          "decisions": 128,
+          "expanded": 125,
+          "finalizations": 3,
+          "reason": "certified",
+          "stop_reason": "decision_budget",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 2.5242500000000057,
+              "y": 5.454345060994686,
+              "yaw": 3.141592653589793,
+              "xy_error_m": 5.617333549722722e-15,
+              "yaw_error_rad": 0.0
+            }
+          },
+          "timing": {
+            "duration_s": 3.707517766220198,
+            "mode_switch_count": 1,
+            "mode_switch_hold_seconds": 0.3,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "val_ee0094265a3e67de",
+          "start": {
+            "x": 5.875,
+            "y": 1.8250000000000002,
+            "th": 1.5707963267948966
+          },
+          "goal": {
+            "x": 5.875,
+            "y": 2.0095,
+            "th": 1.5707963267948966
+          },
+          "is_success": true,
+          "execution_s": 1.769795017272105,
+          "wall_s": 0.119014710013289,
+          "decisions": 7,
+          "expanded": 3,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 5.875,
+              "y": 2.0095,
+              "yaw": 1.5707963267948966,
+              "xy_error_m": 0.0,
+              "yaw_error_rad": 0.0
+            }
+          },
+          "timing": {
+            "duration_s": 1.769795017272105,
+            "mode_switch_count": 0,
+            "mode_switch_hold_seconds": 0.0,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "val_80d49bd0d6eec674",
+          "start": {
+            "x": 2.5250000000000004,
+            "y": 4.625,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 2.8900161701281135,
+            "y": 4.530636680985447,
+            "th": 0.9333086623077087
+          },
+          "is_success": true,
+          "execution_s": 5.2505367973262285,
+          "wall_s": 0.3292952449992299,
+          "decisions": 22,
+          "expanded": 18,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 2.890016170128113,
+              "y": 4.530636680985447,
+              "yaw": 0.9333086623077087,
+              "xy_error_m": 4.440892098500626e-16,
+              "yaw_error_rad": 0.0
+            }
+          },
+          "timing": {
+            "duration_s": 5.2505367973262285,
+            "mode_switch_count": 2,
+            "mode_switch_hold_seconds": 0.6,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "val_f05500db59acddc8",
+          "start": {
+            "x": 3.575,
+            "y": 5.4750000000000005,
+            "th": -1.5707963267948966
+          },
+          "goal": {
+            "x": 3.595921808173016,
+            "y": 5.292091259959898,
+            "th": -1.3430185490171187
+          },
+          "is_success": true,
+          "execution_s": 1.7697950172721073,
+          "wall_s": 0.12516503199003637,
+          "decisions": 5,
+          "expanded": 1,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 3.595921808173016,
+              "y": 5.292091259959898,
+              "yaw": -1.3430185490171187,
+              "xy_error_m": 0.0,
+              "yaw_error_rad": 0.0
+            }
+          },
+          "timing": {
+            "duration_s": 1.7697950172721073,
+            "mode_switch_count": 0,
+            "mode_switch_hold_seconds": 0.0,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "val_34c2b2646e39a83f",
+          "start": {
+            "x": 5.125,
+            "y": 4.175,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 6.450206246542977,
+            "y": 3.9743437147997263,
+            "th": 0.22777777777777777
+          },
+          "is_success": true,
+          "execution_s": 3.697211922814038,
+          "wall_s": 0.111453846009681,
+          "decisions": 5,
+          "expanded": 1,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 6.450430554621005,
+              "y": 3.9753816606849033,
+              "yaw": 0.22777777777777783,
+              "xy_error_m": 0.0010619066693568831,
+              "yaw_error_rad": 5.551115123125783e-17
+            }
+          },
+          "timing": {
+            "duration_s": 3.697211922814038,
+            "mode_switch_count": 0,
+            "mode_switch_hold_seconds": 0.0,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "val_f61d3530c041433c",
+          "start": {
+            "x": 5.625,
+            "y": 2.975,
+            "th": 1.5707963267948966
+          },
+          "goal": {
+            "x": 5.625,
+            "y": 3.1595,
+            "th": 1.5707963267948966
+          },
+          "is_success": true,
+          "execution_s": 1.769795017272105,
+          "wall_s": 0.11996456500492059,
+          "decisions": 6,
+          "expanded": 2,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 5.625,
+              "y": 3.1595,
+              "yaw": 1.5707963267948966,
+              "xy_error_m": 0.0,
+              "yaw_error_rad": 0.0
+            }
+          },
+          "timing": {
+            "duration_s": 1.769795017272105,
+            "mode_switch_count": 0,
+            "mode_switch_hold_seconds": 0.0,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "val_1d95b075d6599186",
+          "start": {
+            "x": 7.4750000000000005,
+            "y": 3.9250000000000003,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 7.11863136330816,
+            "y": 3.8423935625109693,
+            "th": 0.45555555555555555
+          },
+          "is_success": true,
+          "execution_s": 1.9802777548613086,
+          "wall_s": 0.11604521700064652,
+          "decisions": 5,
+          "expanded": 1,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 7.11863136330816,
+              "y": 3.8423935625109693,
+              "yaw": 0.45555555555555555,
+              "xy_error_m": 0.0,
+              "yaw_error_rad": 0.0
+            }
+          },
+          "timing": {
+            "duration_s": 1.9802777548613086,
+            "mode_switch_count": 0,
+            "mode_switch_hold_seconds": 0.0,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "val_28737565c0be3162",
+          "start": {
+            "x": 3.475,
+            "y": 6.825,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 3.7387281707361555,
+            "y": 4.779019930201592,
+            "th": -2.5055555555555555
+          },
+          "is_success": true,
+          "execution_s": 4.743186376940895,
+          "wall_s": 0.16670702799456194,
+          "decisions": 6,
+          "expanded": 2,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 3.739131979982595,
+              "y": 4.778944526015097,
+              "yaw": -2.5055555555555555,
+              "xy_error_m": 0.0004107891172499939,
+              "yaw_error_rad": 0.0
+            }
+          },
+          "timing": {
+            "duration_s": 4.743186376940895,
+            "mode_switch_count": 0,
+            "mode_switch_hold_seconds": 0.0,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "val_c2a0863c2f43d516",
+          "start": {
+            "x": 4.525,
+            "y": 5.9750000000000005,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 5.164126747992916,
+            "y": 5.606000000000001,
+            "th": 0.0
+          },
+          "is_success": true,
+          "execution_s": 2.957258294439757,
+          "wall_s": 0.128361300972756,
+          "decisions": 7,
+          "expanded": 3,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 5.164126747992917,
+              "y": 5.606000000000001,
+              "yaw": 0.0,
+              "xy_error_m": 8.881784197001252e-16,
+              "yaw_error_rad": 0.0
+            }
+          },
+          "timing": {
+            "duration_s": 2.957258294439757,
+            "mode_switch_count": 1,
+            "mode_switch_hold_seconds": 0.3,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "val_55f84d6eb56d4c47",
+          "start": {
+            "x": 2.1750000000000003,
+            "y": 4.4750000000000005,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 2.540817480080204,
+            "y": 4.4331563836539685,
+            "th": -0.22777777777777775
+          },
+          "is_success": true,
+          "execution_s": 1.9793989450587288,
+          "wall_s": 0.08150247999583371,
+          "decisions": 4,
+          "expanded": 0,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 2.540817050209723,
+              "y": 4.433156432824214,
+              "yaw": -0.22777777777777772,
+              "xy_error_m": 4.326734836841144e-07,
+              "yaw_error_rad": 2.7755575615628914e-17
+            }
+          },
+          "timing": {
+            "duration_s": 1.9793989450587288,
+            "mode_switch_count": 0,
+            "mode_switch_hold_seconds": 0.0,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "val_20edd524eba792b4",
+          "start": {
+            "x": 5.925000000000001,
+            "y": 3.975,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 6.693681048574091,
+            "y": 3.5297137288937845,
+            "th": -0.6833333333333333
+          },
+          "is_success": true,
+          "execution_s": 3.0074620189710703,
+          "wall_s": 0.15662310799234547,
+          "decisions": 5,
+          "expanded": 1,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 6.694012979478578,
+              "y": 3.52997993516898,
+              "yaw": -0.6833333333333337,
+              "xy_error_m": 0.00042549254553628056,
+              "yaw_error_rad": 3.3306690738754696e-16
+            }
+          },
+          "timing": {
+            "duration_s": 3.0074620189710703,
+            "mode_switch_count": 0,
+            "mode_switch_hold_seconds": 0.0,
+            "same_mode_hold_seconds": 0.0
+          }
+        }
+      ]
+    },
+    "trained_val": {
+      "path": "/home/wq/whut_thesis/expv3_experiment_archive/rl/evaluation/20261026-rule-frontier-rl-val-pilot",
+      "evaluation_sha256": "a5b838a6d59fbb81646711870002851f5cfeb3eccb8558b338c59189f5d5ae6d",
+      "manifest_sha256": "8bd2cb2ac7964efe8e2b67cdb26d5fabe7988cb21d592697729c69c7f3d0e55c",
+      "manifest": {
+        "identity": {
+          "schema": "rule_frontier_mode_path_v1",
+          "contract": "e20964349a7987628a4e64c0f351070e7c5d9863356faa22065cd4386369c397",
+          "sources": {
+            "rl/src/coptrans_rl/rule_candidates.py": "f4087103083e897cccd49ab51d67b6c8ca39786ae1518bf8b442b16d0107b4a5",
+            "rl/src/coptrans_rl/rule_frontend.py": "4f61ee3164fb6609182572c042b1af301152dce8552f7585b5d2717295478ed0",
+            "rl/src/coptrans_rl/rule_learning.py": "29f2bdf8010682b0ecb67392dad6627546eb2bae972580a0273a3d5e8ea22d09",
+            "rl/src/coptrans_rl/local_connections.py": "f1cd6b01b8bf69725e18140cd606cd1ce5e3b2602b9a2e4d609d9c44212c7709",
+            "rl/native/local_connections.cpp": "43622f2ca0d13c15e1e8bdf8b642ed29133259187182857fd840c6a90bcfec45",
+            "catkin_ws/src/fwis_common/include/fwis_common/reeds_shepp.hpp": "904645d5358df1ccb8ed7d5a135e1aa371003f98cda7ea8aea2509f0850402f4"
+          },
+          "features": 27,
+          "direction_policy": {
+            "allow_reverse": true,
+            "allow_shunting": false,
+            "initial_mode": 0,
+            "xy_tol": 0.02,
+            "yaw_tol": 0.017453292519943295
+          }
+        },
+        "config": {
+          "capacity": 64,
+          "max_decisions": 128,
+          "max_finalizations": 4,
+          "budget_s": 5.0,
+          "finalize_reserve_s": 1.0,
+          "max_execution_s": 300.0
+        },
+        "arguments": {
+          "stage": "evaluate",
+          "dataset": "/home/wq/whut_thesis/expv3_experiment_archive/rl/datasets/curriculum-v1-20261026",
+          "output": "/home/wq/whut_thesis/expv3_experiment_archive/rl/evaluation/20261026-rule-frontier-rl-val-pilot",
+          "model": "/home/wq/whut_thesis/expv3_experiment_archive/rl/training/rule-frontier-ppo-seed7-pilot/latest.pt",
+          "device": "cuda",
+          "split": "val",
+          "episodes": 20,
+          "maps": false,
+          "steps": 512,
+          "rollout_steps": 128,
+          "ppo_epochs": 4,
+          "learning_rate": 5e-05,
+          "eval_episodes": 8,
+          "seed": 7,
+          "budget": 5.0,
+          "decisions": 128
+        },
+        "dataset_sha256": "0c992e62dac20192eb82df77a7cf4e8f62170518e16a6d68cf6bec06fb143047",
+        "commit": "db12fa31c220df0bfcc1dd513c3e7b3d22ef27a6",
+        "working_tree_dirty": false
+      },
+      "summary": {
+        "tasks": 20,
+        "successes": 20,
+        "success_rate": 1.0,
+        "mean_execution_s": 3.5075504349738615,
+        "mean_wall_s": 0.26546768984990193
+      },
+      "tasks": [
+        {
+          "task_id": "val_40ead8324a211fe0",
+          "start": {
+            "x": 1.925,
+            "y": 6.675000000000001,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 0.6354924319499289,
+            "y": 6.643537996139581,
+            "th": 0.9333086623077087
+          },
+          "is_success": true,
+          "execution_s": 6.658281300304373,
+          "wall_s": 0.49128861000644974,
+          "decisions": 7,
+          "expanded": 3,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 0.6354924319499315,
+              "y": 6.643537996139581,
+              "yaw": 0.9333086623077087,
+              "xy_error_m": 2.6645352591003757e-15,
+              "yaw_error_rad": 0.0
+            }
+          },
+          "timing": {
+            "duration_s": 6.658281300304373,
+            "mode_switch_count": 2,
+            "mode_switch_hold_seconds": 0.6,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "val_0db9ef0a366fb402",
+          "start": {
+            "x": 3.625,
+            "y": 3.575,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 3.8095,
+            "y": 3.894563373996458,
+            "th": 0.0
+          },
+          "is_success": true,
+          "execution_s": 2.28027775486131,
+          "wall_s": 0.21496095499605872,
+          "decisions": 12,
+          "expanded": 8,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 3.8095,
+              "y": 3.8945633739964576,
+              "yaw": 0.0,
+              "xy_error_m": 4.440892098500626e-16,
+              "yaw_error_rad": 0.0
+            }
+          },
+          "timing": {
+            "duration_s": 2.28027775486131,
+            "mode_switch_count": 1,
+            "mode_switch_hold_seconds": 0.3,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "val_cd98651279a0885c",
+          "start": {
+            "x": 6.025,
+            "y": 3.075,
+            "th": -1.5707963267948966
+          },
+          "goal": {
+            "x": 5.801870182841039,
+            "y": 2.1213635080136157,
+            "th": -1.4569074379060076
+          },
+          "is_success": true,
+          "execution_s": 3.176252277996337,
+          "wall_s": 0.13670935897971503,
+          "decisions": 7,
+          "expanded": 3,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 5.802497895524284,
+              "y": 2.121097458889068,
+              "yaw": -1.4569074379060076,
+              "xy_error_m": 0.0006817663451497057,
+              "yaw_error_rad": 0.0
+            }
+          },
+          "timing": {
+            "duration_s": 3.176252277996337,
+            "mode_switch_count": 0,
+            "mode_switch_hold_seconds": 0.0,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "val_9335bbb4ea23264d",
+          "start": {
+            "x": 5.325,
+            "y": 4.625,
+            "th": -1.5707963267948966
+          },
+          "goal": {
+            "x": 5.89519178803032,
+            "y": 3.7343328317891697,
+            "th": -0.4319074379060078
+          },
+          "is_success": true,
+          "execution_s": 3.1787232383713917,
+          "wall_s": 0.12791961900074966,
+          "decisions": 5,
+          "expanded": 1,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 5.895189933917042,
+              "y": 3.734335728003842,
+              "yaw": -0.4319074379060077,
+              "xy_error_m": 3.4388654342024718e-06,
+              "yaw_error_rad": 5.551115123125783e-17
+            }
+          },
+          "timing": {
+            "duration_s": 3.1787232383713917,
+            "mode_switch_count": 0,
+            "mode_switch_hold_seconds": 0.0,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "val_aa2f1b0dac1bb7b9",
+          "start": {
+            "x": 3.575,
+            "y": 5.425000000000001,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 2.530649848776272,
+            "y": 4.1283909205710945,
+            "th": -1.1729104989102608
+          },
+          "is_success": true,
+          "execution_s": 10.998233168183534,
+          "wall_s": 0.9821022709948011,
+          "decisions": 62,
+          "expanded": 58,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 2.5302793002948656,
+              "y": 4.129029400679762,
+              "yaw": -1.1729104989102608,
+              "xy_error_m": 0.0007382161107948029,
+              "yaw_error_rad": 0.0
+            }
+          },
+          "timing": {
+            "duration_s": 10.998233168183534,
+            "mode_switch_count": 3,
+            "mode_switch_hold_seconds": 0.8999999999999999,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "val_42d4d85f12bbfca3",
+          "start": {
+            "x": 1.975,
+            "y": 3.5250000000000004,
+            "th": 3.141592653589793
+          },
+          "goal": {
+            "x": 1.3814287136174304,
+            "y": 3.366187331145759,
+            "th": 2.9138148758120153
+          },
+          "is_success": true,
+          "execution_s": 4.712139067279301,
+          "wall_s": 0.13336585700744763,
+          "decisions": 5,
+          "expanded": 1,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 1.3814287136174306,
+              "y": 3.3661873311457593,
+              "yaw": 2.9138148758120153,
+              "xy_error_m": 4.965068306494546e-16,
+              "yaw_error_rad": 0.0
+            }
+          },
+          "timing": {
+            "duration_s": 4.712139067279301,
+            "mode_switch_count": 2,
+            "mode_switch_hold_seconds": 0.6,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "val_00dc884363e159cd",
+          "start": {
+            "x": 4.825,
+            "y": 1.225,
+            "th": 3.141592653589793
+          },
+          "goal": {
+            "x": 5.194000000000001,
+            "y": 1.4951267479929156,
+            "th": 3.141592653589793
+          },
+          "is_success": true,
+          "execution_s": 2.4647941918990277,
+          "wall_s": 0.15028993299347349,
+          "decisions": 7,
+          "expanded": 3,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 5.194000000000001,
+              "y": 1.4951267479929156,
+              "yaw": 3.141592653589793,
+              "xy_error_m": 0.0,
+              "yaw_error_rad": 0.0
+            }
+          },
+          "timing": {
+            "duration_s": 2.4647941918990277,
+            "mode_switch_count": 1,
+            "mode_switch_hold_seconds": 0.3,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "val_31f4fc1b2c1e06bb",
+          "start": {
+            "x": 6.325,
+            "y": 1.225,
+            "th": -1.5707963267948966
+          },
+          "goal": {
+            "x": 6.325,
+            "y": 1.0405000000000002,
+            "th": -1.5707963267948966
+          },
+          "is_success": true,
+          "execution_s": 1.769795017272105,
+          "wall_s": 0.13283987398608588,
+          "decisions": 6,
+          "expanded": 2,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 6.325,
+              "y": 1.0405000000000002,
+              "yaw": -1.5707963267948966,
+              "xy_error_m": 0.0,
+              "yaw_error_rad": 0.0
+            }
+          },
+          "timing": {
+            "duration_s": 1.769795017272105,
+            "mode_switch_count": 0,
+            "mode_switch_hold_seconds": 0.0,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "val_5b5d04034591cb32",
+          "start": {
+            "x": 7.025,
+            "y": 3.325,
+            "th": -1.5707963267948966
+          },
+          "goal": {
+            "x": 6.8405000000000005,
+            "y": 3.0054366260035423,
+            "th": -1.5707963267948966
+          },
+          "is_success": true,
+          "execution_s": 2.28027775486131,
+          "wall_s": 0.17954196699429303,
+          "decisions": 7,
+          "expanded": 3,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 6.8405000000000005,
+              "y": 3.0054366260035428,
+              "yaw": -1.5707963267948966,
+              "xy_error_m": 4.440892098500626e-16,
+              "yaw_error_rad": 0.0
+            }
+          },
+          "timing": {
+            "duration_s": 2.28027775486131,
+            "mode_switch_count": 1,
+            "mode_switch_hold_seconds": 0.3,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "val_351bdae6a070ef17",
+          "start": {
+            "x": 1.3250000000000002,
+            "y": 4.9750000000000005,
+            "th": 3.141592653589793
+          },
+          "goal": {
+            "x": 2.5242500000000003,
+            "y": 5.4543450609946875,
+            "th": 3.141592653589793
+          },
+          "is_success": true,
+          "execution_s": 3.707517766220198,
+          "wall_s": 1.2152956840000115,
+          "decisions": 125,
+          "expanded": 121,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 2.5242500000000057,
+              "y": 5.454345060994686,
+              "yaw": 3.141592653589793,
+              "xy_error_m": 5.617333549722722e-15,
+              "yaw_error_rad": 0.0
+            }
+          },
+          "timing": {
+            "duration_s": 3.707517766220198,
+            "mode_switch_count": 1,
+            "mode_switch_hold_seconds": 0.3,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "val_ee0094265a3e67de",
+          "start": {
+            "x": 5.875,
+            "y": 1.8250000000000002,
+            "th": 1.5707963267948966
+          },
+          "goal": {
+            "x": 5.875,
+            "y": 2.0095,
+            "th": 1.5707963267948966
+          },
+          "is_success": true,
+          "execution_s": 1.769795017272105,
+          "wall_s": 0.13006628799485043,
+          "decisions": 7,
+          "expanded": 3,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 5.875,
+              "y": 2.0095,
+              "yaw": 1.5707963267948966,
+              "xy_error_m": 0.0,
+              "yaw_error_rad": 0.0
+            }
+          },
+          "timing": {
+            "duration_s": 1.769795017272105,
+            "mode_switch_count": 0,
+            "mode_switch_hold_seconds": 0.0,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "val_80d49bd0d6eec674",
+          "start": {
+            "x": 2.5250000000000004,
+            "y": 4.625,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 2.8900161701281135,
+            "y": 4.530636680985447,
+            "th": 0.9333086623077087
+          },
+          "is_success": true,
+          "execution_s": 5.2505367973262285,
+          "wall_s": 0.3621899500139989,
+          "decisions": 22,
+          "expanded": 18,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 2.890016170128113,
+              "y": 4.530636680985447,
+              "yaw": 0.9333086623077087,
+              "xy_error_m": 4.440892098500626e-16,
+              "yaw_error_rad": 0.0
+            }
+          },
+          "timing": {
+            "duration_s": 5.2505367973262285,
+            "mode_switch_count": 2,
+            "mode_switch_hold_seconds": 0.6,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "val_f05500db59acddc8",
+          "start": {
+            "x": 3.575,
+            "y": 5.4750000000000005,
+            "th": -1.5707963267948966
+          },
+          "goal": {
+            "x": 3.595921808173016,
+            "y": 5.292091259959898,
+            "th": -1.3430185490171187
+          },
+          "is_success": true,
+          "execution_s": 1.7697950172721073,
+          "wall_s": 0.13255847201799043,
+          "decisions": 5,
+          "expanded": 1,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 3.595921808173016,
+              "y": 5.292091259959898,
+              "yaw": -1.3430185490171187,
+              "xy_error_m": 0.0,
+              "yaw_error_rad": 0.0
+            }
+          },
+          "timing": {
+            "duration_s": 1.7697950172721073,
+            "mode_switch_count": 0,
+            "mode_switch_hold_seconds": 0.0,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "val_34c2b2646e39a83f",
+          "start": {
+            "x": 5.125,
+            "y": 4.175,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 6.450206246542977,
+            "y": 3.9743437147997263,
+            "th": 0.22777777777777777
+          },
+          "is_success": true,
+          "execution_s": 3.697211922814038,
+          "wall_s": 0.12328074499964714,
+          "decisions": 5,
+          "expanded": 1,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 6.450430554621005,
+              "y": 3.9753816606849033,
+              "yaw": 0.22777777777777783,
+              "xy_error_m": 0.0010619066693568831,
+              "yaw_error_rad": 5.551115123125783e-17
+            }
+          },
+          "timing": {
+            "duration_s": 3.697211922814038,
+            "mode_switch_count": 0,
+            "mode_switch_hold_seconds": 0.0,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "val_f61d3530c041433c",
+          "start": {
+            "x": 5.625,
+            "y": 2.975,
+            "th": 1.5707963267948966
+          },
+          "goal": {
+            "x": 5.625,
+            "y": 3.1595,
+            "th": 1.5707963267948966
+          },
+          "is_success": true,
+          "execution_s": 1.769795017272105,
+          "wall_s": 0.1282093150075525,
+          "decisions": 6,
+          "expanded": 2,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 5.625,
+              "y": 3.1595,
+              "yaw": 1.5707963267948966,
+              "xy_error_m": 0.0,
+              "yaw_error_rad": 0.0
+            }
+          },
+          "timing": {
+            "duration_s": 1.769795017272105,
+            "mode_switch_count": 0,
+            "mode_switch_hold_seconds": 0.0,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "val_1d95b075d6599186",
+          "start": {
+            "x": 7.4750000000000005,
+            "y": 3.9250000000000003,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 7.11863136330816,
+            "y": 3.8423935625109693,
+            "th": 0.45555555555555555
+          },
+          "is_success": true,
+          "execution_s": 1.9802777548613086,
+          "wall_s": 0.12409643499995582,
+          "decisions": 5,
+          "expanded": 1,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 7.11863136330816,
+              "y": 3.8423935625109693,
+              "yaw": 0.45555555555555555,
+              "xy_error_m": 0.0,
+              "yaw_error_rad": 0.0
+            }
+          },
+          "timing": {
+            "duration_s": 1.9802777548613086,
+            "mode_switch_count": 0,
+            "mode_switch_hold_seconds": 0.0,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "val_28737565c0be3162",
+          "start": {
+            "x": 3.475,
+            "y": 6.825,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 3.7387281707361555,
+            "y": 4.779019930201592,
+            "th": -2.5055555555555555
+          },
+          "is_success": true,
+          "execution_s": 4.743186376940895,
+          "wall_s": 0.17436405099579133,
+          "decisions": 6,
+          "expanded": 2,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 3.739131979982595,
+              "y": 4.778944526015097,
+              "yaw": -2.5055555555555555,
+              "xy_error_m": 0.0004107891172499939,
+              "yaw_error_rad": 0.0
+            }
+          },
+          "timing": {
+            "duration_s": 4.743186376940895,
+            "mode_switch_count": 0,
+            "mode_switch_hold_seconds": 0.0,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "val_c2a0863c2f43d516",
+          "start": {
+            "x": 4.525,
+            "y": 5.9750000000000005,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 5.164126747992916,
+            "y": 5.606000000000001,
+            "th": 0.0
+          },
+          "is_success": true,
+          "execution_s": 2.957258294439757,
+          "wall_s": 0.12111625599209219,
+          "decisions": 7,
+          "expanded": 3,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 5.164126747992917,
+              "y": 5.606000000000001,
+              "yaw": 0.0,
+              "xy_error_m": 8.881784197001252e-16,
+              "yaw_error_rad": 0.0
+            }
+          },
+          "timing": {
+            "duration_s": 2.957258294439757,
+            "mode_switch_count": 1,
+            "mode_switch_hold_seconds": 0.3,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "val_55f84d6eb56d4c47",
+          "start": {
+            "x": 2.1750000000000003,
+            "y": 4.4750000000000005,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 2.540817480080204,
+            "y": 4.4331563836539685,
+            "th": -0.22777777777777775
+          },
+          "is_success": true,
+          "execution_s": 1.9793989450587288,
+          "wall_s": 0.08728354002232663,
+          "decisions": 4,
+          "expanded": 0,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 2.540817050209723,
+              "y": 4.433156432824214,
+              "yaw": -0.22777777777777772,
+              "xy_error_m": 4.326734836841144e-07,
+              "yaw_error_rad": 2.7755575615628914e-17
+            }
+          },
+          "timing": {
+            "duration_s": 1.9793989450587288,
+            "mode_switch_count": 0,
+            "mode_switch_hold_seconds": 0.0,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "val_20edd524eba792b4",
+          "start": {
+            "x": 5.925000000000001,
+            "y": 3.975,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 6.693681048574091,
+            "y": 3.5297137288937845,
+            "th": -0.6833333333333333
+          },
+          "is_success": true,
+          "execution_s": 3.0074620189710703,
+          "wall_s": 0.16187461599474773,
+          "decisions": 5,
+          "expanded": 1,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 6.694012979478578,
+              "y": 3.52997993516898,
+              "yaw": -0.6833333333333337,
+              "xy_error_m": 0.00042549254553628056,
+              "yaw_error_rad": 3.3306690738754696e-16
+            }
+          },
+          "timing": {
+            "duration_s": 3.0074620189710703,
+            "mode_switch_count": 0,
+            "mode_switch_hold_seconds": 0.0,
+            "same_mode_hold_seconds": 0.0
+          }
+        }
+      ]
+    },
+    "rule_maps_5s": {
+      "path": "/home/wq/whut_thesis/expv3_experiment_archive/rl/evaluation/20261026-rule-frontier-maps-final",
+      "evaluation_sha256": "15b0a529ac8f8da8388243500a6244d964f0fe443b0acf50c7e04d91d4fe7d20",
+      "manifest_sha256": "af1f823abadec39b67356e6019263c78f53191013358dacac53e96a15f842ca7",
+      "manifest": {
+        "identity": {
+          "schema": "rule_frontier_mode_path_v1",
+          "contract": "e20964349a7987628a4e64c0f351070e7c5d9863356faa22065cd4386369c397",
+          "sources": {
+            "rl/src/coptrans_rl/rule_candidates.py": "f4087103083e897cccd49ab51d67b6c8ca39786ae1518bf8b442b16d0107b4a5",
+            "rl/src/coptrans_rl/rule_frontend.py": "4f61ee3164fb6609182572c042b1af301152dce8552f7585b5d2717295478ed0",
+            "rl/src/coptrans_rl/rule_learning.py": "29f2bdf8010682b0ecb67392dad6627546eb2bae972580a0273a3d5e8ea22d09",
+            "rl/src/coptrans_rl/local_connections.py": "f1cd6b01b8bf69725e18140cd606cd1ce5e3b2602b9a2e4d609d9c44212c7709",
+            "rl/native/local_connections.cpp": "43622f2ca0d13c15e1e8bdf8b642ed29133259187182857fd840c6a90bcfec45",
+            "catkin_ws/src/fwis_common/include/fwis_common/reeds_shepp.hpp": "904645d5358df1ccb8ed7d5a135e1aa371003f98cda7ea8aea2509f0850402f4"
+          },
+          "features": 27,
+          "direction_policy": {
+            "allow_reverse": true,
+            "allow_shunting": false,
+            "initial_mode": 0,
+            "xy_tol": 0.02,
+            "yaw_tol": 0.017453292519943295
+          }
+        },
+        "config": {
+          "capacity": 64,
+          "max_decisions": 128,
+          "max_finalizations": 4,
+          "budget_s": 5.0,
+          "finalize_reserve_s": 1.0,
+          "max_execution_s": 300.0
+        },
+        "arguments": {
+          "stage": "evaluate",
+          "dataset": "/home/wq/whut_thesis/expv3_experiment_archive/rl/datasets/curriculum-v1-20261026",
+          "output": "/home/wq/whut_thesis/expv3_experiment_archive/rl/evaluation/20261026-rule-frontier-maps-final",
+          "model": null,
+          "device": "cpu",
+          "split": "val",
+          "episodes": 20,
+          "maps": true,
+          "steps": 512,
+          "rollout_steps": 128,
+          "ppo_epochs": 4,
+          "learning_rate": 5e-05,
+          "eval_episodes": 8,
+          "seed": 7,
+          "budget": 5.0,
+          "decisions": 128
+        },
+        "dataset_sha256": "0c992e62dac20192eb82df77a7cf4e8f62170518e16a6d68cf6bec06fb143047",
+        "commit": "db12fa31c220df0bfcc1dd513c3e7b3d22ef27a6",
+        "working_tree_dirty": false
+      },
+      "summary": {
+        "tasks": 11,
+        "successes": 3,
+        "success_rate": 0.2727272727272727,
+        "mean_execution_s": 10.173199259053899,
+        "mean_wall_s": 2.278648624823704
+      },
+      "tasks": [
+        {
+          "task_id": "map01-p11-narrow-case-a",
+          "start": {
+            "x": 6.75203775,
+            "y": 6.4025875,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 8.81018775,
+            "y": 5.0365375,
+            "th": 0.0
+          },
+          "is_success": true,
+          "execution_s": 7.0505150192420905,
+          "wall_s": 1.0287058700050693,
+          "decisions": 22,
+          "expanded": 18,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 8.813534443981622,
+              "y": 5.038696675166193,
+              "yaw": -5.551115123125783e-17,
+              "xy_error_m": 0.00398276260966244,
+              "yaw_error_rad": 5.551115123125783e-17
+            }
+          },
+          "timing": {
+            "duration_s": 7.0505150192420905,
+            "mode_switch_count": 1,
+            "mode_switch_hold_seconds": 0.3,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "map02-p11-goal-side-aisle",
+          "start": {
+            "x": 3.8521,
+            "y": 4.8591,
+            "th": -1.570796
+          },
+          "goal": {
+            "x": 5.2116,
+            "y": 4.9632,
+            "th": 1.570796
+          },
+          "is_success": false,
+          "execution_s": null,
+          "wall_s": 1.9006104660220444,
+          "decisions": 128,
+          "expanded": 128,
+          "finalizations": 0,
+          "reason": "decision_budget",
+          "stop_reason": "decision_budget"
+        },
+        {
+          "task_id": "map03-p11-narrow-case-c",
+          "start": {
+            "x": 5.74540665,
+            "y": 3.2838941,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 7.44255665,
+            "y": 3.5754161,
+            "th": 0.0
+          },
+          "is_success": true,
+          "execution_s": 4.1840754525157715,
+          "wall_s": 0.2830193919944577,
+          "decisions": 7,
+          "expanded": 3,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 7.4425566499999904,
+              "y": 3.5754160999999995,
+              "yaw": 0.0,
+              "xy_error_m": 9.780050345373876e-15,
+              "yaw_error_rad": 0.0
+            }
+          },
+          "timing": {
+            "duration_s": 4.1840754525157715,
+            "mode_switch_count": 1,
+            "mode_switch_hold_seconds": 0.3,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "map04-p12-maze-env1",
+          "start": {
+            "x": 7.7120999999999995,
+            "y": 13.359372,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 11.589658,
+            "y": 12.012357999999999,
+            "th": 0.0
+          },
+          "is_success": false,
+          "execution_s": null,
+          "wall_s": 3.754213444015477,
+          "decisions": 128,
+          "expanded": 127,
+          "finalizations": 0,
+          "reason": "decision_budget",
+          "stop_reason": "decision_budget"
+        },
+        {
+          "task_id": "map05-p12-parking-row-env2",
+          "start": {
+            "x": 3.97111245,
+            "y": 6.2370043,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 6.32378935,
+            "y": 4.57629105,
+            "th": 1.570796
+          },
+          "is_success": false,
+          "execution_s": null,
+          "wall_s": 1.8740557880082633,
+          "decisions": 128,
+          "expanded": 128,
+          "finalizations": 0,
+          "reason": "decision_budget",
+          "stop_reason": "decision_budget"
+        },
+        {
+          "task_id": "map06-p12-bent-corridor-env3",
+          "start": {
+            "x": 1.8639000000000001,
+            "y": 2.5068,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 6.9328,
+            "y": 2.5339,
+            "th": 3.141593
+          },
+          "is_success": false,
+          "execution_s": null,
+          "wall_s": 2.7127187459846027,
+          "decisions": 128,
+          "expanded": 118,
+          "finalizations": 0,
+          "reason": "decision_budget",
+          "stop_reason": "decision_budget"
+        },
+        {
+          "task_id": "map07-p12-obstacle-field-env4",
+          "start": {
+            "x": 6.2692729,
+            "y": 2.9559645999999997,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 10.6173825,
+            "y": 5.7511846,
+            "th": 0.0
+          },
+          "is_success": false,
+          "execution_s": null,
+          "wall_s": 4.002492274012184,
+          "decisions": 87,
+          "expanded": 83,
+          "finalizations": 0,
+          "reason": "deadline",
+          "stop_reason": "deadline"
+        },
+        {
+          "task_id": "map08-p16-complex-parking",
+          "start": {
+            "x": 12.5063646,
+            "y": 16.374111000000003,
+            "th": -0.652599
+          },
+          "goal": {
+            "x": 17.540467800000002,
+            "y": 12.5264742,
+            "th": -0.652599
+          },
+          "is_success": false,
+          "execution_s": null,
+          "wall_s": 2.362749599007657,
+          "decisions": 128,
+          "expanded": 128,
+          "finalizations": 0,
+          "reason": "decision_budget",
+          "stop_reason": "decision_budget"
+        },
+        {
+          "task_id": "map09-p16-narrow-maze",
+          "start": {
+            "x": 11.848235,
+            "y": 16.794715,
+            "th": 3.141593
+          },
+          "goal": {
+            "x": 17.573625,
+            "y": 12.305945,
+            "th": 0.0
+          },
+          "is_success": false,
+          "execution_s": null,
+          "wall_s": 4.0017271079996135,
+          "decisions": 101,
+          "expanded": 100,
+          "finalizations": 0,
+          "reason": "deadline",
+          "stop_reason": "deadline"
+        },
+        {
+          "task_id": "map15-n06-two-stage-offset-passage",
+          "start": {
+            "x": 2.0,
+            "y": 2.96,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 9.959999999999999,
+            "y": 6.279999999999999,
+            "th": 1.5708
+          },
+          "is_success": true,
+          "execution_s": 19.285007305403834,
+          "wall_s": 1.4191581979976036,
+          "decisions": 34,
+          "expanded": 30,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 9.962486652565104,
+              "y": 6.281461042065082,
+              "yaw": 1.5707999999999995,
+              "xy_error_m": 0.002884109029750152,
+              "yaw_error_rad": 4.440892098500626e-16
+            }
+          },
+          "timing": {
+            "duration_s": 19.285007305403834,
+            "mode_switch_count": 4,
+            "mode_switch_hold_seconds": 1.2,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "map16-s09-underground-garage",
+          "start": {
+            "x": 13.2,
+            "y": 2.25,
+            "th": 3.14159
+          },
+          "goal": {
+            "x": 5.86,
+            "y": 0.5499999999999998,
+            "th": 1.5708
+          },
+          "is_success": false,
+          "execution_s": null,
+          "wall_s": 1.7256839880137704,
+          "decisions": 128,
+          "expanded": 128,
+          "finalizations": 0,
+          "reason": "decision_budget",
+          "stop_reason": "decision_budget"
+        }
+      ]
+    },
+    "rule_maps_10s": {
+      "path": "/home/wq/whut_thesis/expv3_experiment_archive/rl/evaluation/20261026-rule-frontier-maps-10s",
+      "evaluation_sha256": "d4a6ec194263480ae8cc70ef560cb2af58c2fc1173d2a373a028511daaa7a75f",
+      "manifest_sha256": "930d88910cc7529cc242751de05b62d1639c81305f3fb782b360ceec5c2e34f9",
+      "manifest": {
+        "identity": {
+          "schema": "rule_frontier_mode_path_v1",
+          "contract": "e20964349a7987628a4e64c0f351070e7c5d9863356faa22065cd4386369c397",
+          "sources": {
+            "rl/src/coptrans_rl/rule_candidates.py": "f4087103083e897cccd49ab51d67b6c8ca39786ae1518bf8b442b16d0107b4a5",
+            "rl/src/coptrans_rl/rule_frontend.py": "4f61ee3164fb6609182572c042b1af301152dce8552f7585b5d2717295478ed0",
+            "rl/src/coptrans_rl/rule_learning.py": "29f2bdf8010682b0ecb67392dad6627546eb2bae972580a0273a3d5e8ea22d09",
+            "rl/src/coptrans_rl/local_connections.py": "f1cd6b01b8bf69725e18140cd606cd1ce5e3b2602b9a2e4d609d9c44212c7709",
+            "rl/native/local_connections.cpp": "43622f2ca0d13c15e1e8bdf8b642ed29133259187182857fd840c6a90bcfec45",
+            "catkin_ws/src/fwis_common/include/fwis_common/reeds_shepp.hpp": "904645d5358df1ccb8ed7d5a135e1aa371003f98cda7ea8aea2509f0850402f4"
+          },
+          "features": 27,
+          "direction_policy": {
+            "allow_reverse": true,
+            "allow_shunting": false,
+            "initial_mode": 0,
+            "xy_tol": 0.02,
+            "yaw_tol": 0.017453292519943295
+          }
+        },
+        "config": {
+          "capacity": 64,
+          "max_decisions": 512,
+          "max_finalizations": 4,
+          "budget_s": 10.0,
+          "finalize_reserve_s": 1.0,
+          "max_execution_s": 300.0
+        },
+        "arguments": {
+          "stage": "evaluate",
+          "dataset": "/home/wq/whut_thesis/expv3_experiment_archive/rl/datasets/curriculum-v1-20261026",
+          "output": "/home/wq/whut_thesis/expv3_experiment_archive/rl/evaluation/20261026-rule-frontier-maps-10s",
+          "model": null,
+          "device": "cpu",
+          "split": "val",
+          "episodes": 20,
+          "maps": true,
+          "steps": 512,
+          "rollout_steps": 128,
+          "ppo_epochs": 4,
+          "learning_rate": 5e-05,
+          "eval_episodes": 8,
+          "seed": 7,
+          "budget": 10.0,
+          "decisions": 512
+        },
+        "dataset_sha256": "0c992e62dac20192eb82df77a7cf4e8f62170518e16a6d68cf6bec06fb143047",
+        "commit": "db12fa31c220df0bfcc1dd513c3e7b3d22ef27a6",
+        "working_tree_dirty": true
+      },
+      "summary": {
+        "tasks": 11,
+        "successes": 3,
+        "success_rate": 0.2727272727272727,
+        "mean_execution_s": 10.173199259053899,
+        "mean_wall_s": 6.22303425263751
+      },
+      "tasks": [
+        {
+          "task_id": "map01-p11-narrow-case-a",
+          "start": {
+            "x": 6.75203775,
+            "y": 6.4025875,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 8.81018775,
+            "y": 5.0365375,
+            "th": 0.0
+          },
+          "is_success": true,
+          "execution_s": 7.0505150192420905,
+          "wall_s": 0.9555173400149215,
+          "decisions": 22,
+          "expanded": 18,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 8.813534443981622,
+              "y": 5.038696675166193,
+              "yaw": -5.551115123125783e-17,
+              "xy_error_m": 0.00398276260966244,
+              "yaw_error_rad": 5.551115123125783e-17
+            }
+          },
+          "timing": {
+            "duration_s": 7.0505150192420905,
+            "mode_switch_count": 1,
+            "mode_switch_hold_seconds": 0.3,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "map02-p11-goal-side-aisle",
+          "start": {
+            "x": 3.8521,
+            "y": 4.8591,
+            "th": -1.570796
+          },
+          "goal": {
+            "x": 5.2116,
+            "y": 4.9632,
+            "th": 1.570796
+          },
+          "is_success": false,
+          "execution_s": null,
+          "wall_s": 9.001433269004337,
+          "decisions": 455,
+          "expanded": 455,
+          "finalizations": 0,
+          "reason": "deadline",
+          "stop_reason": "deadline"
+        },
+        {
+          "task_id": "map03-p11-narrow-case-c",
+          "start": {
+            "x": 5.74540665,
+            "y": 3.2838941,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 7.44255665,
+            "y": 3.5754161,
+            "th": 0.0
+          },
+          "is_success": true,
+          "execution_s": 4.1840754525157715,
+          "wall_s": 0.28325027899700217,
+          "decisions": 7,
+          "expanded": 3,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 7.4425566499999904,
+              "y": 3.5754160999999995,
+              "yaw": 0.0,
+              "xy_error_m": 9.780050345373876e-15,
+              "yaw_error_rad": 0.0
+            }
+          },
+          "timing": {
+            "duration_s": 4.1840754525157715,
+            "mode_switch_count": 1,
+            "mode_switch_hold_seconds": 0.3,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "map04-p12-maze-env1",
+          "start": {
+            "x": 7.7120999999999995,
+            "y": 13.359372,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 11.589658,
+            "y": 12.012357999999999,
+            "th": 0.0
+          },
+          "is_success": false,
+          "execution_s": null,
+          "wall_s": 8.17734738800209,
+          "decisions": 512,
+          "expanded": 507,
+          "finalizations": 0,
+          "reason": "decision_budget",
+          "stop_reason": "decision_budget"
+        },
+        {
+          "task_id": "map05-p12-parking-row-env2",
+          "start": {
+            "x": 3.97111245,
+            "y": 6.2370043,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 6.32378935,
+            "y": 4.57629105,
+            "th": 1.570796
+          },
+          "is_success": false,
+          "execution_s": null,
+          "wall_s": 7.72374676601612,
+          "decisions": 512,
+          "expanded": 509,
+          "finalizations": 0,
+          "reason": "decision_budget",
+          "stop_reason": "decision_budget"
+        },
+        {
+          "task_id": "map06-p12-bent-corridor-env3",
+          "start": {
+            "x": 1.8639000000000001,
+            "y": 2.5068,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 6.9328,
+            "y": 2.5339,
+            "th": 3.141593
+          },
+          "is_success": false,
+          "execution_s": null,
+          "wall_s": 7.961855300993193,
+          "decisions": 512,
+          "expanded": 462,
+          "finalizations": 0,
+          "reason": "decision_budget",
+          "stop_reason": "decision_budget"
+        },
+        {
+          "task_id": "map07-p12-obstacle-field-env4",
+          "start": {
+            "x": 6.2692729,
+            "y": 2.9559645999999997,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 10.6173825,
+            "y": 5.7511846,
+            "th": 0.0
+          },
+          "is_success": false,
+          "execution_s": null,
+          "wall_s": 9.004635245015379,
+          "decisions": 210,
+          "expanded": 206,
+          "finalizations": 0,
+          "reason": "deadline",
+          "stop_reason": "deadline"
+        },
+        {
+          "task_id": "map08-p16-complex-parking",
+          "start": {
+            "x": 12.5063646,
+            "y": 16.374111000000003,
+            "th": -0.652599
+          },
+          "goal": {
+            "x": 17.540467800000002,
+            "y": 12.5264742,
+            "th": -0.652599
+          },
+          "is_success": false,
+          "execution_s": null,
+          "wall_s": 8.641063003975432,
+          "decisions": 512,
+          "expanded": 476,
+          "finalizations": 0,
+          "reason": "decision_budget",
+          "stop_reason": "decision_budget"
+        },
+        {
+          "task_id": "map09-p16-narrow-maze",
+          "start": {
+            "x": 11.848235,
+            "y": 16.794715,
+            "th": 3.141593
+          },
+          "goal": {
+            "x": 17.573625,
+            "y": 12.305945,
+            "th": 0.0
+          },
+          "is_success": false,
+          "execution_s": null,
+          "wall_s": 9.001840156997787,
+          "decisions": 232,
+          "expanded": 220,
+          "finalizations": 0,
+          "reason": "deadline",
+          "stop_reason": "deadline"
+        },
+        {
+          "task_id": "map15-n06-two-stage-offset-passage",
+          "start": {
+            "x": 2.0,
+            "y": 2.96,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 9.959999999999999,
+            "y": 6.279999999999999,
+            "th": 1.5708
+          },
+          "is_success": true,
+          "execution_s": 19.285007305403834,
+          "wall_s": 1.291939263988752,
+          "decisions": 34,
+          "expanded": 30,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 9.962486652565104,
+              "y": 6.281461042065082,
+              "yaw": 1.5707999999999995,
+              "xy_error_m": 0.002884109029750152,
+              "yaw_error_rad": 4.440892098500626e-16
+            }
+          },
+          "timing": {
+            "duration_s": 19.285007305403834,
+            "mode_switch_count": 4,
+            "mode_switch_hold_seconds": 1.2,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "map16-s09-underground-garage",
+          "start": {
+            "x": 13.2,
+            "y": 2.25,
+            "th": 3.14159
+          },
+          "goal": {
+            "x": 5.86,
+            "y": 0.5499999999999998,
+            "th": 1.5708
+          },
+          "is_success": false,
+          "execution_s": null,
+          "wall_s": 6.4107487660076,
+          "decisions": 512,
+          "expanded": 512,
+          "finalizations": 0,
+          "reason": "decision_budget",
+          "stop_reason": "decision_budget"
+        }
+      ]
+    },
+    "trained_maps_10s": {
+      "path": "/home/wq/whut_thesis/expv3_experiment_archive/rl/evaluation/20261026-rule-frontier-rl-maps-pilot",
+      "evaluation_sha256": "afe37a8ff49f25a6918bcc2cc6748c89ea077ad2e8fb325ed6bb38b3beb21c98",
+      "manifest_sha256": "6ad7d04937c8c63810e29e3db708c63b8846496d891d1adace1a5a05a1fa9cef",
+      "manifest": {
+        "identity": {
+          "schema": "rule_frontier_mode_path_v1",
+          "contract": "e20964349a7987628a4e64c0f351070e7c5d9863356faa22065cd4386369c397",
+          "sources": {
+            "rl/src/coptrans_rl/rule_candidates.py": "f4087103083e897cccd49ab51d67b6c8ca39786ae1518bf8b442b16d0107b4a5",
+            "rl/src/coptrans_rl/rule_frontend.py": "4f61ee3164fb6609182572c042b1af301152dce8552f7585b5d2717295478ed0",
+            "rl/src/coptrans_rl/rule_learning.py": "29f2bdf8010682b0ecb67392dad6627546eb2bae972580a0273a3d5e8ea22d09",
+            "rl/src/coptrans_rl/local_connections.py": "f1cd6b01b8bf69725e18140cd606cd1ce5e3b2602b9a2e4d609d9c44212c7709",
+            "rl/native/local_connections.cpp": "43622f2ca0d13c15e1e8bdf8b642ed29133259187182857fd840c6a90bcfec45",
+            "catkin_ws/src/fwis_common/include/fwis_common/reeds_shepp.hpp": "904645d5358df1ccb8ed7d5a135e1aa371003f98cda7ea8aea2509f0850402f4"
+          },
+          "features": 27,
+          "direction_policy": {
+            "allow_reverse": true,
+            "allow_shunting": false,
+            "initial_mode": 0,
+            "xy_tol": 0.02,
+            "yaw_tol": 0.017453292519943295
+          }
+        },
+        "config": {
+          "capacity": 64,
+          "max_decisions": 512,
+          "max_finalizations": 4,
+          "budget_s": 10.0,
+          "finalize_reserve_s": 1.0,
+          "max_execution_s": 300.0
+        },
+        "arguments": {
+          "stage": "evaluate",
+          "dataset": "/home/wq/whut_thesis/expv3_experiment_archive/rl/datasets/curriculum-v1-20261026",
+          "output": "/home/wq/whut_thesis/expv3_experiment_archive/rl/evaluation/20261026-rule-frontier-rl-maps-pilot",
+          "model": "/home/wq/whut_thesis/expv3_experiment_archive/rl/training/rule-frontier-ppo-seed7-pilot/latest.pt",
+          "device": "cuda",
+          "split": "val",
+          "episodes": 20,
+          "maps": true,
+          "steps": 512,
+          "rollout_steps": 128,
+          "ppo_epochs": 4,
+          "learning_rate": 5e-05,
+          "eval_episodes": 8,
+          "seed": 7,
+          "budget": 10.0,
+          "decisions": 512
+        },
+        "dataset_sha256": "0c992e62dac20192eb82df77a7cf4e8f62170518e16a6d68cf6bec06fb143047",
+        "commit": "db12fa31c220df0bfcc1dd513c3e7b3d22ef27a6",
+        "working_tree_dirty": true
+      },
+      "summary": {
+        "tasks": 11,
+        "successes": 3,
+        "success_rate": 0.2727272727272727,
+        "mean_execution_s": 10.446220589852436,
+        "mean_wall_s": 6.530610895821486
+      },
+      "tasks": [
+        {
+          "task_id": "map01-p11-narrow-case-a",
+          "start": {
+            "x": 6.75203775,
+            "y": 6.4025875,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 8.81018775,
+            "y": 5.0365375,
+            "th": 0.0
+          },
+          "is_success": true,
+          "execution_s": 7.0505150192420905,
+          "wall_s": 1.3346933730063029,
+          "decisions": 20,
+          "expanded": 16,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 8.813534443981622,
+              "y": 5.038696675166193,
+              "yaw": -5.551115123125783e-17,
+              "xy_error_m": 0.00398276260966244,
+              "yaw_error_rad": 5.551115123125783e-17
+            }
+          },
+          "timing": {
+            "duration_s": 7.0505150192420905,
+            "mode_switch_count": 1,
+            "mode_switch_hold_seconds": 0.3,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "map02-p11-goal-side-aisle",
+          "start": {
+            "x": 3.8521,
+            "y": 4.8591,
+            "th": -1.570796
+          },
+          "goal": {
+            "x": 5.2116,
+            "y": 4.9632,
+            "th": 1.570796
+          },
+          "is_success": false,
+          "execution_s": null,
+          "wall_s": 9.001666883006692,
+          "decisions": 326,
+          "expanded": 326,
+          "finalizations": 0,
+          "reason": "deadline",
+          "stop_reason": "deadline"
+        },
+        {
+          "task_id": "map03-p11-narrow-case-c",
+          "start": {
+            "x": 5.74540665,
+            "y": 3.2838941,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 7.44255665,
+            "y": 3.5754161,
+            "th": 0.0
+          },
+          "is_success": true,
+          "execution_s": 4.1840754525157715,
+          "wall_s": 0.2953983739716932,
+          "decisions": 7,
+          "expanded": 3,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 7.4425566499999904,
+              "y": 3.5754160999999995,
+              "yaw": 0.0,
+              "xy_error_m": 9.780050345373876e-15,
+              "yaw_error_rad": 0.0
+            }
+          },
+          "timing": {
+            "duration_s": 4.1840754525157715,
+            "mode_switch_count": 1,
+            "mode_switch_hold_seconds": 0.3,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "map04-p12-maze-env1",
+          "start": {
+            "x": 7.7120999999999995,
+            "y": 13.359372,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 11.589658,
+            "y": 12.012357999999999,
+            "th": 0.0
+          },
+          "is_success": false,
+          "execution_s": null,
+          "wall_s": 8.662575371999992,
+          "decisions": 512,
+          "expanded": 507,
+          "finalizations": 0,
+          "reason": "decision_budget",
+          "stop_reason": "decision_budget"
+        },
+        {
+          "task_id": "map05-p12-parking-row-env2",
+          "start": {
+            "x": 3.97111245,
+            "y": 6.2370043,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 6.32378935,
+            "y": 4.57629105,
+            "th": 1.570796
+          },
+          "is_success": false,
+          "execution_s": null,
+          "wall_s": 8.532026604021667,
+          "decisions": 512,
+          "expanded": 507,
+          "finalizations": 0,
+          "reason": "decision_budget",
+          "stop_reason": "decision_budget"
+        },
+        {
+          "task_id": "map06-p12-bent-corridor-env3",
+          "start": {
+            "x": 1.8639000000000001,
+            "y": 2.5068,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 6.9328,
+            "y": 2.5339,
+            "th": 3.141593
+          },
+          "is_success": false,
+          "execution_s": null,
+          "wall_s": 8.35871671201312,
+          "decisions": 512,
+          "expanded": 499,
+          "finalizations": 0,
+          "reason": "decision_budget",
+          "stop_reason": "decision_budget"
+        },
+        {
+          "task_id": "map07-p12-obstacle-field-env4",
+          "start": {
+            "x": 6.2692729,
+            "y": 2.9559645999999997,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 10.6173825,
+            "y": 5.7511846,
+            "th": 0.0
+          },
+          "is_success": false,
+          "execution_s": null,
+          "wall_s": 9.004728430008981,
+          "decisions": 216,
+          "expanded": 212,
+          "finalizations": 0,
+          "reason": "deadline",
+          "stop_reason": "deadline"
+        },
+        {
+          "task_id": "map08-p16-complex-parking",
+          "start": {
+            "x": 12.5063646,
+            "y": 16.374111000000003,
+            "th": -0.652599
+          },
+          "goal": {
+            "x": 17.540467800000002,
+            "y": 12.5264742,
+            "th": -0.652599
+          },
+          "is_success": false,
+          "execution_s": null,
+          "wall_s": 9.001620210008696,
+          "decisions": 504,
+          "expanded": 466,
+          "finalizations": 0,
+          "reason": "deadline",
+          "stop_reason": "deadline"
+        },
+        {
+          "task_id": "map09-p16-narrow-maze",
+          "start": {
+            "x": 11.848235,
+            "y": 16.794715,
+            "th": 3.141593
+          },
+          "goal": {
+            "x": 17.573625,
+            "y": 12.305945,
+            "th": 0.0
+          },
+          "is_success": false,
+          "execution_s": null,
+          "wall_s": 9.001673828985076,
+          "decisions": 229,
+          "expanded": 217,
+          "finalizations": 0,
+          "reason": "deadline",
+          "stop_reason": "deadline"
+        },
+        {
+          "task_id": "map15-n06-two-stage-offset-passage",
+          "start": {
+            "x": 2.0,
+            "y": 2.96,
+            "th": 0.0
+          },
+          "goal": {
+            "x": 9.959999999999999,
+            "y": 6.279999999999999,
+            "th": 1.5708
+          },
+          "is_success": true,
+          "execution_s": 20.104071297799447,
+          "wall_s": 1.4473151040147059,
+          "decisions": 34,
+          "expanded": 30,
+          "finalizations": 4,
+          "reason": "certified",
+          "stop_reason": "finalization_limit",
+          "audit": {
+            "geometry_status": "PASS",
+            "dynamic_status": "PASS",
+            "timing_status": "PASS",
+            "terminal": {
+              "x": 9.96207078957597,
+              "y": 6.281550664739762,
+              "yaw": 1.5708000000000004,
+              "xy_error_m": 0.002587031233497579,
+              "yaw_error_rad": 4.440892098500626e-16
+            }
+          },
+          "timing": {
+            "duration_s": 20.104071297799447,
+            "mode_switch_count": 4,
+            "mode_switch_hold_seconds": 1.2,
+            "same_mode_hold_seconds": 0.0
+          }
+        },
+        {
+          "task_id": "map16-s09-underground-garage",
+          "start": {
+            "x": 13.2,
+            "y": 2.25,
+            "th": 3.14159
+          },
+          "goal": {
+            "x": 5.86,
+            "y": 0.5499999999999998,
+            "th": 1.5708
+          },
+          "is_success": false,
+          "execution_s": null,
+          "wall_s": 7.19630496299942,
+          "decisions": 512,
+          "expanded": 512,
+          "finalizations": 0,
+          "reason": "decision_budget",
+          "stop_reason": "decision_budget"
+        }
+      ]
+    }
+  },
+  "training": {
+    "path": "/home/wq/whut_thesis/expv3_experiment_archive/rl/training/rule-frontier-ppo-seed7-pilot",
+    "manifest": {
+      "identity": {
+        "schema": "rule_frontier_mode_path_v1",
+        "contract": "e20964349a7987628a4e64c0f351070e7c5d9863356faa22065cd4386369c397",
+        "sources": {
+          "rl/src/coptrans_rl/rule_candidates.py": "f4087103083e897cccd49ab51d67b6c8ca39786ae1518bf8b442b16d0107b4a5",
+          "rl/src/coptrans_rl/rule_frontend.py": "4f61ee3164fb6609182572c042b1af301152dce8552f7585b5d2717295478ed0",
+          "rl/src/coptrans_rl/rule_learning.py": "29f2bdf8010682b0ecb67392dad6627546eb2bae972580a0273a3d5e8ea22d09",
+          "rl/src/coptrans_rl/local_connections.py": "f1cd6b01b8bf69725e18140cd606cd1ce5e3b2602b9a2e4d609d9c44212c7709",
+          "rl/native/local_connections.cpp": "43622f2ca0d13c15e1e8bdf8b642ed29133259187182857fd840c6a90bcfec45",
+          "catkin_ws/src/fwis_common/include/fwis_common/reeds_shepp.hpp": "904645d5358df1ccb8ed7d5a135e1aa371003f98cda7ea8aea2509f0850402f4"
+        },
+        "features": 27,
+        "direction_policy": {
+          "allow_reverse": true,
+          "allow_shunting": false,
+          "initial_mode": 0,
+          "xy_tol": 0.02,
+          "yaw_tol": 0.017453292519943295
+        }
+      },
+      "config": {
+        "capacity": 64,
+        "max_decisions": 128,
+        "max_finalizations": 4,
+        "budget_s": 5.0,
+        "finalize_reserve_s": 1.0,
+        "max_execution_s": 300.0
+      },
+      "arguments": {
+        "stage": "train",
+        "dataset": "/home/wq/whut_thesis/expv3_experiment_archive/rl/datasets/curriculum-v1-20261026",
+        "output": "/home/wq/whut_thesis/expv3_experiment_archive/rl/training/rule-frontier-ppo-seed7-pilot",
+        "model": null,
+        "device": "cuda",
+        "split": "val",
+        "episodes": 20,
+        "maps": false,
+        "steps": 512,
+        "rollout_steps": 128,
+        "ppo_epochs": 4,
+        "learning_rate": 5e-05,
+        "eval_episodes": 8,
+        "seed": 7,
+        "budget": 5.0,
+        "decisions": 128
+      },
+      "dataset_sha256": "0c992e62dac20192eb82df77a7cf4e8f62170518e16a6d68cf6bec06fb143047",
+      "commit": "db12fa31c220df0bfcc1dd513c3e7b3d22ef27a6",
+      "working_tree_dirty": false
+    },
+    "summary": {
+      "steps": 512,
+      "device": "cuda",
+      "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU",
+      "wall_s": 16.08090584797901,
+      "baseline": {
+        "tasks": 8,
+        "successes": 8,
+        "success_rate": 1.0,
+        "mean_execution_s": 4.343760373754705,
+        "mean_wall_s": 0.22821542612291523
+      },
+      "best_validation": {
+        "tasks": 8,
+        "successes": 8,
+        "success_rate": 1.0,
+        "mean_execution_s": 4.343760373754705,
+        "mean_wall_s": 0.22821542612291523
+      },
+      "reset_rejected_tasks": [],
+      "gradient_is_cuda": true,
+      "finite_gradients": true,
+      "parameter_l2_change": 0.07818950712680817
+    },
+    "history": [
+      {
+        "steps": 128,
+        "episodes": 6,
+        "successes": 6,
+        "loss": 200.1122589111328,
+        "kl": 1.210719347000122e-08,
+        "wall_s": 2.4275749379885383,
+        "validation": {
+          "tasks": 8,
+          "successes": 8,
+          "success_rate": 1.0,
+          "mean_execution_s": 4.404812002020923,
+          "mean_wall_s": 0.24420131637816667
+        }
+      },
+      {
+        "steps": 256,
+        "episodes": 8,
+        "successes": 8,
+        "loss": 268.546630859375,
+        "kl": 4.190951585769653e-09,
+        "wall_s": 6.519215538981371,
+        "validation": {
+          "tasks": 8,
+          "successes": 8,
+          "success_rate": 1.0,
+          "mean_execution_s": 4.404812002020923,
+          "mean_wall_s": 0.249842355002329
+        }
+      },
+      {
+        "steps": 384,
+        "episodes": 6,
+        "successes": 6,
+        "loss": 184.14328002929688,
+        "kl": 5.587935447692871e-09,
+        "wall_s": 10.303240457986249,
+        "validation": {
+          "tasks": 8,
+          "successes": 8,
+          "success_rate": 1.0,
+          "mean_execution_s": 4.404812002020923,
+          "mean_wall_s": 0.24659625687490916
+        }
+      },
+      {
+        "steps": 512,
+        "episodes": 6,
+        "successes": 6,
+        "loss": 117.42082214355469,
+        "kl": 1.6763806343078613e-08,
+        "wall_s": 14.137272308988031,
+        "validation": {
+          "tasks": 8,
+          "successes": 8,
+          "success_rate": 1.0,
+          "mean_execution_s": 4.404812002020923,
+          "mean_wall_s": 0.24241174174676416
+        }
+      }
+    ],
+    "models_sha256": {
+      "best.pt": "429419a7e9561aadd74e4174f430acd2eddc66022c22d725c1f91b03ca8e54b9",
+      "latest.pt": "fdc5655a2e0c47905c194d22a769ebff4e6d731ee8bfabbc38362a916483d9d7"
+    },
+    "actor_parameter_change_l2": 0.001911281724460423
+  },
+  "engineering_inputs": [
+    {
+      "task_id": "map01-p11-narrow-case-a",
+      "directory": "maps/map01-p11-narrow-case-a",
+      "scale": 0.75,
+      "source": {
+        "map_yaml_sha256": "550bb7b462705969ff47c477bf27c783ed4f50aaec705d536b068647198a9525",
+        "image_sha256": "80f77d5aeed3bccef320b44728f1ccd9dbd53873a24e47270d21caddf3cf6211",
+        "scene_meta_sha256": "015c514673acb40726a915d7baedd24a837c419d97947c60eb2271e33a11f00e"
+      },
+      "effective": {
+        "occupied_sha256": "b4aed408cbc3e31ddb9437f172ffa93292e8f4a1ad0f752b6f4d2d81b35177ed",
+        "shape": [
+          450,
+          863
+        ],
+        "resolution": 0.0059654999999999994,
+        "origin": [
+          5.9258377499999995,
+          4.657712500000001
+        ],
+        "start": {
+          "x": 6.75203775,
+          "y": 6.4025875,
+          "th": 0.0
+        },
+        "goal": {
+          "x": 8.81018775,
+          "y": 5.0365375,
+          "th": 0.0
+        }
+      },
+      "effective_sha256": "8c7dfc2f8970caab0a2aeccd7df86d09bc3469c2bee4f1dd6ca269b950c759fb",
+      "contract_sha256": "e20964349a7987628a4e64c0f351070e7c5d9863356faa22065cd4386369c397",
+      "allow_reverse": true,
+      "allow_shunting": false,
+      "initial_mode": 0,
+      "xy_tol": 0.02,
+      "yaw_tol": 0.017453292519943295,
+      "start_footprint_valid": true,
+      "goal_footprint_valid": true,
+      "legacy_name": "P11_case_a",
+      "category": "paper"
+    },
+    {
+      "task_id": "map02-p11-goal-side-aisle",
+      "directory": "maps/map02-p11-goal-side-aisle",
+      "scale": 1.0,
+      "source": {
+        "map_yaml_sha256": "0f478f1f58a909c5fe0aadc1d52e6237b0e99e52a91cc997da945a0578fedc45",
+        "image_sha256": "729d84af84a2533cdff2f406f0fcaf7917374400252d489c2cefae10560cfb1c",
+        "scene_meta_sha256": "af2471105378106eced16a3d2bc7d8586e7786d75b3013657709be9a05011962"
+      },
+      "effective": {
+        "occupied_sha256": "d7e24dbaa002e8c1c8b72611ac01e63d4d96e1fc3740eb4371acd93be8a5aeb2",
+        "shape": [
+          516,
+          430
+        ],
+        "resolution": 0.006936,
+        "origin": [
+          3.5088,
+          4.2106
+        ],
+        "start": {
+          "x": 3.8521,
+          "y": 4.8591,
+          "th": -1.570796
+        },
+        "goal": {
+          "x": 5.2116,
+          "y": 4.9632,
+          "th": 1.570796
+        }
+      },
+      "effective_sha256": "e3adcccac8c09c53352b2276e4169af0285424582941f97d175f0f3080708b66",
+      "contract_sha256": "e20964349a7987628a4e64c0f351070e7c5d9863356faa22065cd4386369c397",
+      "allow_reverse": true,
+      "allow_shunting": false,
+      "initial_mode": 0,
+      "xy_tol": 0.02,
+      "yaw_tol": 0.017453292519943295,
+      "start_footprint_valid": true,
+      "goal_footprint_valid": true,
+      "legacy_name": "P11_case_b",
+      "category": "paper"
+    },
+    {
+      "task_id": "map03-p11-narrow-case-c",
+      "directory": "maps/map03-p11-narrow-case-c",
+      "scale": 0.7,
+      "source": {
+        "map_yaml_sha256": "5f92cd3167a5348f91491dbe5b0b58a87968453ddd039b4b31e1d38ebcb70fcf",
+        "image_sha256": "7a2e7c45ad52672703a9a2ca828baf3b4171e1e3015ef04ce9c1122303a0b841",
+        "scene_meta_sha256": "b44d4636e4853afeca196cdf9e07211f316fbc2c5fa5cd2a630de9683d51547f"
+      },
+      "effective": {
+        "occupied_sha256": "f3eec73799790c865ba07e35b4c755be269b69dbf919caef4fb4f459cd2296ee",
+        "shape": [
+          462,
+          803
+        ],
+        "resolution": 0.005205899999999999,
+        "origin": [
+          4.909886650000001,
+          2.0474841
+        ],
+        "start": {
+          "x": 5.74540665,
+          "y": 3.2838941,
+          "th": 0.0
+        },
+        "goal": {
+          "x": 7.44255665,
+          "y": 3.5754161,
+          "th": 0.0
+        }
+      },
+      "effective_sha256": "e9b03b875c7921dc2f957938b8d9b0854990a970fbf59455b733838a237fe2f7",
+      "contract_sha256": "e20964349a7987628a4e64c0f351070e7c5d9863356faa22065cd4386369c397",
+      "allow_reverse": true,
+      "allow_shunting": false,
+      "initial_mode": 0,
+      "xy_tol": 0.02,
+      "yaw_tol": 0.017453292519943295,
+      "start_footprint_valid": true,
+      "goal_footprint_valid": true,
+      "legacy_name": "P11_case_c",
+      "category": "paper"
+    },
+    {
+      "task_id": "map04-p12-maze-env1",
+      "directory": "maps/map04-p12-maze-env1",
+      "scale": 0.5,
+      "source": {
+        "map_yaml_sha256": "2e1d894d60d7390e6866a65e14d6405e80c396225920eceef30cb56979df96f1",
+        "image_sha256": "2fea924069231f0a1b3b826ce660b8b213c04e2665922f4e47ed26fe4f08dba8",
+        "scene_meta_sha256": "74461ccd74ca32e9a3513dbc1d7b7be3536a03e270d6084e05c8fbf19a66918b"
+      },
+      "effective": {
+        "occupied_sha256": "881b4bd95a8b506ae7079ed42e90689522e3191f3d1ed0f3e97f2faa1c6dad0b",
+        "shape": [
+          1431,
+          1431
+        ],
+        "resolution": 0.005636,
+        "origin": [
+          5.967758,
+          5.967758
+        ],
+        "start": {
+          "x": 7.7120999999999995,
+          "y": 13.359372,
+          "th": 0.0
+        },
+        "goal": {
+          "x": 11.589658,
+          "y": 12.012357999999999,
+          "th": 0.0
+        }
+      },
+      "effective_sha256": "195393737b1f1d790a3ec27db922a7639b5acc3f55e9906685bcd5ded3d993e7",
+      "contract_sha256": "e20964349a7987628a4e64c0f351070e7c5d9863356faa22065cd4386369c397",
+      "allow_reverse": true,
+      "allow_shunting": false,
+      "initial_mode": 0,
+      "xy_tol": 0.02,
+      "yaw_tol": 0.017453292519943295,
+      "start_footprint_valid": true,
+      "goal_footprint_valid": true,
+      "legacy_name": "P12_env1",
+      "category": "paper"
+    },
+    {
+      "task_id": "map05-p12-parking-row-env2",
+      "directory": "maps/map05-p12-parking-row-env2",
+      "scale": 0.7,
+      "source": {
+        "map_yaml_sha256": "96f12a5355be92fffdd114df5944eb592fa96db6e875a9e124949a7d92c3d8ee",
+        "image_sha256": "0856ad0af795b09e17e01e41bbf7c0f819170f53c93c6df718ed8342749ba718",
+        "scene_meta_sha256": "22e88f7073cf368b4341e74b264f9dcd01b0908cd77cde772c6db314dafc062e"
+      },
+      "effective": {
+        "occupied_sha256": "e5f91759835d6b0a2fbad3bc46da8fe21b4153c4680a90b1082c51529bcf0a7a",
+        "shape": [
+          326,
+          489
+        ],
+        "resolution": 0.017299099999999998,
+        "origin": [
+          3.27049855,
+          2.1803657
+        ],
+        "start": {
+          "x": 3.97111245,
+          "y": 6.2370043,
+          "th": 0.0
+        },
+        "goal": {
+          "x": 6.32378935,
+          "y": 4.57629105,
+          "th": 1.570796
+        }
+      },
+      "effective_sha256": "1d8f9430863860bf3d13bd64bc4e599589827351e789d05cddf539a9b3eeb4a8",
+      "contract_sha256": "e20964349a7987628a4e64c0f351070e7c5d9863356faa22065cd4386369c397",
+      "allow_reverse": true,
+      "allow_shunting": false,
+      "initial_mode": 0,
+      "xy_tol": 0.02,
+      "yaw_tol": 0.017453292519943295,
+      "start_footprint_valid": true,
+      "goal_footprint_valid": true,
+      "legacy_name": "P12_env2",
+      "category": "paper"
+    },
+    {
+      "task_id": "map06-p12-bent-corridor-env3",
+      "directory": "maps/map06-p12-bent-corridor-env3",
+      "scale": 1.0,
+      "source": {
+        "map_yaml_sha256": "aa6e276bc6ed1f9510c490d98c4a55db653504482ac9c847f155e32b69e90a8e",
+        "image_sha256": "1f62a9ea3e05a0c1507ad48c690df33c8a727eab6d9c943a01d5798e70403e97",
+        "scene_meta_sha256": "32940d5e4d853d36ef3e29406dd780ca0407a3d812d748b3605fd6d755a82a03"
+      },
+      "effective": {
+        "occupied_sha256": "6959636a41427c03f0ab3e3f750b54cb0ad58da09334745e3dc2e8c7f77374d6",
+        "shape": [
+          298,
+          536
+        ],
+        "resolution": 0.013553,
+        "origin": [
+          0.8678000000000003,
+          0.4805999999999999
+        ],
+        "start": {
+          "x": 1.8639000000000001,
+          "y": 2.5068,
+          "th": 0.0
+        },
+        "goal": {
+          "x": 6.9328,
+          "y": 2.5339,
+          "th": 3.141593
+        }
+      },
+      "effective_sha256": "a44255ca0325b1be1bb1bd3fd8800b79d3acfd4bdb3c8d82fd78fdde003c4020",
+      "contract_sha256": "e20964349a7987628a4e64c0f351070e7c5d9863356faa22065cd4386369c397",
+      "allow_reverse": true,
+      "allow_shunting": false,
+      "initial_mode": 0,
+      "xy_tol": 0.02,
+      "yaw_tol": 0.017453292519943295,
+      "start_footprint_valid": true,
+      "goal_footprint_valid": true,
+      "legacy_name": "P12_env3",
+      "category": "paper"
+    },
+    {
+      "task_id": "map07-p12-obstacle-field-env4",
+      "directory": "maps/map07-p12-obstacle-field-env4",
+      "scale": 0.8,
+      "source": {
+        "map_yaml_sha256": "0d42c3cf97c38a5944932eec72723aa638bddd8f08a1f38ee406c2743320fb8a",
+        "image_sha256": "c9c424ec15670ee3fbb61d3efdb2f7106493f64276378a827c96caf44e5a8021",
+        "scene_meta_sha256": "0219641157b1dfc71cb103bc0b1d5b8590211fb59c53f6d30065437693ae35b0"
+      },
+      "effective": {
+        "occupied_sha256": "7248cb6de3692a412b40927e1b2ff73a39be74b97751b9a243bd5099f571b931",
+        "shape": [
+          990,
+          1485
+        ],
+        "resolution": 0.005860000000000001,
+        "origin": [
+          5.3990625,
+          1.5993749999999998
+        ],
+        "start": {
+          "x": 6.2692729,
+          "y": 2.9559645999999997,
+          "th": 0.0
+        },
+        "goal": {
+          "x": 10.6173825,
+          "y": 5.7511846,
+          "th": 0.0
+        }
+      },
+      "effective_sha256": "ab0f82e53e3b2fd657240a1c16e2ce85e7537d854bde6bbf52b03e78f9735bfa",
+      "contract_sha256": "e20964349a7987628a4e64c0f351070e7c5d9863356faa22065cd4386369c397",
+      "allow_reverse": true,
+      "allow_shunting": false,
+      "initial_mode": 0,
+      "xy_tol": 0.02,
+      "yaw_tol": 0.017453292519943295,
+      "start_footprint_valid": true,
+      "goal_footprint_valid": true,
+      "legacy_name": "P12_env4",
+      "category": "paper"
+    },
+    {
+      "task_id": "map08-p16-complex-parking",
+      "directory": "maps/map08-p16-complex-parking",
+      "scale": 1.2,
+      "source": {
+        "map_yaml_sha256": "6634042e5fb0aede9043b20f4ca0176b9c5cdc8ddfe43f0776679e89f5b16b01",
+        "image_sha256": "e4d8551f6ae9eb7a06c561cbf2334aaa5fe06dfddefad4f9bd8b4e3e10aa5565",
+        "scene_meta_sha256": "6f950ec6bfcd54f33c0fa750e95825241ec3236d74f195ab8999a7875920bd4c"
+      },
+      "effective": {
+        "occupied_sha256": "ac17a02b694db7aec98564e02c40872faef0e635faf33e7aef0b63e6f94ee82e",
+        "shape": [
+          935,
+          935
+        ],
+        "resolution": 0.0067031999999999994,
+        "origin": [
+          11.866209,
+          11.866209
+        ],
+        "start": {
+          "x": 12.5063646,
+          "y": 16.374111000000003,
+          "th": -0.652599
+        },
+        "goal": {
+          "x": 17.540467800000002,
+          "y": 12.5264742,
+          "th": -0.652599
+        }
+      },
+      "effective_sha256": "7eb7e95f3af4bc3554d19cf0038b9c829c82d04da1719294cb0c214dd23f91b3",
+      "contract_sha256": "e20964349a7987628a4e64c0f351070e7c5d9863356faa22065cd4386369c397",
+      "allow_reverse": true,
+      "allow_shunting": false,
+      "initial_mode": 0,
+      "xy_tol": 0.02,
+      "yaw_tol": 0.017453292519943295,
+      "start_footprint_valid": true,
+      "goal_footprint_valid": true,
+      "legacy_name": "P16_complex_parking",
+      "category": "paper"
+    },
+    {
+      "task_id": "map09-p16-narrow-maze",
+      "directory": "maps/map09-p16-narrow-maze",
+      "scale": 1.0,
+      "source": {
+        "map_yaml_sha256": "cdf42ea0cbee81f7e6281310e5c1e398c6e1ad521fb1d0197da9d0e20cbf2c5f",
+        "image_sha256": "49092b2eaabdf9abed44a2159e41ad4cfa78adcf7d5c84e3966c79728eec0d06",
+        "scene_meta_sha256": "cdfb1b310493f0401258faa16be6f2a6f96d77945b91766a1d5011f4dfbc6054"
+      },
+      "effective": {
+        "occupied_sha256": "f97c55b68606b4e82141fd675e428e678ed758a1ba1529d229f57acd6cd76293",
+        "shape": [
+          934,
+          934
+        ],
+        "resolution": 0.00803,
+        "origin": [
+          11.25,
+          11.25
+        ],
+        "start": {
+          "x": 11.848235,
+          "y": 16.794715,
+          "th": 3.141593
+        },
+        "goal": {
+          "x": 17.573625,
+          "y": 12.305945,
+          "th": 0.0
+        }
+      },
+      "effective_sha256": "006f8df55b8e160f945043786b88df1324e8323dc2f573ab430d4ab60675afb7",
+      "contract_sha256": "e20964349a7987628a4e64c0f351070e7c5d9863356faa22065cd4386369c397",
+      "allow_reverse": true,
+      "allow_shunting": false,
+      "initial_mode": 0,
+      "xy_tol": 0.02,
+      "yaw_tol": 0.017453292519943295,
+      "start_footprint_valid": true,
+      "goal_footprint_valid": true,
+      "legacy_name": "P16_narrow_maze",
+      "category": "paper"
+    },
+    {
+      "task_id": "map15-n06-two-stage-offset-passage",
+      "directory": "maps/map15-n06-two-stage-offset-passage",
+      "scale": 0.8,
+      "source": {
+        "map_yaml_sha256": "aef7c28a5b6669eed2c6b513e868b1268b9e91b69ed6097a50a35f78c6d7c1d9",
+        "image_sha256": "6624c67f7f64db2f636fecf0aaeba8d8e61e773f411116c7bd02afe9cf547d0f",
+        "scene_meta_sha256": "cb71cccc036ed2f6755104f63fd2eb825354aa6e64566fde82490d6c7351d676"
+      },
+      "effective": {
+        "occupied_sha256": "b895cd4e2fa165a1acb370881d105d117f694ce7b90a72a74dd6de3c73d060f2",
+        "shape": [
+          400,
+          600
+        ],
+        "resolution": 0.016,
+        "origin": [
+          1.1999999999999993,
+          0.7999999999999998
+        ],
+        "start": {
+          "x": 2.0,
+          "y": 2.96,
+          "th": 0.0
+        },
+        "goal": {
+          "x": 9.959999999999999,
+          "y": 6.279999999999999,
+          "th": 1.5708
+        }
+      },
+      "effective_sha256": "3235459330a18e83092487eab93527be5379cd0851ea693ab1fe1f96d04f8742",
+      "contract_sha256": "e20964349a7987628a4e64c0f351070e7c5d9863356faa22065cd4386369c397",
+      "allow_reverse": true,
+      "allow_shunting": false,
+      "initial_mode": 0,
+      "xy_tol": 0.02,
+      "yaw_tol": 0.017453292519943295,
+      "start_footprint_valid": true,
+      "goal_footprint_valid": true,
+      "legacy_name": "N06_two_stage_offset_passage",
+      "category": "synthetic"
+    },
+    {
+      "task_id": "map16-s09-underground-garage",
+      "directory": "maps/map16-s09-underground-garage",
+      "scale": 1.0,
+      "source": {
+        "map_yaml_sha256": "aef7c28a5b6669eed2c6b513e868b1268b9e91b69ed6097a50a35f78c6d7c1d9",
+        "image_sha256": "c700fdc43e2a29d244a5a7134ae96825623bc04d74f26f6ae7b47e8eba9468b4",
+        "scene_meta_sha256": "3b0cc0be010a64d558eabcf8296476f1a8edad0da4f5919045eb5af3df7d3c3f"
+      },
+      "effective": {
+        "occupied_sha256": "3873c33e316ad6df3fc6b7adcb827a1c6bb004efe059672d944c704ec920afab",
+        "shape": [
+          500,
+          700
+        ],
+        "resolution": 0.02,
+        "origin": [
+          0.0,
+          0.0
+        ],
+        "start": {
+          "x": 13.2,
+          "y": 2.25,
+          "th": 3.14159
+        },
+        "goal": {
+          "x": 5.86,
+          "y": 0.5499999999999998,
+          "th": 1.5708
+        }
+      },
+      "effective_sha256": "543a8a4f11c8efaea4be5fdf2b6a4dfffa17391bca6ed9697b7cca855cf21ad8",
+      "contract_sha256": "e20964349a7987628a4e64c0f351070e7c5d9863356faa22065cd4386369c397",
+      "allow_reverse": true,
+      "allow_shunting": false,
+      "initial_mode": 0,
+      "xy_tol": 0.02,
+      "yaw_tol": 0.017453292519943295,
+      "start_footprint_valid": true,
+      "goal_footprint_valid": true,
+      "legacy_name": "S09_underground_garage",
+      "category": "demo"
+    }
+  ],
+  "checks": {
+    "learning_module_tests_passed": 35,
+    "log_sha256": "ed108c9cb5fbfce00b63a170c1ee288d50799d0b7db99ebaa4ad282084d0af60"
+  }
+}

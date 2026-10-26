@@ -1,10 +1,59 @@
-# 强化学习版本开发与基础检查
+# 规则与强化学习前端：开发、训练与检查
 
-当前 **P0/P1 基础模块已通过验收，P2/P3 已运行首轮 GPU 训练，效果尚未达标**；`run_demo.sh` 仍运行父版本 v2。
+当前主线为 **规则候选生成＋RL 选择模式与路径分支**；独立离线前端已可运行，`run_demo.sh` 仍运行父版本 v2。
 阶段验收结果及图片见 [`evaluation/rl/foundation/REPORT.md`](../evaluation/rl/foundation/REPORT.md)。
 首轮 RTX 4060 训练曲线、实际成功/失败路径和原始结果索引见 [GPU 训练评估](../evaluation/rl/training/REPORT.md)。
 
-当前选中模型只到达 2/20 个固定短程验证目标，两例均为单步 A；PPO 最后模型为 1/20，尚无可交付的学习规划器。
+新前端的规则版为短程验证 20/20、工程地图 3/11；512 步 GPU 接入小试尚未优于规则版。
+见 [新前端逐图评估及图片](../evaluation/rl/rule_frontend/REPORT.md)。旧 80 动作模型只有 2/20，保留为历史实验。
+
+## 当前主线：独立规则与学习前端
+
+本入口直接接收地图和起终点，不调用旧 C++ 完整搜索，也不调用 `ModePathMaster.solve`。
+复用现有 C++ A 模式局部连接公式，并生成 O、Spin、短圆弧、引导点和径向候选。
+需要 `g++`；首次使用会将局部连接库编译到 `/tmp/coptrans-rl-native/<源码哈希>/`，不修改 ROS 工作空间。
+
+策略一次选择一个“路径前缀＋局部连接”，同时决定探索哪条分支、哪种模式和哪段几何。
+未选择的分支保留在有容量限制的候选集合中；规则版用固定优先级，学习版在其上学习评分修正。
+学习权重初始为零时，确定性选择与规则版一致。所有完整路线经过共同完成器，按审核通过后的实际执行时间选择。
+
+安装下文 CUDA 学习环境后，可单独运行：
+
+```bash
+cd /home/wq/whut_thesis/expv3
+DATA=/home/wq/whut_thesis/expv3_experiment_archive/rl/datasets/curriculum-v1-20261026
+RUN=/home/wq/whut_thesis/expv3_experiment_archive/rl/training
+
+# 规则版：固定的前 20 个验证目标
+.venv-rl/bin/python -m coptrans_rl.rule_learning evaluate \
+  --dataset "$DATA" --output /tmp/rule-val-new-01 \
+  --split val --episodes 20 --budget 5 --device cpu
+
+# 规则版：11 张工程地图，默认比例及预设起终点
+.venv-rl/bin/python -m coptrans_rl.rule_learning evaluate \
+  --dataset "$DATA" --output /tmp/rule-maps-new-01 \
+  --maps --budget 10 --decisions 512 --device cpu
+
+# GPU 接入小试；512 步仅用于验证学习流程
+.venv-rl/bin/python -m coptrans_rl.rule_learning train \
+  --dataset "$DATA" --output "$RUN/rule-my-run-01" \
+  --device cuda --steps 512 --rollout-steps 128 --budget 5 --seed 7
+
+# 评估实际训练后的权重；best.pt 可能仍是未更新的规则基线
+.venv-rl/bin/python -m coptrans_rl.rule_learning evaluate \
+  --dataset "$DATA" --model "$RUN/rule-my-run-01/latest.pt" \
+  --output /tmp/rule-rl-val-new-01 --episodes 20 --budget 5 --device cuda
+
+# 生成实际路径及学习曲线
+.venv-rl/bin/python -m coptrans_rl.rule_figures \
+  --dataset "$DATA" --evaluation /tmp/rule-rl-val-new-01/evaluation.json \
+  --run "$RUN/rule-my-run-01" --output /tmp/rule-rl-figures-new-01
+```
+
+输出目录必须尚不存在，且在仓库外。`evaluation.json` 保存逐任务定时轨迹、审核、搜索事件、失败原因及最后尝试。
+`best.pt`、`latest.pt` 是新候选选择网络，不能与旧 80 动作模型的 zip 权重互换；源码/车辆身份不符会拒绝加载。
+当前 PPO 小试采用单个 CPU 几何环境采样、GPU 网络更新；旧 80 动作训练入口的 4 进程设置不适用于这个新入口。
+本轮证明了接口和 CUDA 更新流程，尚未证明强化学习改善路径质量。正式训练前需补齐长距离任务和候选覆盖。
 
 ## 已实现
 
@@ -32,7 +81,7 @@ UV_CACHE_DIR=/tmp/coptrans-uv-cache uv pip install --python .venv-rl/bin/python 
 锁文件对应 Linux x86_64 / Python 3.12 的基础环境，不包括 PyTorch、PPO 和训练依赖。
 `.venv-rl`、安装产物、训练数据及权重均不提交到 Git。
 
-## 如何训练：默认使用 GPU
+## 学习依赖安装：默认使用 GPU
 
 本机已在宿主环境确认 RTX 4060 / 8 GB 显存，驱动 570.181 / CUDA 12.8。
 训练命令在能运行 `nvidia-smi` 的普通宿主终端执行。受限工具环境可能看不到 GPU，不能把这一现象当成驱动故障。
@@ -48,6 +97,10 @@ bash rl/setup_training.sh
 安装使用官方 PyTorch 2.8.0 CUDA 12.8 包、Stable-Baselines3 / sb3-contrib 2.9.0。
 完整运行依赖已锁在 `requirements-training-cu128.lock`，安装脚本同时验证真实 CUDA 运算。
 实现遵循 [MaskablePPO 官方接口](https://sb3-contrib.readthedocs.io/en/master/modules/ppo_mask.html)：环境内部提供掩码，训练和评估均传递掩码。
+
+## 历史路线：80 动作自由生成实验
+
+下面命令用于保留的旧训练路线，不是当前候选选择前端。该路线尚未通过规划效果验收。
 
 ### 1. 生成入门课程数据
 
@@ -166,6 +219,11 @@ ROS 检查会启动独立 master 和受控仿真时钟，使用现有 `playback.
 
 | 模块 | 职责 |
 |---|---|
+| `local_connections.py` / `rl/native/local_connections.cpp` | 调用现有 C++ 短程 A 连接公式，无完整路径搜索 |
+| `rule_candidates.py` | 多方向引导点、A/O/Spin 局部连接及整车扫掠 |
+| `rule_frontend.py` | 分支保留、有限探索、共同完成器和实际执行时间选择 |
+| `rule_learning.py` | 共享候选评分网络、规则残差 PPO、离线评估 |
+| `rule_figures.py` | 成功定时路径、失败尝试和学习曲线 |
 | `kernel_adapter.py` | 读取公共车辆/计时配置，导入不依赖 ROS 的内核 |
 | `configuration.py` | 版本化环境设置与配置身份 |
 | `benchmark.py` | 按 ROS 栅格语义读取 11 图并按中心缩放 |
