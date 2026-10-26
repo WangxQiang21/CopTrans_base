@@ -1,6 +1,6 @@
 # 强化学习版本开发与基础检查
 
-当前实现到 **P0/P1 基础模块**，没有训练好的策略；`run_demo.sh` 仍运行父版本 v2。
+当前 **P0/P1 基础模块已通过验收，正在接入 P2/P3 数据与训练**；`run_demo.sh` 仍运行父版本 v2。
 阶段验收结果及图片见 [`evaluation/rl/foundation/REPORT.md`](../evaluation/rl/foundation/REPORT.md)。
 
 ## 已实现
@@ -28,6 +28,94 @@ UV_CACHE_DIR=/tmp/coptrans-uv-cache uv pip install --python .venv-rl/bin/python 
 
 锁文件对应 Linux x86_64 / Python 3.12 的基础环境，不包括 PyTorch、PPO 和训练依赖。
 `.venv-rl`、安装产物、训练数据及权重均不提交到 Git。
+
+## 如何训练：默认使用 GPU
+
+本机已在宿主环境确认 RTX 4060 / 8 GB 显存，驱动 570.181 / CUDA 12.8。
+训练命令在能运行 `nvidia-smi` 的普通宿主终端执行。受限工具环境可能看不到 GPU，不能把这一现象当成驱动故障。
+
+先安装 CUDA 学习环境并验证实际 GPU 运算：
+
+```bash
+cd /home/wq/whut_thesis/expv3
+git switch rl-mode-path
+bash rl/setup_training.sh
+```
+
+安装使用官方 PyTorch 2.8.0 CUDA 12.8 包、Stable-Baselines3 / sb3-contrib 2.9.0。
+实现遵循 [MaskablePPO 官方接口](https://sb3-contrib.readthedocs.io/en/master/modules/ppo_mask.html)：环境内部提供掩码，训练和评估均传递掩码。
+
+### 1. 生成入门课程数据
+
+已生成的数据位于以下目录，可以直接使用；完整数据和权重放仓库外。
+
+```bash
+DATA=/home/wq/whut_thesis/expv3_experiment_archive/rl/datasets/curriculum-v1-20261026
+RUN=/home/wq/whut_thesis/expv3_experiment_archive/rl/training
+```
+
+该数据集包含训练 1,000、验证 200、测试 500、另留地图类型 100 个任务。布局哈希跨集合隔离。
+教师是通过同一 80 动作库构造并经完整审核的可达样本；尚未采集三个传统算法的教师，不能把这批短程课程当成论文正式盲测。
+
+需要重新生成时，使用一个尚不存在的目录：
+
+```bash
+.venv-rl/bin/python -m coptrans_rl.dataset --output /tmp/rl-data-new
+```
+
+### 2. 行为克隆预训练
+
+```bash
+.venv-rl/bin/python -m coptrans_rl.train bc \
+  --dataset "$DATA" --output "$RUN/bc-seed7" \
+  --device cuda --epochs 30 --seed 7
+```
+
+策略学习教师在每一步的动作选择；验证集只用于评估和选模型。
+输出 `bc_history.json`、`best_validation.json`、`best_model.zip`、`latest_model.zip` 和带依赖/配置/数据/权重哈希的 `manifest.json`。
+`best_model` 按验证到达率优先、成功轨迹执行时间其次选择；仅验证 NLL 改善不能替代实际到达评估。
+
+### 3. MaskablePPO 微调
+
+```bash
+.venv-rl/bin/python -m coptrans_rl.train ppo \
+  --dataset "$DATA" --output "$RUN/ppo-seed7" \
+  --initial-model "$RUN/bc-seed7/best_model.zip" \
+  --device cuda --envs 4 --timesteps 200000 --seed 7
+```
+
+GPU 训练 CNN、策略和价值网络；4 个 CPU 进程进行几何环境采样。每个环境 512 步，合计 2,048 transitions 后更新。
+请求步数按完整 rollout 向上取整，实际步数保存在 `training_summary.json`。训练日志 `progress.csv` 包含损失、KL、近期到达率和实际吞吐。
+每 50,000 transitions 保存 checkpoint，并在固定验证任务上选最优模型。
+
+中断后可从已有检查点继续；`--timesteps` 表示本次追加步数：
+
+```bash
+.venv-rl/bin/python -m coptrans_rl.train ppo \
+  --dataset "$DATA" --output "$RUN/ppo-seed7-resume1" \
+  --initial-model "$RUN/ppo-seed7/checkpoint_50000.zip" \
+  --device cuda --envs 4 --timesteps 150000 --seed 7
+```
+
+续训保留权重与已有步数，以指定 seed 重新建立采样状态；不是逐位恢复此前的随机流。
+输出目录必须尚不存在，避免覆盖旧实验。训练入口默认 CUDA；显式 CUDA 不可用时会报错，CPU 合同测试可显式指定 `--device cpu`。
+
+### 4. 单独评估模型并生成图片
+
+```bash
+.venv-rl/bin/python -m coptrans_rl.evaluate \
+  --dataset "$DATA" --model "$RUN/ppo-seed7/best_model.zip" \
+  --split test --episodes 500 --device cuda \
+  --output "$RUN/ppo-seed7-test"
+
+.venv-rl/bin/python -m coptrans_rl.training_figures \
+  --dataset "$DATA" --run "$RUN/ppo-seed7" \
+  --evaluation "$RUN/ppo-seed7-test/evaluation.json" \
+  --output "$RUN/ppo-seed7-figures"
+```
+
+图片包含课程地图/教师预览、实际学习曲线及模型成功和失败路径。`--split ood` 单列未参加训练的 islands 类型。
+训练与选模型使用验证集；测试集留到配置冻结后再评估。当前课程数据上的成绩与 11 张工程地图、正式盲测分别报告。
 
 ## 一次运行基础检查
 
