@@ -35,7 +35,9 @@ def main():
         wanted = {r["task_id"] for r in json.loads(args.evaluation.read_text())["tasks"]}
         problems.update({r["task_id"]:corpus.problem(r) for r in corpus.rows if r["task_id"] in wanted})
     report = json.loads(args.evaluation.read_text())
-    rows = report["tasks"]
+    rows = [r for r in report["tasks"] if "is_success" in r]
+    if not rows:
+        raise ValueError("no_evaluated_tasks_to_plot")
     engineering = all(r["task_id"].startswith("map") for r in rows)
     if not engineering:
         rows = sorted(rows,key=lambda r:(r["is_success"],r["task_id"]))[:6]

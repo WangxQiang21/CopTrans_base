@@ -1,0 +1,129 @@
+{
+  "date": "2026-10-27",
+  "timezone": "Asia/Shanghai",
+  "status": "paused_at_user_request",
+  "branch": "rl-mode-path",
+  "base_commit": "c3458c1",
+  "active_training_processes": false,
+  "current_online_launcher": "mode_path_v2; new frontend is offline only",
+  "rule_baseline": {
+    "short_validation": "20/20",
+    "engineering_maps": "3/11"
+  },
+  "oracle_diagnostic": {
+    "summary": {
+      "tasks": 8,
+      "successes": 6,
+      "input_errors": 1,
+      "scope": "offline_reference_oracle_not_a_planner_benchmark"
+    },
+    "path": "/home/wq/whut_thesis/expv3_experiment_archive/rl/datasets/20261027-rule-oracle-decisions-v1/evaluation.json",
+    "sha256": "5072db36906707c516f2fed275c5291922042b25d32c1ad248a1510fdec29f46",
+    "not_an_rl_score": true,
+    "tasks": [
+      {
+        "task_id": "map01-p11-narrow-case-a",
+        "is_success": true,
+        "reason": "certified",
+        "decisions": 14
+      },
+      {
+        "task_id": "map02-p11-goal-side-aisle",
+        "is_success": true,
+        "reason": "certified",
+        "decisions": 117
+      },
+      {
+        "task_id": "map03-p11-narrow-case-c",
+        "is_success": true,
+        "reason": "certified",
+        "decisions": 6
+      },
+      {
+        "task_id": "map04-p12-maze-env1",
+        "is_success": false,
+        "reason": "finalization_limit",
+        "decisions": 118
+      },
+      {
+        "task_id": "map05-p12-parking-row-env2",
+        "input_error": "reference_goal_mismatch"
+      },
+      {
+        "task_id": "map06-p12-bent-corridor-env3",
+        "is_success": true,
+        "reason": "certified",
+        "decisions": 163
+      },
+      {
+        "task_id": "map09-p16-narrow-maze",
+        "is_success": false,
+        "reason": "deadline",
+        "decisions": 284
+      },
+      {
+        "task_id": "map15-n06-two-stage-offset-passage",
+        "is_success": true,
+        "reason": "certified",
+        "decisions": 22
+      },
+      {
+        "task_id": "map16-s09-underground-garage",
+        "is_success": true,
+        "reason": "certified",
+        "decisions": 405
+      }
+    ]
+  },
+  "pretraining": {
+    "path": "/home/wq/whut_thesis/expv3_experiment_archive/rl/training/rule-oracle-bc-seed7-v1",
+    "summary": {
+      "epochs": 100,
+      "rows": 727,
+      "train_rows": 564,
+      "holdout_rows": 163,
+      "scope": "teacher_forced_accuracy_not_planning_success",
+      "wall_s": 2.6551304680178873,
+      "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU",
+      "final": {
+        "epoch": 100,
+        "train_nll": 2.2620422958482242,
+        "train_accuracy": 0.4237588652482269,
+        "holdout_nll": 5.547505946247124,
+        "holdout_accuracy": 0.07975460122699386
+      }
+    },
+    "best_teacher_forced_epoch": {
+      "epoch": 38,
+      "train_nll": 3.5036082707398326,
+      "train_accuracy": 0.1773049645390071,
+      "holdout_nll": 4.322415310912337,
+      "holdout_accuracy": 0.024539877300613498
+    },
+    "manifest_sha256": "097257ca9d5258762a09919a7d6882bf86ca86915e3ca53da83ed2509639c51d",
+    "models_sha256": {
+      "best.pt": "fa79b41bc4f139137b4f6c99d22b34993ac32a9ad7f752e4b519b8193d80d1cb",
+      "latest.pt": "1eed516afc0c88b5227cec85a98b79abd414d2cdd79da3e60fd4ccebc8563124"
+    },
+    "teacher_arrays_sha256": "fd9f7ff065c6a9919dcfa61ebf8763ac061c113ecd8941697abc91a80629ef0f",
+    "full_planner_evaluation_done": false
+  },
+  "checks": {
+    "passed": 38,
+    "log_sha256": "ab215d2f60a8dbe925f7e8eba4146af6af28f360c7a142aa5d239c5803b63882"
+  },
+  "pending": [
+    "Evaluate best.pt and latest.pt on all engineering maps without oracle references",
+    "Diagnose map04 continuous_projection_or_sweep_failed separately from frontend choices",
+    "Check observation sufficiency and rule prior scale; these are hypotheses, no such changes applied",
+    "Improve long-route decision training and demonstrate gain over common rule baseline before ROS integration"
+  ],
+  "source_sha256": {
+    "rl/src/coptrans_rl/rule_candidates.py": "f4087103083e897cccd49ab51d67b6c8ca39786ae1518bf8b442b16d0107b4a5",
+    "rl/src/coptrans_rl/rule_frontend.py": "4f61ee3164fb6609182572c042b1af301152dce8552f7585b5d2717295478ed0",
+    "rl/src/coptrans_rl/rule_learning.py": "29f2bdf8010682b0ecb67392dad6627546eb2bae972580a0273a3d5e8ea22d09",
+    "rl/src/coptrans_rl/rule_reference_audit.py": "51cd3c393682dd710e7230e45547557e0808f62aacad46943f4a3eeef9293728",
+    "rl/src/coptrans_rl/rule_imitation.py": "40978f59a4123f3604a22f4960eed8042ba5573e35e7c1ba2fbec4526b0b8a42",
+    "rl/src/coptrans_rl/rule_figures.py": "235fa13ec1b8b64f9a7a902e1dadf9106637e9afce7697b81d1caa93f09864ef"
+  }
+}

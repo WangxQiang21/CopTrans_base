@@ -1,6 +1,9 @@
 import dataclasses
 import math
 import unittest
+import json
+import tempfile
+from pathlib import Path
 
 import numpy as np
 
@@ -95,6 +98,67 @@ class RuleFrontendTests(unittest.TestCase):
         loss = -distribution.log_prob(distribution.probs.argmax(dim=1)).mean()+value.square().mean()
         loss.backward()
         self.assertTrue(all(torch.isfinite(p.grad).all() for p in policy.parameters() if p.grad is not None))
+
+    def test_offline_reference_inputs_are_checked(self):
+        from PIL import Image
+        import yaml
+        from coptrans_rl.rule_reference_audit import check_reference
+        problem = self.problem([Action(0,1.,0.)])
+        probe = {"start":[3.,3.,0.],"goal":[4.,3.,0.]}
+        with tempfile.TemporaryDirectory(dir="/tmp") as directory:
+            root = Path(directory); maps = root/"runtime_map"; maps.mkdir()
+            Image.fromarray(np.full((160,160),255,dtype=np.uint8)).save(maps/"map.png")
+            (maps/"map.yaml").write_text(yaml.safe_dump({"image":"map.png","resolution":.05,"origin":[0.,0.,0.]}))
+            check_reference(problem,root,probe)
+            wrong = dict(probe,start=[3.1,3.,0.])
+            with self.assertRaisesRegex(ValueError,"reference_start_mismatch"):
+                check_reference(problem,root,wrong)
+            pixels = np.full((160,160),255,dtype=np.uint8); pixels[20,20]=0
+            Image.fromarray(pixels).save(maps/"map.png")
+            with self.assertRaisesRegex(ValueError,"reference_occupancy_mismatch"):
+                check_reference(problem,root,probe)
+
+    def test_reference_oracle_selects_only_available_candidates(self):
+        from coptrans_rl.rule_reference_audit import ReferenceOracle
+        problem = self.problem([Action(0,1.,0.)])
+        trace = [[i*.1,3.+i*.1,3.,0.,0.,0] for i in range(11)]
+        env = RuleFrontend(FrontendConfig(budget_s=5.)); env.reset(problem)
+        oracle = ReferenceOracle(trace,problem)
+        while not env.done:
+            index,station,error = oracle.choose(env)
+            self.assertTrue(0<=index<len(env.frontier))
+            self.assertTrue(0<=station<len(oracle.poses))
+            self.assertTrue(math.isfinite(error))
+            env.step(index)
+        self.assertTrue(env.report(False)["is_success"])
+
+    def test_offline_teacher_masks_certificates_and_task_holdout(self):
+        from coptrans_rl.rule_imitation import load_teachers
+        with tempfile.TemporaryDirectory(dir="/tmp") as directory:
+            path = Path(directory)
+            names = ["map01-example","map06-example"]
+            rows = [{"task_id":name,"is_success":True,"finalization":{"status":"FEASIBLE",
+                     "audit":{key:"PASS" for key in ("geometry_status","dynamic_status","timing_status")}}}
+                    for name in names]
+            report = {"method":"reference_oracle_diagnostic","tasks":rows}
+            (path/"evaluation.json").write_text(json.dumps(report))
+            arrays = {"candidates":np.zeros((2,64,27),np.float32),"rule_logits":np.zeros((2,64),np.float32),
+                      "mask":np.ones((2,64),bool),"map":np.zeros((2,2,32,32),np.float32),
+                      "labels":np.array([0,1]),"task_ids":np.asarray(names)}
+            np.savez_compressed(path/"teacher_observations.npz",**arrays)
+            _,_,_,train,holdout = load_teachers(path,["map06"])
+            np.testing.assert_array_equal(train,[True,False])
+            np.testing.assert_array_equal(holdout,[False,True])
+            arrays["mask"][0,0] = False
+            np.savez_compressed(path/"teacher_observations.npz",**arrays)
+            with self.assertRaisesRegex(ValueError,"masked_teacher_label"):
+                load_teachers(path)
+            arrays["mask"][0,0] = True
+            np.savez_compressed(path/"teacher_observations.npz",**arrays)
+            rows[0]["finalization"]["audit"]["geometry_status"] = "FAIL"
+            (path/"evaluation.json").write_text(json.dumps(report))
+            with self.assertRaisesRegex(ValueError,"teacher_task_lacks_terminal_certificate"):
+                load_teachers(path)
 
 
 if __name__=="__main__":
