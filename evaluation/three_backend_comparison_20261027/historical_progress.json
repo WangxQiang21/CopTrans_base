@@ -1,0 +1,48 @@
+{
+  "date": "2026-10-25",
+  "note": "These paired improvement experiments have distinct scopes and profiles; they are not the 2026-10-27 cross-branch evaluation.",
+  "experiments": {
+    "legacy": {
+      "source_commit": "a49223570f28ef510df42ce4ad8e96aac87fda10",
+      "source_path": "evaluation/paper06/metrics.json",
+      "source_sha256": "adb8784fe27425821f49353dce193c95b220fbd9e3d53c6dd3b9c30b0b9d504f",
+      "before": 225365,
+      "after": 170577,
+      "reduction_percent": 24.310784726998424,
+      "scope": "map04：搜索扩展节点",
+      "unit": "节点",
+      "details": {
+        "identical_timed_trace": true
+      }
+    },
+    "mode_path_v1": {
+      "source_commit": "a415043cf8929fb1aa8bc5fbaba2632a6414a70a",
+      "source_path": "evaluation/paper08/metrics.json",
+      "source_sha256": "adbb6884585afdafa067a1b0b74c682cbd06e68e749d5584d0294f5cac78806b",
+      "before": 8.630863528719438,
+      "after": 6.201310470332893,
+      "reduction_percent": 28.149594189528536,
+      "scope": "4 m 曲率振荡定向用例",
+      "unit": "执行时间 / s",
+      "details": {
+        "profile": "kinematic_sim_v1",
+        "fixture": "open-space 4m oscillatory Ackermann block; not a maps preset",
+        "map01_recovered": true
+      }
+    },
+    "mode_path_v2": {
+      "source_commit": "c90e981cd996e1feaa196f1bdbfbdd709036d37f",
+      "source_path": "evaluation/paper12/metrics.json",
+      "source_sha256": "b4c30fd75aac75db6bb48b24cd4e68e426de66ff2e8ae171f82bddc8d85c4cf5",
+      "before": 806.5706139896065,
+      "after": 297.610404988518,
+      "reduction_percent": 63.10175453623048,
+      "scope": "map04：重定时阶段耗时",
+      "unit": "ms",
+      "details": {
+        "identical_serialized_trace": true,
+        "microbenchmark_speedup": 2.401044100412226
+      }
+    }
+  }
+}
