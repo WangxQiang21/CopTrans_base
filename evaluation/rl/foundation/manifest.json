@@ -1,0 +1,599 @@
+{
+  "action_library_sha256": "8f633f660d1e3e81a2f064a24a710dd816cbeb94b46d92a4619c1493c10bf955",
+  "baselines": {
+    "legacy": "a492235",
+    "v1": "a415043",
+    "v2": "c90e981"
+  },
+  "commit": "b190a9ccc7b48571233fd6003d5ea43520b928dc",
+  "contract": {
+    "length": 0.738,
+    "limits": {
+      "a_max": 0.6,
+      "alpha_max": 0.8,
+      "angular_jerk_max": 3.0,
+      "jerk_max": 2.0,
+      "lateral_a_max": 2.0,
+      "mode_setup_time": 0.15,
+      "mode_switch_duration": 0.3,
+      "omega_max": 0.8,
+      "profile": "kinematic_sim_mode_switch_only_v2",
+      "r_min_ack": 0.81,
+      "steer_accel_max": 1.5,
+      "steer_angle_max": 1.5707963267948966,
+      "steer_rate_max": 0.8,
+      "target_v": 2.0,
+      "track": 0.364,
+      "translation_alpha_max": null,
+      "translation_angular_jerk_max": null,
+      "translation_omega_max": 2.5,
+      "translation_speed_policy": "mode_switch_only",
+      "v_max": 2.0,
+      "wheel_speed_max": 3.0,
+      "wheelbase": 0.494
+    },
+    "margin": 0.04,
+    "quality": {
+      "adjustment": 0.5,
+      "clearance": 4.0,
+      "direction_change": 1.5,
+      "length": 0.25,
+      "metric_spacing": 0.01,
+      "name": "quality_cost_v2_prototype_uncalibrated",
+      "preferred_clearance_factor": 0.2,
+      "reference_speed_mps": 2.0,
+      "reference_spin_omega_radps": 0.8,
+      "reverse": 2.0,
+      "reverse_early": 4.0,
+      "reverse_start": 3.0,
+      "reverse_yaw_early": 2.0,
+      "shape": 1.0,
+      "sweep_spacing": 0.005,
+      "time": 1.0
+    },
+    "width": 0.5
+  },
+  "contract_sha256": "e20964349a7987628a4e64c0f351070e7c5d9863356faa22065cd4386369c397",
+  "manifest_sha256": "d100e90e5aedc1224effdbe135c7de9f3e684c30af1da551d92f856fdaf71629",
+  "python": "3.12.13",
+  "schema": "rl_foundation_v1",
+  "smoke_environment_budget": {
+    "failure_penalty": 50.0,
+    "finalization_timeout_s": 3.0,
+    "image_size": 64,
+    "max_decisions": 24,
+    "max_execution_seconds": 300.0,
+    "potential_weight": 1.0,
+    "success_bonus": 50.0,
+    "time_scale": 10.0
+  },
+  "source_files_sha256": {
+    "catkin_ws/src/fwis_common/config/ranger_mini_2.yaml": "c69972c760dddd270d6d0f6455ced43559ffa6f86bb639b99f6e9e4493d89b05",
+    "catkin_ws/src/fwis_v3_demo/config/params.yaml": "2c3f2718f059cd48aa29c3ca5cd5c02d9ceb5843784cc10897818b70fecc200f",
+    "catkin_ws/src/fwis_v3_msgs/msg/ModePrimitive.msg": "7fa0345ae76c9f09055c9e17d898d8c79fec59aeb3c39549e911c9afb2d17b03",
+    "catkin_ws/src/fwis_v3_msgs/msg/PlanSeed.msg": "688a693eac0537271f07a40d0d3b42680d70d41cf6f3fe6b06c2d7248d0ad204",
+    "catkin_ws/src/fwis_v3_msgs/msg/PlanSeedCandidates.msg": "e76716dbc68f240a1660d3f011506524ad3e4ef00dfe04dc3b0d89e553031a43",
+    "catkin_ws/src/fwis_v3_msgs/msg/TimedPoint.msg": "55cf0349caad56a8122ce23fac470912e22ec676f723772ad9b3a24b8729ceb5",
+    "catkin_ws/src/fwis_v3_msgs/msg/TimedTrajectory.msg": "be55fdd47ca8d2f63f6759a4aa8549d2e93c92c1ebeedd990f54e2f405cb1c2e",
+    "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/__init__.py": "f03490dfaf1648ecc443b4f2136eecab48413f3ae166b237e3b66209c9cce93b",
+    "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/candidate_finalizer.py": "d089ac359d1d7d28e2c80e91aba7fe73fbbb838087ca5f5475ca31e32ecd13d8",
+    "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/continuous_geometry.py": "cbf8ce12690865ba05660af427161b26afdd5cc944b66b7c9d8f7d240f4fa27a",
+    "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/continuous_optimizer.py": "cc03a5f8eec5cd8ca2ca68d9602ae9edcdf130f73409346f8724f71564392ddf",
+    "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/continuous_retiming.py": "8313a80941d7ed298f1b42f3bb90c2d7b5756d703234e54a1624c5aa5ef55bce",
+    "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/core.py": "8c412351b5c47e959970d26c588fb7bc329640cd21c7da4ef48ddcf46564b81d",
+    "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/diagnostics.py": "6942310c230f2d716206da5e23e68bd249618f13632356a2fe751dd3abda69c8",
+    "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/geometry_incumbent.py": "a3792f95e173e0c4166a305cd2b94835aeb198956c05a4edc4f09aff99cd8bd9",
+    "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/legacy_geometry_provider.py": "c3437ad38831527cabf1e4ed5b57a2958615cacb9aef71ed37be50b79d306409",
+    "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/mode_master.py": "d0d55e85be3be34459662bc8bf471f5c3e363becddb62d59feb4cb9b5633a019",
+    "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/mode_switch_timing.py": "633deb6bc169a80ccf932714a995d9d90828315ed243c27aac179740eb08625c",
+    "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/numerics.py": "7d047dc70e6d255fa9bbe691afa7ac7ba0419a11c661b8919641f12611f279fd",
+    "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/planning_display.py": "86c0ceec87a8baa7708b912b1cc4eb39af8186b22ed350798c16923675421d35",
+    "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/quality.py": "aecb7c50f9454fab5e030badb27c2ba281ad6b6c3b940a2194da777cae922ace",
+    "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/retiming.py": "0b52706acca0eae0220bc0248f5706bdb24c559d8f26de018ea64e5ff958d82f",
+    "catkin_ws/src/fwis_v3_playback/scripts/playback.py": "133a2efd0b1450d25a7af8c75eaced77be76ea76b3d1e90b0fdae25740238a30",
+    "rl/configs/environment.yaml": "987b0f2f8ddcb03171b0d13ef85b9e876f7c3963539737014d1b8a7b96ce4a8a",
+    "rl/pyproject.toml": "b60aea7044ee1884fbb6b0315537f5f6cfa3ddec20320ce315914a49d3c83fb0",
+    "rl/requirements-foundation.lock": "e3f3a0b910e72352caff423863e0ac9870aeee5a315a263279847d483f954602",
+    "rl/run_checks.sh": "559164560bca047cf0b29d3177e0bda95faafe203093a29260eb2a55d5400db0",
+    "rl/src/coptrans_rl/__init__.py": "5d9b6f3753dae4ae11dd39eafdd33be174c68467b2bddfa2b211d18e55fb9e62",
+    "rl/src/coptrans_rl/action_library.py": "5cf6e567e057fdff2b47dfd8229ec26f8fd57e554d7e282a6a6bd75cabcd5a79",
+    "rl/src/coptrans_rl/action_mask.py": "7b49846fd7824fd4640a95442e4e4902f64ccbb6c08fc4edd321257a666c0114",
+    "rl/src/coptrans_rl/benchmark.py": "7bbe05167281ad03c27962039f561885b6a5b3b2b319c711af8953e272f70ebd",
+    "rl/src/coptrans_rl/configuration.py": "fd9f9b024b7cdfbca3f8ae25a448d2aeb1091f0f31f0d84e172c3bce09e4f4cd",
+    "rl/src/coptrans_rl/environment.py": "984eabd91492505f43f58e0ad713bdf83c44a46f5b266a6c417cdc6233920676",
+    "rl/src/coptrans_rl/foundation.py": "b6bb0033ca4f01a5db9da4b640f6dd0e596dd12fecb2dbe35d126ed649ee9ebb",
+    "rl/src/coptrans_rl/kernel_adapter.py": "3683cd33de35f9a0901fa6d98979d908342e1ac3912a162468332ca97f526c3f",
+    "rl/src/coptrans_rl/observation.py": "6b845ce501c64a00fa5d6c666b3310061645fe97afcd400481495a06b73a5b8a",
+    "rl/src/coptrans_rl/reward.py": "7243cbfe52a654439409818dcf9cdcbb775c712517a0acfa633b8c2c8931f1dd",
+    "rl/src/coptrans_rl/timing_audit.py": "0fef9d0e4f017e4d8a136b643063cf33d287b24acabe7c74989b107865ab6e10",
+    "rl/tests/kernel_contract_snapshot.py": "86afe9c107bcf7347ea3718148c5deb107b6e6b032962c321475e9a3439b80b2",
+    "rl/tests/ros_playback_audit.py": "ca5fc25a5f6d4018c269ff166ed8d556c10ac6c628f8a8c6d8812aa9809cd91d",
+    "rl/tests/test_foundation.py": "22f177ca681cb5611244e4d3abe8bccb9745a0555ba540721d4471fd2570745b"
+  },
+  "tasks": [
+    {
+      "allow_reverse": true,
+      "allow_shunting": false,
+      "category": "paper",
+      "contract_sha256": "e20964349a7987628a4e64c0f351070e7c5d9863356faa22065cd4386369c397",
+      "directory": "maps/map01-p11-narrow-case-a",
+      "effective": {
+        "goal": {
+          "th": 0.0,
+          "x": 8.81018775,
+          "y": 5.0365375
+        },
+        "occupied_sha256": "b4aed408cbc3e31ddb9437f172ffa93292e8f4a1ad0f752b6f4d2d81b35177ed",
+        "origin": [
+          5.9258377499999995,
+          4.657712500000001
+        ],
+        "resolution": 0.0059654999999999994,
+        "shape": [
+          450,
+          863
+        ],
+        "start": {
+          "th": 0.0,
+          "x": 6.75203775,
+          "y": 6.4025875
+        }
+      },
+      "effective_sha256": "8c7dfc2f8970caab0a2aeccd7df86d09bc3469c2bee4f1dd6ca269b950c759fb",
+      "goal_footprint_valid": true,
+      "initial_mode": 0,
+      "legacy_name": "P11_case_a",
+      "scale": 0.75,
+      "source": {
+        "image_sha256": "80f77d5aeed3bccef320b44728f1ccd9dbd53873a24e47270d21caddf3cf6211",
+        "map_yaml_sha256": "550bb7b462705969ff47c477bf27c783ed4f50aaec705d536b068647198a9525",
+        "scene_meta_sha256": "015c514673acb40726a915d7baedd24a837c419d97947c60eb2271e33a11f00e"
+      },
+      "start_footprint_valid": true,
+      "task_id": "map01-p11-narrow-case-a",
+      "xy_tol": 0.02,
+      "yaw_tol": 0.017453292519943295
+    },
+    {
+      "allow_reverse": true,
+      "allow_shunting": false,
+      "category": "paper",
+      "contract_sha256": "e20964349a7987628a4e64c0f351070e7c5d9863356faa22065cd4386369c397",
+      "directory": "maps/map02-p11-goal-side-aisle",
+      "effective": {
+        "goal": {
+          "th": 1.570796,
+          "x": 5.2116,
+          "y": 4.9632
+        },
+        "occupied_sha256": "d7e24dbaa002e8c1c8b72611ac01e63d4d96e1fc3740eb4371acd93be8a5aeb2",
+        "origin": [
+          3.5088,
+          4.2106
+        ],
+        "resolution": 0.006936,
+        "shape": [
+          516,
+          430
+        ],
+        "start": {
+          "th": -1.570796,
+          "x": 3.8521,
+          "y": 4.8591
+        }
+      },
+      "effective_sha256": "e3adcccac8c09c53352b2276e4169af0285424582941f97d175f0f3080708b66",
+      "goal_footprint_valid": true,
+      "initial_mode": 0,
+      "legacy_name": "P11_case_b",
+      "scale": 1.0,
+      "source": {
+        "image_sha256": "729d84af84a2533cdff2f406f0fcaf7917374400252d489c2cefae10560cfb1c",
+        "map_yaml_sha256": "0f478f1f58a909c5fe0aadc1d52e6237b0e99e52a91cc997da945a0578fedc45",
+        "scene_meta_sha256": "af2471105378106eced16a3d2bc7d8586e7786d75b3013657709be9a05011962"
+      },
+      "start_footprint_valid": true,
+      "task_id": "map02-p11-goal-side-aisle",
+      "xy_tol": 0.02,
+      "yaw_tol": 0.017453292519943295
+    },
+    {
+      "allow_reverse": true,
+      "allow_shunting": false,
+      "category": "paper",
+      "contract_sha256": "e20964349a7987628a4e64c0f351070e7c5d9863356faa22065cd4386369c397",
+      "directory": "maps/map03-p11-narrow-case-c",
+      "effective": {
+        "goal": {
+          "th": 0.0,
+          "x": 7.44255665,
+          "y": 3.5754161
+        },
+        "occupied_sha256": "f3eec73799790c865ba07e35b4c755be269b69dbf919caef4fb4f459cd2296ee",
+        "origin": [
+          4.909886650000001,
+          2.0474841
+        ],
+        "resolution": 0.005205899999999999,
+        "shape": [
+          462,
+          803
+        ],
+        "start": {
+          "th": 0.0,
+          "x": 5.74540665,
+          "y": 3.2838941
+        }
+      },
+      "effective_sha256": "e9b03b875c7921dc2f957938b8d9b0854990a970fbf59455b733838a237fe2f7",
+      "goal_footprint_valid": true,
+      "initial_mode": 0,
+      "legacy_name": "P11_case_c",
+      "scale": 0.7,
+      "source": {
+        "image_sha256": "7a2e7c45ad52672703a9a2ca828baf3b4171e1e3015ef04ce9c1122303a0b841",
+        "map_yaml_sha256": "5f92cd3167a5348f91491dbe5b0b58a87968453ddd039b4b31e1d38ebcb70fcf",
+        "scene_meta_sha256": "b44d4636e4853afeca196cdf9e07211f316fbc2c5fa5cd2a630de9683d51547f"
+      },
+      "start_footprint_valid": true,
+      "task_id": "map03-p11-narrow-case-c",
+      "xy_tol": 0.02,
+      "yaw_tol": 0.017453292519943295
+    },
+    {
+      "allow_reverse": true,
+      "allow_shunting": false,
+      "category": "paper",
+      "contract_sha256": "e20964349a7987628a4e64c0f351070e7c5d9863356faa22065cd4386369c397",
+      "directory": "maps/map04-p12-maze-env1",
+      "effective": {
+        "goal": {
+          "th": 0.0,
+          "x": 11.589658,
+          "y": 12.012357999999999
+        },
+        "occupied_sha256": "881b4bd95a8b506ae7079ed42e90689522e3191f3d1ed0f3e97f2faa1c6dad0b",
+        "origin": [
+          5.967758,
+          5.967758
+        ],
+        "resolution": 0.005636,
+        "shape": [
+          1431,
+          1431
+        ],
+        "start": {
+          "th": 0.0,
+          "x": 7.7120999999999995,
+          "y": 13.359372
+        }
+      },
+      "effective_sha256": "195393737b1f1d790a3ec27db922a7639b5acc3f55e9906685bcd5ded3d993e7",
+      "goal_footprint_valid": true,
+      "initial_mode": 0,
+      "legacy_name": "P12_env1",
+      "scale": 0.5,
+      "source": {
+        "image_sha256": "2fea924069231f0a1b3b826ce660b8b213c04e2665922f4e47ed26fe4f08dba8",
+        "map_yaml_sha256": "2e1d894d60d7390e6866a65e14d6405e80c396225920eceef30cb56979df96f1",
+        "scene_meta_sha256": "74461ccd74ca32e9a3513dbc1d7b7be3536a03e270d6084e05c8fbf19a66918b"
+      },
+      "start_footprint_valid": true,
+      "task_id": "map04-p12-maze-env1",
+      "xy_tol": 0.02,
+      "yaw_tol": 0.017453292519943295
+    },
+    {
+      "allow_reverse": true,
+      "allow_shunting": false,
+      "category": "paper",
+      "contract_sha256": "e20964349a7987628a4e64c0f351070e7c5d9863356faa22065cd4386369c397",
+      "directory": "maps/map05-p12-parking-row-env2",
+      "effective": {
+        "goal": {
+          "th": 1.570796,
+          "x": 6.32378935,
+          "y": 4.57629105
+        },
+        "occupied_sha256": "e5f91759835d6b0a2fbad3bc46da8fe21b4153c4680a90b1082c51529bcf0a7a",
+        "origin": [
+          3.27049855,
+          2.1803657
+        ],
+        "resolution": 0.017299099999999998,
+        "shape": [
+          326,
+          489
+        ],
+        "start": {
+          "th": 0.0,
+          "x": 3.97111245,
+          "y": 6.2370043
+        }
+      },
+      "effective_sha256": "1d8f9430863860bf3d13bd64bc4e599589827351e789d05cddf539a9b3eeb4a8",
+      "goal_footprint_valid": true,
+      "initial_mode": 0,
+      "legacy_name": "P12_env2",
+      "scale": 0.7,
+      "source": {
+        "image_sha256": "0856ad0af795b09e17e01e41bbf7c0f819170f53c93c6df718ed8342749ba718",
+        "map_yaml_sha256": "96f12a5355be92fffdd114df5944eb592fa96db6e875a9e124949a7d92c3d8ee",
+        "scene_meta_sha256": "22e88f7073cf368b4341e74b264f9dcd01b0908cd77cde772c6db314dafc062e"
+      },
+      "start_footprint_valid": true,
+      "task_id": "map05-p12-parking-row-env2",
+      "xy_tol": 0.02,
+      "yaw_tol": 0.017453292519943295
+    },
+    {
+      "allow_reverse": true,
+      "allow_shunting": false,
+      "category": "paper",
+      "contract_sha256": "e20964349a7987628a4e64c0f351070e7c5d9863356faa22065cd4386369c397",
+      "directory": "maps/map06-p12-bent-corridor-env3",
+      "effective": {
+        "goal": {
+          "th": 3.141593,
+          "x": 6.9328,
+          "y": 2.5339
+        },
+        "occupied_sha256": "6959636a41427c03f0ab3e3f750b54cb0ad58da09334745e3dc2e8c7f77374d6",
+        "origin": [
+          0.8678000000000003,
+          0.4805999999999999
+        ],
+        "resolution": 0.013553,
+        "shape": [
+          298,
+          536
+        ],
+        "start": {
+          "th": 0.0,
+          "x": 1.8639000000000001,
+          "y": 2.5068
+        }
+      },
+      "effective_sha256": "a44255ca0325b1be1bb1bd3fd8800b79d3acfd4bdb3c8d82fd78fdde003c4020",
+      "goal_footprint_valid": true,
+      "initial_mode": 0,
+      "legacy_name": "P12_env3",
+      "scale": 1.0,
+      "source": {
+        "image_sha256": "1f62a9ea3e05a0c1507ad48c690df33c8a727eab6d9c943a01d5798e70403e97",
+        "map_yaml_sha256": "aa6e276bc6ed1f9510c490d98c4a55db653504482ac9c847f155e32b69e90a8e",
+        "scene_meta_sha256": "32940d5e4d853d36ef3e29406dd780ca0407a3d812d748b3605fd6d755a82a03"
+      },
+      "start_footprint_valid": true,
+      "task_id": "map06-p12-bent-corridor-env3",
+      "xy_tol": 0.02,
+      "yaw_tol": 0.017453292519943295
+    },
+    {
+      "allow_reverse": true,
+      "allow_shunting": false,
+      "category": "paper",
+      "contract_sha256": "e20964349a7987628a4e64c0f351070e7c5d9863356faa22065cd4386369c397",
+      "directory": "maps/map07-p12-obstacle-field-env4",
+      "effective": {
+        "goal": {
+          "th": 0.0,
+          "x": 10.6173825,
+          "y": 5.7511846
+        },
+        "occupied_sha256": "7248cb6de3692a412b40927e1b2ff73a39be74b97751b9a243bd5099f571b931",
+        "origin": [
+          5.3990625,
+          1.5993749999999998
+        ],
+        "resolution": 0.005860000000000001,
+        "shape": [
+          990,
+          1485
+        ],
+        "start": {
+          "th": 0.0,
+          "x": 6.2692729,
+          "y": 2.9559645999999997
+        }
+      },
+      "effective_sha256": "ab0f82e53e3b2fd657240a1c16e2ce85e7537d854bde6bbf52b03e78f9735bfa",
+      "goal_footprint_valid": true,
+      "initial_mode": 0,
+      "legacy_name": "P12_env4",
+      "scale": 0.8,
+      "source": {
+        "image_sha256": "c9c424ec15670ee3fbb61d3efdb2f7106493f64276378a827c96caf44e5a8021",
+        "map_yaml_sha256": "0d42c3cf97c38a5944932eec72723aa638bddd8f08a1f38ee406c2743320fb8a",
+        "scene_meta_sha256": "0219641157b1dfc71cb103bc0b1d5b8590211fb59c53f6d30065437693ae35b0"
+      },
+      "start_footprint_valid": true,
+      "task_id": "map07-p12-obstacle-field-env4",
+      "xy_tol": 0.02,
+      "yaw_tol": 0.017453292519943295
+    },
+    {
+      "allow_reverse": true,
+      "allow_shunting": false,
+      "category": "paper",
+      "contract_sha256": "e20964349a7987628a4e64c0f351070e7c5d9863356faa22065cd4386369c397",
+      "directory": "maps/map08-p16-complex-parking",
+      "effective": {
+        "goal": {
+          "th": -0.652599,
+          "x": 17.540467800000002,
+          "y": 12.5264742
+        },
+        "occupied_sha256": "ac17a02b694db7aec98564e02c40872faef0e635faf33e7aef0b63e6f94ee82e",
+        "origin": [
+          11.866209,
+          11.866209
+        ],
+        "resolution": 0.0067031999999999994,
+        "shape": [
+          935,
+          935
+        ],
+        "start": {
+          "th": -0.652599,
+          "x": 12.5063646,
+          "y": 16.374111000000003
+        }
+      },
+      "effective_sha256": "7eb7e95f3af4bc3554d19cf0038b9c829c82d04da1719294cb0c214dd23f91b3",
+      "goal_footprint_valid": true,
+      "initial_mode": 0,
+      "legacy_name": "P16_complex_parking",
+      "scale": 1.2,
+      "source": {
+        "image_sha256": "e4d8551f6ae9eb7a06c561cbf2334aaa5fe06dfddefad4f9bd8b4e3e10aa5565",
+        "map_yaml_sha256": "6634042e5fb0aede9043b20f4ca0176b9c5cdc8ddfe43f0776679e89f5b16b01",
+        "scene_meta_sha256": "6f950ec6bfcd54f33c0fa750e95825241ec3236d74f195ab8999a7875920bd4c"
+      },
+      "start_footprint_valid": true,
+      "task_id": "map08-p16-complex-parking",
+      "xy_tol": 0.02,
+      "yaw_tol": 0.017453292519943295
+    },
+    {
+      "allow_reverse": true,
+      "allow_shunting": false,
+      "category": "paper",
+      "contract_sha256": "e20964349a7987628a4e64c0f351070e7c5d9863356faa22065cd4386369c397",
+      "directory": "maps/map09-p16-narrow-maze",
+      "effective": {
+        "goal": {
+          "th": 0.0,
+          "x": 17.573625,
+          "y": 12.305945
+        },
+        "occupied_sha256": "f97c55b68606b4e82141fd675e428e678ed758a1ba1529d229f57acd6cd76293",
+        "origin": [
+          11.25,
+          11.25
+        ],
+        "resolution": 0.00803,
+        "shape": [
+          934,
+          934
+        ],
+        "start": {
+          "th": 3.141593,
+          "x": 11.848235,
+          "y": 16.794715
+        }
+      },
+      "effective_sha256": "006f8df55b8e160f945043786b88df1324e8323dc2f573ab430d4ab60675afb7",
+      "goal_footprint_valid": true,
+      "initial_mode": 0,
+      "legacy_name": "P16_narrow_maze",
+      "scale": 1.0,
+      "source": {
+        "image_sha256": "49092b2eaabdf9abed44a2159e41ad4cfa78adcf7d5c84e3966c79728eec0d06",
+        "map_yaml_sha256": "cdf42ea0cbee81f7e6281310e5c1e398c6e1ad521fb1d0197da9d0e20cbf2c5f",
+        "scene_meta_sha256": "cdfb1b310493f0401258faa16be6f2a6f96d77945b91766a1d5011f4dfbc6054"
+      },
+      "start_footprint_valid": true,
+      "task_id": "map09-p16-narrow-maze",
+      "xy_tol": 0.02,
+      "yaw_tol": 0.017453292519943295
+    },
+    {
+      "allow_reverse": true,
+      "allow_shunting": false,
+      "category": "synthetic",
+      "contract_sha256": "e20964349a7987628a4e64c0f351070e7c5d9863356faa22065cd4386369c397",
+      "directory": "maps/map15-n06-two-stage-offset-passage",
+      "effective": {
+        "goal": {
+          "th": 1.5708,
+          "x": 9.959999999999999,
+          "y": 6.279999999999999
+        },
+        "occupied_sha256": "b895cd4e2fa165a1acb370881d105d117f694ce7b90a72a74dd6de3c73d060f2",
+        "origin": [
+          1.1999999999999993,
+          0.7999999999999998
+        ],
+        "resolution": 0.016,
+        "shape": [
+          400,
+          600
+        ],
+        "start": {
+          "th": 0.0,
+          "x": 2.0,
+          "y": 2.96
+        }
+      },
+      "effective_sha256": "3235459330a18e83092487eab93527be5379cd0851ea693ab1fe1f96d04f8742",
+      "goal_footprint_valid": true,
+      "initial_mode": 0,
+      "legacy_name": "N06_two_stage_offset_passage",
+      "scale": 0.8,
+      "source": {
+        "image_sha256": "6624c67f7f64db2f636fecf0aaeba8d8e61e773f411116c7bd02afe9cf547d0f",
+        "map_yaml_sha256": "aef7c28a5b6669eed2c6b513e868b1268b9e91b69ed6097a50a35f78c6d7c1d9",
+        "scene_meta_sha256": "cb71cccc036ed2f6755104f63fd2eb825354aa6e64566fde82490d6c7351d676"
+      },
+      "start_footprint_valid": true,
+      "task_id": "map15-n06-two-stage-offset-passage",
+      "xy_tol": 0.02,
+      "yaw_tol": 0.017453292519943295
+    },
+    {
+      "allow_reverse": true,
+      "allow_shunting": false,
+      "category": "demo",
+      "contract_sha256": "e20964349a7987628a4e64c0f351070e7c5d9863356faa22065cd4386369c397",
+      "directory": "maps/map16-s09-underground-garage",
+      "effective": {
+        "goal": {
+          "th": 1.5708,
+          "x": 5.86,
+          "y": 0.5499999999999998
+        },
+        "occupied_sha256": "3873c33e316ad6df3fc6b7adcb827a1c6bb004efe059672d944c704ec920afab",
+        "origin": [
+          0.0,
+          0.0
+        ],
+        "resolution": 0.02,
+        "shape": [
+          500,
+          700
+        ],
+        "start": {
+          "th": 3.14159,
+          "x": 13.2,
+          "y": 2.25
+        }
+      },
+      "effective_sha256": "543a8a4f11c8efaea4be5fdf2b6a4dfffa17391bca6ed9697b7cca855cf21ad8",
+      "goal_footprint_valid": true,
+      "initial_mode": 0,
+      "legacy_name": "S09_underground_garage",
+      "scale": 1.0,
+      "source": {
+        "image_sha256": "c700fdc43e2a29d244a5a7134ae96825623bc04d74f26f6ae7b47e8eba9468b4",
+        "map_yaml_sha256": "aef7c28a5b6669eed2c6b513e868b1268b9e91b69ed6097a50a35f78c6d7c1d9",
+        "scene_meta_sha256": "3b0cc0be010a64d558eabcf8296476f1a8edad0da4f5919045eb5af3df7d3c3f"
+      },
+      "start_footprint_valid": true,
+      "task_id": "map16-s09-underground-garage",
+      "xy_tol": 0.02,
+      "yaw_tol": 0.017453292519943295
+    }
+  ],
+  "training_environment_budget": {
+    "failure_penalty": 50.0,
+    "finalization_timeout_s": 3.0,
+    "image_size": 64,
+    "max_decisions": 256,
+    "max_execution_seconds": 300.0,
+    "potential_weight": 1.0,
+    "success_bonus": 50.0,
+    "time_scale": 10.0
+  },
+  "working_tree_dirty": false
+}
