@@ -16,6 +16,7 @@ from .continuous_geometry import (ContinuousPlan, ControlKnot, MotionBlock,
                                   fit_continuous_endpoint, replay_continuous,
                                   sample_block)
 from .core import features
+from .numerics import trapezoid
 
 
 class _DeadlineReached(RuntimeError):
@@ -197,7 +198,7 @@ def _optimize_continuous_geometry_scipy(plan, evaluator, time_limit=1.0,
                     stations = np.asarray([row[0] for row in rows])
                 risks = [max(0., (preferred-distance)/preferred)**2
                          for distance in block_clearances]
-                risk_integral += float(np.trapz(risks, x=stations))
+                risk_integral += float(trapezoid(risks, x=stations))
                 peak_risk = max(peak_risk, max(risks))
         endpoint = pose
         goal_yaw = candidate.goal.th+2.*math.pi*round(

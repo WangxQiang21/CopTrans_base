@@ -268,7 +268,9 @@ class ContinuousRetiming(unittest.TestCase):
         self.assertEqual(timed.samples[0][2], 0.)
         self.assertAlmostEqual(timed.samples[-1][2], 0.)
         self.assertGreater(max(abs(row[2]) for row in timed.samples), .01)
-        self.assertLessEqual(timed.phases[0]["dynamic_peaks"]["acceleration"],
+        motion = next(p for p in timed.phases if p["kind"] == "translation")
+        self.assertEqual(timed.mode_switch_count, 1)
+        self.assertLessEqual(motion["dynamic_peaks"]["acceleration"],
                              self.limits.a_max+1e-5)
 
     def test_spin_centers_stay_fixed_and_has_finite_angular_profile(self):

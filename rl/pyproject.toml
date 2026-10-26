@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "coptrans-rl"
+version = "0.1.0"
+description = "ROS-independent multimode path-planning environment"
+requires-python = ">=3.10"
+dependencies = [
+  "numpy>=1.24,<3",
+  "scipy>=1.10,<2",
+  "PyYAML>=6,<7",
+  "Pillow>=10,<13",
+  "gymnasium>=1.0,<2",
+]
+
+[project.optional-dependencies]
+train = ["torch>=2.3", "stable-baselines3>=2.4,<3", "sb3-contrib>=2.4,<3"]
+plots = ["matplotlib>=3.7,<4"]
+
+[tool.setuptools.packages.find]
+where = ["src"]

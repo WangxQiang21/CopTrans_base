@@ -1,12 +1,15 @@
 # expv3
 
-## 本分支：强化学习模式与路径规划（调研方案阶段）
+## 本分支：强化学习模式与路径规划（P0/P1 基础实现）
 
 本分支 rl-mode-path 从 continuous-mode-path 的 c90e981 派生，用于第四种方法的开发。
-当前已完成文献调研与执行方案，尚未实现 RL 后端、训练模型或产生 RL 性能结果。
+当前已实现 80 动作库、整车动作掩码、离线环境及公共候选完成器，正在按执行方案逐阶段验收。
+尚未训练策略或接入 ROS RL 后端，不能把基础模块检查当成学习规划结果。
 
 - [完整文献调研与算法架构](plan/rl/01_文献调研与算法架构.md)
 - [分阶段执行方案与验收标准](plan/rl/02_执行方案与验收标准.md)
+- [基础模块的安装、检查命令与代码说明](rl/README.md)
+- [P0/P1 实测结果和图片](evaluation/rl/foundation/REPORT.md)
 
 推荐框架：带动作掩码的 PPO 逐段选择 A/斜移/Spin、方向和运动参数，生成完整路径；
 随后复用现有连续化、边界拟合、重定时、车辆切换配置及整车审核。
@@ -15,7 +18,8 @@
 
 **目前执行 run_demo.sh 仍运行继承的 mode_path_v2；它可以用于父版本对照，不能当成强化学习结果。**
 执行方案 P5 完成后，本分支入口才会绑定拟定的 rl_mode_path 后端。
-下方命令说明描述当前继承入口；训练与 RL 命令在执行方案中均明确标为待实现。
+下方命令说明描述当前继承入口；离线基础检查使用 `bash rl/run_checks.sh --output 新目录 --ros`。
+训练与 RL 在线推理尚未实现。
 
 本文档列出 `run_demo.sh` 的完整用法。地图目录及预览见[地图总索引](maps/README.md)，可运行地图与旧名称的对应关系见 [`maps/map_index.tsv`](maps/map_index.tsv)。
 
@@ -34,7 +38,7 @@ bash run_demo.sh --list-maps
 bash run_demo.sh --help
 ```
 
-启动脚本会加载 ROS Noetic、构建 `catkin_ws`，再启动 Demo。三个已实现的算法分支各自锁定对应后端；rl-mode-path 当前继承 v2 入口，处于方案阶段。检测到图形桌面时打开 RViz；无图形桌面时自动关闭 RViz。
+启动脚本会加载 ROS Noetic、构建 `catkin_ws`，再启动 Demo。三个已实现的算法分支各自锁定对应后端；rl-mode-path 当前继承 v2 入口，学习环境在独立目录中开发。检测到图形桌面时打开 RViz；无图形桌面时自动关闭 RViz。
 
 模式切换时间是车辆配置，不属于某个规划后端：当前 Ranger Mini 2 仿真值统一设为 0.3 秒，来自 [`ranger_mini_2.yaml`](catkin_ws/src/fwis_common/config/ranger_mini_2.yaml)。三个后端在相同配置下使用同一切换事件；受限动态配置只有在转向执行时间更长时才延长事件。搜索评分中的换模惩罚与这段执行时间分开计算。
 

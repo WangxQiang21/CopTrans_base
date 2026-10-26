@@ -10,6 +10,7 @@ from .core import (Action, Grid, Pose, advance, collapse_exact_runs, replay, wra
                    footprint_corners)
 from .continuous_geometry import ContinuousPlan, sample_block
 from .retiming import wheel_configuration
+from .numerics import trapezoid
 
 
 def shunting_violation(motions):
@@ -202,7 +203,7 @@ def _reverse_preferences(segments, start_window_m=.738):
             if mode == 0:
                 station, curvature = controls
                 weight = (1.-(traveled+station)/max(total, 1e-12))**2
-                early_yaw += float(np.trapz(np.abs(curvature)*weight, station))
+                early_yaw += float(trapezoid(np.abs(curvature)*weight, station))
         traveled += length
     return {"reverse_early_length_m": early,
             "reverse_start": (math.exp(-forward_prefix/max(start_window_m, 1e-9))
@@ -735,7 +736,7 @@ class TrajectoryEvaluator:
                         positions = (np.linspace(0., measure, len(block_risks))
                                      if block.mode == 2 else
                                      np.asarray(block_metric_positions, dtype=float))
-                        risk_integral += float(np.trapz(
+                        risk_integral += float(trapezoid(
                             block_risks, x=positions))
                 pose = rows[-1][1]
                 global_s += block.length
@@ -1112,11 +1113,11 @@ class TrajectoryEvaluator:
                 body_min, safe_min = min(body_min, d), min(safe_min, dsafe)
                 risks.append(max(0., (pref-d)/pref)**2)
                 low.append(float(d < pref))
-            integral += float(np.trapz(risks, dx=measure/n))
+            integral += float(trapezoid(risks, dx=measure/n))
             peak_risk = max(peak_risk, max(risks))
             if a.mode != 2:
                 length += abs(a.amount)
-                low_length += float(np.trapz(low, dx=abs(a.amount)/n))
+                low_length += float(trapezoid(low, dx=abs(a.amount)/n))
             if a.mode == 0:
                 curvature_energy += abs(a.amount)*(a.control/kmax)**2
                 if old is not None and old.mode == 0:
