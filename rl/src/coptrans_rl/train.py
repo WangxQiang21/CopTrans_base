@@ -40,11 +40,13 @@ def model_rank(evaluation, validation_nll=0.):
 
 
 def run_manifest(args, corpus, output):
+    from .observation import ObservationBuilder
     dependencies = {d.metadata["Name"]: d.version for d in importlib.metadata.distributions()}
     meta = {"schema": "masked_planning_model_v1", "stage": args.stage,
             "contract_sha256": corpus.settings.contract.identity,
             "action_library_sha256": corpus.settings.library.identity,
             "settings_sha256": corpus.settings.identity,
+            "observation_schema": ObservationBuilder.state_schema,
             "dataset_sha256": corpus.manifest["dataset_sha256"],
             "dataset_scope": corpus.manifest["scope"],
             "arguments": {k: str(v) if isinstance(v, Path) else v for k, v in vars(args).items()},

@@ -63,6 +63,18 @@ class FoundationTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 EnvironmentConfig(max_decisions=bad)
 
+    def test_goal_vector_uses_vehicle_length_and_body_frame(self):
+        p = self.problem([Action(0, 2., 0.)])
+        builder = ObservationBuilder(p)
+        mask = np.ones(len(self.library), dtype=bool)
+        obs = builder.encode(p.start, [], 0, 256, 0., mask)
+        self.assertAlmostEqual(float(obs["state"][0]), 2./self.contract.length, places=6)
+        self.assertAlmostEqual(float(obs["state"][1]), 0., places=6)
+        rotated = dataclasses.replace(p, start=Pose(3., 3., math.pi/2), goal=Pose(3., 5., math.pi/2))
+        obs = ObservationBuilder(rotated).encode(rotated.start, [], 0, 256, 0., mask)
+        self.assertAlmostEqual(float(obs["state"][0]), 2./self.contract.length, places=6)
+        self.assertAlmostEqual(float(obs["state"][1]), 0., places=6)
+
     def test_forward_and_shared_history_mask(self):
         problem = self.problem([Action(0, 1., 0.)], allow_reverse=False)
         mask, _ = valid_actions(problem, problem.start, [], self.library)

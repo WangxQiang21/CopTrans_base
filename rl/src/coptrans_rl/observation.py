@@ -29,6 +29,7 @@ def goal_distance_field(grid, goal):
 
 class ObservationBuilder:
     state_dim = 60
+    state_schema = "relative_goal_vehicle_lengths_v2"
 
     def __init__(self, problem, image_size=64):
         self.problem, self.size = problem, image_size
@@ -101,7 +102,7 @@ class ObservationBuilder:
         mode = prefix[-1].mode if prefix else self.problem.initial_mode
         last_control = prefix[-1].control if prefix else 0.
         state = [
-            (c*dx+s*dy)/(100*length), (-s*dx+c*dy)/(100*length),
+            (c*dx+s*dy)/length, (-s*dx+c*dy)/length,
             math.sin(self.problem.goal.th-pose.th), math.cos(self.problem.goal.th-pose.th),
             *[float(mode == m) for m in range(3)],
             previous, reversals, wrap(spin)/math.pi,
