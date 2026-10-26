@@ -1,0 +1,469 @@
+{
+  "schema": "branch_comparison_report_v1",
+  "evaluation_date": "2026-10-25",
+  "case_count": 11,
+  "source": "/home/wq/whut_thesis/expv3_experiment_archive/result/20261025_backend_comparison",
+  "source_sha256": "35a916d221396ee4d39b285f27fe4ebb60128c7853310f0ed5b4c9cb4932957e",
+  "branches": {
+    "multimodal-hybrid-astar": {
+      "backend": "legacy",
+      "title": "多模式 Hybrid A*",
+      "pass_count": 6,
+      "case_count": 11,
+      "pass_rate": 0.5454545454545454,
+      "median_route_duration_s_successes": 6.7072200665,
+      "median_reported_search_plus_optimizer_s_successes": 3.7458545,
+      "median_mode_switches_successes": 1.0,
+      "median_min_body_clearance_m_successes": null,
+      "failures": {
+        "map02": "search_no_path_in_discretized_lattice",
+        "map07": "search_budget_exhausted",
+        "map08": "search_no_path_in_discretized_lattice",
+        "map09": "search_no_path_in_discretized_lattice",
+        "map16": "search_budget_exhausted"
+      },
+      "current_branch_commit": "a49223570f28ef510df42ce4ad8e96aac87fda10"
+    },
+    "mode-path-constant-primitive": {
+      "backend": "mode_path_v1",
+      "title": "模式序列搜索 + 分段平滑",
+      "pass_count": 5,
+      "case_count": 11,
+      "pass_rate": 0.45454545454545453,
+      "median_route_duration_s_successes": 43.167094098,
+      "median_reported_search_plus_optimizer_s_successes": 6.531371,
+      "median_mode_switches_successes": 3,
+      "median_min_body_clearance_m_successes": 0.03506500506773591,
+      "failures": {
+        "map01": "optimizer_no_certified_candidate",
+        "map03": "optimizer_no_certified_candidate",
+        "map06": "optimizer_no_certified_candidate",
+        "map07": "search_budget_exhausted",
+        "map08": "search_budget_exhausted",
+        "map15": "optimizer_no_certified_candidate"
+      },
+      "current_branch_commit": "a415043cf8929fb1aa8bc5fbaba2632a6414a70a"
+    },
+    "continuous-mode-path": {
+      "backend": "mode_path_v2",
+      "title": "连续可执行轨迹",
+      "pass_count": 9,
+      "case_count": 11,
+      "pass_rate": 0.8181818181818182,
+      "median_route_duration_s_successes": 14.241158459,
+      "median_reported_search_plus_optimizer_s_successes": 2.573074,
+      "median_mode_switches_successes": 2,
+      "median_min_body_clearance_m_successes": 0.051151637106066405,
+      "failures": {
+        "map07": "search_budget_exhausted",
+        "map08": "search_budget_exhausted"
+      },
+      "current_branch_commit": "c90e981cd996e1feaa196f1bdbfbdd709036d37f"
+    }
+  },
+  "per_map": [
+    {
+      "map_id": "map01",
+      "case": "P11 case A",
+      "legacy": {
+        "status": "pass",
+        "route_duration_s": 1.951811296,
+        "reported_planning_seconds_sum": 10.811585,
+        "mode_switches": 1,
+        "min_body_clearance_m": null,
+        "failure_class": null,
+        "failure_detail": null,
+        "search_diagnostic": null
+      },
+      "mode_path_v1": {
+        "status": "fail",
+        "route_duration_s": null,
+        "reported_planning_seconds_sum": null,
+        "mode_switches": null,
+        "min_body_clearance_m": null,
+        "failure_class": "optimizer_no_certified_candidate",
+        "failure_detail": "mode_master_no_feasible_candidate",
+        "search_diagnostic": "search_success id=1 direction_policy=bidirectional_shared_cost allow_shunting=0 reverse_search_competed=1 reverse_fallback_tried=1 reverse_fallback_used=1 selected_has_reverse=0 reverse_fallback_iterations=90000 reverse_fallback_seconds=0.878136 actions=11 iterations=125000 seconds=1.091715 modes=A10/2.000000m,O1/0.627239m,S0/0.000000rad,switches=1 steer_changes=3 curvature_tv=1.851852 oblique_tv=0.000000 reverse=0.000000m budget_hit=0 incumbent_budget_hit=1 selected=reverse_competitor auxiliary_shunting_proposal=1 guided_cost=5.885337 cost_parts={distance:2.627239,spin:0.000000,mode_switch:2.000000,low_curvature_switch:0.000000,reverse:0.000000,reverse_early:0.000000,reverse_start:0.000000,reverse_yaw_early:0.000000,direction:0.000000,steer_tv:0.740741,curvature:0.008383,oblique_tv:0.000000,oblique_event:0.000000,oblique_use:0.355444,oblique_cruise:0.017372,sum:5.749179} baseline_cost=inf route2d=feasible route2d_cost=6.175589 route2d_seconds=0.096771 ackermann_probe=feasible ackermann_probe_cost=7.285902 ackermann_probe_iterations=30000 ackermann_probe_seconds=0.094524 route2d_reason=route_candidate xy_routes=4 duplicate_routes=0 duplicate_waypoint_variants=0 heuristic_headings=0 start_spin_blocked=0 start_spin_ok=0 heuristic_route_ok=0 route_edge_blocked=0 terminal_spin_blocked=0 terminal_pose_rejected=0 dp_terminal_states=12 dp_max_reachable_waypoint=6 dp_waypoint_count=7 dp_terminal_spin_blocked=0 dp_pose_rejected=0 mixed_calls=4 mixed_successes=1 ackermann_calls=4 ackermann_successes=0 ackermann_expansions=298 mixed_expansions=409 mixed_budget_hit=0 cell_astar_seconds=0.055313 route_heuristic_seconds=0.000000 route_dp_seconds=0.038312 route_graph_wall_seconds=0.038312 mixed_search_seconds=0.010180 route_details=floor:0.000000,weight:0.000000,sampling:base,path_m:2.623946,wps:4,dense_wps:1,intermediate_wps:3,sparse_wps:0,forced_wps:0,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:0,forced_clearance_min:0,base_wps:2,dp_states:1944,candidate_edges:63,feasible_edges:2,max_turn:0.362871,dp:1,mixed:1,expanded:11,dp_x:7.461954,dp_y:5.692727|floor:0.000000,weight:0.000000,sampling:adaptive,path_m:2.623946,wps:6,dense_wps:1,intermediate_wps:3,sparse_wps:0,forced_wps:0,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:0,forced_clearance_min:0,base_wps:2,dp_states:2916,candidate_edges:225,feasible_edges:5,max_turn:0.362871,dp:1,mixed:4,expanded:39,dp_x:7.288955,dp_y:5.865726|floor:0.000000,weight:0.500000,sampling:base,path_m:2.623946,wps:4,dense_wps:0,intermediate_wps:4,sparse_wps:1,forced_wps:2,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:1,forced_clearance_min:0,base_wps:2,dp_states:1944,candidate_edges:117,feasible_edges:5,max_turn:0.673707,dp:1,mixed:-1,expanded:0,dp_x:7.569333,dp_y:5.961174|floor:0.000000,weight:0.500000,sampling:adaptive,path_m:2.623946,wps:7,dense_wps:0,intermediate_wps:4,sparse_wps:1,forced_wps:2,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:1,forced_clearance_min:0,base_wps:2,dp_states:3402,candidate_edges:990,feasible_edges:173,max_turn:0.673707,dp:6,mixed:-1,expanded:0,dp_x:8.810157,dp_y:5.036522|floor:0.000000,weight:1.500000,sampling:base,path_m:2.861573,wps:4,dense_wps:0,intermediate_wps:5,sparse_wps:0,forced_wps:2,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:1,forced_clearance_min:0,base_wps:2,dp_states:1944,candidate_edges:207,feasible_edges:55,max_turn:0.785398,dp:3,mixed:3,expanded:20,dp_x:8.810157,dp_y:5.036522|floor:0.000000,weight:1.500000,sampling:adaptive,path_m:2.861573,wps:7,dense_wps:0,intermediate_wps:5,sparse_wps:0,forced_wps:2,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:1,forced_clearance_min:0,base_wps:2,dp_states:3402,candidate_edges:1107,feasible_edges:315,max_turn:0.785398,dp:6,mixed:5,expanded:41,dp_x:8.810157,dp_y:5.036522|floor:0.000000,weight:3.000000,sampling:base,path_m:2.966408,wps:4,dense_wps:0,intermediate_wps:5,sparse_wps:0,forced_wps:2,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:1,forced_clearance_min:0,base_wps:2,dp_states:1944,candidate_edges:207,feasible_edges:55,max_turn:1.143998,dp:3,mixed:-1,expanded:0,dp_x:8.810157,dp_y:5.036522|floor:0.000000,weight:3.000000,sampling:adaptive,path_m:2.966408,wps:7,dense_wps:0,intermediate_wps:5,sparse_wps:0,forced_wps:2,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:1,forced_clearance_min:0,base_wps:2,dp_states:3402,candidate_edges:1107,feasible_edges:347,max_turn:1.143998,dp:6,mixed:-1,expanded:0,dp_x:8.810157,dp_y:5.036522 mode_policy=shared_cost_all_modes fallback_lattice_scale=1.000000 guided_modes=A11/O1/S0/sw1 baseline_modes=none start=(6.752038,6.402588,0.000000) goal=(8.810188,5.036537,0.000000)"
+      },
+      "mode_path_v2": {
+        "status": "pass",
+        "route_duration_s": 4.673832182,
+        "reported_planning_seconds_sum": 2.067542,
+        "mode_switches": 0,
+        "min_body_clearance_m": 0.051563129053029726,
+        "failure_class": null,
+        "failure_detail": null,
+        "search_diagnostic": null
+      }
+    },
+    {
+      "map_id": "map02",
+      "case": "P11 case B",
+      "legacy": {
+        "status": "fail",
+        "route_duration_s": null,
+        "reported_planning_seconds_sum": null,
+        "mode_switches": null,
+        "min_body_clearance_m": null,
+        "failure_class": "search_no_path_in_discretized_lattice",
+        "failure_detail": "search_no_path_in_discretized_lattice",
+        "search_diagnostic": "search_no_path_in_discretized_lattice id=1 direction_policy=forward_only allow_shunting=0 reverse_search_competed=0 reverse_fallback_tried=0 reverse_fallback_seconds=0.000000 iterations=160 guided_iterations=24 ackermann_probe_iterations=10 fallback_iterations=136 route2d=unavailable route2d_reason=no_route_candidate xy_routes=4 duplicate_routes=1 duplicate_waypoint_variants=0 heuristic_headings=0 start_spin_blocked=0 start_spin_ok=0 heuristic_route_ok=0 route_edge_blocked=0 terminal_spin_blocked=0 terminal_pose_rejected=0 dp_terminal_states=0 dp_max_reachable_waypoint=0 dp_waypoint_count=4 dp_terminal_spin_blocked=0 dp_pose_rejected=0 mixed_calls=6 mixed_successes=0 ackermann_calls=6 ackermann_successes=0 ackermann_expansions=7 mixed_expansions=20 mixed_budget_hit=0 cell_astar_seconds=0.060576 route_heuristic_seconds=0.000000 route_dp_seconds=0.004511 route_graph_wall_seconds=0.004511 mixed_search_seconds=0.001412 route_details=floor:0.000000,weight:0.000000,sampling:base,path_m:2.230869,wps:4,dense_wps:4,intermediate_wps:1,sparse_wps:0,forced_wps:1,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:1,forced_clearance_min:0,base_wps:2,dp_states:1944,candidate_edges:27,feasible_edges:0,max_turn:1.185255,dp:0,mixed:0,expanded:1,dp_x:3.852100,dp_y:4.859100|floor:0.000000,weight:0.000000,sampling:adaptive,path_m:2.230869,wps:7,dense_wps:4,intermediate_wps:1,sparse_wps:0,forced_wps:1,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:1,forced_clearance_min:0,base_wps:2,dp_states:3402,candidate_edges:54,feasible_edges:0,max_turn:1.185255,dp:0,mixed:0,expanded:1,dp_x:3.852100,dp_y:4.859100|floor:0.000000,weight:0.500000,sampling:base,path_m:2.230841,wps:4,dense_wps:4,intermediate_wps:1,sparse_wps:0,forced_wps:0,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:0,forced_clearance_min:0,base_wps:2,dp_states:1944,candidate_edges:27,feasible_edges:0,max_turn:0.818532,dp:0,mixed:-1,expanded:0,dp_x:3.852100,dp_y:4.859100|floor:0.000000,weight:0.500000,sampling:adaptive,path_m:2.230841,wps:7,dense_wps:4,intermediate_wps:1,sparse_wps:0,forced_wps:0,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:0,forced_clearance_min:0,base_wps:2,dp_states:3402,candidate_edges:54,feasible_edges:0,max_turn:0.818532,dp:0,mixed:-1,expanded:0,dp_x:3.852100,dp_y:4.859100|floor:0.000000,weight:1.500000,sampling:base,path_m:2.230841,wps:4,dense_wps:4,intermediate_wps:1,sparse_wps:0,forced_wps:0,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:0,forced_clearance_min:0,base_wps:2,dp_states:1944,candidate_edges:27,feasible_edges:0,max_turn:0.818532,dp:0,mixed:0,expanded:1,dp_x:3.852100,dp_y:4.859100|floor:0.000000,weight:1.500000,sampling:adaptive,path_m:2.230841,wps:7,dense_wps:4,intermediate_wps:1,sparse_wps:0,forced_wps:0,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:0,forced_clearance_min:0,base_wps:2,dp_states:3402,candidate_edges:54,feasible_edges:0,max_turn:0.818532,dp:0,mixed:0,expanded:1,dp_x:3.852100,dp_y:4.859100|floor:0.275000,weight:0.500000,sampling:base,path_m:4.002927,wps:5,dense_wps:0,intermediate_wps:8,sparse_wps:0,forced_wps:3,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:2,forced_clearance_min:0,base_wps:3,dp_states:2430,candidate_edges:36,feasible_edges:0,max_turn:1.329113,dp:0,mixed:1,expanded:2,dp_x:3.852100,dp_y:4.859100|floor:0.275000,weight:0.500000,sampling:adaptive,path_m:4.002927,wps:10,dense_wps:0,intermediate_wps:8,sparse_wps:0,forced_wps:3,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:2,forced_clearance_min:0,base_wps:3,dp_states:4860,candidate_edges:54,feasible_edges:0,max_turn:1.329113,dp:0,mixed:3,expanded:7,dp_x:3.852100,dp_y:4.859100 mode_policy=shared_cost_all_modes route2d_seconds=0.067050 ackermann_probe=unavailable ackermann_probe_seconds=0.000057 guided_seconds=0.002807 fallback_seconds=0.003296 fallback_lattice_scale=0.500000 seconds=0.073219 start=(3.852100,4.859100,-1.570796) goal=(5.211600,4.963200,1.570796)"
+      },
+      "mode_path_v1": {
+        "status": "pass",
+        "route_duration_s": 32.25251956,
+        "reported_planning_seconds_sum": 6.437132999999999,
+        "mode_switches": 3,
+        "min_body_clearance_m": 0.04273278039868739,
+        "failure_class": null,
+        "failure_detail": null,
+        "search_diagnostic": null
+      },
+      "mode_path_v2": {
+        "status": "pass",
+        "route_duration_s": 11.294970796,
+        "reported_planning_seconds_sum": 1.814524,
+        "mode_switches": 2,
+        "min_body_clearance_m": 0.05279044916633896,
+        "failure_class": null,
+        "failure_detail": null,
+        "search_diagnostic": null
+      }
+    },
+    {
+      "map_id": "map03",
+      "case": "P11 case C",
+      "legacy": {
+        "status": "pass",
+        "route_duration_s": 1.248831758,
+        "reported_planning_seconds_sum": 1.077546,
+        "mode_switches": 0,
+        "min_body_clearance_m": null,
+        "failure_class": null,
+        "failure_detail": null,
+        "search_diagnostic": null
+      },
+      "mode_path_v1": {
+        "status": "fail",
+        "route_duration_s": null,
+        "reported_planning_seconds_sum": null,
+        "mode_switches": null,
+        "min_body_clearance_m": null,
+        "failure_class": "optimizer_no_certified_candidate",
+        "failure_detail": "mode_master_no_feasible_candidate",
+        "search_diagnostic": "search_success id=1 direction_policy=bidirectional_shared_cost allow_shunting=0 reverse_search_competed=1 reverse_fallback_tried=1 reverse_fallback_used=0 selected_has_reverse=0 reverse_fallback_iterations=88387 reverse_fallback_seconds=0.693366 actions=8 iterations=102851 seconds=0.787836 modes=A8/1.600000m,O0/0.000000m,S0/0.000000rad,switches=0 steer_changes=3 curvature_tv=2.469136 oblique_tv=0.000000 reverse=0.000000m budget_hit=0 incumbent_budget_hit=1 selected=guided auxiliary_shunting_proposal=0 guided_cost=2.592989 cost_parts={distance:1.600000,spin:0.000000,mode_switch:0.000000,low_curvature_switch:0.000000,reverse:0.000000,reverse_early:0.000000,reverse_start:0.000000,reverse_yaw_early:0.000000,direction:0.000000,steer_tv:0.987654,curvature:0.005335,oblique_tv:0.000000,oblique_event:0.000000,oblique_use:0.000000,oblique_cruise:0.000000,sum:2.592989} baseline_cost=inf route2d=feasible route2d_cost=2.601313 route2d_seconds=0.049511 ackermann_probe=feasible ackermann_probe_cost=2.592989 ackermann_probe_iterations=9464 ackermann_probe_seconds=0.026953 route2d_reason=route_candidate xy_routes=4 duplicate_routes=0 duplicate_waypoint_variants=0 heuristic_headings=0 start_spin_blocked=0 start_spin_ok=0 heuristic_route_ok=0 route_edge_blocked=0 terminal_spin_blocked=0 terminal_pose_rejected=0 dp_terminal_states=38 dp_max_reachable_waypoint=4 dp_waypoint_count=5 dp_terminal_spin_blocked=0 dp_pose_rejected=0 mixed_calls=4 mixed_successes=0 ackermann_calls=4 ackermann_successes=0 ackermann_expansions=126 mixed_expansions=145 mixed_budget_hit=0 cell_astar_seconds=0.027287 route_heuristic_seconds=0.000000 route_dp_seconds=0.018929 route_graph_wall_seconds=0.018929 mixed_search_seconds=0.002269 route_details=floor:0.000000,weight:0.000000,sampling:base,path_m:1.817906,wps:3,dense_wps:0,intermediate_wps:2,sparse_wps:0,forced_wps:0,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:0,forced_clearance_min:0,base_wps:1,dp_states:1458,candidate_edges:63,feasible_edges:17,max_turn:0.433123,dp:2,mixed:1,expanded:4,dp_x:7.442557,dp_y:3.575416|floor:0.000000,weight:0.000000,sampling:adaptive,path_m:1.817906,wps:4,dense_wps:0,intermediate_wps:2,sparse_wps:0,forced_wps:0,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:0,forced_clearance_min:0,base_wps:1,dp_states:1944,candidate_edges:144,feasible_edges:39,max_turn:0.433123,dp:3,mixed:2,expanded:5,dp_x:7.442557,dp_y:3.575416|floor:0.000000,weight:0.500000,sampling:base,path_m:1.817892,wps:3,dense_wps:0,intermediate_wps:3,sparse_wps:0,forced_wps:1,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:0,forced_clearance_min:0,base_wps:1,dp_states:1458,candidate_edges:63,feasible_edges:17,max_turn:0.773774,dp:2,mixed:-1,expanded:0,dp_x:7.442557,dp_y:3.575416|floor:0.000000,weight:0.500000,sampling:adaptive,path_m:1.817892,wps:5,dense_wps:0,intermediate_wps:3,sparse_wps:0,forced_wps:1,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:0,forced_clearance_min:0,base_wps:1,dp_states:2430,candidate_edges:369,feasible_edges:140,max_turn:0.773774,dp:4,mixed:-1,expanded:0,dp_x:7.442557,dp_y:3.575416|floor:0.000000,weight:1.500000,sampling:base,path_m:1.817892,wps:3,dense_wps:0,intermediate_wps:3,sparse_wps:0,forced_wps:1,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:0,forced_clearance_min:0,base_wps:1,dp_states:1458,candidate_edges:63,feasible_edges:17,max_turn:0.773774,dp:2,mixed:1,expanded:4,dp_x:7.442557,dp_y:3.575416|floor:0.000000,weight:1.500000,sampling:adaptive,path_m:1.817892,wps:5,dense_wps:0,intermediate_wps:3,sparse_wps:0,forced_wps:1,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:0,forced_clearance_min:0,base_wps:1,dp_states:2430,candidate_edges:369,feasible_edges:140,max_turn:0.773774,dp:4,mixed:3,expanded:6,dp_x:7.442557,dp_y:3.575416|floor:0.000000,weight:3.000000,sampling:base,path_m:1.817892,wps:3,dense_wps:0,intermediate_wps:3,sparse_wps:0,forced_wps:1,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:0,forced_clearance_min:0,base_wps:1,dp_states:1458,candidate_edges:63,feasible_edges:17,max_turn:0.773774,dp:2,mixed:-1,expanded:0,dp_x:7.442557,dp_y:3.575416|floor:0.000000,weight:3.000000,sampling:adaptive,path_m:1.817892,wps:5,dense_wps:0,intermediate_wps:3,sparse_wps:0,forced_wps:1,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:0,forced_clearance_min:0,base_wps:1,dp_states:2430,candidate_edges:369,feasible_edges:140,max_turn:0.773774,dp:4,mixed:-1,expanded:0,dp_x:7.442557,dp_y:3.575416 mode_policy=shared_cost_all_modes fallback_lattice_scale=1.000000 guided_modes=A8/O0/S0/sw0 baseline_modes=none start=(5.745407,3.283894,0.000000) goal=(7.442557,3.575416,0.000000)"
+      },
+      "mode_path_v2": {
+        "status": "pass",
+        "route_duration_s": 3.8840754520000003,
+        "reported_planning_seconds_sum": 1.598677,
+        "mode_switches": 0,
+        "min_body_clearance_m": 0.033721180047870725,
+        "failure_class": null,
+        "failure_detail": null,
+        "search_diagnostic": null
+      }
+    },
+    {
+      "map_id": "map04",
+      "case": "P12 env1",
+      "legacy": {
+        "status": "pass",
+        "route_duration_s": 20.687205407,
+        "reported_planning_seconds_sum": 10.961191,
+        "mode_switches": 13,
+        "min_body_clearance_m": null,
+        "failure_class": null,
+        "failure_detail": null,
+        "search_diagnostic": null
+      },
+      "mode_path_v1": {
+        "status": "pass",
+        "route_duration_s": 113.754350533,
+        "reported_planning_seconds_sum": 9.055710000000001,
+        "mode_switches": 10,
+        "min_body_clearance_m": 0.02442357736212497,
+        "failure_class": null,
+        "failure_detail": null,
+        "search_diagnostic": null
+      },
+      "mode_path_v2": {
+        "status": "pass",
+        "route_duration_s": 40.446479532,
+        "reported_planning_seconds_sum": 15.407356,
+        "mode_switches": 8,
+        "min_body_clearance_m": 0.02340142912754839,
+        "failure_class": null,
+        "failure_detail": null,
+        "search_diagnostic": null
+      }
+    },
+    {
+      "map_id": "map05",
+      "case": "P12 env2",
+      "legacy": {
+        "status": "pass",
+        "route_duration_s": 10.038878238,
+        "reported_planning_seconds_sum": 5.581819,
+        "mode_switches": 2,
+        "min_body_clearance_m": null,
+        "failure_class": null,
+        "failure_detail": null,
+        "search_diagnostic": null
+      },
+      "mode_path_v1": {
+        "status": "pass",
+        "route_duration_s": 43.167094098,
+        "reported_planning_seconds_sum": 6.912609,
+        "mode_switches": 2,
+        "min_body_clearance_m": 0.02921671815985749,
+        "failure_class": null,
+        "failure_detail": null,
+        "search_diagnostic": null
+      },
+      "mode_path_v2": {
+        "status": "pass",
+        "route_duration_s": 15.08003142,
+        "reported_planning_seconds_sum": 3.3779820000000003,
+        "mode_switches": 2,
+        "min_body_clearance_m": 0.027329282360751717,
+        "failure_class": null,
+        "failure_detail": null,
+        "search_diagnostic": null
+      }
+    },
+    {
+      "map_id": "map06",
+      "case": "P12 env3",
+      "legacy": {
+        "status": "pass",
+        "route_duration_s": 5.921009564,
+        "reported_planning_seconds_sum": 1.3953520000000001,
+        "mode_switches": 1,
+        "min_body_clearance_m": null,
+        "failure_class": null,
+        "failure_detail": null,
+        "search_diagnostic": null
+      },
+      "mode_path_v1": {
+        "status": "fail",
+        "route_duration_s": null,
+        "reported_planning_seconds_sum": null,
+        "mode_switches": null,
+        "min_body_clearance_m": null,
+        "failure_class": "optimizer_no_certified_candidate",
+        "failure_detail": "mode_master_no_feasible_candidate",
+        "search_diagnostic": "search_success id=1 direction_policy=bidirectional_shared_cost allow_shunting=0 reverse_search_competed=1 reverse_fallback_tried=1 reverse_fallback_used=0 selected_has_reverse=0 reverse_fallback_iterations=67842 reverse_fallback_seconds=0.546276 actions=26 iterations=84411 seconds=0.633707 modes=A25/5.000000m,O0/0.000000m,S1/2.894679rad,switches=1 steer_changes=4 curvature_tv=4.320988 oblique_tv=0.000000 reverse=0.000000m budget_hit=0 incumbent_budget_hit=1 selected=guided auxiliary_shunting_proposal=1 guided_cost=11.627647 cost_parts={distance:5.000000,spin:2.894679,mode_switch:2.000000,low_curvature_switch:0.000000,reverse:0.000000,reverse_early:0.000000,reverse_start:0.000000,reverse_yaw_early:0.000000,direction:0.000000,steer_tv:1.728395,curvature:0.004572,oblique_tv:0.000000,oblique_event:0.000000,oblique_use:0.000000,oblique_cruise:0.000000,sum:11.627647} baseline_cost=inf route2d=unavailable route2d_cost=inf route2d_seconds=0.023039 ackermann_probe=feasible ackermann_probe_cost=11.627647 ackermann_probe_iterations=11569 ackermann_probe_seconds=0.040790 route2d_reason=no_route_candidate xy_routes=2 duplicate_routes=4 duplicate_waypoint_variants=0 heuristic_headings=0 start_spin_blocked=0 start_spin_ok=0 heuristic_route_ok=0 route_edge_blocked=0 terminal_spin_blocked=0 terminal_pose_rejected=0 dp_terminal_states=12 dp_max_reachable_waypoint=10 dp_waypoint_count=11 dp_terminal_spin_blocked=12 dp_pose_rejected=0 mixed_calls=2 mixed_successes=0 ackermann_calls=2 ackermann_successes=0 ackermann_expansions=22 mixed_expansions=62 mixed_budget_hit=0 cell_astar_seconds=0.011686 route_heuristic_seconds=0.000000 route_dp_seconds=0.008673 route_graph_wall_seconds=0.008673 mixed_search_seconds=0.003417 route_details=floor:0.000000,weight:0.000000,sampling:base,path_m:5.080095,wps:7,dense_wps:0,intermediate_wps:9,sparse_wps:0,forced_wps:1,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:0,forced_clearance_min:0,base_wps:5,dp_states:3402,candidate_edges:324,feasible_edges:44,max_turn:0.463648,dp:6,mixed:6,expanded:16,dp_x:6.932768,dp_y:2.533880|floor:0.000000,weight:0.000000,sampling:adaptive,path_m:5.080095,wps:11,dense_wps:0,intermediate_wps:9,sparse_wps:0,forced_wps:1,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:0,forced_clearance_min:0,base_wps:5,dp_states:5346,candidate_edges:756,feasible_edges:154,max_turn:0.463648,dp:10,mixed:10,expanded:24,dp_x:6.932768,dp_y:2.533880|floor:0.000000,weight:0.500000,sampling:base,path_m:5.080095,wps:7,dense_wps:0,intermediate_wps:8,sparse_wps:0,forced_wps:0,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:0,forced_clearance_min:0,base_wps:5,dp_states:3402,candidate_edges:324,feasible_edges:48,max_turn:0.152649,dp:6,mixed:-1,expanded:0,dp_x:6.932768,dp_y:2.533880|floor:0.000000,weight:0.500000,sampling:adaptive,path_m:5.080095,wps:10,dense_wps:0,intermediate_wps:8,sparse_wps:0,forced_wps:0,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:0,forced_clearance_min:0,base_wps:5,dp_states:4860,candidate_edges:648,feasible_edges:130,max_turn:0.152649,dp:9,mixed:-1,expanded:0,dp_x:6.932768,dp_y:2.533880 mode_policy=shared_cost_all_modes fallback_lattice_scale=0.500000 guided_modes=A25/O0/S1/sw1 baseline_modes=none start=(1.863900,2.506800,0.000000) goal=(6.932800,2.533900,-3.141592)"
+      },
+      "mode_path_v2": {
+        "status": "pass",
+        "route_duration_s": 14.241158459,
+        "reported_planning_seconds_sum": 2.573074,
+        "mode_switches": 2,
+        "min_body_clearance_m": 0.06490065754603508,
+        "failure_class": null,
+        "failure_detail": null,
+        "search_diagnostic": null
+      }
+    },
+    {
+      "map_id": "map07",
+      "case": "P12 env4",
+      "legacy": {
+        "status": "fail",
+        "route_duration_s": null,
+        "reported_planning_seconds_sum": null,
+        "mode_switches": null,
+        "min_body_clearance_m": null,
+        "failure_class": "search_budget_exhausted",
+        "failure_detail": "search_budget_exhausted",
+        "search_diagnostic": "search_budget_exhausted id=1 direction_policy=forward_only allow_shunting=0 reverse_search_competed=0 reverse_fallback_tried=0 reverse_fallback_seconds=0.000000 iterations=450000 guided_iterations=2 ackermann_probe_iterations=1 fallback_iterations=449998 route2d=unavailable route2d_reason=no_route_candidate xy_routes=5 duplicate_routes=0 duplicate_waypoint_variants=0 heuristic_headings=0 start_spin_blocked=0 start_spin_ok=0 heuristic_route_ok=0 route_edge_blocked=0 terminal_spin_blocked=0 terminal_pose_rejected=0 dp_terminal_states=0 dp_max_reachable_waypoint=8 dp_waypoint_count=13 dp_terminal_spin_blocked=0 dp_pose_rejected=0 mixed_calls=6 mixed_successes=0 ackermann_calls=6 ackermann_successes=0 ackermann_expansions=6 mixed_expansions=93 mixed_budget_hit=0 cell_astar_seconds=0.491620 route_heuristic_seconds=0.000000 route_dp_seconds=0.029654 route_graph_wall_seconds=0.029654 mixed_search_seconds=0.009210 route_details=floor:0.000000,weight:0.000000,sampling:base,path_m:5.523101,wps:7,dense_wps:6,intermediate_wps:4,sparse_wps:0,forced_wps:0,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:0,forced_clearance_min:0,base_wps:5,dp_states:3402,candidate_edges:54,feasible_edges:0,max_turn:0.785398,dp:0,mixed:0,expanded:1,dp_x:6.269273,dp_y:2.955965|floor:0.000000,weight:0.000000,sampling:adaptive,path_m:5.523101,wps:12,dense_wps:6,intermediate_wps:4,sparse_wps:0,forced_wps:0,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:0,forced_clearance_min:0,base_wps:5,dp_states:5832,candidate_edges:162,feasible_edges:2,max_turn:0.785398,dp:1,mixed:1,expanded:10,dp_x:6.773232,dp_y:3.459925|floor:0.000000,weight:0.500000,sampling:base,path_m:5.560861,wps:7,dense_wps:3,intermediate_wps:8,sparse_wps:0,forced_wps:2,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:2,forced_clearance_min:0,base_wps:5,dp_states:3402,candidate_edges:144,feasible_edges:2,max_turn:0.785398,dp:1,mixed:-1,expanded:0,dp_x:6.931452,dp_y:3.682605|floor:0.000000,weight:0.500000,sampling:adaptive,path_m:5.560861,wps:13,dense_wps:3,intermediate_wps:8,sparse_wps:0,forced_wps:2,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:2,forced_clearance_min:0,base_wps:5,dp_states:6318,candidate_edges:162,feasible_edges:2,max_turn:0.785398,dp:1,mixed:-1,expanded:0,dp_x:6.790812,dp_y:3.541965|floor:0.000000,weight:1.500000,sampling:base,path_m:5.939292,wps:7,dense_wps:1,intermediate_wps:10,sparse_wps:0,forced_wps:3,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:3,forced_clearance_min:0,base_wps:5,dp_states:3402,candidate_edges:54,feasible_edges:0,max_turn:0.785398,dp:0,mixed:0,expanded:1,dp_x:6.269273,dp_y:2.955965|floor:0.000000,weight:1.500000,sampling:adaptive,path_m:5.939292,wps:13,dense_wps:1,intermediate_wps:10,sparse_wps:0,forced_wps:3,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:3,forced_clearance_min:0,base_wps:5,dp_states:6318,candidate_edges:918,feasible_edges:62,max_turn:0.785398,dp:8,mixed:8,expanded:50,dp_x:9.328192,dp_y:4.456125|floor:0.000000,weight:3.000000,sampling:base,path_m:6.085721,wps:8,dense_wps:1,intermediate_wps:10,sparse_wps:0,forced_wps:2,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:1,forced_clearance_min:0,base_wps:6,dp_states:3888,candidate_edges:54,feasible_edges:0,max_turn:0.880840,dp:0,mixed:-1,expanded:0,dp_x:6.269273,dp_y:2.955965|floor:0.000000,weight:3.000000,sampling:adaptive,path_m:6.085721,wps:13,dense_wps:1,intermediate_wps:10,sparse_wps:0,forced_wps:2,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:1,forced_clearance_min:0,base_wps:6,dp_states:6318,candidate_edges:900,feasible_edges:49,max_turn:0.880840,dp:7,mixed:-1,expanded:0,dp_x:9.293032,dp_y:4.432685|floor:0.275000,weight:0.500000,sampling:base,path_m:8.490290,wps:10,dense_wps:1,intermediate_wps:16,sparse_wps:0,forced_wps:5,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:4,forced_clearance_min:0,base_wps:8,dp_states:4860,candidate_edges:54,feasible_edges:0,max_turn:1.464422,dp:0,mixed:0,expanded:1,dp_x:6.269273,dp_y:2.955965|floor:0.275000,weight:0.500000,sampling:adaptive,path_m:8.490290,wps:19,dense_wps:1,intermediate_wps:16,sparse_wps:0,forced_wps:5,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:4,forced_clearance_min:0,base_wps:8,dp_states:9234,candidate_edges:432,feasible_edges:12,max_turn:1.464422,dp:3,mixed:3,expanded:24,dp_x:7.242032,dp_y:4.456125 mode_policy=shared_cost_all_modes route2d_seconds=0.535150 ackermann_probe=unavailable ackermann_probe_seconds=0.000037 guided_seconds=0.000268 fallback_seconds=1.851287 fallback_lattice_scale=0.500000 seconds=2.386749 start=(6.269273,2.955965,0.000000) goal=(10.617382,5.751185,0.000000)"
+      },
+      "mode_path_v1": {
+        "status": "fail",
+        "route_duration_s": null,
+        "reported_planning_seconds_sum": null,
+        "mode_switches": null,
+        "min_body_clearance_m": null,
+        "failure_class": "search_budget_exhausted",
+        "failure_detail": "search_budget_exhausted",
+        "search_diagnostic": "search_budget_exhausted id=1 direction_policy=bidirectional_shared_cost allow_shunting=0 reverse_search_competed=1 reverse_fallback_tried=1 reverse_fallback_seconds=0.000076 iterations=450001 guided_iterations=2 ackermann_probe_iterations=1 fallback_iterations=449998 route2d=unavailable route2d_reason=no_route_candidate xy_routes=5 duplicate_routes=0 duplicate_waypoint_variants=0 heuristic_headings=0 start_spin_blocked=0 start_spin_ok=0 heuristic_route_ok=0 route_edge_blocked=0 terminal_spin_blocked=0 terminal_pose_rejected=0 dp_terminal_states=0 dp_max_reachable_waypoint=8 dp_waypoint_count=13 dp_terminal_spin_blocked=0 dp_pose_rejected=0 mixed_calls=6 mixed_successes=0 ackermann_calls=6 ackermann_successes=0 ackermann_expansions=6 mixed_expansions=93 mixed_budget_hit=0 cell_astar_seconds=0.484236 route_heuristic_seconds=0.000000 route_dp_seconds=0.028669 route_graph_wall_seconds=0.028669 mixed_search_seconds=0.008558 route_details=floor:0.000000,weight:0.000000,sampling:base,path_m:5.523101,wps:7,dense_wps:6,intermediate_wps:4,sparse_wps:0,forced_wps:0,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:0,forced_clearance_min:0,base_wps:5,dp_states:3402,candidate_edges:54,feasible_edges:0,max_turn:0.785398,dp:0,mixed:0,expanded:1,dp_x:6.269273,dp_y:2.955965|floor:0.000000,weight:0.000000,sampling:adaptive,path_m:5.523101,wps:12,dense_wps:6,intermediate_wps:4,sparse_wps:0,forced_wps:0,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:0,forced_clearance_min:0,base_wps:5,dp_states:5832,candidate_edges:162,feasible_edges:2,max_turn:0.785398,dp:1,mixed:1,expanded:10,dp_x:6.773232,dp_y:3.459925|floor:0.000000,weight:0.500000,sampling:base,path_m:5.560861,wps:7,dense_wps:3,intermediate_wps:8,sparse_wps:0,forced_wps:2,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:2,forced_clearance_min:0,base_wps:5,dp_states:3402,candidate_edges:144,feasible_edges:2,max_turn:0.785398,dp:1,mixed:-1,expanded:0,dp_x:6.931452,dp_y:3.682605|floor:0.000000,weight:0.500000,sampling:adaptive,path_m:5.560861,wps:13,dense_wps:3,intermediate_wps:8,sparse_wps:0,forced_wps:2,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:2,forced_clearance_min:0,base_wps:5,dp_states:6318,candidate_edges:162,feasible_edges:2,max_turn:0.785398,dp:1,mixed:-1,expanded:0,dp_x:6.790812,dp_y:3.541965|floor:0.000000,weight:1.500000,sampling:base,path_m:5.939292,wps:7,dense_wps:1,intermediate_wps:10,sparse_wps:0,forced_wps:3,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:3,forced_clearance_min:0,base_wps:5,dp_states:3402,candidate_edges:54,feasible_edges:0,max_turn:0.785398,dp:0,mixed:0,expanded:1,dp_x:6.269273,dp_y:2.955965|floor:0.000000,weight:1.500000,sampling:adaptive,path_m:5.939292,wps:13,dense_wps:1,intermediate_wps:10,sparse_wps:0,forced_wps:3,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:3,forced_clearance_min:0,base_wps:5,dp_states:6318,candidate_edges:918,feasible_edges:62,max_turn:0.785398,dp:8,mixed:8,expanded:50,dp_x:9.328192,dp_y:4.456125|floor:0.000000,weight:3.000000,sampling:base,path_m:6.085721,wps:8,dense_wps:1,intermediate_wps:10,sparse_wps:0,forced_wps:2,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:1,forced_clearance_min:0,base_wps:6,dp_states:3888,candidate_edges:54,feasible_edges:0,max_turn:0.880840,dp:0,mixed:-1,expanded:0,dp_x:6.269273,dp_y:2.955965|floor:0.000000,weight:3.000000,sampling:adaptive,path_m:6.085721,wps:13,dense_wps:1,intermediate_wps:10,sparse_wps:0,forced_wps:2,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:1,forced_clearance_min:0,base_wps:6,dp_states:6318,candidate_edges:900,feasible_edges:49,max_turn:0.880840,dp:7,mixed:-1,expanded:0,dp_x:9.293032,dp_y:4.432685|floor:0.275000,weight:0.500000,sampling:base,path_m:8.490290,wps:10,dense_wps:1,intermediate_wps:16,sparse_wps:0,forced_wps:5,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:4,forced_clearance_min:0,base_wps:8,dp_states:4860,candidate_edges:54,feasible_edges:0,max_turn:1.464422,dp:0,mixed:0,expanded:1,dp_x:6.269273,dp_y:2.955965|floor:0.275000,weight:0.500000,sampling:adaptive,path_m:8.490290,wps:19,dense_wps:1,intermediate_wps:16,sparse_wps:0,forced_wps:5,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:4,forced_clearance_min:0,base_wps:8,dp_states:9234,candidate_edges:432,feasible_edges:12,max_turn:1.464422,dp:3,mixed:3,expanded:24,dp_x:7.242032,dp_y:4.456125 mode_policy=shared_cost_all_modes route2d_seconds=0.526775 ackermann_probe=unavailable ackermann_probe_seconds=0.000030 guided_seconds=0.000249 fallback_seconds=1.765189 fallback_lattice_scale=0.500000 seconds=2.292327 start=(6.269273,2.955965,0.000000) goal=(10.617382,5.751185,0.000000)"
+      },
+      "mode_path_v2": {
+        "status": "fail",
+        "route_duration_s": null,
+        "reported_planning_seconds_sum": null,
+        "mode_switches": null,
+        "min_body_clearance_m": null,
+        "failure_class": "search_budget_exhausted",
+        "failure_detail": "search_budget_exhausted",
+        "search_diagnostic": "search_budget_exhausted id=1 direction_policy=bidirectional_shared_cost allow_shunting=0 reverse_search_competed=1 reverse_fallback_tried=1 reverse_fallback_seconds=0.000076 iterations=450001 guided_iterations=2 ackermann_probe_iterations=1 fallback_iterations=449998 route2d=unavailable route2d_reason=no_route_candidate xy_routes=5 duplicate_routes=0 duplicate_waypoint_variants=0 heuristic_headings=0 start_spin_blocked=0 start_spin_ok=0 heuristic_route_ok=0 route_edge_blocked=0 terminal_spin_blocked=0 terminal_pose_rejected=0 dp_terminal_states=0 dp_max_reachable_waypoint=8 dp_waypoint_count=13 dp_terminal_spin_blocked=0 dp_pose_rejected=0 mixed_calls=6 mixed_successes=0 ackermann_calls=6 ackermann_successes=0 ackermann_expansions=6 mixed_expansions=93 mixed_budget_hit=0 cell_astar_seconds=0.493234 route_heuristic_seconds=0.000000 route_dp_seconds=0.028929 route_graph_wall_seconds=0.028929 mixed_search_seconds=0.008600 route_details=floor:0.000000,weight:0.000000,sampling:base,path_m:5.523101,wps:7,dense_wps:6,intermediate_wps:4,sparse_wps:0,forced_wps:0,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:0,forced_clearance_min:0,base_wps:5,dp_states:3402,candidate_edges:54,feasible_edges:0,max_turn:0.785398,dp:0,mixed:0,expanded:1,dp_x:6.269273,dp_y:2.955965|floor:0.000000,weight:0.000000,sampling:adaptive,path_m:5.523101,wps:12,dense_wps:6,intermediate_wps:4,sparse_wps:0,forced_wps:0,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:0,forced_clearance_min:0,base_wps:5,dp_states:5832,candidate_edges:162,feasible_edges:2,max_turn:0.785398,dp:1,mixed:1,expanded:10,dp_x:6.773232,dp_y:3.459925|floor:0.000000,weight:0.500000,sampling:base,path_m:5.560861,wps:7,dense_wps:3,intermediate_wps:8,sparse_wps:0,forced_wps:2,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:2,forced_clearance_min:0,base_wps:5,dp_states:3402,candidate_edges:144,feasible_edges:2,max_turn:0.785398,dp:1,mixed:-1,expanded:0,dp_x:6.931452,dp_y:3.682605|floor:0.000000,weight:0.500000,sampling:adaptive,path_m:5.560861,wps:13,dense_wps:3,intermediate_wps:8,sparse_wps:0,forced_wps:2,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:2,forced_clearance_min:0,base_wps:5,dp_states:6318,candidate_edges:162,feasible_edges:2,max_turn:0.785398,dp:1,mixed:-1,expanded:0,dp_x:6.790812,dp_y:3.541965|floor:0.000000,weight:1.500000,sampling:base,path_m:5.939292,wps:7,dense_wps:1,intermediate_wps:10,sparse_wps:0,forced_wps:3,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:3,forced_clearance_min:0,base_wps:5,dp_states:3402,candidate_edges:54,feasible_edges:0,max_turn:0.785398,dp:0,mixed:0,expanded:1,dp_x:6.269273,dp_y:2.955965|floor:0.000000,weight:1.500000,sampling:adaptive,path_m:5.939292,wps:13,dense_wps:1,intermediate_wps:10,sparse_wps:0,forced_wps:3,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:3,forced_clearance_min:0,base_wps:5,dp_states:6318,candidate_edges:918,feasible_edges:62,max_turn:0.785398,dp:8,mixed:8,expanded:50,dp_x:9.328192,dp_y:4.456125|floor:0.000000,weight:3.000000,sampling:base,path_m:6.085721,wps:8,dense_wps:1,intermediate_wps:10,sparse_wps:0,forced_wps:2,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:1,forced_clearance_min:0,base_wps:6,dp_states:3888,candidate_edges:54,feasible_edges:0,max_turn:0.880840,dp:0,mixed:-1,expanded:0,dp_x:6.269273,dp_y:2.955965|floor:0.000000,weight:3.000000,sampling:adaptive,path_m:6.085721,wps:13,dense_wps:1,intermediate_wps:10,sparse_wps:0,forced_wps:2,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:1,forced_clearance_min:0,base_wps:6,dp_states:6318,candidate_edges:900,feasible_edges:49,max_turn:0.880840,dp:7,mixed:-1,expanded:0,dp_x:9.293032,dp_y:4.432685|floor:0.275000,weight:0.500000,sampling:base,path_m:8.490290,wps:10,dense_wps:1,intermediate_wps:16,sparse_wps:0,forced_wps:5,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:4,forced_clearance_min:0,base_wps:8,dp_states:4860,candidate_edges:54,feasible_edges:0,max_turn:1.464422,dp:0,mixed:0,expanded:1,dp_x:6.269273,dp_y:2.955965|floor:0.275000,weight:0.500000,sampling:adaptive,path_m:8.490290,wps:19,dense_wps:1,intermediate_wps:16,sparse_wps:0,forced_wps:5,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:4,forced_clearance_min:0,base_wps:8,dp_states:9234,candidate_edges:432,feasible_edges:12,max_turn:1.464422,dp:3,mixed:3,expanded:24,dp_x:7.242032,dp_y:4.456125 mode_policy=shared_cost_all_modes route2d_seconds=0.535081 ackermann_probe=unavailable ackermann_probe_seconds=0.000025 guided_seconds=0.000182 fallback_seconds=1.767419 fallback_lattice_scale=0.500000 seconds=2.302790 start=(6.269273,2.955965,0.000000) goal=(10.617382,5.751185,0.000000)"
+      }
+    },
+    {
+      "map_id": "map08",
+      "case": "P16 parking",
+      "legacy": {
+        "status": "fail",
+        "route_duration_s": null,
+        "reported_planning_seconds_sum": null,
+        "mode_switches": null,
+        "min_body_clearance_m": null,
+        "failure_class": "search_no_path_in_discretized_lattice",
+        "failure_detail": "search_no_path_in_discretized_lattice",
+        "search_diagnostic": "search_no_path_in_discretized_lattice id=1 direction_policy=forward_only allow_shunting=0 reverse_search_competed=0 reverse_fallback_tried=0 reverse_fallback_seconds=0.000000 iterations=409532 guided_iterations=88336 ackermann_probe_iterations=16192 fallback_iterations=321196 route2d=unavailable route2d_reason=no_route_candidate xy_routes=6 duplicate_routes=0 duplicate_waypoint_variants=0 heuristic_headings=0 start_spin_blocked=0 start_spin_ok=0 heuristic_route_ok=0 route_edge_blocked=0 terminal_spin_blocked=0 terminal_pose_rejected=0 dp_terminal_states=0 dp_max_reachable_waypoint=9 dp_waypoint_count=19 dp_terminal_spin_blocked=0 dp_pose_rejected=0 mixed_calls=8 mixed_successes=0 ackermann_calls=8 ackermann_successes=0 ackermann_expansions=831 mixed_expansions=1931 mixed_budget_hit=0 cell_astar_seconds=0.320040 route_heuristic_seconds=0.000000 route_dp_seconds=0.152848 route_graph_wall_seconds=0.152848 mixed_search_seconds=0.065167 route_details=floor:0.000000,weight:0.000000,sampling:base,path_m:7.884372,wps:9,dense_wps:11,intermediate_wps:7,sparse_wps:0,forced_wps:2,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:2,forced_clearance_min:0,base_wps:7,dp_states:4374,candidate_edges:54,feasible_edges:0,max_turn:1.401549,dp:0,mixed:0,expanded:10,dp_x:12.506365,dp_y:16.374111|floor:0.000000,weight:0.000000,sampling:adaptive,path_m:7.884372,wps:20,dense_wps:11,intermediate_wps:7,sparse_wps:0,forced_wps:2,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:2,forced_clearance_min:0,base_wps:7,dp_states:9720,candidate_edges:108,feasible_edges:1,max_turn:1.401549,dp:1,mixed:1,expanded:12,dp_x:12.908557,dp_y:15.971919|floor:0.000000,weight:0.500000,sampling:base,path_m:7.884372,wps:9,dense_wps:8,intermediate_wps:8,sparse_wps:0,forced_wps:3,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:3,forced_clearance_min:0,base_wps:7,dp_states:4374,candidate_edges:108,feasible_edges:1,max_turn:0.785398,dp:1,mixed:-1,expanded:0,dp_x:12.834821,dp_y:15.509398|floor:0.000000,weight:0.500000,sampling:adaptive,path_m:7.884372,wps:18,dense_wps:8,intermediate_wps:8,sparse_wps:0,forced_wps:3,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:3,forced_clearance_min:0,base_wps:7,dp_states:8748,candidate_edges:324,feasible_edges:5,max_turn:0.785398,dp:1,mixed:-1,expanded:0,dp_x:12.613616,dp_y:15.750713|floor:0.000000,weight:1.500000,sampling:base,path_m:8.626998,wps:10,dense_wps:3,intermediate_wps:14,sparse_wps:0,forced_wps:6,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:5,forced_clearance_min:0,base_wps:8,dp_states:4860,candidate_edges:486,feasible_edges:20,max_turn:0.785398,dp:2,mixed:5,expanded:119,dp_x:12.988995,dp_y:14.570950|floor:0.000000,weight:1.500000,sampling:adaptive,path_m:8.626998,wps:19,dense_wps:3,intermediate_wps:14,sparse_wps:0,forced_wps:6,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:5,forced_clearance_min:0,base_wps:8,dp_states:9234,candidate_edges:1998,feasible_edges:163,max_turn:0.785398,dp:9,mixed:9,expanded:369,dp_x:16.360704,dp_y:14.550841|floor:0.000000,weight:3.000000,sampling:base,path_m:9.122756,wps:11,dense_wps:0,intermediate_wps:16,sparse_wps:0,forced_wps:3,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:2,forced_clearance_min:0,base_wps:9,dp_states:5346,candidate_edges:756,feasible_edges:39,max_turn:1.053747,dp:3,mixed:-1,expanded:0,dp_x:13.800082,dp_y:14.349745|floor:0.000000,weight:3.000000,sampling:adaptive,path_m:9.122756,wps:18,dense_wps:0,intermediate_wps:16,sparse_wps:0,forced_wps:3,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:2,forced_clearance_min:0,base_wps:9,dp_states:8748,candidate_edges:972,feasible_edges:75,max_turn:1.053747,dp:3,mixed:-1,expanded:0,dp_x:13.183388,dp_y:14.557544|floor:0.275000,weight:0.500000,sampling:base,path_m:8.888341,wps:10,dense_wps:0,intermediate_wps:17,sparse_wps:0,forced_wps:6,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:5,forced_clearance_min:0,base_wps:8,dp_states:4860,candidate_edges:324,feasible_edges:5,max_turn:1.239346,dp:1,mixed:2,expanded:83,dp_x:12.613616,dp_y:15.415553|floor:0.275000,weight:0.500000,sampling:adaptive,path_m:8.888341,wps:19,dense_wps:0,intermediate_wps:17,sparse_wps:0,forced_wps:6,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:5,forced_clearance_min:0,base_wps:8,dp_states:9234,candidate_edges:594,feasible_edges:27,max_turn:1.239346,dp:3,mixed:3,expanded:129,dp_x:13.324155,dp_y:14.517325|floor:0.340000,weight:0.500000,sampling:base,path_m:9.156469,wps:11,dense_wps:0,intermediate_wps:16,sparse_wps:0,forced_wps:4,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:3,forced_clearance_min:0,base_wps:9,dp_states:5346,candidate_edges:378,feasible_edges:10,max_turn:1.401549,dp:2,mixed:6,expanded:112,dp_x:13.056027,dp_y:14.591060|floor:0.340000,weight:0.500000,sampling:adaptive,path_m:9.156469,wps:18,dense_wps:0,intermediate_wps:16,sparse_wps:0,forced_wps:4,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:3,forced_clearance_min:0,base_wps:9,dp_states:8748,candidate_edges:702,feasible_edges:45,max_turn:1.401549,dp:3,mixed:11,expanded:266,dp_x:13.310749,dp_y:14.530731 mode_policy=shared_cost_all_modes route2d_seconds=0.481223 ackermann_probe=unavailable ackermann_probe_seconds=0.054946 guided_seconds=0.278737 fallback_seconds=1.266139 fallback_lattice_scale=0.500000 seconds=2.081052 start=(12.506365,16.374111,-0.652599) goal=(17.540468,12.526474,-0.652599)"
+      },
+      "mode_path_v1": {
+        "status": "fail",
+        "route_duration_s": null,
+        "reported_planning_seconds_sum": null,
+        "mode_switches": null,
+        "min_body_clearance_m": null,
+        "failure_class": "search_budget_exhausted",
+        "failure_detail": "search_budget_exhausted",
+        "search_diagnostic": "search_budget_exhausted id=1 direction_policy=bidirectional_shared_cost allow_shunting=0 reverse_search_competed=1 reverse_fallback_tried=1 reverse_fallback_seconds=0.733291 iterations=499532 guided_iterations=88336 ackermann_probe_iterations=16192 fallback_iterations=321196 route2d=unavailable route2d_reason=no_route_candidate xy_routes=6 duplicate_routes=0 duplicate_waypoint_variants=0 heuristic_headings=0 start_spin_blocked=0 start_spin_ok=0 heuristic_route_ok=0 route_edge_blocked=0 terminal_spin_blocked=0 terminal_pose_rejected=0 dp_terminal_states=0 dp_max_reachable_waypoint=9 dp_waypoint_count=19 dp_terminal_spin_blocked=0 dp_pose_rejected=0 mixed_calls=8 mixed_successes=0 ackermann_calls=8 ackermann_successes=0 ackermann_expansions=831 mixed_expansions=1931 mixed_budget_hit=0 cell_astar_seconds=0.322212 route_heuristic_seconds=0.000000 route_dp_seconds=0.150943 route_graph_wall_seconds=0.150943 mixed_search_seconds=0.064697 route_details=floor:0.000000,weight:0.000000,sampling:base,path_m:7.884372,wps:9,dense_wps:11,intermediate_wps:7,sparse_wps:0,forced_wps:2,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:2,forced_clearance_min:0,base_wps:7,dp_states:4374,candidate_edges:54,feasible_edges:0,max_turn:1.401549,dp:0,mixed:0,expanded:10,dp_x:12.506365,dp_y:16.374111|floor:0.000000,weight:0.000000,sampling:adaptive,path_m:7.884372,wps:20,dense_wps:11,intermediate_wps:7,sparse_wps:0,forced_wps:2,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:2,forced_clearance_min:0,base_wps:7,dp_states:9720,candidate_edges:108,feasible_edges:1,max_turn:1.401549,dp:1,mixed:1,expanded:12,dp_x:12.908557,dp_y:15.971919|floor:0.000000,weight:0.500000,sampling:base,path_m:7.884372,wps:9,dense_wps:8,intermediate_wps:8,sparse_wps:0,forced_wps:3,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:3,forced_clearance_min:0,base_wps:7,dp_states:4374,candidate_edges:108,feasible_edges:1,max_turn:0.785398,dp:1,mixed:-1,expanded:0,dp_x:12.834821,dp_y:15.509398|floor:0.000000,weight:0.500000,sampling:adaptive,path_m:7.884372,wps:18,dense_wps:8,intermediate_wps:8,sparse_wps:0,forced_wps:3,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:3,forced_clearance_min:0,base_wps:7,dp_states:8748,candidate_edges:324,feasible_edges:5,max_turn:0.785398,dp:1,mixed:-1,expanded:0,dp_x:12.613616,dp_y:15.750713|floor:0.000000,weight:1.500000,sampling:base,path_m:8.626998,wps:10,dense_wps:3,intermediate_wps:14,sparse_wps:0,forced_wps:6,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:5,forced_clearance_min:0,base_wps:8,dp_states:4860,candidate_edges:486,feasible_edges:20,max_turn:0.785398,dp:2,mixed:5,expanded:119,dp_x:12.988995,dp_y:14.570950|floor:0.000000,weight:1.500000,sampling:adaptive,path_m:8.626998,wps:19,dense_wps:3,intermediate_wps:14,sparse_wps:0,forced_wps:6,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:5,forced_clearance_min:0,base_wps:8,dp_states:9234,candidate_edges:1998,feasible_edges:163,max_turn:0.785398,dp:9,mixed:9,expanded:369,dp_x:16.360704,dp_y:14.550841|floor:0.000000,weight:3.000000,sampling:base,path_m:9.122756,wps:11,dense_wps:0,intermediate_wps:16,sparse_wps:0,forced_wps:3,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:2,forced_clearance_min:0,base_wps:9,dp_states:5346,candidate_edges:756,feasible_edges:39,max_turn:1.053747,dp:3,mixed:-1,expanded:0,dp_x:13.800082,dp_y:14.349745|floor:0.000000,weight:3.000000,sampling:adaptive,path_m:9.122756,wps:18,dense_wps:0,intermediate_wps:16,sparse_wps:0,forced_wps:3,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:2,forced_clearance_min:0,base_wps:9,dp_states:8748,candidate_edges:972,feasible_edges:75,max_turn:1.053747,dp:3,mixed:-1,expanded:0,dp_x:13.183388,dp_y:14.557544|floor:0.275000,weight:0.500000,sampling:base,path_m:8.888341,wps:10,dense_wps:0,intermediate_wps:17,sparse_wps:0,forced_wps:6,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:5,forced_clearance_min:0,base_wps:8,dp_states:4860,candidate_edges:324,feasible_edges:5,max_turn:1.239346,dp:1,mixed:2,expanded:83,dp_x:12.613616,dp_y:15.415553|floor:0.275000,weight:0.500000,sampling:adaptive,path_m:8.888341,wps:19,dense_wps:0,intermediate_wps:17,sparse_wps:0,forced_wps:6,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:5,forced_clearance_min:0,base_wps:8,dp_states:9234,candidate_edges:594,feasible_edges:27,max_turn:1.239346,dp:3,mixed:3,expanded:129,dp_x:13.324155,dp_y:14.517325|floor:0.340000,weight:0.500000,sampling:base,path_m:9.156469,wps:11,dense_wps:0,intermediate_wps:16,sparse_wps:0,forced_wps:4,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:3,forced_clearance_min:0,base_wps:9,dp_states:5346,candidate_edges:378,feasible_edges:10,max_turn:1.401549,dp:2,mixed:6,expanded:112,dp_x:13.056027,dp_y:14.591060|floor:0.340000,weight:0.500000,sampling:adaptive,path_m:9.156469,wps:18,dense_wps:0,intermediate_wps:16,sparse_wps:0,forced_wps:4,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:3,forced_clearance_min:0,base_wps:9,dp_states:8748,candidate_edges:702,feasible_edges:45,max_turn:1.401549,dp:3,mixed:11,expanded:266,dp_x:13.310749,dp_y:14.530731 mode_policy=shared_cost_all_modes route2d_seconds=0.481583 ackermann_probe=unavailable ackermann_probe_seconds=0.054811 guided_seconds=0.271699 fallback_seconds=1.208182 fallback_lattice_scale=0.500000 seconds=2.749578 start=(12.506365,16.374111,-0.652599) goal=(17.540468,12.526474,-0.652599)"
+      },
+      "mode_path_v2": {
+        "status": "fail",
+        "route_duration_s": null,
+        "reported_planning_seconds_sum": null,
+        "mode_switches": null,
+        "min_body_clearance_m": null,
+        "failure_class": "search_budget_exhausted",
+        "failure_detail": "search_budget_exhausted",
+        "search_diagnostic": "search_budget_exhausted id=1 direction_policy=bidirectional_shared_cost allow_shunting=0 reverse_search_competed=1 reverse_fallback_tried=1 reverse_fallback_seconds=0.789485 iterations=499532 guided_iterations=88336 ackermann_probe_iterations=16192 fallback_iterations=321196 route2d=unavailable route2d_reason=no_route_candidate xy_routes=6 duplicate_routes=0 duplicate_waypoint_variants=0 heuristic_headings=0 start_spin_blocked=0 start_spin_ok=0 heuristic_route_ok=0 route_edge_blocked=0 terminal_spin_blocked=0 terminal_pose_rejected=0 dp_terminal_states=0 dp_max_reachable_waypoint=9 dp_waypoint_count=19 dp_terminal_spin_blocked=0 dp_pose_rejected=0 mixed_calls=8 mixed_successes=0 ackermann_calls=8 ackermann_successes=0 ackermann_expansions=831 mixed_expansions=1931 mixed_budget_hit=0 cell_astar_seconds=0.319719 route_heuristic_seconds=0.000000 route_dp_seconds=0.153125 route_graph_wall_seconds=0.153125 mixed_search_seconds=0.065752 route_details=floor:0.000000,weight:0.000000,sampling:base,path_m:7.884372,wps:9,dense_wps:11,intermediate_wps:7,sparse_wps:0,forced_wps:2,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:2,forced_clearance_min:0,base_wps:7,dp_states:4374,candidate_edges:54,feasible_edges:0,max_turn:1.401549,dp:0,mixed:0,expanded:10,dp_x:12.506365,dp_y:16.374111|floor:0.000000,weight:0.000000,sampling:adaptive,path_m:7.884372,wps:20,dense_wps:11,intermediate_wps:7,sparse_wps:0,forced_wps:2,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:2,forced_clearance_min:0,base_wps:7,dp_states:9720,candidate_edges:108,feasible_edges:1,max_turn:1.401549,dp:1,mixed:1,expanded:12,dp_x:12.908557,dp_y:15.971919|floor:0.000000,weight:0.500000,sampling:base,path_m:7.884372,wps:9,dense_wps:8,intermediate_wps:8,sparse_wps:0,forced_wps:3,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:3,forced_clearance_min:0,base_wps:7,dp_states:4374,candidate_edges:108,feasible_edges:1,max_turn:0.785398,dp:1,mixed:-1,expanded:0,dp_x:12.834821,dp_y:15.509398|floor:0.000000,weight:0.500000,sampling:adaptive,path_m:7.884372,wps:18,dense_wps:8,intermediate_wps:8,sparse_wps:0,forced_wps:3,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:3,forced_clearance_min:0,base_wps:7,dp_states:8748,candidate_edges:324,feasible_edges:5,max_turn:0.785398,dp:1,mixed:-1,expanded:0,dp_x:12.613616,dp_y:15.750713|floor:0.000000,weight:1.500000,sampling:base,path_m:8.626998,wps:10,dense_wps:3,intermediate_wps:14,sparse_wps:0,forced_wps:6,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:5,forced_clearance_min:0,base_wps:8,dp_states:4860,candidate_edges:486,feasible_edges:20,max_turn:0.785398,dp:2,mixed:5,expanded:119,dp_x:12.988995,dp_y:14.570950|floor:0.000000,weight:1.500000,sampling:adaptive,path_m:8.626998,wps:19,dense_wps:3,intermediate_wps:14,sparse_wps:0,forced_wps:6,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:5,forced_clearance_min:0,base_wps:8,dp_states:9234,candidate_edges:1998,feasible_edges:163,max_turn:0.785398,dp:9,mixed:9,expanded:369,dp_x:16.360704,dp_y:14.550841|floor:0.000000,weight:3.000000,sampling:base,path_m:9.122756,wps:11,dense_wps:0,intermediate_wps:16,sparse_wps:0,forced_wps:3,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:2,forced_clearance_min:0,base_wps:9,dp_states:5346,candidate_edges:756,feasible_edges:39,max_turn:1.053747,dp:3,mixed:-1,expanded:0,dp_x:13.800082,dp_y:14.349745|floor:0.000000,weight:3.000000,sampling:adaptive,path_m:9.122756,wps:18,dense_wps:0,intermediate_wps:16,sparse_wps:0,forced_wps:3,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:2,forced_clearance_min:0,base_wps:9,dp_states:8748,candidate_edges:972,feasible_edges:75,max_turn:1.053747,dp:3,mixed:-1,expanded:0,dp_x:13.183388,dp_y:14.557544|floor:0.275000,weight:0.500000,sampling:base,path_m:8.888341,wps:10,dense_wps:0,intermediate_wps:17,sparse_wps:0,forced_wps:6,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:5,forced_clearance_min:0,base_wps:8,dp_states:4860,candidate_edges:324,feasible_edges:5,max_turn:1.239346,dp:1,mixed:2,expanded:83,dp_x:12.613616,dp_y:15.415553|floor:0.275000,weight:0.500000,sampling:adaptive,path_m:8.888341,wps:19,dense_wps:0,intermediate_wps:17,sparse_wps:0,forced_wps:6,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:5,forced_clearance_min:0,base_wps:8,dp_states:9234,candidate_edges:594,feasible_edges:27,max_turn:1.239346,dp:3,mixed:3,expanded:129,dp_x:13.324155,dp_y:14.517325|floor:0.340000,weight:0.500000,sampling:base,path_m:9.156469,wps:11,dense_wps:0,intermediate_wps:16,sparse_wps:0,forced_wps:4,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:3,forced_clearance_min:0,base_wps:9,dp_states:5346,candidate_edges:378,feasible_edges:10,max_turn:1.401549,dp:2,mixed:6,expanded:112,dp_x:13.056027,dp_y:14.591060|floor:0.340000,weight:0.500000,sampling:adaptive,path_m:9.156469,wps:18,dense_wps:0,intermediate_wps:16,sparse_wps:0,forced_wps:4,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:3,forced_clearance_min:0,base_wps:9,dp_states:8748,candidate_edges:702,feasible_edges:45,max_turn:1.401549,dp:3,mixed:11,expanded:266,dp_x:13.310749,dp_y:14.530731 mode_policy=shared_cost_all_modes route2d_seconds=0.480674 ackermann_probe=unavailable ackermann_probe_seconds=0.055022 guided_seconds=0.272256 fallback_seconds=1.258939 fallback_lattice_scale=0.500000 seconds=2.856385 start=(12.506365,16.374111,-0.652599) goal=(17.540468,12.526474,-0.652599)"
+      }
+    },
+    {
+      "map_id": "map09",
+      "case": "P16 maze",
+      "legacy": {
+        "status": "fail",
+        "route_duration_s": null,
+        "reported_planning_seconds_sum": null,
+        "mode_switches": null,
+        "min_body_clearance_m": null,
+        "failure_class": "search_no_path_in_discretized_lattice",
+        "failure_detail": "search_no_path_in_discretized_lattice",
+        "search_diagnostic": "search_no_path_in_discretized_lattice id=1 direction_policy=forward_only allow_shunting=0 reverse_search_competed=0 reverse_fallback_tried=0 reverse_fallback_seconds=0.000000 iterations=5 guided_iterations=2 ackermann_probe_iterations=1 fallback_iterations=3 route2d=feasible route2d_reason=route_candidate xy_routes=5 duplicate_routes=0 duplicate_waypoint_variants=0 heuristic_headings=0 start_spin_blocked=0 start_spin_ok=0 heuristic_route_ok=0 route_edge_blocked=0 terminal_spin_blocked=0 terminal_pose_rejected=0 dp_terminal_states=0 dp_max_reachable_waypoint=0 dp_waypoint_count=10 dp_terminal_spin_blocked=0 dp_pose_rejected=0 mixed_calls=6 mixed_successes=1 ackermann_calls=6 ackermann_successes=0 ackermann_expansions=6 mixed_expansions=218 mixed_budget_hit=0 cell_astar_seconds=0.346532 route_heuristic_seconds=0.000000 route_dp_seconds=0.069100 route_graph_wall_seconds=0.069100 mixed_search_seconds=0.020951 route_details=floor:0.000000,weight:0.000000,sampling:base,path_m:9.000262,wps:10,dense_wps:10,intermediate_wps:7,sparse_wps:1,forced_wps:2,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:2,forced_clearance_min:0,base_wps:8,dp_states:4860,candidate_edges:54,feasible_edges:0,max_turn:1.266270,dp:0,mixed:0,expanded:1,dp_x:11.848235,dp_y:16.794715|floor:0.000000,weight:0.000000,sampling:adaptive,path_m:9.000262,wps:20,dense_wps:10,intermediate_wps:7,sparse_wps:1,forced_wps:2,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:2,forced_clearance_min:0,base_wps:8,dp_states:9720,candidate_edges:54,feasible_edges:0,max_turn:1.266270,dp:0,mixed:0,expanded:1,dp_x:11.848235,dp_y:16.794715|floor:0.000000,weight:0.500000,sampling:base,path_m:9.000262,wps:10,dense_wps:4,intermediate_wps:9,sparse_wps:3,forced_wps:4,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:4,forced_clearance_min:0,base_wps:8,dp_states:4860,candidate_edges:54,feasible_edges:0,max_turn:0.830326,dp:0,mixed:-1,expanded:0,dp_x:11.848235,dp_y:16.794715|floor:0.000000,weight:0.500000,sampling:adaptive,path_m:9.000262,wps:18,dense_wps:4,intermediate_wps:9,sparse_wps:3,forced_wps:4,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:4,forced_clearance_min:0,base_wps:8,dp_states:8748,candidate_edges:54,feasible_edges:0,max_turn:0.830326,dp:0,mixed:-1,expanded:0,dp_x:11.848235,dp_y:16.794715|floor:0.000000,weight:1.500000,sampling:base,path_m:9.876853,wps:11,dense_wps:2,intermediate_wps:11,sparse_wps:3,forced_wps:2,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:2,forced_clearance_min:0,base_wps:9,dp_states:5346,candidate_edges:54,feasible_edges:0,max_turn:0.830326,dp:0,mixed:0,expanded:1,dp_x:11.848235,dp_y:16.794715|floor:0.000000,weight:1.500000,sampling:adaptive,path_m:9.876853,wps:18,dense_wps:2,intermediate_wps:11,sparse_wps:3,forced_wps:2,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:2,forced_clearance_min:0,base_wps:9,dp_states:8748,candidate_edges:54,feasible_edges:0,max_turn:0.830326,dp:0,mixed:1,expanded:2,dp_x:11.848235,dp_y:16.794715|floor:0.000000,weight:3.000000,sampling:base,path_m:11.575731,wps:13,dense_wps:0,intermediate_wps:12,sparse_wps:6,forced_wps:6,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:6,forced_clearance_min:0,base_wps:11,dp_states:6318,candidate_edges:54,feasible_edges:0,max_turn:1.068364,dp:0,mixed:-1,expanded:0,dp_x:11.848235,dp_y:16.794715|floor:0.000000,weight:3.000000,sampling:adaptive,path_m:11.575731,wps:20,dense_wps:0,intermediate_wps:12,sparse_wps:6,forced_wps:6,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:6,forced_clearance_min:0,base_wps:11,dp_states:9720,candidate_edges:54,feasible_edges:0,max_turn:1.068364,dp:0,mixed:-1,expanded:0,dp_x:11.848235,dp_y:16.794715|floor:0.275000,weight:0.500000,sampling:base,path_m:10.251075,wps:12,dense_wps:0,intermediate_wps:12,sparse_wps:4,forced_wps:3,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:3,forced_clearance_min:0,base_wps:10,dp_states:5832,candidate_edges:54,feasible_edges:0,max_turn:1.068364,dp:0,mixed:1,expanded:10,dp_x:11.848235,dp_y:16.794715|floor:0.275000,weight:0.500000,sampling:adaptive,path_m:10.251075,wps:18,dense_wps:0,intermediate_wps:12,sparse_wps:4,forced_wps:3,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:3,forced_clearance_min:0,base_wps:10,dp_states:8748,candidate_edges:54,feasible_edges:0,max_turn:1.068364,dp:0,mixed:17,expanded:197,dp_x:11.848235,dp_y:16.794715 mode_policy=shared_cost_all_modes route2d_seconds=0.423840 ackermann_probe=unavailable ackermann_probe_seconds=0.000028 guided_seconds=0.000220 fallback_seconds=0.000196 fallback_lattice_scale=1.000000 seconds=0.424290 start=(11.848235,16.794715,-3.141592) goal=(17.573625,12.305945,0.000000)"
+      },
+      "mode_path_v1": {
+        "status": "pass",
+        "route_duration_s": 85.844169082,
+        "reported_planning_seconds_sum": 6.531371,
+        "mode_switches": 7,
+        "min_body_clearance_m": 0.03506500506773591,
+        "failure_class": null,
+        "failure_detail": null,
+        "search_diagnostic": null
+      },
+      "mode_path_v2": {
+        "status": "pass",
+        "route_duration_s": 29.766256271,
+        "reported_planning_seconds_sum": 4.5162960000000005,
+        "mode_switches": 6,
+        "min_body_clearance_m": 0.0352838336726613,
+        "failure_class": null,
+        "failure_detail": null,
+        "search_diagnostic": null
+      }
+    },
+    {
+      "map_id": "map15",
+      "case": "N06 passage",
+      "legacy": {
+        "status": "pass",
+        "route_duration_s": 7.493430569,
+        "reported_planning_seconds_sum": 1.9098899999999999,
+        "mode_switches": 0,
+        "min_body_clearance_m": null,
+        "failure_class": null,
+        "failure_detail": null,
+        "search_diagnostic": null
+      },
+      "mode_path_v1": {
+        "status": "fail",
+        "route_duration_s": null,
+        "reported_planning_seconds_sum": null,
+        "mode_switches": null,
+        "min_body_clearance_m": null,
+        "failure_class": "optimizer_no_certified_candidate",
+        "failure_detail": "mode_master_no_feasible_candidate",
+        "search_diagnostic": "search_success id=1 direction_policy=bidirectional_shared_cost allow_shunting=0 reverse_search_competed=1 reverse_fallback_tried=1 reverse_fallback_used=0 selected_has_reverse=0 reverse_fallback_iterations=90000 reverse_fallback_seconds=0.815481 actions=50 iterations=125000 seconds=1.054459 modes=A50/10.000000m,O0/0.000000m,S0/0.000000rad,switches=0 steer_changes=12 curvature_tv=8.641975 oblique_tv=0.000000 reverse=0.000000m budget_hit=0 incumbent_budget_hit=1 selected=guided auxiliary_shunting_proposal=1 guided_cost=13.495656 cost_parts={distance:10.000000,spin:0.000000,mode_switch:0.000000,low_curvature_switch:0.000000,reverse:0.000000,reverse_early:0.000000,reverse_start:0.000000,reverse_yaw_early:0.000000,direction:0.000000,steer_tv:3.456790,curvature:0.038866,oblique_tv:0.000000,oblique_event:0.000000,oblique_use:0.000000,oblique_cruise:0.000000,sum:13.495656} baseline_cost=inf route2d=feasible route2d_cost=21.466274 route2d_seconds=0.126074 ackermann_probe=feasible ackermann_probe_cost=13.495656 ackermann_probe_iterations=30000 ackermann_probe_seconds=0.096244 route2d_reason=route_candidate xy_routes=4 duplicate_routes=0 duplicate_waypoint_variants=0 heuristic_headings=0 start_spin_blocked=0 start_spin_ok=0 heuristic_route_ok=0 route_edge_blocked=0 terminal_spin_blocked=0 terminal_pose_rejected=0 dp_terminal_states=0 dp_max_reachable_waypoint=5 dp_waypoint_count=24 dp_terminal_spin_blocked=0 dp_pose_rejected=0 mixed_calls=4 mixed_successes=2 ackermann_calls=4 ackermann_successes=1 ackermann_expansions=61 mixed_expansions=151 mixed_budget_hit=0 cell_astar_seconds=0.083930 route_heuristic_seconds=0.000000 route_dp_seconds=0.040004 route_graph_wall_seconds=0.040004 mixed_search_seconds=0.010294 route_details=floor:0.000000,weight:0.000000,sampling:base,path_m:9.651112,wps:11,dense_wps:17,intermediate_wps:5,sparse_wps:1,forced_wps:2,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:2,forced_clearance_min:0,base_wps:9,dp_states:5346,candidate_edges:54,feasible_edges:0,max_turn:1.015394,dp:0,mixed:0,expanded:1,dp_x:2.000000,dp_y:2.960000|floor:0.000000,weight:0.000000,sampling:adaptive,path_m:9.651112,wps:25,dense_wps:17,intermediate_wps:5,sparse_wps:1,forced_wps:2,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:2,forced_clearance_min:0,base_wps:9,dp_states:12150,candidate_edges:162,feasible_edges:2,max_turn:1.015394,dp:1,mixed:1,expanded:3,dp_x:2.584000,dp_y:2.952000|floor:0.000000,weight:0.500000,sampling:base,path_m:9.644485,wps:11,dense_wps:3,intermediate_wps:15,sparse_wps:0,forced_wps:5,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:4,forced_clearance_min:0,base_wps:9,dp_states:5346,candidate_edges:162,feasible_edges:2,max_turn:0.785398,dp:1,mixed:-1,expanded:0,dp_x:3.000000,dp_y:2.984000|floor:0.000000,weight:0.500000,sampling:adaptive,path_m:9.644485,wps:20,dense_wps:3,intermediate_wps:15,sparse_wps:0,forced_wps:5,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:4,forced_clearance_min:0,base_wps:9,dp_states:9720,candidate_edges:594,feasible_edges:32,max_turn:0.785398,dp:4,mixed:-1,expanded:0,dp_x:3.832000,dp_y:3.048000|floor:0.000000,weight:1.500000,sampling:base,path_m:10.469938,wps:12,dense_wps:0,intermediate_wps:16,sparse_wps:3,forced_wps:6,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:3,forced_curv_rate_extrema:3,forced_clearance_min:0,base_wps:10,dp_states:5832,candidate_edges:270,feasible_edges:8,max_turn:0.785398,dp:2,mixed:11,expanded:25,dp_x:4.008000,dp_y:2.984000|floor:0.000000,weight:1.500000,sampling:adaptive,path_m:10.469938,wps:21,dense_wps:0,intermediate_wps:16,sparse_wps:3,forced_wps:6,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:3,forced_curv_rate_extrema:3,forced_clearance_min:0,base_wps:10,dp_states:10206,candidate_edges:486,feasible_edges:32,max_turn:0.785398,dp:4,mixed:20,expanded:61,dp_x:3.880000,dp_y:2.984000|floor:0.000000,weight:3.000000,sampling:base,path_m:10.801861,wps:12,dense_wps:0,intermediate_wps:18,sparse_wps:4,forced_wps:8,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:3,forced_curv_rate_extrema:5,forced_clearance_min:0,base_wps:10,dp_states:5832,candidate_edges:270,feasible_edges:8,max_turn:0.905478,dp:2,mixed:-1,expanded:0,dp_x:4.008000,dp_y:2.984000|floor:0.000000,weight:3.000000,sampling:adaptive,path_m:10.801861,wps:24,dense_wps:0,intermediate_wps:18,sparse_wps:4,forced_wps:8,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:3,forced_curv_rate_extrema:5,forced_clearance_min:0,base_wps:10,dp_states:11664,candidate_edges:594,feasible_edges:50,max_turn:0.905478,dp:5,mixed:-1,expanded:0,dp_x:4.072000,dp_y:2.984000 mode_policy=shared_cost_all_modes fallback_lattice_scale=1.000000 guided_modes=A50/O0/S0/sw0 baseline_modes=none start=(2.000000,2.960000,0.000000) goal=(9.960000,6.280000,1.570800)"
+      },
+      "mode_path_v2": {
+        "status": "pass",
+        "route_duration_s": 9.003703703,
+        "reported_planning_seconds_sum": 2.837357,
+        "mode_switches": 0,
+        "min_body_clearance_m": 0.051151637106066405,
+        "failure_class": null,
+        "failure_detail": null,
+        "search_diagnostic": null
+      }
+    },
+    {
+      "map_id": "map16",
+      "case": "S09 garage",
+      "legacy": {
+        "status": "fail",
+        "route_duration_s": null,
+        "reported_planning_seconds_sum": null,
+        "mode_switches": null,
+        "min_body_clearance_m": null,
+        "failure_class": "search_budget_exhausted",
+        "failure_detail": "search_budget_exhausted",
+        "search_diagnostic": "search_budget_exhausted id=1 direction_policy=forward_only allow_shunting=0 reverse_search_competed=0 reverse_fallback_tried=0 reverse_fallback_seconds=0.000000 iterations=450000 guided_iterations=450000 ackermann_probe_iterations=0 fallback_iterations=0 route2d=feasible route2d_reason=route_candidate xy_routes=4 duplicate_routes=0 duplicate_waypoint_variants=0 heuristic_headings=0 start_spin_blocked=0 start_spin_ok=0 heuristic_route_ok=0 route_edge_blocked=0 terminal_spin_blocked=0 terminal_pose_rejected=0 dp_terminal_states=2 dp_max_reachable_waypoint=13 dp_waypoint_count=14 dp_terminal_spin_blocked=2 dp_pose_rejected=0 mixed_calls=4 mixed_successes=1 ackermann_calls=4 ackermann_successes=1 ackermann_expansions=978 mixed_expansions=2400 mixed_budget_hit=0 cell_astar_seconds=0.039425 route_heuristic_seconds=0.000000 route_dp_seconds=0.181794 route_graph_wall_seconds=0.181794 mixed_search_seconds=0.086693 route_details=floor:0.000000,weight:0.000000,sampling:base,path_m:8.044163,wps:9,dense_wps:4,intermediate_wps:3,sparse_wps:5,forced_wps:2,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:1,forced_clearance_min:0,base_wps:7,dp_states:4374,candidate_edges:1557,feasible_edges:350,max_turn:0.672535,dp:6,mixed:6,expanded:370,dp_x:7.490000,dp_y:1.290000|floor:0.000000,weight:0.000000,sampling:adaptive,path_m:8.044163,wps:14,dense_wps:4,intermediate_wps:3,sparse_wps:5,forced_wps:2,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:1,forced_clearance_min:0,base_wps:7,dp_states:6804,candidate_edges:2376,feasible_edges:450,max_turn:0.672535,dp:7,mixed:7,expanded:418,dp_x:7.270000,dp_y:1.190000|floor:0.000000,weight:0.500000,sampling:base,path_m:8.044163,wps:9,dense_wps:2,intermediate_wps:2,sparse_wps:6,forced_wps:1,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:1,forced_clearance_min:0,base_wps:7,dp_states:4374,candidate_edges:1719,feasible_edges:460,max_turn:0.785398,dp:7,mixed:-1,expanded:0,dp_x:6.530000,dp_y:1.210000|floor:0.000000,weight:0.500000,sampling:adaptive,path_m:8.044163,wps:12,dense_wps:2,intermediate_wps:2,sparse_wps:6,forced_wps:1,forced_corner:0,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:1,forced_clearance_min:0,base_wps:7,dp_states:5832,candidate_edges:3078,feasible_edges:750,max_turn:0.785398,dp:8,mixed:-1,expanded:0,dp_x:6.670000,dp_y:1.350000|floor:0.000000,weight:1.500000,sampling:base,path_m:8.325341,wps:10,dense_wps:0,intermediate_wps:3,sparse_wps:8,forced_wps:3,forced_corner:1,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:2,forced_clearance_min:0,base_wps:8,dp_states:4860,candidate_edges:2196,feasible_edges:550,max_turn:0.785398,dp:7,mixed:9,expanded:291,dp_x:6.390000,dp_y:1.510000|floor:0.000000,weight:1.500000,sampling:adaptive,path_m:8.325341,wps:13,dense_wps:0,intermediate_wps:3,sparse_wps:8,forced_wps:3,forced_corner:1,forced_curv_sign:0,forced_curv_extrema:0,forced_curv_rate_extrema:2,forced_clearance_min:0,base_wps:8,dp_states:6318,candidate_edges:3537,feasible_edges:840,max_turn:0.785398,dp:9,mixed:9,expanded:343,dp_x:6.070000,dp_y:1.230000|floor:0.000000,weight:3.000000,sampling:base,path_m:8.419066,wps:10,dense_wps:0,intermediate_wps:4,sparse_wps:8,forced_wps:4,forced_corner:1,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:2,forced_clearance_min:0,base_wps:8,dp_states:4860,candidate_edges:2196,feasible_edges:550,max_turn:0.785398,dp:7,mixed:-1,expanded:0,dp_x:6.390000,dp_y:1.510000|floor:0.000000,weight:3.000000,sampling:adaptive,path_m:8.419066,wps:14,dense_wps:0,intermediate_wps:4,sparse_wps:8,forced_wps:4,forced_corner:1,forced_curv_sign:0,forced_curv_extrema:1,forced_curv_rate_extrema:2,forced_clearance_min:0,base_wps:8,dp_states:6804,candidate_edges:3951,feasible_edges:901,max_turn:0.785398,dp:13,mixed:-1,expanded:0,dp_x:5.860000,dp_y:0.550000 mode_policy=shared_cost_all_modes route2d_seconds=0.224349 ackermann_probe=unavailable ackermann_probe_seconds=0.000000 guided_seconds=2.049694 fallback_seconds=0.000000 fallback_lattice_scale=1.000000 seconds=2.274046 start=(13.200000,2.250000,3.141590) goal=(5.860000,0.550000,1.570800)"
+      },
+      "mode_path_v1": {
+        "status": "pass",
+        "route_duration_s": 28.10869063,
+        "reported_planning_seconds_sum": 6.040131,
+        "mode_switches": 3,
+        "min_body_clearance_m": 0.05761978443196103,
+        "failure_class": null,
+        "failure_detail": null,
+        "search_diagnostic": null
+      },
+      "mode_path_v2": {
+        "status": "pass",
+        "route_duration_s": 15.692854779,
+        "reported_planning_seconds_sum": 1.424517,
+        "mode_switches": 2,
+        "min_body_clearance_m": 0.06144134040524796,
+        "failure_class": null,
+        "failure_detail": null,
+        "search_diagnostic": null
+      }
+    }
+  ],
+  "notes": {
+    "ros_probe": "isolated localhost roscore, sequential per case",
+    "backend_override": "legacy, mode_path_v1, mode_path_v2",
+    "joint": "off for all backends",
+    "cbc": "off for all backends",
+    "shared_config": "catkin_ws/src/fwis_v3_demo/config/params.yaml with backend-only override",
+    "direction_policy": "backend default; legacy is forward_only, mode_path_v1/v2 are bidirectional",
+    "timing_profiles": "mode_path_v1/v2 use kinematic_sim_mode_switch_only_v2; legacy emits legacy_native_speed_only",
+    "pass_contract": "Planner and optimizer returned a trajectory; 5 mm swept-footprint, terminal, monotone-time, direction and ROS cleanup checks passed. Dynamics pass is interpreted under each backend contract; legacy_native_speed_only is weaker than the common v1/v2 acceleration/jerk profile.",
+    "comparability": "route durations and clearance are directly comparable between v1/v2. Legacy uses a different timing contract and lacks the shared clearance score, so its duration/quality scores must not be ranked directly against v1/v2.",
+    "legacy_dynamics_limit": "legacy_native_speed_only does not certify the same acceleration, jerk, steering-rate and mode-switch timing limits as kinematic_sim_mode_switch_only_v2; legacy duration and dynamics are not directly comparable."
+  },
+  "v1_v2_common_success_cases": [
+    "P11_case_b_default",
+    "P12_env1_default",
+    "P12_env2_default",
+    "P16_narrow_maze_default",
+    "S09_underground_garage_default"
+  ],
+  "v1_to_v2_duration_ratio_on_common_success_cases": {
+    "median": 2.855476135575482,
+    "values": {
+      "P11_case_b_default": 2.855476135575482,
+      "P12_env1_default": 2.8124660501787573,
+      "P12_env2_default": 2.8625334321750375,
+      "P16_narrow_maze_default": 2.883942417899369,
+      "S09_underground_garage_default": 1.7911776426819888
+    }
+  }
+}
