@@ -10,6 +10,16 @@ import numpy as np
 AVAILABLE = all(importlib.util.find_spec(name) for name in ("torch", "sb3_contrib"))
 
 
+class FigureSelectionTests(unittest.TestCase):
+    def test_includes_late_success_and_failures_without_duplicates(self):
+        from coptrans_rl.training_figures import representative_episodes
+        rows = [{"task_id": str(i), "info": {"is_success": i >= 8}} for i in range(10)]
+        selected = representative_episodes(rows)
+        self.assertEqual([r["task_id"] for r in selected], ["8", "9", "0", "1", "2", "3"])
+        self.assertEqual(representative_episodes([]), [])
+        self.assertEqual(representative_episodes(rows[8:]), rows[8:])
+
+
 @unittest.skipUnless(AVAILABLE, "training dependencies are optional for foundation tests")
 class TrainingTests(unittest.TestCase):
     @classmethod

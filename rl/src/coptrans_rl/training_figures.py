@@ -97,10 +97,21 @@ def learning_curves(run, output):
     fig.savefig(output/"learning_curves.png", dpi=150); plt.close(fig)
 
 
+def representative_episodes(episodes, limit=6):
+    """Show both outcomes when available, retaining deterministic task order."""
+    successful = [r for r in episodes if r["info"]["is_success"]]
+    failed = [r for r in episodes if not r["info"]["is_success"]]
+    selected = successful[:(limit+1)//2]
+    selected += failed[:limit-len(selected)]
+    selected_ids = {r["task_id"] for r in selected}
+    selected += [r for r in episodes if r["task_id"] not in selected_ids][:limit-len(selected)]
+    return selected
+
+
 def rollout_figures(corpus, evaluation, output):
     import matplotlib.pyplot as plt
     rows = {r["task_id"]: r for r in corpus.rows}
-    episodes = evaluation["episodes"][:6]
+    episodes = representative_episodes(evaluation["episodes"])
     fig, axes = plt.subplots(2, 3, figsize=(14, 9), constrained_layout=True)
     for ax, episode in zip(axes.flat, episodes):
         problem = corpus.problem(rows[episode["task_id"]])
@@ -115,7 +126,7 @@ def rollout_figures(corpus, evaluation, output):
             points, _ = expand(problem.start, [corpus.settings.library[i] for i in episode["action_ids"]], .05, math.radians(5))
             ax.plot([p.x for p in points], [p.y for p in points], "--", color="#ef6c00", lw=1.5)
         label = f'PASS T={episode["info"]["execution_seconds"]:.2f}s' if success else "FAIL "+episode["info"]["reason"]
-        ax.set_title(episode["family"]+"\n"+label, fontsize=9)
+        ax.set_title(episode["family"]+" / "+episode["task_id"]+"\n"+label, fontsize=9)
     for ax in list(axes.flat)[len(episodes):]:
         ax.axis("off")
     fig.suptitle("Actual model rollouts: solid = certified trajectory; dashed = failed raw attempt")

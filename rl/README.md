@@ -1,7 +1,10 @@
 # 强化学习版本开发与基础检查
 
-当前 **P0/P1 基础模块已通过验收，正在接入 P2/P3 数据与训练**；`run_demo.sh` 仍运行父版本 v2。
+当前 **P0/P1 基础模块已通过验收，P2/P3 已运行首轮 GPU 训练，效果尚未达标**；`run_demo.sh` 仍运行父版本 v2。
 阶段验收结果及图片见 [`evaluation/rl/foundation/REPORT.md`](../evaluation/rl/foundation/REPORT.md)。
+首轮 RTX 4060 训练曲线、实际成功/失败路径和原始结果索引见 [GPU 训练评估](../evaluation/rl/training/REPORT.md)。
+
+当前选中模型只到达 2/20 个固定短程验证目标，两例均为单步 A；PPO 最后模型为 1/20，尚无可交付的学习规划器。
 
 ## 已实现
 
@@ -53,6 +56,8 @@ bash rl/setup_training.sh
 ```bash
 DATA=/home/wq/whut_thesis/expv3_experiment_archive/rl/datasets/curriculum-v1-20261026
 RUN=/home/wq/whut_thesis/expv3_experiment_archive/rl/training
+BC_RUN="$RUN/bc-my-run-01"
+PPO_RUN="$RUN/ppo-my-run-01"
 ```
 
 该数据集包含训练 1,000、验证 200、测试 500、另留地图类型 100 个任务。布局哈希跨集合隔离。
@@ -68,11 +73,13 @@ RUN=/home/wq/whut_thesis/expv3_experiment_archive/rl/training
 
 ```bash
 .venv-rl/bin/python -m coptrans_rl.train bc \
-  --dataset "$DATA" --output "$RUN/bc-seed7" \
+  --dataset "$DATA" --output "$BC_RUN" \
   --device cuda --epochs 30 --seed 7
 ```
 
 策略学习教师在每一步的动作选择；验证集只用于评估和选模型。
+示例中的 `BC_RUN`、`PPO_RUN` 必须是新目录；重复运行时修改名称。已完成的 `bc-seed7*`、`ppo-seed7-goal-v2-pilot` 为冻结实验，保留作对照。
+当前目标位移以车长归一化；旧 `bc-seed7` 使用旧观测，不能加载到新观测代码中，入口会拒绝不匹配的权重。
 输出 `bc_history.json`、`best_validation.json`、`best_model.zip`、`latest_model.zip` 和带依赖/配置/数据/权重哈希的 `manifest.json`。
 `best_model` 按验证到达率优先、成功轨迹执行时间其次选择；仅验证 NLL 改善不能替代实际到达评估。
 
@@ -80,8 +87,8 @@ RUN=/home/wq/whut_thesis/expv3_experiment_archive/rl/training
 
 ```bash
 .venv-rl/bin/python -m coptrans_rl.train ppo \
-  --dataset "$DATA" --output "$RUN/ppo-seed7" \
-  --initial-model "$RUN/bc-seed7/best_model.zip" \
+  --dataset "$DATA" --output "$PPO_RUN" \
+  --initial-model "$BC_RUN/best_model.zip" \
   --device cuda --envs 4 --timesteps 200000 --seed 7
 ```
 
@@ -93,8 +100,8 @@ GPU 训练 CNN、策略和价值网络；4 个 CPU 进程进行几何环境采�
 
 ```bash
 .venv-rl/bin/python -m coptrans_rl.train ppo \
-  --dataset "$DATA" --output "$RUN/ppo-seed7-resume1" \
-  --initial-model "$RUN/ppo-seed7/checkpoint_50000.zip" \
+  --dataset "$DATA" --output "$RUN/ppo-my-run-01-resume1" \
+  --initial-model "$PPO_RUN/checkpoint_50000.zip" \
   --device cuda --envs 4 --timesteps 150000 --seed 7
 ```
 
@@ -105,14 +112,14 @@ GPU 训练 CNN、策略和价值网络；4 个 CPU 进程进行几何环境采�
 
 ```bash
 .venv-rl/bin/python -m coptrans_rl.evaluate \
-  --dataset "$DATA" --model "$RUN/ppo-seed7/best_model.zip" \
+  --dataset "$DATA" --model "$PPO_RUN/best_model.zip" \
   --split test --episodes 500 --device cuda \
-  --output "$RUN/ppo-seed7-test"
+  --output "${PPO_RUN}-test"
 
 .venv-rl/bin/python -m coptrans_rl.training_figures \
-  --dataset "$DATA" --run "$RUN/ppo-seed7" \
-  --evaluation "$RUN/ppo-seed7-test/evaluation.json" \
-  --output "$RUN/ppo-seed7-figures"
+  --dataset "$DATA" --run "$PPO_RUN" \
+  --evaluation "${PPO_RUN}-test/evaluation.json" \
+  --output "${PPO_RUN}-figures"
 ```
 
 图片包含课程地图/教师预览、实际学习曲线及模型成功和失败路径。`--split ood` 单列未参加训练的 islands 类型。
@@ -174,6 +181,6 @@ ROS 检查会启动独立 master 和受控仿真时钟，使用现有 `playback.
 
 ## 下一阶段
 
-P2 生成布局隔离的数据集及同库教师；P3 完成 BC、MaskablePPO 训练和吞吐实测；
-之后才接入独立 ROS RL 前端，评估 11 图和盲测任务。
+先补齐传统教师、基础动作课程和策略错误分解，提高多步验证到达率；再完成多种子训练。
+之后接入独立 ROS RL 前端，评估 11 图和盲测任务。
 完整阶段门槛见 [`plan/rl/02_执行方案与验收标准.md`](../plan/rl/02_执行方案与验收标准.md)。

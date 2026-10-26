@@ -5,12 +5,13 @@
 本分支 rl-mode-path 从 continuous-mode-path 的 c90e981 派生，用于第四种方法的开发。
 当前已实现 80 动作库、整车动作掩码、离线环境及公共候选完成器，P0/P1 的 171 项基础测试和独立 ROS 回放检查已通过。
 已新增布局隔离的课程数据、行为克隆和 MaskablePPO 训练入口，默认使用 GPU；操作命令见 [rl/README.md 的训练部分](rl/README.md#如何训练默认使用-gpu)。
-当前在做训练流程小试，尚未通过完整 RL 规划效果验收，也未接入 ROS RL 后端。
+已在 RTX 4060 上完成 BC 和 20,480 步 PPO 试训；所选模型仅通过 2/20 个短程验证任务，尚未通过 RL 规划效果验收，也未接入 ROS RL 后端。
 
 - [完整文献调研与算法架构](plan/rl/01_文献调研与算法架构.md)
 - [分阶段执行方案与验收标准](plan/rl/02_执行方案与验收标准.md)
 - [基础模块的安装、检查命令与代码说明](rl/README.md)
 - [P0/P1 实测结果和图片](evaluation/rl/foundation/REPORT.md)
+- [GPU 训练曲线与实际成功/失败路径图](evaluation/rl/training/REPORT.md)
 
 推荐框架：带动作掩码的 PPO 逐段选择 A/斜移/Spin、方向和运动参数，生成完整路径；
 随后复用现有连续化、边界拟合、重定时、车辆切换配置及整车审核。
