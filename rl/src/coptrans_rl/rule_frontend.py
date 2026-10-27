@@ -1,5 +1,6 @@
 """Independent bounded frontend: select mode+geometry edges in a live frontier."""
 from dataclasses import dataclass
+from functools import cached_property
 import math
 import numbers
 import time
@@ -40,6 +41,29 @@ class Branch:
     proxy: float
     depth: int
 
+    @cached_property
+    def state_key(self):
+        end = self.edge.end
+        gear, reversals, spin = 0,0,0.
+        for a in self.actions:
+            if a.mode == 2:
+                spin += a.amount
+            else:
+                new = 1 if a.amount>0 else -1
+                reversals += int(gear!=0 and new!=gear)
+                gear,spin = new,0.
+        last = self.actions[-1]
+        return (round(end.x/.05),round(end.y/.05),round(end.th/math.radians(3)),
+                last.mode,round(last.control,4),gear,reversals,round(wrap(spin),4))
+
+    @cached_property
+    def action_features(self):
+        return (sum(abs(a.amount) for a in self.edge.actions if a.mode!=2),
+                sum(abs(a.amount) for a in self.edge.actions if a.mode==2),
+                sum(a.mode!=z.mode for a,z in zip(self.actions,self.actions[1:]))+
+                    int(self.actions[0].mode!=0),
+                sum(abs(a.amount) for a in self.actions if a.mode!=2 and a.amount<0))
+
 
 class RuleFrontend:
     schema = "rule_frontier_mode_path_v1"
@@ -55,28 +79,24 @@ class RuleFrontend:
                 abs(wrap(pose.th-p.goal.th))<=p.yaw_tol)
 
     def heuristic(self, pose):
+        key = (pose.x,pose.y,pose.th)
+        if key in self.heuristic_cache:
+            return self.heuristic_cache[key]
         p = self.problem
         distance = self.generator.guide.distance_to_goal(pose,p.goal)/p.limits.target_v
         angle = abs(wrap(p.goal.th-pose.th))/max(p.limits.omega_max,p.limits.translation_omega_max or 0.)
-        return max(distance,angle)
+        result = max(distance,angle)
+        if len(self.heuristic_cache)>=32768:
+            self.heuristic_cache.clear()
+        self.heuristic_cache[key] = result
+        return result
 
     def priority(self, branch):
         # Search preference only; final selection always uses certified time.
         return branch.proxy+1.5*self.heuristic(branch.edge.end)-2*int(self.at_goal(branch.edge.end))
 
     def state_key(self, branch):
-        end = branch.edge.end
-        gear, reversals, spin = 0,0,0.
-        for a in branch.actions:
-            if a.mode == 2:
-                spin += a.amount
-            else:
-                new = 1 if a.amount>0 else -1
-                reversals += int(gear!=0 and new!=gear)
-                gear,spin = new,0.
-        last = branch.actions[-1]
-        return (round(end.x/.05),round(end.y/.05),round(end.th/math.radians(3)),
-                last.mode,round(last.control,4),gear,reversals,round(wrap(spin),4))
+        return branch.state_key
 
     def _add(self, pose, prefix, proxy, depth):
         stop = self.deadline-self.config.finalize_reserve_s
@@ -105,6 +125,9 @@ class RuleFrontend:
         self.begun = time.perf_counter()
         self.deadline = self.begun+self.config.budget_s
         self.problem = problem
+        self.heuristic_cache = {}
+        self.observation_s = 0.
+        self.first_solution_s = None
         if problem.initial_mode != 0:
             raise ValueError("unsupported_initial_mode")
         if not all(problem.grid.pose_clear(p) for p in (problem.start,problem.goal)):
@@ -135,6 +158,7 @@ class RuleFrontend:
         return self.observe()
 
     def observe(self):
+        begun = time.perf_counter()
         p = self.problem
         features = np.zeros((self.config.capacity,self.feature_dim),dtype=np.float32)
         logits = np.zeros(self.config.capacity,dtype=np.float32)
@@ -143,11 +167,7 @@ class RuleFrontend:
             end = b.edge.end
             dx,dy = p.goal.x-end.x,p.goal.y-end.y
             c,s = math.cos(end.th),math.sin(end.th)
-            length = sum(abs(a.amount) for a in b.edge.actions if a.mode!=2)
-            spin = sum(abs(a.amount) for a in b.edge.actions if a.mode==2)
-            switches = sum(a.mode!=z.mode for a,z in zip(b.actions,b.actions[1:]))
-            switches += int(b.actions[0].mode != p.initial_mode)
-            reverse = sum(abs(a.amount) for a in b.actions if a.mode!=2 and a.amount<0)
+            length,spin,switches,reverse = b.action_features
             clearance = p.grid.center_clearance_lower_bound(end.x,end.y)
             features[i] = [(c*dx+s*dy)/p.length,(-s*dx+c*dy)/p.length,
                            math.sin(p.goal.th-end.th),math.cos(p.goal.th-end.th),
@@ -166,8 +186,10 @@ class RuleFrontend:
                            1.-self.finalizations/self.config.max_finalizations]
             logits[i] = -self.priority(b)
             mask[i] = True
-        return {"candidates":np.clip(features,-100.,100.),"rule_logits":logits,
-                "mask":mask,"map":self.map_image.copy()}
+        observation = {"candidates":np.clip(features,-100.,100.),"rule_logits":logits,
+                       "mask":mask,"map":self.map_image.copy()}
+        self.observation_s += time.perf_counter()-begun
+        return observation
 
     def step(self, index):
         if self.done:
@@ -186,12 +208,20 @@ class RuleFrontend:
             result = finalize_candidate(self.problem,branch.actions,
                 FinalizationConfig(include_metrics=False),self.deadline,source="rule_rl_frontend")
             event.update(status=result.status,reason=result.reason)
+            event["failure_stage"] = result.failure_stage
+            event["finalization_s"] = result.stages_s.get("total",0.)
+            collision = result.detail.get("first_collision")
+            if collision:
+                event["first_collision"] = {key:collision[key] for key in
+                    ("block_index","mode","interval_end_pose") if key in collision}
             if result.feasible and result.timed.duration>self.config.max_execution_s:
                 event.update(status="REJECTED",reason="execution_time_budget_exceeded")
             if (result.feasible and result.timed.duration<=self.config.max_execution_s and
                     (self.best is None or result.timed.duration < self.best.timed.duration)):
                 reward = (50.-result.timed.duration/10. if self.best is None else
                           (self.best.timed.duration-result.timed.duration)/10.)
+                if self.best is None:
+                    self.first_solution_s = time.perf_counter()-self.begun
                 self.best,self.best_actions = result,branch.actions
                 event["incumbent_execution_s"] = result.timed.duration
         else:
@@ -219,6 +249,9 @@ class RuleFrontend:
                 "execution_s":self.best.timed.duration if success else None,
                 "wall_s":time.perf_counter()-self.begun,"decisions":self.steps,
                 "finalizations":self.finalizations,"expanded":len(self.expanded),
+                "first_solution_s":self.first_solution_s,
+                "observation_s":self.observation_s,
+                "finalization_s":sum(e.get("finalization_s",0.) for e in self.events),
                 "reason":"certified" if success else self.stop_reason,
                 "stop_reason":self.stop_reason,
                 "last_attempt":[[a.mode,a.amount,a.control] for a in self.last_actions],
@@ -229,8 +262,13 @@ class RuleFrontend:
 def solve(problem, config=None, selector=None, include_trace=True):
     env = RuleFrontend(config)
     observation = env.reset(problem)
+    selection_s = 0.
     while not env.done:
+        begun = time.perf_counter()
         index = (int(np.argmax(np.where(observation["mask"],observation["rule_logits"],-np.inf)))
                  if selector is None else selector(observation))
+        selection_s += time.perf_counter()-begun
         observation,_,_ = env.step(index)
-    return env.report(include_trace)
+    report = env.report(include_trace)
+    report["selection_s"] = selection_s
+    return report

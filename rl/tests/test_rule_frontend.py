@@ -47,6 +47,31 @@ class RuleFrontendTests(unittest.TestCase):
                 self.assertTrue(problem.grid.action_clear(p,action,.0025))
                 p = replay(p,[action])[-1]
 
+    def test_candidate_envelope_matches_final_auditor(self):
+        from fwis_v3_optimizer.quality import TrajectoryEvaluator
+        problem = dataclasses.replace(self.problem([Action(0,1.,0.)]),
+                                      start=Pose(3.,.271,0.),goal=Pose(4.,.271,0.))
+        action = Action(0,1.,0.)
+        self.assertTrue(problem.grid.action_clear(problem.start,action,.005))
+        generator = RuleCandidates(problem)
+        evaluator = TrajectoryEvaluator(problem.grid,problem.start,problem.goal,problem.limits,
+            problem.length,problem.width,profile=problem.quality_profile)
+        self.assertAlmostEqual(generator.sweep_grid.half_l,evaluator.sweep_grid.half_l)
+        self.assertAlmostEqual(generator.sweep_grid.half_w,evaluator.sweep_grid.half_w)
+        self.assertFalse(generator._clear(problem.start,action))
+
+    def test_exact_sweep_cache_reuses_identical_query_only(self):
+        problem = self.problem([Action(0,1.,0.)])
+        generator = RuleCandidates(problem)
+        action = Action(0,1.,0.)
+        self.assertTrue(generator._clear(problem.start,action))
+        self.assertTrue(generator._clear(problem.start,action))
+        self.assertEqual(generator.stats['sweep_checks'],1)
+        self.assertEqual(generator.stats['sweep_cache_hits'],1)
+        moved = Pose(problem.start.x+1e-7,problem.start.y,problem.start.th)
+        self.assertTrue(generator._clear(moved,action))
+        self.assertEqual(generator.stats['sweep_checks'],2)
+
     def test_rule_baseline_certifies_basic_modes(self):
         config = FrontendConfig(budget_s=5.)
         for actions in ([Action(0,1.,0.)],[Action(1,1.,math.pi/2)],
@@ -98,6 +123,24 @@ class RuleFrontendTests(unittest.TestCase):
         loss = -distribution.log_prob(distribution.probs.argmax(dim=1)).mean()+value.square().mean()
         loss.backward()
         self.assertTrue(all(torch.isfinite(p.grad).all() for p in policy.parameters() if p.grad is not None))
+
+    def test_spatial_policy_with_nonzero_residual_is_permutation_equivariant(self):
+        import torch
+        from coptrans_rl.rule_learning import CandidateRanker,tensors
+        torch.set_num_threads(1);torch.manual_seed(3)
+        env = RuleFrontend(FrontendConfig(budget_s=5.))
+        obs = env.reset(self.problem([Action(0,1.,0.)]))
+        policy = CandidateRanker()
+        with torch.no_grad():
+            policy.actor[-1].weight.normal_(0.,.1)
+            policy.log_prior_scale.fill_(-.3)
+        original,value = policy(tensors(obs,'cpu'))
+        order = np.random.default_rng(4).permutation(64)
+        swapped = {k:(v[order] if k!='map' else v) for k,v in obs.items()}
+        other,other_value = policy(tensors(swapped,'cpu'))
+        np.testing.assert_allclose(original.probs.detach().numpy()[0,order],
+                                   other.probs.detach().numpy()[0],rtol=1e-5,atol=1e-7)
+        torch.testing.assert_close(value,other_value)
 
     def test_offline_reference_inputs_are_checked(self):
         from PIL import Image

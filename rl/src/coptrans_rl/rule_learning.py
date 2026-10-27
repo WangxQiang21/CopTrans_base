@@ -10,6 +10,7 @@ import time
 import numpy as np
 import torch
 from torch import nn
+from torch.nn import functional as F
 from torch.distributions import Categorical
 
 from .dataset import Corpus, artifact_directory
@@ -20,28 +21,42 @@ from .benchmark import engineering_tasks
 
 class CandidateRanker(nn.Module):
     """Shared edge scorer: arbitrary slot order, rule score + learned residual."""
-    schema = "rule_residual_candidate_ppo_v1"
+    schema = "rule_residual_candidate_ppo_v2_spatial"
 
     def __init__(self):
         super().__init__()
-        self.map_encoder = nn.Sequential(nn.Conv2d(2,8,3,2,1),nn.ReLU(),
-            nn.Conv2d(8,16,3,2,1),nn.ReLU(),nn.AdaptiveAvgPool2d((2,2)),
+        self.map_encoder = nn.Sequential(nn.Conv2d(2,16,3,1,1),nn.ReLU(),
+            nn.Conv2d(16,16,3,2,1),nn.ReLU(),nn.Conv2d(16,16,3,2,1),nn.ReLU())
+        self.context_encoder = nn.Sequential(nn.AdaptiveAvgPool2d((2,2)),
             nn.Flatten(),nn.Linear(64,32),nn.ReLU())
-        self.edge_encoder = nn.Sequential(nn.Linear(RuleFrontend.feature_dim+32,64),nn.Tanh(),nn.Linear(64,32),nn.Tanh())
-        self.actor = nn.Linear(32,1)
-        self.critic = nn.Sequential(nn.Linear(64,64),nn.Tanh(),nn.Linear(64,1))
-        nn.init.zeros_(self.actor.weight); nn.init.zeros_(self.actor.bias)
+        self.edge_encoder = nn.Sequential(nn.Linear(RuleFrontend.feature_dim+32+16,128),
+            nn.LayerNorm(128),nn.ReLU(),nn.Linear(128,64),nn.ReLU())
+        self.actor = nn.Sequential(nn.Linear(128,64),nn.Tanh(),nn.Linear(64,1))
+        self.critic = nn.Sequential(nn.Linear(96,64),nn.Tanh(),nn.Linear(64,1))
+        self.log_prior_scale = nn.Parameter(torch.zeros(()))
+        nn.init.zeros_(self.actor[-1].weight); nn.init.zeros_(self.actor[-1].bias)
 
     def forward(self, obs):
-        context = self.map_encoder(obs["map"])
+        spatial = self.map_encoder(obs["map"])
+        context = self.context_encoder(spatial)
+        # Endpoint coordinates are in the same bottom-up world frame as the
+        # occupancy/distance image. Sample each candidate's own neighborhood;
+        # a single pooled map vector cannot distinguish two different corners.
+        positions = (2*obs["candidates"][:,:,4:6]-1).unsqueeze(2)
+        local = F.grid_sample(spatial,positions,mode="bilinear",
+                              padding_mode="border",align_corners=False)
+        local = local.squeeze(-1).transpose(1,2)
         features = self.edge_encoder(torch.cat([obs["candidates"],
-            context[:,None,:].expand(-1,obs["candidates"].shape[1],-1)],dim=-1))
+            context[:,None,:].expand(-1,obs["candidates"].shape[1],-1),local],dim=-1))
         mask = obs["mask"].bool()
         if not torch.all(mask.any(dim=1)):
             raise ValueError("no_frontier_candidate")
-        residual = self.actor(features).squeeze(-1)
-        logits = (obs["rule_logits"]+residual).masked_fill(~mask,-1e9)
         pooled = (features*mask[:,:,None]).sum(dim=1)/mask.sum(dim=1,keepdim=True)
+        residual = self.actor(torch.cat([features,
+            pooled[:,None,:].expand_as(features)],dim=-1)).squeeze(-1)
+        prior = obs["rule_logits"].masked_fill(~mask,-1e9)
+        prior = prior-prior.max(dim=1,keepdim=True).values
+        logits = (self.log_prior_scale.exp().clamp(.05,2.)*prior+residual).masked_fill(~mask,-1e9)
         value = self.critic(torch.cat([context,pooled],dim=1)).squeeze(-1)
         return Categorical(logits=logits),value
 
@@ -60,9 +75,13 @@ def selector(model, device):
 
 def source_identity():
     files = [PROJECT_ROOT/"rl/src/coptrans_rl"/name for name in
-             ("rule_candidates.py","rule_frontend.py","rule_learning.py","local_connections.py")]
+             ("rule_candidates.py","rule_frontend.py","rule_learning.py","local_connections.py",
+              "action_mask.py","kernel_adapter.py","reward.py","benchmark.py")]
     files += [PROJECT_ROOT/"rl/native/local_connections.cpp",
               PROJECT_ROOT/"catkin_ws/src/fwis_common/include/fwis_common/reeds_shepp.hpp"]
+    files += [PROJECT_ROOT/"catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer"/name
+              for name in ("candidate_finalizer.py","continuous_geometry.py",
+                           "continuous_retiming.py","quality.py","core.py","retiming.py")]
     return {str(p.relative_to(PROJECT_ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in files}
 
 
@@ -83,13 +102,17 @@ def load(path, device, identity):
     return model
 
 
-def evaluate(problems, config, model=None, device="cpu", trace=False):
+def evaluate(problems, config, model=None, device="cpu", trace=False, on_result=None):
     choose = selector(model,device) if model is not None else None
     results = []
     for problem in problems:
         row = solve(problem,config,choose,include_trace=trace)
         row["start"],row["goal"] = asdict(problem.start),asdict(problem.goal)
         results.append(row)
+        if on_result:
+            on_result(results)
+        print(problem.task_id, row["is_success"], row["reason"],
+              "decisions",row["decisions"],"wall_s",round(row["wall_s"],3),flush=True)
     passed = [r for r in results if r["is_success"]]
     return {"summary":{"tasks":len(results),"successes":len(passed),
              "success_rate":len(passed)/len(results) if results else 0.,
@@ -110,18 +133,34 @@ def json_write(path, value):
 def train(args, corpus, config, output, identity):
     torch.manual_seed(args.seed)
     rng = np.random.default_rng(args.seed)
-    model = CandidateRanker().to(args.device)
+    model = (load(args.initial_model,args.device,identity) if args.initial_model else
+             CandidateRanker().to(args.device))
+    model.train()
     initial_parameters = [p.detach().clone() for p in model.parameters()]
     print("Rule frontend PPO device:",args.device,
           torch.cuda.get_device_name(0) if args.device=="cuda" else "CPU",flush=True)
     optimizer = torch.optim.Adam(model.parameters(),lr=args.learning_rate)
     validation = [corpus.problem(r) for r in corpus.split("val")[:args.eval_episodes]]
+    maps = {p.task_id.split("-")[0]:p for p,_ in engineering_tasks(corpus.settings.contract)}
+    if set(args.engineering_train_maps)&set(args.engineering_val_maps):
+        raise ValueError("engineering_train_validation_overlap")
+    unknown = (set(args.engineering_train_maps)|set(args.engineering_val_maps))-set(maps)
+    if unknown:
+        raise ValueError("unknown_engineering_map:"+str(sorted(unknown)))
+    validation += [maps[name] for name in args.engineering_val_maps]
     baseline = evaluate(validation,config)
     json_write(output/"rule_validation.json",baseline)
     json_write(output/"best_validation.json",baseline)
     best_report = baseline
     best = rank(baseline)
-    save(model,optimizer,output/"best.pt",identity)
+    save(CandidateRanker().to(args.device),optimizer,output/"best.pt",identity)
+    if args.initial_model:
+        initial_report = evaluate(validation,config,model,args.device)
+        json_write(output/"initial_validation.json",initial_report)
+        if rank(initial_report)>best:
+            best_report,best = initial_report,rank(initial_report)
+            save(model,optimizer,output/"best.pt",identity)
+            json_write(output/"best_validation.json",initial_report)
     # Zero actor residual is exactly the rule choice, tested independently.
     env = RuleFrontend(config)
     train_rows = corpus.split("train")
@@ -129,10 +168,13 @@ def train(args, corpus, config, output, identity):
     def reset():
         for _ in range(100):
             task = train_rows[int(rng.integers(len(train_rows)))]
-            observation = env.reset(corpus.problem(task))
+            problem = (maps[str(rng.choice(args.engineering_train_maps))]
+                       if args.engineering_train_maps and rng.random()<args.long_task_probability
+                       else corpus.problem(task))
+            observation = env.reset(problem)
             if not env.done:
                 return observation
-            reset_rejections.append(task["task_id"])
+            reset_rejections.append(problem.task_id)
         raise RuntimeError("no_nonterminal_training_task")
     obs = reset()
     history, total, begun = [],0,time.perf_counter()
@@ -210,6 +252,11 @@ def main():
     parser.add_argument("--dataset",type=Path,required=True)
     parser.add_argument("--output",type=Path,required=True)
     parser.add_argument("--model",type=Path)
+    parser.add_argument("--initial-model",type=Path,
+                        help="warm start policy weights; PPO optimizer and sampling restart")
+    parser.add_argument("--engineering-train-maps",nargs="*",default=[])
+    parser.add_argument("--engineering-val-maps",nargs="*",default=[])
+    parser.add_argument("--long-task-probability",type=float,default=.5)
     parser.add_argument("--device",choices=("cpu","cuda"),default="cuda")
     parser.add_argument("--split",choices=("train","val","test","ood"),default="val")
     parser.add_argument("--episodes",type=int,default=20)
@@ -228,6 +275,8 @@ def main():
             parser.error(key+" must be positive")
     if not np.isfinite(args.learning_rate) or args.learning_rate<=0:
         parser.error("learning rate must be positive and finite")
+    if not np.isfinite(args.long_task_probability) or not 0<=args.long_task_probability<=1:
+        parser.error("long task probability must be in [0,1]")
     torch.set_num_threads(2)
     if args.device=="cuda" and (args.stage=="train" or args.model) and not torch.cuda.is_available():
         raise RuntimeError("CUDA unavailable")
@@ -250,7 +299,8 @@ def main():
         model = load(args.model,args.device,identity) if args.model else None
         problems = ([p for p,_ in engineering_tasks(corpus.settings.contract)] if args.maps else
                     [corpus.problem(r) for r in corpus.split(args.split)[:args.episodes]])
-        report = evaluate(problems,config,model,args.device,trace=True)
+        report = evaluate(problems,config,model,args.device,trace=True,
+            on_result=lambda rows:json_write(output/"partial.json",{"complete":False,"tasks":rows}))
         report["method"] = "rule_residual_rl" if model else "rules_only"
         json_write(output/"evaluation.json",report)
         print(json.dumps(report["summary"],indent=2))

@@ -8,7 +8,7 @@ import numpy as np
 from scipy.ndimage import distance_transform_edt
 
 from .action_mask import action_clear_vectorized
-from .kernel_adapter import Action, Pose, advance, wrap, action_shunting_violation
+from .kernel_adapter import Action, Grid, Pose, advance, wrap, action_shunting_violation
 from .local_connections import LocalConnections
 from .reward import proxy_seconds
 from fwis_v3_optimizer.core import fit_action_to_pose, collapse_exact_runs
@@ -94,14 +94,41 @@ class Guide:
 
 
 class RuleCandidates:
-    schema = "lazy_rule_macro_candidates_v1"
+    schema = "lazy_rule_macro_candidates_v2"
 
     def __init__(self, problem):
         self.problem = problem
         self.local = LocalConnections()
         self.guide = Guide(problem)
+        # Match the final continuous auditor's sampling envelope.  The map and
+        # vehicle contract are unchanged; proposals that only fit before the
+        # auditor's extra half-spacing allowance are rejected here, not after
+        # spending an endpoint fit on an already blocked prefix.
+        grid = problem.grid
+        spacing = min(.005, problem.quality_profile.sweep_spacing)
+        margin = 2*grid.half_l-problem.length
+        self.sweep_grid = Grid(grid.occ, grid.res, grid.ox, grid.oy,
+                               problem.length, problem.width, margin+spacing)
+        self.clear_cache = {}
         self.stats = {"proposed": 0, "history_rejected": 0, "collision_rejected": 0,
-                      "generated": 0, "wall_s": 0.}
+                      "generated": 0, "wall_s": 0., "sweep_s": 0.,
+                      "sweep_checks": 0, "sweep_cache_hits": 0,
+                      "sweep_envelope_spacing_m": spacing}
+
+    def _clear(self, pose, action):
+        # Exact keys only: quantizing a swept-volume cache can hide collisions.
+        key = (pose.x, pose.y, pose.th, action.mode, action.amount, action.control)
+        if key in self.clear_cache:
+            self.stats["sweep_cache_hits"] += 1
+            return self.clear_cache[key]
+        begun = time.perf_counter()
+        clear = action_clear_vectorized(self.sweep_grid, pose, action)
+        self.stats["sweep_s"] += time.perf_counter()-begun
+        self.stats["sweep_checks"] += 1
+        if len(self.clear_cache) >= 32768:
+            self.clear_cache.clear()
+        self.clear_cache[key] = clear
+        return clear
 
     def generate(self, pose, prefix=(), deadline=float("inf")):
         begun = time.perf_counter()
@@ -128,7 +155,7 @@ class RuleCandidates:
             for a in actions:
                 proxy += proxy_seconds(a, mode, p.limits)
                 mode, end = a.mode, advance(end,a)
-            if not grid.pose_clear(end):
+            if not self.sweep_grid.pose_clear(end):
                 return
             proposed.append(Candidate(actions,end,proxy,source))
 
@@ -184,7 +211,7 @@ class RuleCandidates:
                 break
             current = pose
             for a in candidate.actions:
-                if not action_clear_vectorized(grid,current,a):
+                if not self._clear(current,a):
                     self.stats["collision_rejected"] += 1
                     break
                 current = advance(current,a)

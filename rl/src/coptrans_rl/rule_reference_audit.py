@@ -5,6 +5,7 @@ import hashlib
 import json
 import math
 from pathlib import Path
+import subprocess
 
 import numpy as np
 from PIL import Image
@@ -90,6 +91,15 @@ def main():
     parser.add_argument("--collect",action="store_true",help="save successful oracle decisions for offline imitation")
     args = parser.parse_args()
     output = artifact_directory(args.output)
+    from .rule_learning import source_identity
+    (output/"manifest.json").write_text(json.dumps({
+        "scope":"offline_reference_teacher_not_online_input",
+        "feature_schema":"rule_frontier_features_27_v1",
+        "contract":load_settings().contract.identity,
+        "sources":source_identity(),
+        "arguments":{k:str(v) if isinstance(v,Path) else v for k,v in vars(args).items()},
+        "commit":subprocess.check_output(["git","rev-parse","HEAD"],cwd=PROJECT_ROOT,text=True).strip()
+    },indent=2)+"\n")
     comparison = json.loads((args.reference_root/"comparison.json").read_text())
     available = {r["map_id"]:r for r in comparison["backends"]["mode_path_v2"] if r["status"]=="pass"}
     rows,examples,labels,example_tasks = [],[],[],[]

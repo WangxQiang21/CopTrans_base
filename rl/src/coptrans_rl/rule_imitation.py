@@ -55,6 +55,8 @@ def main():
     parser.add_argument("--batch-size",type=int,default=128)
     parser.add_argument("--learning-rate",type=float,default=1e-3)
     parser.add_argument("--holdout-prefix",action="append",default=[])
+    parser.add_argument("--task-balanced",action="store_true",
+                        help="give each training route equal sampling mass")
     parser.add_argument("--seed",type=int,default=7)
     args = parser.parse_args()
     if args.epochs<1 or args.batch_size<1 or not np.isfinite(args.learning_rate) or args.learning_rate<=0:
@@ -84,6 +86,12 @@ def main():
     labels = torch.tensor(y,device=args.device)
     rng = np.random.default_rng(args.seed)
     train_indices,val_indices = np.flatnonzero(train_mask),np.flatnonzero(val_mask)
+    sampling = None
+    if args.task_balanced:
+        names,counts = np.unique(tasks[train_indices],return_counts=True)
+        frequency = dict(zip(names,counts))
+        sampling = np.asarray([1./frequency[t] for t in tasks[train_indices]])
+        sampling /= sampling.sum()
     history,best = [],float("inf")
     begun = time.perf_counter()
     def score(indices):
@@ -99,7 +107,8 @@ def main():
         return total/len(indices),correct/len(indices)
     print("Offline teacher pretraining",args.device,"rows",len(y),"train",len(train_indices),"holdout",len(val_indices),flush=True)
     for epoch in range(1,args.epochs+1):
-        order = rng.permutation(train_indices)
+        order = (rng.permutation(train_indices) if sampling is None else
+                 rng.choice(train_indices,len(train_indices),replace=True,p=sampling))
         for begin in range(0,len(order),args.batch_size):
             ix = order[begin:begin+args.batch_size]
             distribution,_ = model({k:v[ix] for k,v in observations.items()})

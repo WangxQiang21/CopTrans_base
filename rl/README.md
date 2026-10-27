@@ -4,8 +4,8 @@
 阶段验收结果及图片见 [`evaluation/rl/foundation/REPORT.md`](../evaluation/rl/foundation/REPORT.md)。
 首轮 RTX 4060 训练曲线、实际成功/失败路径和原始结果索引见 [GPU 训练评估](../evaluation/rl/training/REPORT.md)。
 
-新前端的规则版为短程验证 20/20、工程地图 3/11；512 步 GPU 接入小试尚未优于规则版。
-见 [新前端逐图评估及图片](../evaluation/rl/rule_frontend/REPORT.md)。旧 80 动作模型只有 2/20，保留为历史实验。
+2026-10-27 本轮：同一 10 s / 512 次选择预算下，规则版为 **3/11**，空间候选网络经监督预训练和 2,048 步 CUDA PPO 后为 **8/11**；固定短程验证保持 **20/20**。这是工程开发集的离线结果，包含训练/验证地图，不是盲测或 ROS RL 成绩。
+本轮逐图数据和实际轨迹图片见 [优化评估](../evaluation/rl/optimization_20261027/REPORT.md)。[第一版评估](../evaluation/rl/rule_frontend/REPORT.md)与旧 80 动作模型保留为历史实验。
 
 ## 当前主线：独立规则与学习前端
 
@@ -52,8 +52,37 @@ RUN=/home/wq/whut_thesis/expv3_experiment_archive/rl/training
 
 输出目录必须尚不存在，且在仓库外。`evaluation.json` 保存逐任务定时轨迹、审核、搜索事件、失败原因及最后尝试。
 `best.pt`、`latest.pt` 是新候选选择网络，不能与旧 80 动作模型的 zip 权重互换；源码/车辆身份不符会拒绝加载。
-当前 PPO 小试采用单个 CPU 几何环境采样、GPU 网络更新；旧 80 动作训练入口的 4 进程设置不适用于这个新入口。
-本轮证明了接口和 CUDA 更新流程，尚未证明强化学习改善路径质量。正式训练前需补齐长距离任务和候选覆盖。
+新候选前端采用单个 CPU 几何环境采样、GPU 网络更新；旧 80 动作训练入口的 4 进程设置不适用于这个新入口。
+早期 512 步小试只验证接口；本轮加入长路线预训练与 PPO，结果和局限见上方优化评估。
+
+## 本轮模型和继续训练
+
+改动包括：前端扫掠裕度与最终审核对齐；精确键的验碰缓存、分支历史与启发式缓存；候选端点附近的地图特征、候选集合上下文和可学习规则先验强度；按路线平衡的监督预训练；支持从预训练权重开始 PPO，并混入指定工程地图。
+
+本机保存的当前模型（权重在仓库外）：
+
+```bash
+DATA=/home/wq/whut_thesis/expv3_experiment_archive/rl/datasets/curriculum-v1-20261026
+ART=/home/wq/whut_thesis/expv3_experiment_archive/rl
+MODEL="$ART/training/20261027-spatial-long-ppo-seed7-v1/best.pt"
+
+# 离线运行全部 11 图；输出路径须不存在。不是 run_demo.sh / ROS 后端。
+.venv-rl/bin/python -m coptrans_rl.rule_learning evaluate \
+  --dataset "$DATA" --model "$MODEL" --maps --budget 10 --decisions 512 \
+  --device cuda --output /tmp/rl-my-maps-01
+
+# 延续本轮训练方向；恢复策略权重，重新建立 PPO 优化器和采样状态。
+.venv-rl/bin/python -m coptrans_rl.rule_learning train \
+  --dataset "$DATA" --initial-model "$MODEL" \
+  --engineering-train-maps map02 map04 map09 map16 \
+  --engineering-val-maps map05 map06 --long-task-probability 0.7 \
+  --steps 2048 --rollout-steps 512 --eval-episodes 4 \
+  --budget 10 --decisions 512 --learning-rate 0.00002 --device cuda \
+  --output "$ART/training/my-long-ppo-01"
+```
+
+新模型 schema 为 `rule_residual_candidate_ppo_v2_spatial`。旧 v1 权重不能直接加载；修改模型、观测或内核源码也会触发身份检查，应重新训练并评估，不能改哈希强行冒充原实验。
+PPO 的 `best.pt` 按固定验证任务的完整规划成功数优先、成功路线平均执行时间其次选择；监督预训练的 `best.pt` 仍按留图 NLL 选择，两者含义不同。
 
 ## 已实现
 
