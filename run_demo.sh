@@ -17,6 +17,7 @@ usage() {
   ./run_demo.sh --map map01/map001、完整目录名、旧名称或地图目录 [ROS参数...]
   ./run_demo.sh --map map01/map001、完整目录名、旧名称或地图目录 [--map-scale|--scale|-scale 比例] [ROS参数...]
   ./run_demo.sh --list-maps
+  ./run_demo.sh --map map04 --collect-data [--data-root 仓库外目录]
 
 示例：
   ./run_demo.sh --map P12_env1
@@ -51,12 +52,19 @@ direction_policy:=bidirectional（新后端默认）允许正反向候选按共�
 forward_only 用于只允许正向的对照。旧参数 allow_reverse_fallback:=true/false
 仍可用并会映射到这两个策略；同时指定新旧参数且相互冲突会报配置错误。
 
+采集模式：打开本地标注网页，在 RViz 手动设置起终点，结果出来后选优质/参考/剔除。
+采集默认关闭自动终点；可显式传 auto_goal:=true 使用预设任务。
+数据自动保存到仓库外 expv3_experiment_archive/teacher_collection。
+二次筛选：python3 tools/review_collected_data.py --reanalyze
+
 手动选图时，如果地图目录含 scene_meta.yaml，默认使用其中的预设起点和终点，
 并使用空场景标注；可传 auto_goal:=false 关闭自动终点，再在 RViz 用
 2D Pose Estimate 设置起点、用 2D Nav Goal 设置终点。
 EOF
 }
 
+collect_data=false
+data_root=""
 requested_map=""
 requested_map_scale=""
 list_maps=false
@@ -64,6 +72,18 @@ has_map_dir_arg=false
 launch_args=()
 while (($#)); do
   case "$1" in
+    --collect-data)
+      collect_data=true
+      shift
+      ;;
+    --data-root)
+      if (($# < 2)) || [[ -z "$2" ]]; then
+        echo "错误：--data-root 需要保存目录。" >&2
+        exit 2
+      fi
+      data_root="$2"
+      shift 2
+      ;;
     --map|-m)
       if [[ -n "${requested_map}" ]]; then
         echo "错误：--map 只能指定一次；设置地图比例请写 --scale 0.7 或 -scale 0.7（不要重复写 --map）。" >&2
@@ -136,6 +156,11 @@ while (($#)); do
       ;;
   esac
 done
+
+if [[ -n "${data_root}" && "${collect_data}" != true ]]; then
+  echo "错误：--data-root 需要与 --collect-data 一起使用。" >&2
+  exit 2
+fi
 
 if [[ "${list_maps}" == true ]]; then
   echo "地图编号（目录名；括号内依次为三位编号写法和兼容旧名称）："
@@ -285,6 +310,20 @@ set -u
 bonminseed_plugin_dir="${overlay_dir}/devel/lib/fwis_v3_optimizer/casadi_plugins"
 if [[ -f "${bonminseed_plugin_dir}/libcasadi_nlpsol_bonminseed.so" ]]; then
   export CASADIPATH="${bonminseed_plugin_dir}${CASADIPATH:+:${CASADIPATH}}"
+fi
+
+if [[ "${collect_data}" == true ]]; then
+  launch_args+=("collect_data:=true" "map_scale:=${effective_map_scale}" "project_root:=${demo_dir}")
+  if [[ -z "${data_root}" ]]; then
+    data_root="$(dirname -- "${demo_dir}")/expv3_experiment_archive/teacher_collection"
+  fi
+  launch_args+=("data_root:=${data_root}")
+  collection_has_auto_goal=false
+  for arg in "${launch_args[@]}"; do
+    [[ "${arg}" == auto_goal:=* ]] && collection_has_auto_goal=true
+  done
+  [[ "${collection_has_auto_goal}" == true ]] || launch_args+=("auto_goal:=false")
+  echo "[expv3] 人工采集模式，数据目录：${data_root}"
 fi
 
 has_auto_goal=false

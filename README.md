@@ -29,6 +29,128 @@ map04真实ROS配对中，重定时耗时从0.807秒降至0.298秒，执行时�
 
 本文档列出 `run_demo.sh` 的完整用法。地图目录及预览见[地图总索引](maps/README.md)，可运行地图与旧名称的对应关系见 [`maps/map_index.tsv`](maps/map_index.tsv)。
 
+## 人工采集与二次筛选（2026-11-08）
+
+### 1. 切换算法分支
+
+先在运行 Demo 的终端按 **Ctrl+C** 停止 ROS，再切换分支：
+
+```bash
+cd /home/wq/whut_thesis/expv3
+# 当前分支前面带 *
+git branch
+
+# Legacy
+git switch multimodal-hybrid-astar
+# V1
+git switch mode-path-constant-primitive
+# V2
+git switch continuous-mode-path
+```
+
+上面三条 `git switch` 是三个选项，每次执行需要的那一条。`run_demo.sh` 固定运行当前算法分支对应的版本，启动时会重新构建。
+
+### 2. 启动采集
+
+```bash
+bash run_demo.sh --map map04 --collect-data
+```
+
+打开 RViz 和本地标注网页。若浏览器没有自动打开，复制终端里 `[采集] 打开 http://127.0.0.1:端口/` 的地址。
+
+1. RViz 用 **2D Pose Estimate** 设置起点位置和方向。
+2. 用 **2D Nav Goal** 设置终点位置和方向。
+3. 等规划结束，观察 RViz；网页也可以重播、拖动时间、跳到下一次模式切换并显示实际发布的安全走廊。
+4. 选择 **优质 / 参考 / 剔除**，可填写理由，再点击 **保存本条标签和预览图**。
+5. 保存后继续设置下一组起终点。每次规划独立编号，旧记录保留；未标注的结果保留为待筛选。
+
+优质必须通过共同审核；失败或未通过审核的路线可以保存为参考或剔除。初筛标签、二次审核标签分别保存；都不会自动启动训练。
+
+其他用法：
+
+```bash
+# 明确使用地图预设起终点，便于跨分支执行同一个任务
+bash run_demo.sh --map map04 --collect-data auto_goal:=true
+
+# 修改地图比例；车辆不缩放
+bash run_demo.sh --map map01 --scale 0.75 --collect-data
+
+# 自定义仓库外数据目录
+bash run_demo.sh --map map04 --collect-data --data-root /home/wq/whut_thesis/my_teacher_data
+
+# 不自动打开浏览器；地址仍打印到终端
+bash run_demo.sh --map map04 --collect-data collection_open_browser:=false
+```
+
+采集模式默认关闭自动目标；普通 Demo 的预设目标行为保留。若规划一直未完成，可点击“记录等待超时”，再标为参考或剔除；此按钮仅记录超时，不取消规划，继续下一条前请等待当前规划结束或停止并重新启动 Demo。
+
+### 3. 数据保存在哪里
+
+默认统一保存在仓库外：
+
+`/home/wq/whut_thesis/expv3_experiment_archive/teacher_collection/`
+
+三个分支共用这个目录。每次启动创建独立会话，每次规划保存独立记录：
+
+```text
+teacher_collection/
+  maps/地图哈希.json.gz、地图哈希.png
+  sessions/启动时间_算法/
+    session.json
+    source.tar.gz         # 本次采集使用的源代码快照（含工作区修改）
+    episodes/000001/
+      episode.json        # 请求、最终几何、实际定时轨迹、实际走廊、审核及人工标签
+      preview.png         # 点击保存时的网页预览
+      analysis.json       # 二次独立审核结果
+  diagnostics/            # 规划器原始诊断
+```
+
+会话记录分支、提交、源文件哈希、车辆实际配置及地图比例；地图快照包含完整栅格、分辨率和原点。失败记录不会用搜索种子冒充最终轨迹。页面顶部可导出标签 JSON，但标签本身已经保存在数据目录，退出浏览器不会丢失已保存标签。
+
+### 4. 收集一批后做二次筛选
+
+停止 Demo，在任意一个上述算法分支执行：
+
+```bash
+python3 tools/review_collected_data.py --reanalyze
+```
+
+重新审核保存下来的最终几何和**实际发布的定时轨迹**，不做几何修复或替换；核对地图、结果哈希、车辆配置、终点、整车扫掠、速度动态和显示插值。页面汇总三个分支记录，保留初筛标签，另存二次标签。点击“同任务对照”可并排查看相同任务、相同车辆配置的路线、实际走廊、执行时间和切换次数。相同任务及车辆配置下，提示耗时较长或完全重复的记录；不会自动替你打标签。
+
+自定义目录用：
+
+```bash
+python3 tools/review_collected_data.py --data-root /home/wq/whut_thesis/my_teacher_data --reanalyze
+```
+
+二次筛选结束后可以导出训练候选引用清单（仅包含二次人工选优并通过复核的数据，不启动训练）：
+
+```bash
+python3 tools/review_collected_data.py --export-reviewed \
+  /home/wq/whut_thesis/expv3_experiment_archive/teacher_collection/reviewed_selection.json
+```
+
+输出文件已存在时不会覆盖。把数据目录或导出的清单路径交给我，后续再做 RL 动作映射和训练。
+
+### 5. 三个版本统一的车辆执行规则
+
+默认性能参数集中在 [`ranger_mini_2.yaml`](catkin_ws/src/fwis_common/config/ranger_mini_2.yaml)，分支默认参数不再各存一份运动限制。车辆契约哈希只包含车辆与执行配置，不包含算法评分权重。
+
+| 项目 | 三个分支共同默认值 |
+| --- | --- |
+| 车长 × 车宽 | 0.738 × 0.5 m |
+| 目标速度 | 2 m/s |
+| 平移加速度 / 加加速度上限 | 0.6 m/s² / 2 m/s³ |
+| Spin 角速度 / 角加速度 / 角加加速度上限 | 0.8 rad/s / 0.8 rad/s² / 3 rad/s³ |
+| 模式切换静止驻留 | 0.3 s，设置时间包含在内 |
+| 起终速度 | 0 |
+| 最终终点审核 | 2 cm / 1° |
+
+减速、静止驻留、加速和 Spin 旋转分别计时。默认仿真 profile 不因曲率主动限速，同模式内部普通控制节点不额外停车。它只把纵向运动与 Spin 限制作为对应动态硬约束，侧向及转向执行器需求按现有仿真策略诊断；不是经过实车标定的全动态模型。受限动态配置另行使用并产生不同车辆契约，不与默认配置混排。
+
+Legacy 的最终恒定控制几何通过精确分段表示接入公共计时，不进行隐式平滑或末端拟合；其几何优化本身采用更严格的末端求解容差，为共同终点审核保留数值余量。V1 保留原分段优化，恒定原语回退结果也接入公共计时。V2 保留连续段后端。三个分支发布前均检查实际显示插值的整车扫掠。
+
+
 ## 快速开始
 
 ```bash

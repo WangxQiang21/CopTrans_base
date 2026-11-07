@@ -40,6 +40,12 @@ def main(argv):
     if config_override:
         config = Path(config_override).expanduser().resolve()
     params = yaml.safe_load(config.read_text(encoding="utf-8"))
+    shared = yaml.safe_load((demo / "catkin_ws/src/fwis_common/config/ranger_mini_2.yaml").read_text())
+    params["vehicle"] = dict(shared.get("vehicle", {}), **params.get("vehicle", {}))
+    common_limits = shared.get("quality", {}).get("limits", {})
+    params.setdefault("quality", {})["limits"] = dict(common_limits, **params.get("quality", {}).get("limits", {}))
+    for name in ("mode_switch_duration", "mode_setup_time"):
+        params["quality"]["limits"][name] = params["vehicle"][name]
     planning = params.get("planning", {})
     search = params.get("search", {})
     vehicle = params.get("vehicle", {})
