@@ -36,6 +36,9 @@ def inspect_run(path, expected):
                         ("run.json", "probe_result.json", "case.json")]
     params = yaml.safe_load((path/"params.yaml").read_text())
     defaults = yaml.safe_load((ROOT/"catkin_ws/src/fwis_v3_demo/config/params.yaml").read_text())
+    common = yaml.safe_load((ROOT/"catkin_ws/src/fwis_common/config/ranger_mini_2.yaml").read_text())
+    defaults["quality"]["limits"] = dict(common["quality"]["limits"], **defaults["quality"].get("limits", {}))
+    defaults["vehicle"] = dict(common["vehicle"], **defaults.get("vehicle", {}))
     report = probe["quality_report"]
     selected, timing = report["selected"], report["selected_timing"]
     checks = {}

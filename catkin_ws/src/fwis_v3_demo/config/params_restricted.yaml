@@ -15,6 +15,7 @@ quality:
   # Explicit simulation limits, not measured vehicle capabilities.
   limits:
     profile: kinematic_sim_target2_v1
+    translation_speed_policy: restricted
     target_v: 2.0
     v_max: 2.0
     a_max: 0.6
@@ -270,12 +271,6 @@ mode_master:
   # The continuous stage already refines the incumbent's fixed schedule.
   # Keep the extra collapsed-schedule NLP configurable for matched ablations.
   refine_seed_schedule: false
-vehicle:
-  length: 0.738
-  width: 0.500
-  wheelbase: 0.494
-  track: 0.364
-  r_min_ack: 0.810
 collision:
   margin: 0.04
   sweep_guard: 0.005

@@ -14,28 +14,6 @@ quality:
   # Interactive kinematic demo: cruise through turns; slow at mode events.
   # Actuator/curvature demands are recorded, not used as translation speed caps.
   # params_restricted.yaml preserves the earlier full-limit comparison profile.
-  limits:
-    profile: kinematic_sim_mode_switch_only_v2
-    translation_speed_policy: mode_switch_only
-    target_v: 2.0
-    v_max: 2.0
-    a_max: 0.6
-    jerk_max: 2.0
-    lateral_a_max: 2.0
-    omega_max: 0.8
-    alpha_max: 0.8
-    angular_jerk_max: 3.0
-    # Spin limits above do not constrain steering-driven translation yaw.
-    translation_omega_max: 2.5
-    # Zero disables these additional translation body-yaw bounds. Steering
-    # rate/acceleration, lateral acceleration and wheel speed remain bounded.
-    translation_alpha_max: 0.0
-    translation_angular_jerk_max: 0.0
-    steer_rate_max: 0.8
-    steer_accel_max: 1.5
-    steer_angle_max: 1.5707963267948966
-    # Outer Ackermann wheels may run faster than the vehicle center.
-    wheel_speed_max: 3.0
   cost:
     name: quality_cost_v2_prototype_uncalibrated
     clearance: 4.0
@@ -291,12 +269,6 @@ mode_master:
   # The continuous stage already refines the incumbent's fixed schedule.
   # Keep the extra collapsed-schedule NLP configurable for matched ablations.
   refine_seed_schedule: false
-vehicle:
-  length: 0.738
-  width: 0.500
-  wheelbase: 0.494
-  track: 0.364
-  r_min_ack: 0.810
 collision:
   margin: 0.04
   sweep_guard: 0.005
@@ -335,9 +307,8 @@ cost:
   w_terminal_xy: 8.0
   w_terminal_yaw: 2.0
 time:
-  # This is RViz/timed-output playback, not a vehicle-control command.
-  # Smoothstep profile peaks at this rate and averages 2/3 of it per group.
-  # 2.0 gives >1 m/s average on translation groups for legible RViz playback.
+  # Legacy scoring-scale compatibility only; these values no longer time
+  # published motion. Actual vehicle limits come from the shared vehicle YAML.
   v_demo: 2.00
   omega_demo: 2.00
   dt: 0.10

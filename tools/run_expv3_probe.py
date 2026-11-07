@@ -605,6 +605,10 @@ def main() -> int:
         base_config_path = args.config_file.resolve()
         with base_config_path.open("r", encoding="utf-8") as stream:
             config = yaml.safe_load(stream)
+        common = yaml.safe_load((ROOT / "catkin_ws/src/fwis_common/config/ranger_mini_2.yaml").read_text())
+        config["vehicle"] = dict(common["vehicle"], **config.get("vehicle", {}))
+        config.setdefault("quality", {})["limits"] = dict(
+            common["quality"]["limits"], **config.get("quality", {}).get("limits", {}))
         for key, value in parse_overrides(args.overrides):
             set_existing(config, key, value)
         set_existing(config, "joint.enabled", args.joint == "on")
