@@ -43,6 +43,7 @@ from fwis_v3_optimizer.retiming import MotionLimits
 from fwis_v3_optimizer.mode_switch_timing import mode_switch_events_for_actions
 from fwis_v3_optimizer.continuous_geometry import replay_continuous
 from fwis_v3_optimizer.diagnostics import atomic_write_json
+from fwis_v3_optimizer.vehicle_execution import time_actions, serialize_plan, vehicle_contract, certify_display_sampling
 
 
 def pose_stamped(p, stamp):
@@ -122,13 +123,16 @@ def make_timed_mode_strip(timed, header, namespace, width, alpha, colors):
 
 def safe_time_sample(start, actions, grid, v_demo, omega_demo, dt,
                      sweep_corner_step=.0025, mode_switch_durations=None,
-                     initial_mode=0):
+                     initial_mode=0, limits=None):
     """Refine temporal sampling until linear interpolation remains SAT-clear."""
     last_collision=False
     for level in range(7):
         sample_dt=dt/(2**level)
-        timed=time_sample(start,actions,v_demo,omega_demo,sample_dt,
-                          mode_switch_durations,initial_mode)
+        if limits is None:
+            raise ValueError("shared_vehicle_limits_required_for_execution")
+        _, execution = time_actions(start, actions, limits, dt=sample_dt,
+                                     spatial_dt=.005)
+        timed = execution.samples
         if any(t2<=t1 for (t1,_,_,_), (t2,_,_,_) in zip(timed,timed[1:])):
             raise ValueError("non_increasing_timestamps")
         if all(grid.interpolated_clear(p1,p2,sweep_corner_step)
@@ -350,8 +354,9 @@ class OptimizerNode:
         self.v_demo = rospy.get_param("~time/v_demo", .5)
         self.omega_demo = rospy.get_param("~time/omega_demo", .5)
         self.dt = rospy.get_param("~time/dt", .1)
-        self.xy_tol = rospy.get_param("~search/goal_xy_tol", .16)
-        self.yaw_tol = rospy.get_param("~search/goal_yaw_tol", .14)
+        # Reserve numerical room inside the common final 2 cm / 1 deg gate.
+        self.xy_tol = min(float(rospy.get_param("~search/goal_xy_tol", .16)), .015)
+        self.yaw_tol = min(float(rospy.get_param("~search/goal_yaw_tol", .14)), math.radians(.75))
         self.planning_backend = rospy.get_param("~planning/backend", "legacy")
         if self.planning_backend not in ("legacy", "mode_path_v1", "mode_path_v2"):
             raise ValueError("unknown_planning_backend")
@@ -818,10 +823,14 @@ class OptimizerNode:
             "allow_reverse":bool(self.allow_reverse),
             "allow_shunting":bool(self.allow_shunting)}
         payload["execution_profile"]=asdict(self.quality_limits)
+        payload["execution_contract"]=vehicle_contract(
+            self.length,self.width,self.margin,self.quality_limits)
         payload["quality_profile"]=asdict(self.quality_profile)
         payload["map_signature"]=(self._joint_seed_map_signature()
                                   if self.grid is not None else None)
-        source_files=("catkin_ws/src/fwis_v3_optimizer/scripts/optimizer_node.py",
+        source_files=("catkin_ws/src/fwis_common/config/ranger_mini_2.yaml",
+                      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/vehicle_execution.py",
+                      "catkin_ws/src/fwis_v3_optimizer/scripts/optimizer_node.py",
                       "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/core.py",
                       "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/quality.py",
                       "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/continuous_geometry.py",
@@ -2363,7 +2372,7 @@ class OptimizerNode:
                         self.dt,self.timed_sweep_corner_step,
                         [event["duration"] for event in
                          mode_switch_events_for_actions(
-                             refined,self.quality_limits)])
+                             refined,self.quality_limits)], limits=self.quality_limits)
                     chosen=(source,poses,refined,boxes,meta,timed,sample_dt)
                     break
                 except Exception as exc:
@@ -2447,7 +2456,7 @@ class OptimizerNode:
                                         [event["duration"] for event in
                                          mode_switch_events_for_actions(
                                              repaired_actions,
-                                             self.quality_limits)])
+                                             self.quality_limits)], limits=self.quality_limits)
                                     repair_meta.update({
                                         "solver":"ipopt_time_clearance_repair",
                                         "common_score":repaired_score,
@@ -2501,7 +2510,7 @@ class OptimizerNode:
                         self.omega_demo,self.dt,self.timed_sweep_corner_step,
                         [event["duration"] for event in
                          mode_switch_events_for_actions(
-                             coarse_actions,self.quality_limits)])
+                             coarse_actions,self.quality_limits)], limits=self.quality_limits)
                     _,coarse_boxes,_=build_corridors(self.grid,coarse_poses)
                     meta={"corridor":"coarse_seed_validated",
                           "solver":"none_safe_incumbent",
@@ -2530,13 +2539,36 @@ class OptimizerNode:
             meta["selected_candidate"]=source
             if math.hypot(timed[-1][1].x-goal.x,timed[-1][1].y-goal.y)>self.xy_tol+1e-5:
                 raise ValueError("timed_goal_violation")
+            execution_plan, execution_timed = time_actions(
+                start, refined, self.quality_limits, dt=sample_dt,
+                spatial_dt=.005, goal=goal)
+            timed = execution_timed.samples
+            common_evaluator = TrajectoryEvaluator(
+                self.grid, start, goal, self.quality_limits,
+                self.length, self.width, .02, math.radians(1),
+                self.quality_profile, allow_reverse=self.allow_reverse,
+                allow_shunting=self.allow_shunting)
+            common_audit = (common_evaluator.evaluate_continuous_geometry(
+                execution_plan, execution_timed, allow_reverse=self.allow_reverse)
+                if execution_plan is not None else
+                common_evaluator.evaluate(refined, execution_timed,
+                                          allow_reverse=self.allow_reverse))
+            # A loose legacy terminal result may still be displayed for human
+            # review, but it can never become a certified demonstration.
+            if common_audit.get("geometry_status") == "PASS" and common_audit.get("status") != "FEASIBLE":
+                raise ValueError("legacy_shared_execution_audit:"+str(common_audit.get("reason")))
+            execution_timed, resampled_audit, display_sampling = certify_display_sampling(
+                execution_plan, execution_timed, common_evaluator, refined)
+            timed = execution_timed.samples
+            if resampled_audit is not None:
+                common_audit = resampled_audit
             meta["visualization"] = self.publish(
                 msg.plan_id, start, poses, refined, timed, boxes, meta)
             selected_score=sequence_cost(refined,self.cost_weights)
             # Capture the actual selected legacy route. The planner's input
             # seed and the MINLP warm seed can both differ from this geometry.
-            # Native legacy playback has no restricted dynamic certificate;
-            # its geometry is audited independently for same-profile replay.
+            # Native selected geometry is retained. Common execution timing
+            # and its independent audit are recorded alongside legacy metrics.
             geometry_evaluator = TrajectoryEvaluator(
                 self.grid, start, goal, self.quality_limits,
                 self.length, self.width, .02, math.radians(1),
@@ -2549,9 +2581,17 @@ class OptimizerNode:
             mode_switch_events = mode_switch_events_for_actions(
                 refined,self.quality_limits)
             legacy_report = {
+                "plan_id": int(msg.plan_id), "backend": self.planning_backend,
                 "status": "LEGACY_NATIVE_PUBLISHED",
-                "geometry_status": geometry_audit.get("geometry_status"),
-                "dynamic_status": "NOT_CHECKED_UNDER_RESTRICTED_PROFILE",
+                "geometry_status": common_audit.get("geometry_status"),
+                "dynamic_status": common_audit.get("dynamic_status"),
+                "selected": common_audit,
+                "execution_display_sweep_clear": True,
+                "execution_display_sampling": display_sampling,
+                "selected_timing": execution_timed.report(),
+                "selected_continuous_plan": serialize_plan(execution_plan),
+                "selected_actions": [[a.mode,a.amount,a.control] for a in refined],
+                "execution_contract": vehicle_contract(self.length,self.width,self.margin,self.quality_limits),
                 "selected_source": source,
                 "final_geometry": {
                     "representation": "legacy_final_actions_v1",
@@ -2563,8 +2603,9 @@ class OptimizerNode:
                     "strict_geometry_audit": geometry_audit,
                 },
                 "legacy_native_timing": {
-                    "contract": "legacy_speed_with_shared_vehicle_mode_events",
-                    "restricted_profile_certified": False,
+                    "contract": "shared_vehicle_execution_v1",
+                    "restricted_profile_certified": (self.quality_limits.translation_speed_policy == "restricted" and common_audit.get("status") == "FEASIBLE"),
+                    "shared_execution_certified": common_audit.get("status") == "FEASIBLE",
                     "duration_s": float(timed[-1][0]),
                     "mode_switch_count": len(mode_switch_events),
                     "mode_switch_hold_seconds": float(sum(
@@ -2575,7 +2616,7 @@ class OptimizerNode:
                                      float(v), int(mode)]
                                     for t, p, v, mode in timed],
                 },
-                "execution_profile_role": "shared_replay_target_only",
+                "execution_profile_role": "shared_vehicle_execution",
                 "visualization": meta["visualization"],
                 "total_s": time.perf_counter()-begin,
             }
@@ -2638,7 +2679,7 @@ class OptimizerNode:
             evaluator = TrajectoryEvaluator(
                 self.grid, start, goal, self.quality_limits, self.length, self.width,
                 .02, math.radians(1), self.quality_profile,
-                allow_shunting=self.allow_shunting)
+                allow_reverse=self.allow_reverse, allow_shunting=self.allow_shunting)
             solver_seed = seed
             solver_auxiliary_seeds = list(auxiliary_seeds or [])
             solver_seed_source = "planner_strict_primary"
@@ -2669,6 +2710,22 @@ class OptimizerNode:
             stage_timings = report.setdefault("stage_timings_s", {})
             stage_timings["mode_master_total"] = float(report.get("total_s", 0.0))
             postprocess_begin = time.perf_counter()
+            if self.planning_backend == "mode_path_v1" and continuous is None:
+                continuous, timed = time_actions(
+                    start, actions, self.quality_limits, dt=.02,
+                    spatial_dt=.005, goal=goal)
+                audit = (evaluator.evaluate_continuous_geometry(
+                    continuous, timed, allow_reverse=self.allow_reverse)
+                    if continuous is not None else
+                    evaluator.evaluate(actions, timed, allow_reverse=self.allow_reverse))
+                if audit.get("status") != "FEASIBLE":
+                    raise ValueError("v1_shared_execution_audit:"+str(audit.get("reason")))
+                winner["timed"], winner["audit"] = timed, audit
+                winner["continuous_plan"] = continuous
+                report["selected"], report["selected_timing"] = audit, timed.report()
+                report["motion_representation"] = "shared_exact_geometry_execution_v1"
+            report["execution_contract"] = vehicle_contract(
+                self.length,self.width,self.margin,self.quality_limits)
             if continuous is not None:
                 spatial_rows = replay_continuous(continuous, .10)
                 corridor_rows = [spatial_rows[0]]
@@ -2716,14 +2773,7 @@ class OptimizerNode:
                                            "margin_corners_world_m": footprint_corners(
                                                p, 2*self.grid.half_l, 2*self.grid.half_w)}
                                           for k,p in enumerate(poses)]}
-                report["selected_continuous_plan"] = [
-                    {"mode": block.mode, "direction": block.direction,
-                     "slope_policy": block.slope_policy,
-                     "length_m": block.length,
-                     "signed_angle_rad": block.signed_angle,
-                     "knots": [[k.s, k.value, k.derivative]
-                               for k in block.knots]}
-                    for block in continuous.blocks]
+                report["selected_continuous_plan"] = serialize_plan(continuous)
             else:
                 poses = replay(start, actions)
                 try:
@@ -2743,6 +2793,15 @@ class OptimizerNode:
             report.update(plan_id=int(plan_id), status="FEASIBLE",
                           selected_actions=[[a.mode, a.amount, a.control] for a in actions])
             publish_begin = time.perf_counter()
+            timed, resampled_audit, display_sampling = certify_display_sampling(
+                continuous, timed, evaluator, actions)
+            winner["timed"] = timed
+            if resampled_audit is not None:
+                winner["audit"] = resampled_audit
+                report["selected"] = resampled_audit
+            report["selected_timing"] = timed.report()
+            report["execution_display_sampling"] = display_sampling
+            report["execution_display_sweep_clear"] = True
             report["visualization"] = self.publish(
                 plan_id, start, poses, actions, timed.samples, boxes, meta)
             stage_timings["trajectory_publish_call"] = time.perf_counter()-publish_begin

@@ -20,3 +20,28 @@ vehicle:
   max_wheel_steer: 1.5707963267948966
   max_wheel_steer_rate: 2.50
   mesh: ""
+
+# Shared default simulation performance. Restricted profiles override explicitly.
+quality:
+  limits:
+    profile: kinematic_sim_mode_switch_only_v2
+    translation_speed_policy: mode_switch_only
+    target_v: 2.0
+    v_max: 2.0
+    a_max: 0.6
+    jerk_max: 2.0
+    lateral_a_max: 2.0
+    omega_max: 0.8
+    alpha_max: 0.8
+    angular_jerk_max: 3.0
+    # Spin limits above do not constrain steering-driven translation yaw.
+    translation_omega_max: 2.5
+    # Zero disables these additional translation body-yaw bounds. Steering
+    # rate/acceleration, lateral acceleration and wheel speed remain bounded.
+    translation_alpha_max: 0.0
+    translation_angular_jerk_max: 0.0
+    steer_rate_max: 0.8
+    steer_accel_max: 1.5
+    steer_angle_max: 1.5707963267948966
+    # Outer Ackermann wheels may run faster than the vehicle center.
+    wheel_speed_max: 3.0

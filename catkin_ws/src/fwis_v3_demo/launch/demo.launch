@@ -1,4 +1,10 @@
 <launch>
+  <arg name="collect_data" default="false"/>
+  <arg name="data_root" default=""/>
+  <arg name="project_root" default=""/>
+  <arg name="map_scale" default="1.0"/>
+  <arg name="collection_port" default="0"/>
+  <arg name="collection_open_browser" default="true"/>
   <arg name="scene" default="S09_underground_garage"/>
   <arg name="map_dir" default="$(find fwis_v3_demo)/../../../maps/map16-s09-underground-garage"/>
   <arg name="scene_yaml" default="$(arg map_dir)/scene_source.yaml"/>
@@ -23,6 +29,7 @@
     <param if="$(eval arg('allow_reverse_fallback') != '')" name="planning/allow_reverse_fallback" value="$(arg allow_reverse_fallback)" type="bool"/>
   </node>
   <node name="fwis_v3_optimizer" pkg="fwis_v3_optimizer" type="optimizer_node.py" output="screen">
+    <param if="$(arg collect_data)" name="quality/report_dir" value="$(arg data_root)/diagnostics"/>
     <rosparam command="load" file="$(find fwis_common)/config/ranger_mini_2.yaml"/>
     <rosparam command="load" file="$(arg config_file)"/>
     <param if="$(eval arg('planning_backend') != '')" name="planning/backend" value="$(arg planning_backend)"/>
@@ -31,6 +38,14 @@
     <param if="$(eval arg('direction_policy') != '')" name="planning/direction_policy" value="$(arg direction_policy)"/>
     <param if="$(eval arg('allow_reverse_fallback') != '' and arg('direction_policy') == '')" name="planning/direction_policy" value="$(eval 'bidirectional' if arg('allow_reverse_fallback') == 'true' else 'forward_only')"/>
     <param if="$(eval arg('allow_reverse_fallback') != '')" name="planning/allow_reverse_fallback" value="$(arg allow_reverse_fallback)" type="bool"/>
+  </node>
+  <node if="$(arg collect_data)" name="fwis_data_collector" pkg="fwis_v3_optimizer" type="collect_node.py" output="screen" required="true">
+    <param name="project_root" value="$(arg project_root)"/>
+    <param name="data_root" value="$(arg data_root)"/>
+    <param name="map_dir" value="$(arg map_dir)"/>
+    <param name="map_scale" value="$(arg map_scale)" type="double"/>
+    <param name="port" value="$(arg collection_port)" type="int"/>
+    <param name="open_browser" value="$(arg collection_open_browser)" type="bool"/>
   </node>
   <node name="fwis_v3_playback" pkg="fwis_v3_playback" type="playback.py" output="screen">
     <rosparam command="load" file="$(find fwis_common)/config/ranger_mini_2.yaml"/>

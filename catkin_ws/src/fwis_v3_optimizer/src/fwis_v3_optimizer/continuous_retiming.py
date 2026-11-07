@@ -695,6 +695,9 @@ def retime_continuous(plan, limits=None, dt=.02, spatial_dt=.005):
     if not isinstance(plan, ContinuousPlan):
         raise TypeError("continuous_plan_required")
     limits = limits or MotionLimits()
+    if (any(getattr(b, 'slope_policy', '') == 'exact_piecewise_constant' for b in plan.blocks)
+            and limits.translation_speed_policy != 'mode_switch_only'):
+        raise ValueError("exact_discontinuous_controls_require_stationary_restricted_retimer")
     if not math.isfinite(dt) or dt <= 0 or not math.isfinite(spatial_dt) or spatial_dt <= 0:
         raise ValueError("continuous_invalid_sampling_interval")
     blocks = plan.blocks

@@ -311,6 +311,7 @@ class PlannerNode {
     sub_goal_=nh_.subscribe("/move_base_simple/goal",1,&PlannerNode::on_goal,this);
     pub_path_=nh_.advertise<nav_msgs::Path>("/plan/path_coarse",1,true);
     pub_seed_=nh_.advertise<fwis_v3_msgs::PlanSeed>("/plan/seed",1,true);
+    pub_request_=nh_.advertise<fwis_v3_msgs::PlanSeed>("/plan/request",1,true);
     pub_seed_candidates_=nh_.advertise<fwis_v3_msgs::PlanSeedCandidates>(
         "/plan/seed_candidates",1,true);
     pub_markers_=nh_.advertise<visualization_msgs::MarkerArray>("/plan/markers",1,true);
@@ -1833,7 +1834,12 @@ class PlannerNode {
     if (m->header.frame_id!="map") {has_goal_=false;publish_endpoints();publish_status("invalid_goal_frame");return;}
     goal_={m->pose.position.x,m->pose.position.y,yaw_of(m->pose.orientation)};
     has_goal_=true;publish_endpoints();
-    if (!has_map_||!has_start_) {publish_status("missing_map_or_start");return;}
+    fwis_v3_msgs::PlanSeed request;
+    request.header=blank.header;request.plan_id=plan_id_;
+    request.start_center.x=start_.x;request.start_center.y=start_.y;request.start_center.theta=start_.th;
+    request.goal_center.x=goal_.x;request.goal_center.y=goal_.y;request.goal_center.theta=goal_.th;
+    pub_request_.publish(request);
+    if (!has_map_||!has_start_) {publish_status("missing_map_or_start id="+std::to_string(plan_id_));return;}
     goal_field_=map_.goal_distance_field(goal_.x,goal_.y);
     int iterations=0; std::vector<Action> actions;
     auto t0=std::chrono::steady_clock::now();
@@ -2121,7 +2127,7 @@ class PlannerNode {
   }
   ros::NodeHandle nh_,pnh_;
   ros::Subscriber sub_map_,sub_start_,sub_init_,sub_goal_;
-  ros::Publisher pub_path_,pub_seed_,pub_seed_candidates_,pub_status_,pub_markers_;
+  ros::Publisher pub_path_,pub_seed_,pub_request_,pub_seed_candidates_,pub_status_,pub_markers_;
   fwis::GridMap map_;Pose start_,goal_;
   std::vector<uint16_t> safe_clearance_;
   std::vector<std::vector<CellRun>> occupied_runs_by_row_;
