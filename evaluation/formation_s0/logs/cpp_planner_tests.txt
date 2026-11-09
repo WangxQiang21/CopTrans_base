@@ -1,0 +1,139 @@
+[  0%] Built target tf_generate_messages_py
+Scanning dependencies of target gtest
+[  3%] Building CXX object gtest/googletest/CMakeFiles/gtest.dir/src/gtest-all.cc.o
+[  6%] Linking CXX shared library ../lib/libgtest.so
+[  6%] Built target gtest
+[  6%] Built target geometry_msgs_generate_messages_nodejs
+[  6%] Built target _fwis_v3_msgs_generate_messages_check_deps_PlanSeedCandidates
+[  6%] Built target geometry_msgs_generate_messages_lisp
+[  6%] Built target _fwis_v3_msgs_generate_messages_check_deps_ModePrimitive
+[  6%] Built target _fwis_v3_msgs_generate_messages_check_deps_PlanSeed
+[  6%] Built target _fwis_v3_msgs_generate_messages_check_deps_TimedTrajectory
+[  6%] Built target std_msgs_generate_messages_lisp
+[  6%] Built target _fwis_v3_msgs_generate_messages_check_deps_TimedPoint
+[ 22%] Built target fwis_v3_msgs_generate_messages_lisp
+[ 22%] Built target std_msgs_generate_messages_eus
+[ 22%] Built target geometry_msgs_generate_messages_py
+[ 22%] Built target std_msgs_generate_messages_py
+[ 22%] Built target std_msgs_generate_messages_nodejs
+[ 38%] Built target fwis_v3_msgs_generate_messages_nodejs
+[ 38%] Built target std_msgs_generate_messages_cpp
+[ 38%] Built target geometry_msgs_generate_messages_cpp
+[ 54%] Built target fwis_v3_msgs_generate_messages_cpp
+[ 54%] Built target geometry_msgs_generate_messages_eus
+[ 74%] Built target fwis_v3_msgs_generate_messages_eus
+[ 93%] Built target fwis_v3_msgs_generate_messages_py
+[ 93%] Built target visualization_msgs_generate_messages_py
+[ 93%] Built target actionlib_msgs_generate_messages_lisp
+[ 93%] Built target visualization_msgs_generate_messages_nodejs
+[ 93%] Built target nav_msgs_generate_messages_eus
+[ 93%] Built target nav_msgs_generate_messages_cpp
+[ 93%] Built target nav_msgs_generate_messages_lisp
+[ 93%] Built target nav_msgs_generate_messages_nodejs
+[ 93%] Built target visualization_msgs_generate_messages_cpp
+[ 93%] Built target visualization_msgs_generate_messages_lisp
+[ 93%] Built target actionlib_msgs_generate_messages_cpp
+[ 93%] Built target nav_msgs_generate_messages_py
+[ 93%] Built target actionlib_msgs_generate_messages_eus
+[ 93%] Built target actionlib_msgs_generate_messages_nodejs
+[ 93%] Built target actionlib_msgs_generate_messages_py
+[ 93%] Built target visualization_msgs_generate_messages_eus
+[ 93%] Built target actionlib_generate_messages_nodejs
+[ 93%] Built target actionlib_generate_messages_eus
+[ 93%] Built target tf2_msgs_generate_messages_py
+[ 93%] Built target tf2_msgs_generate_messages_nodejs
+[ 93%] Built target roscpp_generate_messages_cpp
+[ 93%] Built target actionlib_generate_messages_cpp
+[ 93%] Built target tf2_msgs_generate_messages_eus
+[ 93%] Built target roscpp_generate_messages_eus
+[ 93%] Built target rosgraph_msgs_generate_messages_nodejs
+[ 93%] Built target tf2_msgs_generate_messages_cpp
+[ 93%] Built target actionlib_generate_messages_lisp
+[ 93%] Built target roscpp_generate_messages_py
+[ 93%] Built target roscpp_generate_messages_nodejs
+[ 93%] Built target rosgraph_msgs_generate_messages_cpp
+[ 93%] Built target actionlib_generate_messages_py
+[ 93%] Built target rosgraph_msgs_generate_messages_eus
+[ 93%] Built target rosgraph_msgs_generate_messages_lisp
+[ 93%] Built target roscpp_generate_messages_lisp
+[ 93%] Built target tf2_msgs_generate_messages_lisp
+[ 93%] Built target rosgraph_msgs_generate_messages_py
+[ 93%] Built target tf_generate_messages_cpp
+[ 93%] Built target tf_generate_messages_nodejs
+[ 93%] Built target sensor_msgs_generate_messages_cpp
+[ 93%] Built target sensor_msgs_generate_messages_lisp
+[ 93%] Built target sensor_msgs_generate_messages_nodejs
+[ 93%] Built target tf_generate_messages_lisp
+[ 93%] Built target sensor_msgs_generate_messages_py
+[ 93%] Built target sensor_msgs_generate_messages_eus
+[ 93%] Built target tf_generate_messages_eus
+Scanning dependencies of target test_planner_policy_history
+[ 96%] Building CXX object fwis_v3_planner/CMakeFiles/test_planner_policy_history.dir/tests/test_policy_history.cpp.o
+[100%] Linking CXX executable /home/wq/whut_thesis/expv3_multi/catkin_ws/devel/lib/fwis_v3_planner/test_planner_policy_history
+[100%] Built target test_planner_policy_history
+Scanning dependencies of target run_tests_fwis_v3_planner_gtest_test_planner_policy_history
+[==========] Running 6 tests from 2 test suites.
+[----------] Global test environment set-up.
+[----------] 4 tests from PlannerPolicyHistory
+[ RUN      ] PlannerPolicyHistory.DistinctHistoriesDoNotMergeAtTheSamePose
+[       OK ] PlannerPolicyHistory.DistinctHistoriesDoNotMergeAtTheSamePose (0 ms)
+[ RUN      ] PlannerPolicyHistory.ActualSpinMakesOneReversalLegal
+[       OK ] PlannerPolicyHistory.ActualSpinMakesOneReversalLegal (0 ms)
+[ RUN      ] PlannerPolicyHistory.SpinDoesNotPermitASecondReversal
+[       OK ] PlannerPolicyHistory.SpinDoesNotPermitASecondReversal (0 ms)
+[ RUN      ] PlannerPolicyHistory.ZeroOrCancelledSpinDoesNotBypassPolicy
+[       OK ] PlannerPolicyHistory.ZeroOrCancelledSpinDoesNotBypassPolicy (0 ms)
+[----------] 4 tests from PlannerPolicyHistory (0 ms total)
+
+[----------] 2 tests from PlannerObstacleSlabs
+[ RUN      ] PlannerObstacleSlabs.PreservesEveryOccupiedCellAndCompressesStraightWalls
+[       OK ] PlannerObstacleSlabs.PreservesEveryOccupiedCellAndCompressesStraightWalls (0 ms)
+[ RUN      ] PlannerObstacleSlabs.MatchesPerCellSATOnRotatedBodiesAndIrregularRaster
+[       OK ] PlannerObstacleSlabs.MatchesPerCellSATOnRotatedBodiesAndIrregularRaster (6 ms)
+[----------] 2 tests from PlannerObstacleSlabs (6 ms total)
+
+[----------] Global test environment tear-down
+[==========] 6 tests from 2 test suites ran. (6 ms total)
+[  PASSED  ] 6 tests.
+-- run_tests.py: execute commands
+  /home/wq/whut_thesis/expv3_multi/catkin_ws/devel/lib/fwis_v3_planner/test_planner_policy_history --gtest_output=xml:/home/wq/whut_thesis/expv3_multi/catkin_ws/build/test_results/fwis_v3_planner/gtest-test_planner_policy_history.xml
+-- run_tests.py: verify result "/home/wq/whut_thesis/expv3_multi/catkin_ws/build/test_results/fwis_v3_planner/gtest-test_planner_policy_history.xml"
+[100%] Built target run_tests_fwis_v3_planner_gtest_test_planner_policy_history
+Scanning dependencies of target run_tests_fwis_v3_planner_gtest
+[100%] Built target run_tests_fwis_v3_planner_gtest
+Scanning dependencies of target run_tests_fwis_v3_planner
+[100%] Built target run_tests_fwis_v3_planner
+Base path: /home/wq/whut_thesis/expv3_multi/catkin_ws
+Source space: /home/wq/whut_thesis/expv3_multi/catkin_ws/src
+Build space: /home/wq/whut_thesis/expv3_multi/catkin_ws/build
+Devel space: /home/wq/whut_thesis/expv3_multi/catkin_ws/devel
+Install space: /home/wq/whut_thesis/expv3_multi/catkin_ws/install
+####
+#### Running command: "make cmake_check_build_system" in "/home/wq/whut_thesis/expv3_multi/catkin_ws/build"
+####
+####
+#### Running command: "make -j1 run_tests_fwis_v3_planner" in "/home/wq/whut_thesis/expv3_multi/catkin_ws/build"
+####
+	Command being timed: "catkin_make -C /home/wq/whut_thesis/expv3_multi/catkin_ws -j1 run_tests_fwis_v3_planner"
+	User time (seconds): 12.69
+	System time (seconds): 1.98
+	Percent of CPU this job got: 99%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:14.72
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 707528
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 1
+	Minor (reclaiming a frame) page faults: 476695
+	Voluntary context switches: 1419
+	Involuntary context switches: 1816
+	Swaps: 0
+	File system inputs: 4112
+	File system outputs: 23920
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0
