@@ -1,0 +1,8 @@
+$ ROS_MASTER_URI=http://127.0.0.1:11411 python3 /tmp/s3_formation_validator_probe.py
+status_count=2
+valid_status={"detail": "", "executable": false, "field": "", "formation_id": "wedge_3", "node_state": "VALIDATED_NOT_PLANNED", "plan_id": 17, "reason": "", "requests_seen": 1, "schema": "fwis_v3/formation_status", "search_started": false, "trajectory_published": false, "valid": true, "vehicle_id": null}
+invalid_status={"detail": "expected 'map', got 'odom'", "executable": false, "field": "header.frame_id", "formation_id": "wedge_3", "node_state": "REJECTED", "plan_id": 17, "reason": "INVALID_REQUEST", "requests_seen": 2, "schema": "fwis_v3/formation_status", "search_started": false, "trajectory_published": false, "valid": false, "vehicle_id": null}
+PROBE_OK
+probe_exit=0
+$ rospy.get_published_topics() from a separate probe node
+[['/formation/status', 'std_msgs/String'], ['/rosout', 'rosgraph_msgs/Log']]

@@ -1,0 +1,98 @@
+$ python3 -c "<import new and old messages>"
+formation_and_single_vehicle_imports_ok
+$ rosmsg show fwis_v3_msgs/FormationPlanRequest
+std_msgs/Header header
+  uint32 seq
+  time stamp
+  string frame_id
+uint32 plan_id
+string formation_id
+geometry_msgs/Pose2D formation_start
+  float64 x
+  float64 y
+  float64 theta
+geometry_msgs/Pose2D formation_goal
+  float64 x
+  float64 y
+  float64 theta
+fwis_v3_msgs/FormationVehicleSpec[] vehicles
+  uint32 vehicle_id
+  geometry_msgs/Point offset_in_formation
+    float64 x
+    float64 y
+    float64 z
+  geometry_msgs/Pose2D start_center
+    float64 x
+    float64 y
+    float64 theta
+  geometry_msgs/Pose2D goal_center
+    float64 x
+    float64 y
+    float64 theta
+  bool goal_heading_free
+  float64 body_length_m
+  float64 body_width_m
+bool allow_reverse
+
+$ rosmsg show fwis_v3_msgs/FormationTimedTrajectory
+std_msgs/Header header
+  uint32 seq
+  time stamp
+  string frame_id
+uint32 plan_id
+string formation_id
+fwis_v3_msgs/FormationVehicleSpec[] vehicles
+  uint32 vehicle_id
+  geometry_msgs/Point offset_in_formation
+    float64 x
+    float64 y
+    float64 z
+  geometry_msgs/Pose2D start_center
+    float64 x
+    float64 y
+    float64 theta
+  geometry_msgs/Pose2D goal_center
+    float64 x
+    float64 y
+    float64 theta
+  bool goal_heading_free
+  float64 body_length_m
+  float64 body_width_m
+geometry_msgs/Pose2D[] formation_poses
+  float64 x
+  float64 y
+  float64 theta
+duration[] times_from_start
+fwis_v3_msgs/FormationVehicleTrajectory[] trajectories
+  uint32 vehicle_id
+  fwis_v3_msgs/FormationTimedPoint[] points
+    uint8 ACKERMANN=0
+    uint8 OBLIQUE=1
+    uint8 SPIN=2
+    duration time_from_start
+    geometry_msgs/Pose2D center_pose
+      float64 x
+      float64 y
+      float64 theta
+    float64 center_speed_mps
+    float64 center_yaw_rate_radps
+    uint8 mode
+    float64 mode_control
+
+$ rosmsg show fwis_v3_msgs/FormationVehicleSpec
+uint32 vehicle_id
+geometry_msgs/Point offset_in_formation
+  float64 x
+  float64 y
+  float64 z
+geometry_msgs/Pose2D start_center
+  float64 x
+  float64 y
+  float64 theta
+geometry_msgs/Pose2D goal_center
+  float64 x
+  float64 y
+  float64 theta
+bool goal_heading_free
+float64 body_length_m
+float64 body_width_m
