@@ -1,0 +1,35 @@
+uint8 TRANSLATION=0
+uint8 ROTATION=1
+uint8 COMPOSITE=2
+uint8 geometry_type
+float64 dx
+float64 dy
+float64 dpsi
+float64 pivot_x
+float64 pivot_y
+
+---
+std_msgs/Header header
+  uint32 seq
+  time stamp
+  string frame_id
+uint32 plan_id
+string formation_id
+geometry_msgs/Pose2D formation_start
+  float64 x
+  float64 y
+  float64 theta
+geometry_msgs/Pose2D formation_goal
+  float64 x
+  float64 y
+  float64 theta
+fwis_v3_msgs/FormationPrimitive[] primitives
+  uint8 TRANSLATION=0
+  uint8 ROTATION=1
+  uint8 COMPOSITE=2
+  uint8 geometry_type
+  float64 dx
+  float64 dy
+  float64 dpsi
+  float64 pivot_x
+  float64 pivot_y

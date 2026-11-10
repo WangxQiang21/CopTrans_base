@@ -1,0 +1,27 @@
+# Independent S4 formation-front-end parameters.  These never modify the
+# single-vehicle planner defaults in fwis_v3_demo/config/params*.yaml.
+formation:
+  search:
+    # q_F state key: round(x_F/xy_res), round(y_F/xy_res),
+    # round(psi_F/yaw_res).  psi_F is stored unwrapped.
+    xy_res: 0.20
+    yaw_res: 0.17453292519943295       # 10 deg
+    translation_step_m: 0.50
+    rotation_step_rad: 0.17453292519943295  # 10 deg
+    goal_xy_tol_m: 0.16
+    goal_yaw_tol_rad: 0.16
+    # Conservative padded sampling bound for every formation sweep.
+    max_corner_step_m: 0.05
+
+    # These are geometry-search budgets, not executable-time budgets.
+    max_expansions: 50000
+    max_candidates: 4
+    max_wall_time_s: 8.0
+  cost:
+    # Haversine/Euclidean style geometric cost only.  This is not the
+    # single-vehicle minimum-time objective.
+    translation: 1.0
+    rotation: 0.50
+    clearance: 0.25
+    switch: 0.20
+    risk_horizon_m: 0.50

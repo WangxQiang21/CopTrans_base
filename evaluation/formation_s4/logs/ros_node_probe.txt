@@ -1,0 +1,16 @@
+=== isolated S4 ROS probe (port 11413) ===
+success_status={"certification": "GEOMETRY_ONLY", "detail": "GEOMETRY_ONLY_UNCERTIFIED", "executable": false, "expanded_nodes": 59, "field": "", "formation_id": "s4_probe_wedge", "generated_nodes": 646, "geometry_only": true, "goal_candidates": 1, "node_state": "GEOMETRY_ONLY_UNCERTIFIED", "plan_id": 41, "primitive_count": 8, "reason": "", "requests_seen": 1, "schema": "formation_frontend_status/v1", "search_started": true, "trajectory_published": false, "valid": true, "vehicle_id": null}
+seed_primitives=8
+rejected_status={"certification": "NONE", "detail": "expected 'map', got 'odom'", "executable": false, "expanded_nodes": 0, "field": "header.frame_id", "formation_id": "s4_probe_wedge", "generated_nodes": 0, "geometry_only": true, "goal_candidates": 0, "node_state": "REJECTED", "plan_id": 41, "primitive_count": 0, "reason": "INVALID_REQUEST", "requests_seen": 2, "schema": "formation_frontend_status/v1", "search_started": false, "trajectory_published": false, "valid": false, "vehicle_id": null}
+blocked_status={"certification": "NONE", "detail": "goal formation is not clear of the map or itself", "executable": false, "expanded_nodes": 0, "field": "", "formation_id": "s4_probe_wedge", "generated_nodes": 0, "geometry_only": true, "goal_candidates": 0, "node_state": "GEOMETRY_SEARCH_FAILED", "plan_id": 41, "primitive_count": 0, "reason": "GOAL_FORMATION_COLLISION", "requests_seen": 3, "schema": "formation_frontend_status/v1", "search_started": true, "trajectory_published": false, "valid": true, "vehicle_id": null}
+published_topics=['/formation/plan_request', '/formation/plan_seed', '/formation/status', '/map', '/rosout', '/rosout_agg']
+PROBE_OK
+PROBE_EXIT=0
+[1]+  已完成               roscore -p 11413 > /tmp/s4_roscore_final.log 2>&1
+=== node log ===
+[33m[WARN] [1794287296.305538038]: [formation planner] rejected request: header.frame_id expected 'map', got 'odom'[0m
+[33m[WARN] [1794287296.826877201]: [formation planner] geometry search failed: GOAL_FORMATION_COLLISION goal formation is not clear of the map or itself[0m
+[0m[INFO] [1794287295.066113867]: [formation planner] S4 geometry-only front end ready[0m
+[0m[INFO] [1794287296.289901865]: [formation planner] published GEOMETRY_ONLY seed plan_id=41 formation_id=s4_probe_wedge primitives=8[0m
+=== cleanup check ===
+PORT_11413_CLOSED

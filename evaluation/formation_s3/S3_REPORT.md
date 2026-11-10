@@ -214,3 +214,7 @@ FAILED (errors=1)
 - 只验证不搜索的 ROS 节点与结构化状态：**已完成并通过探针**。
 - 旧回归新增失败：**无**；既有 `dynamic_peaks` 错误仍保留。
 - S4 前置条件：直接使用 `validate_formation_request()` 返回的 `FormationRequestSnapshot`（含 `model`/`vehicle_shapes`），不要再次从原始消息自行解释位置；S4 的 C++ 前端必须与这些字段语义一致。S4 的第一版 `FormationPrimitive` 若需要 pivot，必须在开始搜索前完成消息迁移，不能把 pivot 藏进 `amount/control`。S4 仍只能发布几何-only 结果，不能把 `VALIDATED_NOT_PLANNED` 或结构通过解释为可执行轨迹通过。
+
+## S4 message migration note
+
+S4 finalized the first formation-primitive contract before search. `FormationPrimitive.msg` now has explicit `dx`, `dy`, `dpsi`, `pivot_x`, and `pivot_y` fields; the earlier `amount/control` pair was removed rather than hiding a rotation pivot. The seven formation messages were not consumed outside this repository, and all five single-vehicle message files remain byte-identical. The S3 validation evidence above remains the record of the S3 commit; S4 tests in `evaluation/formation_s4/` verify the migrated primitive bytes and node output.

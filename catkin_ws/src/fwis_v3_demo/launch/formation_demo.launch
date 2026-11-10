@@ -1,0 +1,25 @@
+<launch>
+  <!-- S4 geometry-only formation front end.  This launch intentionally does
+       not start the single-vehicle planner, optimizer, playback, or any
+       trajectory publisher. -->
+  <arg name="scene" default="S09_underground_garage"/>
+  <arg name="map_dir"
+       default="$(find fwis_v3_demo)/../../../maps/map16-s09-underground-garage"/>
+  <arg name="scene_yaml" default="$(arg map_dir)/scene_source.yaml"/>
+  <arg name="rviz" default="false"/>
+  <arg name="config_file"
+       default="$(find fwis_v3_demo)/config/formation_params.yaml"/>
+
+  <node name="fwis_map_publisher" pkg="fwis_map_server"
+        type="map_publisher.py" output="screen">
+    <param name="map_dir" value="$(arg map_dir)"/>
+  </node>
+
+  <node name="formation_planner" pkg="fwis_v3_planner"
+        type="formation_planner_node" output="screen">
+    <rosparam command="load" file="$(arg config_file)"/>
+  </node>
+
+  <node if="$(arg rviz)" name="rviz" pkg="rviz" type="rviz"
+        args="-d $(find fwis_v3_demo)/rviz/demo.rviz" output="screen"/>
+</launch>

@@ -1,0 +1,64 @@
+$ catkin_ws/devel/lib/fwis_v3_planner/test_formation_geometry --gtest_color=no
+[==========] Running 13 tests from 3 test suites.
+[----------] Global test environment set-up.
+[----------] 4 tests from FormationModel
+[ RUN      ] FormationModel.AcceptsArbitraryFixedOffsetsAndCanonicalisesIds
+[       OK ] FormationModel.AcceptsArbitraryFixedOffsetsAndCanonicalisesIds (0 ms)
+[ RUN      ] FormationModel.RejectsBrokenRigidCenterAndDuplicateIds
+[       OK ] FormationModel.RejectsBrokenRigidCenterAndDuplicateIds (0 ms)
+[ RUN      ] FormationModel.RejectsMalformedRequestFieldsFailClosed
+[       OK ] FormationModel.RejectsMalformedRequestFieldsFailClosed (0 ms)
+[ RUN      ] FormationModel.PrimitiveIntegrationUsesFormationFrameAndExplicitPivot
+[       OK ] FormationModel.PrimitiveIntegrationUsesFormationFrameAndExplicitPivot (0 ms)
+[----------] 4 tests from FormationModel (0 ms total)
+
+[----------] 4 tests from FormationCollision
+[ RUN      ] FormationCollision.SatTreatsTouchingBodiesAsCollision
+[       OK ] FormationCollision.SatTreatsTouchingBodiesAsCollision (0 ms)
+[ RUN      ] FormationCollision.DetectsVehicleOverlapAndMapObstacle
+[       OK ] FormationCollision.DetectsVehicleOverlapAndMapObstacle (0 ms)
+[ RUN      ] FormationCollision.StartGoalAndRigidHeadingsRemainExplicit
+[       OK ] FormationCollision.StartGoalAndRigidHeadingsRemainExplicit (0 ms)
+[ RUN      ] FormationCollision.RotationSweepDistinguishesMidArcObstacle
+[       OK ] FormationCollision.RotationSweepDistinguishesMidArcObstacle (0 ms)
+[----------] 4 tests from FormationCollision (0 ms total)
+
+[----------] 5 tests from FormationSearch
+[ RUN      ] FormationSearch.EmptyMapStraightLineSucceedsAsGeometryOnly
+[       OK ] FormationSearch.EmptyMapStraightLineSucceedsAsGeometryOnly (0 ms)
+[ RUN      ] FormationSearch.ObstacleDetourGeometricallySucceeds
+[       OK ] FormationSearch.ObstacleDetourGeometricallySucceeds (49 ms)
+[ RUN      ] FormationSearch.GoalInsideObstacleFailsStatically
+[       OK ] FormationSearch.GoalInsideObstacleFailsStatically (1 ms)
+[ RUN      ] FormationSearch.ExplicitPivotRotationReachesRotatedGoal
+[       OK ] FormationSearch.ExplicitPivotRotationReachesRotatedGoal (0 ms)
+[ RUN      ] FormationSearch.StartInsideObstacleFailsStatically
+[       OK ] FormationSearch.StartInsideObstacleFailsStatically (0 ms)
+[----------] 5 tests from FormationSearch (50 ms total)
+
+[----------] Global test environment tear-down
+[==========] 13 tests from 3 test suites ran. (51 ms total)
+[  PASSED  ] 13 tests.
+	Command being timed: "catkin_ws/devel/lib/fwis_v3_planner/test_formation_geometry --gtest_color=no"
+	User time (seconds): 0.05
+	System time (seconds): 0.00
+	Percent of CPU this job got: 98%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:00.05
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 6176
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 407
+	Voluntary context switches: 1
+	Involuntary context switches: 5
+	Swaps: 0
+	File system inputs: 0
+	File system outputs: 0
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0

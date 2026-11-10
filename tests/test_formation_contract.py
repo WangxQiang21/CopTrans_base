@@ -594,7 +594,8 @@ class GeneratedMessageContracts(unittest.TestCase):
                 "geometry_msgs/Pose2D", "geometry_msgs/Pose2D",
                 "fwis_v3_msgs/FormationVehicleSpec[]", "bool"],
             "FormationPrimitive": [
-                "uint8", "float64", "float64"],
+                "uint8", "float64", "float64", "float64",
+                "float64", "float64"],
             "FormationPlanSeed": [
                 "std_msgs/Header", "uint32", "string",
                 "geometry_msgs/Pose2D", "geometry_msgs/Pose2D",
@@ -725,12 +726,22 @@ class GeneratedMessageContracts(unittest.TestCase):
             formation_id="wedge_3",
             formation_start=Pose2D(x=2.0, y=2.0, theta=0.35),
             formation_goal=Pose2D(x=6.0, y=3.0, theta=-0.4),
-            primitives=[MESSAGE_MODULE.FormationPrimitive(
-                geometry_type=MESSAGE_MODULE.FormationPrimitive.TRANSLATION,
-                amount=2.0, control=0.0)])
+            primitives=[
+                MESSAGE_MODULE.FormationPrimitive(
+                    geometry_type=MESSAGE_MODULE.FormationPrimitive.TRANSLATION,
+                    dx=2.0, dy=0.0, dpsi=0.0, pivot_x=0.0, pivot_y=0.0),
+                MESSAGE_MODULE.FormationPrimitive(
+                    geometry_type=MESSAGE_MODULE.FormationPrimitive.ROTATION,
+                    dx=0.0, dy=0.0, dpsi=-0.5,
+                    pivot_x=0.8, pivot_y=-0.3)])
         decoded = self._assert_roundtrip(message)
         self.assertEqual(decoded.primitives[0].geometry_type,
                          MESSAGE_MODULE.FormationPrimitive.TRANSLATION)
+        self.assertEqual(decoded.primitives[1].geometry_type,
+                         MESSAGE_MODULE.FormationPrimitive.ROTATION)
+        self.assertAlmostEqual(decoded.primitives[1].pivot_x, 0.8)
+        self.assertAlmostEqual(decoded.primitives[1].pivot_y, -0.3)
+        self.assertAlmostEqual(decoded.primitives[1].dpsi, -0.5)
         self.assertEqual(decoded.plan_id, 17)
 
     def test_single_vehicle_messages_still_import_unchanged(self):
