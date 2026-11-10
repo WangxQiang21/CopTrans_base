@@ -170,3 +170,7 @@ FAILED (errors=1)
 - 不输出 `FEASIBLE` 或时间轨迹：**已由代码和状态测试确认**。
 - 单车回归：**无新增失败；既有 `dynamic_peaks` 错误保留**。
 - S6 前置条件：必须从 S4 种子逐 primitive 构建 `FormationBlock`，在每个 block 边界传入上一段终点 `theta_i`；必须把 S5 返回的每个联合方案分别审核后才可加入候选；必须在整链终端处理显式终点航向与 `goal_heading_free`，不能把 S5 的单 block 候选当作整链可行；不得修改单车 `ContinuousPlan`。
+
+## S6 集成修正（2026-11-10）
+
+S6 用非零 `psi_F` 的 S4 种子做整链测试时发现 S5 的一个世界航向偏移错误：平移 `motion_angle` 和纯旋转 forward/reverse tangent 都没有加上 `psi_F`。这只在 `psi_F != 0` 时暴露，会错误选择 O 或误报 `REVERSE_NOT_ALLOWED`。S6 分支已修正 `formation_kinematics.py` 的枚举与独立审核，并新增 `test_world_headings_include_the_formation_heading_offset`（15/15 通过）。修正只把 formation-frame 运动方向转换到世界系，不改变 S5 的 A/O/S 方程、曲率、reverse 或 `goal_heading_free` 契约。

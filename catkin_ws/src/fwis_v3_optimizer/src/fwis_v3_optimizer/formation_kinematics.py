@@ -594,7 +594,7 @@ def _translation_choices(theta, motion_angle, allow_reverse, limits):
 
 
 def _rotation_choices(offset, pivot_x, pivot_y, theta, dpsi,
-                       allow_reverse, limits):
+                       allow_reverse, limits, start_psi=0.0):
     rx = offset.x - pivot_x
     ry = offset.y - pivot_y
     radius = math.hypot(rx, ry)
@@ -602,7 +602,9 @@ def _rotation_choices(offset, pivot_x, pivot_y, theta, dpsi,
         return ((
             _Choice(SPIN, 1 if dpsi >= 0.0 else -1, 0.0, 0.0),
         ), None, radius)
-    tangent = math.atan2(rx, -ry)
+    # Offsets and pivots are expressed in the formation frame; body headings
+    # are world headings.  The forward tangent therefore includes psi_F.
+    tangent = math.atan2(rx, -ry) + start_psi
     direction = None
     if _angle_near(theta, tangent, limits.heading_tolerance_rad):
         direction = 1
@@ -744,7 +746,9 @@ def enumerate_mode_assignments(
             block.end_qf.x - block.start_qf.x) + math.cos(
             block.start_qf.psi) * (
             block.end_qf.y - block.start_qf.y)
-        motion_angle = math.atan2(local_dy, local_dx)
+        # local_dx/local_dy are in the formation frame while theta_i is a
+        # world heading; rotate the local motion direction back to world.
+        motion_angle = block.start_qf.psi + math.atan2(local_dy, local_dx)
     else:
         motion_angle = None
         dpsi = block.delta_psi
@@ -760,7 +764,7 @@ def enumerate_mode_assignments(
         else:
             choices, rejection, radius = _rotation_choices(
                 offset, block.pivot_x, block.pivot_y, theta, dpsi,
-                allow_reverse, limits)
+                allow_reverse, limits, block.start_qf.psi)
         if rejection is not None:
             if rejection.vehicle_id is None:
                 rejection = VehicleModeRejection(
@@ -1154,7 +1158,7 @@ def audit_mode_assignment(
                             "PIVOT_VEHICLE_NON_SPIN",
                             "vehicle_id={} lies on the pivot but was assigned "
                             "A".format(vehicle_id), checks, goal_checked)
-                    tangent = math.atan2(rx, -ry)
+                    tangent = math.atan2(rx, -ry) + block.start_qf.psi
                     if segment.direction == 1:
                         tangent_expected = tangent
                     elif segment.direction == -1:

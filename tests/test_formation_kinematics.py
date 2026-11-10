@@ -122,6 +122,41 @@ class FormationKinematicsTests(unittest.TestCase):
         self.assertFalse(reverse_policy.success)
         self.assertEqual(reverse_policy.reason, "REVERSE_NOT_ALLOWED")
 
+    def test_world_headings_include_the_formation_heading_offset(self):
+        start_psi = 0.7
+        translation = translation_block(
+            (2.0, 0.0), self.wedge[:2], start_psi=start_psi)
+        assignment = assign_formation_modes(
+            translation, {0: start_psi, 1: start_psi})
+        self.assertTrue(assignment.success, assignment.detail)
+        for segment in assignment.segments:
+            self.assertEqual(segment.mode, ACKERMANN)
+            self.assertEqual(segment.direction, 1)
+        self.assert_audit_passes(assignment)
+
+        reverse = translation_block(
+            (-2.0, 0.0), self.wedge[:2], start_psi=start_psi)
+        backward = assign_formation_modes(
+            reverse, {0: start_psi, 1: start_psi}, allow_reverse=True)
+        self.assertTrue(backward.success, backward.detail)
+        for segment in backward.segments:
+            self.assertEqual(segment.mode, ACKERMANN)
+            self.assertEqual(segment.direction, -1)
+        self.assert_audit_passes(backward, allow_reverse=True)
+
+        offsets = (VehicleOffset(0, 0.0, 0.0),
+                   VehicleOffset(1, 1.2, 0.0))
+        rotation = rotation_block(
+            math.pi / 2.0, offsets, start_psi=start_psi)
+        rotated = assign_formation_modes(
+            rotation, {0: start_psi, 1: start_psi + math.pi / 2.0})
+        self.assertTrue(rotated.success, rotated.detail)
+        self.assertEqual(
+            {segment.vehicle_id: segment.mode
+             for segment in rotated.segments},
+            {0: SPIN, 1: ACKERMANN})
+        self.assert_audit_passes(rotated)
+
     def test_oblique_translation_holds_body_heading_and_uses_signed_phi(self):
         block = translation_block(
             (2.0 * math.cos(math.pi / 3.0),
