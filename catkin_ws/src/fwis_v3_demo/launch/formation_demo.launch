@@ -16,6 +16,11 @@
   <arg name="frontend" default="true"/>
   <arg name="optimizer" default="true"/>
   <arg name="playback" default="true"/>
+  <arg name="goal_bridge" default="true"/>
+  <arg name="goal_start_x" default="10.0"/>
+  <arg name="goal_start_y" default="3.6"/>
+  <arg name="goal_start_theta" default="0.0"/>
+  <arg name="goal_formation_id" default="rviz_goal"/>
   <arg name="enable_nlp" default="true"/>
   <arg name="max_candidates" default="4"/>
   <arg name="optimizer_time_limit" default="1.0"/>
@@ -53,6 +58,28 @@
     <param name="frame_id" value="map"/>
     <param name="rate" value="$(arg playback_rate)"/>
     <param name="publish_tf" value="$(arg playback_publish_tf)"/>
+  </node>
+
+  <node if="$(arg goal_bridge)" name="formation_goal_bridge"
+        pkg="fwis_v3_demo" type="formation_goal_bridge.py"
+        output="screen">
+    <param name="frame_id" value="map"/>
+    <param name="formation_id" value="$(arg goal_formation_id)"/>
+    <param name="start_x" value="$(arg goal_start_x)"/>
+    <param name="start_y" value="$(arg goal_start_y)"/>
+    <param name="start_theta" value="$(arg goal_start_theta)"/>
+    <param name="body_length_m" value="0.738"/>
+    <param name="body_width_m" value="0.500"/>
+    <param name="allow_reverse" value="true"/>
+    <param name="goal_heading_free" value="false"/>
+    <param name="initial_plan_id" value="600000"/>
+    <param name="map_timeout_s" value="8.0"/>
+    <rosparam param="vehicle_ids">[1, 2, 3]</rosparam>
+    <rosparam param="offsets">
+      - [0.0, 0.0]
+      - [0.0, 1.2]
+      - [0.0, -1.2]
+    </rosparam>
   </node>
 
   <node if="$(arg rviz)" name="rviz" pkg="rviz" type="rviz"

@@ -10,6 +10,7 @@ LAUNCH = ROOT / "catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch"
 RVIZ = ROOT / "catkin_ws/src/fwis_v3_demo/rviz/formation_demo.rviz"
 PARAMS = ROOT / "catkin_ws/src/fwis_v3_demo/config/formation_params.yaml"
 PLAYBACK_CMAKE = ROOT / "catkin_ws/src/fwis_v3_playback/CMakeLists.txt"
+DEMO_CMAKE = ROOT / "catkin_ws/src/fwis_v3_demo/CMakeLists.txt"
 
 
 class FormationLaunchTest(unittest.TestCase):
@@ -68,6 +69,26 @@ class FormationLaunchTest(unittest.TestCase):
         self.assertIn("scripts/formation_playback.py", cmake)
         self.assertIn("scripts/playback.py", cmake)
 
+    def test_launch_starts_one_interactive_goal_bridge(self):
+        root = ElementTree.parse(LAUNCH).getroot()
+        args = {arg.get("name"): arg.get("default")
+                for arg in root.findall("arg")}
+        self.assertEqual(args["goal_bridge"], "true")
+        nodes = [node for node in root.findall("node")
+                 if node.get("name") == "formation_goal_bridge"]
+        self.assertEqual(len(nodes), 1)
+        node = nodes[0]
+        self.assertEqual(node.get("pkg"), "fwis_v3_demo")
+        self.assertEqual(node.get("type"), "formation_goal_bridge.py")
+        offsets = node.find("rosparam[@param='offsets']")
+        self.assertIsNotNone(offsets)
+        self.assertIn("1.2", offsets.text)
+
+    def test_goal_bridge_script_is_installed_by_catkin(self):
+        cmake = DEMO_CMAKE.read_text(encoding="utf-8")
+        self.assertIn("catkin_install_python", cmake)
+        self.assertIn("scripts/formation_goal_bridge.py", cmake)
+
 
 class FormationRvizTest(unittest.TestCase):
 
@@ -92,6 +113,16 @@ class FormationRvizTest(unittest.TestCase):
         for topic in ("/plan/markers", "/plan/mode_strip",
                       "/robot/heading_marker", "/plan/timed_trajectory"):
             self.assertNotIn(topic, text)
+
+    def test_demo_rviz_exposes_goal_and_initial_pose_tools(self):
+        manager = self.document["Visualization Manager"]
+        tools = manager["Tools"]
+        goal = next(item for item in tools
+                    if item.get("Class") == "rviz/SetGoal")
+        self.assertEqual(goal["Topic"], "/move_base_simple/goal")
+        initial = next(item for item in tools
+                       if item.get("Class") == "rviz/SetInitialPose")
+        self.assertEqual(initial["Topic"], "/initialpose")
 
 
 if __name__ == "__main__":
