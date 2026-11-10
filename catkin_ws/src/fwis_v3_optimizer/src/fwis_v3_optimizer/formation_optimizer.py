@@ -39,6 +39,7 @@ from .formation_kinematics import (
     KinematicLimits,
     audit_mode_assignment,
     enumerate_mode_assignments,
+    normalize_allowed_modes,
     wrap_angle,
 )
 
@@ -690,7 +691,8 @@ def _hard_residuals(plan, parameters, values, limits):
 
 
 def _reconstruct_plan(plan, snapshot, parameter_values, limits,
-                      config, grid, margin_m, sweep_policy):
+                      config, grid, margin_m, sweep_policy,
+                      allowed_modes=None):
     qf = plan.start
     blocks = []
     current_headings = dict(plan.start_heading_map)
@@ -730,7 +732,8 @@ def _reconstruct_plan(plan, snapshot, parameter_values, limits,
             expected_end_headings=(snapshot.goal_headings if is_last else None),
             goal_heading_free=(snapshot.goal_heading_free if is_last else None),
             max_schedules=config.max_schedules_per_block,
-            max_combinations=4096)
+            max_combinations=4096,
+            allowed_modes=allowed_modes)
         if not assignments:
             return None, "MODE_ASSIGNMENT_FAILED", "no mode schedule returned"
         if not assignments[0].success:
@@ -804,7 +807,7 @@ def _rejected_result(report, reason, detail):
 
 def optimize_continuous_plan(plan, snapshot, limits=None, grid=None,
                              margin_m=0.05, sweep_policy=None,
-                             config=None):
+                             config=None, allowed_modes=None):
     """Optimize one audited S6 plan and require independent re-audit.
 
     The function returns at most a ``KINEMATIC_VALID`` geometry candidate.  It
@@ -824,6 +827,7 @@ def optimize_continuous_plan(plan, snapshot, limits=None, grid=None,
     if not isinstance(limits, KinematicLimits):
         raise FormationValidationError(
             "INVALID_KINEMATIC_LIMITS expected KinematicLimits")
+    allowed_modes = normalize_allowed_modes(allowed_modes)
     begin = time.perf_counter()
     seed_audit = audit_continuous_plan(
         plan, snapshot, limits=limits, grid=grid, margin_m=margin_m,
@@ -965,7 +969,7 @@ def optimize_continuous_plan(plan, snapshot, limits=None, grid=None,
     try:
         candidate, reason, detail = _reconstruct_plan(
             plan, snapshot, values, limits, config, grid, margin_m,
-            sweep_policy)
+            sweep_policy, allowed_modes=allowed_modes)
     except (FormationValidationError, ValueError, TypeError) as exc:
         candidate, reason, detail = None, INDEPENDENT_AUDIT_FAILED, str(exc)
     if candidate is None:

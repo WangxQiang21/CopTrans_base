@@ -15,6 +15,7 @@ from collections.abc import Mapping as MappingABC
 from dataclasses import dataclass, field, replace
 import json
 import math
+import time as _time
 from typing import Mapping, Optional, Tuple
 
 import numpy as np
@@ -30,7 +31,10 @@ from fwis_v3_optimizer.formation_geometry import (
     FormationPlanBuild,
     build_continuous_plans,
 )
-from fwis_v3_optimizer.formation_kinematics import KinematicLimits
+from fwis_v3_optimizer.formation_kinematics import (
+    KinematicLimits,
+    normalize_allowed_modes,
+)
 from fwis_v3_optimizer.formation_master import (
     FormationMasterConfig,
     FormationMasterResult,
@@ -181,6 +185,7 @@ class FormationPipelineConfig:
     require_collision_precheck: bool = True
     optimizer_config: FormationOptimizerConfig = field(
         default_factory=FormationOptimizerConfig)
+    allowed_modes: Optional[Tuple[int, ...]] = None
 
     def __post_init__(self):
         if not isinstance(self.quality_config, FormationQualityConfig):
@@ -200,6 +205,9 @@ class FormationPipelineConfig:
         if not isinstance(self.optimizer_config, FormationOptimizerConfig):
             raise FormationValidationError(
                 "INVALID_OPTIMIZER_CONFIG")
+        object.__setattr__(
+            self, "allowed_modes",
+            normalize_allowed_modes(self.allowed_modes))
 
     @property
     def kinematic_limits(self):
@@ -302,6 +310,7 @@ class FormationPipelineResult:
     candidates: Tuple[FormationPipelineCandidate, ...]
     rejections: Tuple[FormationPipelineRejection, ...]
     selection: Optional[FormationSelection]
+    timings_s: Tuple[Tuple[str, float], ...] = ()
 
     def __post_init__(self):
         if self.status not in _ALLOWED_PIPELINE_STATUS:
@@ -374,6 +383,8 @@ class FormationPipelineResult:
             "trajectory_published": False,
             "independent_audit": self.selection is not None,
             "collision_certificate": self.status == FEASIBLE,
+            "timings_s": {name: float(value)
+                          for name, value in self.timings_s},
         }
 
 
@@ -427,53 +438,69 @@ class FormationPlanningPipeline:
             raise FormationValidationError(
                 "INVALID_GRID an exact occupancy map is required")
         quality = self.config.quality_config
+        started = _time.perf_counter()
+        timings = {}
+
+        def finish(result):
+            timings.setdefault("total_s", _time.perf_counter() - started)
+            return replace(
+                result, timings_s=tuple(sorted(timings.items())))
+
         build = build_continuous_plans(
             snapshot, seed, limits=quality.kinematic_limits,
             max_candidates=self.config.max_candidates,
             max_schedule_combinations=self.config.max_schedule_combinations,
-            max_schedules_per_block=self.config.max_schedules_per_block)
+            max_schedules_per_block=self.config.max_schedules_per_block,
+            allowed_modes=self.config.allowed_modes)
+        timings["build_s"] = _time.perf_counter() - started
         if not build.success or not build.plans:
             rejections = tuple(
                 _build_rejection(item) for item in build.rejections)
             status = (INVALID if build.reason == "INVALID_SEED"
                       else REJECTED)
             reason = build.reason if build.reason else "NO_CONTINUOUS_CANDIDATE"
-            return FormationPipelineResult(
+            return finish(FormationPipelineResult(
                 status=status, reason=reason,
                 detail=build.detail, build=build, master=None,
-                candidates=(), rejections=rejections, selection=None)
+                candidates=(), rejections=rejections, selection=None))
 
         master = FormationModeMaster(
             self._master_config(), limits=quality.kinematic_limits)
+        master_started = _time.perf_counter()
         admitted = master.consider_build(
             build, snapshot, source="s6_seed", grid=grid,
             sweep_policy=self._sweep_policy())
+        timings["master_s"] = _time.perf_counter() - master_started
         if not admitted:
             result = master.result()
-            return FormationPipelineResult(
+            return finish(FormationPipelineResult(
                 status=REJECTED, reason=result.reason,
                 detail=result.detail, build=build, master=result,
                 candidates=(), rejections=tuple(
                     _master_rejection(item)
                     for item in result.rejections),
-                selection=None)
+                selection=None))
 
         timed_candidates = []
         pipeline_candidates = []
         rejections = []
+        nlp_s = 0.0
+        retiming_s = 0.0
         for master_candidate in admitted:
             source_id = master_candidate.candidate_id
             plan = master_candidate.plan
             optimization = None
             origin = "s6_seed"
             if self.config.enable_nlp:
+                nlp_started = _time.perf_counter()
                 try:
                     optimized = optimize_continuous_plan(
                         plan, snapshot,
                         limits=quality.kinematic_limits, grid=grid,
                         margin_m=quality.collision_margin_m,
                         sweep_policy=self._sweep_policy(),
-                        config=self.config.optimizer_config)
+                        config=self.config.optimizer_config,
+                        allowed_modes=self.config.allowed_modes)
                 except Exception as exc:
                     rejections.append(FormationPipelineRejection(
                         stage="optimization",
@@ -481,7 +508,9 @@ class FormationPlanningPipeline:
                         detail="optimizer raised: {!r}".format(exc),
                         source_candidate_id=source_id,
                         failure_code="FORMATION_NLP_INFEASIBLE"))
+                    nlp_s += _time.perf_counter() - nlp_started
                     continue
+                nlp_s += _time.perf_counter() - nlp_started
                 optimization = optimized.report.as_dict()
                 if optimized.plan is None or not optimized.accepted:
                     rejections.append(FormationPipelineRejection(
@@ -495,6 +524,7 @@ class FormationPlanningPipeline:
                 origin = ("s7_optimized" if optimized.reason == "OPTIMIZED"
                           else "s7_seed_retained")
 
+            retime_started = _time.perf_counter()
             try:
                 timing = retime_formation_plan(
                     plan, limits=quality.timing_limits,
@@ -506,7 +536,9 @@ class FormationPlanningPipeline:
                     detail=str(exc),
                     source_candidate_id=source_id,
                     failure_code="INVALID_FORMATION_PLAN"))
+                retiming_s += _time.perf_counter() - retime_started
                 continue
+            retiming_s += _time.perf_counter() - retime_started
             if timing.timed is None:
                 failure = timing.failure
                 rejections.append(FormationPipelineRejection(
@@ -533,41 +565,46 @@ class FormationPlanningPipeline:
                 timed=timing.timed,
                 optimization=optimization))
 
+        timings["nlp_s"] = nlp_s
+        timings["retiming_s"] = retiming_s
         if not timed_candidates:
             retiming_only = (bool(rejections) and all(
                 item.stage == "retiming" and
                 item.failure_code == RETIMING_INFEASIBLE
                 for item in rejections))
             if retiming_only:
-                return FormationPipelineResult(
+                return finish(FormationPipelineResult(
                     status=GEOMETRY_ONLY_NOT_EXECUTABLE,
                     reason=RETIMING_INFEASIBLE,
                     detail=("all admitted geometry candidates failed "
                             "common-time retiming; no executable trajectory"),
                     build=build, master=master.result(),
                     candidates=(), rejections=tuple(rejections),
-                    selection=None)
+                    selection=None))
             first = rejections[0] if rejections else None
-            return FormationPipelineResult(
+            return finish(FormationPipelineResult(
                 status=REJECTED,
                 reason=("ALL_CANDIDATES_REJECTED" if first is None
                         else first.reason),
                 detail=("" if first is None else first.detail),
                 build=build, master=master.result(),
                 candidates=(), rejections=tuple(rejections),
-                selection=None)
+                selection=None))
 
+        selection_started = _time.perf_counter()
         selection = select_formation_candidate(
             snapshot, tuple(timed_candidates), grid, config=quality)
+        timings["selection_s"] = _time.perf_counter() - selection_started
         if selection.status == FEASIBLE:
-            return FormationPipelineResult(
+            timings["audit_s"] = timings["selection_s"]
+            return finish(FormationPipelineResult(
                 status=FEASIBLE, reason="OK",
                 detail=("independent S9 evaluation selected the feasible "
                         "candidate with the least common T_end; publication "
                         "still requires the node transaction gate"),
                 build=build, master=master.result(),
                 candidates=tuple(pipeline_candidates),
-                rejections=tuple(rejections), selection=selection)
+                rejections=tuple(rejections), selection=selection))
 
         all_evaluations_timing = (
             bool(selection.evaluations) and all(
@@ -576,24 +613,25 @@ class FormationPlanningPipeline:
         all_pre_timing = all(
             item.failure_code == RETIMING_INFEASIBLE
             for item in rejections)
+        timings["audit_s"] = timings["selection_s"]
         if all_evaluations_timing and all_pre_timing:
-            return FormationPipelineResult(
+            return finish(FormationPipelineResult(
                 status=GEOMETRY_ONLY_NOT_EXECUTABLE,
                 reason=RETIMING_INFEASIBLE,
                 detail=("geometry candidates were independently rejected "
                         "for timing/dynamic infeasibility"),
                 build=build, master=master.result(),
                 candidates=tuple(pipeline_candidates),
-                rejections=tuple(rejections), selection=selection)
+                rejections=tuple(rejections), selection=selection))
         first = selection.rejections[0] if selection.rejections else None
-        return FormationPipelineResult(
+        return finish(FormationPipelineResult(
             status=REJECTED,
             reason=("ALL_CANDIDATES_REJECTED" if first is None
                     else first["rejection_reason"]),
             detail=("" if first is None else first.get("detail", "")),
             build=build, master=master.result(),
             candidates=tuple(pipeline_candidates),
-            rejections=tuple(rejections), selection=selection)
+            rejections=tuple(rejections), selection=selection))
 
 
 def timed_trajectory_fields(snapshot, timed, stamp):
@@ -1564,7 +1602,8 @@ def _load_pipeline_config():
         enable_nlp=rospy.get_param("~enable_nlp", True),
         require_collision_precheck=rospy.get_param(
             "~require_collision_precheck", True),
-        optimizer_config=optimizer)
+        optimizer_config=optimizer,
+        allowed_modes=rospy.get_param("~allowed_modes", None))
 
 
 def main():

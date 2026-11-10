@@ -39,6 +39,7 @@ from .formation_kinematics import (
     VehicleModeSegment,
     audit_mode_assignment,
     enumerate_mode_assignments,
+    normalize_allowed_modes,
 )
 
 
@@ -848,7 +849,7 @@ def _terminal_goal_error(control, goal):
 
 def _fit_terminal_control(kinematic, goal, start_headings, expected_end,
                           goal_heading_free, allow_reverse, limits,
-                          max_schedules):
+                          max_schedules, allowed_modes=None):
     """Return ``(variants, failure_reason, failure_detail)``.
 
     Each variant is ``(kinematic, assignment)``; ``assignment=None`` means the
@@ -921,7 +922,8 @@ def _fit_terminal_control(kinematic, goal, start_headings, expected_end,
         allow_reverse=allow_reverse,
         expected_end_headings=expected_end,
         goal_heading_free=goal_heading_free,
-        max_schedules=max_schedules)
+        max_schedules=max_schedules,
+        allowed_modes=allowed_modes)
     variants = []
     for assignment in assignments:
         audit = audit_mode_assignment(
@@ -961,9 +963,10 @@ def build_continuous_plans(
         snapshot, seed, limits=None, max_candidates=4,
         max_schedule_combinations=64, max_schedules_per_block=4,
         expected_map_signature=None, terminal_tolerance_m=_GEOMETRY_TOL,
-        terminal_tolerance_rad=_GEOMETRY_TOL):
+        terminal_tolerance_rad=_GEOMETRY_TOL, allowed_modes=None):
     """Convert one S4 geometry-only seed into up to K continuous candidates."""
     limits = limits or KinematicLimits()
+    allowed_modes = normalize_allowed_modes(allowed_modes)
     if not isinstance(limits, KinematicLimits):
         raise FormationValidationError(
             "INVALID_KINEMATIC_LIMITS expected KinematicLimits")
@@ -1040,7 +1043,8 @@ def build_continuous_plans(
             assignments = enumerate_mode_assignments(
                 kinematic, headings, limits=limits,
                 allow_reverse=allow_reverse,
-                max_schedules=max_schedules_per_block)
+                max_schedules=max_schedules_per_block,
+                allowed_modes=allowed_modes)
         except FormationValidationError as exc:
             rejection = FormationPlanRejection(
                 block_index, None, "MODE_ASSIGNMENT_FAILED", str(exc),
@@ -1110,7 +1114,7 @@ def build_continuous_plans(
         fit_variants, fit_reason, fit_detail = _fit_terminal_control(
             last_kinematic, snapshot.goal, last_start_headings,
             goal_headings, free_flags, allow_reverse, limits,
-            max_schedules_per_block)
+            max_schedules_per_block, allowed_modes=allowed_modes)
         if not fit_variants:
             rejections.append(FormationPlanRejection(
                 last_block.block_index, None,

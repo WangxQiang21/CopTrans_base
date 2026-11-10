@@ -1,0 +1,73 @@
+$ OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 python3 -m unittest -v tests.test_formation_playback tests.test_formation_regression tests.test_formation_demo_assets
+test_after_end_holds_the_final_sample (tests.test_formation_playback.PlaybackClockTest) ... ok
+test_all_vehicles_use_one_clock_and_one_fraction (tests.test_formation_playback.PlaybackClockTest) ... ok
+test_before_stamp_holds_the_first_sample (tests.test_formation_playback.PlaybackClockTest) ... ok
+test_heading_interpolation_takes_the_short_arc (tests.test_formation_playback.PlaybackClockTest) ... ok
+test_mode_is_piecewise_constant_from_the_lower_sample (tests.test_formation_playback.PlaybackClockTest) ... ok
+test_status_document_names_the_single_time_source (tests.test_formation_playback.PlaybackClockTest) ... ok
+test_audited_status_allows_feasible_label (tests.test_formation_playback.PlaybackMarkerTest) ... ok
+test_clear_is_a_single_deleteall_marker (tests.test_formation_playback.PlaybackMarkerTest) ... ok
+test_cleared_and_invalid_status_documents_are_strict (tests.test_formation_playback.PlaybackMarkerTest) ... ok
+test_marker_ids_are_unique_and_every_vehicle_is_present (tests.test_formation_playback.PlaybackMarkerTest) ... ok
+test_mode_band_colors_follow_each_sample_mode (tests.test_formation_playback.PlaybackMarkerTest) ... ok
+test_obb_uses_the_body_heading_not_the_formation_heading (tests.test_formation_playback.PlaybackMarkerTest) ... ok
+test_tf_frames_are_unique_and_formation_scoped (tests.test_formation_playback.PlaybackMarkerTest) ... ok
+test_unpublished_status_keeps_geometry_only_label (tests.test_formation_playback.PlaybackMarkerTest) ... ok
+test_vehicle_namespace_contains_formation_and_vehicle (tests.test_formation_playback.PlaybackMarkerTest) ... ok
+test_duplicate_vehicle_ids_fail_closed (tests.test_formation_playback.PlaybackTrajectoryTest) ... ok
+test_fields_validate_and_report_shared_samples (tests.test_formation_playback.PlaybackTrajectoryTest) ... ok
+test_nonfinite_sample_fails_closed (tests.test_formation_playback.PlaybackTrajectoryTest) ... ok
+test_per_vehicle_time_must_match_the_shared_axis (tests.test_formation_playback.PlaybackTrajectoryTest) ... ok
+test_time_axis_must_start_at_zero_and_increase (tests.test_formation_playback.PlaybackTrajectoryTest) ... ok
+test_zero_stamp_is_not_a_common_clock (tests.test_formation_playback.PlaybackTrajectoryTest) ... ok
+test_grid_rasterises_obstacle_cells_and_edges (tests.test_formation_regression.GeometryAndRequestTest) ... ok
+test_nan_and_empty_request_messages_fail_closed (tests.test_formation_regression.GeometryAndRequestTest) ... ok
+test_plan_ids_are_stable_and_valid_uint32 (tests.test_formation_regression.GeometryAndRequestTest) ... ok
+test_request_mutation_hits_start_then_goal_field (tests.test_formation_regression.GeometryAndRequestTest) ... ok
+test_group_cases_have_labeled_runs (tests.test_formation_regression.ManifestTest) ... ok
+test_manifest_has_frozen_twenty_cases (tests.test_formation_regression.ManifestTest) ... ok
+test_manifest_rejects_duplicate_and_missing_ids (tests.test_formation_regression.ManifestTest) ... ok
+test_cli_requires_three_repeats (tests.test_formation_regression.RunnerIntegrationTest) ... usage: python3 -m unittest [-h] [--cases-file CASES_FILE] --output-dir
+                           OUTPUT_DIR [--repeats REPEATS]
+                           [--ids IDS [IDS ...]]
+                           [--ablation {no_oblique,no_spin,no_spin_no_oblique,none}]
+                           [--enable-nlp] [--ros-summary ROS_SUMMARY]
+python3 -m unittest: error: --repeats must be at least 3 for the S10 contract
+ok
+test_group_case_aggregates_subrun_success (tests.test_formation_regression.RunnerIntegrationTest) ... [E19] repeat 1/1 kind=group expectation=statistical
+    status=GROUP_COMPLETE reason= feasible=True passed=True
+summary: /tmp/tmp031eslsu/summary.json
+all_pass: True (1/1)
+ok
+test_summary_schema_and_three_repeat_aggregation (tests.test_formation_regression.RunnerIntegrationTest) ... [E11] repeat 1/2 kind=request_invalid expectation=must_fail
+    status=INVALID reason=INVALID_REQUEST feasible=False passed=True
+[E11] repeat 2/2 kind=request_invalid expectation=must_fail
+    status=INVALID reason=INVALID_REQUEST feasible=False passed=True
+[E13] repeat 1/2 kind=evaluator expectation=must_fail
+    status=REJECTED reason=KINEMATIC_INFEASIBLE feasible=False passed=True
+[E13] repeat 2/2 kind=evaluator expectation=must_fail
+    status=REJECTED reason=KINEMATIC_INFEASIBLE feasible=False passed=True
+[E18] repeat 1/2 kind=node expectation=scenario_pass
+    status=SCENARIO_CLEARED reason= feasible=None passed=True
+[E18] repeat 2/2 kind=node expectation=scenario_pass
+    status=SCENARIO_CLEARED reason= feasible=None passed=True
+summary: /tmp/tmp5n9_4dxz/summary.json
+all_pass: True (3/3)
+ok
+test_ablation_is_record_only_and_uses_allowed_modes (tests.test_formation_regression.TamperAndOutcomeTest) ... ok
+test_failed_expectation_is_retained_not_dropped (tests.test_formation_regression.TamperAndOutcomeTest) ... ok
+test_mode_control_tamper_reaches_independent_evaluator (tests.test_formation_regression.TamperAndOutcomeTest) ... ok
+test_node_scenario_clears_nan_empty_and_stale_plan (tests.test_formation_regression.TamperAndOutcomeTest) ... ok
+test_shared_time_tamper_fails_message_contract (tests.test_formation_regression.TamperAndOutcomeTest) ... ok
+test_launch_has_exactly_one_of_each_formation_process (tests.test_formation_demo_assets.FormationLaunchTest) ... ok
+test_launch_never_starts_single_vehicle_nodes_or_extra_planners (tests.test_formation_demo_assets.FormationLaunchTest) ... ok
+test_launch_uses_the_formation_params_and_rviz_files (tests.test_formation_demo_assets.FormationLaunchTest) ... ok
+test_playback_script_is_installed_by_catkin (tests.test_formation_demo_assets.FormationLaunchTest) ... ok
+test_demo_rviz_does_not_reference_single_vehicle_topics (tests.test_formation_demo_assets.FormationRvizTest) ... ok
+test_map_and_formation_markers_are_displayed_in_map_frame (tests.test_formation_demo_assets.FormationRvizTest) ... ok
+
+----------------------------------------------------------------------
+Ran 42 tests in 3.606s
+
+OK
+EXIT=0

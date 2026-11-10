@@ -1,0 +1,43 @@
+Panels:
+  - Class: rviz/Displays
+    Name: Displays
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Class: rviz/Grid
+      Enabled: true
+      Name: Grid
+      Value: true
+    - Class: rviz/Map
+      Enabled: true
+      Name: Map
+      Topic: /map
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Name: Formation vehicles, mode bands, status
+      Marker Topic: /formation/markers
+      Value: true
+    - Class: rviz/TF
+      Enabled: true
+      Name: Formation TF
+      Show Arrows: true
+      Show Axes: true
+      Show Names: true
+      Value: true
+  Global Options:
+    Fixed Frame: map
+    Background Color: 48; 48; 48
+    Frame Rate: 30
+  Tools:
+    - Class: rviz/Interact
+    - Class: rviz/MoveCamera
+    - Class: rviz/Select
+  Views:
+    Current:
+      Class: rviz/TopDownOrtho
+      Name: Current View
+      Scale: 70
+      X: 6
+      Y: 4
+      Angle: 0

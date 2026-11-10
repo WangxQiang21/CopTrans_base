@@ -550,7 +550,43 @@ class _Choice:
     mode_cost: float
 
 
-def _translation_choices(theta, motion_angle, allow_reverse, limits):
+def normalize_allowed_modes(value):
+    """Validate an optional A/O/S ablation filter (``None`` means all)."""
+    if value is None:
+        return None
+    if isinstance(value, (str, bytes)) or not isinstance(value, (list, tuple)):
+        raise FormationValidationError(
+            "INVALID_ALLOWED_MODES expected None or a sequence")
+    modes = []
+    for item in value:
+        _integer(item, "allowed_modes", allowed=(ACKERMANN, OBLIQUE, SPIN))
+        if item not in modes:
+            modes.append(item)
+    if not modes:
+        raise FormationValidationError(
+            "INVALID_ALLOWED_MODES at least one mode must remain enabled")
+    return tuple(modes)
+
+
+def _filter_allowed_modes(choices, allowed_modes, vehicle_id, label):
+    if allowed_modes is None:
+        return tuple(choices), None
+    kept = tuple(choice for choice in choices
+                 if choice.mode in allowed_modes)
+    if kept:
+        return kept, None
+    if not choices:
+        return (), None
+    return (), VehicleModeRejection(
+        vehicle_id, "MODE_DISABLED",
+        "vehicle_id={} only admissible {} mode(s) {} are disabled by the "
+        "ablation filter".format(
+            vehicle_id, label,
+            sorted({choice.mode for choice in choices})))
+
+
+def _translation_choices(theta, motion_angle, allow_reverse, limits,
+                         allowed_modes=None):
     choices = []
     delta = wrap_angle(motion_angle - theta)
     tolerance = limits.heading_tolerance_rad
@@ -580,6 +616,10 @@ def _translation_choices(theta, motion_angle, allow_reverse, limits):
     # admissible constant-heading translation mode.
     choices.sort(key=lambda item: (
         item.mode_cost, item.mode, abs(item.control), item.direction))
+    choices, disabled = _filter_allowed_modes(
+        choices, allowed_modes, None, "translation")
+    if disabled is not None:
+        return (), disabled
     if choices:
         return tuple(choices), None
     if reverse_possible:
@@ -594,14 +634,18 @@ def _translation_choices(theta, motion_angle, allow_reverse, limits):
 
 
 def _rotation_choices(offset, pivot_x, pivot_y, theta, dpsi,
-                       allow_reverse, limits, start_psi=0.0):
+                       allow_reverse, limits, start_psi=0.0,
+                       allowed_modes=None):
     rx = offset.x - pivot_x
     ry = offset.y - pivot_y
     radius = math.hypot(rx, ry)
     if radius <= limits.pivot_tolerance_m:
-        return ((
-            _Choice(SPIN, 1 if dpsi >= 0.0 else -1, 0.0, 0.0),
-        ), None, radius)
+        choices, disabled = _filter_allowed_modes(
+            (_Choice(SPIN, 1 if dpsi >= 0.0 else -1, 0.0, 0.0),),
+            allowed_modes, offset.vehicle_id, "rotation")
+        if disabled is not None:
+            return (), disabled, radius
+        return (choices, None, radius)
     # Offsets and pivots are expressed in the formation frame; body headings
     # are world headings.  The forward tangent therefore includes psi_F.
     tangent = math.atan2(rx, -ry) + start_psi
@@ -632,9 +676,12 @@ def _rotation_choices(offset, pivot_x, pivot_y, theta, dpsi,
             "|kappa|={:.12g} > 1/Rmin={:.12g}".format(
                 offset.vehicle_id, radius, abs(curvature),
                 1.0 / limits.r_min_ackermann)), radius
-    return ((
-        _Choice(ACKERMANN, direction, curvature, 0.0),
-    ), None, radius)
+    choices, disabled = _filter_allowed_modes(
+        (_Choice(ACKERMANN, direction, curvature, 0.0),),
+        allowed_modes, offset.vehicle_id, "rotation")
+    if disabled is not None:
+        return (), disabled, radius
+    return (choices, None, radius)
 
 
 def _build_segment(block, offset, choice, start_theta, end_theta):
@@ -687,7 +734,7 @@ def _assignment_failure(block, headings, rejection, reason=None,
 def enumerate_mode_assignments(
         block, start_headings, limits=None, allow_reverse=False,
         expected_end_headings=None, goal_heading_free=None,
-        max_schedules=4, max_combinations=4096):
+        max_schedules=4, max_combinations=4096, allowed_modes=None):
     """Return up to ``max_schedules`` best joint A/O/S schedules.
 
     The Cartesian product is over per-vehicle admissible constant-control
@@ -713,6 +760,7 @@ def enumerate_mode_assignments(
         raise FormationValidationError(
             "INVALID_MAX_COMBINATIONS expected a positive integer")
     allow_reverse = bool(allow_reverse)
+    allowed_modes = normalize_allowed_modes(allowed_modes)
 
     headings = _mapping_to_headings(
         start_headings, block.vehicle_ids, "start_headings")
@@ -759,12 +807,14 @@ def enumerate_mode_assignments(
         theta = headings[offset.vehicle_id]
         if block.geometry_type == TRANSLATION:
             choices, rejection = _translation_choices(
-                theta, motion_angle, allow_reverse, limits)
+                theta, motion_angle, allow_reverse, limits,
+                allowed_modes=allowed_modes)
             radius = None
         else:
             choices, rejection, radius = _rotation_choices(
                 offset, block.pivot_x, block.pivot_y, theta, dpsi,
-                allow_reverse, limits, block.start_qf.psi)
+                allow_reverse, limits, block.start_qf.psi,
+                allowed_modes=allowed_modes)
         if rejection is not None:
             if rejection.vehicle_id is None:
                 rejection = VehicleModeRejection(

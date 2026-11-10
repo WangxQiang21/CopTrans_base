@@ -373,6 +373,66 @@ class FormationKinematicsTests(unittest.TestCase):
                 primitive(1, dpsi=0.0, pivot_x=0.0, pivot_y=0.0),
                 self.wedge)
 
+    def test_allowed_modes_can_disable_spin_on_a_rotation(self):
+        offsets = (VehicleOffset(0, 0.0, 0.0),
+                   VehicleOffset(1, 1.2, 0.0),
+                   VehicleOffset(2, -1.2, 0.0))
+        block = rotation_block(0.5, offsets)
+        headings_map = {0: 0.0, 1: math.pi / 2.0, 2: -math.pi / 2.0}
+        all_modes = enumerate_mode_assignments(
+            block, headings_map, limits=self.limits)
+        self.assertTrue(any(assignment.success for assignment in all_modes))
+        filtered = enumerate_mode_assignments(
+            block, headings_map, limits=self.limits,
+            allowed_modes=(ACKERMANN, OBLIQUE))
+        self.assertEqual(len(filtered), 1)
+        self.assertFalse(filtered[0].success)
+        self.assertEqual(filtered[0].reason, "MODE_DISABLED")
+        self.assertIn("vehicle_id=0", filtered[0].detail)
+
+    def test_allowed_modes_can_disable_ackermann_on_a_rotation(self):
+        offsets = (VehicleOffset(0, 0.0, 0.0),
+                   VehicleOffset(1, 1.2, 0.0),
+                   VehicleOffset(2, -1.2, 0.0))
+        block = rotation_block(0.5, offsets)
+        headings_map = {0: 0.0, 1: math.pi / 2.0, 2: -math.pi / 2.0}
+        filtered = enumerate_mode_assignments(
+            block, headings_map, limits=self.limits,
+            allowed_modes=(SPIN,))
+        self.assertEqual(len(filtered), 1)
+        self.assertFalse(filtered[0].success)
+        self.assertEqual(filtered[0].reason, "MODE_DISABLED")
+
+    def test_allowed_modes_can_disable_oblique_translation(self):
+        block = translation_block((2.0, 2.0), self.wedge)
+        headings_map = {0: 0.0, 1: 0.0, 2: 0.0}
+        unfiltered = enumerate_mode_assignments(
+            block, headings_map, limits=self.limits)
+        self.assertTrue(unfiltered[0].success)
+        self.assertTrue(all(
+            segment.mode == OBLIQUE for segment in unfiltered[0].segments))
+        filtered = enumerate_mode_assignments(
+            block, headings_map, limits=self.limits,
+            allowed_modes=(ACKERMANN,))
+        self.assertEqual(len(filtered), 1)
+        self.assertFalse(filtered[0].success)
+        self.assertEqual(filtered[0].reason, "MODE_DISABLED")
+
+    def test_allowed_modes_validation_is_fail_closed(self):
+        block = translation_block((3.0, 0.0), self.wedge)
+        with self.assertRaises(FormationValidationError):
+            enumerate_mode_assignments(
+                block, {0: 0.0, 1: 0.0, 2: 0.0}, limits=self.limits,
+                allowed_modes=())
+        with self.assertRaises(FormationValidationError):
+            enumerate_mode_assignments(
+                block, {0: 0.0, 1: 0.0, 2: 0.0}, limits=self.limits,
+                allowed_modes=(7,))
+        with self.assertRaises(FormationValidationError):
+            enumerate_mode_assignments(
+                block, {0: 0.0, 1: 0.0, 2: 0.0}, limits=self.limits,
+                allowed_modes="A")
+
     def test_status_never_claims_execution(self):
         block = rotation_block(math.pi / 2.0, self.wedge)
         assignment = assign_formation_modes(
