@@ -650,19 +650,24 @@ def _rotation_choices(offset, pivot_x, pivot_y, theta, dpsi,
             return (), disabled, radius
         return (choices, None, radius)
     # Offsets and pivots are expressed in the formation frame; body headings
-    # are world headings.  The forward tangent therefore includes psi_F.
+    # are world headings.  The chord velocity at the block start is
+    # dpsi/L * J (offset - pivot); a body aligned with that velocity travels
+    # forward, and a body aligned with the opposite tangent travels in
+    # reverse.  ``direction`` is the sign of the actual translation speed,
+    # not a label tied to the positive-tangent convention.
     tangent = math.atan2(rx, -ry) + start_psi
+    tangent_direction = 1 if dpsi > 0.0 else -1
     direction = None
     if _angle_near(theta, tangent, limits.heading_tolerance_rad):
-        direction = 1
+        direction = tangent_direction
     elif _angle_near(theta, tangent + math.pi,
                      limits.heading_tolerance_rad):
-        direction = -1
+        direction = -tangent_direction
     if direction is None:
         return (), VehicleModeRejection(
             offset.vehicle_id, "HEADING_BOUNDARY_MISMATCH",
-            "vehicle_id={} body heading {:.12g} is neither the forward "
-            "tangent {:.12g} nor the reverse tangent {:.12g}".format(
+            "vehicle_id={} body heading {:.12g} is neither the tangent "
+            "{:.12g} nor the opposite tangent {:.12g}".format(
                 offset.vehicle_id, theta, tangent,
                 wrap_angle(tangent + math.pi))), radius
     if direction == -1 and not allow_reverse:
@@ -670,7 +675,10 @@ def _rotation_choices(offset, pivot_x, pivot_y, theta, dpsi,
             offset.vehicle_id, "REVERSE_NOT_ALLOWED",
             "vehicle_id={} A rotation would require reverse travel".format(
                 offset.vehicle_id)), radius
-    curvature = (1.0 if dpsi >= 0.0 else -1.0) * direction / radius
+    # dtheta/dlambda and the signed centre speed along the body heading.
+    theta_rate = 1.0 if dpsi > 0.0 else -1.0
+    signed_speed = direction * radius
+    curvature = theta_rate / signed_speed
     if abs(curvature) > 1.0 / limits.r_min_ackermann + (
             limits.heading_tolerance_rad):
         return (), VehicleModeRejection(
@@ -1132,6 +1140,33 @@ def audit_mode_assignment(
                         "vehicle_id={} direction={}".format(
                             vehicle_id, segment.direction), checks,
                         goal_checked)
+                # Independent first-order derivative of the block centre
+                # p(lambda) = q_F(lambda) + R(psi_F) r_i.  A translation block
+                # has constant q_F velocity and heading, so the centre
+                # velocity follows directly from q_F and must not be taken
+                # from the stored direction or oblique angle.
+                velocity_x = (
+                    block.end_qf.x - block.start_qf.x) / block.parameter_length
+                velocity_y = (
+                    block.end_qf.y - block.start_qf.y) / block.parameter_length
+                signed_speed = (
+                    velocity_x * math.cos(segment.theta_start) +
+                    velocity_y * math.sin(segment.theta_start))
+                lateral_speed = (
+                    -velocity_x * math.sin(segment.theta_start) +
+                    velocity_y * math.cos(segment.theta_start))
+                if (abs(signed_speed) > limits.geometry_tolerance_m and
+                        segment.direction != (
+                            1 if signed_speed > 0.0 else -1)):
+                    return _audit_failure(
+                        "DIRECTION_SIGN_MISMATCH",
+                        "vehicle_id={} direction={} but the centre velocity "
+                        "projection has sign {}".format(
+                            vehicle_id, segment.direction,
+                            1 if signed_speed > 0.0 else -1), checks,
+                        goal_checked)
+                expected_dx = velocity_x * block.parameter_length
+                expected_dy = velocity_y * block.parameter_length
                 if segment.mode == ACKERMANN:
                     curvature = segment.control
                     max_curvature = max(max_curvature, abs(curvature))
@@ -1147,13 +1182,15 @@ def audit_mode_assignment(
                             "CURVATURE_LIMIT",
                             "vehicle_id={} |kappa| exceeds 1/Rmin".format(
                                 vehicle_id), checks, goal_checked)
-                    angle = segment.theta_start
-                    expected_dx = (
-                        segment.travel_distance * segment.direction *
-                        math.cos(angle))
-                    expected_dy = (
-                        segment.travel_distance * segment.direction *
-                        math.sin(angle))
+                    if abs(lateral_speed) > (
+                            limits.geometry_tolerance_m +
+                            limits.heading_tolerance_rad):
+                        return _audit_failure(
+                            "ACKERMANN_LATERAL_RESIDUAL",
+                            "vehicle_id={} A translation has lateral "
+                            "component {:.12g} m per lambda".format(
+                                vehicle_id, lateral_speed), checks,
+                            goal_checked)
                 elif segment.mode == OBLIQUE:
                     oblique = abs(segment.control)
                     max_oblique = max(max_oblique, oblique)
@@ -1163,13 +1200,22 @@ def audit_mode_assignment(
                             "OBLIQUE_ANGLE_LIMIT",
                             "vehicle_id={} |phi|={:.12g} exceeds limit".format(
                                 vehicle_id, oblique), checks, goal_checked)
-                    angle = segment.theta_start + segment.control
-                    expected_dx = (
-                        segment.travel_distance * segment.direction *
-                        math.cos(angle))
-                    expected_dy = (
-                        segment.travel_distance * segment.direction *
-                        math.sin(angle))
+                    if abs(signed_speed) > limits.geometry_tolerance_m:
+                        expected_direction = (
+                            1 if signed_speed > 0.0 else -1)
+                        phi_observed = math.atan2(
+                            lateral_speed, signed_speed)
+                        if expected_direction < 0:
+                            phi_observed = wrap_angle(
+                                phi_observed - math.pi)
+                        if _angle_error(phi_observed, segment.control) > (
+                                limits.heading_tolerance_rad):
+                            return _audit_failure(
+                                "OBLIQUE_ANGLE_MISMATCH",
+                                "vehicle_id={} stored phi {:.12g} != "
+                                "recomputed {:.12g}".format(
+                                    vehicle_id, segment.control,
+                                    phi_observed), checks, goal_checked)
                 else:
                     return _audit_failure(
                         "UNSUPPORTED_MODE",
@@ -1235,23 +1281,57 @@ def audit_mode_assignment(
                             "vehicle_id={} lies on the pivot but was assigned "
                             "A".format(vehicle_id), checks, goal_checked)
                     tangent = math.atan2(rx, -ry) + block.start_qf.psi
-                    if segment.direction == 1:
-                        tangent_expected = tangent
-                    elif segment.direction == -1:
-                        tangent_expected = tangent + math.pi
-                    else:
-                        return _audit_failure(
-                            "INVALID_MODE_DIRECTION",
-                            "vehicle_id={} direction={}".format(
-                                vehicle_id, segment.direction), checks,
-                            goal_checked)
-                    tangent_error = _angle_error(
-                        theta_start, tangent_expected)
-                    if tangent_error > limits.heading_tolerance_rad:
+                    if not (_angle_near(
+                                theta_start, tangent,
+                                limits.heading_tolerance_rad) or
+                            _angle_near(
+                                theta_start, tangent + math.pi,
+                                limits.heading_tolerance_rad)):
                         return _audit_failure(
                             "HEADING_BOUNDARY_MISMATCH",
                             "vehicle_id={} heading is not aligned with the "
                             "rotation tangent".format(vehicle_id), checks,
+                            goal_checked)
+                    # Independent first-order centre velocity at lambda=0:
+                    # dp_i/dlambda = dpsi/L R(psi) J (r_i - pivot).  Its
+                    # projection on the body heading is the signed speed,
+                    # and the perpendicular projection must vanish for A.
+                    slope = dpsi / block.parameter_length
+                    local_vx = -slope * ry
+                    local_vy = slope * rx
+                    cosine = math.cos(block.start_qf.psi)
+                    sine = math.sin(block.start_qf.psi)
+                    velocity_x = cosine * local_vx - sine * local_vy
+                    velocity_y = sine * local_vx + cosine * local_vy
+                    signed_speed = (
+                        velocity_x * math.cos(theta_start) +
+                        velocity_y * math.sin(theta_start))
+                    lateral_speed = (
+                        -velocity_x * math.sin(theta_start) +
+                        velocity_y * math.cos(theta_start))
+                    if abs(signed_speed) <= (
+                            limits.geometry_tolerance_m):
+                        return _audit_failure(
+                            "INVALID_MODE_DIRECTION",
+                            "vehicle_id={} rotation has zero signed speed"
+                            .format(vehicle_id), checks, goal_checked)
+                    expected_direction = 1 if signed_speed > 0.0 else -1
+                    if segment.direction != expected_direction:
+                        return _audit_failure(
+                            "DIRECTION_SIGN_MISMATCH",
+                            "vehicle_id={} direction={} but the centre "
+                            "derivative projects with sign {}".format(
+                                vehicle_id, segment.direction,
+                                expected_direction), checks, goal_checked)
+                    if abs(lateral_speed) > (
+                            limits.geometry_tolerance_m +
+                            limits.heading_tolerance_rad *
+                            max(1.0, abs(signed_speed))):
+                        return _audit_failure(
+                            "ACKERMANN_LATERAL_RESIDUAL",
+                            "vehicle_id={} A centre velocity has lateral "
+                            "component {:.12g} m per lambda".format(
+                                vehicle_id, lateral_speed), checks,
                             goal_checked)
                     expected_travel = radius * block.parameter_length
                     if abs(segment.travel_distance - expected_travel) > (
@@ -1263,9 +1343,10 @@ def audit_mode_assignment(
                             "{:.12g}".format(
                                 vehicle_id, segment.travel_distance,
                                 expected_travel), checks, goal_checked)
-                    expected_curvature = (
-                        (1.0 if dpsi > 0.0 else -1.0) *
-                        segment.direction / radius)
+                    theta_rate = (
+                        segment.theta_end - segment.theta_start) / (
+                        block.parameter_length)
+                    expected_curvature = theta_rate / signed_speed
                     max_curvature = max(
                         max_curvature, abs(segment.control))
                     curvature_error = abs(
@@ -1276,7 +1357,7 @@ def audit_mode_assignment(
                         return _audit_failure(
                             "MODE_CURVATURE_MISMATCH",
                             "vehicle_id={} stored kappa {:.12g} != recomputed "
-                            "{:.12g}".format(
+                            "theta'/v={:.12g}".format(
                                 vehicle_id, segment.control,
                                 expected_curvature), checks, goal_checked)
                     if abs(expected_curvature) > (

@@ -581,6 +581,64 @@ def _context_for(segment, offset, block, limits, motion_limits):
         raise _TimingInfeasible(
             "spin_control_not_zero", segment.vehicle_id, block.block_index,
             "spin control is {:.12g}".format(segment.control))
+
+    # Independent first-order motion contract.  The centre velocity at
+    # lambda=0 follows from q_F and the fixed offset; its projection on the
+    # body heading is the signed speed.  This check does not reuse the
+    # constructor's direction/curvature answer.
+    control = block.control
+    if block.geometry_type == TRANSLATION:
+        velocity_x = (control.end_qf.x - control.start_qf.x) / length
+        velocity_y = (control.end_qf.y - control.start_qf.y) / length
+    else:
+        slope = control.delta_psi / length
+        rx = offset.x - control.pivot_x
+        ry = offset.y - control.pivot_y
+        local_vx = -slope * ry
+        local_vy = slope * rx
+        cosine = math.cos(control.start_qf.psi)
+        sine = math.sin(control.start_qf.psi)
+        velocity_x = cosine * local_vx - sine * local_vy
+        velocity_y = sine * local_vx + cosine * local_vy
+    signed_speed = (
+        velocity_x * math.cos(segment.theta_start) +
+        velocity_y * math.sin(segment.theta_start))
+    lateral_speed = (
+        -velocity_x * math.sin(segment.theta_start) +
+        velocity_y * math.cos(segment.theta_start))
+    if segment.mode in (ACKERMANN, OBLIQUE) and (
+            abs(signed_speed) > _GEOMETRY_TOL):
+        expected_direction = 1 if signed_speed > 0.0 else -1
+        if segment.direction != expected_direction:
+            raise _TimingInfeasible(
+                "direction_sign", segment.vehicle_id, block.block_index,
+                "stored direction {} contradicts signed centre speed {:.12g}"
+                .format(segment.direction, signed_speed))
+    if segment.mode == ACKERMANN and block.geometry_type != TRANSLATION:
+        if abs(signed_speed) <= _GEOMETRY_TOL:
+            raise _TimingInfeasible(
+                "direction_sign", segment.vehicle_id, block.block_index,
+                "A rotation has zero signed centre speed")
+        expected_curvature = theta_rate / signed_speed
+        if abs(expected_curvature - segment.control) > (
+                _GEOMETRY_TOL + 1e-9 * max(
+                    1.0, abs(expected_curvature))):
+            raise _TimingInfeasible(
+                "curvature_mismatch", segment.vehicle_id,
+                block.block_index,
+                "stored kappa {:.12g} contradicts theta'/v {:.12g}".format(
+                    segment.control, expected_curvature))
+    elif segment.mode == OBLIQUE and abs(signed_speed) > _GEOMETRY_TOL:
+        observed_phi = math.atan2(lateral_speed, signed_speed)
+        if expected_direction < 0:
+            observed_phi = _wrap(observed_phi - math.pi)
+        if _angle_error(observed_phi, segment.control) > (
+                _GEOMETRY_TOL + 1e-9):
+            raise _TimingInfeasible(
+                "oblique_angle_mismatch", segment.vehicle_id,
+                block.block_index,
+                "stored phi {:.12g} contradicts observed {:.12g}".format(
+                    segment.control, observed_phi))
     wheel_angles, wheel_factors = _wheel_data(segment, motion_limits)
     max_wheel_angle = max(abs(value) for value in wheel_angles)
     if max_wheel_angle > limits.steer_angle_max + 1e-9:
@@ -628,8 +686,19 @@ def _quantities(context, block, station, lambda_dot, lambda_ddot,
                    (speed if context.mode != SPIN else yaw_rate))
     lateral = (abs(context.control) * speed * speed
                if context.mode == ACKERMANN else 0.0)
+    heading = block.body_heading_at(context.vehicle_id, station)
+    if context.mode == SPIN:
+        speed_signed = 0.0
+        lateral_speed = 0.0
+    else:
+        speed_signed = (
+            p_dot_x * math.cos(heading) + p_dot_y * math.sin(heading))
+        lateral_speed = (
+            -p_dot_x * math.sin(heading) + p_dot_y * math.cos(heading))
     return {
         "speed": speed,
+        "speed_signed": speed_signed,
+        "lateral_speed_signed": lateral_speed,
         "acceleration": acceleration,
         "jerk": jerk,
         "yaw_rate": yaw_rate,
@@ -951,7 +1020,7 @@ def _sample_motion(block, analyzed, start_time, dt):
             center_x += qf.x
             center_y += qf.y
             signed_speed = (
-                context.direction * values["speed"]
+                values["speed_signed"]
                 if context.mode != SPIN else 0.0)
             points.append(FormationTimedPoint(
                 time_from_start=time_s,

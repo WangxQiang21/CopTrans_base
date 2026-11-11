@@ -1,0 +1,75 @@
+{
+  "stage": "T2",
+  "pass": true,
+  "scope": "rotation direction/signed-speed/curvature contract in S5, S8 and S9",
+  "base_head": "32d77da",
+  "contract": {
+    "centre_derivative": "dp_i/dlambda = dpsi/L R(psi_F) J (r_i - pivot)",
+    "signed_speed": "dot(dp_i/dlambda, u(theta_i))",
+    "ackermann_lateral_residual": "cross(dp_i/dlambda, u(theta_i))",
+    "ackermann_curvature": "theta'/v",
+    "direction": "sign of dot(centre derivative, body heading)"
+  },
+  "rotation_contract": {
+    "tool": "tools/verify_rotation_contract.py",
+    "output": "rotation_contract.json",
+    "cases": 7,
+    "all_pass": true,
+    "tamper": 3,
+    "tamper_rejected": 3,
+    "max_direction_error": 0.0,
+    "max_lateral_speed_m": 4.163336342344337e-16,
+    "max_curvature_error_1_per_m": 4.440892098500626e-16,
+    "cases_verified": [
+      "ccw_tangent_forward",
+      "cw_tangent_reverse",
+      "cw_opposite_forward",
+      "ccw_opposite_reverse",
+      "ccw_nonzero_pivot",
+      "cw_nonzero_pivot_reverse",
+      "ccw_cross_pi"
+    ],
+    "tamper_rejected_examples": [
+      {"name": "ccw_flipped_direction", "reason": "DIRECTION_SIGN_MISMATCH"},
+      {"name": "ccw_flipped_curvature", "reason": "MODE_CURVATURE_MISMATCH"},
+      {"name": "cw_fixed_tangent_curvature", "reason": "MODE_CURVATURE_MISMATCH"}
+    ]
+  },
+  "s8_retiming": {
+    "test": "test_clockwise_rotation_reports_reverse_signed_speeds",
+    "signed_center_speed": "negative for CW tangent bodies",
+    "wheel_speed": "non-negative magnitude",
+    "curvature": "stored +1/1.2 equals theta'/v",
+    "result": "pass"
+  },
+  "s9_evaluation": {
+    "clockwise_rotation": "FEASIBLE, independent chain rule pass",
+    "tampered_direction": {"result": "REJECTED", "reason": "KINEMATIC_INFEASIBLE", "field": "direction"},
+    "tampered_curvature": {"result": "REJECTED", "reason": "KINEMATIC_INFEASIBLE", "field": "curvature"},
+    "tampered_signed_speed_magnitude": {"result": "REJECTED", "reason": "FORMATION_RETIMING_INFEASIBLE", "field": "center_speed_mps"},
+    "tampered_signed_speed_sign": {"result": "REJECTED", "reason": "KINEMATIC_INFEASIBLE", "field": "center_speed_mps"},
+    "s4_audit_bypassed_for_tamper_tests": true
+  },
+  "tests": {
+    "targeted_t2": {"tests": 64, "failures": 0, "log": "runtime/t2_tests.log"},
+    "full_python_suite": {
+      "tests": 392,
+      "errors": 1,
+      "log": "runtime/python_tests.log",
+      "preserved_historical_error": "tests/test_continuous_retiming.py:271 KeyError 'dynamic_peaks'"
+    },
+    "planner_cpp_tests": {"tests": 14, "failures": 0, "log": "runtime/planner_cpp_tests.log"}
+  },
+  "real_entry_smoke": {
+    "pass": true,
+    "checks": 33,
+    "failed": 0,
+    "duration_s": 91.901,
+    "run_demo_exit": 0,
+    "roscore_exit": 0,
+    "port_released": true,
+    "config_sha256": "21b9ff574bbfe2e190958a415ae0232a4d9df0146165960aa66f00f9e3f9ca92",
+    "e05_ccw_rotation_still_feasible": true,
+    "output": "smoke.json"
+  }
+}

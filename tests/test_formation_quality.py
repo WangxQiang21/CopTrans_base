@@ -11,6 +11,7 @@ from pathlib import Path
 from types import SimpleNamespace
 import sys
 import unittest
+from unittest import mock
 
 import numpy as np
 
@@ -32,6 +33,7 @@ from fwis_v3_optimizer.formation_quality import (
     FEASIBLE,
     GEOMETRY_ONLY_NOT_EXECUTABLE,
     GOAL_FORMATION_COLLISION,
+    FORMATION_RETIMING_INFEASIBLE,
     FORMATION_RIGIDITY_VIOLATION,
     FORMATION_SWEEP_COLLISION,
     INVALID,
@@ -148,6 +150,22 @@ def rotation_plan(plan_id=17):
     return request, build_plan(request, (primitive(1, dpsi=0.5),))
 
 
+def cw_rotation_request(plan_id=17):
+    offsets = (VehicleOffset(0, 0.0, 0.0), VehicleOffset(1, 1.2, 0.0))
+    dpsi = -0.5
+    return snapshot(
+        offsets, FormationPose(0.0, 0.0, 0.0), FormationPose(0.0, 0.0, dpsi),
+        {0: 0.0, 1: math.pi / 2.0},
+        {0: dpsi, 1: math.pi / 2.0 + dpsi},
+        allow_reverse=True, plan_id=plan_id,
+        formation_id="s9_cw_rotation")
+
+
+def cw_rotation_plan(plan_id=17):
+    request = cw_rotation_request(plan_id)
+    return request, build_plan(request, (primitive(1, dpsi=-0.5),))
+
+
 def chain_request(plan_id=17):
     offsets = (VehicleOffset(0, 0.0, 0.0), VehicleOffset(1, 1.2, 0.0))
     dpsi = 0.3
@@ -235,6 +253,99 @@ class FormationQualityTest(unittest.TestCase):
         self.assertTrue(evaluation.feasible, evaluation.detail)
         self.assertEqual(evaluation.metrics["mode_switch_count"], 2)
         self.assertEqual(evaluation.metrics["direction_change_count"], 1)
+
+    def test_clockwise_rotation_is_feasible_with_reverse_speeds(self):
+        request, plan = cw_rotation_plan()
+        timed = retimed(plan)
+        evaluation = evaluate_formation_trajectory(
+            request, plan, timed, empty_grid())
+        self.assertTrue(evaluation.feasible, evaluation.detail)
+        follower = timed.trajectories[1]
+        self.assertTrue(all(point.mode == 0 for point in follower))
+        signed = [point.center_speed_mps for point in follower
+                  if abs(point.center_speed_mps) > 1e-6]
+        self.assertTrue(signed)
+        # Clockwise rotation drags the tangent-aligned body backwards.
+        self.assertTrue(all(value < 0.0 for value in signed))
+        ys = [point.center_y for point in follower]
+        self.assertLess(ys[-1], ys[0] - 0.5)
+        for point in follower:
+            self.assertGreaterEqual(point.wheel_speed_mps, 0.0)
+        segment = plan.blocks[0].segment_map[1]
+        self.assertEqual(segment.direction, -1)
+        self.assertAlmostEqual(segment.control, 1.0 / 1.2, places=12)
+
+    def test_tampered_reverse_direction_is_rejected_by_s9(self):
+        request, plan = cw_rotation_plan()
+        timed = retimed(plan)
+        blocks = list(plan.blocks)
+        segments = list(blocks[0].vehicle_mode_segments)
+        index = next(index for index, segment in enumerate(segments)
+                     if segment.vehicle_id == 1)
+        segments[index] = replace(segments[index], direction=1)
+        blocks[0] = replace(blocks[0], vehicle_mode_segments=tuple(segments))
+        bad_plan = replace(plan, blocks=tuple(blocks))
+        passing = SimpleNamespace(
+            success=True, checks=0, reason=None, detail="",
+            max_rigidity_error_m=0.0)
+        with mock.patch(
+                "fwis_v3_optimizer.formation_quality.audit_continuous_plan",
+                return_value=passing):
+            evaluation = evaluate_formation_trajectory(
+                request, bad_plan, timed, empty_grid())
+        self.assertFalse(evaluation.feasible)
+        self.assertEqual(evaluation.reason, KINEMATIC_INFEASIBLE)
+        self.assertEqual(evaluation.failure.field, "direction")
+        self.assertEqual(evaluation.failure.vehicle_id, 1)
+
+    def test_tampered_rotation_curvature_is_rejected_by_s9(self):
+        request, plan = cw_rotation_plan()
+        timed = retimed(plan)
+        blocks = list(plan.blocks)
+        segments = list(blocks[0].vehicle_mode_segments)
+        index = next(index for index, segment in enumerate(segments)
+                     if segment.vehicle_id == 1)
+        segments[index] = replace(
+            segments[index], control=-segments[index].control)
+        blocks[0] = replace(blocks[0], vehicle_mode_segments=tuple(segments))
+        bad_plan = replace(plan, blocks=tuple(blocks))
+        passing = SimpleNamespace(
+            success=True, checks=0, reason=None, detail="",
+            max_rigidity_error_m=0.0)
+        with mock.patch(
+                "fwis_v3_optimizer.formation_quality.audit_continuous_plan",
+                return_value=passing):
+            evaluation = evaluate_formation_trajectory(
+                request, bad_plan, timed, empty_grid())
+        self.assertFalse(evaluation.feasible)
+        self.assertEqual(evaluation.reason, KINEMATIC_INFEASIBLE)
+        self.assertEqual(evaluation.failure.field, "curvature")
+        self.assertEqual(evaluation.failure.vehicle_id, 1)
+
+    def test_tampered_signed_speed_is_rejected_by_s9(self):
+        request, plan = cw_rotation_plan()
+        timed = retimed(plan)
+        index = next(
+            index for index, point in enumerate(timed.trajectories[1])
+            if point.center_speed_mps < -1e-3)
+        point = timed.trajectories[1][index]
+        halved = tamper_point(
+            timed, 1, index,
+            center_speed_mps=0.5 * point.center_speed_mps)
+        evaluation = evaluate_formation_trajectory(
+            request, plan, halved, empty_grid())
+        self.assertFalse(evaluation.feasible)
+        self.assertEqual(evaluation.reason, FORMATION_RETIMING_INFEASIBLE)
+        self.assertEqual(evaluation.failure.field, "center_speed_mps")
+        self.assertEqual(evaluation.failure.vehicle_id, 1)
+        flipped = tamper_point(
+            timed, 1, index,
+            center_speed_mps=-point.center_speed_mps)
+        evaluation = evaluate_formation_trajectory(
+            request, plan, flipped, empty_grid())
+        self.assertFalse(evaluation.feasible)
+        self.assertEqual(evaluation.reason, KINEMATIC_INFEASIBLE)
+        self.assertEqual(evaluation.failure.field, "center_speed_mps")
 
     def test_tampered_center_is_rigidity_violation(self):
         request, plan = straight_plan()

@@ -114,6 +114,19 @@ def rotation_plan(plan_id=17):
     return build_plan(request, (primitive(1, dpsi=dpsi),))
 
 
+def cw_rotation_plan(plan_id=17):
+    offsets = (VehicleOffset(0, 0.0, 0.0), VehicleOffset(1, 1.2, 0.0))
+    dpsi = -0.5
+    request = snapshot(
+        offsets, FormationPose(0.0, 0.0, 0.0),
+        FormationPose(0.0, 0.0, dpsi),
+        {0: 0.0, 1: math.pi / 2.0},
+        {0: dpsi, 1: math.pi / 2.0 + dpsi},
+        allow_reverse=True, plan_id=plan_id,
+        formation_id="s8_cw_rotation")
+    return build_plan(request, (primitive(1, dpsi=dpsi),))
+
+
 def chain_plan(plan_id=17):
     offsets = (VehicleOffset(0, 0.0, 0.0), VehicleOffset(1, 1.2, 0.0))
     dpsi = 0.3
@@ -238,6 +251,29 @@ class FormationRetimingTest(unittest.TestCase):
                                    places=9)
             self.assertAlmostEqual(points[-1].center_speed_mps, 0.0,
                                    places=9)
+
+    def test_clockwise_rotation_reports_reverse_signed_speeds(self):
+        plan = cw_rotation_plan()
+        result = retimed(plan)
+        self.assertEqual(result.status, TIMED_GEOMETRY_ONLY)
+        self.assertTrue(result.audit.success, result.audit.detail)
+        timed = result.timed
+        follower = timed.trajectories[1]
+        self.assertTrue(all(point.mode == 0 for point in follower))
+        signed = [point.center_speed_mps for point in follower
+                  if abs(point.center_speed_mps) > 1e-6]
+        self.assertTrue(signed)
+        # The tangent-aligned body is dragged backwards by the clockwise
+        # formation rotation: signed speed is negative while the wheel-speed
+        # magnitude stays positive.
+        self.assertTrue(all(value < 0.0 for value in signed))
+        for point in follower:
+            self.assertGreaterEqual(point.wheel_speed_mps, 0.0)
+        ys = [point.center_y for point in follower]
+        self.assertLess(ys[-1], ys[0] - 0.5)
+        segment = plan.blocks[0].segment_map[1]
+        self.assertEqual(segment.direction, -1)
+        self.assertAlmostEqual(segment.control, 1.0 / 1.2, places=12)
 
     def test_chain_holds_dwell_and_reverse(self):
         plan = chain_plan()

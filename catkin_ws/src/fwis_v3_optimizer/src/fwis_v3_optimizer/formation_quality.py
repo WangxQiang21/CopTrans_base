@@ -761,9 +761,18 @@ def _dynamic_values(block, segment, offset, duration, tau, motion_limits,
         yaw_rate if segment.mode == SPIN else speed)
     lateral = (abs(segment.control) * speed * speed
                if segment.mode == ACKERMANN else 0.0)
-    signed_speed = 0.0 if segment.mode == SPIN else segment.direction * speed
+    heading = block.body_heading_at(segment.vehicle_id, station)
+    if segment.mode == SPIN:
+        signed_speed = 0.0
+        lateral_speed = 0.0
+    else:
+        signed_speed = (p_dot[0] * math.cos(heading) +
+                        p_dot[1] * math.sin(heading))
+        lateral_speed = (-p_dot[0] * math.sin(heading) +
+                         p_dot[1] * math.cos(heading))
     return {
         "speed_signed": signed_speed,
+        "lateral_speed_signed": lateral_speed,
         "speed": speed,
         "acceleration": math.hypot(p_ddot[0], p_ddot[1]),
         "jerk": math.hypot(p_dddot[0], p_dddot[1]),
@@ -1171,6 +1180,81 @@ class _IndependentEvaluator:
                         "Spin centre moves in the plan",
                         field="center", vehicle_id=vehicle_id,
                         block_index=block.block_index)
+            # Independent first-order differential contract.  The centre
+            # velocity is derived from q_F, the offset and the pivot; its
+            # projection on the body heading gives the signed speed, and the
+            # curvature is theta'/v rather than a direction label.
+            control = block.control
+            if block.geometry_type == "translation":
+                velocity_x = (
+                    control.end_qf.x - control.start_qf.x) / length
+                velocity_y = (
+                    control.end_qf.y - control.start_qf.y) / length
+            else:
+                slope = control.delta_psi / length
+                offset = self.offset_map[vehicle_id]
+                rx = offset.x - control.pivot_x
+                ry = offset.y - control.pivot_y
+                local_vx = -slope * ry
+                local_vy = slope * rx
+                cosine = math.cos(control.start_qf.psi)
+                sine = math.sin(control.start_qf.psi)
+                velocity_x = cosine * local_vx - sine * local_vy
+                velocity_y = sine * local_vx + cosine * local_vy
+            signed_speed = (
+                velocity_x * math.cos(segment.theta_start) +
+                velocity_y * math.sin(segment.theta_start))
+            lateral_speed = (
+                -velocity_x * math.sin(segment.theta_start) +
+                velocity_y * math.cos(segment.theta_start))
+            if (segment.mode in (ACKERMANN, OBLIQUE) and
+                    abs(signed_speed) > _GEOMETRY_TOL):
+                expected_direction = 1 if signed_speed > 0.0 else -1
+                if segment.direction != expected_direction:
+                    self._fail(
+                        KINEMATIC_INFEASIBLE,
+                        "centre velocity sign contradicts segment direction",
+                        field="direction", vehicle_id=vehicle_id,
+                        block_index=block.block_index,
+                        max_error=abs(signed_speed))
+            if segment.mode == ACKERMANN:
+                if abs(lateral_speed) > (
+                        self.config.position_tolerance_m + _GEOMETRY_TOL):
+                    self._fail(
+                        KINEMATIC_INFEASIBLE,
+                        "A centre velocity has a lateral component",
+                        field="lateral_speed", vehicle_id=vehicle_id,
+                        block_index=block.block_index,
+                        max_error=abs(lateral_speed))
+                if (block.geometry_type == "rotation" and
+                        abs(signed_speed) > _GEOMETRY_TOL):
+                    curvature = (
+                        (segment.theta_end - segment.theta_start) / length
+                    ) / signed_speed
+                    if abs(curvature - segment.control) > (
+                            self.config.heading_tolerance_rad +
+                            1e-9 * max(1.0, abs(curvature))):
+                        self._fail(
+                            KINEMATIC_INFEASIBLE,
+                            "A curvature contradicts theta'/v",
+                            field="curvature", vehicle_id=vehicle_id,
+                            block_index=block.block_index,
+                            max_error=abs(curvature - segment.control),
+                            constraint="r_min_ackermann")
+            elif (segment.mode == OBLIQUE and
+                  abs(signed_speed) > _GEOMETRY_TOL):
+                observed_phi = math.atan2(lateral_speed, signed_speed)
+                if expected_direction < 0:
+                    observed_phi = _wrap(observed_phi - math.pi)
+                if _angle_error(observed_phi, segment.control) > (
+                        self.config.heading_tolerance_rad + _GEOMETRY_TOL):
+                    self._fail(
+                        KINEMATIC_INFEASIBLE,
+                        "O oblique angle contradicts centre velocity",
+                        field="oblique_angle", vehicle_id=vehicle_id,
+                        block_index=block.block_index,
+                        max_error=_angle_error(
+                            observed_phi, segment.control))
             if segment.direction == -1 and not bool(
                     getattr(self.snapshot, "allow_reverse", False)):
                 self._fail(
@@ -1610,8 +1694,17 @@ class _IndependentEvaluator:
                         field="center_speed_mps", vehicle_id=vehicle_id,
                         sample_index=index, time_s=self._times[index],
                         constraint="speed", max_error=signed_error)
+                # The stored scalar is the signed component along the body
+                # heading.  For O the centre travels along theta+phi, so the
+                # full speed is reconstructed with the independently derived
+                # lateral component before it is compared with |v|.
+                speed_actual = abs(point.center_speed_mps)
+                if segment.mode == OBLIQUE:
+                    speed_actual = math.hypot(
+                        point.center_speed_mps,
+                        expected["lateral_speed_signed"])
                 comparisons = (
-                    ("center_speed_mps", abs(point.center_speed_mps),
+                    ("center_speed_mps", speed_actual,
                      expected["speed"]),
                     ("center_acceleration_mps2",
                      point.center_acceleration_mps2,

@@ -1,0 +1,495 @@
+{
+  "tool": "tools/verify_rotation_contract.py",
+  "contract": {
+    "centre_derivative": "dp_i/dlambda = dpsi/L R(psi_F) J (r_i - pivot)",
+    "signed_speed": "dot(dp_i/dlambda, u(theta_i))",
+    "ackermann_curvature": "theta'/v",
+    "direction": "sign of the signed centre speed"
+  },
+  "limits": {
+    "r_min_ackermann": 0.81,
+    "heading_tolerance_rad": 1e-06
+  },
+  "cases": [
+    {
+      "name": "ccw_tangent_forward",
+      "dpsi": 0.5,
+      "start_psi": 0.0,
+      "pivot": [
+        0.0,
+        0.0
+      ],
+      "opposite_headings": false,
+      "allow_reverse": false,
+      "assignment_success": true,
+      "assignment_reason": "OK",
+      "assignment_detail": "KINEMATIC_CANDIDATE_NOT_AUDITED",
+      "segments": [
+        {
+          "vehicle_id": 1,
+          "mode": "A",
+          "body_heading": 1.5707963267948966,
+          "stored_direction": 1,
+          "expected_direction": 1,
+          "signed_speed": 1.0,
+          "lateral_speed": 6.123233995736766e-17,
+          "stored_control": 1.0,
+          "curvature_theta_over_v": 1.0,
+          "direction_error": 0,
+          "lateral_speed_error": 6.123233995736766e-17,
+          "curvature_error": 0.0
+        },
+        {
+          "vehicle_id": 2,
+          "mode": "A",
+          "body_heading": 3.141592653589793,
+          "stored_direction": 1,
+          "expected_direction": 1,
+          "signed_speed": 1.0,
+          "lateral_speed": 1.2246467991473532e-16,
+          "stored_control": 1.0,
+          "curvature_theta_over_v": 1.0,
+          "direction_error": 0,
+          "lateral_speed_error": 1.2246467991473532e-16,
+          "curvature_error": 0.0
+        },
+        {
+          "vehicle_id": 3,
+          "mode": "A",
+          "body_heading": 0.0,
+          "stored_direction": 1,
+          "expected_direction": 1,
+          "signed_speed": 1.0,
+          "lateral_speed": 0.0,
+          "stored_control": 1.0,
+          "curvature_theta_over_v": 1.0,
+          "direction_error": 0,
+          "lateral_speed_error": 0.0,
+          "curvature_error": 0.0
+        }
+      ],
+      "audit_success": true,
+      "audit_reason": "OK",
+      "audit_detail": "KINEMATIC_AUDIT_PASSED_NOT_EXECUTABLE",
+      "max_direction_error": 0.0,
+      "max_lateral_speed": 1.2246467991473532e-16,
+      "max_curvature_error": 0.0,
+      "all_pass": true
+    },
+    {
+      "name": "cw_tangent_reverse",
+      "dpsi": -0.5,
+      "start_psi": 0.0,
+      "pivot": [
+        0.0,
+        0.0
+      ],
+      "opposite_headings": false,
+      "allow_reverse": true,
+      "assignment_success": true,
+      "assignment_reason": "OK",
+      "assignment_detail": "KINEMATIC_CANDIDATE_NOT_AUDITED",
+      "segments": [
+        {
+          "vehicle_id": 1,
+          "mode": "A",
+          "body_heading": 1.5707963267948966,
+          "stored_direction": -1,
+          "expected_direction": -1,
+          "signed_speed": -1.0,
+          "lateral_speed": -6.123233995736766e-17,
+          "stored_control": 1.0,
+          "curvature_theta_over_v": 1.0,
+          "direction_error": 0,
+          "lateral_speed_error": 6.123233995736766e-17,
+          "curvature_error": 0.0
+        },
+        {
+          "vehicle_id": 2,
+          "mode": "A",
+          "body_heading": 3.141592653589793,
+          "stored_direction": -1,
+          "expected_direction": -1,
+          "signed_speed": -1.0,
+          "lateral_speed": -1.2246467991473532e-16,
+          "stored_control": 1.0,
+          "curvature_theta_over_v": 1.0,
+          "direction_error": 0,
+          "lateral_speed_error": 1.2246467991473532e-16,
+          "curvature_error": 0.0
+        },
+        {
+          "vehicle_id": 3,
+          "mode": "A",
+          "body_heading": 0.0,
+          "stored_direction": -1,
+          "expected_direction": -1,
+          "signed_speed": -1.0,
+          "lateral_speed": 0.0,
+          "stored_control": 1.0,
+          "curvature_theta_over_v": 1.0,
+          "direction_error": 0,
+          "lateral_speed_error": 0.0,
+          "curvature_error": 0.0
+        }
+      ],
+      "audit_success": true,
+      "audit_reason": "OK",
+      "audit_detail": "KINEMATIC_AUDIT_PASSED_NOT_EXECUTABLE",
+      "max_direction_error": 0.0,
+      "max_lateral_speed": 1.2246467991473532e-16,
+      "max_curvature_error": 0.0,
+      "all_pass": true
+    },
+    {
+      "name": "cw_opposite_forward",
+      "dpsi": -0.5,
+      "start_psi": 0.0,
+      "pivot": [
+        0.0,
+        0.0
+      ],
+      "opposite_headings": true,
+      "allow_reverse": false,
+      "assignment_success": true,
+      "assignment_reason": "OK",
+      "assignment_detail": "KINEMATIC_CANDIDATE_NOT_AUDITED",
+      "segments": [
+        {
+          "vehicle_id": 1,
+          "mode": "A",
+          "body_heading": -1.5707963267948968,
+          "stored_direction": 1,
+          "expected_direction": 1,
+          "signed_speed": 1.0,
+          "lateral_speed": 1.6081226496766364e-16,
+          "stored_control": -1.0,
+          "curvature_theta_over_v": -0.9999999999999996,
+          "direction_error": 0,
+          "lateral_speed_error": 1.6081226496766364e-16,
+          "curvature_error": 4.440892098500626e-16
+        },
+        {
+          "vehicle_id": 2,
+          "mode": "A",
+          "body_heading": -2.4492935982947064e-16,
+          "stored_direction": 1,
+          "expected_direction": 1,
+          "signed_speed": 1.0,
+          "lateral_speed": 2.4492935982947064e-16,
+          "stored_control": -1.0,
+          "curvature_theta_over_v": -1.0,
+          "direction_error": 0,
+          "lateral_speed_error": 2.4492935982947064e-16,
+          "curvature_error": 0.0
+        },
+        {
+          "vehicle_id": 3,
+          "mode": "A",
+          "body_heading": 3.141592653589793,
+          "stored_direction": 1,
+          "expected_direction": 1,
+          "signed_speed": 1.0,
+          "lateral_speed": 1.2246467991473532e-16,
+          "stored_control": -1.0,
+          "curvature_theta_over_v": -1.0,
+          "direction_error": 0,
+          "lateral_speed_error": 1.2246467991473532e-16,
+          "curvature_error": 0.0
+        }
+      ],
+      "audit_success": true,
+      "audit_reason": "OK",
+      "audit_detail": "KINEMATIC_AUDIT_PASSED_NOT_EXECUTABLE",
+      "max_direction_error": 0.0,
+      "max_lateral_speed": 2.4492935982947064e-16,
+      "max_curvature_error": 4.440892098500626e-16,
+      "all_pass": true
+    },
+    {
+      "name": "ccw_opposite_reverse",
+      "dpsi": 0.5,
+      "start_psi": 0.0,
+      "pivot": [
+        0.0,
+        0.0
+      ],
+      "opposite_headings": true,
+      "allow_reverse": true,
+      "assignment_success": true,
+      "assignment_reason": "OK",
+      "assignment_detail": "KINEMATIC_CANDIDATE_NOT_AUDITED",
+      "segments": [
+        {
+          "vehicle_id": 1,
+          "mode": "A",
+          "body_heading": -1.5707963267948968,
+          "stored_direction": -1,
+          "expected_direction": -1,
+          "signed_speed": -1.0,
+          "lateral_speed": -1.6081226496766364e-16,
+          "stored_control": -1.0,
+          "curvature_theta_over_v": -1.0,
+          "direction_error": 0,
+          "lateral_speed_error": 1.6081226496766364e-16,
+          "curvature_error": 0.0
+        },
+        {
+          "vehicle_id": 2,
+          "mode": "A",
+          "body_heading": -2.4492935982947064e-16,
+          "stored_direction": -1,
+          "expected_direction": -1,
+          "signed_speed": -1.0,
+          "lateral_speed": -2.4492935982947064e-16,
+          "stored_control": -1.0,
+          "curvature_theta_over_v": -1.0,
+          "direction_error": 0,
+          "lateral_speed_error": 2.4492935982947064e-16,
+          "curvature_error": 0.0
+        },
+        {
+          "vehicle_id": 3,
+          "mode": "A",
+          "body_heading": 3.141592653589793,
+          "stored_direction": -1,
+          "expected_direction": -1,
+          "signed_speed": -1.0,
+          "lateral_speed": -1.2246467991473532e-16,
+          "stored_control": -1.0,
+          "curvature_theta_over_v": -1.0,
+          "direction_error": 0,
+          "lateral_speed_error": 1.2246467991473532e-16,
+          "curvature_error": 0.0
+        }
+      ],
+      "audit_success": true,
+      "audit_reason": "OK",
+      "audit_detail": "KINEMATIC_AUDIT_PASSED_NOT_EXECUTABLE",
+      "max_direction_error": 0.0,
+      "max_lateral_speed": 2.4492935982947064e-16,
+      "max_curvature_error": 0.0,
+      "all_pass": true
+    },
+    {
+      "name": "ccw_nonzero_pivot",
+      "dpsi": 0.4,
+      "start_psi": 0.0,
+      "pivot": [
+        0.0,
+        0.1
+      ],
+      "opposite_headings": false,
+      "allow_reverse": false,
+      "assignment_success": true,
+      "assignment_reason": "OK",
+      "assignment_detail": "KINEMATIC_CANDIDATE_NOT_AUDITED",
+      "segments": [
+        {
+          "vehicle_id": 1,
+          "mode": "A",
+          "body_heading": 1.4711276743037345,
+          "stored_direction": 1,
+          "expected_direction": 1,
+          "signed_speed": 1.004987562112089,
+          "lateral_speed": 1.1102230246251565e-16,
+          "stored_control": 0.9950371902099893,
+          "curvature_theta_over_v": 0.9950371902099895,
+          "direction_error": 0,
+          "lateral_speed_error": 1.1102230246251565e-16,
+          "curvature_error": 2.220446049250313e-16
+        },
+        {
+          "vehicle_id": 2,
+          "mode": "A",
+          "body_heading": 3.141592653589793,
+          "stored_direction": 1,
+          "expected_direction": 1,
+          "signed_speed": 0.9,
+          "lateral_speed": 1.1021821192326179e-16,
+          "stored_control": 1.1111111111111112,
+          "curvature_theta_over_v": 1.111111111111111,
+          "direction_error": 0,
+          "lateral_speed_error": 1.1021821192326179e-16,
+          "curvature_error": 2.220446049250313e-16
+        },
+        {
+          "vehicle_id": 3,
+          "mode": "A",
+          "body_heading": 0.0,
+          "stored_direction": 1,
+          "expected_direction": 1,
+          "signed_speed": 1.1,
+          "lateral_speed": 0.0,
+          "stored_control": 0.9090909090909091,
+          "curvature_theta_over_v": 0.9090909090909091,
+          "direction_error": 0,
+          "lateral_speed_error": 0.0,
+          "curvature_error": 0.0
+        }
+      ],
+      "audit_success": true,
+      "audit_reason": "OK",
+      "audit_detail": "KINEMATIC_AUDIT_PASSED_NOT_EXECUTABLE",
+      "max_direction_error": 0.0,
+      "max_lateral_speed": 1.1102230246251565e-16,
+      "max_curvature_error": 2.220446049250313e-16,
+      "all_pass": true
+    },
+    {
+      "name": "cw_nonzero_pivot_reverse",
+      "dpsi": -0.4,
+      "start_psi": 0.0,
+      "pivot": [
+        0.0,
+        0.1
+      ],
+      "opposite_headings": false,
+      "allow_reverse": true,
+      "assignment_success": true,
+      "assignment_reason": "OK",
+      "assignment_detail": "KINEMATIC_CANDIDATE_NOT_AUDITED",
+      "segments": [
+        {
+          "vehicle_id": 1,
+          "mode": "A",
+          "body_heading": 1.4711276743037345,
+          "stored_direction": -1,
+          "expected_direction": -1,
+          "signed_speed": -1.004987562112089,
+          "lateral_speed": -1.1102230246251565e-16,
+          "stored_control": 0.9950371902099893,
+          "curvature_theta_over_v": 0.9950371902099895,
+          "direction_error": 0,
+          "lateral_speed_error": 1.1102230246251565e-16,
+          "curvature_error": 2.220446049250313e-16
+        },
+        {
+          "vehicle_id": 2,
+          "mode": "A",
+          "body_heading": 3.141592653589793,
+          "stored_direction": -1,
+          "expected_direction": -1,
+          "signed_speed": -0.9,
+          "lateral_speed": -1.1021821192326179e-16,
+          "stored_control": 1.1111111111111112,
+          "curvature_theta_over_v": 1.111111111111111,
+          "direction_error": 0,
+          "lateral_speed_error": 1.1021821192326179e-16,
+          "curvature_error": 2.220446049250313e-16
+        },
+        {
+          "vehicle_id": 3,
+          "mode": "A",
+          "body_heading": 0.0,
+          "stored_direction": -1,
+          "expected_direction": -1,
+          "signed_speed": -1.1,
+          "lateral_speed": 0.0,
+          "stored_control": 0.9090909090909091,
+          "curvature_theta_over_v": 0.9090909090909091,
+          "direction_error": 0,
+          "lateral_speed_error": 0.0,
+          "curvature_error": 0.0
+        }
+      ],
+      "audit_success": true,
+      "audit_reason": "OK",
+      "audit_detail": "KINEMATIC_AUDIT_PASSED_NOT_EXECUTABLE",
+      "max_direction_error": 0.0,
+      "max_lateral_speed": 1.1102230246251565e-16,
+      "max_curvature_error": 2.220446049250313e-16,
+      "all_pass": true
+    },
+    {
+      "name": "ccw_cross_pi",
+      "dpsi": 0.6,
+      "start_psi": 2.9,
+      "pivot": [
+        0.0,
+        0.0
+      ],
+      "opposite_headings": false,
+      "allow_reverse": false,
+      "assignment_success": true,
+      "assignment_reason": "OK",
+      "assignment_detail": "KINEMATIC_CANDIDATE_NOT_AUDITED",
+      "segments": [
+        {
+          "vehicle_id": 1,
+          "mode": "A",
+          "body_heading": -1.8123889803846895,
+          "stored_direction": 1,
+          "expected_direction": 1,
+          "signed_speed": 1.0000000000000002,
+          "lateral_speed": -4.163336342344337e-16,
+          "stored_control": 1.0,
+          "curvature_theta_over_v": 1.0,
+          "direction_error": 0,
+          "lateral_speed_error": 4.163336342344337e-16,
+          "curvature_error": 0.0
+        },
+        {
+          "vehicle_id": 2,
+          "mode": "A",
+          "body_heading": -0.241592653589793,
+          "stored_direction": 1,
+          "expected_direction": 1,
+          "signed_speed": 1.0000000000000002,
+          "lateral_speed": -3.0531133177191805e-16,
+          "stored_control": 1.0,
+          "curvature_theta_over_v": 1.0,
+          "direction_error": 0,
+          "lateral_speed_error": 3.0531133177191805e-16,
+          "curvature_error": 0.0
+        },
+        {
+          "vehicle_id": 3,
+          "mode": "A",
+          "body_heading": 2.9,
+          "stored_direction": 1,
+          "expected_direction": 1,
+          "signed_speed": 1.0000000000000002,
+          "lateral_speed": 0.0,
+          "stored_control": 1.0,
+          "curvature_theta_over_v": 1.0,
+          "direction_error": 0,
+          "lateral_speed_error": 0.0,
+          "curvature_error": 0.0
+        }
+      ],
+      "audit_success": true,
+      "audit_reason": "OK",
+      "audit_detail": "KINEMATIC_AUDIT_PASSED_NOT_EXECUTABLE",
+      "max_direction_error": 0.0,
+      "max_lateral_speed": 4.163336342344337e-16,
+      "max_curvature_error": 0.0,
+      "all_pass": true
+    }
+  ],
+  "tamper": [
+    {
+      "name": "ccw_flipped_direction",
+      "vehicle_id": 1,
+      "audit_success": false,
+      "reason": "DIRECTION_SIGN_MISMATCH",
+      "detail": "vehicle_id=1 direction=-1 but the centre derivative projects with sign 1"
+    },
+    {
+      "name": "ccw_flipped_curvature",
+      "vehicle_id": 1,
+      "audit_success": false,
+      "reason": "MODE_CURVATURE_MISMATCH",
+      "detail": "vehicle_id=1 stored kappa -1 != recomputed theta'/v=1"
+    },
+    {
+      "name": "cw_fixed_tangent_curvature",
+      "vehicle_id": 1,
+      "audit_success": false,
+      "reason": "MODE_CURVATURE_MISMATCH",
+      "detail": "vehicle_id=1 stored kappa -1 != recomputed theta'/v=1"
+    }
+  ],
+  "all_pass": true,
+  "scope": "S5 candidate/audit only; no timing, collision or publication certification"
+}

@@ -32,6 +32,7 @@ from fwis_v3_optimizer.formation_kinematics import (
     audit_mode_assignment,
     enumerate_mode_assignments,
     mode_word,
+    wrap_angle,
 )
 
 
@@ -121,6 +122,18 @@ class FormationKinematicsTests(unittest.TestCase):
         reverse_policy = audit_mode_assignment(reverse)
         self.assertFalse(reverse_policy.success)
         self.assertEqual(reverse_policy.reason, "REVERSE_NOT_ALLOWED")
+
+    def test_translation_audit_uses_the_independent_center_derivative(self):
+        block = translation_block((2.0, 0.0), self.wedge)
+        assignment = assign_formation_modes(
+            block, {0: 0.0, 1: 0.0, 2: 0.0})
+        self.assertTrue(assignment.success, assignment.detail)
+        tampered = replace(assignment, segments=tuple(
+            replace(segment, direction=-1)
+            for segment in assignment.segments))
+        audit = audit_mode_assignment(tampered, allow_reverse=True)
+        self.assertFalse(audit.success)
+        self.assertEqual(audit.reason, "DIRECTION_SIGN_MISMATCH")
 
     def test_world_headings_include_the_formation_heading_offset(self):
         start_psi = 0.7
@@ -212,6 +225,162 @@ class FormationKinematicsTests(unittest.TestCase):
         self.assertAlmostEqual(upper.theta_end, math.pi / 2.0)
         audit = self.assert_audit_passes(assignment, allow_reverse=True)
         self.assertAlmostEqual(audit.max_curvature, 1.0 / 1.2)
+
+    def test_clockwise_rotation_uses_reverse_and_positive_curvature(self):
+        offsets = (
+            VehicleOffset(1, 1.0, 0.0),
+            VehicleOffset(2, 0.0, 1.0),
+            VehicleOffset(3, 0.0, -1.0),
+        )
+        block = rotation_block(-0.5, offsets)
+        start = {
+            1: math.pi / 2.0, 2: math.pi, 3: 0.0,
+        }
+        assignment = assign_formation_modes(
+            block, start, allow_reverse=True)
+        self.assertTrue(assignment.success, assignment.detail)
+        for segment in assignment.segments:
+            # The tangent-aligned body is dragged backwards by a clockwise
+            # formation rotation; the signed centre speed is negative and
+            # theta'/v_lambda is positive.
+            self.assertEqual(segment.direction, -1)
+            self.assertAlmostEqual(segment.control, 1.0)
+        audit = self.assert_audit_passes(assignment, allow_reverse=True)
+        self.assertAlmostEqual(audit.max_curvature, 1.0)
+
+    def test_clockwise_rotation_with_opposite_headings_is_forward(self):
+        offsets = (
+            VehicleOffset(1, 1.0, 0.0),
+            VehicleOffset(2, 0.0, 1.0),
+            VehicleOffset(3, 0.0, -1.0),
+        )
+        block = rotation_block(-0.5, offsets)
+        start = {
+            1: -math.pi / 2.0, 2: 0.0, 3: math.pi,
+        }
+        assignment = assign_formation_modes(block, start)
+        self.assertTrue(assignment.success, assignment.detail)
+        for segment in assignment.segments:
+            self.assertEqual(segment.direction, 1)
+            self.assertAlmostEqual(segment.control, -1.0)
+        self.assert_audit_passes(assignment)
+
+    def test_clockwise_tangent_rotation_requires_reverse_authorization(self):
+        offsets = (
+            VehicleOffset(1, 1.0, 0.0),
+            VehicleOffset(2, 0.0, 1.0),
+            VehicleOffset(3, 0.0, -1.0),
+        )
+        block = rotation_block(-0.5, offsets)
+        assignment = assign_formation_modes(
+            block, {1: math.pi / 2.0, 2: math.pi, 3: 0.0})
+        self.assertFalse(assignment.success)
+        self.assertEqual(assignment.reason, "REVERSE_NOT_ALLOWED")
+
+    def test_audit_rejects_tampered_rotation_direction_and_signed_speed(self):
+        offsets = (
+            VehicleOffset(1, 1.0, 0.0),
+            VehicleOffset(2, 0.0, 1.0),
+            VehicleOffset(3, 0.0, -1.0),
+        )
+        block = rotation_block(-0.5, offsets)
+        assignment = assign_formation_modes(
+            block, {1: math.pi / 2.0, 2: math.pi, 3: 0.0},
+            allow_reverse=True)
+        self.assertTrue(assignment.success, assignment.detail)
+        tampered = replace(
+            assignment, segments=tuple(
+                replace(segment, direction=1)
+                if segment.vehicle_id == 1 else segment
+                for segment in assignment.segments))
+        audit = audit_mode_assignment(tampered, allow_reverse=True)
+        self.assertFalse(audit.success)
+        self.assertEqual(audit.reason, "DIRECTION_SIGN_MISMATCH")
+        self.assertIn("vehicle_id=1", audit.detail)
+
+    def test_audit_rejects_tampered_rotation_curvature(self):
+        offsets = (
+            VehicleOffset(1, 1.0, 0.0),
+            VehicleOffset(2, 0.0, 1.0),
+            VehicleOffset(3, 0.0, -1.0),
+        )
+        block = rotation_block(-0.5, offsets)
+        assignment = assign_formation_modes(
+            block, {1: math.pi / 2.0, 2: math.pi, 3: 0.0},
+            allow_reverse=True)
+        self.assertTrue(assignment.success, assignment.detail)
+        tampered = replace(
+            assignment, segments=tuple(
+                replace(segment, control=-1.0)
+                if segment.vehicle_id == 1 else segment
+                for segment in assignment.segments))
+        audit = audit_mode_assignment(tampered, allow_reverse=True)
+        self.assertFalse(audit.success)
+        self.assertEqual(audit.reason, "MODE_CURVATURE_MISMATCH")
+        self.assertIn("theta'/v", audit.detail)
+
+    def test_audit_rejects_tampered_rotation_travel_magnitude(self):
+        offsets = (
+            VehicleOffset(1, 1.0, 0.0),
+            VehicleOffset(2, 0.0, 1.0),
+            VehicleOffset(3, 0.0, -1.0),
+        )
+        block = rotation_block(-0.5, offsets)
+        assignment = assign_formation_modes(
+            block, {1: math.pi / 2.0, 2: math.pi, 3: 0.0},
+            allow_reverse=True)
+        self.assertTrue(assignment.success, assignment.detail)
+        tampered = replace(
+            assignment, segments=tuple(
+                replace(segment, travel_distance=0.25)
+                if segment.vehicle_id == 1 else segment
+                for segment in assignment.segments))
+        audit = audit_mode_assignment(tampered, allow_reverse=True)
+        self.assertFalse(audit.success)
+        self.assertEqual(audit.reason, "MODE_TRAVEL_MISMATCH")
+
+    def test_rotation_crosses_pi_from_a_nonzero_heading(self):
+        offsets = (
+            VehicleOffset(1, 1.0, 0.0),
+            VehicleOffset(2, 0.0, 1.0),
+            VehicleOffset(3, 0.0, -1.0),
+        )
+        start_psi = 2.9
+        block = rotation_block(0.6, offsets, start_psi=start_psi)
+        self.assertGreater(block.end_qf.psi, math.pi)
+        start = {
+            offset.vehicle_id: wrap_angle(
+                math.atan2(offset.x, -offset.y) + start_psi)
+            for offset in offsets
+        }
+        assignment = assign_formation_modes(
+            block, start, allow_reverse=True)
+        self.assertTrue(assignment.success, assignment.detail)
+        for segment in assignment.segments:
+            self.assertEqual(segment.direction, 1)
+        self.assert_audit_passes(assignment, allow_reverse=True)
+
+    def test_rotation_about_a_nonzero_offset_pivot(self):
+        offsets = (
+            VehicleOffset(1, 1.0, 0.0),
+            VehicleOffset(2, 0.0, 1.0),
+            VehicleOffset(3, 0.0, -1.0),
+        )
+        pivot = (0.0, 0.1)
+        block = rotation_block(0.4, offsets, pivot=pivot)
+        start = {
+            offset.vehicle_id: wrap_angle(
+                math.atan2(offset.x - pivot[0],
+                           -(offset.y - pivot[1])))
+            for offset in offsets
+        }
+        assignment = assign_formation_modes(
+            block, start, allow_reverse=True)
+        self.assertTrue(assignment.success, assignment.detail)
+        modes = {segment.vehicle_id: segment.mode
+                 for segment in assignment.segments}
+        self.assertEqual(set(modes.values()), {ACKERMANN})
+        self.assert_audit_passes(assignment, allow_reverse=True)
 
     def test_nonpivot_spin_assignment_is_rejected_by_independent_audit(self):
         block = rotation_block(math.pi / 2.0, self.wedge)
@@ -311,7 +480,7 @@ class FormationKinematicsTests(unittest.TestCase):
             turned,) + assignment.segments[1:])
         audit = audit_mode_assignment(bad_control)
         self.assertFalse(audit.success)
-        self.assertEqual(audit.reason, "MODE_DISPLACEMENT_MISMATCH")
+        self.assertEqual(audit.reason, "OBLIQUE_ANGLE_MISMATCH")
 
         drifted = replace(assignment.segments[0], theta_end=0.2)
         bad_heading = replace(assignment, segments=(

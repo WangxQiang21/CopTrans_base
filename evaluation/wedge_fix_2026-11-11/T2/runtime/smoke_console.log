@@ -1,0 +1,34 @@
+ros_cargo_smoke: PASS (33 checks, /home/wq/whut_thesis/expv3_multi/evaluation/wedge_fix_2026-11-11/T2/smoke.json)
+  [ok] real_entry_point_started: run_demo.sh pid=1753263
+  [ok] one_config_for_area_tool: footprint tool read the same YAML: sha256=21b9ff574bbfe2e190958a415ae0232a4d9df0146165960aa66f00f9e3f9ca92
+  [ok] new_wedge_pair_distances: pair distances={'1-2': 1.4142135623730951, '1-3': 1.4142135623730951, '2-3': 2.0}
+  [ok] new_wedge_area_contract: AABB=[1.738, 2.5] hull=3.345 envelope=6.5662084606402 axis=5.0 disk=5.782856135530851
+  [ok] static_preview_uses_config_offsets_and_headings: max marker/config error=4.44e-16 m or rad; offsets=[[1.0, 0.0], [0.0, 1.0], [0.0, -1.0]]
+  [ok] static_tf_matches_markers_and_config: TF reference=(10,10,0), body frames match marker OBBs; max error=0
+  [ok] E01_forward_initial_request_start: start=[10.0, 10.0, 0.0] expected=(10.0, 10.0, 0.0)
+  [ok] E01_forward_initial_feasible: status=FEASIBLE reason=OK
+  [ok] E01_forward_initial_terminal_goal: terminal centres=[[14.0, 10.0], [13.0, 11.0], [13.0, 9.0]] max goal error=0
+  [ok] e05_request_distinct_theta_from_psi: theta_i=[1.5707963267948966, 3.141592653589793, 0.0] psi_F=0.0
+  [ok] e05_feasible_without_cargo_heading_lock: status=FEASIBLE reason=OK
+  [ok] e05_trajectory_identity: plan=700000 formation=cargo_wedge vehicles=3
+  [ok] e05_terminal_headings_are_the_orbit_tangents: terminal theta={1: 3.1415926535897922, 2: 4.712388980384688, 3: 1.5707963267948966} expected={1: 3.141592653589793, 2: 4.71238898038469, 3: 1.5707963267948966}
+  [ok] e05_terminal_cargo_pose: TF reference=(10.000000, 10.000000, 1.570796) expected=(10.0, 10.0, 1.5707963267948966)
+  [ok] continuous_request_starts_at_displayed_terminal: start=[10.0, 10.0, 1.5707963267948963] expected displayed E05 terminal
+  [ok] continuous_request_keeps_real_body_headings: bridge start theta={1: 3.1415926535897922, 2: -1.5707963267948986, 3: 1.5707963267948963} displayed terminal={1: 3.1415926535897922, 2: 4.712388980384688, 3: 1.5707963267948966} (cargo-heading policy would give all 1.571)
+  [ok] continuous_translation_feasible: status=FEASIBLE reason=OK
+  [ok] continuous_plan_keeps_body_headings: end theta={1: 3.1415926535897922, 2: -1.5707963267948986, 3: 1.5707963267948963} start theta={1: 3.1415926535897922, 2: -1.5707963267948986, 3: 1.5707963267948963}
+  [ok] continuous_terminal_cargo_pose: TF reference=(10.000000, 13.000000, 1.570796)
+  [ok] manual_reset_reinitialises_policy_headings: reset reason=START, policy headings=0; max heading error=0
+  [ok] e06_rejected_by_independent_heading_check: status=REJECTED reason=HEADING_BOUNDARY_MISMATCH
+  [ok] e06_keeps_static_bodies_without_old_path: state=STATIC reason=REJECTED: HEADING_BOUNDARY_MISMATCH static vehicle OBBs=3
+  [ok] retired_cargo_heading_lock_not_default: no optimizer status cites ('CARGO_ROTATION_REQUIRES_GENERAL_4WIS', 'CARGO_HEADING_MISMATCH')
+  [ok] E01_forward_request_start: start=[10.0, 10.0, 0.0] expected=(10.0, 10.0, 0.0)
+  [ok] E01_forward_feasible: status=FEASIBLE reason=OK
+  [ok] E01_forward_terminal_goal: terminal centres=[[14.0, 10.0], [13.0, 11.0], [13.0, 9.0]] max goal error=0
+  [ok] E02_lateral_request_start: start=[13.0, 10.0, 0.0] expected=(13.0, 10.0, 0.0)
+  [ok] E02_lateral_feasible: status=FEASIBLE reason=OK
+  [ok] E02_lateral_terminal_goal: terminal centres=[[14.0, 13.0], [13.0, 14.0], [13.0, 12.0]] max goal error=0
+  [ok] E05_request_uses_config: ids/offsets/dims/heading policy match transport YAML
+  [ok] continuous_request_uses_config: ids/offsets/dims/heading policy match transport YAML
+  [ok] E01_request_uses_config: ids/offsets/dims/heading policy match transport YAML
+  [ok] E02_request_uses_config: ids/offsets/dims/heading policy match transport YAML
