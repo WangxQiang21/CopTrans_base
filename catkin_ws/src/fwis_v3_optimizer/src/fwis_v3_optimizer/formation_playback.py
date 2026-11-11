@@ -874,6 +874,40 @@ def clear_marker_specs(frame_id="map"):
         action="DELETEALL"),)
 
 
+def build_hold_markers(formation_id, qf, vehicles, reason, frame_id="map"):
+    """Static bodies and cargo reference only; never an executable path.
+
+    ``vehicles`` contains (PlaybackVehicleSpec, x, y, body_heading) tuples.
+    Caller must clear obsolete path markers before showing this static state.
+    """
+    markers = []
+    color = (0.65, 0.75, 0.85, 1.0)
+    for spec, x, y, theta in vehicles:
+        ns = vehicle_namespace(formation_id, spec.vehicle_id)
+        markers.append(_marker(ns, len(markers) + 1, "LINE_STRIP", frame_id,
+            points=spec.obb_corners(x, y, theta), color=color,
+            scale=(0.035, 0.0, 0.0)))
+        markers.append(_marker(ns, len(markers) + 1, "ARROW", frame_id,
+            points=((x, y, 0.04), (x + 0.5 * math.cos(theta),
+                                    y + 0.5 * math.sin(theta), 0.04)),
+            color=color, scale=(0.025, 0.06, 0.08)))
+        markers.append(_marker(ns, len(markers) + 1, "TEXT_VIEW_FACING", frame_id,
+            position=(x, y, 0.4), text="car{}".format(spec.vehicle_id),
+            color=color, scale=(0.0, 0.0, 0.18)))
+    x, y, yaw = qf
+    ns = shared_namespace(formation_id, "cargo")
+    markers.append(_marker(ns, len(markers) + 1, "SPHERE", frame_id,
+        position=(x, y, 0.1), color=WHITE, scale=(0.16, 0.16, 0.16)))
+    markers.append(_marker(ns, len(markers) + 1, "ARROW", frame_id,
+        points=((x, y, 0.06), (x + 0.7 * math.cos(yaw),
+                                y + 0.7 * math.sin(yaw), 0.06)),
+        color=WHITE, scale=(0.035, 0.08, 0.12)))
+    markers.append(_marker(ns, len(markers) + 1, "TEXT_VIEW_FACING", frame_id,
+        position=(x, y, 0.85), text="Cargo | {}\nSTATIC / no executable trajectory".format(reason),
+        color=WHITE, scale=(0.0, 0.0, 0.20)))
+    return tuple(markers)
+
+
 def status_document(trajectory=None, frame=None, status=None, *,
                     cleared=False, marker_count=0, namespaces=(),
                     invalid_reason="", frame_id="map",

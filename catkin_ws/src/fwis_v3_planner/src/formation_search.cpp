@@ -205,6 +205,52 @@ bool full_sweep_clear(const FormationRequest& request,
   return true;
 }
 
+// Finish both components of SE(2), rather than leaving a yaw residual for a
+// translation-only terminal fit in the Python backend.
+bool connect_exact_goal(const FormationRequest& request,
+                        const FormationCollisionChecker& checker,
+                        const FormationSearchConfig& config,
+                        const FormationPose& from,
+                        std::vector<FormationPrimitive>* candidate) {
+  for (bool rotate_first : {false, true}) {
+    FormationPose pose = from;
+    auto completed = *candidate;
+    bool clear = true;
+    for (int i = 0; i < 2; ++i) {
+      const bool rotate = (i == 0) == rotate_first;
+      FormationPrimitive primitive;
+      if (rotate) {
+        primitive.geometry_type = FormationPrimitive::ROTATION;
+        primitive.dpsi = wrap_angle(request.goal_qf.psi - pose.psi);
+        if (std::abs(primitive.dpsi) < 1e-10) continue;
+      } else {
+        const double dx = request.goal_qf.x - pose.x;
+        const double dy = request.goal_qf.y - pose.y;
+        if (std::hypot(dx, dy) < 1e-10) continue;
+        primitive.geometry_type = FormationPrimitive::TRANSLATION;
+        primitive.dx = std::cos(pose.psi) * dx + std::sin(pose.psi) * dy;
+        primitive.dy = -std::sin(pose.psi) * dx + std::cos(pose.psi) * dy;
+      }
+      if (!checker.sweep_clear(pose, primitive, config.max_corner_step_m)) {
+        clear = false;
+        break;
+      }
+      FormationPose next;
+      if (!integrate_primitive(pose, primitive, &next)) { clear = false; break; }
+      completed.push_back(primitive);
+      pose = next;
+    }
+    if (clear && std::hypot(pose.x - request.goal_qf.x,
+                            pose.y - request.goal_qf.y) < 1e-7 &&
+        std::abs(wrap_angle(pose.psi - request.goal_qf.psi)) < 1e-7 &&
+        full_sweep_clear(request, checker, completed, config)) {
+      *candidate = std::move(completed);
+      return true;
+    }
+  }
+  return false;
+}
+
 }  // namespace
 
 FormationSearchResult search_formation_geometry(
@@ -303,9 +349,9 @@ FormationSearchResult search_formation_geometry(
     if (xy_error <= config.goal_xy_tol_m &&
         yaw_error <= config.goal_yaw_tol_rad) {
       ++goal_candidates;
-      const std::vector<FormationPrimitive> candidate =
+      std::vector<FormationPrimitive> candidate =
           reconstruct(nodes, item.node_index);
-      if (full_sweep_clear(request, checker, candidate, config)) {
+      if (connect_exact_goal(request, checker, config, node.qf, &candidate)) {
         result.success = true;
         result.reason = "OK";
         result.detail = "GEOMETRY_ONLY_UNCERTIFIED";

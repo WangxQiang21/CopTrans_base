@@ -9,6 +9,8 @@ ROOT = Path(__file__).resolve().parents[1]
 LAUNCH = ROOT / "catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch"
 RVIZ = ROOT / "catkin_ws/src/fwis_v3_demo/rviz/formation_demo.rviz"
 PARAMS = ROOT / "catkin_ws/src/fwis_v3_demo/config/formation_params.yaml"
+TRANSPORT_CONFIG = (ROOT / "catkin_ws/src/fwis_v3_demo/config/"
+                    "transport_formation.yaml")
 PLAYBACK_CMAKE = ROOT / "catkin_ws/src/fwis_v3_playback/CMakeLists.txt"
 DEMO_CMAKE = ROOT / "catkin_ws/src/fwis_v3_demo/CMakeLists.txt"
 
@@ -60,7 +62,8 @@ class FormationLaunchTest(unittest.TestCase):
         self.assertIn("formation_params.yaml", args["config_file"])
         rviz_node = next(node for node in root.findall("node")
                          if node.get("name") == "rviz")
-        self.assertIn("formation_demo.rviz", rviz_node.get("args"))
+        self.assertEqual(rviz_node.get("args"), "-d $(arg rviz_config)")
+        self.assertIn("formation_demo.rviz", args["rviz_config"])
         self.assertTrue(PARAMS.is_file())
 
     def test_playback_script_is_installed_by_catkin(self):
@@ -80,9 +83,15 @@ class FormationLaunchTest(unittest.TestCase):
         node = nodes[0]
         self.assertEqual(node.get("pkg"), "fwis_v3_demo")
         self.assertEqual(node.get("type"), "formation_goal_bridge.py")
-        offsets = node.find("rosparam[@param='offsets']")
-        self.assertIsNotNone(offsets)
-        self.assertIn("1.2", offsets.text)
+        self.assertIsNone(node.find("rosparam[@param='offsets']"))
+        loads = node.findall("rosparam")
+        self.assertEqual(len(loads), 1)
+        self.assertEqual(loads[0].get("command"), "load")
+        self.assertEqual(loads[0].get("file"), "$(arg transport_config)")
+        transport = yaml.safe_load(TRANSPORT_CONFIG.read_text(encoding="utf-8"))
+        self.assertEqual(transport["offsets"],
+                         [[1.0, 0.0], [0.0, 1.0], [0.0, -1.0]])
+        self.assertTrue(transport["goal_heading_free"])
 
     def test_goal_bridge_script_is_installed_by_catkin(self):
         cmake = DEMO_CMAKE.read_text(encoding="utf-8")

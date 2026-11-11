@@ -9,8 +9,22 @@ map_index="${map_root}/map_index.tsv"
 # This checkout is the continuous-mode-path algorithm version.
 branch_backend="mode_path_v2"
 branch_name="continuous-mode-path"
+demo_kind="formation"
+for option in "$@"; do
+  [[ "$option" == --single ]] && demo_kind="single"
+done
 
 usage() {
+  if [[ "$demo_kind" == formation ]]; then
+    cat <<'EOF'
+用法：./run_demo.sh [--map map01] [--scale 比例] [auto_goal:=false] [rviz:=true]
+默认启动货物中心楔形编队：car1(1,0)、car2(0,1)、car3(0,-1)，单位米。
+2D Pose Estimate 设置货物起点与航向，2D Nav Goal 设置货物终点与航向。
+编队默认比例为原单车比例 × 3.75（旧策略，尚待按新构型重新验收）；--scale 指定绝对比例。
+--list-maps 查看地图。--single 使用原单车流程（含 --collect-data）。
+EOF
+    return
+  fi
   cat <<'EOF'
 用法：
   ./run_demo.sh [ROS参数...]
@@ -68,10 +82,18 @@ data_root=""
 requested_map=""
 requested_map_scale=""
 list_maps=false
+dry_run=false
 has_map_dir_arg=false
 launch_args=()
 while (($#)); do
   case "$1" in
+    --dry-run)
+      dry_run=true
+      shift
+      ;;
+    --single)
+      shift
+      ;;
     --collect-data)
       collect_data=true
       shift
@@ -156,6 +178,14 @@ while (($#)); do
       ;;
   esac
 done
+
+if [[ "$demo_kind" == formation && "$collect_data" == true ]]; then
+  echo "错误：现有 --collect-data 采集器仅支持单车，请加 --single。编队规划诊断见 /formation/quality_report。" >&2
+  exit 2
+fi
+if [[ "$demo_kind" == formation && -z "$requested_map" && "$has_map_dir_arg" == false ]]; then
+  requested_map="map16"
+fi
 
 if [[ -n "${data_root}" && "${collect_data}" != true ]]; then
   echo "错误：--data-root 需要与 --collect-data 一起使用。" >&2
@@ -244,6 +274,12 @@ if [[ -z "${requested_map_scale}" && -n "${selected_map_dir}" ]]; then
     map15-n06-two-stage-offset-passage) effective_map_scale="0.8" ;;
   esac
 fi
+if [[ "$demo_kind" == formation && -z "$requested_map_scale" ]]; then
+  # Legacy "single-vehicle default x 3.75" factor from the old formation
+  # contract.  It is not yet re-derived from the current wedge envelope;
+  # T7 must re-evaluate it after the empty-map tasks pass.
+  effective_map_scale="$(python3 -c 'import sys; print(float(sys.argv[1])*3.75)' "$effective_map_scale")"
+fi
 if [[ -n "${requested_map_scale}" || "${effective_map_scale}" != "1.0" ]]; then
   if [[ -z "${selected_map_dir}" || ! -d "${selected_map_dir}" ]]; then
     echo "错误：--map-scale 需要有效的 --map 或 map_dir:= 地图目录。" >&2
@@ -279,37 +315,20 @@ fi
 # Keep each algorithm branch tied to its own backend. Reject other backends so
 # changing algorithm versions requires switching the Git branch.
 has_planning_backend=false
-for arg in "${launch_args[@]}"; do
-  if [[ "${arg}" == planning_backend:=* ]]; then
-    requested_backend="${arg#planning_backend:=}"
-    if [[ "${requested_backend}" != "${branch_backend}" ]]; then
-      echo "错误：当前分支 ${branch_name} 固定使用 ${branch_backend}，拒绝 ${requested_backend}。请用 git switch 切换算法分支。" >&2
-      exit 2
+if [[ "$demo_kind" == single ]]; then
+  for arg in "${launch_args[@]}"; do
+    if [[ "${arg}" == planning_backend:=* ]]; then
+      requested_backend="${arg#planning_backend:=}"
+      if [[ "${requested_backend}" != "${branch_backend}" ]]; then
+        echo "错误：当前分支 ${branch_name} 固定使用 ${branch_backend}，拒绝 ${requested_backend}。请用 git switch 切换算法分支。" >&2
+        exit 2
+      fi
+      has_planning_backend=true
     fi
-    has_planning_backend=true
+  done
+  if [[ "${has_planning_backend}" == false ]]; then
+    launch_args+=("planning_backend:=${branch_backend}")
   fi
-done
-if [[ "${has_planning_backend}" == false ]]; then
-  launch_args+=("planning_backend:=${branch_backend}")
-fi
-
-if [[ ! -f /opt/ros/noetic/setup.bash ]]; then
-  echo "错误：未找到 ROS Noetic (/opt/ros/noetic/setup.bash)。" >&2
-  exit 1
-fi
-unset ROS_PACKAGE_PATH CMAKE_PREFIX_PATH PYTHONPATH LD_LIBRARY_PATH
-set +u
-source /opt/ros/noetic/setup.bash
-set -u
-
-echo "[expv3] 构建 ROS overlay..."
-catkin_make -C "${overlay_dir}" -j4 >/dev/null
-set +u
-source "${overlay_dir}/devel/setup.bash"
-set -u
-bonminseed_plugin_dir="${overlay_dir}/devel/lib/fwis_v3_optimizer/casadi_plugins"
-if [[ -f "${bonminseed_plugin_dir}/libcasadi_nlpsol_bonminseed.so" ]]; then
-  export CASADIPATH="${bonminseed_plugin_dir}${CASADIPATH:+:${CASADIPATH}}"
 fi
 
 if [[ "${collect_data}" == true ]]; then
@@ -354,8 +373,56 @@ if [[ "${has_rviz}" == false && -z "${DISPLAY:-}" && -z "${WAYLAND_DISPLAY:-}" ]
   launch_args+=("rviz:=false")
 fi
 
-python3 "${demo_dir}/tools/describe_run_context.py" \
-  "${demo_dir}" "${selected_map_dir:-}" "${effective_map_scale}" "${launch_args[@]}"
+if [[ "$demo_kind" == single ]]; then
+  python3 "${demo_dir}/tools/describe_run_context.py" \
+    "${demo_dir}" "${selected_map_dir:-}" "${effective_map_scale}" "${launch_args[@]}"
+  demo_launch="demo.launch"
+else
+  demo_launch="formation_demo.launch"
+  has_rviz_config=false
+  for arg in "${launch_args[@]}"; do
+    [[ "$arg" == rviz_config:=* ]] && has_rviz_config=true
+  done
+  if [[ "$has_rviz_config" == false ]]; then
+    if [[ -z "$runtime_map_parent" ]]; then
+      runtime_map_parent="$(mktemp -d "${TMPDIR:-/tmp}/expv3-formation-view.XXXXXX")"
+    fi
+    # selected_map_dir is the original path; the runtime copy is used when scaled.
+    view_map_dir="${runtime_map_dir:-$selected_map_dir}"
+    python3 "${demo_dir}/tools/configure_formation_view.py" "$view_map_dir" \
+      "${overlay_dir}/src/fwis_v3_demo/rviz/formation_demo.rviz" \
+      "${runtime_map_parent}/formation.rviz"
+    launch_args+=("rviz_config:=${runtime_map_parent}/formation.rviz")
+  fi
+  [[ "$has_rviz" == true || -z "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]] || launch_args+=("rviz:=true")
+  echo "[expv3] 货物中心楔形编队，车体航向独立（新实验按配置策略初始化）；地图绝对比例 ${effective_map_scale}"
+fi
+
+if [[ "$dry_run" == true ]]; then
+  printf 'roslaunch fwis_v3_demo %s' "$demo_launch"
+  printf ' %q' "${launch_args[@]}"
+  printf '\n'
+  exit 0
+fi
+
+if [[ ! -f /opt/ros/noetic/setup.bash ]]; then
+  echo "错误：未找到 ROS Noetic (/opt/ros/noetic/setup.bash)。" >&2
+  exit 1
+fi
+unset ROS_PACKAGE_PATH CMAKE_PREFIX_PATH PYTHONPATH LD_LIBRARY_PATH
+set +u
+source /opt/ros/noetic/setup.bash
+set -u
+
+echo "[expv3] 构建 ROS overlay..."
+catkin_make -C "${overlay_dir}" -j2 >/dev/null
+set +u
+source "${overlay_dir}/devel/setup.bash"
+set -u
+bonminseed_plugin_dir="${overlay_dir}/devel/lib/fwis_v3_optimizer/casadi_plugins"
+if [[ -f "${bonminseed_plugin_dir}/libcasadi_nlpsol_bonminseed.so" ]]; then
+  export CASADIPATH="${bonminseed_plugin_dir}${CASADIPATH:+:${CASADIPATH}}"
+fi
 
 echo "[expv3] 启动 Demo：${launch_args[*]}"
-roslaunch fwis_v3_demo demo.launch "${launch_args[@]}"
+roslaunch fwis_v3_demo "$demo_launch" "${launch_args[@]}"

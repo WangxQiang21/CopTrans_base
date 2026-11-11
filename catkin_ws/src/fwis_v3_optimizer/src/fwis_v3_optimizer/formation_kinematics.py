@@ -152,8 +152,11 @@ class KinematicLimits:
     heading_tolerance_rad: float = 1e-6
     geometry_tolerance_m: float = 1e-7
     pivot_tolerance_m: float = 1e-9
+    require_cargo_heading: bool = False
 
     def __post_init__(self):
+        if not isinstance(self.require_cargo_heading, bool):
+            raise FormationValidationError("require_cargo_heading must be bool")
         object.__setattr__(self, "r_min_ackermann", _finite(
             self.r_min_ackermann, "KinematicLimits.r_min_ackermann", positive=True))
         object.__setattr__(self, "oblique_angle_max", _finite(
@@ -764,6 +767,13 @@ def enumerate_mode_assignments(
 
     headings = _mapping_to_headings(
         start_headings, block.vehicle_ids, "start_headings")
+    if limits.require_cargo_heading:
+        for vehicle_id, theta in headings.items():
+            if not _angle_near(theta, block.start_qf.psi,
+                               limits.heading_tolerance_rad):
+                return (_assignment_failure(block, headings, VehicleModeRejection(
+                    vehicle_id, "CARGO_HEADING_MISMATCH",
+                    "body heading must equal cargo heading throughout transport")),)
     if expected_end_headings is None:
         expected = None
         free_flags = {vehicle_id: False
@@ -784,6 +794,15 @@ def enumerate_mode_assignments(
         rejection = VehicleModeRejection(
             None, "UNSUPPORTED_GEOMETRY_TYPE", block.geometry_type)
         return (_assignment_failure(block, headings, rejection),)
+
+    if (limits.require_cargo_heading and block.geometry_type == ROTATION and
+            any(abs(v.x - block.pivot_x) > limits.geometry_tolerance_m
+                for v in block.offsets)):
+        return (_assignment_failure(block, headings, VehicleModeRejection(
+            None, "CARGO_ROTATION_REQUIRES_GENERAL_4WIS",
+            "A/O/S cannot rotate this rigid formation while keeping every "
+            "body aligned with cargo: an off-axis vehicle needs simultaneous "
+            "lateral translation and body yaw")),)
 
     if block.geometry_type == TRANSLATION:
         local_dx = math.cos(block.start_qf.psi) * (
@@ -1041,6 +1060,13 @@ def audit_mode_assignment(
             vehicle_id = offset.vehicle_id
             segment = segment_map[vehicle_id]
             theta_start = headings[vehicle_id]
+            if limits.require_cargo_heading and (
+                    not _angle_near(segment.theta_start, block.start_qf.psi,
+                                    limits.heading_tolerance_rad) or
+                    not _angle_near(segment.theta_end, block.end_qf.psi,
+                                    limits.heading_tolerance_rad)):
+                return _audit_failure("CARGO_HEADING_MISMATCH",
+                    "vehicle_id={} body heading differs from cargo".format(vehicle_id))
             expected_start = start_centers[vehicle_id]
             expected_end = end_centers[vehicle_id]
 

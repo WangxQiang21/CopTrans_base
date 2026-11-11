@@ -3,21 +3,17 @@
 
 The bridge is deliberately a thin request adapter.  It does not plan, retime,
 evaluate or publish trajectories.  RViz's ``2D Nav Goal`` tool publishes the
-formation-center goal on ``/move_base_simple/goal``; this node converts it to
-a ``FormationPlanRequest`` on ``/formation/plan_request`` with the same fixed
-offsets and body dimensions for every click.  The C++ front end, S9 evaluator
-and transactional publication remain unchanged.
+cargo goal on ``/move_base_simple/goal``; this node converts it to a
+``FormationPlanRequest`` on ``/formation/plan_request`` using the one
+authoritative transport contract (ids, offsets, body dimensions, heading
+policies) loaded from ``config/transport_formation.yaml``.
 
-The formation start is, in priority order:
-
-1. the most recent ``2D Pose Estimate`` on ``/initialpose`` (one-shot override),
-2. the current playback TF frame ``formation_<id>_reference`` if it exists,
-3. the configured start pose (defaults to the clear corridor used by the
-   real-map demonstration).
-
-Vehicle body headings are also read from playback TF when available, so a
-sequence of goals continues from the current independently-steered 4WIS
-configuration instead of silently resetting body headings.
+Body headings are independent.  A new experiment -- a manual
+``2D Pose Estimate`` or the configured start fallback -- initialises
+``theta_i(0)`` from the contract's ``initial_heading_policy``.  Later goals
+never reset headings: the start pose and all three body headings are read
+from one synchronized, sufficiently fresh playback TF snapshot.  Publication
+of a trajectory is not treated as arrival; the live playback pose is.
 """
 import json
 import math
@@ -32,6 +28,8 @@ from fwis_v3_msgs.msg import FormationPlanRequest, FormationVehicleSpec
 from fwis_v3_optimizer.formation import (
     FormationModel, FormationPose, VehicleOffset)
 from fwis_v3_optimizer.formation_playback import tf_frame_prefix
+from fwis_v3_optimizer.transport_contract import (
+    TransportContractError, load_contract)
 from tf2_ros import LookupException, ConnectivityException, ExtrapolationException
 
 GOAL_TOPIC = "/move_base_simple/goal"
@@ -54,22 +52,35 @@ class FormationGoalBridge(object):
     def __init__(self):
         rospy.init_node("formation_goal_bridge")
         self.frame_id = self._text_param("~frame_id", "map")
-        self.formation_id = self._text_param("~formation_id", "rviz_goal")
+        try:
+            self.contract = load_contract(
+                lambda name: rospy.get_param("~" + name))
+        except KeyError as exc:
+            raise ValueError(
+                "missing transport contract parameter {}; the launch file "
+                "must load config/transport_formation.yaml".format(exc))
+        self.formation_id = self.contract.formation_id
         self.start_x = float(rospy.get_param("~start_x", 10.0))
         self.start_y = float(rospy.get_param("~start_y", 3.6))
         self.start_theta = float(rospy.get_param("~start_theta", 0.0))
-        self.body_length_m = float(
-            rospy.get_param("~body_length_m", 0.738))
-        self.body_width_m = float(rospy.get_param("~body_width_m", 0.500))
-        self.allow_reverse = self._bool_param("~allow_reverse", True)
-        self.goal_heading_free = self._bool_param(
-            "~goal_heading_free", False)
+        self.body_length_m = self.contract.body_length_m
+        self.body_width_m = self.contract.body_width_m
+        self.allow_reverse = self.contract.allow_reverse
+        self.goal_heading_free = self.contract.goal_heading_free
         self.map_timeout_s = float(
             rospy.get_param("~map_timeout_s", 8.0))
+        self.playback_tf_timeout_s = float(
+            rospy.get_param("~playback_tf_timeout_s", 0.5))
+        if (not math.isfinite(self.playback_tf_timeout_s)
+                or self.playback_tf_timeout_s <= 0.0):
+            raise ValueError(
+                "~playback_tf_timeout_s must be a positive finite value")
+        self.rigid_start_tolerance_m = float(
+            rospy.get_param("~rigid_start_tolerance_m", 1e-3))
         self.initial_plan_id = int(
             rospy.get_param("~initial_plan_id", 600000))
-        self.vehicle_ids = self._vehicle_ids_param()
-        self.offsets = self._offsets_param()
+        self.vehicle_ids = self.contract.vehicle_ids
+        self.offsets = self.contract.offsets
 
         self._offset_by_id = dict(zip(self.vehicle_ids, self.offsets))
         self._model = FormationModel([
@@ -86,6 +97,9 @@ class FormationGoalBridge(object):
                                 self.start_theta)
         self._start_override = None
         self._map_ready = False
+        self._manual_start = False
+        self._preview_pub = rospy.Publisher(
+            "/formation/display_pose", PoseStamped, queue_size=1, latch=True)
 
         self._request_pub = rospy.Publisher(
             REQUEST_TOPIC, FormationPlanRequest, queue_size=1, latch=True)
@@ -95,6 +109,8 @@ class FormationGoalBridge(object):
             self.on_initial_pose, queue_size=1)
         rospy.Subscriber(
             STATUS_TOPIC, String, self.on_optimizer_status, queue_size=10)
+        rospy.Subscriber("/start_pose", PoseStamped, self.on_map_start,
+                         queue_size=1)
 
         try:
             rospy.wait_for_message(
@@ -120,80 +136,73 @@ class FormationGoalBridge(object):
             raise ValueError("{} must be a non-empty string".format(name))
         return value.strip()
 
-    @staticmethod
-    def _bool_param(name, default):
-        value = rospy.get_param(name, default)
-        if not isinstance(value, bool):
-            raise ValueError("{} must be a bool".format(name))
-        return value
-
-    def _vehicle_ids_param(self):
-        raw = rospy.get_param("~vehicle_ids", [1, 2, 3])
-        if not isinstance(raw, list) or not raw:
-            raise ValueError("~vehicle_ids must be a non-empty list")
-        result = []
-        for value in raw:
-            vehicle_id = int(value)
-            if vehicle_id < 0 or vehicle_id in result:
-                raise ValueError(
-                    "~vehicle_ids must contain unique non-negative ids")
-            result.append(vehicle_id)
-        return tuple(result)
-
-    def _offsets_param(self):
-        raw = rospy.get_param(
-            "~offsets", [[0.0, 0.0], [0.0, 1.2], [0.0, -1.2]])
-        if not isinstance(raw, list) or len(raw) != len(self.vehicle_ids):
-            raise ValueError(
-                "~offsets must contain one [x, y] pair per vehicle")
-        result = []
-        for pair in raw:
-            if (not isinstance(pair, list) or len(pair) != 2):
-                raise ValueError("each ~offsets entry must be [x, y]")
-            result.append((float(pair[0]), float(pair[1])))
-        return tuple(result)
-
     # ---- TF / goal input ---------------------------------------------
 
-    def _latest_reference(self):
+    def _lookup(self, frame, stamp):
         try:
-            transform = self._tf_buffer.lookup_transform(
-                self.frame_id, self._tf_prefix + "_reference",
-                rospy.Time(0), rospy.Duration(0.05))
-        except (LookupException, ConnectivityException, ExtrapolationException):
+            return self._tf_buffer.lookup_transform(
+                self.frame_id, frame, stamp, rospy.Duration(0.05))
+        except (LookupException, ConnectivityException,
+                ExtrapolationException):
             return None
-        translation = transform.transform.translation
-        yaw = quaternion_to_yaw(transform.transform.rotation)
-        return (float(translation.x), float(translation.y), yaw)
 
-    def _latest_body_headings(self):
+    def _playback_snapshot(self):
+        """One synchronized, fresh cargo + three-body playback state.
+
+        The reference lookup chooses the display time; every body transform
+        is then looked up at that same stamp, so the start pose and all three
+        headings come from one playback instant rather than four separate
+        ``Time(0)`` queries.  A stale snapshot is unused; a snapshot whose
+        centres are not rigid with the configured offsets is rejected.
+        """
+        reference = self._lookup(
+            self._tf_prefix + "_reference", rospy.Time(0))
+        if reference is None:
+            return None
+        stamp = reference.header.stamp
+        age = (rospy.Time.now() - stamp).to_sec()
+        if (not math.isfinite(age)
+                or age > self.playback_tf_timeout_s or age < -0.05):
+            return None
+        translation = reference.transform.translation
+        heading = quaternion_to_yaw(reference.transform.rotation)
+        start = (float(translation.x), float(translation.y), heading)
+        expected_centres = self._model.centers(FormationPose(*start))
         headings = {}
         for vehicle_id in self.vehicle_ids:
             frame = "{}_vehicle_{}_base_link".format(
                 self._tf_prefix, vehicle_id)
-            try:
-                transform = self._tf_buffer.lookup_transform(
-                    self.frame_id, frame, rospy.Time(0),
-                    rospy.Duration(0.05))
-            except (LookupException, ConnectivityException,
-                    ExtrapolationException):
-                continue
-            headings[vehicle_id] = quaternion_to_yaw(
-                transform.transform.rotation)
-        return headings
+            transform = self._lookup(frame, stamp)
+            if transform is None:
+                return None
+            body = transform.transform
+            expected = expected_centres[vehicle_id]
+            error = math.hypot(
+                body.translation.x - expected[0],
+                body.translation.y - expected[1])
+            if error > self.rigid_start_tolerance_m:
+                raise TransportContractError(
+                    "playback TF for vehicle_id={} is not rigid with "
+                    "formation {} (centre error {:.6g} m); refusing to start "
+                    "from an inconsistent display".format(
+                        vehicle_id, self.formation_id, error))
+            headings[vehicle_id] = quaternion_to_yaw(body.rotation)
+        return start, headings
 
     def _start_pose(self):
+        """Return ``(start, body_headings, source, consume_override)``."""
         if self._start_override is not None:
             start = self._start_override
-            self._start_override = None
-            rospy.loginfo(
-                "[formation goal bridge] using 2D Pose Estimate start "
-                "(%.3f, %.3f, %.3f)", *start)
-            return start, {}
-        current = self._latest_reference()
-        if current is not None:
-            return current, self._latest_body_headings()
-        return self._fallback_start, {}
+            return (start,
+                    self.contract.headings_for_policy(start[2]),
+                    "manual start", True)
+        snapshot = self._playback_snapshot()
+        if snapshot is not None:
+            return snapshot[0], snapshot[1], "current playback", False
+        start = self._fallback_start
+        return (start,
+                self.contract.headings_for_policy(start[2]),
+                "configured fallback", False)
 
     def on_initial_pose(self, message):
         if message.header.frame_id not in ("", self.frame_id):
@@ -205,9 +214,39 @@ class FormationGoalBridge(object):
         self._start_override = (
             float(pose.position.x), float(pose.position.y),
             quaternion_to_yaw(pose.orientation))
+        self._manual_start = True
+        self._fallback_start = self._start_override
+        # A manual reset starts a new experiment.  Statuses for the previous
+        # plan must not be mistaken for this experiment, and the preview
+        # below clears any old executable trajectory from the display.
+        self._current_plan = None
+        self._publish_preview(self._start_override)
         rospy.loginfo(
-            "[formation goal bridge] 2D Pose Estimate recorded; it will be "
-            "used by the next goal")
+            "[formation goal bridge] 2D Pose Estimate recorded; new "
+            "experiment policy=%s headings=%s",
+            self.contract.initial_heading_policy,
+            self.contract.headings_for_policy(self._start_override[2]))
+
+    def on_map_start(self, message):
+        if self._manual_start or self._current_plan is not None:
+            return
+        if message.header.frame_id not in ("", self.frame_id):
+            return
+        pose = message.pose
+        start = (float(pose.position.x), float(pose.position.y),
+                 quaternion_to_yaw(pose.orientation))
+        self._fallback_start = start
+        self._start_override = start
+        self._publish_preview(start)
+
+    def _publish_preview(self, start):
+        message = PoseStamped()
+        message.header.frame_id = self.frame_id
+        message.header.stamp = rospy.Time.now()
+        message.pose.position.x, message.pose.position.y = start[:2]
+        message.pose.orientation.z = math.sin(start[2] / 2)
+        message.pose.orientation.w = math.cos(start[2] / 2)
+        self._preview_pub.publish(message)
 
     def on_goal(self, message):
         if message.header.frame_id not in ("", self.frame_id):
@@ -227,9 +266,21 @@ class FormationGoalBridge(object):
         goal_x = float(message.pose.position.x)
         goal_y = float(message.pose.position.y)
         goal_theta = quaternion_to_yaw(message.pose.orientation)
-        start, body_headings = self._start_pose()
-        self._publish_request(start, (goal_x, goal_y, goal_theta),
-                              body_headings)
+        try:
+            start, body_headings, source, consume_override = self._start_pose()
+        except (TransportContractError, ValueError) as exc:
+            rospy.logerr(
+                "[formation goal bridge] refusing goal: %s", exc)
+            return
+        if not self._publish_request(
+                start, (goal_x, goal_y, goal_theta), body_headings):
+            return
+        if consume_override:
+            self._start_override = None
+        rospy.loginfo(
+            "[formation goal bridge] start from %s; body headings %s",
+            source, {vehicle_id: round(body_headings[vehicle_id], 6)
+                     for vehicle_id in self.vehicle_ids})
 
     # ---- request construction ----------------------------------------
 
@@ -245,7 +296,7 @@ class FormationGoalBridge(object):
         except Exception as exc:
             rospy.logerr(
                 "[formation goal bridge] cannot build rigid centers: %s", exc)
-            return
+            return False
 
         plan_id = self._next_plan_id()
         request = FormationPlanRequest()
@@ -271,10 +322,11 @@ class FormationGoalBridge(object):
             goal_center = goal_centers[vehicle_id]
             spec.start_center.x = float(start_center[0])
             spec.start_center.y = float(start_center[1])
-            spec.start_center.theta = float(
-                body_headings.get(vehicle_id, start[2]))
+            spec.start_center.theta = float(body_headings[vehicle_id])
             spec.goal_center.x = float(goal_center[0])
             spec.goal_center.y = float(goal_center[1])
+            # Placeholder only when goal_heading_free is true; the backend
+            # still checks cargo psi_F and the rigid goal centres.
             spec.goal_center.theta = float(goal[2])
             spec.goal_heading_free = self.goal_heading_free
             spec.body_length_m = self.body_length_m
@@ -289,6 +341,7 @@ class FormationGoalBridge(object):
             "goal=(%.3f, %.3f, %.3f) vehicles=%d",
             plan_id, start[0], start[1], start[2],
             goal[0], goal[1], goal[2], len(self.vehicle_ids))
+        return True
 
     def on_optimizer_status(self, message):
         try:
@@ -301,8 +354,8 @@ class FormationGoalBridge(object):
         if status not in ("FEASIBLE", "INVALID", "REJECTED"):
             return
         if status == "FEASIBLE" and document.get("trajectory_published"):
-            if self._last_goal is not None:
-                self._fallback_start = self._last_goal
+            # Publication is not arrival. Playback TF supplies the actual
+            # current reference pose for subsequent goals.
             rospy.loginfo(
                 "[formation goal bridge] plan %d FEASIBLE and published",
                 self._current_plan)

@@ -9,14 +9,17 @@ actual playback sample on ``/formation/playback_status``.
 """
 import json
 import math
+import threading
+from functools import wraps
+from types import SimpleNamespace
 import rospy
 from std_msgs.msg import String
 from visualization_msgs.msg import Marker, MarkerArray
-from geometry_msgs.msg import Point, Quaternion, TransformStamped, Vector3
+from geometry_msgs.msg import Point, Quaternion, TransformStamped, Vector3, PoseStamped
 from std_msgs.msg import ColorRGBA
 from tf.transformations import quaternion_from_euler
 from tf2_ros import TransformBroadcaster
-from fwis_v3_msgs.msg import FormationTimedTrajectory
+from fwis_v3_msgs.msg import FormationTimedTrajectory, FormationPlanRequest
 
 from fwis_v3_optimizer.formation_playback import (
     CLEARED,
@@ -30,13 +33,24 @@ from fwis_v3_optimizer.formation_playback import (
     terminal_errors,
     tf_frame_prefix,
     trajectory_from_fields,
+    PlaybackVehicleSpec,
+    build_hold_markers,
 )
+from fwis_v3_optimizer.transport_contract import load_contract
 
 MARKER_TOPIC = "/formation/markers"
 STATUS_TOPIC = "/formation/playback_status"
 TRAJECTORY_TOPIC = "/formation/timed_trajectory"
 OPTIMIZER_STATUS_TOPIC = "/formation/optimizer_status"
 QUALITY_TOPIC = "/formation/quality_report"
+
+
+def synchronized(method):
+    @wraps(method)
+    def call(self, *args, **kwargs):
+        with self._lock:
+            return method(self, *args, **kwargs)
+    return call
 
 
 def _seconds(value):
@@ -92,6 +106,23 @@ def fields_from_message(message):
 class FormationPlaybackNode:
 
     def __init__(self):
+        self._lock = threading.RLock()
+        self.transport_ui = bool(rospy.get_param("~transport_ui", False))
+        self.contract = None
+        if self.transport_ui:
+            try:
+                self.contract = load_contract(
+                    lambda name: rospy.get_param("~" + name))
+            except KeyError as exc:
+                raise ValueError(
+                    "missing transport contract parameter {}; the launch "
+                    "file must load config/transport_formation.yaml".format(
+                        exc))
+        self.hold = None
+        self._active_plan = None
+        self._hold_reason = "START"
+        self._previewing = False
+        self._frontend_reports = {}
         self.frame_id = rospy.get_param("~frame_id", "map")
         if not isinstance(self.frame_id, str) or not self.frame_id.strip():
             raise ValueError("~frame_id must be a non-empty string")
@@ -132,6 +163,13 @@ class FormationPlaybackNode:
             queue_size=1)
         rospy.Subscriber(
             QUALITY_TOPIC, String, self.on_quality, queue_size=1)
+        if self.transport_ui:
+            rospy.Subscriber("/formation/display_pose", PoseStamped,
+                             self.on_preview, queue_size=1)
+            rospy.Subscriber("/formation/plan_request", FormationPlanRequest,
+                             self.on_request, queue_size=1)
+            rospy.Subscriber("/formation/status", String,
+                             self.on_frontend_status, queue_size=1)
         self.timer = rospy.Timer(rospy.Duration(1.0 / rate), self.tick)
         rospy.loginfo(
             "[formation playback] common-clock display ready; "
@@ -140,7 +178,13 @@ class FormationPlaybackNode:
 
     # ---- subscriptions -------------------------------------------------
 
+    @synchronized
     def on_trajectory(self, message):
+        if self.transport_ui and self._previewing:
+            return
+        if (self.transport_ui and self._active_plan is not None and
+                message.plan_id < self._active_plan):
+            return
         if not message.vehicles or not message.trajectories:
             self._clear("empty trajectory clears previous markers")
             return
@@ -158,6 +202,7 @@ class FormationPlaybackNode:
             self._clear("invalid trajectory: {}".format(exc))
             return
         self.trajectory = trajectory
+        self.hold = None
         self._tf_prefix = tf_frame_prefix(trajectory.formation_id)
         self._last_state = None
         rospy.loginfo(
@@ -170,6 +215,7 @@ class FormationPlaybackNode:
         # already old is still visible without waiting for the next tick.
         self._publish_tick()
 
+    @synchronized
     def on_optimizer_status(self, message):
         report = self._parse_json(message, "optimizer_status")
         if report is None:
@@ -179,11 +225,91 @@ class FormationPlaybackNode:
         # clear, and status delivery can race the trajectory on the wire.
         # Playback therefore clears only on the trajectory itself.
         self.optimizer_status = report
+        if (self.transport_ui and report.get("plan_id") == self._active_plan
+                and report.get("status") in ("INVALID", "REJECTED")):
+            self._hold_reason = "{}: {}".format(report.get("status"),
+                                                report.get("reason"))
 
+    @synchronized
     def on_quality(self, message):
         report = self._parse_json(message, "quality_report")
         if report is not None:
             self.quality_report = report
+
+    @synchronized
+    def on_request(self, message):
+        self._previewing = False
+        self._active_plan = message.plan_id
+        self._hold_reason = "PLANNING"
+        qf = message.formation_start
+        self.hold = (message.formation_id, (qf.x, qf.y, qf.theta), tuple(
+            (PlaybackVehicleSpec(v.vehicle_id, v.offset_in_formation.x,
+                                 v.offset_in_formation.y, v.body_length_m,
+                                 v.body_width_m),
+             v.start_center.x, v.start_center.y, v.start_center.theta)
+            for v in message.vehicles))
+        self.trajectory = None
+        self.marker_pub.publish(self._marker_array(
+            clear_marker_specs(self.frame_id), rospy.Time.now()))
+        self._publish_hold()
+
+    @synchronized
+    def on_preview(self, message):
+        if message.header.frame_id != self.frame_id:
+            return
+        p, q = message.pose.position, message.pose.orientation
+        yaw = math.atan2(2 * (q.w * q.z + q.x * q.y),
+                         1 - 2 * (q.y * q.y + q.z * q.z))
+        contract = self.contract
+        headings = contract.headings_for_policy(yaw)
+        c, s = math.cos(yaw), math.sin(yaw)
+        vehicles = tuple((PlaybackVehicleSpec(
+                    vehicle_id, a, b, contract.body_length_m,
+                    contract.body_width_m),
+                          p.x + c * a - s * b,
+                          p.y + s * a + c * b, headings[vehicle_id])
+                         for vehicle_id, (a, b) in zip(
+                             contract.vehicle_ids, contract.offsets))
+        self.hold = (contract.formation_id, (p.x, p.y, yaw), vehicles)
+        self.trajectory = None
+        self._previewing = True
+        self._active_plan = None
+        self._hold_reason = "START"
+        self.marker_pub.publish(self._marker_array(
+            clear_marker_specs(self.frame_id), rospy.Time.now()))
+        self._publish_hold()
+
+    @synchronized
+    def on_frontend_status(self, message):
+        report = self._parse_json(message, "frontend_status")
+        if report and isinstance(report.get("plan_id"), int):
+            self._frontend_reports[report["plan_id"]] = report
+            while len(self._frontend_reports) > 32:
+                del self._frontend_reports[min(self._frontend_reports)]
+
+    def _publish_hold(self):
+        if self.hold is None:
+            return
+        formation_id, qf, vehicles = self.hold
+        reason = self._hold_reason
+        frontend = self._frontend_reports.get(self._active_plan, {})
+        if frontend.get("reason"):
+            prefix = "WAITING" if frontend["reason"] == "MAP_UNAVAILABLE" else "FAILED"
+            reason = "{}: {}".format(prefix, frontend["reason"])
+        specs = build_hold_markers(formation_id, qf, vehicles,
+                                   reason, self.frame_id)
+        self.marker_pub.publish(self._marker_array(specs, rospy.Time.now()))
+        self._tf_prefix = tf_frame_prefix(formation_id)
+        self._broadcast_tf(SimpleNamespace(
+            formation_x=qf[0], formation_y=qf[1], formation_psi=qf[2],
+            vehicles=tuple(SimpleNamespace(vehicle_id=v.vehicle_id,
+                center_x=x, center_y=y, theta=theta)
+                for v, x, y, theta in vehicles)), rospy.Time.now())
+        self.status_pub.publish(String(data=json.dumps({
+            "schema": "formation_playback/v1", "state": "STATIC",
+            "plan_id": self._active_plan, "formation_id": formation_id,
+            "reason": reason, "executable": False,
+            "trajectory_published": False, "cleared": True})))
 
     @staticmethod
     def _parse_json(message, label):
@@ -202,8 +328,11 @@ class FormationPlaybackNode:
 
     # ---- display -------------------------------------------------------
 
+    @synchronized
     def tick(self, _event=None):
         if self.trajectory is None:
+            if self.transport_ui:
+                self._publish_hold()
             return
         self._publish_tick()
 
@@ -318,12 +447,22 @@ class FormationPlaybackNode:
             marker.color = ColorRGBA(*spec.color)
             marker.points = [Point(x=x, y=y, z=z) for x, y, z in spec.points]
             marker.colors = [ColorRGBA(*color) for color in spec.colors]
-            marker.text = spec.text
+            marker.text = "Cargo" if self.transport_ui and spec.text == "F" else spec.text
             marker.lifetime = rospy.Duration(0)
             array.markers.append(marker)
         return array
 
     def _clear(self, reason):
+        if self.transport_ui and self.trajectory is not None and self.hold is None:
+            trajectory = self.trajectory
+            elapsed = (rospy.Time.now() - rospy.Time(*trajectory.stamp)).to_sec()
+            frame = frame_at(trajectory, elapsed)
+            specs = trajectory.vehicle_map()
+            self.hold = (trajectory.formation_id,
+                         (frame.formation_x, frame.formation_y, frame.formation_psi),
+                         tuple((specs[v.vehicle_id], v.center_x, v.center_y, v.theta)
+                               for v in frame.vehicles))
+            self._hold_reason = "CLEARED"
         self.trajectory = None
         self._last_state = CLEARED
         specs = clear_marker_specs(self.frame_id)
@@ -334,6 +473,8 @@ class FormationPlaybackNode:
         self.status_pub.publish(String(data=json.dumps(
             document, sort_keys=True, allow_nan=False)))
         rospy.loginfo("[formation playback] cleared: %s", reason)
+        if self.transport_ui:
+            self._publish_hold()
 
 
 def main():

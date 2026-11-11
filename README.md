@@ -1,5 +1,42 @@
 # expv3
 
+## 当前多车运输入口（2026-11-11）
+
+本仓库 `run_demo.sh` 默认启动货物中心楔形编队。权威运输配置为
+`catkin_ws/src/fwis_v3_demo/config/transport_formation.yaml`：
+车辆 id 1/2/3 相对货物原点的 offset 为 `(1,0)/(0,1)/(0,-1)` 米，
+车身 0.738×0.5 米；`p_i = p_F + R(ψ_F) r_i` 是刚性硬约束，
+`θ_i` 是独立运动学变量。默认 `require_cargo_heading=false`、
+`goal_heading_free=true`；新实验的初始航向策略为 `cargo_heading`
+（三车与货物同向），连续目标从播放 TF 读取实际车体航向，不重置。
+下方历史单车说明中的启动命令需加 `--single` 才沿用原单车行为。
+
+```bash
+cd /home/wq/whut_thesis/expv3_multi
+bash run_demo.sh --map map04 auto_goal:=false
+# 与单车相同：2D Pose Estimate 设置货物起点和航向；2D Nav Goal 设置货物终点和航向。
+# 地图预设任务：省略 auto_goal:=false，或显式 auto_goal:=true。
+bash run_demo.sh --map map16 --scale 3.75 auto_goal:=false
+bash run_demo.sh --map map04 --dry-run    # 仅查看启动配置
+bash run_demo.sh --single --map map04   # 原单车流程与默认地图比例
+```
+
+默认地图比例 = 原单车比例 × 3.75，`--scale` 指定绝对比例。
+起终点随临时地图统一变换，车辆尺寸与偏移保持米制；RViz 视角自动适配地图范围。
+设置起点立即显示队形；规划失败保留静止车体并显示原因，清除旧路径。
+
+**T1 已验证：** 货物 `(10,10,0)→(10,10,π/2)` 的请求在起点采用切向航向
+`θ=(π/2,π,0)` 时返回 `FEASIBLE`，发布轨迹并在回放中保持三车不同航向；
+连续目标使用回放中的真实航向。对同一货物旋转、若起点三车航向均为 0，
+当前返回 `HEADING_BOUNDARY_MISMATCH`（静止显示三车，不发布路径）——
+独立的车体原地 Spin 尚未实现（T4）。旧的 `CARGO_HEADING_MISMATCH` /
+`CARGO_ROTATION_REQUIRES_GENERAL_4WIS` 只会在显式受限实验
+`require_cargo_heading:=true` 下出现。几何前端找到旋转路径不等于可执行。
+现有 `--collect-data` 标注网页仍用于 `--single`；编队并未接入该单车采集器。
+
+配置一致性、足迹数值、可复现测试和证据见
+[T1 报告](evaluation/wedge_fix_2026-11-11/T1/T1_REPORT.md)。
+
 ## 本分支：模式一致的连续轨迹与段级时间求解
 
 本分支 `continuous-mode-path` 运行 `mode_path_v2`。参考论文 12：Runjiao Bao 等，

@@ -385,6 +385,20 @@ TEST(FormationSearch, StartInsideObstacleFailsStatically) {
   EXPECT_EQ(result.reason, "START_FORMATION_COLLISION");
 }
 
+TEST(FormationSearch, NearGoalMustConnectBothPositionAndHeadingExactly) {
+  const auto request = make_request({6.0, 6.0, 0.27}, {6.11, 6.09, 0.34},
+                                    {{0.0, 1.0}, {-1.0, 0.0}, {1.0, 0.0}});
+  const auto validation = formation::validate_formation_request(request);
+  ASSERT_TRUE(validation.valid);
+  const auto result = formation::search_formation_geometry(
+      validation.request, validation.model, make_map(120, 120, 0.10), test_config());
+  ASSERT_TRUE(result.success) << result.reason;
+  const auto end = integrate_path(request.start_qf, result.primitives);
+  EXPECT_NEAR(end.x, request.goal_qf.x, 1e-7);
+  EXPECT_NEAR(end.y, request.goal_qf.y, 1e-7);
+  EXPECT_NEAR(formation::wrap_angle(end.psi - request.goal_qf.psi), 0.0, 1e-7);
+}
+
 int main(int argc, char** argv) {
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

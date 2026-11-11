@@ -186,6 +186,10 @@ class FormationPlannerNode {
     map_error_ = has_map_ ? "" : "map data does not match its dimensions";
     if (!has_map_) {
       ROS_ERROR("[formation planner] %s", map_error_.c_str());
+    } else if (pending_request_) {
+      const auto request = pending_request_;
+      pending_request_.reset();
+      on_request(request);
     }
   }
 
@@ -200,6 +204,7 @@ class FormationPlannerNode {
       return;
     }
     if (!has_map_) {
+      pending_request_ = message;
       publish_status(validation, request, nullptr, "MAP_UNAVAILABLE", false,
                      "NONE");
       return;
@@ -321,6 +326,7 @@ class FormationPlannerNode {
   ros::Subscriber sub_request_;
   ros::Publisher pub_seed_;
   ros::Publisher pub_status_;
+  fwis_v3_msgs::FormationPlanRequest::ConstPtr pending_request_;
 
   formation::FormationSearchConfig config_;
   formation::FormationMap map_;

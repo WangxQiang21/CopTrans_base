@@ -10,6 +10,8 @@
        default="$(find fwis_v3_demo)/../../../maps/map16-s09-underground-garage"/>
   <arg name="scene_yaml" default="$(arg map_dir)/scene_source.yaml"/>
   <arg name="rviz" default="false"/>
+  <arg name="rviz_config" default="$(find fwis_v3_demo)/rviz/formation_demo.rviz"/>
+  <arg name="auto_goal" default="false"/>
   <arg name="config_file"
        default="$(find fwis_v3_demo)/config/formation_params.yaml"/>
   <arg name="start_map" default="true"/>
@@ -20,11 +22,18 @@
   <arg name="goal_start_x" default="10.0"/>
   <arg name="goal_start_y" default="3.6"/>
   <arg name="goal_start_theta" default="0.0"/>
-  <arg name="goal_formation_id" default="rviz_goal"/>
+  <!-- One authoritative transport contract: ids, offsets, body dimensions,
+       heading policies.  Loaded into the goal bridge and the playback node;
+       tools/transport_footprint.py reads the same file. -->
+  <arg name="transport_config"
+       default="$(find fwis_v3_demo)/config/transport_formation.yaml"/>
   <arg name="enable_nlp" default="true"/>
   <arg name="max_candidates" default="4"/>
   <arg name="optimizer_time_limit" default="1.0"/>
   <arg name="require_collision_precheck" default="true"/>
+  <!-- Legacy restricted experiment only: the transport contract has no
+       theta_i=psi_F lock.  Keep false for the default demo. -->
+  <arg name="require_cargo_heading" default="false"/>
   <arg name="playback_rate" default="25.0"/>
   <arg name="playback_publish_tf" default="true"/>
 
@@ -50,6 +59,9 @@
     <param name="sweep_spacing" value="0.01"/>
     <param name="publication_dt" value="0.02"/>
     <param name="planning_dt" value="0.02"/>
+    <param name="kinematic_limits/require_cargo_heading"
+           value="$(arg require_cargo_heading)"/>
+    <param name="start_on_publication" value="true"/>
   </node>
 
   <node if="$(arg playback)" name="formation_playback"
@@ -58,31 +70,29 @@
     <param name="frame_id" value="map"/>
     <param name="rate" value="$(arg playback_rate)"/>
     <param name="publish_tf" value="$(arg playback_publish_tf)"/>
+    <param name="transport_ui" value="true"/>
+    <rosparam command="load" file="$(arg transport_config)"/>
   </node>
 
   <node if="$(arg goal_bridge)" name="formation_goal_bridge"
         pkg="fwis_v3_demo" type="formation_goal_bridge.py"
         output="screen">
     <param name="frame_id" value="map"/>
-    <param name="formation_id" value="$(arg goal_formation_id)"/>
     <param name="start_x" value="$(arg goal_start_x)"/>
     <param name="start_y" value="$(arg goal_start_y)"/>
     <param name="start_theta" value="$(arg goal_start_theta)"/>
-    <param name="body_length_m" value="0.738"/>
-    <param name="body_width_m" value="0.500"/>
-    <param name="allow_reverse" value="true"/>
-    <param name="goal_heading_free" value="false"/>
     <param name="initial_plan_id" value="600000"/>
     <param name="map_timeout_s" value="8.0"/>
-    <rosparam param="vehicle_ids">[1, 2, 3]</rosparam>
-    <rosparam param="offsets">
-      - [0.0, 0.0]
-      - [0.0, 1.2]
-      - [0.0, -1.2]
-    </rosparam>
+    <param name="playback_tf_timeout_s" value="0.5"/>
+    <rosparam command="load" file="$(arg transport_config)"/>
+  </node>
+
+  <node if="$(arg auto_goal)" name="formation_auto_goal"
+        pkg="fwis_v3_demo" type="auto_goal.py" output="screen">
+    <param name="map_dir" value="$(arg map_dir)"/>
   </node>
 
   <node if="$(arg rviz)" name="rviz" pkg="rviz" type="rviz"
-        args="-d $(find fwis_v3_demo)/rviz/formation_demo.rviz"
+        args="-d $(arg rviz_config)"
         output="screen"/>
 </launch>

@@ -1422,6 +1422,7 @@ class FormationOptimizerNode:
                     ROS_IMPORT_ERROR))
         self.core = core or FormationNodeCore(
             pipeline_config=_load_pipeline_config())
+        self.start_on_publication = bool(rospy.get_param("~start_on_publication", False))
         self.status_pub = rospy.Publisher(
             self.STATUS_TOPIC, String, queue_size=1, latch=True)
         self.quality_pub = rospy.Publisher(
@@ -1530,7 +1531,13 @@ class FormationOptimizerNode:
             self.trajectory_pub.publish(self._clear_message(event))
         if event.trajectory_fields is not None:
             try:
-                message = self._timed_message(event.trajectory_fields)
+                fields = event.trajectory_fields
+                if self.start_on_publication:
+                    # Shift the shared time origin only. Relative times, every
+                    # vehicle's samples and all independently audited dynamics
+                    # stay identical. Planning time is not playback time.
+                    fields = dict(fields, stamp=self._now())
+                message = self._timed_message(fields)
             except Exception as exc:
                 event = self.core.publication_rejected(
                     INVALID_TIMED_TRAJECTORY,
