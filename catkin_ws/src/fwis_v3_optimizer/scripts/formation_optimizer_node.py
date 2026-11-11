@@ -31,6 +31,14 @@ from fwis_v3_optimizer.formation_geometry import (
     FormationPlanBuild,
     build_continuous_plans,
 )
+from fwis_v3_optimizer.formation_hold import (
+    HOLD_CONTRACT,
+    NO_MOTION,
+    build_hold_timed_trajectory,
+    evaluate_formation_hold,
+    hold_failure,
+    zero_motion_seed,
+)
 from fwis_v3_optimizer.formation_kinematics import (
     KinematicLimits,
     normalize_allowed_modes,
@@ -76,9 +84,9 @@ QUALITY_SCHEMA = "formation_quality_report/v1"
 PIPELINE_SCHEMA = "formation_pipeline_result/v1"
 
 _ALLOWED_PIPELINE_STATUS = (
-    FEASIBLE, REJECTED, GEOMETRY_ONLY_NOT_EXECUTABLE, INVALID)
+    FEASIBLE, NO_MOTION, REJECTED, GEOMETRY_ONLY_NOT_EXECUTABLE, INVALID)
 _ALLOWED_REJECTION_STAGES = (
-    "build", "master", "optimization", "retiming")
+    "build", "master", "optimization", "retiming", "hold")
 _NANOSECONDS = 1_000_000_000
 
 
@@ -338,7 +346,7 @@ class FormationPipelineResult:
                 raise FormationValidationError(
                     "DUPLICATE_PIPELINE_CANDIDATE_ID")
             seen.add(candidate.candidate_id)
-        if self.status == FEASIBLE:
+        if self.status in (FEASIBLE, NO_MOTION):
             if (self.selection is None or
                     self.selection.status != FEASIBLE or
                     self.selection.selected_timed is None):
@@ -379,10 +387,13 @@ class FormationPipelineResult:
             "T_end": (None if self.selected_timed is None
                       else float(self.selected_timed.duration)),
             "candidate_count": len(self.candidates),
-            "executable": self.status == FEASIBLE,
+            "executable": self.status in (FEASIBLE, NO_MOTION),
             "trajectory_published": False,
             "independent_audit": self.selection is not None,
-            "collision_certificate": self.status == FEASIBLE,
+            "collision_certificate": self.status in (FEASIBLE, NO_MOTION),
+            "no_motion": self.status == NO_MOTION,
+            "hold_contract": (
+                HOLD_CONTRACT if self.status == NO_MOTION else None),
             "timings_s": {name: float(value)
                           for name, value in self.timings_s},
         }
@@ -405,6 +416,49 @@ def _master_rejection(item):
         detail=item.detail,
         source_candidate_id=item.candidate_id,
         failure_code=item.reason)
+
+
+def _no_motion_result(snapshot, seed, grid, build, quality):
+    """Return an audited hold result, or ``None`` for a non-hold seed."""
+    report = zero_motion_seed(
+        snapshot, seed, expected_map_signature=quality.expected_map_signature)
+    if report is None:
+        return None
+    try:
+        timed = build_hold_timed_trajectory(
+            snapshot, dt_s=quality.publication_dt_s)
+        evaluation = evaluate_formation_hold(
+            snapshot, timed, grid, quality)
+    except FormationValidationError as exc:
+        evaluation = hold_failure(
+            snapshot.plan_id, snapshot.formation_id, "INVALID_HOLD",
+            "could not build the audited hold: {}".format(exc))
+    feasible = bool(evaluation.feasible)
+    selection = FormationSelection(
+        status=evaluation.status,
+        selected_candidate_id=None,
+        selected_plan=None,
+        selected_timed=(timed if feasible else None),
+        selected_evaluation=evaluation,
+        evaluations=(evaluation,),
+        rejections=(),
+        candidate_count=0,
+        feasible_count=(1 if feasible else 0))
+    rejections = ()
+    if not feasible:
+        failure = evaluation.failure
+        rejections = (FormationPipelineRejection(
+            stage="hold",
+            reason=evaluation.reason,
+            detail=evaluation.detail,
+            failure_code=evaluation.reason,
+            vehicle_id=(None if failure is None else failure.vehicle_id)),)
+    return FormationPipelineResult(
+        status=(NO_MOTION if feasible else evaluation.status),
+        reason=evaluation.reason,
+        detail=evaluation.detail,
+        build=build, master=None, candidates=(), rejections=rejections,
+        selection=selection)
 
 
 class FormationPlanningPipeline:
@@ -454,6 +508,10 @@ class FormationPlanningPipeline:
             allowed_modes=self.config.allowed_modes)
         timings["build_s"] = _time.perf_counter() - started
         if not build.success or not build.plans:
+            no_motion = _no_motion_result(
+                snapshot, seed, grid, build, quality)
+            if no_motion is not None:
+                return finish(no_motion)
             rejections = tuple(
                 _build_rejection(item) for item in build.rejections)
             status = (INVALID if build.reason == "INVALID_SEED"
@@ -808,7 +866,8 @@ class FormationNodeCore:
             "formation_id": self.formation_id,
             "status": status,
             "feasible": bool(feasible),
-            "executable": bool(published and status == FEASIBLE),
+            "executable": bool(
+                published and status in (FEASIBLE, NO_MOTION)),
             "trajectory_published": bool(published),
             "reason": reason,
             "detail": detail,
@@ -840,7 +899,8 @@ class FormationNodeCore:
             "reason": reason,
             "detail": detail,
             "feasible": bool(feasible),
-            "executable": bool(published and status == FEASIBLE),
+            "executable": bool(
+                published and status in (FEASIBLE, NO_MOTION)),
             "trajectory_published": bool(published),
             "independent_audit": bool(
                 pipeline is not None and
@@ -1192,7 +1252,7 @@ class FormationNodeCore:
         self._last_pipeline = result
         self._seed_attempts.add(seed_key)
 
-        if result.status == FEASIBLE:
+        if result.status in (FEASIBLE, NO_MOTION):
             decision = self.gate.offer(
                 plan_id, result.selected_timed,
                 result.selected_evaluation)
@@ -1216,18 +1276,28 @@ class FormationNodeCore:
                         publication=failure_decision.as_status(),
                         clear=True, stamp=publication_stamp,
                         extra={"planning_started": True})
+                is_hold = result.status == NO_MOTION
                 return self._event(
-                    "FEASIBLE_PUBLISHED", FEASIBLE, "OK",
-                    "independent S9 evaluation passed and the current "
-                    "plan_id was published through the transaction gate",
+                    ("NO_MOTION_PUBLISHED" if is_hold
+                     else "FEASIBLE_PUBLISHED"),
+                    result.status, ("NO_MOTION" if is_hold else "OK"),
+                    ("zero-motion request: independent hold audit passed "
+                     "and the static hold was published through the "
+                     "transaction gate" if is_hold else
+                     "independent S9 evaluation passed and the current "
+                     "plan_id was published through the transaction gate"),
                     feasible=True, published=True,
                     seed=seed_status, publication=decision.as_status(),
                     clear=pre_clear,
                     stamp=(publication_stamp or snapshot.header_stamp),
                     trajectory_fields=fields,
-                    extra={"selected_candidate_id":
-                           result.selection.selected_candidate_id,
+                    extra={"selected_candidate_id": (
+                               None if result.selection is None else
+                               result.selection.selected_candidate_id),
                            "duration": float(result.selected_timed.duration),
+                           "no_motion": is_hold,
+                           "hold_contract": (HOLD_CONTRACT if is_hold
+                                             else None),
                            "planning_started": True})
             return self._event(
                 "STALE_PUBLICATION", result.status, "STALE_PLAN",

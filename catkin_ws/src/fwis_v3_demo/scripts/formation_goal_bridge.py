@@ -351,14 +351,16 @@ class FormationGoalBridge(object):
         if document.get("plan_id") != self._current_plan:
             return
         status = document.get("status")
-        if status not in ("FEASIBLE", "INVALID", "REJECTED"):
+        if status not in ("FEASIBLE", "NO_MOTION", "INVALID", "REJECTED"):
             return
-        if status == "FEASIBLE" and document.get("trajectory_published"):
+        if (status in ("FEASIBLE", "NO_MOTION") and
+                document.get("trajectory_published")):
             # Publication is not arrival. Playback TF supplies the actual
-            # current reference pose for subsequent goals.
+            # current reference pose for subsequent goals.  A NO_MOTION hold
+            # is a successful static publication, not a failed plan.
             rospy.loginfo(
-                "[formation goal bridge] plan %d FEASIBLE and published",
-                self._current_plan)
+                "[formation goal bridge] plan %d %s and published",
+                self._current_plan, status)
         else:
             rospy.logwarn(
                 "[formation goal bridge] plan %d status=%s reason=%s",

@@ -1,0 +1,23 @@
+[==========] Running 6 tests from 2 test suites.
+[----------] Global test environment set-up.
+[----------] 4 tests from PlannerPolicyHistory
+[ RUN      ] PlannerPolicyHistory.DistinctHistoriesDoNotMergeAtTheSamePose
+[       OK ] PlannerPolicyHistory.DistinctHistoriesDoNotMergeAtTheSamePose (0 ms)
+[ RUN      ] PlannerPolicyHistory.ActualSpinMakesOneReversalLegal
+[       OK ] PlannerPolicyHistory.ActualSpinMakesOneReversalLegal (0 ms)
+[ RUN      ] PlannerPolicyHistory.SpinDoesNotPermitASecondReversal
+[       OK ] PlannerPolicyHistory.SpinDoesNotPermitASecondReversal (0 ms)
+[ RUN      ] PlannerPolicyHistory.ZeroOrCancelledSpinDoesNotBypassPolicy
+[       OK ] PlannerPolicyHistory.ZeroOrCancelledSpinDoesNotBypassPolicy (0 ms)
+[----------] 4 tests from PlannerPolicyHistory (1 ms total)
+
+[----------] 2 tests from PlannerObstacleSlabs
+[ RUN      ] PlannerObstacleSlabs.PreservesEveryOccupiedCellAndCompressesStraightWalls
+[       OK ] PlannerObstacleSlabs.PreservesEveryOccupiedCellAndCompressesStraightWalls (0 ms)
+[ RUN      ] PlannerObstacleSlabs.MatchesPerCellSATOnRotatedBodiesAndIrregularRaster
+[       OK ] PlannerObstacleSlabs.MatchesPerCellSATOnRotatedBodiesAndIrregularRaster (5 ms)
+[----------] 2 tests from PlannerObstacleSlabs (5 ms total)
+
+[----------] Global test environment tear-down
+[==========] 6 tests from 2 test suites ran. (6 ms total)
+[  PASSED  ] 6 tests.

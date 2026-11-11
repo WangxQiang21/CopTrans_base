@@ -1,0 +1,3626 @@
+{
+  "schema": "wedge_fix_t3_acceptance/v1",
+  "stage": "T3",
+  "date": "2026-11-12",
+  "stage_pass": true,
+  "acceptance_standard": "E00-E04 through real run_demo.sh entry, independent audit and playback; NLP off passes; default NLP does not break any feasible solution",
+  "accepted_runs": [
+    "nlp_off_run2.json",
+    "smoke_nlp_on.json"
+  ],
+  "preserved_failed_rounds": [
+    {
+      "file": "smoke_nlp_off.json",
+      "sha256": "11377816b20a43e8a44d5c81b94af46505a4ca54d86c6ba37f4f0b4a3764a9c0",
+      "pass": false,
+      "succeeded": "12/15",
+      "failures": [
+        "E00 attempts 2,3: playback_executable false (playback status race: first HOLD_END labelled GEOMETRY_ONLY before matching optimizer status)",
+        "E03 attempt 2: marker_center_1 error 4.648e-3 m = stale pre-terminal marker array"
+      ],
+      "resolution": "smoke wait now requires the audited playback status document and a terminal-matching marker array; raw file preserved unchanged"
+    }
+  ],
+  "runs": {
+    "nlp_off_run1_failed": {
+      "attempts": 3,
+      "attempts_succeeded": 12,
+      "attempts_total": 15,
+      "checks": {
+        "E00_all_attempts_succeed": {
+          "detail": "1/3 attempts succeeded",
+          "ok": false
+        },
+        "enable_nlp_effective": {
+          "detail": "parameter=False requested=False",
+          "ok": true
+        },
+        "real_entry_point_started": {
+          "detail": "run_demo.sh pid=1769566",
+          "ok": true
+        }
+      },
+      "cleanup": {
+        "exit_codes": {
+          "roscore": 0,
+          "run_demo": 0
+        },
+        "port_released": true
+      },
+      "duration_s": 246.623,
+      "enable_nlp": false,
+      "errors": [
+        {
+          "detail": "E00_all_attempts_succeed: 1/3 attempts succeeded",
+          "type": "SmokeError"
+        }
+      ],
+      "file": "smoke_nlp_off.json",
+      "missions": {
+        "E00": {
+          "attempts": [
+            {
+              "T_end": 0.0,
+              "attempt": 1,
+              "checks_failed": [],
+              "checks_total": 72,
+              "error": null,
+              "modes": {
+                "1": [],
+                "2": [],
+                "3": []
+              },
+              "ok": true,
+              "plan_id": 600000,
+              "playback_status_upgrade_s": null,
+              "quality": {
+                "T_end": 0.0,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": true,
+                "pipeline_status": "NO_MOTION",
+                "reason": "NO_MOTION",
+                "status": "NO_MOTION"
+              },
+              "reason": "NO_MOTION",
+              "sample_count": 1,
+              "speed_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "speed_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "status": "NO_MOTION",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            },
+            {
+              "T_end": 0.0,
+              "attempt": 2,
+              "checks_failed": [
+                "playback_executable"
+              ],
+              "checks_total": 45,
+              "error": "playback_executable: False",
+              "modes": {
+                "1": [],
+                "2": [],
+                "3": []
+              },
+              "ok": false,
+              "plan_id": 600001,
+              "playback_status_upgrade_s": null,
+              "quality": {
+                "T_end": 0.0,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": true,
+                "pipeline_status": "NO_MOTION",
+                "reason": "NO_MOTION",
+                "status": "NO_MOTION"
+              },
+              "reason": "NO_MOTION",
+              "sample_count": 1,
+              "speed_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "speed_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "status": "NO_MOTION",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            },
+            {
+              "T_end": 0.0,
+              "attempt": 3,
+              "checks_failed": [
+                "playback_executable"
+              ],
+              "checks_total": 45,
+              "error": "playback_executable: False",
+              "modes": {
+                "1": [],
+                "2": [],
+                "3": []
+              },
+              "ok": false,
+              "plan_id": 600002,
+              "playback_status_upgrade_s": null,
+              "quality": {
+                "T_end": 0.0,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": true,
+                "pipeline_status": "NO_MOTION",
+                "reason": "NO_MOTION",
+                "status": "NO_MOTION"
+              },
+              "reason": "NO_MOTION",
+              "sample_count": 1,
+              "speed_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "speed_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "status": "NO_MOTION",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            }
+          ],
+          "goal": null
+        },
+        "E01": {
+          "attempts": [
+            {
+              "T_end": 14.871258808212731,
+              "attempt": 1,
+              "checks_failed": [],
+              "checks_total": 4534,
+              "error": null,
+              "modes": {
+                "1": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ],
+                "2": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ],
+                "3": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ]
+              },
+              "ok": true,
+              "plan_id": 600003,
+              "playback_status_upgrade_s": null,
+              "quality": {
+                "T_end": 14.871258808212731,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": false,
+                "pipeline_status": "FEASIBLE",
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "reason": "OK",
+              "sample_count": 745,
+              "speed_max": {
+                "1": 0.37824639275953986,
+                "2": 0.37824639275953986,
+                "3": 0.37824639275953986
+              },
+              "speed_min": {
+                "1": 0.00038727392745123483,
+                "2": 0.00038727392745123483,
+                "3": 0.00038727392745123483
+              },
+              "status": "FEASIBLE",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            },
+            {
+              "T_end": 14.871258808212731,
+              "attempt": 2,
+              "checks_failed": [],
+              "checks_total": 4534,
+              "error": null,
+              "modes": {
+                "1": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ],
+                "2": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ],
+                "3": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ]
+              },
+              "ok": true,
+              "plan_id": 600004,
+              "playback_status_upgrade_s": null,
+              "quality": {
+                "T_end": 14.871258808212731,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": false,
+                "pipeline_status": "FEASIBLE",
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "reason": "OK",
+              "sample_count": 745,
+              "speed_max": {
+                "1": 0.37824639275953986,
+                "2": 0.37824639275953986,
+                "3": 0.37824639275953986
+              },
+              "speed_min": {
+                "1": 0.00038727392745123483,
+                "2": 0.00038727392745123483,
+                "3": 0.00038727392745123483
+              },
+              "status": "FEASIBLE",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            },
+            {
+              "T_end": 14.871258808212731,
+              "attempt": 3,
+              "checks_failed": [],
+              "checks_total": 4534,
+              "error": null,
+              "modes": {
+                "1": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ],
+                "2": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ],
+                "3": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ]
+              },
+              "ok": true,
+              "plan_id": 600005,
+              "playback_status_upgrade_s": null,
+              "quality": {
+                "T_end": 14.871258808212731,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": false,
+                "pipeline_status": "FEASIBLE",
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "reason": "OK",
+              "sample_count": 745,
+              "speed_max": {
+                "1": 0.37824639275953986,
+                "2": 0.37824639275953986,
+                "3": 0.37824639275953986
+              },
+              "speed_min": {
+                "1": 0.00038727392745123483,
+                "2": 0.00038727392745123483,
+                "3": 0.00038727392745123483
+              },
+              "status": "FEASIBLE",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            }
+          ],
+          "goal": null
+        },
+        "E02": {
+          "attempts": [
+            {
+              "T_end": 14.871258808212731,
+              "attempt": 1,
+              "checks_failed": [],
+              "checks_total": 4537,
+              "error": null,
+              "modes": {
+                "1": [
+                  [
+                    1,
+                    1.570796
+                  ]
+                ],
+                "2": [
+                  [
+                    1,
+                    1.570796
+                  ]
+                ],
+                "3": [
+                  [
+                    1,
+                    1.570796
+                  ]
+                ]
+              },
+              "ok": true,
+              "plan_id": 600006,
+              "playback_status_upgrade_s": null,
+              "quality": {
+                "T_end": 14.871258808212731,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": false,
+                "pipeline_status": "FEASIBLE",
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "reason": "OK",
+              "sample_count": 745,
+              "speed_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "speed_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "status": "FEASIBLE",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            },
+            {
+              "T_end": 14.871258808212731,
+              "attempt": 2,
+              "checks_failed": [],
+              "checks_total": 4537,
+              "error": null,
+              "modes": {
+                "1": [
+                  [
+                    1,
+                    1.570796
+                  ]
+                ],
+                "2": [
+                  [
+                    1,
+                    1.570796
+                  ]
+                ],
+                "3": [
+                  [
+                    1,
+                    1.570796
+                  ]
+                ]
+              },
+              "ok": true,
+              "plan_id": 600007,
+              "playback_status_upgrade_s": null,
+              "quality": {
+                "T_end": 14.871258808212731,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": false,
+                "pipeline_status": "FEASIBLE",
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "reason": "OK",
+              "sample_count": 745,
+              "speed_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "speed_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "status": "FEASIBLE",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            },
+            {
+              "T_end": 14.871258808212731,
+              "attempt": 3,
+              "checks_failed": [],
+              "checks_total": 4537,
+              "error": null,
+              "modes": {
+                "1": [
+                  [
+                    1,
+                    1.570796
+                  ]
+                ],
+                "2": [
+                  [
+                    1,
+                    1.570796
+                  ]
+                ],
+                "3": [
+                  [
+                    1,
+                    1.570796
+                  ]
+                ]
+              },
+              "ok": true,
+              "plan_id": 600008,
+              "playback_status_upgrade_s": null,
+              "quality": {
+                "T_end": 14.871258808212731,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": false,
+                "pipeline_status": "FEASIBLE",
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "reason": "OK",
+              "sample_count": 745,
+              "speed_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "speed_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "status": "FEASIBLE",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            }
+          ],
+          "goal": null
+        },
+        "E03": {
+          "attempts": [
+            {
+              "T_end": 26.371248391749607,
+              "attempt": 1,
+              "checks_failed": [],
+              "checks_total": 8011,
+              "error": null,
+              "modes": {
+                "1": [
+                  [
+                    1,
+                    0.588003
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.550526
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.479296
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.254263
+                  ]
+                ],
+                "2": [
+                  [
+                    1,
+                    0.588003
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.550526
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.479296
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.254263
+                  ]
+                ],
+                "3": [
+                  [
+                    1,
+                    0.588003
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.550526
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.479296
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.254263
+                  ]
+                ]
+              },
+              "ok": true,
+              "plan_id": 600009,
+              "playback_status_upgrade_s": null,
+              "quality": {
+                "T_end": 26.371248391749607,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": false,
+                "pipeline_status": "FEASIBLE",
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "reason": "OK",
+              "sample_count": 1324,
+              "speed_max": {
+                "1": 0.3660853453126855,
+                "2": 0.3660853453126855,
+                "3": 0.3660853453126855
+              },
+              "speed_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "status": "FEASIBLE",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            },
+            {
+              "T_end": 26.371248391749607,
+              "attempt": 2,
+              "checks_failed": [
+                "marker_center_1"
+              ],
+              "checks_total": 7995,
+              "error": "marker_center_1: ((13.995351894019926, 11.998792012506817), (14.0, 12.0))",
+              "modes": {
+                "1": [
+                  [
+                    1,
+                    0.588003
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.550526
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.479296
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.254263
+                  ]
+                ],
+                "2": [
+                  [
+                    1,
+                    0.588003
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.550526
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.479296
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.254263
+                  ]
+                ],
+                "3": [
+                  [
+                    1,
+                    0.588003
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.550526
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.479296
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.254263
+                  ]
+                ]
+              },
+              "ok": false,
+              "plan_id": 600010,
+              "playback_status_upgrade_s": null,
+              "quality": {
+                "T_end": 26.371248391749607,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": false,
+                "pipeline_status": "FEASIBLE",
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "reason": "OK",
+              "sample_count": 1324,
+              "speed_max": {
+                "1": 0.3660853453126855,
+                "2": 0.3660853453126855,
+                "3": 0.3660853453126855
+              },
+              "speed_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "status": "FEASIBLE",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            },
+            {
+              "T_end": 26.371248391749607,
+              "attempt": 3,
+              "checks_failed": [],
+              "checks_total": 8011,
+              "error": null,
+              "modes": {
+                "1": [
+                  [
+                    1,
+                    0.588003
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.550526
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.479296
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.254263
+                  ]
+                ],
+                "2": [
+                  [
+                    1,
+                    0.588003
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.550526
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.479296
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.254263
+                  ]
+                ],
+                "3": [
+                  [
+                    1,
+                    0.588003
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.550526
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.479296
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.254263
+                  ]
+                ]
+              },
+              "ok": true,
+              "plan_id": 600011,
+              "playback_status_upgrade_s": null,
+              "quality": {
+                "T_end": 26.371248391749607,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": false,
+                "pipeline_status": "FEASIBLE",
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "reason": "OK",
+              "sample_count": 1324,
+              "speed_max": {
+                "1": 0.3660853453126855,
+                "2": 0.3660853453126855,
+                "3": 0.3660853453126855
+              },
+              "speed_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "status": "FEASIBLE",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            }
+          ],
+          "goal": null
+        },
+        "E04": {
+          "attempts": [
+            {
+              "T_end": 14.871258808212731,
+              "attempt": 1,
+              "checks_failed": [],
+              "checks_total": 4537,
+              "error": null,
+              "modes": {
+                "1": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ],
+                "2": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ],
+                "3": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ]
+              },
+              "ok": true,
+              "plan_id": 600012,
+              "playback_status_upgrade_s": null,
+              "quality": {
+                "T_end": 14.871258808212731,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": false,
+                "pipeline_status": "FEASIBLE",
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "reason": "OK",
+              "sample_count": 745,
+              "speed_max": {
+                "1": -0.00038727392745123483,
+                "2": -0.00038727392745123483,
+                "3": -0.00038727392745123483
+              },
+              "speed_min": {
+                "1": -0.37824639275953986,
+                "2": -0.37824639275953986,
+                "3": -0.37824639275953986
+              },
+              "status": "FEASIBLE",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            },
+            {
+              "T_end": 14.871258808212731,
+              "attempt": 2,
+              "checks_failed": [],
+              "checks_total": 4537,
+              "error": null,
+              "modes": {
+                "1": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ],
+                "2": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ],
+                "3": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ]
+              },
+              "ok": true,
+              "plan_id": 600013,
+              "playback_status_upgrade_s": null,
+              "quality": {
+                "T_end": 14.871258808212731,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": false,
+                "pipeline_status": "FEASIBLE",
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "reason": "OK",
+              "sample_count": 745,
+              "speed_max": {
+                "1": -0.00038727392745123483,
+                "2": -0.00038727392745123483,
+                "3": -0.00038727392745123483
+              },
+              "speed_min": {
+                "1": -0.37824639275953986,
+                "2": -0.37824639275953986,
+                "3": -0.37824639275953986
+              },
+              "status": "FEASIBLE",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            },
+            {
+              "T_end": 14.871258808212731,
+              "attempt": 3,
+              "checks_failed": [],
+              "checks_total": 4537,
+              "error": null,
+              "modes": {
+                "1": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ],
+                "2": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ],
+                "3": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ]
+              },
+              "ok": true,
+              "plan_id": 600014,
+              "playback_status_upgrade_s": null,
+              "quality": {
+                "T_end": 14.871258808212731,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": false,
+                "pipeline_status": "FEASIBLE",
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "reason": "OK",
+              "sample_count": 745,
+              "speed_max": {
+                "1": -0.00038727392745123483,
+                "2": -0.00038727392745123483,
+                "3": -0.00038727392745123483
+              },
+              "speed_min": {
+                "1": -0.37824639275953986,
+                "2": -0.37824639275953986,
+                "3": -0.37824639275953986
+              },
+              "status": "FEASIBLE",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            }
+          ],
+          "goal": null
+        }
+      },
+      "pass": false,
+      "sha256": "11377816b20a43e8a44d5c81b94af46505a4ca54d86c6ba37f4f0b4a3764a9c0"
+    },
+    "nlp_off_run2": {
+      "attempts": 3,
+      "attempts_succeeded": 15,
+      "attempts_total": 15,
+      "checks": {
+        "E00_all_attempts_succeed": {
+          "detail": "3/3 attempts succeeded",
+          "ok": true
+        },
+        "E01_all_attempts_succeed": {
+          "detail": "3/3 attempts succeeded",
+          "ok": true
+        },
+        "E02_all_attempts_succeed": {
+          "detail": "3/3 attempts succeeded",
+          "ok": true
+        },
+        "E03_all_attempts_succeed": {
+          "detail": "3/3 attempts succeeded",
+          "ok": true
+        },
+        "E04_all_attempts_succeed": {
+          "detail": "3/3 attempts succeeded",
+          "ok": true
+        },
+        "enable_nlp_effective": {
+          "detail": "parameter=False requested=False",
+          "ok": true
+        },
+        "real_entry_point_started": {
+          "detail": "run_demo.sh pid=1771291",
+          "ok": true
+        }
+      },
+      "cleanup": {
+        "exit_codes": {
+          "roscore": 0,
+          "run_demo": 0
+        },
+        "port_released": true
+      },
+      "duration_s": 247.561,
+      "enable_nlp": false,
+      "errors": [],
+      "file": "smoke_nlp_off_r2.json",
+      "missions": {
+        "E00": {
+          "attempts": [
+            {
+              "T_end": 0.0,
+              "attempt": 1,
+              "checks_failed": [],
+              "checks_total": 72,
+              "error": null,
+              "modes": {
+                "1": [],
+                "2": [],
+                "3": []
+              },
+              "ok": true,
+              "plan_id": 600000,
+              "playback_status_upgrade_s": 0.027,
+              "quality": {
+                "T_end": 0.0,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": true,
+                "pipeline_status": "NO_MOTION",
+                "reason": "NO_MOTION",
+                "status": "NO_MOTION"
+              },
+              "reason": "NO_MOTION",
+              "sample_count": 1,
+              "speed_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "speed_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "status": "NO_MOTION",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            },
+            {
+              "T_end": 0.0,
+              "attempt": 2,
+              "checks_failed": [],
+              "checks_total": 72,
+              "error": null,
+              "modes": {
+                "1": [],
+                "2": [],
+                "3": []
+              },
+              "ok": true,
+              "plan_id": 600001,
+              "playback_status_upgrade_s": 0.0,
+              "quality": {
+                "T_end": 0.0,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": true,
+                "pipeline_status": "NO_MOTION",
+                "reason": "NO_MOTION",
+                "status": "NO_MOTION"
+              },
+              "reason": "NO_MOTION",
+              "sample_count": 1,
+              "speed_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "speed_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "status": "NO_MOTION",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            },
+            {
+              "T_end": 0.0,
+              "attempt": 3,
+              "checks_failed": [],
+              "checks_total": 72,
+              "error": null,
+              "modes": {
+                "1": [],
+                "2": [],
+                "3": []
+              },
+              "ok": true,
+              "plan_id": 600002,
+              "playback_status_upgrade_s": 0.014,
+              "quality": {
+                "T_end": 0.0,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": true,
+                "pipeline_status": "NO_MOTION",
+                "reason": "NO_MOTION",
+                "status": "NO_MOTION"
+              },
+              "reason": "NO_MOTION",
+              "sample_count": 1,
+              "speed_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "speed_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "status": "NO_MOTION",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            }
+          ],
+          "goal": null
+        },
+        "E01": {
+          "attempts": [
+            {
+              "T_end": 14.871258808212731,
+              "attempt": 1,
+              "checks_failed": [],
+              "checks_total": 4534,
+              "error": null,
+              "modes": {
+                "1": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ],
+                "2": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ],
+                "3": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ]
+              },
+              "ok": true,
+              "plan_id": 600003,
+              "playback_status_upgrade_s": 0.0,
+              "quality": {
+                "T_end": 14.871258808212731,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": false,
+                "pipeline_status": "FEASIBLE",
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "reason": "OK",
+              "sample_count": 745,
+              "speed_max": {
+                "1": 0.37824639275953986,
+                "2": 0.37824639275953986,
+                "3": 0.37824639275953986
+              },
+              "speed_min": {
+                "1": 0.00038727392745123483,
+                "2": 0.00038727392745123483,
+                "3": 0.00038727392745123483
+              },
+              "status": "FEASIBLE",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            },
+            {
+              "T_end": 14.871258808212731,
+              "attempt": 2,
+              "checks_failed": [],
+              "checks_total": 4534,
+              "error": null,
+              "modes": {
+                "1": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ],
+                "2": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ],
+                "3": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ]
+              },
+              "ok": true,
+              "plan_id": 600004,
+              "playback_status_upgrade_s": 0.0,
+              "quality": {
+                "T_end": 14.871258808212731,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": false,
+                "pipeline_status": "FEASIBLE",
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "reason": "OK",
+              "sample_count": 745,
+              "speed_max": {
+                "1": 0.37824639275953986,
+                "2": 0.37824639275953986,
+                "3": 0.37824639275953986
+              },
+              "speed_min": {
+                "1": 0.00038727392745123483,
+                "2": 0.00038727392745123483,
+                "3": 0.00038727392745123483
+              },
+              "status": "FEASIBLE",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            },
+            {
+              "T_end": 14.871258808212731,
+              "attempt": 3,
+              "checks_failed": [],
+              "checks_total": 4534,
+              "error": null,
+              "modes": {
+                "1": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ],
+                "2": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ],
+                "3": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ]
+              },
+              "ok": true,
+              "plan_id": 600005,
+              "playback_status_upgrade_s": 0.0,
+              "quality": {
+                "T_end": 14.871258808212731,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": false,
+                "pipeline_status": "FEASIBLE",
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "reason": "OK",
+              "sample_count": 745,
+              "speed_max": {
+                "1": 0.37824639275953986,
+                "2": 0.37824639275953986,
+                "3": 0.37824639275953986
+              },
+              "speed_min": {
+                "1": 0.00038727392745123483,
+                "2": 0.00038727392745123483,
+                "3": 0.00038727392745123483
+              },
+              "status": "FEASIBLE",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            }
+          ],
+          "goal": null
+        },
+        "E02": {
+          "attempts": [
+            {
+              "T_end": 14.871258808212731,
+              "attempt": 1,
+              "checks_failed": [],
+              "checks_total": 4537,
+              "error": null,
+              "modes": {
+                "1": [
+                  [
+                    1,
+                    1.570796
+                  ]
+                ],
+                "2": [
+                  [
+                    1,
+                    1.570796
+                  ]
+                ],
+                "3": [
+                  [
+                    1,
+                    1.570796
+                  ]
+                ]
+              },
+              "ok": true,
+              "plan_id": 600006,
+              "playback_status_upgrade_s": 0.0,
+              "quality": {
+                "T_end": 14.871258808212731,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": false,
+                "pipeline_status": "FEASIBLE",
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "reason": "OK",
+              "sample_count": 745,
+              "speed_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "speed_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "status": "FEASIBLE",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            },
+            {
+              "T_end": 14.871258808212731,
+              "attempt": 2,
+              "checks_failed": [],
+              "checks_total": 4537,
+              "error": null,
+              "modes": {
+                "1": [
+                  [
+                    1,
+                    1.570796
+                  ]
+                ],
+                "2": [
+                  [
+                    1,
+                    1.570796
+                  ]
+                ],
+                "3": [
+                  [
+                    1,
+                    1.570796
+                  ]
+                ]
+              },
+              "ok": true,
+              "plan_id": 600007,
+              "playback_status_upgrade_s": 0.0,
+              "quality": {
+                "T_end": 14.871258808212731,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": false,
+                "pipeline_status": "FEASIBLE",
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "reason": "OK",
+              "sample_count": 745,
+              "speed_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "speed_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "status": "FEASIBLE",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            },
+            {
+              "T_end": 14.871258808212731,
+              "attempt": 3,
+              "checks_failed": [],
+              "checks_total": 4537,
+              "error": null,
+              "modes": {
+                "1": [
+                  [
+                    1,
+                    1.570796
+                  ]
+                ],
+                "2": [
+                  [
+                    1,
+                    1.570796
+                  ]
+                ],
+                "3": [
+                  [
+                    1,
+                    1.570796
+                  ]
+                ]
+              },
+              "ok": true,
+              "plan_id": 600008,
+              "playback_status_upgrade_s": 0.0,
+              "quality": {
+                "T_end": 14.871258808212731,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": false,
+                "pipeline_status": "FEASIBLE",
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "reason": "OK",
+              "sample_count": 745,
+              "speed_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "speed_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "status": "FEASIBLE",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            }
+          ],
+          "goal": null
+        },
+        "E03": {
+          "attempts": [
+            {
+              "T_end": 26.371248391749607,
+              "attempt": 1,
+              "checks_failed": [],
+              "checks_total": 8011,
+              "error": null,
+              "modes": {
+                "1": [
+                  [
+                    1,
+                    0.588003
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.550526
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.479296
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.254263
+                  ]
+                ],
+                "2": [
+                  [
+                    1,
+                    0.588003
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.550526
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.479296
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.254263
+                  ]
+                ],
+                "3": [
+                  [
+                    1,
+                    0.588003
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.550526
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.479296
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.254263
+                  ]
+                ]
+              },
+              "ok": true,
+              "plan_id": 600009,
+              "playback_status_upgrade_s": 0.0,
+              "quality": {
+                "T_end": 26.371248391749607,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": false,
+                "pipeline_status": "FEASIBLE",
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "reason": "OK",
+              "sample_count": 1324,
+              "speed_max": {
+                "1": 0.3660853453126855,
+                "2": 0.3660853453126855,
+                "3": 0.3660853453126855
+              },
+              "speed_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "status": "FEASIBLE",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            },
+            {
+              "T_end": 26.371248391749607,
+              "attempt": 2,
+              "checks_failed": [],
+              "checks_total": 8011,
+              "error": null,
+              "modes": {
+                "1": [
+                  [
+                    1,
+                    0.588003
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.550526
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.479296
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.254263
+                  ]
+                ],
+                "2": [
+                  [
+                    1,
+                    0.588003
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.550526
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.479296
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.254263
+                  ]
+                ],
+                "3": [
+                  [
+                    1,
+                    0.588003
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.550526
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.479296
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.254263
+                  ]
+                ]
+              },
+              "ok": true,
+              "plan_id": 600010,
+              "playback_status_upgrade_s": 0.0,
+              "quality": {
+                "T_end": 26.371248391749607,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": false,
+                "pipeline_status": "FEASIBLE",
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "reason": "OK",
+              "sample_count": 1324,
+              "speed_max": {
+                "1": 0.3660853453126855,
+                "2": 0.3660853453126855,
+                "3": 0.3660853453126855
+              },
+              "speed_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "status": "FEASIBLE",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            },
+            {
+              "T_end": 26.371248391749607,
+              "attempt": 3,
+              "checks_failed": [],
+              "checks_total": 8011,
+              "error": null,
+              "modes": {
+                "1": [
+                  [
+                    1,
+                    0.588003
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.550526
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.479296
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.254263
+                  ]
+                ],
+                "2": [
+                  [
+                    1,
+                    0.588003
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.550526
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.479296
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.254263
+                  ]
+                ],
+                "3": [
+                  [
+                    1,
+                    0.588003
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.550526
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.479296
+                  ],
+                  [
+                    1,
+                    0.785398
+                  ],
+                  [
+                    1,
+                    0.254263
+                  ]
+                ]
+              },
+              "ok": true,
+              "plan_id": 600011,
+              "playback_status_upgrade_s": 0.0,
+              "quality": {
+                "T_end": 26.371248391749607,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": false,
+                "pipeline_status": "FEASIBLE",
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "reason": "OK",
+              "sample_count": 1324,
+              "speed_max": {
+                "1": 0.3660853453126855,
+                "2": 0.3660853453126855,
+                "3": 0.3660853453126855
+              },
+              "speed_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "status": "FEASIBLE",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            }
+          ],
+          "goal": null
+        },
+        "E04": {
+          "attempts": [
+            {
+              "T_end": 14.871258808212731,
+              "attempt": 1,
+              "checks_failed": [],
+              "checks_total": 4537,
+              "error": null,
+              "modes": {
+                "1": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ],
+                "2": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ],
+                "3": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ]
+              },
+              "ok": true,
+              "plan_id": 600012,
+              "playback_status_upgrade_s": 0.0,
+              "quality": {
+                "T_end": 14.871258808212731,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": false,
+                "pipeline_status": "FEASIBLE",
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "reason": "OK",
+              "sample_count": 745,
+              "speed_max": {
+                "1": -0.00038727392745123483,
+                "2": -0.00038727392745123483,
+                "3": -0.00038727392745123483
+              },
+              "speed_min": {
+                "1": -0.37824639275953986,
+                "2": -0.37824639275953986,
+                "3": -0.37824639275953986
+              },
+              "status": "FEASIBLE",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            },
+            {
+              "T_end": 14.871258808212731,
+              "attempt": 2,
+              "checks_failed": [],
+              "checks_total": 4537,
+              "error": null,
+              "modes": {
+                "1": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ],
+                "2": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ],
+                "3": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ]
+              },
+              "ok": true,
+              "plan_id": 600013,
+              "playback_status_upgrade_s": 0.0,
+              "quality": {
+                "T_end": 14.871258808212731,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": false,
+                "pipeline_status": "FEASIBLE",
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "reason": "OK",
+              "sample_count": 745,
+              "speed_max": {
+                "1": -0.00038727392745123483,
+                "2": -0.00038727392745123483,
+                "3": -0.00038727392745123483
+              },
+              "speed_min": {
+                "1": -0.37824639275953986,
+                "2": -0.37824639275953986,
+                "3": -0.37824639275953986
+              },
+              "status": "FEASIBLE",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            },
+            {
+              "T_end": 14.871258808212731,
+              "attempt": 3,
+              "checks_failed": [],
+              "checks_total": 4537,
+              "error": null,
+              "modes": {
+                "1": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ],
+                "2": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ],
+                "3": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ]
+              },
+              "ok": true,
+              "plan_id": 600014,
+              "playback_status_upgrade_s": 0.0,
+              "quality": {
+                "T_end": 14.871258808212731,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": false,
+                "pipeline_status": "FEASIBLE",
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "reason": "OK",
+              "sample_count": 745,
+              "speed_max": {
+                "1": -0.00038727392745123483,
+                "2": -0.00038727392745123483,
+                "3": -0.00038727392745123483
+              },
+              "speed_min": {
+                "1": -0.37824639275953986,
+                "2": -0.37824639275953986,
+                "3": -0.37824639275953986
+              },
+              "status": "FEASIBLE",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            }
+          ],
+          "goal": null
+        }
+      },
+      "pass": true,
+      "sha256": "1d00343fc032b2e3e5b3508cb96b4e676b81befe0485ab283477d3233d117b80"
+    },
+    "nlp_on": {
+      "attempts": 3,
+      "attempts_succeeded": 15,
+      "attempts_total": 15,
+      "checks": {
+        "E00_all_attempts_succeed": {
+          "detail": "3/3 attempts succeeded",
+          "ok": true
+        },
+        "E01_all_attempts_succeed": {
+          "detail": "3/3 attempts succeeded",
+          "ok": true
+        },
+        "E02_all_attempts_succeed": {
+          "detail": "3/3 attempts succeeded",
+          "ok": true
+        },
+        "E03_all_attempts_succeed": {
+          "detail": "3/3 attempts succeeded",
+          "ok": true
+        },
+        "E04_all_attempts_succeed": {
+          "detail": "3/3 attempts succeeded",
+          "ok": true
+        },
+        "enable_nlp_effective": {
+          "detail": "parameter=True requested=True",
+          "ok": true
+        },
+        "real_entry_point_started": {
+          "detail": "run_demo.sh pid=1773022",
+          "ok": true
+        }
+      },
+      "cleanup": {
+        "exit_codes": {
+          "roscore": 0,
+          "run_demo": 0
+        },
+        "port_released": true
+      },
+      "duration_s": 253.644,
+      "enable_nlp": true,
+      "errors": [],
+      "file": "smoke_nlp_on.json",
+      "missions": {
+        "E00": {
+          "attempts": [
+            {
+              "T_end": 0.0,
+              "attempt": 1,
+              "checks_failed": [],
+              "checks_total": 72,
+              "error": null,
+              "modes": {
+                "1": [],
+                "2": [],
+                "3": []
+              },
+              "ok": true,
+              "plan_id": 600000,
+              "playback_status_upgrade_s": 0.024,
+              "quality": {
+                "T_end": 0.0,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": true,
+                "pipeline_status": "NO_MOTION",
+                "reason": "NO_MOTION",
+                "status": "NO_MOTION"
+              },
+              "reason": "NO_MOTION",
+              "sample_count": 1,
+              "speed_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "speed_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "status": "NO_MOTION",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            },
+            {
+              "T_end": 0.0,
+              "attempt": 2,
+              "checks_failed": [],
+              "checks_total": 72,
+              "error": null,
+              "modes": {
+                "1": [],
+                "2": [],
+                "3": []
+              },
+              "ok": true,
+              "plan_id": 600001,
+              "playback_status_upgrade_s": 0.039,
+              "quality": {
+                "T_end": 0.0,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": true,
+                "pipeline_status": "NO_MOTION",
+                "reason": "NO_MOTION",
+                "status": "NO_MOTION"
+              },
+              "reason": "NO_MOTION",
+              "sample_count": 1,
+              "speed_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "speed_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "status": "NO_MOTION",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            },
+            {
+              "T_end": 0.0,
+              "attempt": 3,
+              "checks_failed": [],
+              "checks_total": 72,
+              "error": null,
+              "modes": {
+                "1": [],
+                "2": [],
+                "3": []
+              },
+              "ok": true,
+              "plan_id": 600002,
+              "playback_status_upgrade_s": 0.0,
+              "quality": {
+                "T_end": 0.0,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": true,
+                "pipeline_status": "NO_MOTION",
+                "reason": "NO_MOTION",
+                "status": "NO_MOTION"
+              },
+              "reason": "NO_MOTION",
+              "sample_count": 1,
+              "speed_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "speed_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "status": "NO_MOTION",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            }
+          ],
+          "goal": null
+        },
+        "E01": {
+          "attempts": [
+            {
+              "T_end": 14.871258808212731,
+              "attempt": 1,
+              "checks_failed": [],
+              "checks_total": 4534,
+              "error": null,
+              "modes": {
+                "1": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ],
+                "2": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ],
+                "3": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ]
+              },
+              "ok": true,
+              "plan_id": 600003,
+              "playback_status_upgrade_s": 0.0,
+              "quality": {
+                "T_end": 14.871258808212731,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": false,
+                "pipeline_status": "FEASIBLE",
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "reason": "OK",
+              "sample_count": 745,
+              "speed_max": {
+                "1": 0.37824639275953986,
+                "2": 0.37824639275953986,
+                "3": 0.37824639275953986
+              },
+              "speed_min": {
+                "1": 0.00038727392745123483,
+                "2": 0.00038727392745123483,
+                "3": 0.00038727392745123483
+              },
+              "status": "FEASIBLE",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            },
+            {
+              "T_end": 14.871258808212731,
+              "attempt": 2,
+              "checks_failed": [],
+              "checks_total": 4534,
+              "error": null,
+              "modes": {
+                "1": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ],
+                "2": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ],
+                "3": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ]
+              },
+              "ok": true,
+              "plan_id": 600004,
+              "playback_status_upgrade_s": 0.0,
+              "quality": {
+                "T_end": 14.871258808212731,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": false,
+                "pipeline_status": "FEASIBLE",
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "reason": "OK",
+              "sample_count": 745,
+              "speed_max": {
+                "1": 0.37824639275953986,
+                "2": 0.37824639275953986,
+                "3": 0.37824639275953986
+              },
+              "speed_min": {
+                "1": 0.00038727392745123483,
+                "2": 0.00038727392745123483,
+                "3": 0.00038727392745123483
+              },
+              "status": "FEASIBLE",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            },
+            {
+              "T_end": 14.871258808212731,
+              "attempt": 3,
+              "checks_failed": [],
+              "checks_total": 4534,
+              "error": null,
+              "modes": {
+                "1": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ],
+                "2": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ],
+                "3": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ]
+              },
+              "ok": true,
+              "plan_id": 600005,
+              "playback_status_upgrade_s": 0.0,
+              "quality": {
+                "T_end": 14.871258808212731,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": false,
+                "pipeline_status": "FEASIBLE",
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "reason": "OK",
+              "sample_count": 745,
+              "speed_max": {
+                "1": 0.37824639275953986,
+                "2": 0.37824639275953986,
+                "3": 0.37824639275953986
+              },
+              "speed_min": {
+                "1": 0.00038727392745123483,
+                "2": 0.00038727392745123483,
+                "3": 0.00038727392745123483
+              },
+              "status": "FEASIBLE",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            }
+          ],
+          "goal": null
+        },
+        "E02": {
+          "attempts": [
+            {
+              "T_end": 14.871258808212731,
+              "attempt": 1,
+              "checks_failed": [],
+              "checks_total": 4537,
+              "error": null,
+              "modes": {
+                "1": [
+                  [
+                    1,
+                    1.570796
+                  ]
+                ],
+                "2": [
+                  [
+                    1,
+                    1.570796
+                  ]
+                ],
+                "3": [
+                  [
+                    1,
+                    1.570796
+                  ]
+                ]
+              },
+              "ok": true,
+              "plan_id": 600006,
+              "playback_status_upgrade_s": 0.0,
+              "quality": {
+                "T_end": 14.871258808212731,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": false,
+                "pipeline_status": "FEASIBLE",
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "reason": "OK",
+              "sample_count": 745,
+              "speed_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "speed_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "status": "FEASIBLE",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            },
+            {
+              "T_end": 14.871258808212731,
+              "attempt": 2,
+              "checks_failed": [],
+              "checks_total": 4537,
+              "error": null,
+              "modes": {
+                "1": [
+                  [
+                    1,
+                    1.570796
+                  ]
+                ],
+                "2": [
+                  [
+                    1,
+                    1.570796
+                  ]
+                ],
+                "3": [
+                  [
+                    1,
+                    1.570796
+                  ]
+                ]
+              },
+              "ok": true,
+              "plan_id": 600007,
+              "playback_status_upgrade_s": 0.0,
+              "quality": {
+                "T_end": 14.871258808212731,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": false,
+                "pipeline_status": "FEASIBLE",
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "reason": "OK",
+              "sample_count": 745,
+              "speed_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "speed_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "status": "FEASIBLE",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            },
+            {
+              "T_end": 14.871258808212731,
+              "attempt": 3,
+              "checks_failed": [],
+              "checks_total": 4537,
+              "error": null,
+              "modes": {
+                "1": [
+                  [
+                    1,
+                    1.570796
+                  ]
+                ],
+                "2": [
+                  [
+                    1,
+                    1.570796
+                  ]
+                ],
+                "3": [
+                  [
+                    1,
+                    1.570796
+                  ]
+                ]
+              },
+              "ok": true,
+              "plan_id": 600008,
+              "playback_status_upgrade_s": 0.0,
+              "quality": {
+                "T_end": 14.871258808212731,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": false,
+                "pipeline_status": "FEASIBLE",
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "reason": "OK",
+              "sample_count": 745,
+              "speed_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "speed_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "status": "FEASIBLE",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            }
+          ],
+          "goal": null
+        },
+        "E03": {
+          "attempts": [
+            {
+              "T_end": 24.044066378636018,
+              "attempt": 1,
+              "checks_failed": [],
+              "checks_total": 7333,
+              "error": null,
+              "modes": {
+                "1": [
+                  [
+                    1,
+                    0.592156
+                  ],
+                  [
+                    1,
+                    0.649475
+                  ],
+                  [
+                    1,
+                    0.581305
+                  ],
+                  [
+                    1,
+                    0.649475
+                  ],
+                  [
+                    1,
+                    0.56065
+                  ],
+                  [
+                    1,
+                    0.649475
+                  ],
+                  [
+                    1,
+                    0.494552
+                  ],
+                  [
+                    1,
+                    0.410295
+                  ]
+                ],
+                "2": [
+                  [
+                    1,
+                    0.592156
+                  ],
+                  [
+                    1,
+                    0.649475
+                  ],
+                  [
+                    1,
+                    0.581305
+                  ],
+                  [
+                    1,
+                    0.649475
+                  ],
+                  [
+                    1,
+                    0.56065
+                  ],
+                  [
+                    1,
+                    0.649475
+                  ],
+                  [
+                    1,
+                    0.494552
+                  ],
+                  [
+                    1,
+                    0.410295
+                  ]
+                ],
+                "3": [
+                  [
+                    1,
+                    0.592156
+                  ],
+                  [
+                    1,
+                    0.649475
+                  ],
+                  [
+                    1,
+                    0.581305
+                  ],
+                  [
+                    1,
+                    0.649475
+                  ],
+                  [
+                    1,
+                    0.56065
+                  ],
+                  [
+                    1,
+                    0.649475
+                  ],
+                  [
+                    1,
+                    0.494552
+                  ],
+                  [
+                    1,
+                    0.410295
+                  ]
+                ]
+              },
+              "ok": true,
+              "plan_id": 600009,
+              "playback_status_upgrade_s": 0.0,
+              "quality": {
+                "T_end": 24.044066378636018,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": false,
+                "pipeline_status": "FEASIBLE",
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "reason": "OK",
+              "sample_count": 1211,
+              "speed_max": {
+                "1": 0.32723357470169107,
+                "2": 0.32723357470169107,
+                "3": 0.32723357470169107
+              },
+              "speed_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "status": "FEASIBLE",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            },
+            {
+              "T_end": 24.044066378636018,
+              "attempt": 2,
+              "checks_failed": [],
+              "checks_total": 7333,
+              "error": null,
+              "modes": {
+                "1": [
+                  [
+                    1,
+                    0.592156
+                  ],
+                  [
+                    1,
+                    0.649475
+                  ],
+                  [
+                    1,
+                    0.581305
+                  ],
+                  [
+                    1,
+                    0.649475
+                  ],
+                  [
+                    1,
+                    0.56065
+                  ],
+                  [
+                    1,
+                    0.649475
+                  ],
+                  [
+                    1,
+                    0.494552
+                  ],
+                  [
+                    1,
+                    0.410295
+                  ]
+                ],
+                "2": [
+                  [
+                    1,
+                    0.592156
+                  ],
+                  [
+                    1,
+                    0.649475
+                  ],
+                  [
+                    1,
+                    0.581305
+                  ],
+                  [
+                    1,
+                    0.649475
+                  ],
+                  [
+                    1,
+                    0.56065
+                  ],
+                  [
+                    1,
+                    0.649475
+                  ],
+                  [
+                    1,
+                    0.494552
+                  ],
+                  [
+                    1,
+                    0.410295
+                  ]
+                ],
+                "3": [
+                  [
+                    1,
+                    0.592156
+                  ],
+                  [
+                    1,
+                    0.649475
+                  ],
+                  [
+                    1,
+                    0.581305
+                  ],
+                  [
+                    1,
+                    0.649475
+                  ],
+                  [
+                    1,
+                    0.56065
+                  ],
+                  [
+                    1,
+                    0.649475
+                  ],
+                  [
+                    1,
+                    0.494552
+                  ],
+                  [
+                    1,
+                    0.410295
+                  ]
+                ]
+              },
+              "ok": true,
+              "plan_id": 600010,
+              "playback_status_upgrade_s": 0.0,
+              "quality": {
+                "T_end": 24.044066378636018,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": false,
+                "pipeline_status": "FEASIBLE",
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "reason": "OK",
+              "sample_count": 1211,
+              "speed_max": {
+                "1": 0.32723357470169107,
+                "2": 0.32723357470169107,
+                "3": 0.32723357470169107
+              },
+              "speed_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "status": "FEASIBLE",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            },
+            {
+              "T_end": 24.044066378636018,
+              "attempt": 3,
+              "checks_failed": [],
+              "checks_total": 7333,
+              "error": null,
+              "modes": {
+                "1": [
+                  [
+                    1,
+                    0.592156
+                  ],
+                  [
+                    1,
+                    0.649475
+                  ],
+                  [
+                    1,
+                    0.581305
+                  ],
+                  [
+                    1,
+                    0.649475
+                  ],
+                  [
+                    1,
+                    0.56065
+                  ],
+                  [
+                    1,
+                    0.649475
+                  ],
+                  [
+                    1,
+                    0.494552
+                  ],
+                  [
+                    1,
+                    0.410295
+                  ]
+                ],
+                "2": [
+                  [
+                    1,
+                    0.592156
+                  ],
+                  [
+                    1,
+                    0.649475
+                  ],
+                  [
+                    1,
+                    0.581305
+                  ],
+                  [
+                    1,
+                    0.649475
+                  ],
+                  [
+                    1,
+                    0.56065
+                  ],
+                  [
+                    1,
+                    0.649475
+                  ],
+                  [
+                    1,
+                    0.494552
+                  ],
+                  [
+                    1,
+                    0.410295
+                  ]
+                ],
+                "3": [
+                  [
+                    1,
+                    0.592156
+                  ],
+                  [
+                    1,
+                    0.649475
+                  ],
+                  [
+                    1,
+                    0.581305
+                  ],
+                  [
+                    1,
+                    0.649475
+                  ],
+                  [
+                    1,
+                    0.56065
+                  ],
+                  [
+                    1,
+                    0.649475
+                  ],
+                  [
+                    1,
+                    0.494552
+                  ],
+                  [
+                    1,
+                    0.410295
+                  ]
+                ]
+              },
+              "ok": true,
+              "plan_id": 600011,
+              "playback_status_upgrade_s": 0.0,
+              "quality": {
+                "T_end": 24.044066378636018,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": false,
+                "pipeline_status": "FEASIBLE",
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "reason": "OK",
+              "sample_count": 1211,
+              "speed_max": {
+                "1": 0.32723357470169107,
+                "2": 0.32723357470169107,
+                "3": 0.32723357470169107
+              },
+              "speed_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "status": "FEASIBLE",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            }
+          ],
+          "goal": null
+        },
+        "E04": {
+          "attempts": [
+            {
+              "T_end": 14.871258808212731,
+              "attempt": 1,
+              "checks_failed": [],
+              "checks_total": 4537,
+              "error": null,
+              "modes": {
+                "1": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ],
+                "2": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ],
+                "3": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ]
+              },
+              "ok": true,
+              "plan_id": 600012,
+              "playback_status_upgrade_s": 0.0,
+              "quality": {
+                "T_end": 14.871258808212731,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": false,
+                "pipeline_status": "FEASIBLE",
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "reason": "OK",
+              "sample_count": 745,
+              "speed_max": {
+                "1": -0.00038727392745123483,
+                "2": -0.00038727392745123483,
+                "3": -0.00038727392745123483
+              },
+              "speed_min": {
+                "1": -0.37824639275953986,
+                "2": -0.37824639275953986,
+                "3": -0.37824639275953986
+              },
+              "status": "FEASIBLE",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            },
+            {
+              "T_end": 14.871258808212731,
+              "attempt": 2,
+              "checks_failed": [],
+              "checks_total": 4537,
+              "error": null,
+              "modes": {
+                "1": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ],
+                "2": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ],
+                "3": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ]
+              },
+              "ok": true,
+              "plan_id": 600013,
+              "playback_status_upgrade_s": 0.0,
+              "quality": {
+                "T_end": 14.871258808212731,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": false,
+                "pipeline_status": "FEASIBLE",
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "reason": "OK",
+              "sample_count": 745,
+              "speed_max": {
+                "1": -0.00038727392745123483,
+                "2": -0.00038727392745123483,
+                "3": -0.00038727392745123483
+              },
+              "speed_min": {
+                "1": -0.37824639275953986,
+                "2": -0.37824639275953986,
+                "3": -0.37824639275953986
+              },
+              "status": "FEASIBLE",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            },
+            {
+              "T_end": 14.871258808212731,
+              "attempt": 3,
+              "checks_failed": [],
+              "checks_total": 4537,
+              "error": null,
+              "modes": {
+                "1": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ],
+                "2": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ],
+                "3": [
+                  [
+                    0,
+                    0.0
+                  ]
+                ]
+              },
+              "ok": true,
+              "plan_id": 600014,
+              "playback_status_upgrade_s": 0.0,
+              "quality": {
+                "T_end": 14.871258808212731,
+                "collision_certificate": true,
+                "independent_audit": true,
+                "no_motion": false,
+                "pipeline_status": "FEASIBLE",
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "reason": "OK",
+              "sample_count": 745,
+              "speed_max": {
+                "1": -0.00038727392745123483,
+                "2": -0.00038727392745123483,
+                "3": -0.00038727392745123483
+              },
+              "speed_min": {
+                "1": -0.37824639275953986,
+                "2": -0.37824639275953986,
+                "3": -0.37824639275953986
+              },
+              "status": "FEASIBLE",
+              "theta_max": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "theta_min": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              }
+            }
+          ],
+          "goal": null
+        }
+      },
+      "pass": true,
+      "sha256": "f1b1208fee3c0792db478093e44b19c3c88fcbb6ed9ad5a0270c3f6c89845497"
+    }
+  },
+  "tests": {
+    "full_python": {
+      "duration_s": 19.382,
+      "errors": 1,
+      "exit_code": 1,
+      "failures": 0,
+      "log": "runtime/python_tests.log",
+      "preserved_historical_error": "tests/test_continuous_retiming.py:271 KeyError: 'dynamic_peaks'",
+      "tests": 416
+    },
+    "planner_cpp": {
+      "formation_geometry": {
+        "exit_code": 0,
+        "failures": 0,
+        "log": "runtime/planner_cpp_formation_geometry.log",
+        "tests": 14
+      },
+      "policy_history": {
+        "exit_code": 0,
+        "failures": 0,
+        "log": "runtime/planner_cpp_policy_history.log",
+        "tests": 6
+      }
+    },
+    "targeted_t3": {
+      "duration_s": 4.99,
+      "exit_code": 0,
+      "failures": 0,
+      "log": "runtime/targeted_t3_tests.log",
+      "tests": 63
+    }
+  },
+  "zero_motion_contract": "NO_MOTION: one common t=0 sample, fixed centres/body headings, zero signed speed/yaw rate/wheel speed, mode A with control 0, static OBB/map certificate",
+  "environment": {
+    "allow_reverse": true,
+    "goal_heading_free": true,
+    "grid": "30x30 m empty, 0.05 m",
+    "heading_lock_initial": 0.0,
+    "offsets": "vehicle1=(1,0), vehicle2=(0,1), vehicle3=(0,-1) m",
+    "start": "(10,10,0)"
+  }
+}

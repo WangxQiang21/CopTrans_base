@@ -676,6 +676,9 @@ def _status_label(status, plan_id):
         status.get("trajectory_published") and status.get("executable")
         and status.get("feasible") and status_plan == plan_id)
     if executable:
+        if status.get("status") == "NO_MOTION":
+            return "NO_MOTION", True, "NO_MOTION", (
+                "audited zero-motion hold; static state published")
         return "FEASIBLE", True, "FEASIBLE", (
             "independent audit and transactional publication")
     reason = status.get("reason") or status.get("status") or "UNKNOWN"

@@ -794,7 +794,7 @@ def _empty_build(reason, detail, rejection=None, map_checked=False,
         certification=certification)
 
 
-def _validate_seed(snapshot, seed, expected_map_signature):
+def _validate_seed(snapshot, seed, expected_map_signature, allow_empty=False):
     plan_id = _uint32(_attribute(seed, "plan_id", "seed"), "seed.plan_id")
     formation_id = _attribute(seed, "formation_id", "seed")
     if not isinstance(formation_id, str) or not formation_id:
@@ -823,7 +823,7 @@ def _validate_seed(snapshot, seed, expected_map_signature):
                 "SEED_{}_MISMATCH xy={:.12g} yaw={:.12g}".format(
                     name.upper(), xy, yaw))
     primitives = list(_attribute(seed, "primitives", "seed"))
-    if not primitives:
+    if not primitives and not allow_empty:
         raise FormationValidationError("EMPTY_PRIMITIVE_SEQUENCE")
 
     map_checked = False
@@ -839,6 +839,52 @@ def _validate_seed(snapshot, seed, expected_map_signature):
                     "MAP_VERSION_MISMATCH seed={!r} expected={!r}".format(
                         seed_signature, expected_map_signature))
     return plan_id, formation_id, start, goal, primitives, map_checked, map_detail
+
+
+def validate_zero_motion_seed(snapshot, seed, expected_map_signature=None):
+    """Validate a zero-motion seed, or return ``None`` for any other seed.
+
+    A zero-motion request has identical start and goal formation poses and a
+    seed whose primitives are all zero length (an empty sequence qualifies).
+    The seed identity, header, poses and map signature are checked by the same
+    S6 validator used for normal seeds; only the non-empty-primitive rule is
+    relaxed.  Any non-zero primitive means this is not a hold and the normal
+    S6 build path must decide it.
+    """
+    try:
+        (plan_id, formation_id, seed_start, seed_goal, primitives,
+         map_checked, map_detail) = _validate_seed(
+            snapshot, seed, expected_map_signature, allow_empty=True)
+    except FormationValidationError:
+        return None
+    del plan_id, formation_id, seed_start, seed_goal
+    if (math.hypot(snapshot.start.x - snapshot.goal.x,
+                   snapshot.start.y - snapshot.goal.y) > _GEOMETRY_TOL or
+            _angle_error(snapshot.start.psi, snapshot.goal.psi) >
+            _GEOMETRY_TOL):
+        return None
+    for primitive in primitives:
+        try:
+            kind = _primitive_type(primitive)
+        except FormationValidationError:
+            return None
+        if kind == TRANSLATION:
+            length = math.hypot(
+                float(_attribute(primitive, "dx", "primitive")),
+                float(_attribute(primitive, "dy", "primitive")))
+            if length > _GEOMETRY_TOL:
+                return None
+        elif kind == ROTATION:
+            delta = abs(float(_attribute(primitive, "dpsi", "primitive")))
+            if delta > _GEOMETRY_TOL:
+                return None
+        else:
+            return None
+    return {
+        "primitives": tuple(primitives),
+        "map_checked": bool(map_checked),
+        "map_detail": map_detail,
+    }
 
 
 def _terminal_goal_error(control, goal):

@@ -25,6 +25,7 @@ from fwis_v3_optimizer.formation import (
     FormationValidationError,
     VehicleOffset,
 )
+from fwis_v3_optimizer.formation_hold import NO_MOTION
 from fwis_v3_optimizer.formation_quality import (
     FEASIBLE,
     GEOMETRY_ONLY_NOT_EXECUTABLE,
@@ -138,6 +139,12 @@ def rotation_request(plan_id=42):
         goal=(0.0, 0.0, dpsi), dpsi=dpsi)
 
 
+def zero_motion_request(plan_id=43):
+    return request_message(
+        plan_id=plan_id, formation_id="s9_zero_motion",
+        start=(0.0, 0.0, 0.0), goal=(0.0, 0.0, 0.0))
+
+
 def publishable_core(config=None):
     core = FormationNodeCore(pipeline_config=config or pipeline_config())
     core.on_map(empty_grid(), None, "map", stamp=(1000, 0))
@@ -211,6 +218,64 @@ class FormationNodePipelineTest(unittest.TestCase):
             self.assertGreater(second, first)
         with self.assertRaises(FormationValidationError):
             timed_trajectory_fields(snapshot, timed, (0, 0))
+
+    def test_zero_motion_pipeline_is_an_audited_hold(self):
+        request = zero_motion_request()
+        snapshot = validate_formation_request(request).snapshot
+        seed = seed_message(request, ())
+        result = FormationPlanningPipeline(pipeline_config()).run(
+            snapshot, seed, empty_grid())
+        self.assertEqual(result.status, NO_MOTION, result.detail)
+        self.assertEqual(result.reason, NO_MOTION)
+        self.assertEqual(result.candidates, ())
+        self.assertIsNotNone(result.selection)
+        self.assertEqual(result.selection.status, FEASIBLE)
+        self.assertIsNone(result.selection.selected_candidate_id)
+        timed = result.selected_timed
+        self.assertIsNotNone(timed)
+        self.assertEqual(timed.times_from_start, (0.0,))
+        self.assertEqual(timed.duration, 0.0)
+        for points in timed.trajectories.values():
+            self.assertEqual(len(points), 1)
+            self.assertEqual(points[0].center_speed_mps, 0.0)
+            self.assertEqual(points[0].center_yaw_rate_radps, 0.0)
+            self.assertEqual(points[0].wheel_speed_mps, 0.0)
+            self.assertTrue(points[0].stationary)
+        status = result.as_status()
+        self.assertEqual(status["status"], NO_MOTION)
+        self.assertTrue(status["executable"])
+        self.assertTrue(status["collision_certificate"])
+        self.assertTrue(status["no_motion"])
+        self.assertFalse(status["trajectory_published"])
+        self.assertEqual(status["T_end"], 0.0)
+        self.assertTrue(status["selection"]["evaluations"][0]["feasible"])
+        json.dumps(status, sort_keys=True, allow_nan=False)
+
+    def test_empty_seed_with_a_distinct_goal_is_not_a_hold(self):
+        request = straight_request(plan_id=44)
+        snapshot = validate_formation_request(request).snapshot
+        seed = seed_message(request, ())
+        result = FormationPlanningPipeline(pipeline_config()).run(
+            snapshot, seed, empty_grid())
+        self.assertEqual(result.status, "INVALID")
+        self.assertNotEqual(result.status, NO_MOTION)
+        self.assertIsNone(result.selection)
+        self.assertFalse(result.as_status()["executable"])
+
+    def test_zero_motion_hold_rejects_colliding_start(self):
+        request = zero_motion_request(plan_id=45)
+        snapshot = validate_formation_request(request).snapshot
+        seed = seed_message(request, ())
+        grid = empty_grid()
+        grid.occ[30, 64] = True  # x=1.2, y=0.0: vehicle 1 centre
+        result = FormationPlanningPipeline(pipeline_config()).run(
+            snapshot, seed, grid)
+        self.assertEqual(result.status, REJECTED)
+        self.assertNotEqual(result.status, NO_MOTION)
+        self.assertIsNone(result.selected_timed)
+        self.assertTrue(result.rejections)
+        self.assertEqual(result.rejections[0].stage, "hold")
+        self.assertFalse(result.as_status()["executable"])
 
     def test_retiming_failure_is_geometry_only_not_feasible(self):
         config = pipeline_config(timing_limits=FormationTimingLimits(
@@ -534,6 +599,37 @@ class FormationNodeTransactionTest(unittest.TestCase):
         self.assertEqual(event.status["node_state"], "FEASIBLE_PUBLISHED")
         self.assertTrue(event.status["trajectory_published"])
         self.assertIsNone(core.pending_seed)
+
+    def test_zero_motion_seed_publishes_an_audited_static_hold(self):
+        core = publishable_core()
+        request = zero_motion_request(plan_id=46)
+        request_event = core.on_request(
+            request, publication_stamp=(1027, 0))
+        self.assertEqual(request_event.status["node_state"],
+                         "REQUEST_VALIDATED")
+        seed = seed_message(request, ())
+        event = core.on_seed(seed, publication_stamp=(1028, 0))
+        self.assertEqual(event.status["node_state"], "NO_MOTION_PUBLISHED")
+        self.assertEqual(event.status["status"], NO_MOTION)
+        self.assertTrue(event.status["feasible"])
+        self.assertTrue(event.status["executable"])
+        self.assertTrue(event.status["trajectory_published"])
+        self.assertTrue(event.status["no_motion"])
+        self.assertIn("static hold", event.status["detail"])
+        self.assertEqual(event.status["duration"], 0.0)
+        self.assertEqual(event.quality["status"], NO_MOTION)
+        self.assertTrue(event.quality["independent_audit"])
+        self.assertTrue(event.quality["executable"])
+        self.assertEqual(event.trajectory_fields["times_from_start"], [0.0])
+        for trajectory in event.trajectory_fields["trajectories"]:
+            self.assertEqual(len(trajectory["points"]), 1)
+            point = trajectory["points"][0]
+            self.assertEqual(point[4], 0.0)
+            self.assertEqual(point[5], 0.0)
+            self.assertEqual(point[6], 0)
+            self.assertEqual(point[7], 0.0)
+        json.dumps(event.status, sort_keys=True, allow_nan=False)
+        json.dumps(event.quality, sort_keys=True, allow_nan=False)
 
     def test_no_map_rejects_seed_and_never_publishes(self):
         core = FormationNodeCore(pipeline_config=pipeline_config())

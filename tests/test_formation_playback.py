@@ -215,6 +215,38 @@ class PlaybackClockTest(unittest.TestCase):
         self.assertEqual(frame_at(model, 0.999).vehicles[0].mode, ACKERMANN)
         self.assertEqual(frame_at(model, 1.001).vehicles[0].mode, SPIN)
 
+    def test_single_sample_hold_is_the_static_terminal_state(self):
+        model = trajectory(
+            times=(0.0,),
+            samples={
+                0: (point(0.0, 0.0, 0.0, 0.0, speed=0.0),),
+                1: (point(0.0, 0.0, 1.2, math.pi / 2.0, OBLIQUE,
+                          0.0, 0.0),),
+            },
+            poses=((0.0, 0.0, 0.0),))
+        self.assertEqual(model.duration, 0.0)
+        frame = frame_at(model, 1.0)
+        self.assertEqual(frame.state, HOLD_END)
+        self.assertTrue(frame.terminal)
+        self.assertEqual(frame.lower_index, 0)
+        self.assertEqual(frame.upper_index, 0)
+        self.assertEqual(frame.fraction, 0.0)
+        vehicle = frame.vehicle_map()[1]
+        self.assertAlmostEqual(vehicle.center_x, 0.0)
+        self.assertAlmostEqual(vehicle.center_y, 1.2)
+        self.assertAlmostEqual(vehicle.theta, math.pi / 2.0)
+        self.assertEqual(vehicle.center_speed_mps, 0.0)
+        document = status_document(
+            model, frame,
+            {"schema": "formation_optimizer_status/v1", "plan_id": 7,
+             "status": "NO_MOTION", "feasible": True, "executable": True,
+             "trajectory_published": True, "reason": "NO_MOTION"})
+        self.assertTrue(document["executable"])
+        self.assertEqual(document["certification"], "NO_MOTION")
+        self.assertEqual(document["duration_s"], 0.0)
+        self.assertTrue(document["terminal"])
+        json.dumps(document, sort_keys=True, allow_nan=False)
+
     def test_status_document_names_the_single_time_source(self):
         model = trajectory()
         frame = frame_at(model, 0.5)
