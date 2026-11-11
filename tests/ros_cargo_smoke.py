@@ -936,7 +936,10 @@ def main(argv=None):
               "reset reason=START, policy headings=0; max heading error="
               "{:.3g}".format(reset_heading_error))
 
-        # ---- E06: independent headings are not silently faked --------
+        # ---- E06: zero initial headings, +90 deg cargo rotation -------
+        # T4 inserts a joint body-spin event between the stationary start and
+        # the rigid A-mode orbit; vehicle centres must stay fixed during the
+        # spin and the rigid wedge configuration must hold at every sample.
         e06_time = time.time()
         e06_goal = (10.0, 10.0, math.pi / 2.0)
         goal_pub.publish(make_goal(*e06_goal))
@@ -949,47 +952,162 @@ def main(argv=None):
                  and close(item["formation_goal"][2], e06_goal[2], 1e-6)),
                 None), "E06 bridge request", 10.0, run_demo,
             observations)[1]
+        e06_start_headings = [
+            item["start_center"][2] for item in e06_request["vehicles"]]
+        check(summary, "e06_starts_with_three_zero_headings",
+              len(e06_start_headings) == 3
+              and all(abs(wrap(value)) <= 1e-6
+                      for value in e06_start_headings),
+              "start headings={}".format(e06_start_headings))
         e06_terminal = wait_for(
             lambda: observations.terminal(e06_request["plan_id"], e06_time),
             "E06 terminal optimizer status", 60.0, run_demo, observations)[1]
-        check(summary, "e06_rejected_by_independent_heading_check",
-              e06_terminal.get("status") in ("INVALID", "REJECTED")
-              and e06_terminal.get("trajectory_published") is False
-              and e06_terminal.get("reason") ==
-              "HEADING_BOUNDARY_MISMATCH",
-              "status={} reason={}".format(
+        check(summary, "e06_feasible_with_independent_body_spin",
+              e06_terminal.get("status") == "FEASIBLE"
+              and e06_terminal.get("trajectory_published") is True,
+              "status={} reason={} duration={}".format(
                   e06_terminal.get("status"),
-                  e06_terminal.get("reason")))
-        e06_failure = wait_for(
+                  e06_terminal.get("reason"),
+                  e06_terminal.get("duration")))
+        e06_quality = wait_for(
             lambda: next(
-                ((wall, document) for wall, document
-                 in observations.playback
+                ((wall, document) for wall, document in observations.quality
                  if wall >= e06_time
                  and document.get("plan_id") == e06_request["plan_id"]
-                 and document.get("state") == "STATIC"
-                 and "HEADING_BOUNDARY_MISMATCH" in
-                 str(document.get("reason", ""))), None),
-            "E06 static failure display", 10.0, run_demo, observations)
-        e06_bodies = wait_for(
-            lambda: observations.latest_markers(e06_failure[0])
-            if observations.latest_markers(e06_failure[0]) is not None
-            and sum(marker.type == 4 and marker.action == 0
-                    and "vehicle_" in marker.ns
-                    for marker in observations.latest_markers(
-                        e06_failure[0])[1].markers) == 3
-            else None, "E06 three static bodies", 10.0, run_demo,
+                 and document.get("status") == "FEASIBLE"),
+                None), "E06 independent audit", 10.0, run_demo,
+            observations)[1]
+        check(summary, "e06_independent_audit_and_collision_certificate",
+              e06_quality.get("independent_audit") is True
+              and e06_quality.get("collision_certificate") is True,
+              "independent_audit={} collision_certificate={}".format(
+                  e06_quality.get("independent_audit"),
+                  e06_quality.get("collision_certificate")))
+        e06_trajectory = wait_for(
+            lambda: next(
+                (message for _, message in observations.trajectories
+                 if int(message.plan_id) == e06_request["plan_id"]
+                 and message.vehicles and message.trajectories),
+                None), "E06 published trajectory", 10.0, run_demo,
             observations)
-        check(summary, "e06_keeps_static_bodies_without_old_path",
-              e06_failure[1].get("executable") is False
-              and sum(marker.type == 4 and marker.action == 0
-                      and "vehicle_" in marker.ns
-                      for marker in e06_bodies[1].markers) == 3,
-              "state={} reason={} static vehicle OBBs={}".format(
-                  e06_failure[1].get("state"),
-                  e06_failure[1].get("reason"),
-                  sum(marker.type == 4 and marker.action == 0
-                      and "vehicle_" in marker.ns
-                      for marker in e06_bodies[1].markers)))
+        e06_times = [float(value.to_sec())
+                     for value in e06_trajectory.times_from_start]
+        e06_points = {
+            int(item.vehicle_id): list(item.points)
+            for item in e06_trajectory.trajectories}
+        check(summary, "e06_common_time_grid_for_every_vehicle",
+              len(e06_times) == len(e06_trajectory.formation_poses)
+              and len(e06_points) == len(config["vehicle_ids"])
+              and all(len(points) == len(e06_times)
+                      for points in e06_points.values())
+              and all(abs(float(point.time_from_start.to_sec()) -
+                          e06_times[index]) <= 1e-9
+                      for points in e06_points.values()
+                      for index, point in enumerate(points)),
+              "samples={} vehicles={}".format(
+                  len(e06_times), sorted(e06_points)))
+        offsets = {int(item["vehicle_id"]): item["offset"][:2]
+                   for item in e06_request["vehicles"]}
+        max_rigidity = 0.0
+        for index, formation in enumerate(e06_trajectory.formation_poses):
+            cosine, sine = math.cos(formation.theta), math.sin(formation.theta)
+            for vehicle_id, offset_x, offset_y in (
+                    (vehicle_id, offsets[vehicle_id][0],
+                     offsets[vehicle_id][1])
+                    for vehicle_id in offsets):
+                expected_x = formation.x + cosine * offset_x - sine * offset_y
+                expected_y = formation.y + sine * offset_x + cosine * offset_y
+                point = e06_points[vehicle_id][index]
+                max_rigidity = max(max_rigidity, math.hypot(
+                    point.center_pose.x - expected_x,
+                    point.center_pose.y - expected_y))
+        check(summary, "e06_centres_remain_rigid_at_every_sample",
+              max_rigidity <= 1e-6,
+              "max p_i-(q_F+R r_i)={:.3g} m over {} samples".format(
+                  max_rigidity, len(e06_times)))
+
+        spin_vehicle = None
+        spin_rows = []
+        for vehicle_id, points in e06_points.items():
+            rows = [point for point in points
+                    if int(point.mode) == 2]
+            if rows:
+                spin_vehicle = vehicle_id
+                spin_rows = rows
+                break
+        spin_center_error = 0.0
+        spin_speed = 0.0
+        spin_heading_change = 0.0
+        if spin_rows:
+            first, last = spin_rows[0], spin_rows[-1]
+            for point in spin_rows:
+                spin_center_error = max(
+                    spin_center_error,
+                    math.hypot(point.center_pose.x - first.center_pose.x,
+                               point.center_pose.y - first.center_pose.y))
+                spin_speed = max(spin_speed,
+                                 abs(float(point.center_speed_mps)))
+            spin_heading_change = abs(wrap(
+                last.center_pose.theta - first.center_pose.theta))
+        check(summary, "e06_has_a_stationary_vehicle_body_spin",
+              spin_vehicle is not None
+              and spin_center_error <= 1e-6
+              and spin_speed <= 1e-9
+              and spin_heading_change >= math.pi / 2.0 - 1e-3,
+              "vehicle={} spin heading change={:.6f} rad centre error="
+              "{:.3g} m speed={:.3g} m/s".format(
+                  spin_vehicle, spin_heading_change, spin_center_error,
+                  spin_speed))
+        orbit_moved = 0.0
+        orbit_a_mode = False
+        if spin_rows:
+            spin_end_time = float(spin_rows[-1].time_from_start.to_sec())
+            start_center = spin_rows[-1].center_pose
+            for point in e06_points[spin_vehicle]:
+                if float(point.time_from_start.to_sec()) <= spin_end_time:
+                    continue
+                if int(point.mode) == 0:
+                    orbit_a_mode = True
+                orbit_moved = max(orbit_moved, math.hypot(
+                    point.center_pose.x - start_center.x,
+                    point.center_pose.y - start_center.y))
+        check(summary, "e06_spin_is_followed_by_an_A_orbit",
+              orbit_a_mode and orbit_moved >= 0.5,
+              "A sample={} centre travel after spin={:.3f} m".format(
+                  orbit_a_mode, orbit_moved))
+
+        e06_hold = wait_for(
+            lambda: observations.hold_end(e06_request["plan_id"], e06_time),
+            "E06 HOLD_END",
+            float(e06_trajectory.times_from_start[-1].to_sec()) + 20.0,
+            run_demo, observations)[1]
+        e06_terminal_headings = {
+            int(item["vehicle_id"]): float(item["theta"])
+            for item in e06_hold.get("vehicles", [])}
+        displayed_error = 0.0
+        for vehicle_id, points in e06_points.items():
+            displayed_error = max(displayed_error, abs(wrap(
+                e06_terminal_headings[vehicle_id] -
+                float(points[-1].center_pose.theta))))
+        check(summary, "e06_terminal_headings_are_per_vehicle",
+              set(e06_terminal_headings) == set(e06_points)
+              and displayed_error <= 1e-3
+              and any(abs(wrap(value - e06_goal[2])) > 0.5
+                      for value in e06_terminal_headings.values()),
+              "terminal theta={} psi_F={} displayed error={:.3g}".format(
+                  e06_terminal_headings, e06_goal[2], displayed_error))
+        e06_reference = wait_for(
+            lambda: reference_at(e06_goal),
+            "E06 terminal cargo TF", 5.0, run_demo, observations)
+        check(summary, "e06_terminal_cargo_pose",
+              math.hypot(
+                  e06_reference["translation"][0] - e06_goal[0],
+                  e06_reference["translation"][1] - e06_goal[1]) <= 1e-3
+              and close_angle(e06_reference["yaw"], e06_goal[2], 1e-3),
+              "TF reference=({:.6f}, {:.6f}, {:.6f}) expected={}".format(
+                  e06_reference["translation"][0],
+                  e06_reference["translation"][1],
+                  e06_reference["yaw"], e06_goal))
         retired = ("CARGO_ROTATION_REQUIRES_GENERAL_4WIS",
                    "CARGO_HEADING_MISMATCH")
         check(summary, "retired_cargo_heading_lock_not_default",
@@ -997,19 +1115,27 @@ def main(argv=None):
                   and retired[1] not in str(document.get("reason", ""))
                   for _, document in observations.optimizer),
               "no optimizer status cites {}".format(retired))
-        summary["observed"]["e06_failure"] = {
+        summary["observed"]["e06"] = {
             "plan_id": e06_request["plan_id"],
             "request": e06_request,
             "terminal_optimizer_status": e06_terminal,
-            "playback_status": e06_failure[1],
+            "terminal_headings": e06_terminal_headings,
+            "spin_vehicle": spin_vehicle,
+            "spin_heading_change": spin_heading_change,
+            "orbit_moved_m": orbit_moved,
+            "max_rigidity_error_m": max_rigidity,
         }
 
-        # ---- basic forward and lateral goals after the failure --------
+        # ---- basic forward and lateral goals after the spin case -----
+        # E06 ends with cargo (10,10,pi/2) and per-vehicle headings
+        # (pi, pi/2, pi/2); the bridge must start from that displayed state.
         forward_request, forward_terminal, forward_hold = bridge_case(
-            "E01_forward", (13.0, 10.0, 0.0), (10.0, 10.0, 0.0))
+            "E01_forward", (13.0, 10.0, math.pi / 2.0),
+            (10.0, 10.0, math.pi / 2.0))
         lateral_request, lateral_terminal, lateral_hold = bridge_case(
-            "E02_lateral", (13.0, 13.0, 0.0), (13.0, 10.0, 0.0))
-        summary["observed"]["post_failure_cases"] = {
+            "E02_lateral", (13.0, 13.0, math.pi / 2.0),
+            (13.0, 10.0, math.pi / 2.0))
+        summary["observed"]["post_spin_cases"] = {
             "E01": {"plan_id": forward_request["plan_id"],
                     "terminal_status": forward_terminal,
                     "end_headings": {

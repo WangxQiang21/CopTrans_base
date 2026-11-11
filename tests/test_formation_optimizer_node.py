@@ -26,6 +26,7 @@ from fwis_v3_optimizer.formation import (
     VehicleOffset,
 )
 from fwis_v3_optimizer.formation_hold import NO_MOTION
+from fwis_v3_optimizer.formation_kinematics import ACKERMANN, SPIN
 from fwis_v3_optimizer.formation_quality import (
     FEASIBLE,
     GEOMETRY_ONLY_NOT_EXECUTABLE,
@@ -43,6 +44,10 @@ from formation_optimizer_node import (
     timed_trajectory_fields,
 )
 from fwis_v3_optimizer.formation_quality import FormationQualityConfig
+from tests.test_formation_t3_missions import (
+    make_request as wedge_request,
+    empty_grid as wedge_empty_grid,
+)
 
 
 def primitive(geometry_type, dx=0.0, dy=0.0, dpsi=0.0,
@@ -218,6 +223,48 @@ class FormationNodePipelineTest(unittest.TestCase):
             self.assertGreater(second, first)
         with self.assertRaises(FormationValidationError):
             timed_trajectory_fields(snapshot, timed, (0, 0))
+
+    def test_zero_heading_cargo_rotation_pipeline_spins_then_orbits(self):
+        request = wedge_request((10.0, 10.0, math.pi / 2.0))
+        snapshot = validate_formation_request(request).snapshot
+        seed = seed_message(request, (primitive(1, dpsi=math.pi / 2.0),))
+        result = FormationPlanningPipeline(pipeline_config()).run(
+            snapshot, seed, wedge_empty_grid())
+        self.assertEqual(result.status, FEASIBLE, result.detail)
+        self.assertTrue(result.selection.selected_evaluation.feasible)
+        plan = result.selection.selected_plan
+        self.assertEqual(plan.blocks[0].geometry_type, "body_spin")
+        self.assertEqual(plan.blocks[1].geometry_type, "rotation")
+        timed = result.selected_timed
+        spin_points = [
+            point for point in timed.trajectories[1] if point.mode == SPIN]
+        self.assertTrue(spin_points)
+        first_center = (spin_points[0].center_x, spin_points[0].center_y)
+        for point in spin_points:
+            self.assertAlmostEqual(point.center_x, first_center[0],
+                                   delta=1e-9)
+            self.assertAlmostEqual(point.center_y, first_center[1],
+                                   delta=1e-9)
+            self.assertEqual(point.center_speed_mps, 0.0)
+        self.assertAlmostEqual(
+            spin_points[-1].center_x, 11.0, delta=1e-9)
+        self.assertAlmostEqual(
+            spin_points[-1].center_y, 10.0, delta=1e-9)
+        after_spin = [
+            point for point in timed.trajectories[1]
+            if point.mode == ACKERMANN and (
+                point.time_from_start > spin_points[-1].time_from_start)]
+        self.assertTrue(any(
+            math.hypot(
+                point.center_x - first_center[0],
+                point.center_y - first_center[1]) > 0.5
+            for point in after_spin))
+        fields = timed_trajectory_fields(snapshot, timed, (2100, 0))
+        self.assertEqual(fields["plan_id"], 7000)
+        self.assertEqual(len(fields["trajectories"]), 3)
+        self.assertTrue(all(
+            len(item["points"]) == len(fields["times_from_start"])
+            for item in fields["trajectories"]))
 
     def test_zero_motion_pipeline_is_an_audited_hold(self):
         request = zero_motion_request()

@@ -29,10 +29,13 @@ from .formation_collision import (
     SweepPolicy,
 )
 from .formation_kinematics import (
+    ACKERMANN,
+    BODY_SPIN,
     COMPOSITE,
     KinematicLimits,
     OBLIQUE,
     ROTATION,
+    SPIN,
     TRANSLATION,
     FormationKinematicBlock,
     FormationModeAssignment,
@@ -207,7 +210,8 @@ class FormationPathControl:
     pivot_y: float = 0.0
 
     def __post_init__(self):
-        if self.geometry_type not in (TRANSLATION, ROTATION):
+        if self.geometry_type not in (
+                TRANSLATION, ROTATION, BODY_SPIN):
             raise FormationValidationError(
                 "UNSUPPORTED_GEOMETRY_TYPE {}".format(self.geometry_type))
         object.__setattr__(self, "parameter_length", _finite(
@@ -235,6 +239,17 @@ class FormationPathControl:
                 raise FormationValidationError(
                     "INVALID_TRANSLATION_CONTROL parameter_length mismatch")
             return
+        if self.geometry_type == BODY_SPIN:
+            if math.hypot(
+                    self.end_qf.x - self.start_qf.x,
+                    self.end_qf.y - self.start_qf.y) > _GEOMETRY_TOL:
+                raise FormationValidationError(
+                    "INVALID_BODY_SPIN_CONTROL q_F position must remain fixed")
+            if _angle_error(self.start_qf.psi, self.end_qf.psi) > (
+                    _GEOMETRY_TOL):
+                raise FormationValidationError(
+                    "INVALID_BODY_SPIN_CONTROL psi_F must remain fixed")
+            return
         delta_psi = self.delta_psi
         if abs(abs(delta_psi) - self.parameter_length) > (
                 _GEOMETRY_TOL +
@@ -261,6 +276,9 @@ class FormationPathControl:
                 "INVALID_BLOCK_STATION {} outside [0, {}]".format(
                     station, self.parameter_length))
         fraction = station / self.parameter_length
+        if self.geometry_type == BODY_SPIN:
+            return FormationPose(
+                self.start_qf.x, self.start_qf.y, self.start_qf.psi)
         if self.geometry_type == TRANSLATION:
             return FormationPose(
                 self.start_qf.x + fraction * (
@@ -291,6 +309,8 @@ class FormationPathControl:
             raise FormationValidationError(
                 "INVALID_BLOCK_STATION {} outside [0, {}]".format(
                     station, self.parameter_length))
+        if self.geometry_type == BODY_SPIN:
+            return (0.0, 0.0, 0.0)
         if self.geometry_type == TRANSLATION:
             return (
                 (self.end_qf.x - self.start_qf.x) / self.parameter_length,
@@ -329,7 +349,8 @@ class FormationBlock:
     block_index: int = 0
 
     def __post_init__(self):
-        if self.geometry_type not in (TRANSLATION, ROTATION):
+        if self.geometry_type not in (
+                TRANSLATION, ROTATION, BODY_SPIN):
             raise FormationValidationError(
                 "UNSUPPORTED_GEOMETRY_TYPE {}".format(self.geometry_type))
         object.__setattr__(self, "parameter_length", _finite(
@@ -376,6 +397,40 @@ class FormationBlock:
         if not segments:
             raise FormationValidationError(
                 "EMPTY_MODE_SEGMENTS")
+        if self.geometry_type == BODY_SPIN:
+            for segment in segments:
+                if math.hypot(
+                        segment.end_center_x - segment.start_center_x,
+                        segment.end_center_y - segment.start_center_y) > (
+                        _GEOMETRY_TOL):
+                    raise FormationValidationError(
+                        "BODY_SPIN_CENTER_MOVED vehicle_id={}".format(
+                            segment.vehicle_id))
+                if abs(segment.control) > 1e-12:
+                    raise FormationValidationError(
+                        "BODY_SPIN_CONTROL_NONZERO vehicle_id={}".format(
+                            segment.vehicle_id))
+                if segment.travel_distance != 0.0:
+                    raise FormationValidationError(
+                        "BODY_SPIN_TRAVEL_NONZERO vehicle_id={}".format(
+                            segment.vehicle_id))
+                delta = _wrap(
+                    segment.theta_end - segment.theta_start)
+                if abs(delta) <= _GEOMETRY_TOL:
+                    if segment.mode != ACKERMANN:
+                        raise FormationValidationError(
+                            "BODY_SPIN_HOLD_MODE vehicle_id={} mode={}".format(
+                                segment.vehicle_id, segment.mode))
+                else:
+                    if segment.mode != SPIN:
+                        raise FormationValidationError(
+                            "BODY_SPIN_MODE vehicle_id={} mode={}".format(
+                                segment.vehicle_id, segment.mode))
+                    expected = 1 if delta > 0.0 else -1
+                    if segment.direction != expected:
+                        raise FormationValidationError(
+                            "BODY_SPIN_DIRECTION vehicle_id={}".format(
+                                segment.vehicle_id))
         object.__setattr__(self, "formation_controls", (control,))
         object.__setattr__(
             self, "vehicle_mode_segments",
@@ -863,6 +918,17 @@ def validate_zero_motion_seed(snapshot, seed, expected_map_signature=None):
             _angle_error(snapshot.start.psi, snapshot.goal.psi) >
             _GEOMETRY_TOL):
         return None
+    # A cargo-stationary request can still require an explicit body-heading
+    # change.  Such a request is a T4 body-spin event, never a static hold.
+    goal_headings = dict(snapshot.goal_headings)
+    free_flags = dict(snapshot.goal_heading_free)
+    start_headings = dict(snapshot.start_headings)
+    if any(
+            not free_flags.get(vehicle_id, False) and _angle_error(
+                goal_headings[vehicle_id], start_headings[vehicle_id]) >
+            _GEOMETRY_TOL
+            for vehicle_id in snapshot.model.vehicle_ids):
+        return None
     for primitive in primitives:
         try:
             kind = _primitive_type(primitive)
@@ -893,100 +959,155 @@ def _terminal_goal_error(control, goal):
         _angle_error(endpoint.psi, goal.psi))
 
 
-def _fit_terminal_control(kinematic, goal, start_headings, expected_end,
-                          goal_heading_free, allow_reverse, limits,
-                          max_schedules, allowed_modes=None):
-    """Return ``(variants, failure_reason, failure_detail)``.
+def _fit_terminal_geometry(kinematic, goal):
+    """Fit the last rigid block to the exact formation goal.
 
-    Each variant is ``(kinematic, assignment)``; ``assignment=None`` means the
-    original block already reaches the explicit goal and its stored schedule
-    should be retained.  Otherwise only the last endpoint is changed: a
-    translation absorbs the residual with unchanged ``psi_F``, while a rotation
-    keeps its explicit pivot and changes only its yaw increment.  No other
-    block or vehicle center is independently moved.
+    A translation absorbs the residual with unchanged ``psi_F`` and a rotation
+    keeps its explicit pivot and changes only its yaw increment.  A body-spin
+    event cannot move ``q_F`` at all and is returned unchanged only when the
+    endpoint already equals the goal.  Mode schedules are enumerated by the
+    caller because a T4 pre-rotation spin changes the headings available to
+    the fitted block.
     """
-    goal_heading_free = goal_heading_free or {}
     xy_error, yaw_error = _terminal_goal_error(
         _path_control(kinematic), goal)
     if xy_error <= _GEOMETRY_TOL and yaw_error <= _GEOMETRY_TOL:
-        delta = (kinematic.delta_psi
-                 if kinematic.geometry_type == ROTATION else 0.0)
-        for vehicle_id, theta in start_headings.items():
-            if expected_end is None or goal_heading_free.get(vehicle_id, False):
-                continue
-            error = _angle_error(theta + delta, expected_end[vehicle_id])
-            if error > limits.heading_tolerance_rad:
-                return (), "GOAL_HEADING_MISMATCH", (
-                    "vehicle_id={} terminal body heading differs from the "
-                    "explicit goal by {:.12g} rad without changing position"
-                    .format(vehicle_id, error))
-        return ((kinematic, None),), None, ""
-
+        return kinematic, None, ""
+    if kinematic.geometry_type == BODY_SPIN:
+        return None, "TERMINAL_FIT_FAILED", (
+            "a body-spin event keeps q_F fixed and cannot reach the goal "
+            "xy/yaw residual")
     if kinematic.geometry_type == TRANSLATION:
         if _angle_error(kinematic.start_qf.psi, goal.psi) > _GEOMETRY_TOL:
-            return (), "TERMINAL_FIT_FAILED", (
+            return None, "TERMINAL_FIT_FAILED", (
                 "a translation cannot change psi_F from {:.12g} to {:.12g}"
                 .format(kinematic.start_qf.psi, goal.psi))
         length = math.hypot(
             goal.x - kinematic.start_qf.x,
             goal.y - kinematic.start_qf.y)
         if length <= _GEOMETRY_TOL:
-            return (), "TERMINAL_FIT_FAILED", (
+            return None, "TERMINAL_FIT_FAILED", (
                 "the fitted translation has zero length")
-        fitted = FormationKinematicBlock(
+        return FormationKinematicBlock(
             TRANSLATION, length, kinematic.start_qf, goal, 0.0, 0.0,
-            kinematic.offsets)
-    else:
-        delta_psi = goal.psi - kinematic.start_qf.psi
-        if abs(delta_psi) <= _GEOMETRY_TOL:
-            return (), "TERMINAL_FIT_FAILED", (
-                "the fitted rotation has zero angle")
-        start = kinematic.start_qf
-        cosine, sine = math.cos(start.psi), math.sin(start.psi)
-        pivot_w = (
-            start.x + cosine * kinematic.pivot_x -
-            sine * kinematic.pivot_y,
-            start.y + sine * kinematic.pivot_x +
-            cosine * kinematic.pivot_y)
-        next_psi = start.psi + delta_psi
-        cn, sn = math.cos(next_psi), math.sin(next_psi)
-        endpoint = FormationPose(
-            pivot_w[0] - cn * kinematic.pivot_x + sn * kinematic.pivot_y,
-            pivot_w[1] - sn * kinematic.pivot_x - cn * kinematic.pivot_y,
-            next_psi)
-        residual = math.hypot(endpoint.x - goal.x, endpoint.y - goal.y)
-        if residual > _GEOMETRY_TOL:
-            return (), "TERMINAL_FIT_FAILED", (
-                "the explicit pivot cannot reach the goal; residual={:.12g}"
-                .format(residual))
-        fitted = FormationKinematicBlock(
-            ROTATION, abs(delta_psi), start, endpoint,
-            kinematic.pivot_x, kinematic.pivot_y, kinematic.offsets)
+            kinematic.offsets), None, ""
+    delta_psi = goal.psi - kinematic.start_qf.psi
+    if abs(delta_psi) <= _GEOMETRY_TOL:
+        return None, "TERMINAL_FIT_FAILED", (
+            "the fitted rotation has zero angle")
+    start = kinematic.start_qf
+    cosine, sine = math.cos(start.psi), math.sin(start.psi)
+    pivot_w = (
+        start.x + cosine * kinematic.pivot_x -
+        sine * kinematic.pivot_y,
+        start.y + sine * kinematic.pivot_x +
+        cosine * kinematic.pivot_y)
+    next_psi = start.psi + delta_psi
+    cn, sn = math.cos(next_psi), math.sin(next_psi)
+    endpoint = FormationPose(
+        pivot_w[0] - cn * kinematic.pivot_x + sn * kinematic.pivot_y,
+        pivot_w[1] - sn * kinematic.pivot_x - cn * kinematic.pivot_y,
+        next_psi)
+    residual = math.hypot(endpoint.x - goal.x, endpoint.y - goal.y)
+    if residual > _GEOMETRY_TOL:
+        return None, "TERMINAL_FIT_FAILED", (
+            "the explicit pivot cannot reach the goal; residual={:.12g}"
+            .format(residual))
+    return FormationKinematicBlock(
+        ROTATION, abs(delta_psi), start, endpoint,
+        kinematic.pivot_x, kinematic.pivot_y, kinematic.offsets), None, ""
 
+
+def _audited_block_choices(
+        kinematic, headings, block_index, limits, allow_reverse,
+        max_schedules, allowed_modes, expected_end=None, free_flags=None):
+    """Return ``(choices, failures)`` for one already-fitted block.
+
+    Each choice is ``(schedule_cost, FormationBlock)``.  The caller decides
+    whether a spin event must precede the block.
+    """
     assignments = enumerate_mode_assignments(
-        fitted, start_headings, limits=limits,
+        kinematic, headings, limits=limits,
         allow_reverse=allow_reverse,
         expected_end_headings=expected_end,
-        goal_heading_free=goal_heading_free,
+        goal_heading_free=free_flags,
         max_schedules=max_schedules,
         allowed_modes=allowed_modes)
-    variants = []
+    choices = []
+    failures = []
     for assignment in assignments:
+        if not assignment.success:
+            failures.append(FormationPlanRejection(
+                block_index,
+                (assignment.rejections[0].vehicle_id
+                 if assignment.rejections else None),
+                assignment.reason, assignment.detail))
+            continue
         audit = audit_mode_assignment(
             assignment, limits=limits,
             expected_end_headings=expected_end,
-            goal_heading_free=goal_heading_free,
+            goal_heading_free=free_flags,
             allow_reverse=allow_reverse)
-        if assignment.success and audit.success:
-            variants.append((fitted, assignment))
-    if not variants:
-        reasons = sorted(set(
-            getattr(assignment, "reason", "MODE_ASSIGNMENT_FAILED")
-            for assignment in assignments))
-        return (), "MODE_ASSIGNMENT_FAILED", (
-            "no audited terminal mode schedule; reasons={}".format(
-                reasons or ["NONE"]))
-    return tuple(variants), None, ""
+        if not audit.success:
+            failures.append(FormationPlanRejection(
+                block_index, None, audit.reason, audit.detail))
+            continue
+        block = _block_from_assignment(kinematic, assignment, block_index)
+        choices.append((assignment.schedule_cost, block))
+    choices.sort(key=lambda item: (
+        item[0], item[1].candidate_key()))
+    return choices, failures
+
+
+def _block_options(
+        kinematic, headings, block_index, offsets, limits, allow_reverse,
+        max_schedules, allowed_modes, expected_end=None, free_flags=None,
+        max_spin_schemes=16):
+    """Expand one primitive into direct and pre-spin block options.
+
+    Each option is ``(cost, blocks, end_headings)`` where ``blocks`` is either
+    ``(main,)`` or ``(spin, main)``.  A rotation whose current body headings
+    are not tangent cannot be assigned directly; T4 then generates the finite
+    tangent/anti-tangent schemes and lets the existing S5 A/O enumeration
+    compare their direction feasibility.  Translations keep the existing
+    finite A/O direction comparison without a mandatory spin.
+    """
+    options = []
+    failures = []
+    choices, direct_failures = _audited_block_choices(
+        kinematic, headings, block_index, limits, allow_reverse,
+        max_schedules, allowed_modes, expected_end, free_flags)
+    failures.extend(direct_failures)
+    for cost, block in choices:
+        options.append((cost, (block,), dict(block.end_headings)))
+    if kinematic.geometry_type != ROTATION:
+        return options, failures
+
+    from .formation_spin import make_spin_block, rotation_schemes
+    schemes = rotation_schemes(
+        kinematic.start_qf, headings, offsets, kinematic.delta_psi,
+        limits=limits, goal_headings=expected_end,
+        goal_heading_free=free_flags, max_schemes=max_spin_schemes)
+    for scheme in schemes:
+        targets = dict(scheme.end_headings)
+        built = make_spin_block(
+            kinematic.start_qf, headings, targets, offsets, block_index)
+        if built is None:
+            continue
+        spin_block, post_headings, _length = built
+        main_choices, main_failures = _audited_block_choices(
+            kinematic, dict(post_headings), block_index + 1, limits,
+            allow_reverse, max_schedules, allowed_modes, expected_end,
+            free_flags)
+        failures.extend(main_failures)
+        for cost, block in main_choices:
+            options.append((
+                scheme.cost + cost,
+                (spin_block, block),
+                dict(block.end_headings)))
+    options.sort(key=lambda item: (
+        item[0], tuple(block.candidate_key() for block in item[1])))
+    return options, failures
 
 
 def _schedule_combinations(choice_sets, max_combinations):
@@ -1027,11 +1148,50 @@ def build_continuous_plans(
     terminal_tolerance_rad = _finite(
         terminal_tolerance_rad, "terminal_tolerance_rad", nonnegative=True)
 
+    goal_qf_fixed = (
+        math.hypot(snapshot.start.x - snapshot.goal.x,
+                   snapshot.start.y - snapshot.goal.y) <= _GEOMETRY_TOL and
+        _angle_error(snapshot.start.psi, snapshot.goal.psi) <= _GEOMETRY_TOL)
+
+    def heading_only_build():
+        from .formation_spin import (
+            build_heading_only_plan, heading_reconfiguration_needed)
+        if not goal_qf_fixed or not heading_reconfiguration_needed(snapshot):
+            return None
+        plan = build_heading_only_plan(
+            snapshot, source_signature=_seed_signature(seed))
+        if plan is None:
+            return None
+        return FormationPlanBuild(
+            success=True,
+            reason="OK",
+            detail=("BODY_SPIN_ONLY; "
+                    "GEOMETRY_BUILT_KINEMATIC_CANDIDATE_NOT_EXECUTABLE; "
+                    "map_version_checked={}; skipped_zero_primitives=0"
+                    .format(map_checked)),
+            plans=(plan,),
+            rejections=(),
+            map_version_checked=map_checked,
+            certification=GEOMETRY_VALID)
+
     try:
         (plan_id, formation_id, seed_start, seed_goal, primitives,
          map_checked, _map_detail) = _validate_seed(
             snapshot, seed, expected_map_signature)
     except FormationValidationError as exc:
+        if "EMPTY_PRIMITIVE_SEQUENCE" not in str(exc):
+            return _empty_build("INVALID_SEED", str(exc))
+        # An empty S4 seed is the normal C++ result when q_F does not move.
+        # It is valid only when an explicit body-heading change remains.
+        try:
+            (plan_id, formation_id, seed_start, seed_goal, primitives,
+             map_checked, _map_detail) = _validate_seed(
+                snapshot, seed, expected_map_signature, allow_empty=True)
+        except FormationValidationError as nested:
+            return _empty_build("INVALID_SEED", str(nested))
+        heading_only = heading_only_build()
+        if heading_only is not None:
+            return heading_only
         return _empty_build("INVALID_SEED", str(exc))
 
     offsets = tuple(snapshot.model.offsets)
@@ -1044,7 +1204,7 @@ def build_continuous_plans(
 
     qf = FormationPose(snapshot.start.x, snapshot.start.y,
                        snapshot.start.psi)
-    block_choice_sets = []
+    kinematics = []
     rejections = []
     skipped = 0
     for primitive_index, primitive in enumerate(primitives):
@@ -1052,13 +1212,13 @@ def build_continuous_plans(
             kind = _primitive_type(primitive)
         except FormationValidationError as exc:
             rejections.append(FormationPlanRejection(
-                len(block_choice_sets), None, "INVALID_PRIMITIVE",
+                len(kinematics), None, "INVALID_PRIMITIVE",
                 str(exc), primitive_index))
             return _empty_build(
                 "INVALID_PRIMITIVE", str(exc), rejections[-1], map_checked)
         if kind == COMPOSITE:
             rejection = FormationPlanRejection(
-                len(block_choice_sets), None,
+                len(kinematics), None,
                 "COMPOSITE_PRIMITIVE_UNSUPPORTED",
                 "composite primitive is not defined in S6",
                 primitive_index)
@@ -1076,104 +1236,88 @@ def build_continuous_plans(
                 skipped += 1
                 continue
             rejection = FormationPlanRejection(
-                len(block_choice_sets), None, "INVALID_PRIMITIVE_GEOMETRY",
+                len(kinematics), None, "INVALID_PRIMITIVE_GEOMETRY",
                 message, primitive_index)
             rejections.append(rejection)
             return _empty_build(
                 rejection.reason, message, rejection, map_checked)
-        block_index = len(block_choice_sets)
-        # The last block is fitted to the explicit goal after construction;
-        # its terminal headings are checked there, because extending a short
-        # rotation changes theta_i while preserving the rigid centers.
-        try:
-            assignments = enumerate_mode_assignments(
-                kinematic, headings, limits=limits,
-                allow_reverse=allow_reverse,
-                max_schedules=max_schedules_per_block,
-                allowed_modes=allowed_modes)
-        except FormationValidationError as exc:
-            rejection = FormationPlanRejection(
-                block_index, None, "MODE_ASSIGNMENT_FAILED", str(exc),
-                primitive_index)
-            rejections.append(rejection)
-            return _empty_build(
-                rejection.reason, rejection.detail, rejection, map_checked)
-        choices = []
-        block_rejections = []
-        for assignment in assignments:
-            if not assignment.success:
-                block_rejections.append(FormationPlanRejection(
-                    block_index,
-                    (assignment.rejections[0].vehicle_id
-                     if assignment.rejections else None),
-                    assignment.reason, assignment.detail, primitive_index))
-                continue
-            audit = audit_mode_assignment(
-                assignment, limits=limits,
-                allow_reverse=allow_reverse)
-            if not audit.success:
-                block_rejections.append(FormationPlanRejection(
-                    block_index, None, audit.reason, audit.detail,
-                    primitive_index))
-                continue
-            block = _block_from_assignment(kinematic, assignment, block_index)
-            choices.append((assignment.schedule_cost, block))
-        if not choices:
-            rejections.extend(block_rejections)
-            first = block_rejections[0] if block_rejections else (
-                FormationPlanRejection(
-                    block_index, None, "MODE_ASSIGNMENT_FAILED",
-                    "no audited mode schedule", primitive_index))
-            return _empty_build(
-                first.reason, first.detail, first, map_checked)
-        choices.sort(key=lambda item: (
-            item[0], item[1].candidate_key()))
-        block_choice_sets.append(choices)
-        headings = dict(choices[0][1].end_headings)
+        kinematics.append((primitive_index, kinematic))
         qf = kinematic.end_qf
 
-    if not block_choice_sets:
+    if not kinematics:
+        heading_only = heading_only_build()
+        if heading_only is not None:
+            return heading_only
         return _empty_build(
             "EMPTY_PLAN", "all S4 primitives were zero length",
             FormationPlanRejection(None, None, "EMPTY_PLAN",
                                    "no non-zero primitive"), map_checked)
 
-    combinations = _schedule_combinations(
-        block_choice_sets, max_schedule_combinations)
+    # Expand every non-terminal primitive into direct and pre-rotation spin
+    # options.  Prefixes are kept in a finite cost-ordered budget and headings
+    # propagate branch-by-branch, because a joint spin changes which A/O
+    # directions the next block may use.
+    states = [(0.0, (), dict(headings))]
+    for _, kinematic in kinematics[:-1]:
+        expanded = []
+        seen_keys = set()
+        for prefix_cost, prefix_blocks, state_headings in states:
+            block_index = len(prefix_blocks)
+            options, option_failures = _block_options(
+                kinematic, state_headings, block_index, offsets, limits,
+                allow_reverse, max_schedules_per_block, allowed_modes)
+            rejections.extend(option_failures[:8])
+            for option_cost, option_blocks, option_end in options:
+                candidate_blocks = prefix_blocks + option_blocks
+                key = tuple(block.candidate_key()
+                            for block in candidate_blocks)
+                if key in seen_keys:
+                    continue
+                seen_keys.add(key)
+                expanded.append((
+                    prefix_cost + option_cost,
+                    candidate_blocks,
+                    dict(option_end)))
+        expanded.sort(key=lambda item: (
+            item[0], tuple(block.candidate_key() for block in item[1])))
+        states = expanded[:max_schedule_combinations]
+        if not states:
+            first = rejections[0] if rejections else FormationPlanRejection(
+                len(kinematics) - 1, None, "MODE_ASSIGNMENT_FAILED",
+                "no audited mode schedule")
+            return _empty_build(
+                first.reason, first.detail, first, map_checked)
+        if len(rejections) > 64:
+            rejections = rejections[:64]
+
+    terminal_primitive_index, terminal_kinematic = kinematics[-1]
+    fitted, fit_reason, fit_detail = _fit_terminal_geometry(
+        terminal_kinematic, snapshot.goal)
+    if fitted is None:
+        rejection = FormationPlanRejection(
+            len(states[0][1]), None,
+            fit_reason or "TERMINAL_FIT_FAILED",
+            fit_detail or "terminal fit failed", terminal_primitive_index)
+        rejections.append(rejection)
+        return _empty_build(
+            rejection.reason, rejection.detail, rejection, map_checked)
+
     source_signature = _seed_signature(seed)
     plan_candidates = []
     terminal_max_xy = 0.0
     terminal_max_yaw = 0.0
-    for _, combination in combinations:
-        last_block = combination[-1]
-        last_kinematic = FormationKinematicBlock(
-            last_block.geometry_type,
-            last_block.parameter_length,
-            last_block.control.start_qf,
-            last_block.control.end_qf,
-            last_block.control.pivot_x,
-            last_block.control.pivot_y,
-            offsets)
-        last_start_headings = dict(last_block.start_headings)
-        # The last block is the only one whose endpoint is fitted.  Its start
-        # headings were already propagated from the preceding block.
-        fit_variants, fit_reason, fit_detail = _fit_terminal_control(
-            last_kinematic, snapshot.goal, last_start_headings,
-            goal_headings, free_flags, allow_reverse, limits,
-            max_schedules_per_block, allowed_modes=allowed_modes)
-        if not fit_variants:
-            rejections.append(FormationPlanRejection(
-                last_block.block_index, None,
-                fit_reason or "TERMINAL_FIT_FAILED",
-                fit_detail or "terminal fit produced no audited schedule"))
-            continue
-        for fitted, fitted_assignment in fit_variants:
-            if fitted_assignment is None:
-                fitted_block = last_block
-            else:
-                fitted_block = _block_from_assignment(
-                    fitted, fitted_assignment, last_block.block_index)
-            blocks = combination[:-1] + (fitted_block,)
+    for _, prefix_blocks, prefix_headings in states:
+        block_index = len(prefix_blocks)
+        # The terminal fit is applied before candidate generation so that a
+        # pre-rotation spin uses the fitted dpsi and the explicit goal
+        # headings, not the uncorrected primitive.
+        options, option_failures = _block_options(
+            fitted, prefix_headings, block_index, offsets, limits,
+            allow_reverse, max_schedules_per_block, allowed_modes,
+            expected_end=goal_headings, free_flags=free_flags)
+        rejections.extend(option_failures[:8])
+        for _, option_blocks, _option_end in options:
+            blocks = prefix_blocks + option_blocks
             try:
                 plan = FormationContinuousPlan(
                     plan_id=plan_id,
@@ -1192,7 +1336,7 @@ def build_continuous_plans(
                 )
             except FormationValidationError as exc:
                 rejections.append(FormationPlanRejection(
-                    last_block.block_index, None, "INVALID_CONTINUOUS_PLAN",
+                    block_index, None, "INVALID_CONTINUOUS_PLAN",
                     str(exc)))
                 continue
             endpoint = plan.blocks[-1].control.qf_at(
@@ -1205,7 +1349,7 @@ def build_continuous_plans(
             terminal_max_yaw = max(terminal_max_yaw, yaw)
             if xy > terminal_tolerance_m or yaw > terminal_tolerance_rad:
                 rejections.append(FormationPlanRejection(
-                    last_block.block_index, None, "TERMINAL_ENDPOINT_MISMATCH",
+                    block_index, None, "TERMINAL_ENDPOINT_MISMATCH",
                     "terminal xy={:.12g} yaw={:.12g}".format(xy, yaw)))
                 continue
             plan_candidates.append((plan_candidate_score(plan), plan))
@@ -1328,6 +1472,15 @@ class CollisionPrecheck:
 def _collision_sample_count(block, snapshot, margin_m, policy):
     if block.geometry_type == TRANSLATION:
         bound = block.parameter_length
+    elif block.geometry_type == BODY_SPIN:
+        # Centers are fixed, but each body corner sweeps an arc of radius
+        # corner_radius through the block's largest |dtheta|.
+        corner_radius = max(
+            math.hypot(
+                (shape.length_m + margin_m) / 2.0,
+                (shape.width_m + margin_m) / 2.0)
+            for shape in snapshot.vehicle_shapes.values())
+        bound = corner_radius * block.parameter_length
     else:
         reference_radius = max(
             math.hypot(offset.x, offset.y) for offset in snapshot.model.offsets)
@@ -1521,9 +1674,12 @@ def audit_continuous_plan(
                 block=kinematic,
                 start_headings=tuple(sorted(current_headings.items())),
                 end_headings=tuple(sorted({
-                    vehicle_id: current_headings[vehicle_id] + (
-                        kinematic.delta_psi
-                        if kinematic.geometry_type == ROTATION else 0.0)
+                    vehicle_id: (
+                        block.segment_map[vehicle_id].theta_end
+                        if kinematic.geometry_type == BODY_SPIN else
+                        current_headings[vehicle_id] + (
+                            kinematic.delta_psi
+                            if kinematic.geometry_type == ROTATION else 0.0))
                     for vehicle_id in model.vehicle_ids}.items())),
                 segments=block.vehicle_mode_segments,
                 rejections=(),

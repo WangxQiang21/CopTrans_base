@@ -27,15 +27,20 @@ bash run_demo.sh --single --map map04   # 原单车流程与默认地图比例
 
 **T1 已验证：** 货物 `(10,10,0)→(10,10,π/2)` 的请求在起点采用切向航向
 `θ=(π/2,π,0)` 时返回 `FEASIBLE`，发布轨迹并在回放中保持三车不同航向；
-连续目标使用回放中的真实航向。对同一货物旋转、若起点三车航向均为 0，
-当前返回 `HEADING_BOUNDARY_MISMATCH`（静止显示三车，不发布路径）——
-独立的车体原地 Spin 尚未实现（T4）。旧的 `CARGO_HEADING_MISMATCH` /
+连续目标使用回放中的真实航向。
+
+**T4 已验证：** 同一货物旋转、起点三车航向均为 0 时，规划器在货物位姿与
+三车中心全部固定的事件中让需要转向的车辆原地 Spin 到各自目标车体航向，
+不转的车辆保持 A 模式静止；所有车辆共用一条时间轴，事件完成后再进入绕货物
+的 A 运动。货物 ±90°（`(10,10,0)→(10,10,±π/2)`）均能在空地完成，
+终止航向为逐车 θ，而不是强制等于货物航向。旧的 `CARGO_HEADING_MISMATCH` /
 `CARGO_ROTATION_REQUIRES_GENERAL_4WIS` 只会在显式受限实验
 `require_cargo_heading:=true` 下出现。几何前端找到旋转路径不等于可执行。
 现有 `--collect-data` 标注网页仍用于 `--single`；编队并未接入该单车采集器。
 
 配置一致性、足迹数值、可复现测试和证据见
-[T1 报告](evaluation/wedge_fix_2026-11-11/T1/T1_REPORT.md)。
+[T1 报告](evaluation/wedge_fix_2026-11-11/T1/T1_REPORT.md) 与
+[T4 报告](evaluation/wedge_fix_2026-11-11/T4/T4_REPORT.md)。
 
 ## 本分支：模式一致的连续轨迹与段级时间求解
 

@@ -39,6 +39,7 @@ from .formation_geometry import (
 )
 from .formation_kinematics import (
     ACKERMANN,
+    BODY_SPIN,
     OBLIQUE,
     SPIN,
     KinematicLimits,
@@ -701,6 +702,9 @@ def _formation_derivatives(control, station):
             (0.0, 0.0, 0.0),
             (0.0, 0.0, 0.0),
             0.0)
+    if control.geometry_type == BODY_SPIN:
+        # q_F is fixed; independent body yaw is not a q_F derivative.
+        return ((0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), 0.0)
     slope = control.delta_psi / length
     psi = control.start_qf.psi + control.delta_psi * station / length
     first_x, first_y = _rotate(psi, -control.pivot_y, control.pivot_x)
@@ -1125,6 +1129,48 @@ class _IndependentEvaluator:
                            block_index=block.block_index,
                            max_error=max_angle,
                            constraint="steer_angle_max")
+            if block.geometry_type == BODY_SPIN:
+                qf_motion = math.hypot(
+                    block.control.end_qf.x - block.control.start_qf.x,
+                    block.control.end_qf.y - block.control.start_qf.y)
+                qf_yaw = _angle_error(
+                    block.control.end_qf.psi, block.control.start_qf.psi)
+                if qf_motion > (
+                        self.config.position_tolerance_m + _GEOMETRY_TOL) or (
+                        qf_yaw > self.config.heading_tolerance_rad +
+                        _GEOMETRY_TOL):
+                    self._fail(
+                        FORMATION_RIGIDITY_VIOLATION,
+                        "body-spin event moves the formation pose q_F",
+                        field="formation_pose", vehicle_id=vehicle_id,
+                        block_index=block.block_index,
+                        max_error=max(qf_motion, qf_yaw))
+                center_motion = math.hypot(
+                    segment.end_center_x - segment.start_center_x,
+                    segment.end_center_y - segment.start_center_y)
+                if center_motion > (
+                        self.config.position_tolerance_m + _GEOMETRY_TOL):
+                    self._fail(
+                        KINEMATIC_INFEASIBLE,
+                        "vehicle centre moves during a body-spin event",
+                        field="center", vehicle_id=vehicle_id,
+                        block_index=block.block_index,
+                        max_error=center_motion)
+                if segment.mode == ACKERMANN:
+                    if abs(segment.control) > 1e-12:
+                        self._fail(
+                            KINEMATIC_INFEASIBLE,
+                            "A hold in a body-spin event has non-zero control",
+                            field="control", vehicle_id=vehicle_id,
+                            block_index=block.block_index,
+                            max_error=abs(segment.control))
+                    if segment.travel_distance > 1e-9:
+                        self._fail(
+                            KINEMATIC_INFEASIBLE,
+                            "A hold in a body-spin event has non-zero travel",
+                            field="travel_distance", vehicle_id=vehicle_id,
+                            block_index=block.block_index,
+                            max_error=segment.travel_distance)
             if segment.mode == ACKERMANN:
                 if abs(segment.control) > (
                         1.0 / self.config.timing_limits.r_min_ackermann +
@@ -1185,7 +1231,10 @@ class _IndependentEvaluator:
             # projection on the body heading gives the signed speed, and the
             # curvature is theta'/v rather than a direction label.
             control = block.control
-            if block.geometry_type == "translation":
+            if block.geometry_type == BODY_SPIN:
+                velocity_x = 0.0
+                velocity_y = 0.0
+            elif block.geometry_type == "translation":
                 velocity_x = (
                     control.end_qf.x - control.start_qf.x) / length
                 velocity_y = (
@@ -1255,7 +1304,7 @@ class _IndependentEvaluator:
                         block_index=block.block_index,
                         max_error=_angle_error(
                             observed_phi, segment.control))
-            if segment.direction == -1 and not bool(
+            if segment.mode != SPIN and segment.direction == -1 and not bool(
                     getattr(self.snapshot, "allow_reverse", False)):
                 self._fail(
                     MODE_SCHEDULE_INFEASIBLE,
@@ -1272,6 +1321,34 @@ class _IndependentEvaluator:
                         field="theta", vehicle_id=vehicle_id,
                         block_index=block.block_index,
                         max_error=abs(theta_rate))
+            elif block.geometry_type == BODY_SPIN:
+                if segment.mode == SPIN:
+                    if abs(theta_rate) <= (
+                            self.config.heading_tolerance_rad + _GEOMETRY_TOL):
+                        self._fail(
+                            KINEMATIC_INFEASIBLE,
+                            "S body-spin has no heading change",
+                            field="theta", vehicle_id=vehicle_id,
+                            block_index=block.block_index,
+                            max_error=abs(theta_rate))
+                    expected_direction = 1 if theta_rate > 0.0 else -1
+                    if segment.direction != expected_direction:
+                        self._fail(
+                            KINEMATIC_INFEASIBLE,
+                            "Spin direction sign contradicts its heading "
+                            "change",
+                            field="direction", vehicle_id=vehicle_id,
+                            block_index=block.block_index,
+                            max_error=abs(theta_rate))
+                elif segment.mode == ACKERMANN:
+                    if abs(theta_rate) > (
+                            self.config.heading_tolerance_rad + _GEOMETRY_TOL):
+                        self._fail(
+                            KINEMATIC_INFEASIBLE,
+                            "A hold in a body-spin event changes heading",
+                            field="theta", vehicle_id=vehicle_id,
+                            block_index=block.block_index,
+                            max_error=abs(theta_rate))
             else:
                 if segment.mode in (ACKERMANN, SPIN):
                     if abs(theta_rate - expected_theta_rate) > (

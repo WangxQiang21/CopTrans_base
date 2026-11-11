@@ -37,6 +37,13 @@ MODE_NAMES = {ACKERMANN: "A", OBLIQUE: "O", SPIN: "S"}
 TRANSLATION = "translation"
 ROTATION = "rotation"
 COMPOSITE = "composite"
+# Internal-only T4 geometry: q_F and every vehicle centre are fixed while the
+# body headings change.  This is not an S4 seed primitive and has no ROS
+# message constant; it is synthesised by S6 from explicit goal headings or as
+# a pre-rotation heading alignment event.  ``parameter_length`` is the largest
+# absolute body-heading change in the event, so ``theta_i(lambda)`` advances by
+# at most one radian per unit lambda.
+BODY_SPIN = "body_spin"
 
 # A mode candidate is a kinematic candidate, never an execution certificate.
 CERTIFICATION_CANDIDATE = "KINEMATIC_CANDIDATE"
@@ -255,7 +262,8 @@ class FormationKinematicBlock:
     offsets: Tuple[VehicleOffset, ...]
 
     def __post_init__(self):
-        if self.geometry_type not in (TRANSLATION, ROTATION, COMPOSITE):
+        if self.geometry_type not in (
+                TRANSLATION, ROTATION, COMPOSITE, BODY_SPIN):
             raise FormationValidationError(
                 "INVALID_GEOMETRY_TYPE {}".format(self.geometry_type))
         object.__setattr__(self, "parameter_length", _finite(
@@ -284,6 +292,17 @@ class FormationKinematicBlock:
         object.__setattr__(self, "offsets", offsets)
 
         if self.geometry_type == COMPOSITE:
+            return
+        if self.geometry_type == BODY_SPIN:
+            if math.hypot(
+                    self.end_qf.x - self.start_qf.x,
+                    self.end_qf.y - self.start_qf.y) > self.geometry_tolerance:
+                raise FormationValidationError(
+                    "INVALID_BODY_SPIN_BLOCK q_F position must remain fixed")
+            if _angle_error(self.start_qf.psi, self.end_qf.psi) > (
+                    self.geometry_tolerance):
+                raise FormationValidationError(
+                    "INVALID_BODY_SPIN_BLOCK psi_F must remain fixed")
             return
         if self.geometry_type == TRANSLATION:
             if not _angle_near(
@@ -359,6 +378,9 @@ class FormationKinematicBlock:
                     station, self.parameter_length))
         fraction = 0.0 if self.parameter_length == 0.0 else (
             station / self.parameter_length)
+        if self.geometry_type == BODY_SPIN:
+            return FormationPose(
+                self.start_qf.x, self.start_qf.y, self.start_qf.psi)
         if self.geometry_type == TRANSLATION:
             return FormationPose(
                 self.start_qf.x + fraction * (
@@ -1093,9 +1115,15 @@ def audit_mode_assignment(
                         vehicle_id, center_error), checks, goal_checked)
 
             heading_error = _angle_error(segment.theta_start, theta_start)
-            expected_end_theta = (
-                theta_start + block.delta_psi
-                if block.geometry_type == ROTATION else theta_start)
+            if block.geometry_type == ROTATION:
+                expected_end_theta = theta_start + block.delta_psi
+            elif block.geometry_type == BODY_SPIN:
+                # A body-spin event has no rigid psi_F change; each vehicle
+                # advances to its own stored target and the mode equations
+                # below decide whether that target is admissible.
+                expected_end_theta = segment.theta_end
+            else:
+                expected_end_theta = theta_start
             heading_error = max(
                 heading_error,
                 _angle_error(segment.theta_end, expected_end_theta))
@@ -1231,7 +1259,70 @@ def audit_mode_assignment(
                         "vehicle_id={} translation displacement error "
                         "{:.12g} m".format(vehicle_id, displacement_error),
                         checks, goal_checked)
-            else:
+            elif block.geometry_type == BODY_SPIN:
+                delta_theta = wrap_angle(
+                    segment.theta_end - theta_start)
+                center_motion = math.hypot(
+                    segment.end_center_x - segment.start_center_x,
+                    segment.end_center_y - segment.start_center_y)
+                max_center_error = max(max_center_error, center_motion)
+                if center_motion > limits.geometry_tolerance_m:
+                    return _audit_failure(
+                        "SPIN_CENTER_MOTION",
+                        "vehicle_id={} body-spin centre moved {:.12g} m"
+                        .format(vehicle_id, center_motion), checks,
+                        goal_checked)
+                if segment.mode == SPIN:
+                    max_spin_motion = max(max_spin_motion, center_motion)
+                    if abs(segment.control) > 1e-12:
+                        return _audit_failure(
+                            "SPIN_CONTROL_NONZERO",
+                            "vehicle_id={} body-spin control must be zero"
+                            .format(vehicle_id), checks, goal_checked)
+                    if segment.travel_distance != 0.0:
+                        return _audit_failure(
+                            "SPIN_TRAVEL_NONZERO",
+                            "vehicle_id={} body-spin travel={:.12g}".format(
+                                vehicle_id, segment.travel_distance),
+                            checks, goal_checked)
+                    if abs(delta_theta) <= limits.heading_tolerance_rad:
+                        return _audit_failure(
+                            "ZERO_BODY_SPIN",
+                            "vehicle_id={} S segment has no heading change"
+                            .format(vehicle_id), checks, goal_checked)
+                    expected_direction = 1 if delta_theta > 0.0 else -1
+                    if segment.direction != expected_direction:
+                        return _audit_failure(
+                            "SPIN_DIRECTION_MISMATCH",
+                            "vehicle_id={} direction={} sign(dtheta)={}"
+                            .format(vehicle_id, segment.direction,
+                                    expected_direction), checks, goal_checked)
+                elif segment.mode == ACKERMANN:
+                    # A non-rotating vehicle holds its centre and heading
+                    # during the joint event; it is not a fake translation.
+                    if abs(delta_theta) > limits.heading_tolerance_rad:
+                        return _audit_failure(
+                            "BODY_SPIN_A_ROTATION",
+                            "vehicle_id={} A hold changes heading by {:.12g}"
+                            .format(vehicle_id, delta_theta), checks,
+                            goal_checked)
+                    if abs(segment.control) > 1e-12:
+                        return _audit_failure(
+                            "BODY_SPIN_A_CONTROL",
+                            "vehicle_id={} A hold control must be zero"
+                            .format(vehicle_id), checks, goal_checked)
+                    if segment.travel_distance != 0.0:
+                        return _audit_failure(
+                            "BODY_SPIN_A_TRAVEL",
+                            "vehicle_id={} A hold travel={:.12g}".format(
+                                vehicle_id, segment.travel_distance),
+                            checks, goal_checked)
+                else:
+                    return _audit_failure(
+                        "UNSUPPORTED_MODE",
+                        "vehicle_id={} body-spin mode={}".format(
+                            vehicle_id, segment.mode), checks, goal_checked)
+            elif block.geometry_type == ROTATION:
                 rx = offset.x - block.pivot_x
                 ry = offset.y - block.pivot_y
                 radius = math.hypot(rx, ry)

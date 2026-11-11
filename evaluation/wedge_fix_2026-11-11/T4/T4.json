@@ -1,0 +1,139 @@
+{
+  "schema": "wedge_fix_t4_acceptance/v1",
+  "stage": "T4",
+  "date": "2026-11-12",
+  "stage_pass": true,
+  "base_head": "4be42e5",
+  "acceptance_standard": "With all three initial vehicle headings at zero, cargo +/-90 deg in place both complete in free space; the centre geometry stays fixed throughout; at least one test shows a vehicle's own Spin followed by an A motion around the cargo.",
+  "event_contract": {
+    "internal_geometry_type": "body_spin",
+    "external_seed_reused": false,
+    "q_F_changes": false,
+    "vehicle_centres_change": false,
+    "rotating_vehicle_mode": "SPIN",
+    "non_rotating_vehicle_mode": "ACKERMANN hold, control=0, travel=0",
+    "block_parameter_length": "max(abs(target_theta_i - start_theta_i))",
+    "common_duration_source": "S8 per-vehicle yaw rate/acceleration/jerk constraints",
+    "mode_switch_dwell": "separate stationary event after the spin, not counted as spin time"
+  },
+  "accepted_runs": [
+    {
+      "file": "smoke_nlp_off_r2.json",
+      "sha256": "963e8b496565822507adbdb494f4ea77877321b4a61f1415993600281ac85c4b",
+      "pass": true,
+      "duration_s": 124.691,
+      "checks_ok": 40,
+      "checks_total": 40,
+      "entry": "bash run_demo.sh --map evaluation/wedge_fix_2026-11-11/maps/empty30 --scale 1.0 auto_goal:=false rviz:=false enable_nlp:=false",
+      "port": 11448,
+      "cleanup": {"run_demo_exit": 0, "roscore_exit": 0, "port_released": true},
+      "e06": {
+        "starts_with_three_zero_headings": true,
+        "status": "FEASIBLE",
+        "reason": "OK",
+        "planning_duration_s": 22.43680925462205,
+        "independent_audit": true,
+        "collision_certificate": true,
+        "common_samples": 1130,
+        "max_rigidity_error_m": 0.0,
+        "spin_vehicle": 1,
+        "spin_heading_change_rad": 1.5707963267948966,
+        "spin_centre_error_m": 0.0,
+        "spin_centre_speed_mps": 0.0,
+        "followed_by_A_orbit": true,
+        "orbit_centre_travel_m": 1.4142135623730951,
+        "terminal_headings_rad": {
+          "1": 3.1415926535897922,
+          "2": 1.5707963267948963,
+          "3": 1.5707963267948963
+        },
+        "terminal_psi_F_rad": 1.5707963267948966,
+        "terminal_cargo_pose": [10.0, 10.0, 1.5707963267948966]
+      }
+    }
+  ],
+  "preserved_failed_rounds": [
+    {
+      "file": "smoke_nlp_off.json",
+      "sha256": "0a7b4de632cb6e0a32eef4c1a1e3590da7f8245788f57496ea8bbe663bfa6bdf",
+      "pass": false,
+      "duration_s": 89.492,
+      "failure": "E01_forward_request_start: start=[10.0, 10.0, pi/2] expected=(10.0, 10.0, 0.0)",
+      "cause": "Smoke test still expected the pre-T4 failure path to leave playback at the original start after E06; the displayed E06 terminal is now (10,10,pi/2).",
+      "product_fault": false,
+      "resolution": "Updated only the post-E06 bridge case expectations to continue from the E06 terminal; raw file preserved unchanged.",
+      "e06_checks_all_passed_in_this_round": true
+    }
+  ],
+  "analytic_acceptance": {
+    "plus_90": {
+      "test": "test_cargo_plus90_spins_then_drives_A_arc_around_cargo",
+      "spin_then_A_orbit": true,
+      "fixed_q_F": true,
+      "fixed_centres": true
+    },
+    "minus_90": {
+      "test": "test_cargo_minus90_spins_then_drives_A_arc_around_cargo",
+      "spin_then_A_orbit": true,
+      "fixed_q_F": true,
+      "fixed_centres": true
+    },
+    "common_event_duration": {
+      "test": "test_heading_only_request_is_a_body_spin_not_a_hold",
+      "vehicle_1_rotates_90_deg": true,
+      "vehicle_2_rotates_minus_45_deg": true,
+      "vehicle_3_holds": true,
+      "vehicle_1_yaw_rate_is_binding": true,
+      "per_vehicle_yaw_rate_within_limit": true,
+      "per_vehicle_yaw_acceleration_within_limit": true,
+      "per_vehicle_yaw_jerk_within_limit": true
+    },
+    "dwell_separation": {
+      "test": "test_spin_time_and_mode_switch_dwell_are_separate",
+      "spin_motion_phase": true,
+      "mode_switch_stationary_event_after_spin": true,
+      "spin_interval_excludes_dwell": true
+    },
+    "playback": {
+      "test": "test_playback_shares_one_clock_and_shows_independent_headings",
+      "common_clock": true,
+      "fixed_centres_mid_spin": true,
+      "independent_headings": true,
+      "no_early_next_segment": true
+    },
+    "collision": {
+      "test": "test_body_spin_obb_sweep_rejects_obstacle_outside_both_endpoints",
+      "mid_spin_swept_collision_rejected": true,
+      "endpoint_poses_clear": true
+    },
+    "independent_audit": {
+      "tampered_heading_rejected": "test_tampered_spin_target_is_rejected_by_independent_audit",
+      "stored_centres_recomputed": "test_stored_spin_centres_are_recomputed_from_qf",
+      "orbiting_vehicle_mislabelled_spin_rejected": "test_orbiting_vehicle_mislabelled_as_spin_is_rejected"
+    }
+  },
+  "tests": {
+    "targeted_t4_and_node": {
+      "tests": 33,
+      "failures": 0,
+      "errors": 0,
+      "log": "runtime/targeted_t4_tests.log",
+      "breakdown": {
+        "test_formation_t4_spin": 10,
+        "test_formation_optimizer_node": 23
+      }
+    },
+    "full_python": {
+      "tests": 427,
+      "failures": 0,
+      "errors": 1,
+      "log": "runtime/python_tests.log",
+      "preserved_historical_error": "tests/test_continuous_retiming.py:271 KeyError: 'dynamic_peaks'"
+    },
+    "planner_cpp": {
+      "formation_geometry": {"tests": 14, "failures": 0},
+      "policy_history": {"tests": 6, "failures": 0},
+      "log": "runtime/planner_cpp_tests.log"
+    }
+  }
+}

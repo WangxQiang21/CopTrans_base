@@ -27,6 +27,7 @@ from .formation import (
     VehicleOffset,
 )
 from .formation_geometry import (
+    BODY_SPIN,
     FormationBlock,
     FormationContinuousPlan,
     TRANSLATION,
@@ -504,6 +505,11 @@ def _formation_derivatives(control, station):
             (control.end_qf.y - control.start_qf.y) / length,
             0.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0), 0.0, (
                 control.start_qf.psi)
+    if control.geometry_type == BODY_SPIN:
+        # q_F and psi_F are fixed; every centre is stationary and only the
+        # individual body headings change.
+        return ((0.0, 0.0, 0.0), (0.0, 0.0, 0.0), (0.0, 0.0, 0.0),
+                0.0, control.start_qf.psi)
     slope = control.delta_psi / length
     psi = control.start_qf.psi + (station / length) * control.delta_psi
     pivot_x, pivot_y = control.pivot_x, control.pivot_y
@@ -551,7 +557,56 @@ def _wheel_data(segment, motion_limits):
 def _context_for(segment, offset, block, limits, motion_limits):
     length = block.parameter_length
     theta_rate = (segment.theta_end - segment.theta_start) / length
-    if block.geometry_type == TRANSLATION:
+    if block.geometry_type == BODY_SPIN:
+        # A body-spin event keeps q_F and every centre fixed; only each body's
+        # own heading changes.  The mode schedule must be S for a rotating
+        # vehicle and an A hold for a non-rotating one, with no travel.
+        if math.hypot(
+                block.control.end_qf.x - block.control.start_qf.x,
+                block.control.end_qf.y - block.control.start_qf.y) > (
+                _GEOMETRY_TOL) or _angle_error(
+                    block.control.end_qf.psi,
+                    block.control.start_qf.psi) > _GEOMETRY_TOL:
+            raise _TimingInfeasible(
+                "body_spin_qf_motion", segment.vehicle_id,
+                block.block_index, "q_F must remain fixed during a body spin")
+        if math.hypot(
+                segment.end_center_x - segment.start_center_x,
+                segment.end_center_y - segment.start_center_y) > (
+                _GEOMETRY_TOL):
+            raise _TimingInfeasible(
+                "body_spin_center_motion", segment.vehicle_id,
+                block.block_index,
+                "vehicle centre must remain fixed during a body spin")
+        if abs(segment.control) > 1e-12:
+            raise _TimingInfeasible(
+                "body_spin_control", segment.vehicle_id, block.block_index,
+                "body-spin control must be zero")
+        if segment.travel_distance != 0.0:
+            raise _TimingInfeasible(
+                "body_spin_travel", segment.vehicle_id, block.block_index,
+                "body-spin travel must be zero")
+        if segment.mode == SPIN:
+            if abs(theta_rate) <= 1e-6:
+                raise _TimingInfeasible(
+                    "body_spin_zero_yaw", segment.vehicle_id,
+                    block.block_index, "S body-spin has no heading change")
+            expected_direction = 1 if theta_rate > 0.0 else -1
+            if segment.direction != expected_direction:
+                raise _TimingInfeasible(
+                    "body_spin_direction", segment.vehicle_id,
+                    block.block_index,
+                    "S direction sign contradicts its heading change")
+        elif segment.mode == ACKERMANN:
+            if abs(theta_rate) > 1e-6:
+                raise _TimingInfeasible(
+                    "body_spin_hold_yaw", segment.vehicle_id,
+                    block.block_index, "A hold changes its body heading")
+        else:
+            raise _TimingInfeasible(
+                "body_spin_mode", segment.vehicle_id, block.block_index,
+                "body-spin supports only S or an A hold")
+    elif block.geometry_type == TRANSLATION:
         if abs(theta_rate) > 1e-6:
             raise _TimingInfeasible(
                 "translation_body_heading_change", segment.vehicle_id,
@@ -587,7 +642,10 @@ def _context_for(segment, offset, block, limits, motion_limits):
     # body heading is the signed speed.  This check does not reuse the
     # constructor's direction/curvature answer.
     control = block.control
-    if block.geometry_type == TRANSLATION:
+    if block.geometry_type == BODY_SPIN:
+        velocity_x = 0.0
+        velocity_y = 0.0
+    elif block.geometry_type == TRANSLATION:
         velocity_x = (control.end_qf.x - control.start_qf.x) / length
         velocity_y = (control.end_qf.y - control.start_qf.y) / length
     else:
@@ -614,7 +672,8 @@ def _context_for(segment, offset, block, limits, motion_limits):
                 "direction_sign", segment.vehicle_id, block.block_index,
                 "stored direction {} contradicts signed centre speed {:.12g}"
                 .format(segment.direction, signed_speed))
-    if segment.mode == ACKERMANN and block.geometry_type != TRANSLATION:
+    if segment.mode == ACKERMANN and block.geometry_type not in (
+            TRANSLATION, BODY_SPIN):
         if abs(signed_speed) <= _GEOMETRY_TOL:
             raise _TimingInfeasible(
                 "direction_sign", segment.vehicle_id, block.block_index,
