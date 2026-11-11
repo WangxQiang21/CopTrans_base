@@ -1,0 +1,377 @@
+{
+ "elapsed_s": 3.362,
+ "first_failing_stage": "FEASIBLE_PUBLISHED",
+ "frontend_status": [
+  {
+   "certification": "GEOMETRY_ONLY",
+   "detail": "GEOMETRY_ONLY_UNCERTIFIED",
+   "executable": false,
+   "expanded_nodes": 7,
+   "field": "",
+   "formation_id": "cargo_wedge",
+   "generated_nodes": 60,
+   "geometry_only": true,
+   "goal_candidates": 1,
+   "node_state": "GEOMETRY_ONLY_UNCERTIFIED",
+   "plan_id": 600000,
+   "primitive_count": 6,
+   "reason": "",
+   "requests_seen": 1,
+   "schema": "formation_frontend_status/v1",
+   "search_started": true,
+   "trajectory_published": false,
+   "valid": true,
+   "vehicle_id": null
+  }
+ ],
+ "marker_count": 20,
+ "optimizer_status": [
+  {
+   "detail": "request validated; waiting for a matching formation seed",
+   "executable": false,
+   "feasible": false,
+   "formation_id": "cargo_wedge",
+   "map_frame_id": "map",
+   "map_ready": true,
+   "map_signature": "438cc7f87732d246ffd912ff97b2195aaad047617dcaf6f3cbaf406183c895be",
+   "node_state": "REQUEST_VALIDATED",
+   "plan_id": 600000,
+   "publication": {
+    "clear": true,
+    "detail": "new request 600000 supersedes any previous publication",
+    "plan_id": 600000,
+    "publish": false,
+    "reason": "NEW_REQUEST",
+    "status": "CLEAR",
+    "trajectory_published": false
+   },
+   "publication_version": 1,
+   "published_plan_id": null,
+   "reason": "OK",
+   "request": {
+    "detail": "",
+    "executable": false,
+    "field": "",
+    "reason": "",
+    "schema": "fwis_v3/formation_status",
+    "search_started": false,
+    "trajectory_published": false,
+    "valid": true,
+    "vehicle_id": null
+   },
+   "request_map_signature": "438cc7f87732d246ffd912ff97b2195aaad047617dcaf6f3cbaf406183c895be",
+   "requests_seen": 1,
+   "schema": "formation_optimizer_status/v1",
+   "seeds_seen": 0,
+   "status": "VALIDATED",
+   "trajectory_published": false,
+   "valid": true,
+   "vehicle_ids": [
+    1,
+    2,
+    3
+   ]
+  },
+  {
+   "detail": "independent S9 evaluation passed and the current plan_id was published through the transaction gate",
+   "duration": 14.871258808212731,
+   "executable": true,
+   "feasible": true,
+   "formation_id": "cargo_wedge",
+   "map_frame_id": "map",
+   "map_ready": true,
+   "map_signature": "438cc7f87732d246ffd912ff97b2195aaad047617dcaf6f3cbaf406183c895be",
+   "node_state": "FEASIBLE_PUBLISHED",
+   "plan_id": 600000,
+   "planning_started": true,
+   "publication_version": 1,
+   "published_plan_id": 600000,
+   "reason": "OK",
+   "request_map_signature": "438cc7f87732d246ffd912ff97b2195aaad047617dcaf6f3cbaf406183c895be",
+   "requests_seen": 1,
+   "schema": "formation_optimizer_status/v1",
+   "seeds_seen": 1,
+   "selected_candidate_id": 1,
+   "status": "FEASIBLE",
+   "trajectory_published": true
+  }
+ ],
+ "plan_id": 600000,
+ "playback_status": [
+  {
+   "audit_detail": "independent audit and transactional publication",
+   "audit_status": "FEASIBLE",
+   "certification": "FEASIBLE",
+   "clamped_elapsed_s": 0.950826884,
+   "cleared": false,
+   "duration_s": 14.871258808,
+   "elapsed_s": 0.950826884,
+   "executable": true,
+   "formation_id": "cargo_wedge",
+   "fraction": 0.5692885785754844,
+   "frame_id": "map",
+   "geometry_only": false,
+   "lower_index": 47,
+   "marker_count": 20,
+   "marker_namespaces": [
+    "formation/cargo_wedge/links",
+    "formation/cargo_wedge/reference",
+    "formation/cargo_wedge/status",
+    "formation/cargo_wedge/vehicle_1",
+    "formation/cargo_wedge/vehicle_2",
+    "formation/cargo_wedge/vehicle_3"
+   ],
+   "plan_id": 600000,
+   "sample_count": 745,
+   "schema": "formation_playback/v1",
+   "state": "PLAYING",
+   "terminal": false,
+   "terminal_center_error_m": null,
+   "terminal_heading_error_rad": null,
+   "time_source": "header_stamp_common_clock",
+   "trajectory_stamp": {
+    "nsecs": 141080617,
+    "secs": 1794407258
+   },
+   "upper_index": 48,
+   "vehicle_ids": [
+    1,
+    2,
+    3
+   ],
+   "vehicles": [
+    {
+     "center": [
+      10.144786381306163,
+      11.0
+     ],
+     "center_speed_mps": 0.3383337708755989,
+     "mode": 0,
+     "mode_control": 0.0,
+     "mode_name": "A",
+     "namespace": "formation/cargo_wedge/vehicle_1",
+     "theta": 0.0,
+     "vehicle_id": 1
+    },
+    {
+     "center": [
+      9.144786381306163,
+      10.0
+     ],
+     "center_speed_mps": 0.3383337708755989,
+     "mode": 0,
+     "mode_control": 0.0,
+     "mode_name": "A",
+     "namespace": "formation/cargo_wedge/vehicle_2",
+     "theta": 0.0,
+     "vehicle_id": 2
+    },
+    {
+     "center": [
+      11.144786381306163,
+      10.0
+     ],
+     "center_speed_mps": 0.3383337708755989,
+     "mode": 0,
+     "mode_control": 0.0,
+     "mode_name": "A",
+     "namespace": "formation/cargo_wedge/vehicle_3",
+     "theta": 0.0,
+     "vehicle_id": 3
+    }
+   ]
+  },
+  {
+   "audit_detail": "independent audit and transactional publication",
+   "audit_status": "FEASIBLE",
+   "certification": "FEASIBLE",
+   "clamped_elapsed_s": 0.99082613,
+   "cleared": false,
+   "duration_s": 14.871258808,
+   "elapsed_s": 0.99082613,
+   "executable": true,
+   "formation_id": "cargo_wedge",
+   "fraction": 0.5704264470162985,
+   "frame_id": "map",
+   "geometry_only": false,
+   "lower_index": 49,
+   "marker_count": 20,
+   "marker_namespaces": [
+    "formation/cargo_wedge/links",
+    "formation/cargo_wedge/reference",
+    "formation/cargo_wedge/status",
+    "formation/cargo_wedge/vehicle_1",
+    "formation/cargo_wedge/vehicle_2",
+    "formation/cargo_wedge/vehicle_3"
+   ],
+   "plan_id": 600000,
+   "sample_count": 745,
+   "schema": "formation_playback/v1",
+   "state": "PLAYING",
+   "terminal": false,
+   "terminal_center_error_m": null,
+   "terminal_heading_error_rad": null,
+   "time_source": "header_stamp_common_clock",
+   "trajectory_stamp": {
+    "nsecs": 141080617,
+    "secs": 1794407258
+   },
+   "upper_index": 50,
+   "vehicle_ids": [
+    1,
+    2,
+    3
+   ],
+   "vehicles": [
+    {
+     "center": [
+      10.158525518863604,
+      11.0
+     ],
+     "center_speed_mps": 0.34841079751548654,
+     "mode": 0,
+     "mode_control": 0.0,
+     "mode_name": "A",
+     "namespace": "formation/cargo_wedge/vehicle_1",
+     "theta": 0.0,
+     "vehicle_id": 1
+    },
+    {
+     "center": [
+      9.158525518863604,
+      10.0
+     ],
+     "center_speed_mps": 0.34841079751548654,
+     "mode": 0,
+     "mode_control": 0.0,
+     "mode_name": "A",
+     "namespace": "formation/cargo_wedge/vehicle_2",
+     "theta": 0.0,
+     "vehicle_id": 2
+    },
+    {
+     "center": [
+      11.158525518863604,
+      10.0
+     ],
+     "center_speed_mps": 0.34841079751548654,
+     "mode": 0,
+     "mode_control": 0.0,
+     "mode_name": "A",
+     "namespace": "formation/cargo_wedge/vehicle_3",
+     "theta": 0.0,
+     "vehicle_id": 3
+    }
+   ]
+  },
+  {
+   "audit_detail": "independent audit and transactional publication",
+   "audit_status": "FEASIBLE",
+   "certification": "FEASIBLE",
+   "clamped_elapsed_s": 1.030852557,
+   "cleared": false,
+   "duration_s": 14.871258808,
+   "elapsed_s": 1.030852557,
+   "executable": true,
+   "formation_id": "cargo_wedge",
+   "fraction": 0.5729241643003141,
+   "frame_id": "map",
+   "geometry_only": false,
+   "lower_index": 51,
+   "marker_count": 20,
+   "marker_namespaces": [
+    "formation/cargo_wedge/links",
+    "formation/cargo_wedge/reference",
+    "formation/cargo_wedge/status",
+    "formation/cargo_wedge/vehicle_1",
+    "formation/cargo_wedge/vehicle_2",
+    "formation/cargo_wedge/vehicle_3"
+   ],
+   "plan_id": 600000,
+   "sample_count": 745,
+   "schema": "formation_playback/v1",
+   "state": "PLAYING",
+   "terminal": false,
+   "terminal_center_error_m": null,
+   "terminal_heading_error_rad": null,
+   "time_source": "header_stamp_common_clock",
+   "trajectory_stamp": {
+    "nsecs": 141080617,
+    "secs": 1794407258
+   },
+   "upper_index": 52,
+   "vehicle_ids": [
+    1,
+    2,
+    3
+   ],
+   "vehicles": [
+    {
+     "center": [
+      10.172649934645303,
+      11.0
+     ],
+     "center_speed_mps": 0.357108273740753,
+     "mode": 0,
+     "mode_control": 0.0,
+     "mode_name": "A",
+     "namespace": "formation/cargo_wedge/vehicle_1",
+     "theta": 0.0,
+     "vehicle_id": 1
+    },
+    {
+     "center": [
+      9.172649934645303,
+      10.0
+     ],
+     "center_speed_mps": 0.357108273740753,
+     "mode": 0,
+     "mode_control": 0.0,
+     "mode_name": "A",
+     "namespace": "formation/cargo_wedge/vehicle_2",
+     "theta": 0.0,
+     "vehicle_id": 2
+    },
+    {
+     "center": [
+      11.172649934645303,
+      10.0
+     ],
+     "center_speed_mps": 0.357108273740753,
+     "mode": 0,
+     "mode_control": 0.0,
+     "mode_name": "A",
+     "namespace": "formation/cargo_wedge/vehicle_3",
+     "theta": 0.0,
+     "vehicle_id": 3
+    }
+   ]
+  }
+ ],
+ "reason": "OK",
+ "terminal": {
+  "detail": "independent S9 evaluation passed and the current plan_id was published through the transaction gate",
+  "duration": 14.871258808212731,
+  "executable": true,
+  "feasible": true,
+  "formation_id": "cargo_wedge",
+  "map_frame_id": "map",
+  "map_ready": true,
+  "map_signature": "438cc7f87732d246ffd912ff97b2195aaad047617dcaf6f3cbaf406183c895be",
+  "node_state": "FEASIBLE_PUBLISHED",
+  "plan_id": 600000,
+  "planning_started": true,
+  "publication_version": 1,
+  "published_plan_id": 600000,
+  "reason": "OK",
+  "request_map_signature": "438cc7f87732d246ffd912ff97b2195aaad047617dcaf6f3cbaf406183c895be",
+  "requests_seen": 1,
+  "schema": "formation_optimizer_status/v1",
+  "seeds_seen": 1,
+  "selected_candidate_id": 1,
+  "status": "FEASIBLE",
+  "trajectory_published": true
+ },
+ "timed_out": false,
+ "trajectory_published": true
+}

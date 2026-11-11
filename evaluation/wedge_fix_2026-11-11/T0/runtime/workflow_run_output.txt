@@ -1,0 +1,755 @@
+{
+  "summary": "T0 read-only audit of current implementation vs the corrected wedge-formation contract",
+  "agentCount": 13,
+  "logs": [
+    "[read:playback_display] failed: API Error: Request rejected (429) · You have exceeded the 5-hour usage quota. It will reset at 2026-11-12 03:20:46 +0800 CST. We recommend upgrading your plan for more quota, or waiting for the reset. Request id: 021794407831994035772df07ab2d666278dcdeb9c281b2abb601",
+    "[verify:frontend_cpp] failed: API Error: Request rejected (429) · You have exceeded the 5-hour usage quota. It will reset at 2026-11-12 03:20:46 +0800 CST. We recommend upgrading your plan for more quota, or waiting for the reset. Request id: 021794407835335035772df07ab2d666278dcdeb9c281b2b385e7",
+    "[verify:s5_kinematics] failed: API Error: Request rejected (429) · You have exceeded the 5-hour usage quota. It will reset at 2026-11-12 03:20:46 +0800 CST. We recommend upgrading your plan for more quota, or waiting for the reset. Request id: 021794407839206035772df07ab2d666278dcdeb9c281b2313566",
+    "[verify:geometry_candidates] failed: API Error: Request rejected (429) · You have exceeded the 5-hour usage quota. It will reset at 2026-11-12 03:20:46 +0800 CST. We recommend upgrading your plan for more quota, or waiting for the reset. Request id: 021794407849964035772df07ab2d666278dcdeb9c281b2a404bf",
+    "[verify:retiming_quality] failed: API Error: Request rejected (429) · You have exceeded the 5-hour usage quota. It will reset at 2026-11-12 03:20:46 +0800 CST. We recommend upgrading your plan for more quota, or waiting for the reset. Request id: 021794407852352035772df07ab2d666278dcdeb9c281b2b2b896",
+    "[verify:tests_baseline] failed: API Error: Request rejected (429) · You have exceeded the 5-hour usage quota. It will reset at 2026-11-12 03:20:46 +0800 CST. We recommend upgrading your plan for more quota, or waiting for the reset. Request id: 021794407929005035772df07ab2d666278dcdeb9c281b2db7034"
+  ],
+  "result": [
+    {
+      "module": "config_entry",
+      "read": {
+        "module": "Runtime configuration and user entry-point audit (working tree)",
+        "facts": [
+          "CONFIRMED — Required contract mapping is vehicle_id=1 -> (1,0), vehicle_id=2 -> (0,1), vehicle_id=3 -> (0,-1). None of the six hard-coded offset lists below has that mapping; all use the legacy sequence (0,1),(-1,0),(1,0).",
+          "CONFIRMED — /home/wq/whut_thesis/expv3_multi/run_demo.sh:21 hard-codes user help text `car1(0,1)、car2(-1,0)、car3(1,0)`, in metres.",
+          "CONFIRMED — /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch:67 sets the playback node's effective `offsets` to `[[0.0, 1.0], [-1.0, 0.0], [1.0, 0.0]]`.",
+          "CONFIRMED — /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch:84-89 sets bridge `vehicle_ids` to `[1, 2, 3]` and effective bridge offsets, in that order, to `[0.0,1.0]`, `[-1.0,0.0]`, `[1.0,0.0]`.",
+          "CONFIRMED — /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_demo/scripts/formation_goal_bridge.py:148-150 gives `~offsets` the standalone fallback `[[0.0, 1.0], [-1.0, 0.0], [1.0, 0.0]]`; :136 gives fallback IDs `[1,2,3]`.",
+          "CONFIRMED — /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_playback/scripts/formation_playback.py:252-253 gives preview-only fallbacks `offsets=[[0,1],[-1,0],[1,0]]` and `ids=[1,2,3]`. The normal demo overrides these with the launch values at formation_demo.launch:67.",
+          "CONFIRMED — /home/wq/whut_thesis/expv3_multi/tools/transport_footprint.py:11 hard-codes `OFFSETS = ((0.0, 1.0), (-1.0, 0.0), (1.0, 0.0))`. No vehicle offset list is hard-coded in /home/wq/whut_thesis/expv3_multi/tools/configure_formation_view.py or /home/wq/whut_thesis/expv3_multi/tools/scale_map_runtime.py.",
+          "CONFIRMED — /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch:55 hard-codes the optimizer parameter `kinematic_limits/require_cargo_heading` to `true`; it is not exposed as a launch argument, and run_demo.sh does not override it.",
+          "CONFIRMED — `goal_heading_free` defaults to false in both /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch:81 and the standalone bridge fallback at /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_demo/scripts/formation_goal_bridge.py:65-66. The bridge copies it to each vehicle spec at :310.",
+          "CONFIRMED — The bridge retains the cargo goal and rigid goal centres independently of `goal_heading_free`: /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_demo/scripts/formation_goal_bridge.py:275 computes goal centres from `FormationPose(*goal)`, :290-292 writes `request.formation_goal` including cargo psi, and :307-309 writes every goal centre and its body heading. Thus this adapter does not itself release psi_F or centre positions when the flag is true; consumer behavior is outside the audited files.",
+          "CONFIRMED — Exact start-selection code, /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_demo/scripts/formation_goal_bridge.py:190-201:\n    def _start_pose(self):\n        if self._start_override is not None:\n            start = self._start_override\n            self._start_override = None\n            rospy.loginfo(\n                \"[formation goal bridge] using 2D Pose Estimate start \"\n                \"(%.3f, %.3f, %.3f)\", *start)\n            return start, {}\n        current = self._latest_reference()\n        if current is not None:\n            return current, {}\n        return self._fallback_start, {}",
+          "CONFIRMED — Exact goal/body-heading code, /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_demo/scripts/formation_goal_bridge.py:256-263:\n        goal_x = float(message.pose.position.x)\n        goal_y = float(message.pose.position.y)\n        goal_theta = quaternion_to_yaw(message.pose.orientation)\n        start, _ = self._start_pose()\n        # A transport request fixes every body to the cargo heading.\n        body_headings = {vehicle_id: start[2] for vehicle_id in self.vehicle_ids}\n        self._publish_request(start, (goal_x, goal_y, goal_theta),\n                              body_headings)",
+          "CONFIRMED — First goal: start priority is one-shot override, then current playback cargo-reference TF, then fallback, per formation_goal_bridge.py:190-201. Fallback is initialized from start parameters at :85-86; defaults are (10.0,3.6,0.0) at :58-60 and formation_demo.launch:22-24,75-77. A map `/start_pose` can replace fallback and create a one-shot override before a manual start/current plan at bridge:220-230. In every first-goal path, on_goal sets all initial body headings to start cargo psi at :259-263.",
+          "CONFIRMED — Consecutive goals: if reference TF exists, `_start_pose()` uses its cargo pose at formation_goal_bridge.py:198-200; otherwise it uses fallback at :201. It returns an empty heading dict in both cases, and on_goal discards that dict and resets every body heading to the current cargo psi at :259-263.",
+          "CONFIRMED — After `2D Pose Estimate`, on_initial_pose stores the override, marks manual start, updates fallback, and publishes a preview at /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_demo/scripts/formation_goal_bridge.py:203-218. The next goal consumes that override once at :191-197 and sets all body headings to the override arrow yaw at :259-263; later goals revert to TF/fallback selection.",
+          "CONFIRMED — Real playback body headings are not used. A reader `_latest_body_headings()` exists at /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_demo/scripts/formation_goal_bridge.py:174-188, but there is no call to it anywhere in the file. Playback does broadcast each actual body yaw to `<prefix>_vehicle_<id>_base_link` at /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_playback/scripts/formation_playback.py:393-413. The request writes start body theta from the synthetic dict, with another cargo-psi fallback, at bridge:305-306.",
+          "CONFIRMED — Map scale: default mode is formation at /home/wq/whut_thesis/expv3_multi/run_demo.sh:12; absent `--map`/`map_dir`, formation selects map16 at :186-188. Base scale starts as explicit `--scale` or `1.0` at :265. Per-map defaults at :266-275 have no map16 case, so map16 base remains 1.0. With no explicit scale, formation multiplies by 3.75 at :277-279. Therefore default formation map16 with no `--scale` has exact final scale 3.75; single-vehicle mode would remain 1.0.",
+          "CONFIRMED — An explicit `--scale` is absolute and bypasses the 3.75 multiplication, per /home/wq/whut_thesis/expv3_multi/run_demo.sh:265-279. Scaling runs when explicitly requested or effective scale differs from 1.0 at :280-293. run_demo.sh:23 describes the legacy default as original single-vehicle scale times 3.75.",
+          "CONFIRMED — /home/wq/whut_thesis/expv3_multi/tools/scale_map_runtime.py:49-77 copies the map without resampling, multiplies resolution by scale, recomputes origin around the original image centre, and records `runtime_scale`; :79-87 applies corresponding recursive metadata transforms. /home/wq/whut_thesis/expv3_multi/tools/configure_formation_view.py:10-20 only centres and fits the RViz view using the (possibly scaled) map dimensions; its `Scale=min(900/width,600/height)` at :20 is RViz view scale, not an additional metric map factor.",
+          "CONFIRMED — /home/wq/whut_thesis/expv3_multi/tools/transport_footprint.py:14 separately hard-codes `MAP_FACTOR = 3.75`, exposed at :37. With LENGTH=0.738 and WIDTH=0.500 at :12-13, the old AABB formulas at :28-29 emit `[2.738,1.5]` and area 4.107 m^2; :35-36 derives the old required axis scale from those dimensions. The new contract declares both that bounding box and the x3.75 factor legacy.",
+          "CONFIRMED — Shared-heading statements are present at /home/wq/whut_thesis/expv3_multi/run_demo.sh:395 (`三车同航向`), /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_demo/scripts/formation_goal_bridge.py:18-20 (`Every request fixes all body headings to the cargo heading; the backend must enforce that constraint throughout the path.`), and the code comment at bridge:260. The corresponding configuration/behavior is formation_demo.launch:55 and bridge:259-263.",
+          "CONFIRMED — The arrow semantics in /home/wq/whut_thesis/expv3_multi/run_demo.sh:22 are consistent with the new contract: `2D Pose Estimate` sets cargo start pose/heading and `2D Nav Goal` sets cargo goal pose/heading. Playback preview also constructs preview body yaw from the cargo arrow yaw at /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_playback/scripts/formation_playback.py:255-258; the audited preview defect is its legacy offsets, not a separate consecutive-goal heading reset."
+        ],
+        "findings": [
+          {
+            "file": "/home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch",
+            "line": 55,
+            "severity": "P1",
+            "contract": "require_cargo_heading must be OFF by default for this transport scenario.",
+            "current": "CONFIRMED: The optimizer launch node hard-codes `<param name=\"kinematic_limits/require_cargo_heading\" value=\"true\"/>`, so the default demo enables the forbidden cargo/body-heading constraint.",
+            "fix_hint": "Change the default launch value to false, preferably expose it as an argument defaulting to false if an override is needed."
+          },
+          {
+            "file": "/home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch",
+            "line": 67,
+            "severity": "P1",
+            "contract": "Fixed cargo-frame offsets must be vehicle_id=1 -> (1,0), vehicle_id=2 -> (0,1), vehicle_id=3 -> (0,-1).",
+            "current": "CONFIRMED: Playback offsets at line 67 are `[[0,1],[-1,0],[1,0]]`, and bridge IDs/offsets at lines 84-89 map IDs [1,2,3] to that same legacy sequence. These are the effective demo parameters.",
+            "fix_hint": "Set both ordered lists to `[[1.0,0.0],[0.0,1.0],[0.0,-1.0]]` for IDs [1,2,3]."
+          },
+          {
+            "file": "/home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_demo/scripts/formation_goal_bridge.py",
+            "line": 259,
+            "severity": "P1",
+            "contract": "theta_i are independent; after the first documented manual initialization, consecutive goals MUST use real playback body headings rather than reset them.",
+            "current": "CONFIRMED: `_start_pose()` returns `{}` for override, TF, and fallback paths (lines 190-201). `on_goal()` then executes `body_headings = {vehicle_id: start[2] for vehicle_id in self.vehicle_ids}` at line 261 on every request. `_latest_body_headings()` at lines 174-188 is never called. The module docstring at lines 18-20 and comment at line 260 explicitly document this obsolete shared-heading policy.",
+            "fix_hint": "Use `_latest_body_headings()` for consecutive goals and pass the returned per-vehicle headings into the request; restrict theta_i=psi_F initialization to the documented first-manual-placement case. Update the docstring/comment accordingly."
+          },
+          {
+            "file": "/home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_demo/scripts/formation_goal_bridge.py",
+            "line": 149,
+            "severity": "P1",
+            "contract": "Fixed cargo-frame offsets must be vehicle_id=1 -> (1,0), vehicle_id=2 -> (0,1), vehicle_id=3 -> (0,-1).",
+            "current": "CONFIRMED: `_offsets_param()` defaults to `[[0.0,1.0],[-1.0,0.0],[1.0,0.0]]` at lines 149-150 whenever the ROS parameter is absent.",
+            "fix_hint": "Change the fallback to `[[1.0,0.0],[0.0,1.0],[0.0,-1.0]]`."
+          },
+          {
+            "file": "/home/wq/whut_thesis/expv3_multi/run_demo.sh",
+            "line": 277,
+            "severity": "P1",
+            "contract": "The old x3.75 map scale is legacy.",
+            "current": "CONFIRMED: Lines 277-279 multiply every implicit formation map scale by 3.75. Since map16 has base scale 1.0, its no-`--scale` runtime scale is exactly 3.75. Help line 23 advertises the same legacy behavior.",
+            "fix_hint": "Remove the automatic formation x3.75 multiplication and its help text; retain explicit `--scale` as the absolute override and use the non-legacy per-map defaults."
+          },
+          {
+            "file": "/home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_playback/scripts/formation_playback.py",
+            "line": 252,
+            "severity": "P2",
+            "contract": "Preview defaults must use the fixed new cargo-frame offsets.",
+            "current": "CONFIRMED: The preview fallback is `[[0,1],[-1,0],[1,0]]` with IDs [1,2,3] at lines 252-253. The normal launch currently supplies the same wrong values, so this fallback also preserves the defect when playback is run without that parameter.",
+            "fix_hint": "Change the preview fallback to `[[1,0],[0,1],[0,-1]]`."
+          },
+          {
+            "file": "/home/wq/whut_thesis/expv3_multi/tools/transport_footprint.py",
+            "line": 11,
+            "severity": "P2",
+            "contract": "New offsets replace the old wedge; the old 2.738x1.5 bounding box and x3.75 map scale are legacy, and vehicle headings are independent.",
+            "current": "CONFIRMED: OFFSETS at line 11 is the old sequence; MAP_FACTOR=3.75 at line 14; AABB formulas at lines 28-29 produce [2.738,1.5], and lines 19-37 derive further metrics from the old geometry.",
+            "fix_hint": "Replace OFFSETS and recompute all dependent footprint/rotation/axis-scale metrics from the new geometry and independent-heading assumptions; remove the legacy default map factor."
+          },
+          {
+            "file": "/home/wq/whut_thesis/expv3_multi/run_demo.sh",
+            "line": 21,
+            "severity": "P2",
+            "contract": "User-facing offset documentation must identify vehicle 1=(1,0), vehicle 2=(0,1), vehicle 3=(0,-1).",
+            "current": "CONFIRMED: Formation help says `car1(0,1)、car2(-1,0)、car3(1,0)`.",
+            "fix_hint": "Update the help to `car1(1,0)、car2(0,1)、car3(0,-1)`."
+          },
+          {
+            "file": "/home/wq/whut_thesis/expv3_multi/run_demo.sh",
+            "line": 395,
+            "severity": "P2",
+            "contract": "There is no requirement that all three vehicles share one heading.",
+            "current": "CONFIRMED: Startup output says `货物中心楔形编队，三车同航向；地图绝对比例 ...`, explicitly claiming a shared heading.",
+            "fix_hint": "Remove `三车同航向` and describe the cargo-frame wedge with independent vehicle body headings."
+          }
+        ]
+      },
+      "verify": {
+        "module": "Runtime configuration and user entry-point audit — adversarial recheck of the working tree",
+        "corrections": [],
+        "missed": [
+          "P1 CONFIRMED — Terminal vehicle headings are still locked by default, but the reader recorded this only as a fact and omitted it from findings. /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch:81 sets goal_heading_free=false; the standalone fallback is also False at /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_demo/scripts/formation_goal_bridge.py:65-66. The request assigns every spec.goal_center.theta from the cargo goal at bridge:307-309 and attaches that false flag at bridge:310. This violates the handoff's default-free terminal-body-heading requirement at /home/wq/whut_thesis/expv3_multi/接手执行文档_楔形编队规划修复_2026-11-11.md:47 and :226; the default should be true without releasing cargo psi_F or goal centres.",
+          "P1 CONFIRMED — A valid-frame goal received while /map is unavailable ends with only a log and no plan-scoped terminal status. /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_demo/scripts/formation_goal_bridge.py:247-254 retries /map and then returns from on_goal. Consequently no plan ID is allocated (bridge:281), no FormationPlanRequest is published (bridge:317), and the bridge has only a status subscriber (bridge:99-100), not a publisher that could report MAP_UNAVAILABLE/INVALID for this click. This is a missing explicit failure outcome, not merely a cosmetic logging issue.",
+          "P1 CONFIRMED — Rigid-centre construction failure is a second no-terminal-status path omitted by the reader. /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_demo/scripts/formation_goal_bridge.py:273-279 catches an exception from start/goal centre construction, logs it, and returns before plan-ID allocation at bridge:281 and request publication at bridge:317. Thus this accepted goal produces neither a backend request nor a terminal optimizer/playback outcome from the bridge."
+        ],
+        "confirmed": [
+          "P1 CONFIRMED — /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch:55 exactly sets <param name=\"kinematic_limits/require_cargo_heading\" value=\"true\"/>. It is a literal optimizer-node parameter, not a launch argument; the reader's forbidden-default finding is accurate.",
+          "P1 CONFIRMED — The effective demo offsets are legacy and are duplicated exactly as reported: /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch:67 gives playback [[0.0,1.0],[-1.0,0.0],[1.0,0.0]], while launch:84-89 pairs vehicle_ids [1,2,3] with that same ordered sequence for the bridge. Neither implements id1=(1,0), id2=(0,1), id3=(0,-1).",
+          "P1 CONFIRMED — /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_demo/scripts/formation_goal_bridge.py:148-150 has the standalone fallback [[0.0,1.0],[-1.0,0.0],[1.0,0.0]], with fallback IDs [1,2,3] at bridge:136. The quoted line and behaviour are correct.",
+          "P1 CONFIRMED — The consecutive-goal heading reset is real. /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_demo/scripts/formation_goal_bridge.py:190-201 returns an empty heading dictionary on override, current-reference, and fallback paths; bridge:259-263 then discards it and constructs body_headings={vehicle_id:start[2] ...} at line 261 on every goal. _latest_body_headings exists at bridge:174-188 but has no caller in the file. Start body theta is written from that synthetic dictionary, with another start-cargo-psi fallback, at bridge:305-306.",
+          "P1 CONFIRMED — /home/wq/whut_thesis/expv3_multi/run_demo.sh:277-279 multiplies every implicit formation scale by 3.75. The default formation map is map16 at run_demo.sh:186-188; the initial/default scale is 1.0 at :265 and the per-map cases at :266-275 do not include map16, so its no---scale final value is exactly 3.75. An explicit --scale bypasses the multiplication, as the reader stated.",
+          "CONFIRMED — No P0 findings were present in the reader output, and no quoted P0/P1 line number or behaviour checked above was found to be fabricated or misquoted. The principal refutation is therefore the omitted default goal_heading_free violation and the two silent failure paths, rather than a correction to the reader's existing P1 evidence."
+        ]
+      }
+    },
+    {
+      "module": "frontend_cpp",
+      "read": {
+        "module": "C++ formation front end: q_F geometry search, collision convention, ROS seed/status publication",
+        "facts": [
+          "1) CONFIRMED — The searched state is only cargo/formation q_F=(x_F,y_F,psi_F). SearchKey contains only integer x/y/psi bins; SearchNode contains q_F plus parent/cost/action and mode/gear hints. Vehicle body headings theta_i, A/O/S modes, and body-Spin reconfiguration are not search-state dimensions (catkin_ws/src/fwis_v3_planner/src/formation_search.cpp:19-49,256-262; catkin_ws/src/fwis_v3_planner/include/fwis_v3_planner/formation_search.hpp:1-4).",
+          "1) CONFIRMED — Deduplication bins are llround(qf.x/xy_res), llround(qf.y/xy_res), and llround(qf.psi/yaw_res). psi_F is not wrapped before binning, so headings separated by 2*pi occupy different bins. Defaults are xy_res=0.20 m, yaw_res=rotation_step_rad=0.17453292519943295 rad (10 deg), translation_step_m=0.50 m, goal_xy_tol_m=0.15 m, and goal_yaw_tol_rad=0.15 rad; all are ROS-param configurable (catkin_ws/src/fwis_v3_planner/src/formation_search.cpp:79-83; catkin_ws/src/fwis_v3_planner/include/fwis_v3_planner/formation_search.hpp:17-27; catkin_ws/src/fwis_v3_planner/src/formation_planner_node.cpp:124-148).",
+          "1) CONFIRMED — The requested goal psi_F itself is kept as a continuous value, not snapped to a goal bin. Expansion creates a shortest-direction rotation toward wrap_angle(goal.psi-qf.psi), clipped to rotation_step_rad, plus fixed +rotation_step_rad and -rotation_step_rad probes. A node becomes a goal candidate inside both configured near-goal tolerances, after which the exact connector is required (catkin_ws/src/fwis_v3_planner/src/formation_search.cpp:145-161,344-355). Signed negative dpsi is preserved by integration as psi_F+=dpsi; no curvature is computed in this front end (catkin_ws/src/fwis_v3_planner/include/fwis_v3_planner/formation_model.hpp:90-103).",
+          "2) CONFIRMED — Along every searched path and collision sweep, rigid_bodies(qf) uses theta_i(qf)=vehicle.start_theta+(qf.psi-request.start_qf.psi). Translation therefore leaves every theta_i unchanged; cargo rotation changes every theta_i by exactly the same delta psi_F. It does not literally set theta_i=psi_F and it preserves initial inter-vehicle heading differences, but it does impose rigid co-rotation rather than independent heading trajectories (catkin_ws/src/fwis_v3_planner/include/fwis_v3_planner/formation_collision.hpp:293-303,382-395).",
+          "2) CONFIRMED — Vehicle centres in bodies_at are exactly x_i=qf.x+cos(qf.psi)*offset_x-sin(qf.psi)*offset_y and y_i=qf.y+sin(qf.psi)*offset_x+cos(qf.psi)*offset_y, with the independently supplied heading assigned to the OBB (catkin_ws/src/fwis_v3_planner/include/fwis_v3_planner/formation_collision.hpp:417-431). Request validation also enforces both start and goal centres against p_F+R(psi_F)r_i with default position_tolerance_m=1e-6; goal_heading_free explicitly does not relax goal centres. Offsets arrive in the request rather than being hardcoded in these C++ files (catkin_ws/src/fwis_v3_planner/include/fwis_v3_planner/formation_model.hpp:209-210,299-330; catkin_ws/src/fwis_v3_planner/src/formation_planner_node.cpp:70-85).",
+          "2) CONFIRMED — goal_clear() does not use the rigid_bodies endpoint formula: goal_bodies() evaluates bodies_at(request.goal_qf, goal_headings()), and goal_headings() returns each vehicle.goal_theta verbatim. It then performs static map/self-OBB clearance with zero padding. There is no goal_heading_free branch, so a free vehicle's supplied goal_theta is still its sole collision-checked terminal orientation (catkin_ws/src/fwis_v3_planner/include/fwis_v3_planner/formation_collision.hpp:289-306,408-415). The flag is copied from ROS at formation_planner_node.cpp:82 and stored at formation_model.hpp:48, but is otherwise unused by the checker/search.",
+          "2) CONFIRMED — goal_heading_free never releases cargo psi_F or centre positions: candidate acceptance and exact connection always use request.goal_qf.psi and request.goal_qf.x/y, while centre rigidity is validated separately (catkin_ws/src/fwis_v3_planner/src/formation_search.cpp:210-249,344-355; catkin_ws/src/fwis_v3_planner/include/fwis_v3_planner/formation_model.hpp:310-329).",
+          "3) CONFIRMED — connect_exact_goal tries translation-then-rotation first (rotate_first=false) and rotation-then-translation second (rotate_first=true). Translation is the remaining world-frame position error rotated into the current formation frame; rotation is wrap_angle(goal.psi-pose.psi) about the default explicit pivot (0,0), i.e. the current cargo origin. Zero residuals below 1e-10 skip that primitive (catkin_ws/src/fwis_v3_planner/src/formation_search.cpp:210-242).",
+          "3) CONFIRMED — Each appended exact-connection primitive must pass sweep_clear; the completed candidate must then have position error <1e-7 m and abs(wrap_angle(endpoint.psi-goal.psi)) <1e-7 rad and pass full_sweep_clear from request.start_qf. These are geometric OBB map/self-collision sweeps under the rigid-heading convention, not dynamic certification (catkin_ws/src/fwis_v3_planner/src/formation_search.cpp:192-205,234-249; catkin_ws/src/fwis_v3_planner/include/fwis_v3_planner/formation_collision.hpp:328-395).",
+          "3) CONFIRMED — Neither exact connection nor expansion checks per-vehicle A/O/S equations, body-Spin events, steering/actuator limits, timing, speed, acceleration, jerk, or dynamic feasibility. mode_hint affects only a switch cost during expansion and gear_hint is merely recorded; neither is used to certify connect_exact_goal. Success is explicitly published as GEOMETRY_ONLY_UNCERTIFIED with certification=GEOMETRY_ONLY, not FEASIBLE (catkin_ws/src/fwis_v3_planner/src/formation_search.cpp:396-425; catkin_ws/src/fwis_v3_planner/src/formation_planner_node.cpp:227-229; catkin_ws/src/fwis_v3_planner/include/fwis_v3_planner/formation_search.hpp:1-4).",
+          "4) CONFIRMED — When search_formation_geometry returns failure, the node publishes no new /formation/plan_seed. It publishes a latched std_msgs/String on /formation/status with schema=formation_frontend_status/v1, node_state=GEOMETRY_SEARCH_FAILED, certification=NONE, search_started=true, trajectory_published=false, executable=false, plan_id equal to the raw request plan_id, and reason/detail copied from the search result. Terminal search reasons include START_FORMATION_COLLISION, GOAL_FORMATION_COLLISION, FORMATION_BUDGET_EXHAUSTED, and FORMATION_NO_GEOMETRIC_PATH (catkin_ws/src/fwis_v3_planner/src/formation_planner_node.cpp:117-119,218-225,252-313; catkin_ws/src/fwis_v3_planner/src/formation_search.cpp:281-291,432-443). The seed publisher is also latched, and the failure path sends no empty seed to replace an earlier latched seed (catkin_ws/src/fwis_v3_planner/src/formation_planner_node.cpp:117-119,221-227).",
+          "4) CONFIRMED — A valid request arriving before a valid map is cached in the single pending_request_ slot, and the node publishes /formation/status with node_state=MAP_UNAVAILABLE, reason=MAP_UNAVAILABLE, certification=NONE, search_started=false, and the same plan_id. Before any map callback map_error_ is empty, so detail is empty. A subsequent valid map resets the slot and replays the request through on_request; this increments requests_seen_ a second time. A later pre-map request overwrites the earlier single slot; an invalid request is rejected rather than cached (catkin_ws/src/fwis_v3_planner/src/formation_planner_node.cpp:189-210,329-336).",
+          "5) CONFIRMED — In this working tree, the sole successful search return occurs only after connect_exact_goal succeeds, and publish_seed is called only on that success path. The former near-goal tolerances of 0.15 m/0.15 rad are therefore not, by themselves, sufficient to emit a seed. The seed copies the requested start/goal q_F into formation_start/formation_goal and serializes the checked primitives (catkin_ws/src/fwis_v3_planner/src/formation_search.cpp:349-364; catkin_ws/src/fwis_v3_planner/src/formation_planner_node.cpp:221-245).",
+          "5) CONFIRMED — A literally non-identical cargo endpoint is still possible within the explicit <1e-7 numerical tolerances, and unwrapped psi_F may differ from request.goal_qf.psi by a multiple of 2*pi because only wrap_angle residual is checked. The connector establishes only the cargo SE(2) endpoint, not terminal theta_i. A large residual such as the previously observed 0.011 rad cannot be emitted merely by the current near-goal acceptance code: if both exact orders fail, no seed is published. Attribution of such a runtime seed to stale/different running code or another producer is SUSPECTED, not established by this read-only audit (catkin_ws/src/fwis_v3_planner/src/formation_search.cpp:223-249,349-364; catkin_ws/src/fwis_v3_planner/src/formation_planner_node.cpp:232-245)."
+        ],
+        "findings": [
+          {
+            "file": "catkin_ws/src/fwis_v3_planner/include/fwis_v3_planner/formation_collision.hpp",
+            "line": 299,
+            "severity": "P1",
+            "contract": "NEW CONTRACT / handoff sections 1.1 and T4: theta_i are independent continuous kinematic variables; cargo in-place +/-90 degree rotation from all initial theta_i=0 must eventually be feasible through legal body-Spin reconfiguration.",
+            "current": "CONFIRMED — The only collision/path convention is theta_i=start_theta_i+(psi_F-start_psi_F), and the search state/actions contain no independent theta_i or fixed-cargo body-Spin event. Every sweep checks this co-rotating OBB history. Consequently the front end cannot represent the required Spin reconfiguration and can reject a legal independent-heading solution when its rigid co-rotation sweep collides; conversely its geometric sweep is not a certificate for any different Spin trajectory a backend might choose. This is a front-end structural limitation, not evidence that GEOMETRY_ONLY_UNCERTIFIED means executable.",
+            "fix_hint": "Define an explicit front-end/backend heading-candidate contract. Add fixed-q_F independent Spin/reconfiguration events with continuous OBB sweeps, or retain this only as a conservative candidate convention while providing bounded alternative heading candidates/backend retries and final independent collision certification. Do not turn off OBB checks or claim q_F-only success is executable."
+          },
+          {
+            "file": "catkin_ws/src/fwis_v3_planner/include/fwis_v3_planner/formation_collision.hpp",
+            "line": 412,
+            "severity": "P1",
+            "contract": "NEW CONTRACT / handoff sections 1.1 and T5: goal_heading_free=true releases terminal vehicle body headings theta_i only; an arbitrary goal_theta placeholder must not be treated as the sole feasible orientation, while cargo psi_F and rigid centres remain constrained.",
+            "current": "CONFIRMED — goal_clear() always builds goal OBBs from every supplied vehicle.goal_theta and never reads goal_heading_free. A colliding placeholder orientation therefore causes GOAL_FORMATION_COLLISION before search even when that vehicle's terminal heading is free and another orientation could be clear. Conversely, connect_exact_goal checks only q_F and does not establish goal_theta when goal_heading_free=false; terminal body-heading satisfaction is left entirely downstream.",
+            "fix_hint": "For free terminal headings, generate/search a finite set of collision-clear, continuously reachable theta_i choices (including required Spin sweep) instead of rejecting on the placeholder. For fixed headings, explicitly connect and verify theta_i(start) to goal_theta. Continue checking exact cargo psi_F and p_F+R(psi_F)r_i independently of the flag."
+          }
+        ]
+      },
+      "verify": null
+    },
+    {
+      "module": "s5_kinematics",
+      "read": {
+        "module": "S5 mode enumeration and audit: catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_kinematics.py",
+        "facts": [
+          "CONFIRMED — Defaults and modes (catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_kinematics.py:32-45,150-155,737-740): ACKERMANN=0, OBLIQUE=1, SPIN=2; KinematicLimits defaults are r_min_ackermann=0.810 m, oblique_angle_max=pi/2, heading_tolerance_rad=1e-6, geometry_tolerance_m=1e-7, pivot_tolerance_m=1e-9, and require_cargo_heading=False. enumerate_mode_assignments defaults are allow_reverse=False, expected_end_headings=None, goal_heading_free=None, max_schedules=4, max_combinations=4096, allowed_modes=None.",
+          "CONFIRMED — Tangential-heading requirement (formation_kinematics.py:639-687): for an off-pivot vehicle, rx=offset.x-pivot_x, ry=offset.y-pivot_y, radius=hypot(rx,ry), and tangent=atan2(rx,-ry)+start_psi. Lines 656-660 admit direction=+1 only when theta is tangent and direction=-1 only when theta is tangent+pi. Otherwise lines 662-667 return HEADING_BOUNDARY_MISMATCH with the literal detail: 'body heading {:.12g} is neither the forward tangent {:.12g} nor the reverse tangent {:.12g}'. The only non-A exception is radius<=pivot_tolerance_m, which gets SPIN (lines 645-651); off-pivot vehicles get no O or S alternative.",
+          "CONFIRMED — All-zero wedge headings at cargo-origin pivot and start_psi=0 (formation_kinematics.py:280-284,639-687,823-850): vehicle 1 at (1,0) has radius 1 and forward tangent +pi/2, so theta_1=0 is rejected as HEADING_BOUNDARY_MISMATCH. Vehicle 2 at (0,1) has tangent pi and reverse tangent 0, so theta_2=0 selects direction=-1 but is rejected as REVERSE_NOT_ALLOWED when allow_reverse=False; vehicle 3 at (0,-1) has tangent 0 and can select A direction=+1. Since offsets are sorted by vehicle_id and the first collected rejection is returned, vehicle 1's HEADING_BOUNDARY_MISMATCH is the returned failure. allow_reverse=True does not cure vehicle 1's non-tangency.",
+          "CONFIRMED — Positive versus negative dpsi (formation_kinematics.py:645-647,654-674): pivot SPIN uses direction=+1 for dpsi>=0 and -1 for dpsi<0, with control=0. Off-pivot A direction is chosen from theta against the positive-dpsi tangent without using dpsi; curvature is then control=(+1 if dpsi>=0 else -1)*direction/radius. For positive dpsi, a vehicle headed along tangent gets direction=+1 and kappa=+1/radius, while one headed along tangent+pi gets direction=-1 and kappa=-1/radius. For negative dpsi those same heading tests still produce the same directions, but both curvature signs are negated.",
+          "CONFIRMED — Direction is not derived from actual signed centre velocity for A rotation (formation_kinematics.py:654-674,690-717). With lambda=|dpsi| and unit positive-yaw tangent t, rigid geometry gives dp/dlambda=sign(dpsi)*radius*t. The constructor never computes this derivative or its dot product with [cos(theta),sin(theta)]. Example for vehicle 1 at (1,0), theta_1=pi/2, pivot=(0,0), radius=1: dpsi>0 gives actual projection +1 and the stored direction=+1 is consistent; dpsi<0 gives dp/dlambda=-t and actual projection -1, but the stored direction remains +1 and stored kappa=-1 instead of the physically consistent direction=-1,kappa=+1.",
+          "CONFIRMED — Translation controls are separate and do use actual block displacement (formation_kinematics.py:591-636,807-830): motion_angle is computed from the rigid translation. delta=wrap_angle(motion_angle-theta). A uses control=0 and direction=+1 for aligned motion, or direction=-1 for anti-aligned motion when reverse is allowed. Forward O uses direction=+1, control=phi=delta when |phi|<=oblique_angle_max+tolerance; reverse O uses direction=-1, control=wrap_angle(delta+pi) when allowed. Pure rotation has no O choice; audit explicitly returns ROTATION_OBLIQUE_UNSUPPORTED for O in a rotation block (lines 1312-1317).",
+          "CONFIRMED — Primitive rejection and missing stationary reconfiguration block (formation_kinematics.py:257-263,387-443,788-792): every block requires parameter_length>0. from_primitive rejects translation length<=geometry_tolerance_m (default 1e-7) with ZERO_LENGTH_TRANSLATION_BLOCK at lines 412-414 and |dpsi|<=tolerance with ZERO_ROTATION_BLOCK at lines 422-425. COMPOSITE construction stores identical start/end cargo poses with parameter_length=tolerance (line 443), but enumeration rejects it as COMPOSITE_BLOCK_UNSUPPORTED and qf_at also raises COMPOSITE_BLOCK_UNSUPPORTED (lines 384-385). No supported block expresses cargo pose fixed, all vehicle centres fixed, and independent body headings changing. SPIN is admitted only for a vehicle located at the pivot during a nonzero cargo ROTATION, and all rotation modes set theta_end=theta_start+delta_psi (lines 645-651,869-875).",
+          "CONFIRMED — Cargo-heading lock remains but is OFF by default (formation_kinematics.py:155,770-776,798-805,1063-1069). With require_cargo_heading=True, enumeration rejects any initial theta_i not equal to start psi_F as CARGO_HEADING_MISMATCH. A rotation with any abs(v.x-pivot_x)>geometry_tolerance_m can additionally return CARGO_ROTATION_REQUIRES_GENERAL_4WIS; this branch is unreachable with the default False setting and is not a default expected outcome. Audit repeats the optional lock by requiring segment theta_start=start psi_F and theta_end=end psi_F.",
+          "CONFIRMED — goal_heading_free is scoped only to terminal body headings in this file (formation_kinematics.py:777-786,879-896,1041-1049,1324-1334). A true per-vehicle flag skips only that vehicle's expected_end_headings comparison. It does not alter block.start_qf/end_qf, psi_F, fixed offsets, or centre checks. If the flag mapping is None, _mapping_to_flags makes every flag False (lines 118-138).",
+          "CONFIRMED — What audit recomputes (formation_kinematics.py:974-1351): it validates the segment vehicle set, reconstructs rigid start/end centres with block.centers, checks qf_at endpoints, start/end headings and station span, reverse policy, translation A/O travel and displacement, rotation S fixed-centre/control/travel/direction rules, A tangent/travel/curvature/limit and circular chord length, and optional terminal heading goals. Stored segment centres, headings, travel and controls are compared rather than simply trusted.",
+          "CONFIRMED — What audit reuses rather than independently derives (formation_kinematics.py:1026-1039,1087-1093,1188-1317): it calls the block's own centers/qf_at/delta_psi implementation; repeats the constructor's theta_end=theta_start+delta_psi rule; repeats tangent=atan2(rx,-ry)+start_psi and dpsi-independent A direction selection (lines 1237-1255); and repeats expected_curvature=sign(dpsi)*segment.direction/radius (lines 1266-1281). The extra rotation displacement check compares only chord magnitude with 2*radius*|sin(dpsi/2)| (lines 1292-1311). It never computes dp/dlambda, its signed projection onto the body axis, or a lateral/cross-product residual, so it does not independently detect the negative-dpsi direction/curvature inconsistency."
+        ],
+        "findings": [
+          {
+            "file": "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_kinematics.py",
+            "line": 654,
+            "severity": "P0",
+            "contract": "Cargo in-place +/-90 degree rotation with all initial theta_i=0 must eventually be feasible through legal body-Spin reconfiguration; theta_i are independent kinematic variables, not required to equal psi_F.",
+            "current": "CONFIRMED — _rotation_choices requires every off-pivot vehicle to begin an A rotation exactly on its forward/reverse tangent (lines 654-667) and provides no off-pivot S reconfiguration choice. For the contract wedge, cargo-origin pivot, start_psi=0 and all theta_i=0, vehicle 1 at (1,0) has tangent pi/2 and immediately produces HEADING_BOUNDARY_MISMATCH; enabling reverse cannot fix this. Disabling require_cargo_heading therefore does not make the required initial state feasible.",
+            "fix_hint": "Add an explicit legal stationary body-Spin reconfiguration stage/event before (and where needed after) cargo rotation, preserving continuous per-vehicle headings and exact rigid centres. Retain the tangent check for actual A circular travel, but do not make it the only admissible starting state for the whole rotation task."
+          },
+          {
+            "file": "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_kinematics.py",
+            "line": 412,
+            "severity": "P0",
+            "contract": "The mode model must support legal body-Spin reconfiguration with cargo pose and vehicle centres fixed while independent body headings change.",
+            "current": "CONFIRMED — from_primitive rejects zero-length translation at lines 412-414 and zero-angle rotation at lines 422-425; all blocks require positive parameter_length at lines 261-263. COMPOSITE can hold identical cargo endpoints but is unsupported by qf_at and enumeration (lines 384-385,443,788-792). Audit also rejects SPIN for every off-pivot vehicle (lines 1197-1207). Consequently no supported FormationKinematicBlock can represent a stationary, independent heading-only reconfiguration for the three wedge vehicles.",
+            "fix_hint": "Introduce a distinct stationary-spin/reconfiguration primitive whose progress variable parameterizes body yaw rather than nonzero cargo translation/rotation. Hold q_F and every p_i exactly fixed, allow independent per-vehicle theta_end, and add matching enumeration and independent audit equations; COMPOSITE placeholders are not sufficient."
+          },
+          {
+            "file": "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_kinematics.py",
+            "line": 656,
+            "severity": "P0",
+            "contract": "Clockwise rotation must produce physically correct signed direction and curvature, and the audit must independently verify the actual rigid-body kinematics rather than bless the constructor's convention.",
+            "current": "CONFIRMED — Off-pivot A direction is selected without dpsi at lines 656-660, although actual dp/dlambda changes sign with dpsi; curvature is then sign(dpsi)*direction/radius at line 673. For a tangent-aligned vehicle, positive dpsi yields the consistent pair direction=+1,kappa=+1/radius, but negative dpsi still yields direction=+1 and changes kappa to -1/radius even though actual signed centre projection is negative and the consistent pair is direction=-1,kappa=+1/radius. Reverse gating can consequently be applied to the wrong physical direction. Audit repeats the same dpsi-independent tangent test and curvature formula at lines 1237-1281 and checks only unsigned chord length at lines 1292-1311, so it can return KINEMATIC_AUDITED for this inconsistency.",
+            "fix_hint": "For each candidate independently compute dp_i/dlambda from rigid geometry, obtain signed v_lambda by projection onto [cos(theta_i),sin(theta_i)], set direction from that signed motion, and compute kappa=(dtheta_i/dlambda)/v_lambda; also check lateral cross-product residual. The audit should recompute these physical derivatives independently rather than reusing sign(dpsi)*direction/radius plus chord magnitude."
+          }
+        ]
+      },
+      "verify": null
+    },
+    {
+      "module": "geometry_candidates",
+      "read": {
+        "module": "/home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_geometry.py and /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_master.py",
+        "facts": [
+          "CONFIRMED Q1: Continuous blocks implement only TRANSLATION and ROTATION. FormationPathControl rejects every other geometry type at /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_geometry.py:209-212, and FormationBlock does the same while requiring exactly one FormationPathControl at :331-350. Translation linearly interpolates cargo x/y with constant psi_F; rotation interpolates signed psi_F about a fixed cargo-frame pivot at :255-307.",
+          "CONFIRMED Q1: _primitive_type recognizes string/integer encodings 0=translation, 1=rotation, 2=composite at /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_geometry.py:719-737, but build_continuous_plans immediately returns COMPOSITE_PRIMITIVE_UNSUPPORTED at :1013-1022. Thus COMPOSITE is recognized, not implemented, in the audited modules. A package-wide read-only grep also found only rejection elsewhere: supporting qf_at raises COMPOSITE_BLOCK_UNSUPPORTED at /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_kinematics.py:384-385 and mode enumeration rejects it at :788-792.",
+          "CONFIRMED: Vehicle body headings are stored independently per vehicle and linearly interpolated from theta_start to theta_end at /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_geometry.py:399-429. Centres are not independent curves; the audit recomputes them from q_F and fixed offsets and checks rigidity at :1507-1530. The imported default require_cargo_heading is False at /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_kinematics.py:150-155.",
+          "CONFIRMED Q2: _fit_terminal_control first computes terminal cargo xy/yaw error and uses _GEOMETRY_TOL=1e-7 at /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_geometry.py:50 and :844-865. If both errors are <=1e-7, it retains the original block and returns (kinematic, None), subject only to the non-free body-heading check at :865-877.",
+          "CONFIRMED Q2 GOAL_HEADING_MISMATCH: The fitter directly returns this only on the already-at-cargo-goal path, when expected_end is not None, that vehicle's goal_heading_free flag is false, and angle_error(theta_start + delta_psi, expected_end[vehicle_id]) exceeds limits.heading_tolerance_rad; delta_psi is the signed rotation increment or zero for translation. See /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_geometry.py:865-876. The default heading tolerance is 1e-6 rad at /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_kinematics.py:150-155. On a non-exact fitted path, a scheduler GOAL_HEADING_MISMATCH is instead collapsed into the fitter's outer MODE_ASSIGNMENT_FAILED detail.",
+          "CONFIRMED Q2 TERMINAL_FIT_FAILED translation rule: This branch is reached only when cargo xy or yaw is not already within 1e-7. If angle_error(kinematic.start_qf.psi, goal.psi)>1e-7, it fails because translation cannot change psi_F; otherwise it fits one translation directly from the last block's start to the goal. If that start-to-goal distance is <=1e-7, it fails as zero length. See /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_geometry.py:879-892.",
+          "CONFIRMED Q2 TERMINAL_FIT_FAILED fixed-pivot rule: For rotation, delta_psi=goal.psi-start.psi; abs(delta_psi)<=1e-7 fails as zero angle. The fitter keeps the original pivot, computes pivot_w=start.p+R(start.psi)*pivot, predicts endpoint=pivot_w-R(goal.psi)*pivot, and fails if its xy residual to the requested goal exceeds 1e-7. Otherwise it constructs one rotation of length abs(delta_psi). See /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_geometry.py:893-918.",
+          "CONFIRMED Q2 MODE_ASSIGNMENT_FAILED: After a non-exact translation/rotation is fitted, the fitter enumerates at most max_schedules assignments and retains only assignment.success && audit.success. If none survive, it returns MODE_ASSIGNMENT_FAILED with sorted assignment.reason values, or NONE if no assignments were returned; audit-only failure reasons are not included in that reasons list. See /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_geometry.py:920-943.",
+          "CONFIRMED Q3: Terminal fitting cannot insert a body-Spin-only event or any extra block. It returns variants for one kinematic block, and the builder performs a one-for-one replacement using blocks=combination[:-1]+(fitted_block,) at /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_geometry.py:1101-1130. Zero-length translation/rotation primitives are skipped at :1028-1031. This is not a standalone fixed-cargo Spin/reconfiguration mechanism; supporting S5 Spin-at-pivot handling inside a nonzero rotation is separate at /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_kinematics.py:639-651.",
+          "CONFIRMED Q3: goal_heading_free is per-vehicle and releases only terminal theta_i checks. It bypasses the exact-endpoint theta check at /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_geometry.py:868-876 and is passed to both terminal enumeration and audit at :920-933. The independent audit applies it only to the last block at :1468-1493 and excludes only free vehicles from the final theta comparison at :1554-1564. Cargo psi_F and centre position remain enforced by terminal endpoint checks at :1152-1164 and :1565-1580 and by rigid-centre recomputation at :1507-1530.",
+          "CONFIRMED Q3 signed clockwise geometry: Both primitive construction and terminal rotation fitting retain signed delta_psi while using abs(delta_psi) as parameter length at /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_geometry.py:893-918; qf_at interpolates that signed increment at :279-307. The supporting scheduler sets pivot-Spin direction from dpsi sign and Ackermann curvature to sign(dpsi)*direction/radius at /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_kinematics.py:645-647 and :673-684.",
+          "CONFIRMED Q4 generation: build_continuous_plans validates one S4 seed, converts each nonzero primitive in sequence, calls enumerate_mode_assignments once per block with the snapshot's current headings, independently audits every returned assignment, sorts surviving choices by schedule_cost then block candidate_key, and propagates q_F/headings to the next primitive. See /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_geometry.py:962-997 and :1004-1087.",
+          "CONFIRMED Q4 budgets/defaults: build_continuous_plans defaults are max_candidates=4, max_schedule_combinations=64, max_schedules_per_block=4, terminal_tolerance_m=1e-7 and terminal_tolerance_rad=1e-7 at /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_geometry.py:962-982. _schedule_combinations expands partial Cartesian products, ranks by summed schedule cost and block keys, and truncates to max_schedule_combinations after every block at :946-959. FormationMasterConfig repeats K=4, combinations=64, schedules/block=4 at /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_master.py:51-67.",
+          "CONFIRMED Q4 terminal candidates: Every retained schedule combination is sent through terminal fitting; a failed fit records a rejection and continues to the next combination, while successful variants are checked against cargo terminal tolerances and scored at /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_geometry.py:1101-1165. If no plan survives, the build returns the first recorded rejection or NO_CONTINUOUS_CANDIDATE at :1167-1175.",
+          "CONFIRMED Q4 build dedup/ranking: Plans are sorted by plan_candidate_score and full candidate_key, deduplicated by that key, and truncated to max_candidates at /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_geometry.py:1176-1187. The key includes IDs, offsets, cargo start/goal, start/goal body headings, free flags, reverse policy, profile and every block's geometry/mode data rounded to 12 decimals at :434-451 and :619-639. Score is total_parameter_length plus mode cost (0.01*abs(control), +0.1 per OBLIQUE segment, +0.25 per mode switch) at :1643-1660.",
+          "CONFIRMED Q4 master dedup/admission: FormationModeMaster.consider rejects an already-seen key as DUPLICATE_CANDIDATE, independently audits new plans, certifies successful ones KINEMATIC_VALID, and retains at most K by (score,candidate_id); a worse/equal newcomer is rejected and a better one evicts the worst. See /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_master.py:231-294. consider_build continues to later plans after an individual master audit rejection at :296-312, and result selects the minimum score/id at :322-347.",
+          "CONFIRMED Q4 failure/retry: A failed individual nonterminal assignment is skipped, but if no audited choice survives for a primitive the entire seed build immediately returns the first block rejection at /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_geometry.py:1055-1082; enumeration exceptions become MODE_ASSIGNMENT_FAILED at :1042-1054. There is no alternate geometric seed, alternate start/goal heading scheme, free-flag relaxation, or outer retry in these modules. The only retries are other already-enumerated schedules/combinations and later built plans; all use the same snapshot headings and primitive geometry. evaluate_seed performs one build/consider_build pass and returns the build at /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_master.py:353-371."
+        ],
+        "findings": [
+          {
+            "file": "/home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_geometry.py",
+            "line": 879,
+            "severity": "P1",
+            "contract": "Cargo in-place +/-90 deg rotation with all initial theta_i=0 must eventually be feasible via legal body-Spin reconfiguration.",
+            "current": "CONFIRMED: The required fixed-cargo body-Spin reconfiguration/recovery path cannot be constructed here. Terminal fitting only reshapes the existing final translation/rotation (:879-918), and the builder replaces exactly one final block without appending an event (:1101-1130). Zero-length primitives are skipped (:1028-1031), COMPOSITE is rejected (:1013-1022), and a primitive with no surviving mode schedule aborts the whole seed (:1075-1082). Consequently, if the incoming S4 seed is not already feasible from the supplied headings, these layers cannot insert the legal Spin reconfiguration needed to make the +/-90-degree scenario feasible; translation psi mismatch and fixed-pivot residual instead cause immediate TERMINAL_FIT_FAILED. This does not assert that every conceivable preconfigured seed fails, but the contractually required recovery mechanism is absent.",
+            "fix_hint": "Add an explicitly audited fixed-cargo reconfiguration event (q_F and every centre fixed while theta_i changes by legal signed body Spin), enumerate it in candidate construction, and let terminal recovery try reconfigure-then-rotate/translate sequences rather than only mutating the last block. Cover +90 and -90 degrees from all theta_i(0)=0, including signed curvature/direction and goal_heading_free enabled and disabled."
+          }
+        ]
+      },
+      "verify": null
+    },
+    {
+      "module": "retiming_quality",
+      "read": {
+        "module": "S8 common-clock retiming, S7 local NLP, and S9 independent final audit (working tree)",
+        "facts": [
+          "CONFIRMED — /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_timing.py is absent; FormationTimingLimits is defined in /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_retiming.py:117-143. Defaults are v_max=0.8 m/s, a_max=0.6 m/s^2, jerk_max=2.0 m/s^3, yaw_rate_max=0.8 rad/s, yaw_accel_max=0.8 rad/s^2, yaw_jerk_max=3.0 rad/s^3, lateral_accel_max=0.6 m/s^2, wheel_speed_max=1.0 m/s, steer_rate_max=0.8 rad/s, steer_accel_max=1.5 rad/s^2, mode_setup_time=0.15 s, mode_switch_duration=0.3 s, min_mode_dwell_s=0.3 s, r_min_ackermann=0.810 m, max_block_duration_s=120 s.",
+          "CONFIRMED — The single-vehicle restricted YAML /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_demo/config/params_restricted.yaml:17-37 instead specifies target_v=2.0, v_max=2.0, lateral_a_max=2.0, wheel_speed_max=3.0, translation_omega_max=2.5, with omega_max=0.8, alpha_max=0.8 and angular_jerk_max=3.0. The shared YAML /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_common/config/ranger_mini_2.yaml:24-47 also has v_max=2.0 and wheel_speed_max=3.0. The formation launch does not supply ~timing_limits overrides (/home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch:43-56), and the node loads an empty dictionary into FormationTimingLimits when unset (/home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/scripts/formation_optimizer_node.py:1577-1592), so the formation dataclass defaults above are the demo defaults.",
+          "CONFIRMED — The common axis consists of one rest-to-rest quintic motion phase per block plus a common stationary hold at a boundary when any vehicle changes mode or wheel angles (/home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_retiming.py:1-13,1148-1184). The only boundary event kinds are mode_switch and wheel_reconfiguration (:794-847). There is no standalone q_F-fixed, centre-fixed event in which theta_i changes. Existing SPIN is only an ordinary motion-block segment for a vehicle at the rotation pivot: its signed centre speed is set to zero but its yaw/wheel speed can be nonzero (:621-640,931-971).",
+          "CONFIRMED — Existing wheel/mode hold accounting does not add the configured baseline twice. Formation retiming forces the restricted policy (/home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_retiming.py:174-192). mode_switch_event computes duration=max(mode_switch_duration, setup+steering_min), then steering_s=duration-setup (/home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/mode_switch_timing.py:35-53). The common boundary hold is max(setup_s+steering_s) over vehicles, exactly that event duration, not baseline+setup+steering (/home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_retiming.py:794-847). S9 recomputes the same requirement and rejects a shorter hold (/home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_quality.py:1757-1804).",
+          "CONFIRMED — Minimum mode dwell is a lower bound, not another hold added to every switch: each motion block duration is max(dynamic_duration,min_mode_dwell_s) (/home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_retiming.py:670-720), and mode runs include applicable stationary phases and are checked for total duration (:872-899,1495-1521; /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_quality.py:1711-1755). Separate body-Spin rotation time cannot be credited against this dwell because no such event exists.",
+          "CONFIRMED — S8 computes unsigned centre speed as ||p_dot||, unsigned yaw derivatives as abs(theta_rate*lambda derivatives), wheel speed as max(wheel_factors)*(speed for A/O or yaw_rate for Spin), and Ackermann lateral acceleration as abs(control)*speed^2 (/home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_retiming.py:605-640). It applies v_max/yaw/wheel/lateral caps to magnitudes (:683-740,1419-1448), stores signed centre speed as segment.direction*speed (zero for Spin) and signed yaw rate as theta_rate*lambda_dot (:931-971), and checks curvature only through abs(segment.control)<=1/r_min_ackermann (:569-574). It does not derive signed speed from p_dot dot body heading or curvature from theta'/v_lambda.",
+          "CONFIRMED — S9 has a separately written analytic q_F/offset derivative implementation (/home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_quality.py:693-751), so it is not directly calling S8's derivative function. However, it reduces p_dot to math.hypot at :752 and sets signed_speed=segment.direction*speed at :764; it does not use the required heading dot/cross products. A curvature is taken from abs(segment.control) at :1049-1052 and checked as a magnitude cap at :1119-1129, rather than recomputed as theta'/v_lambda. Timed signed speed and other dynamic fields are then compared with these expected formulas at :1583-1641.",
+          "CONFIRMED — The S7 seed is audited before NLP (/home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_optimizer.py:831-844). allow_seed_fallback=True by default (:91-107). IPOPT uses solve_limited with max_wall_time=config.time_limit_s (default 1.0 s) (:897-910). Solver exceptions and nonconvergence/excess residual respectively return _seed_retained_result under the default (:915-928,952-959); that result preserves the seed with KINEMATIC_VALID, reason SEED_RETAINED and seed_retained=True (:786-796). It is not discarded on these handled failure/timeout paths, but it is not yet S9 FEASIBLE. Setting allow_seed_fallback=False explicitly rejects instead.",
+          "CONFIRMED — An unexpected exception escaping optimize_continuous_plan is caught by the pipeline boundary, recorded as FORMATION_NLP_INFEASIBLE, and the candidate is skipped with continue, so that path does not retain the seed (/home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/scripts/formation_optimizer_node.py:494-512). Normal optimizer-reported failure/timeout does not take this exception path.",
+          "CONFIRMED — S9 runs request, plan, timed-contract, phase, sample, mode, dynamics, static-collision, sweep and publication checks before returning FEASIBLE (/home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_quality.py:833-856,2131-2156). Selection evaluates all candidates and selects only among evaluation.feasible entries (:2279-2349). These gates do not remedy the missing body-Spin event model or the shared signed-speed/curvature formulas identified below."
+        ],
+        "findings": [
+          {
+            "file": "/home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_retiming.py",
+            "line": 975,
+            "severity": "P0",
+            "contract": "Handover T4 and the new contract require a common-time stationary body-Spin reconfiguration event: q_F and every vehicle centre stay fixed while independent theta_i change; wheel setup, mode dwell and actual body rotation are separately timed, enabling cargo in-place +/-90 degree rotation from initial theta_i=0.",
+            "current": "CONFIRMED — No such event exists. _boundary_event only emits mode_switch or wheel_reconfiguration (lines 794-847). _sample_stationary holds theta at block.body_heading_at(vehicle_id,0) and forces center_yaw_rate_radps=0 (lines 975-1001); the S8 audit rejects any nonzero yaw rate in a stationary sample (lines 1392-1401). Phases advance elapsed only by these holds and ordinary block motion (lines 1148-1184). A pivot SPIN inside a rotation block is not a standalone reconfiguration event and cannot reorient vehicles before that block.",
+            "fix_hint": "Introduce an explicit joint body-Spin reconfiguration phase with per-vehicle start/target headings and progress, fixed q_F/centres, and a common duration computed from each vehicle's yaw rate/acceleration/jerk limits. Account for wheel setup and mode dwell separately, then extend sampling, reports, self-audit, collision sweep and playback."
+          },
+          {
+            "file": "/home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_quality.py",
+            "line": 1312,
+            "severity": "P0",
+            "contract": "Handover T4 item 6 and section 6.1 require S9 to certify stationary Spin: fixed q_F and centres, continuous independent headings, legal mode equations, yaw dynamics, and continuous body-Spin OBB collision sweeps.",
+            "current": "CONFIRMED — The phase parser accepts only motion and stationary (lines 1288-1374). Every stationary sample is placed at station=0 with the block's initial headings (lines 1425-1443), and _check_samples sets zero_dynamics for it and rejects nonzero center_yaw_rate_radps (lines 1454-1462,1548-1572). The mode scheduler only verifies stationary wheel/mode holds (lines 1757-1804). Therefore a legal q_F-fixed theta-changing Spin event has no accepted representation and would be rejected rather than independently certified.",
+            "fix_hint": "Parse and validate a versioned body-Spin reconfiguration event, independently reconstruct each theta_i(t), require q_F and centres fixed, check per-vehicle S equations and signed yaw dynamics, and sweep the rotating OBBs continuously on the common time axis."
+          },
+          {
+            "file": "/home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_quality.py",
+            "line": 764,
+            "severity": "P0",
+            "contract": "Handover T2 lines 234-260 requires independent centre derivatives: signed speed from p_i' dot the body/motion heading, an A lateral cross-product residual, and A curvature from theta_i'/v_lambda_i; S9 must not rely on the constructor's direction/curvature formula. Deliberately corrupted direction, signed speed or curvature must be rejected.",
+            "current": "CONFIRMED — Although _dynamic_values computes p_dot (lines 739-751), it uses only math.hypot(p_dot) and then signed_speed=segment.direction*speed (lines 752-764). There is no body-heading dot product or A lateral cross-product check. A curvature metrics and limits use segment.control directly (lines 1049-1052,1119-1129), and timed fields are compared with these same formulas (lines 1583-1641). The evaluator also calls audit_continuous_plan (lines 1002-1004), whose rotation audit uses sign(dpsi)*segment.direction/radius rather than an independent derivative (/home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_kinematics.py:1266-1281). Thus S9 cannot independently expose a constructor/auditor shared sign or curvature error.",
+            "fix_hint": "From independently reconstructed p_i' and theta_i', compute v_lambda_i by projection onto [cos(theta_i),sin(theta_i)] for A (and the phi-shifted heading for O), reject the lateral cross residual, derive kappa_i=theta_i'/v_lambda_i with an explicit near-zero-speed policy, and compare these results against direction, signed speed, mode_control, wheel speed and reverse authorization."
+          },
+          {
+            "file": "/home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_optimizer.py",
+            "line": 670,
+            "severity": "P1",
+            "contract": "The local NLP must preserve correct signed curvature and must not reject an otherwise valid optimized candidate through a hard-residual coding error; default NLP must not破坏已有可行解, including the required +/-90 degree cargo rotations.",
+            "current": "CONFIRMED — _build_nlp uses curvature magnitude 1/radius (lines 480-509), but _hard_residuals later computes curvature=abs(delta)/radius and compares it with 1/r_min_ackermann (lines 648-674). delta is the formation yaw increment, not a length or curvature. For delta=pi/2, radius=1 m and the default r_min_ackermann=0.810 m (/home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_kinematics.py:142-155), this reports 1.5708 > 1.23457 although the actual curvature magnitude is 1.0 <= 1.23457. The resulting hard_residual can trigger NLP_RESIDUAL_EXCEEDED and reject a valid optimized 90 degree candidate (lines 940-959). Default seed fallback masks this as lost optimization, but fallback-disabled operation rejects it.",
+            "fix_hint": "Recompute the residual from theta_i'/v_lambda_i. Under the current fixed circular mode word its magnitude is 1/radius (with sign determined by the actual signed direction and heading recurrence), independent of abs(delta_psi). Add positive/negative, forward/reverse and +/-90 degree NLP residual tests."
+          }
+        ]
+      },
+      "verify": null
+    },
+    {
+      "module": "tests_baseline",
+      "read": {
+        "module": "Working-tree audit of superseded cargo-contract tests and reports",
+        "facts": [
+          "CONFIRMED scope: audited the working-tree files under /home/wq/whut_thesis/expv3_multi without editing files, running tests, launching ROS, or using state-changing git commands. Line references below are 1-based lines actually read.",
+          "/home/wq/whut_thesis/expv3_multi/tests/test_formation_collision.py:1 — S2 contracts for exact formation OBB collision geometry and conservative swept-collision checks.",
+          "/home/wq/whut_thesis/expv3_multi/tests/test_formation_contract.py:1 — S3 formation-request validation and ROS message freeze/round-trip contracts.",
+          "/home/wq/whut_thesis/expv3_multi/tests/test_formation_demo_assets.py:1 — S10 static demo-launch, RViz-configuration, and playback/bridge installation asset tests; explicitly no ROS.",
+          "/home/wq/whut_thesis/expv3_multi/tests/test_formation_geometry.py:1-7 — S6 continuous formation geometry, plan audit, collision precheck, and candidate-master tests.",
+          "/home/wq/whut_thesis/expv3_multi/tests/test_formation_kinematics.py:1-6 — S5 per-vehicle A/O/S mode assignment and independent kinematic-audit tests without ROS, maps, collision checking, or retiming.",
+          "/home/wq/whut_thesis/expv3_multi/tests/test_formation_model.py:1 — S1 rigid-formation model contracts, deliberately independent of ROS and maps.",
+          "/home/wq/whut_thesis/expv3_multi/tests/test_formation_optimizer_node.py:1-6 — S9 ROS-independent optimizer-node pipeline and transactional-publication tests.",
+          "/home/wq/whut_thesis/expv3_multi/tests/test_formation_optimizer.py:1-8 — S7 fixed-mode-structure formation NLP tests.",
+          "/home/wq/whut_thesis/expv3_multi/tests/test_formation_playback.py:1-6 — S10 ROS-independent shared-clock, interpolation, marker, TF, and status playback tests.",
+          "/home/wq/whut_thesis/expv3_multi/tests/test_formation_quality.py:1-7 — S9 independent formation evaluator, candidate selection, and publication-gate tests.",
+          "/home/wq/whut_thesis/expv3_multi/tests/test_formation_regression.py:1 — S10 fixed-case manifest and regression-runner tests without ROS.",
+          "/home/wq/whut_thesis/expv3_multi/tests/test_formation_retiming.py:1-9 — S8 common-time formation retiming and independent timing-audit tests.",
+          "OLD ROS SMOKE LAUNCH (CONFIRMED): /home/wq/whut_thesis/expv3_multi/tests/ros_cargo_smoke.py:43-49 scales maps/map16-s09-underground-garage by exactly 3.75 into a temporary map and launches 'roslaunch fwis_v3_demo formation_demo.launch' with map_dir=<temporary map>, rviz:=false, auto_goal:=false, enable_nlp:=false, and max_candidates:=1. It owns a private ROS master on 127.0.0.1:11443 (lines 24-35).",
+          "OLD ROS SMOKE DEFAULTS/OVERRIDES: /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch:26-27 defaults enable_nlp=true and max_candidates=4, but the smoke overrides them to false and 1. The max_candidates argument is passed to the optimizer at line 47; the C++ frontend separately loads formation.search.max_candidates: 4 from /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_demo/config/formation_params.yaml:16-19.",
+          "OLD ROS SMOKE OFFSETS/HEADING CONFIG: offsets are not command-line overrides; they are inherited from the launch file. /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch:67 and 84-89 configures vehicle_ids [1,2,3] with old offsets [[0,1],[-1,0],[1,0]] for playback and the goal bridge. Line 55 forces optimizer kinematic_limits/require_cargo_heading=true and line 81 sets goal_heading_free=false. This launch override differs from the library default require_cargo_heading=False at /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_kinematics.py:155.",
+          "OLD ROS SMOKE TASK: /home/wq/whut_thesis/expv3_multi/tests/ros_cargo_smoke.py:86-102 publishes cargo start (18.25,-0.25,psi=0.3) and first goal (23.123,-0.13,psi=0.3). Lines 103-123 require a real frontend/evaluator FEASIBLE result, three vehicles, old offsets, body theta==cargo psi at every sample, and exact non-grid terminal cargo coordinates. No geometry seed is injected by this script.",
+          "OLD REPORT ARTIFACT: /home/wq/whut_thesis/expv3_multi/evaluation/cargo_transport/ros_smoke.json:2 records pass=true, but lines 11 and 16-17 show that this pass certifies the superseded common-heading and mandatory-rotation-rejection behavior. /home/wq/whut_thesis/expv3_multi/evaluation/cargo_transport/REPORT.md:99-104 likewise describes the scaled map16 run, same-heading checks, rotation rejection, and absence of graphical RViz.",
+          "UPDATE ORDER: first update the fast contract gates /home/wq/whut_thesis/expv3_multi/tests/test_formation_demo_assets.py (new launch offsets) and /home/wq/whut_thesis/expv3_multi/tests/test_cargo_transport.py (new offsets/footprint/map scale, independent headings, and feasible rotation), together with the fixtures/configuration they inspect. Next update /home/wq/whut_thesis/expv3_multi/tests/ros_cargo_smoke.py and add consecutive-goal bridge coverage plus feasible +90/-90 degree cargo rotation coverage. Regenerate ros_smoke.json and rewrite REPORT.md only after the new tests genuinely pass.",
+          "NEGATIVE TESTS TO KEEP — UI/collision: keep /home/wq/whut_thesis/expv3_multi/tests/test_cargo_transport.py:52-60 (three static bodies, STATIC status, and visible GOAL_FORMATION_COLLISION; only replace its OFFSETS fixture) and /home/wq/whut_thesis/expv3_multi/tests/ros_cargo_smoke.py:125-136 (invalid goal reports frontend collision, failed goal retains static bodies, and manual start resets failure).",
+          "NEGATIVE TESTS TO KEEP — rigidity and goal_heading_free scope: keep /home/wq/whut_thesis/expv3_multi/tests/test_formation_contract.py:210-230 (freeing terminal body headings must not relax center rigidity), lines 232-261 (shifted/mirrored rigid centers rejected), and /home/wq/whut_thesis/expv3_multi/tests/test_formation_geometry.py:350-386 (goal_heading_free releases only body yaw while exact goal x, y, psi and rigid centers are still asserted at lines 374-384).",
+          "NEGATIVE TESTS TO KEEP — legal-motion enforcement: keep /home/wq/whut_thesis/expv3_multi/tests/test_formation_kinematics.py:216-260, which rejects a non-pivot Spin, curvature below the legal radius, an illegal direct Ackermann heading boundary, and reverse travel when allow_reverse=false. These are valid per-primitive/per-policy negatives and must not be generalized into 'cargo rotation is impossible.'",
+          "NEGATIVE TESTS TO KEEP — independent audit: keep /home/wq/whut_thesis/expv3_multi/tests/test_formation_quality.py:239-251 (tampered rigid center), lines 265-275 (tampered body heading), lines 302-338 (Spin center motion, illegal Oblique heading change, and curvature limits), and lines 363-376 (distinct start/goal collision rejection). Also keep /home/wq/whut_thesis/expv3_multi/tests/test_formation_geometry.py:434-459 (center, heading-continuity, and illegal-mode tampering).",
+          "POSITIVE CONTROLS TO KEEP: /home/wq/whut_thesis/expv3_multi/tests/test_formation_model.py:110-118 explicitly proves body headings are independent of cargo psi; /home/wq/whut_thesis/expv3_multi/tests/test_formation_optimizer_node.py:183-208 proves message fields do not silently replace body heading with formation heading; /home/wq/whut_thesis/expv3_multi/tests/test_formation_playback.py:274-290 proves the displayed OBB uses body heading rather than cargo heading. Same-valued heading dictionaries elsewhere are valid synthetic cases, not assertions that headings must always be identical.",
+          "RUN_DEMO COVERAGE: yes, but dry-run only. /home/wq/whut_thesis/expv3_multi/tests/test_cargo_transport.py:73-81 actually executes bash run_demo.sh --dry-run for map04 and for map16 with explicit --scale 2.0. It checks the formation launch text and scale; it does not launch ROS or exercise a real plan.",
+          "RVIZ COVERAGE: no graphical RViz process is exercised. /home/wq/whut_thesis/expv3_multi/tests/test_formation_demo_assets.py:54-64 and 95-127 only parse launch/RViz YAML and check topics/tools. The old ROS smoke explicitly passes rviz:=false at /home/wq/whut_thesis/expv3_multi/tests/ros_cargo_smoke.py:47; its 'RViz input subscribers' and 'RViz status' checks use ROS topics and MarkerArray/status messages at lines 73-84 and 128-145. REPORT.md:104 confirms no graphical RViz or manual visual acceptance.",
+          "CARGO IN-PLACE ROTATION COVERAGE: the required feasible scenario is absent. /home/wq/whut_thesis/expv3_multi/tests/test_cargo_transport.py:62-71 has a zero-translation dpsi=0.4 primitive, but only asserts rejection under require_cargo_heading=true. The ROS smoke's rotation goal changes x from 18.25 to 18.55 and psi from 0.3 to 0.7 (/home/wq/whut_thesis/expv3_multi/tests/ros_cargo_smoke.py:88-89,137-145), so it is neither in-place nor +/-90 degrees and also expects rejection. Generic direct-rotation tests such as /home/wq/whut_thesis/expv3_multi/tests/test_formation_kinematics.py:191-214 use synthetic offsets with a vehicle at the pivot; they do not exercise the new cargo wedge, bridge, or Spin-reconfiguration chain. No cargo clockwise signed-direction/curvature test was found.",
+          "COVERAGE GAP: no test of formation_goal_bridge reading real playback body headings for a subsequent consecutive goal was found. The only cargo smoke reset sequence republishes the manual start after a failure at /home/wq/whut_thesis/expv3_multi/tests/ros_cargo_smoke.py:134-139; the demo-asset bridge test at /home/wq/whut_thesis/expv3_multi/tests/test_formation_demo_assets.py:73-87 checks XML/install configuration only.",
+          "COMPLETENESS NOTE: among the other tests/test_formation*.py modules, no explicit require_cargo_heading=True, CARGO_ROTATION_REQUIRES_GENERAL_4WIS expectation, or exact old three-vehicle demo-offset assertion was found. Their synthetic offsets and equal-valued sample headings should not be bulk-replaced; the stale global-contract assertions are the cargo-specific ones itemized in findings."
+        ],
+        "findings": [
+          {
+            "file": "/home/wq/whut_thesis/expv3_multi/tests/test_cargo_transport.py",
+            "line": 62,
+            "severity": "P1",
+            "contract": "Cargo in-place +/-90 degree rotation with initial theta_i=0 must eventually be feasible through legal body-Spin reconfiguration; CARGO_ROTATION_REQUIRES_GENERAL_4WIS is no longer an expected outcome.",
+            "current": "CONFIRMED: test_wedge_rotation_reports_the_missing_motion_model builds old OFFSETS (lines 63-64), a zero-dx/zero-dy dpsi=0.4 rotation (lines 65-67), identical headings {1:.31,2:.31,3:.31}, and require_cargo_heading=True (lines 68-69), then asserts result.success is false and reason=='CARGO_ROTATION_REQUIRES_GENERAL_4WIS' (lines 70-71).",
+            "fix_hint": "Replace this superseded unit expectation with new-offset, default-heading-independent, multi-block planning coverage for +pi/2 and -pi/2 at unchanged cargo x/y. Require legal Spin reconfiguration, exact cargo arrival, feasible audited output, and correct negative/clockwise signed direction and curvature."
+          },
+          {
+            "file": "/home/wq/whut_thesis/expv3_multi/tests/ros_cargo_smoke.py",
+            "line": 140,
+            "severity": "P1",
+            "contract": "Cargo rotation must be feasible via legal body-Spin reconfiguration and CARGO_ROTATION_REQUIRES_GENERAL_4WIS must not be treated as expected.",
+            "current": "CONFIRMED: lines 137-145 publish a goal at x=18.55 (start x=18.25), y=-0.25, yaw=0.7 (start yaw=0.3), then wait for both optimizer and playback to report CARGO_ROTATION_REQUIRES_GENERAL_4WIS. Thus it tests a translated 0.4-radian change and mandates rejection, not the required in-place +/-90-degree success.",
+            "fix_hint": "Replace with same-position cargo goals at +pi/2 and -pi/2, all initial body headings zero, and require FEASIBLE publication/playback. Assert exact cargo pose, rigid centers, independent body-heading continuity, and signed clockwise controls/curvature; retain collision negatives separately."
+          },
+          {
+            "file": "/home/wq/whut_thesis/expv3_multi/tests/ros_cargo_smoke.py",
+            "line": 115,
+            "severity": "P1",
+            "contract": "theta_i are independent kinematic variables; there is no theta_i=psi_F constraint and headings need not equal each other.",
+            "current": "CONFIRMED: for every vehicle sample, lines 114-116 assert wrapped angular difference point.center_pose.theta - qf.theta is below 1e-6. Line 120 records 'all samples preserve wedge offsets and cargo heading', making common body/cargo heading a required pass condition.",
+            "fix_hint": "Remove the theta_i==qf.theta equality. Validate each body's independent heading against the audited trajectory/continuity and mode equations instead. Keep the rigid-center position checks at lines 117-119 after updating expected offsets."
+          },
+          {
+            "file": "/home/wq/whut_thesis/expv3_multi/tests/test_cargo_transport.py",
+            "line": 33,
+            "severity": "P1",
+            "contract": "require_cargo_heading must be OFF by default for transport; body headings are independent and need not equal cargo psi or each other.",
+            "current": "CONFIRMED: test_cargo_heading_is_a_hard_constraint constructs KinematicLimits(require_cargo_heading=True) at line 40 and identical headings 0.31 at line 41, asserts that assignment/audit succeed at lines 44-46, then changes only vehicle 2 by +0.1 and asserts failure with CARGO_HEADING_MISMATCH at lines 47-50. The old OFFSETS fixture enters at lines 34-35.",
+            "fix_hint": "For the transport contract, use the default require_cargo_heading=False and prove unequal independent body headings can succeed when their per-vehicle modes are legal. Remove CARGO_HEADING_MISMATCH as a default transport expectation; if the optional flag remains supported, isolate its test explicitly as non-default library behavior with new offsets."
+          },
+          {
+            "file": "/home/wq/whut_thesis/expv3_multi/tests/ros_cargo_smoke.py",
+            "line": 110,
+            "severity": "P1",
+            "contract": "Cargo-frame offsets are vehicle_id=1 -> (1,0), vehicle_id=2 -> (0,1), vehicle_id=3 -> (0,-1), in metres.",
+            "current": "CONFIRMED: line 110 hard-codes expected={1:(0.,1.),2:(-1.,0.),3:(1.,0.)}; lines 111-112 assert exact equality with published trajectory offsets, and lines 117-119 reuse that old map in the rigid-position assertion.",
+            "fix_hint": "Change expected to {1:(1.,0.),2:(0.,1.),3:(0.,-1.)}. Keep and strengthen the p_i=p_F+R(psi_F)r_i hard-constraint assertion at lines 117-119 using the new map."
+          },
+          {
+            "file": "/home/wq/whut_thesis/expv3_multi/tests/test_formation_demo_assets.py",
+            "line": 86,
+            "severity": "P1",
+            "contract": "The goal bridge must use new cargo-frame offsets vehicle 1=(1,0), vehicle 2=(0,1), vehicle 3=(0,-1).",
+            "current": "CONFIRMED: test_launch_starts_one_interactive_goal_bridge reads the bridge offsets rosparam at lines 84-85 and asserts YAML equality to [[0.0,1.0],[-1.0,0.0],[1.0,0.0]] at lines 86-87.",
+            "fix_hint": "Update the expected YAML to [[1.0,0.0],[0.0,1.0],[0.0,-1.0]] and update the inspected launch configuration; retain the single-bridge, package/type, and installation checks."
+          },
+          {
+            "file": "/home/wq/whut_thesis/expv3_multi/tests/test_cargo_transport.py",
+            "line": 22,
+            "severity": "P1",
+            "contract": "Old offsets, the old 2.738x1.5 bounding box, and x3.75 map scaling are legacy; new cargo geometry uses vehicle offsets (1,0),(0,1),(0,-1).",
+            "current": "CONFIRMED: line 12 imports OFFSETS, whose actual definition is ((0,1),(-1,0),(1,0)) at /home/wq/whut_thesis/expv3_multi/tools/transport_footprint.py:11. Consequently test_physical_footprint_and_rotation_annulus asserts old-geometry metrics at lines 24-31: single area .369, union 1.107, hull 3.107, AABB exactly [2.738,1.5] at line 27, rotation sweep pi*1.5385 at lines 28-29, and the old default/required map-factor relationship at lines 30-31. The same old fixture also feeds static-preview assertions at lines 53-60 and rotation tests at lines 63-71.",
+            "fix_hint": "Recompute the footprint source and all geometry-dependent expectations from the new offsets and independent-heading rotation policy; replace the explicit legacy AABB and map-factor expectations. Preserve generic three-body/static/collision assertions with the new fixture rather than deleting them."
+          },
+          {
+            "file": "/home/wq/whut_thesis/expv3_multi/tests/ros_cargo_smoke.py",
+            "line": 134,
+            "severity": "P1",
+            "contract": "On subsequent consecutive goals the bridge MUST read vehicles' real playback headings; only the very first manual placement may use the documented theta_i(0)=psi_F(0) initialization policy.",
+            "current": "CONFIRMED coverage gap: after a failed goal the smoke republishes the original manual start at line 134, checks START at lines 135-136, and publishes another goal at lines 137-139. It never issues two consecutive feasible goals or asserts that the next request's start body headings equal the actual final playback headings. The static asset test only inspects bridge XML.",
+            "fix_hint": "Add bridge-level and ROS integration tests with a first feasible goal ending at non-identical body headings, followed without /initialpose by a second goal. Assert the second request uses the real playback headings; separately test the one-time first-placement initialization."
+          },
+          {
+            "file": "/home/wq/whut_thesis/expv3_multi/tests/test_cargo_transport.py",
+            "line": 73,
+            "severity": "P2",
+            "contract": "The x3.75-derived default map scale is legacy.",
+            "current": "CONFIRMED: test_map_default_and_explicit_override executes run_demo.sh --dry-run and expects default map04 scale '1.875' at lines 74-80; 1.875 is the old map04 value also recorded in REPORT.md:52. The same loop expects explicit map16 --scale 2.0 to remain 2.0 and checks formation_demo.launch/no planning_backend override at lines 79-81.",
+            "fix_hint": "Update only the default map04 expected scale after deriving the new geometry policy. Keep the explicit 2.0 override, dry-run entry-point, launch-selection, and no-backend-override assertions."
+          },
+          {
+            "file": "/home/wq/whut_thesis/expv3_multi/evaluation/cargo_transport/REPORT.md",
+            "line": 7,
+            "severity": "P2",
+            "contract": "New cargo offsets are (1,0),(0,1),(0,-1), and theta_i are independent rather than constrained to psi_F.",
+            "current": "CONFIRMED: lines 7-9 specify old car1=(0,1),car2=(-1,0),car3=(1,0) and require every theta_i=psi_F. Line 12 describes same-heading hard auditing as completed scope. These statements define the superseded contract, not the new one.",
+            "fix_hint": "Mark the report as historical/superseded or rewrite it for the new origin/offset mapping and independent body-heading kinematics; do not use it as acceptance evidence for the new contract."
+          },
+          {
+            "file": "/home/wq/whut_thesis/expv3_multi/evaluation/cargo_transport/REPORT.md",
+            "line": 14,
+            "severity": "P2",
+            "contract": "Cargo rotation must become feasible through legal Spin reconfiguration; mandatory CARGO_ROTATION_REQUIRES_GENERAL_4WIS rejection is obsolete.",
+            "current": "CONFIRMED: lines 14-20 say only fixed-heading translation works, reason that rigid same-heading rotation cannot be represented, and require CARGO_ROTATION_REQUIRES_GENERAL_4WIS. Lines 72 and 79-80 instruct users that changing cargo heading is rejected; lines 102-103 list same-heading sample checks and unsupported-rotation rejection as ROS validation.",
+            "fix_hint": "Replace these claims with verified feasible +90/-90 degree Spin-reconfiguration results, including clockwise signed controls. Until then, explicitly label the report obsolete rather than presenting rotation rejection as expected behavior."
+          },
+          {
+            "file": "/home/wq/whut_thesis/expv3_multi/evaluation/cargo_transport/REPORT.md",
+            "line": 31,
+            "severity": "P2",
+            "contract": "The 2.738x1.5 bounding box and x3.75 map scale are legacy.",
+            "current": "CONFIRMED: line 31 records the old 2.738x1.500 m common-heading AABB; lines 36-45 derive rotation/scale values from that geometry, including max(2.738/.738,1.5/.5)=3.710027 rounded to 3.75. Lines 47-61 give the resulting absolute map-scale table, including map04=1.875. Line 99 cites a 3.75-scaled map16 smoke as validation.",
+            "fix_hint": "Regenerate geometry, scale derivations, and the map table from the new contract and record the new exact defaults. Keep the report's valid distinction that a scaled map is not a universal clearance proof, but do not retain legacy numeric acceptance results."
+          },
+          {
+            "file": "/home/wq/whut_thesis/expv3_multi/evaluation/cargo_transport/ros_smoke.json",
+            "line": 11,
+            "severity": "P2",
+            "contract": "New smoke evidence must allow independent body headings and require feasible cargo in-place rotation rather than the obsolete rejection.",
+            "current": "CONFIRMED: pass=true at line 2 is coupled to 'all samples preserve wedge offsets and cargo heading' at line 11 and 'unsupported same-heading rotation fails explicitly' plus motion-model failure visibility at lines 16-17. Those check names mirror the superseded assertions in tests/ros_cargo_smoke.py.",
+            "fix_hint": "Regenerate this artifact from the revised smoke only after new-offset rigid-center checks, independent-heading audits, consecutive-goal playback-heading carryover, and feasible +/-90-degree rotations pass. Label or archive the current JSON as old-contract evidence."
+          }
+        ]
+      },
+      "verify": null
+    }
+  ],
+  "workflowProgress": [
+    {
+      "type": "workflow_phase",
+      "index": 1,
+      "title": "Read"
+    },
+    {
+      "type": "workflow_phase",
+      "index": 2,
+      "title": "Verify"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 1,
+      "label": "read:config_entry",
+      "phaseIndex": 1,
+      "phaseTitle": "Read",
+      "agentId": "a0c18e3fafb6940a5",
+      "model": "kimi-k3.1-pro",
+      "state": "done",
+      "startedAt": 1794407043864,
+      "queuedAt": 1794407043839,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "Runtime configuration and user entry-point audit (working t…",
+      "promptPreview": "NEW CONTRACT (from 接手执行文档_楔形编队规划修复_2026-11-11.md, this overrides older docs):\n- Cargo/formation reference point is the ORIGIN of the cargo frame. Fixed vehicle offsets in that frame:\n  vehicle_id=1 -> (1,0); vehicle_id=2 -> (0,1); vehicle_id=3 -> (0,-1). Units metres.\n- p_i(t) = p_F(t) + R(psi_F(t)) r_i is a HARD constraint; theta_i (body headings) are INDEPENDENT\n  kinematic variables. There is N…",
+      "promptFramed": true,
+      "lastProgressAt": 1794407384582,
+      "tokens": 43742,
+      "toolCalls": 11,
+      "durationMs": 340717,
+      "resultPreview": "{\"module\":\"Runtime configuration and user entry-point audit (working tree)\",\"facts\":[\"CONFIRMED — Required contract mapping is vehicle_id=1 -> (1,0), vehicle_id=2 -> (0,1), vehicle_id=3 -> (0,-1). None of the six hard-coded offset lists below has that mapping; all use the legacy sequence (0,1),(-1,0),(1,0).\",\"CONFIRMED — /home/wq/whut_thesis/expv3_multi/run_demo.sh:21 hard-codes user help text `ca…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 2,
+      "label": "read:frontend_cpp",
+      "phaseIndex": 1,
+      "phaseTitle": "Read",
+      "agentId": "a8a7a7116ad42a316",
+      "model": "kimi-k3.1-pro",
+      "state": "done",
+      "startedAt": 1794407043865,
+      "queuedAt": 1794407043839,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "C++ formation front end: q_F geometry search, collision con…",
+      "promptPreview": "NEW CONTRACT (from 接手执行文档_楔形编队规划修复_2026-11-11.md, this overrides older docs):\n- Cargo/formation reference point is the ORIGIN of the cargo frame. Fixed vehicle offsets in that frame:\n  vehicle_id=1 -> (1,0); vehicle_id=2 -> (0,1); vehicle_id=3 -> (0,-1). Units metres.\n- p_i(t) = p_F(t) + R(psi_F(t)) r_i is a HARD constraint; theta_i (body headings) are INDEPENDENT\n  kinematic variables. There is N…",
+      "promptFramed": true,
+      "lastProgressAt": 1794407453697,
+      "tokens": 49620,
+      "toolCalls": 15,
+      "durationMs": 406609,
+      "resultPreview": "{\"module\":\"C++ formation front end: q_F geometry search, collision convention, ROS seed/status publication\",\"facts\":[\"1) CONFIRMED — The searched state is only cargo/formation q_F=(x_F,y_F,psi_F). SearchKey contains only integer x/y/psi bins; SearchNode contains q_F plus parent/cost/action and mode/gear hints. Vehicle body headings theta_i, A/O/S modes, and body-Spin reconfiguration are not search…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 3,
+      "label": "read:s5_kinematics",
+      "phaseIndex": 1,
+      "phaseTitle": "Read",
+      "agentId": "ab3e5c9ff104fc62d",
+      "model": "kimi-k3.1-pro",
+      "state": "done",
+      "startedAt": 1794407043865,
+      "queuedAt": 1794407043839,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "S5 mode enumeration and audit: catkin_ws/src/fwis_v3_optimi…",
+      "promptPreview": "NEW CONTRACT (from 接手执行文档_楔形编队规划修复_2026-11-11.md, this overrides older docs):\n- Cargo/formation reference point is the ORIGIN of the cargo frame. Fixed vehicle offsets in that frame:\n  vehicle_id=1 -> (1,0); vehicle_id=2 -> (0,1); vehicle_id=3 -> (0,-1). Units metres.\n- p_i(t) = p_F(t) + R(psi_F(t)) r_i is a HARD constraint; theta_i (body headings) are INDEPENDENT\n  kinematic variables. There is N…",
+      "promptFramed": true,
+      "lastProgressAt": 1794407431250,
+      "tokens": 54593,
+      "toolCalls": 11,
+      "durationMs": 384161,
+      "resultPreview": "{\"module\":\"S5 mode enumeration and audit: catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_kinematics.py\",\"facts\":[\"CONFIRMED — Defaults and modes (catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_kinematics.py:32-45,150-155,737-740): ACKERMANN=0, OBLIQUE=1, SPIN=2; KinematicLimits defaults are r_min_ackermann=0.810 m, oblique_angle_max=pi/2, heading_tolerance_rad=1e-…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 4,
+      "label": "read:geometry_candidates",
+      "phaseIndex": 1,
+      "phaseTitle": "Read",
+      "agentId": "a8866a17d94781e05",
+      "model": "kimi-k3.1-pro",
+      "state": "done",
+      "startedAt": 1794407043865,
+      "queuedAt": 1794407043839,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "/home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_opti…",
+      "promptPreview": "NEW CONTRACT (from 接手执行文档_楔形编队规划修复_2026-11-11.md, this overrides older docs):\n- Cargo/formation reference point is the ORIGIN of the cargo frame. Fixed vehicle offsets in that frame:\n  vehicle_id=1 -> (1,0); vehicle_id=2 -> (0,1); vehicle_id=3 -> (0,-1). Units metres.\n- p_i(t) = p_F(t) + R(psi_F(t)) r_i is a HARD constraint; theta_i (body headings) are INDEPENDENT\n  kinematic variables. There is N…",
+      "promptFramed": true,
+      "lastProgressAt": 1794407513901,
+      "tokens": 62626,
+      "toolCalls": 25,
+      "durationMs": 466811,
+      "resultPreview": "{\"module\":\"/home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_geometry.py and /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_master.py\",\"facts\":[\"CONFIRMED Q1: Continuous blocks implement only TRANSLATION and ROTATION. FormationPathControl rejects every other geometry type at /home/wq/whut_thesis/expv3_…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 5,
+      "label": "read:retiming_quality",
+      "phaseIndex": 1,
+      "phaseTitle": "Read",
+      "agentId": "acc1ccfcb87ee3c80",
+      "model": "kimi-k3.1-pro",
+      "state": "done",
+      "startedAt": 1794407043865,
+      "queuedAt": 1794407043840,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "S8 common-clock retiming, S7 local NLP, and S9 independent …",
+      "promptPreview": "NEW CONTRACT (from 接手执行文档_楔形编队规划修复_2026-11-11.md, this overrides older docs):\n- Cargo/formation reference point is the ORIGIN of the cargo frame. Fixed vehicle offsets in that frame:\n  vehicle_id=1 -> (1,0); vehicle_id=2 -> (0,1); vehicle_id=3 -> (0,-1). Units metres.\n- p_i(t) = p_F(t) + R(psi_F(t)) r_i is a HARD constraint; theta_i (body headings) are INDEPENDENT\n  kinematic variables. There is N…",
+      "promptFramed": true,
+      "lastProgressAt": 1794407577593,
+      "tokens": 114713,
+      "toolCalls": 41,
+      "durationMs": 530502,
+      "resultPreview": "{\"module\":\"S8 common-clock retiming, S7 local NLP, and S9 independent final audit (working tree)\",\"facts\":[\"CONFIRMED — /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_timing.py is absent; FormationTimingLimits is defined in /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_retiming.py:117-143. Defaults…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 6,
+      "label": "read:playback_display",
+      "phaseIndex": 1,
+      "phaseTitle": "Read",
+      "agentId": "ad2229bf081253b51",
+      "model": "kimi-k3.1-pro",
+      "state": "error",
+      "startedAt": 1794407043865,
+      "queuedAt": 1794407043840,
+      "attempt": 1,
+      "lastToolName": "Read",
+      "lastToolSummary": "/home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_opti…",
+      "promptPreview": "NEW CONTRACT (from 接手执行文档_楔形编队规划修复_2026-11-11.md, this overrides older docs):\n- Cargo/formation reference point is the ORIGIN of the cargo frame. Fixed vehicle offsets in that frame:\n  vehicle_id=1 -> (1,0); vehicle_id=2 -> (0,1); vehicle_id=3 -> (0,-1). Units metres.\n- p_i(t) = p_F(t) + R(psi_F(t)) r_i is a HARD constraint; theta_i (body headings) are INDEPENDENT\n  kinematic variables. There is N…",
+      "promptFramed": true,
+      "lastProgressAt": 1794407832163,
+      "error": "API Error: Request rejected (429) · You have exceeded the 5-hour usage quota. It will reset at 2026-11-12 03:20:46 +0800 CST. We recommend upgrading your plan for more quota, or waiting for the reset. Request id: 021794407831994035772df07ab2d666278dcdeb9c281b2abb601",
+      "tokens": 0,
+      "toolCalls": 15,
+      "durationMs": 785072
+    },
+    {
+      "type": "workflow_agent",
+      "index": 7,
+      "label": "read:tests_baseline",
+      "phaseIndex": 1,
+      "phaseTitle": "Read",
+      "agentId": "ac24b1a83425bab5b",
+      "model": "kimi-k3.1-pro",
+      "state": "done",
+      "startedAt": 1794407043865,
+      "queuedAt": 1794407043840,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "Working-tree audit of superseded cargo-contract tests and r…",
+      "promptPreview": "NEW CONTRACT (from 接手执行文档_楔形编队规划修复_2026-11-11.md, this overrides older docs):\n- Cargo/formation reference point is the ORIGIN of the cargo frame. Fixed vehicle offsets in that frame:\n  vehicle_id=1 -> (1,0); vehicle_id=2 -> (0,1); vehicle_id=3 -> (0,-1). Units metres.\n- p_i(t) = p_F(t) + R(psi_F(t)) r_i is a HARD constraint; theta_i (body headings) are INDEPENDENT\n  kinematic variables. There is N…",
+      "promptFramed": true,
+      "lastProgressAt": 1794407572724,
+      "tokens": 75528,
+      "toolCalls": 39,
+      "durationMs": 525632,
+      "resultPreview": "{\"module\":\"Working-tree audit of superseded cargo-contract tests and reports\",\"facts\":[\"CONFIRMED scope: audited the working-tree files under /home/wq/whut_thesis/expv3_multi without editing files, running tests, launching ROS, or using state-changing git commands. Line references below are 1-based lines actually read.\",\"/home/wq/whut_thesis/expv3_multi/tests/test_formation_collision.py:1 — S2 con…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 8,
+      "label": "verify:config_entry",
+      "phaseIndex": 2,
+      "phaseTitle": "Verify",
+      "agentId": "ad1e2c0b9105849cb",
+      "model": "kimi-k3.1-pro",
+      "state": "done",
+      "startedAt": 1794407384629,
+      "queuedAt": 1794407384614,
+      "attempt": 1,
+      "lastToolName": "StructuredOutput",
+      "lastToolSummary": "Runtime configuration and user entry-point audit — adversar…",
+      "promptPreview": "NEW CONTRACT (from 接手执行文档_楔形编队规划修复_2026-11-11.md, this overrides older docs):\n- Cargo/formation reference point is the ORIGIN of the cargo frame. Fixed vehicle offsets in that frame:\n  vehicle_id=1 -> (1,0); vehicle_id=2 -> (0,1); vehicle_id=3 -> (0,-1). Units metres.\n- p_i(t) = p_F(t) + R(psi_F(t)) r_i is a HARD constraint; theta_i (body headings) are INDEPENDENT\n  kinematic variables. There is N…",
+      "promptFramed": true,
+      "lastProgressAt": 1794407626773,
+      "tokens": 51516,
+      "toolCalls": 11,
+      "durationMs": 242144,
+      "resultPreview": "{\"module\":\"Runtime configuration and user entry-point audit — adversarial recheck of the working tree\",\"corrections\":[],\"missed\":[\"P1 CONFIRMED — Terminal vehicle headings are still locked by default, but the reader recorded this only as a fact and omitted it from findings. /home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch:81 sets goal_heading_free=false; the…"
+    },
+    {
+      "type": "workflow_agent",
+      "index": 9,
+      "label": "verify:s5_kinematics",
+      "phaseIndex": 2,
+      "phaseTitle": "Verify",
+      "agentId": "a81bae317900dd0b8",
+      "model": "kimi-k3.1-pro",
+      "state": "error",
+      "startedAt": 1794407431253,
+      "queuedAt": 1794407431251,
+      "attempt": 1,
+      "lastToolName": "Read",
+      "lastToolSummary": "/home/wq/whut_thesis/expv3_multi/tests/test_formation_kinem…",
+      "promptPreview": "NEW CONTRACT (from 接手执行文档_楔形编队规划修复_2026-11-11.md, this overrides older docs):\n- Cargo/formation reference point is the ORIGIN of the cargo frame. Fixed vehicle offsets in that frame:\n  vehicle_id=1 -> (1,0); vehicle_id=2 -> (0,1); vehicle_id=3 -> (0,-1). Units metres.\n- p_i(t) = p_F(t) + R(psi_F(t)) r_i is a HARD constraint; theta_i (body headings) are INDEPENDENT\n  kinematic variables. There is N…",
+      "promptFramed": true,
+      "lastProgressAt": 1794407839342,
+      "error": "API Error: Request rejected (429) · You have exceeded the 5-hour usage quota. It will reset at 2026-11-12 03:20:46 +0800 CST. We recommend upgrading your plan for more quota, or waiting for the reset. Request id: 021794407839206035772df07ab2d666278dcdeb9c281b2313566",
+      "tokens": 0,
+      "toolCalls": 13,
+      "durationMs": 408089
+    },
+    {
+      "type": "workflow_agent",
+      "index": 10,
+      "label": "verify:frontend_cpp",
+      "phaseIndex": 2,
+      "phaseTitle": "Verify",
+      "agentId": "ab5297027fddf5be9",
+      "model": "kimi-k3.1-pro",
+      "state": "error",
+      "startedAt": 1794407453701,
+      "queuedAt": 1794407453699,
+      "attempt": 1,
+      "lastToolName": "Bash",
+      "lastToolSummary": "grep -RIn --exclude-dir=build --exclude-dir=devel --exclude…",
+      "promptPreview": "NEW CONTRACT (from 接手执行文档_楔形编队规划修复_2026-11-11.md, this overrides older docs):\n- Cargo/formation reference point is the ORIGIN of the cargo frame. Fixed vehicle offsets in that frame:\n  vehicle_id=1 -> (1,0); vehicle_id=2 -> (0,1); vehicle_id=3 -> (0,-1). Units metres.\n- p_i(t) = p_F(t) + R(psi_F(t)) r_i is a HARD constraint; theta_i (body headings) are INDEPENDENT\n  kinematic variables. There is N…",
+      "promptFramed": true,
+      "lastProgressAt": 1794407835513,
+      "error": "API Error: Request rejected (429) · You have exceeded the 5-hour usage quota. It will reset at 2026-11-12 03:20:46 +0800 CST. We recommend upgrading your plan for more quota, or waiting for the reset. Request id: 021794407835335035772df07ab2d666278dcdeb9c281b2b385e7",
+      "tokens": 0,
+      "toolCalls": 18,
+      "durationMs": 381812
+    },
+    {
+      "type": "workflow_agent",
+      "index": 11,
+      "label": "verify:geometry_candidates",
+      "phaseIndex": 2,
+      "phaseTitle": "Verify",
+      "agentId": "a3d801f5987927dea",
+      "model": "kimi-k3.1-pro",
+      "state": "error",
+      "startedAt": 1794407513905,
+      "queuedAt": 1794407513903,
+      "attempt": 1,
+      "lastToolName": "Bash",
+      "lastToolSummary": "grep -RInE \"(NO_CONTINUOUS_CANDIDATE|ALL_CANDIDATES_REJECTE…",
+      "promptPreview": "NEW CONTRACT (from 接手执行文档_楔形编队规划修复_2026-11-11.md, this overrides older docs):\n- Cargo/formation reference point is the ORIGIN of the cargo frame. Fixed vehicle offsets in that frame:\n  vehicle_id=1 -> (1,0); vehicle_id=2 -> (0,1); vehicle_id=3 -> (0,-1). Units metres.\n- p_i(t) = p_F(t) + R(psi_F(t)) r_i is a HARD constraint; theta_i (body headings) are INDEPENDENT\n  kinematic variables. There is N…",
+      "promptFramed": true,
+      "lastProgressAt": 1794407850150,
+      "error": "API Error: Request rejected (429) · You have exceeded the 5-hour usage quota. It will reset at 2026-11-12 03:20:46 +0800 CST. We recommend upgrading your plan for more quota, or waiting for the reset. Request id: 021794407849964035772df07ab2d666278dcdeb9c281b2a404bf",
+      "tokens": 0,
+      "toolCalls": 20,
+      "durationMs": 336245
+    },
+    {
+      "type": "workflow_agent",
+      "index": 12,
+      "label": "verify:tests_baseline",
+      "phaseIndex": 2,
+      "phaseTitle": "Verify",
+      "agentId": "a0f5a9c6d943823b4",
+      "model": "kimi-k3.1-pro",
+      "state": "error",
+      "startedAt": 1794407572730,
+      "queuedAt": 1794407572728,
+      "attempt": 1,
+      "lastToolName": "Bash",
+      "lastToolSummary": "grep -RInE \"\\{1:[[:space:]]*\\(0\\.?,[[:space:]]*1\\.?\\)|\\[\\[0…",
+      "promptPreview": "NEW CONTRACT (from 接手执行文档_楔形编队规划修复_2026-11-11.md, this overrides older docs):\n- Cargo/formation reference point is the ORIGIN of the cargo frame. Fixed vehicle offsets in that frame:\n  vehicle_id=1 -> (1,0); vehicle_id=2 -> (0,1); vehicle_id=3 -> (0,-1). Units metres.\n- p_i(t) = p_F(t) + R(psi_F(t)) r_i is a HARD constraint; theta_i (body headings) are INDEPENDENT\n  kinematic variables. There is N…",
+      "promptFramed": true,
+      "lastProgressAt": 1794407929238,
+      "error": "API Error: Request rejected (429) · You have exceeded the 5-hour usage quota. It will reset at 2026-11-12 03:20:46 +0800 CST. We recommend upgrading your plan for more quota, or waiting for the reset. Request id: 021794407929005035772df07ab2d666278dcdeb9c281b2db7034",
+      "tokens": 0,
+      "toolCalls": 16,
+      "durationMs": 356508
+    },
+    {
+      "type": "workflow_agent",
+      "index": 13,
+      "label": "verify:retiming_quality",
+      "phaseIndex": 2,
+      "phaseTitle": "Verify",
+      "agentId": "a24d4e0b7b5f5a6c0",
+      "model": "kimi-k3.1-pro",
+      "state": "error",
+      "startedAt": 1794407577596,
+      "queuedAt": 1794407577595,
+      "attempt": 1,
+      "lastToolName": "Read",
+      "lastToolSummary": "/home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_opti…",
+      "promptPreview": "NEW CONTRACT (from 接手执行文档_楔形编队规划修复_2026-11-11.md, this overrides older docs):\n- Cargo/formation reference point is the ORIGIN of the cargo frame. Fixed vehicle offsets in that frame:\n  vehicle_id=1 -> (1,0); vehicle_id=2 -> (0,1); vehicle_id=3 -> (0,-1). Units metres.\n- p_i(t) = p_F(t) + R(psi_F(t)) r_i is a HARD constraint; theta_i (body headings) are INDEPENDENT\n  kinematic variables. There is N…",
+      "promptFramed": true,
+      "lastProgressAt": 1794407852546,
+      "error": "API Error: Request rejected (429) · You have exceeded the 5-hour usage quota. It will reset at 2026-11-12 03:20:46 +0800 CST. We recommend upgrading your plan for more quota, or waiting for the reset. Request id: 021794407852352035772df07ab2d666278dcdeb9c281b2b2b896",
+      "tokens": 0,
+      "toolCalls": 21,
+      "durationMs": 274950
+    }
+  ],
+  "totalTokens": 452338,
+  "totalToolCalls": 256
+}

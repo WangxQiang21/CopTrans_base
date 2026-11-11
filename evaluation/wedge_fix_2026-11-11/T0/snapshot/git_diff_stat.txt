@@ -1,0 +1,13 @@
+ README.md                                          |  28 +++++
+ .../src/fwis_v3_demo/launch/formation_demo.launch  |  22 +++-
+ .../fwis_v3_demo/scripts/formation_goal_bridge.py  |  51 ++++++--
+ .../scripts/formation_optimizer_node.py            |  11 +-
+ .../src/fwis_v3_optimizer/formation_kinematics.py  |  28 ++++-
+ .../src/fwis_v3_optimizer/formation_playback.py    |  36 +++++-
+ .../fwis_v3_planner/src/formation_planner_node.cpp |   8 +-
+ .../src/fwis_v3_planner/src/formation_search.cpp   |  52 +++++++-
+ .../tests/test_formation_geometry.cpp              |  16 ++-
+ .../fwis_v3_playback/scripts/formation_playback.py | 136 ++++++++++++++++++++-
+ run_demo.sh                                        | 128 ++++++++++++++-----
+ tests/test_formation_demo_assets.py                |   8 +-
+ 12 files changed, 461 insertions(+), 63 deletions(-)
