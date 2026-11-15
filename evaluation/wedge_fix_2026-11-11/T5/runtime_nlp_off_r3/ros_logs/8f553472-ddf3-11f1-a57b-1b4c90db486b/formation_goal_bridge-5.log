@@ -1,0 +1,60 @@
+[rospy.client][INFO] 2026-11-12 01:16:00,253: init_node, name[/formation_goal_bridge], pid[1794194]
+[xmlrpc][INFO] 2026-11-12 01:16:00,254: XML-RPC server binding to 127.0.0.1:0
+[xmlrpc][INFO] 2026-11-12 01:16:00,254: Started XML-RPC server [http://127.0.0.1:34675/]
+[rospy.init][INFO] 2026-11-12 01:16:00,254: ROS Slave URI: [http://127.0.0.1:34675/]
+[rospy.impl.masterslave][INFO] 2026-11-12 01:16:00,254: _ready: http://127.0.0.1:34675/
+[rospy.registration][INFO] 2026-11-12 01:16:00,255: Registering with master node http://127.0.0.1:11449
+[xmlrpc][INFO] 2026-11-12 01:16:00,255: xml rpc node: starting XML-RPC server
+[rospy.init][INFO] 2026-11-12 01:16:00,354: registered with master
+[rospy.rosout][INFO] 2026-11-12 01:16:00,355: initializing /rosout core topic
+[rospy.rosout][INFO] 2026-11-12 01:16:00,359: connected to core topic /rosout
+[rospy.simtime][INFO] 2026-11-12 01:16:00,360: /use_sim_time is not set, will not subscribe to simulated time [/clock] topic
+[rospy.internal][INFO] 2026-11-12 01:16:00,373: topic[/tf] adding connection to [http://127.0.0.1:41537/], count 0
+[rospy.internal][INFO] 2026-11-12 01:16:00,374: topic[/tf_static] adding connection to [http://127.0.0.1:38809/], count 0
+[rospy.internal][INFO] 2026-11-12 01:16:00,378: topic[/move_base_simple/goal] adding connection to [http://wq-ubuntu:42321/], count 0
+[rospy.internal][INFO] 2026-11-12 01:16:00,381: topic[/formation/display_pose] adding connection to [/formation_playback], count 0
+[rospy.internal][INFO] 2026-11-12 01:16:00,382: topic[/initialpose] adding connection to [http://wq-ubuntu:42321/], count 0
+[rospy.internal][INFO] 2026-11-12 01:16:00,383: topic[/start_pose] adding connection to [http://127.0.0.1:38809/], count 0
+[rospy.internal][INFO] 2026-11-12 01:16:00,385: topic[/formation/plan_request] adding connection to [/formation_playback], count 0
+[rospy.internal][INFO] 2026-11-12 01:16:00,385: topic[/formation/plan_request] adding connection to [/cargo_smoke_t1_1793538_1794417358000], count 1
+[rospy.internal][INFO] 2026-11-12 01:16:00,387: topic[/map] adding connection to [http://127.0.0.1:38809/], count 0
+[rospy.internal][INFO] 2026-11-12 01:16:00,395: topic impl's ref count is zero, deleting topic /map...
+[rospy.internal][INFO] 2026-11-12 01:16:00,396: topic[/map] removing connection to http://127.0.0.1:38809/
+[rosout][INFO] 2026-11-12 01:16:00,397: [formation goal bridge] ready: formation=cargo_wedge offsets=((1.0, 0.0), (0.0, 1.0), (0.0, -1.0)), start=(10.000, 3.600, 0.000), goal topic=/move_base_simple/goal
+[rospy.internal][INFO] 2026-11-12 01:16:00,456: topic[/formation/plan_request] adding connection to [/formation_optimizer], count 2
+[rospy.internal][INFO] 2026-11-12 01:16:00,485: topic[/formation/optimizer_status] adding connection to [http://127.0.0.1:39675/], count 0
+[rosout][INFO] 2026-11-12 01:16:00,490: [formation goal bridge] 2D Pose Estimate recorded; new experiment policy=cargo_heading headings={1: 0.0, 2: 0.0, 3: 0.0}
+[rosout][INFO] 2026-11-12 01:16:00,541: [formation goal bridge] plan 600000: start=(10.000, 10.000, 0.000) goal=(13.000, 10.000, 0.000) vehicles=3
+[rosout][INFO] 2026-11-12 01:16:00,543: [formation goal bridge] start from manual start; body headings {1: 0.0, 2: 0.0, 3: 0.0}
+[rospy.internal][INFO] 2026-11-12 01:16:00,582: topic[/rosout] adding connection to [/rosout], count 0
+[rospy.internal][INFO] 2026-11-12 01:16:00,656: topic[/formation/plan_request] adding connection to [/formation_planner], count 3
+[rosout][INFO] 2026-11-12 01:16:03,190: [formation goal bridge] plan 600000 FEASIBLE and published
+[rosout][INFO] 2026-11-12 01:16:39,084: [formation goal bridge] plan 600001: start=(10.000, 10.000, 1.571) goal=(10.000, 13.000, 1.571) vehicles=3
+[rosout][INFO] 2026-11-12 01:16:39,087: [formation goal bridge] start from current playback; body headings {1: 3.141593, 2: -1.570796, 3: 1.570796}
+[rosout][INFO] 2026-11-12 01:16:41,647: [formation goal bridge] plan 600001 FEASIBLE and published
+[rosout][INFO] 2026-11-12 01:16:56,793: [formation goal bridge] 2D Pose Estimate recorded; new experiment policy=cargo_heading headings={1: 0.0, 2: 0.0, 3: 0.0}
+[rosout][INFO] 2026-11-12 01:16:56,843: [formation goal bridge] plan 600002: start=(10.000, 10.000, 0.000) goal=(10.000, 10.000, 1.571) vehicles=3
+[rosout][INFO] 2026-11-12 01:16:56,845: [formation goal bridge] start from manual start; body headings {1: 0.0, 2: 0.0, 3: 0.0}
+[rosout][INFO] 2026-11-12 01:17:02,223: [formation goal bridge] plan 600002 FEASIBLE and published
+[rosout][INFO] 2026-11-12 01:17:24,668: [formation goal bridge] plan 600003: start=(10.000, 10.000, 1.571) goal=(13.000, 10.000, 1.571) vehicles=3
+[rosout][INFO] 2026-11-12 01:17:24,670: [formation goal bridge] start from current playback; body headings {1: 3.141593, 2: 1.570796, 3: 1.570796}
+[rosout][INFO] 2026-11-12 01:17:27,813: [formation goal bridge] plan 600003 FEASIBLE and published
+[rosout][INFO] 2026-11-12 01:17:42,945: [formation goal bridge] plan 600004: start=(13.000, 10.000, 1.571) goal=(13.000, 13.000, 1.571) vehicles=3
+[rosout][INFO] 2026-11-12 01:17:42,947: [formation goal bridge] start from current playback; body headings {1: 3.141593, 2: 1.570796, 3: 1.570796}
+[rosout][INFO] 2026-11-12 01:17:45,510: [formation goal bridge] plan 600004 FEASIBLE and published
+[rosout][INFO] 2026-11-12 01:18:00,440: [formation goal bridge] 2D Pose Estimate recorded; new experiment policy=cargo_heading headings={1: 0.0, 2: 0.0, 3: 0.0}
+[rospy.internal][INFO] 2026-11-12 01:19:19,253: topic[/initialpose] removing connection to http://wq-ubuntu:42321/
+[rospy.internal][INFO] 2026-11-12 01:19:19,253: topic[/move_base_simple/goal] removing connection to http://wq-ubuntu:42321/
+[rospy.internal][INFO] 2026-11-12 01:19:19,552: topic[/formation/plan_request] removing connection to /cargo_smoke_t1_1793538_1794417358000
+[rospy.core][INFO] 2026-11-12 01:19:19,916: signal_shutdown [signal-2]
+[rospy.internal][INFO] 2026-11-12 01:19:19,923: topic[/start_pose] removing connection to http://127.0.0.1:38809/
+[rospy.internal][INFO] 2026-11-12 01:19:19,923: topic[/tf_static] removing connection to http://127.0.0.1:38809/
+[rospy.internal][INFO] 2026-11-12 01:19:19,924: topic[/formation/optimizer_status] removing connection to http://127.0.0.1:39675/
+[rospy.internal][INFO] 2026-11-12 01:19:19,924: topic[/rosout] removing connection to /rosout
+[rospy.internal][INFO] 2026-11-12 01:19:19,924: topic[/tf] removing connection to http://127.0.0.1:41537/
+[rospy.internal][INFO] 2026-11-12 01:19:19,924: topic[/formation/display_pose] removing connection to /formation_playback
+[rospy.internal][INFO] 2026-11-12 01:19:19,925: topic[/formation/plan_request] removing connection to /formation_playback
+[rospy.internal][INFO] 2026-11-12 01:19:19,925: topic[/formation/plan_request] removing connection to /formation_optimizer
+[rospy.internal][INFO] 2026-11-12 01:19:19,925: topic[/formation/plan_request] removing connection to /formation_planner
+[rospy.impl.masterslave][INFO] 2026-11-12 01:19:19,925: signal-2
+[rospy.core][INFO] 2026-11-12 01:19:20,516: signal_shutdown [atexit]

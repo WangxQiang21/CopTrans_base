@@ -15,6 +15,7 @@ from collections.abc import Mapping as MappingABC
 from dataclasses import dataclass, field, replace
 import json
 import math
+import threading
 import time as _time
 from typing import Mapping, Optional, Tuple
 
@@ -820,6 +821,11 @@ class FormationNodeEvent:
 class FormationNodeCore:
     """ROS-independent transactional request/seed/map state machine."""
 
+    # A front-end failure and its request are separate topics.  If the status
+    # callback wins the race, keep the failure briefly so the request that is
+    # already on the wire still reaches an explicit terminal state.
+    FRONTEND_FAILURE_WINDOW_S = 5.0
+
     def __init__(self, pipeline_config=None, gate=None):
         self.pipeline_config = (pipeline_config or
                                 FormationPipelineConfig())
@@ -845,6 +851,14 @@ class FormationNodeCore:
         self._last_seed_status = None
         self._last_pipeline = None
         self._last_publication = None
+        self._frontend_failed_plan_id = None
+        self._pending_frontend_failures = {}
+        # rospy dispatches each subscription on its own receive thread, so a
+        # request, its seed and its front-end status can call the core
+        # concurrently.  Plan state and the publication gate are one
+        # transaction and must be serialized (RLock because on_map may
+        # re-enter with a synthesized error map).
+        self._lock = threading.RLock()
 
     # ---- status / quality helpers -------------------------------------
 
@@ -962,6 +976,10 @@ class FormationNodeCore:
     # ---- request -------------------------------------------------------
 
     def on_request(self, message, publication_stamp=None):
+        with self._lock:
+            return self._on_request(message, publication_stamp)
+
+    def _on_request(self, message, publication_stamp=None):
         self.requests_seen += 1
         try:
             validation = validate_formation_request(message)
@@ -992,6 +1010,7 @@ class FormationNodeCore:
             self._seed_attempts.clear()
             self._last_seed_status = None
             self._last_pipeline = None
+            self._frontend_failed_plan_id = None
             reason = (INVALID_REQUEST if validation is None
                       else validation.reason)
             detail = (validation_error if validation is None
@@ -1027,6 +1046,19 @@ class FormationNodeCore:
         self._last_pipeline = None
         self._last_publication = decision.as_status()
         self._last_seed_status = None
+        self._frontend_failed_plan_id = None
+
+        pending_failure = self._pending_frontend_failures.pop(
+            snapshot.plan_id, None)
+        if pending_failure is not None:
+            received, report = pending_failure
+            formation_id = report.get("formation_id")
+            if (_time.monotonic() - received <=
+                    self.FRONTEND_FAILURE_WINDOW_S and
+                    not (isinstance(formation_id, str) and
+                         formation_id != snapshot.formation_id)):
+                return self._frontend_failure_event(
+                    report, publication_stamp, request_status)
 
         if self._pending_seed_matches_snapshot(snapshot, pending_seed):
             seed_key = self._seed_key(pending_seed, pending_stamp)
@@ -1077,6 +1109,10 @@ class FormationNodeCore:
                 _seed_primitive_key(seed))
 
     def on_seed(self, seed, publication_stamp=None, seed_stamp=None):
+        with self._lock:
+            return self._on_seed(seed, publication_stamp, seed_stamp)
+
+    def _on_seed(self, seed, publication_stamp=None, seed_stamp=None):
         self.seeds_seen += 1
         if seed_stamp is None:
             seed_stamp = _message_stamp(seed)
@@ -1157,6 +1193,17 @@ class FormationNodeCore:
                 seed=seed_status, publication=decision.as_status(),
                 clear=decision.clear, stamp=publication_stamp)
 
+        if self._frontend_failed_plan_id == plan_id:
+            return self._event(
+                "SEED_REJECTED", REJECTED, "FRONTEND_FAILED",
+                "the front end already ended plan_id={} without a seed".format(
+                    plan_id),
+                failure={"code": REJECTED, "field": "frontend_status",
+                         "vehicle_id": None,
+                         "detail": "no seed is accepted after a terminal "
+                                   "front-end failure"},
+                seed=seed_status, clear=False, stamp=publication_stamp)
+
         key = self._seed_key(seed, seed_stamp)
         if key in self._seed_attempts:
             return self._event(
@@ -1167,6 +1214,100 @@ class FormationNodeCore:
         return self._run_seed(
             self.snapshot, seed, seed_stamp, key, publication_stamp,
             pre_clear=False)
+
+    @staticmethod
+    def _frontend_failure(report):
+        """Return the report if it is an explicit front-end failure."""
+        if not isinstance(report, MappingABC):
+            return None
+        plan_id = report.get("plan_id")
+        if not isinstance(plan_id, int) or isinstance(plan_id, bool):
+            return None
+        if (report.get("trajectory_published") is True or
+                report.get("executable") is True):
+            return None
+        # MAP_UNAVAILABLE is provisional here: the C++ front end keeps the
+        # request pending and publishes a seed when its map arrives.  The
+        # optimizer's own map gate handles a map that never arrives.
+        failure_states = (
+            "REJECTED", "MAP_FRAME_MISMATCH", "GEOMETRY_SEARCH_FAILED")
+        if (report.get("valid") is not False and
+                report.get("node_state") not in failure_states):
+            return None
+        return report
+
+    def _frontend_failure_event(self, report, publication_stamp=None,
+                                request_status=None):
+        plan_id = self.snapshot.plan_id
+        reason = report.get("reason")
+        if not isinstance(reason, str) or not reason:
+            reason = "GEOMETRY_SEARCH_FAILED"
+        detail = report.get("detail")
+        if not isinstance(detail, str) or not detail:
+            detail = "the geometry front end ended the request without a seed"
+        decision = self.gate.fail(plan_id, reason, detail)
+        self._last_publication = decision.as_status()
+        self._frontend_failed_plan_id = plan_id
+        extra = {"planning_started": False, "frontend": report}
+        if request_status is not None:
+            extra.update({"valid": True, "request": request_status})
+        return self._event(
+            "FRONTEND_FAILED", REJECTED, reason, detail,
+            failure={"code": "FRONTEND_FAILED",
+                     "field": (report.get("field") or "frontend_status"),
+                     "vehicle_id": report.get("vehicle_id"),
+                     "detail": detail},
+            publication=decision.as_status(), clear=True,
+            stamp=publication_stamp, extra=extra)
+
+    def _store_pending_frontend_failure(self, report):
+        plan_id = report["plan_id"]
+        now = _time.monotonic()
+        for key, (received, _) in list(
+                self._pending_frontend_failures.items()):
+            if now - received > self.FRONTEND_FAILURE_WINDOW_S:
+                del self._pending_frontend_failures[key]
+        self._pending_frontend_failures[plan_id] = (now, report)
+        while len(self._pending_frontend_failures) > 16:
+            oldest = min(
+                self._pending_frontend_failures,
+                key=lambda key: self._pending_frontend_failures[key][0])
+            del self._pending_frontend_failures[oldest]
+
+    def on_frontend_status(self, report, publication_stamp=None):
+        with self._lock:
+            return self._on_frontend_status(report, publication_stamp)
+
+    def _on_frontend_status(self, report, publication_stamp=None):
+        """End the active request when the geometry front end fails.
+
+        The front end publishes only a status document on rejection, a map
+        frame failure or an exhausted geometry search.  Without this path the
+        optimizer would remain ``REQUEST_VALIDATED`` forever.  A success
+        status (``GEOMETRY_ONLY_UNCERTIFIED``) and any status carrying a
+        published trajectory are ignored: only an explicit failure ends the
+        matching plan_id.
+
+        The request and status travel on different topics.  A failure for a
+        plan newer than the active snapshot is kept briefly so the request
+        callback, when it arrives second, still ends in ``FRONTEND_FAILED``.
+        """
+        report = self._frontend_failure(report)
+        if report is None:
+            return None
+        plan_id = report["plan_id"]
+        formation_id = report.get("formation_id")
+        if self.snapshot is not None:
+            if plan_id == self.snapshot.plan_id:
+                if (isinstance(formation_id, str) and
+                        formation_id != self.snapshot.formation_id):
+                    return None
+                return self._frontend_failure_event(
+                    report, publication_stamp)
+            if plan_id < self.snapshot.plan_id:
+                return None
+        self._store_pending_frontend_failure(report)
+        return None
 
     def _run_seed(self, snapshot, seed, seed_stamp, seed_key,
                   publication_stamp, pre_clear):
@@ -1326,6 +1467,10 @@ class FormationNodeCore:
     # ---- map -----------------------------------------------------------
 
     def on_map(self, grid, error=None, frame_id=None, stamp=None):
+        with self._lock:
+            return self._on_map(grid, error, frame_id, stamp)
+
+    def _on_map(self, grid, error=None, frame_id=None, stamp=None):
         previous_signature = self.map_signature
         if grid is None or error:
             self.grid = None
@@ -1395,6 +1540,13 @@ class FormationNodeCore:
     def publication_rejected(self, failure_code, detail,
                              field="trajectory", vehicle_id=None,
                              stamp=None):
+        with self._lock:
+            return self._publication_rejected(
+                failure_code, detail, field, vehicle_id, stamp)
+
+    def _publication_rejected(self, failure_code, detail,
+                              field="trajectory", vehicle_id=None,
+                              stamp=None):
         decision = self.gate.invalidate()
         self._last_publication = decision.as_status()
         return self._event(
@@ -1480,6 +1632,7 @@ class FormationOptimizerNode:
 
     REQUEST_TOPIC = "/formation/plan_request"
     SEED_TOPIC = "/formation/plan_seed"
+    FRONTEND_STATUS_TOPIC = "/formation/status"
     MAP_TOPIC = "/map"
     STATUS_TOPIC = "/formation/optimizer_status"
     QUALITY_TOPIC = "/formation/quality_report"
@@ -1493,6 +1646,10 @@ class FormationOptimizerNode:
         self.core = core or FormationNodeCore(
             pipeline_config=_load_pipeline_config())
         self.start_on_publication = bool(rospy.get_param("~start_on_publication", False))
+        # rospy invokes each subscription on its own receive thread.  Keep the
+        # core transaction and the status/trajectory publication atomic so a
+        # newer terminal event cannot be overwritten by an older one.
+        self._callback_lock = threading.RLock()
         self.status_pub = rospy.Publisher(
             self.STATUS_TOPIC, String, queue_size=1, latch=True)
         self.quality_pub = rospy.Publisher(
@@ -1506,6 +1663,8 @@ class FormationOptimizerNode:
                          self.on_request, queue_size=1)
         rospy.Subscriber(self.SEED_TOPIC, FormationPlanSeed, self.on_seed,
                          queue_size=1)
+        rospy.Subscriber(self.FRONTEND_STATUS_TOPIC, String,
+                         self.on_frontend_status, queue_size=1)
 
     def _now(self):
         try:
@@ -1520,22 +1679,44 @@ class FormationOptimizerNode:
         return 1, 0
 
     def on_map(self, message):
-        grid, error = grid_from_occupancy_grid(message)
-        stamp = self._now()
-        event = self.core.on_map(
-            grid, error=error,
-            frame_id=getattr(message.header, "frame_id", None),
-            stamp=stamp)
-        self._publish_event(event)
+        with self._callback_lock:
+            grid, error = grid_from_occupancy_grid(message)
+            stamp = self._now()
+            event = self.core.on_map(
+                grid, error=error,
+                frame_id=getattr(message.header, "frame_id", None),
+                stamp=stamp)
+            self._publish_event(event)
 
     def on_request(self, message):
-        self._publish_event(self.core.on_request(
-            message, publication_stamp=self._now()))
+        with self._callback_lock:
+            self._publish_event(self.core.on_request(
+                message, publication_stamp=self._now()))
 
     def on_seed(self, message):
-        self._publish_event(self.core.on_seed(
-            message, publication_stamp=self._now(),
-            seed_stamp=_message_stamp(message)))
+        with self._callback_lock:
+            self._publish_event(self.core.on_seed(
+                message, publication_stamp=self._now(),
+                seed_stamp=_message_stamp(message)))
+
+    def on_frontend_status(self, message):
+        with self._callback_lock:
+            try:
+                report = json.loads(message.data)
+            except (TypeError, ValueError) as exc:
+                rospy.logwarn(
+                    "[formation optimizer] ignoring invalid frontend status "
+                    "JSON: %s", exc)
+                return
+            if not isinstance(report, dict):
+                rospy.logwarn(
+                    "[formation optimizer] ignoring non-object frontend "
+                    "status")
+                return
+            event = self.core.on_frontend_status(
+                report, publication_stamp=self._now())
+            if event is not None:
+                self._publish_event(event)
 
     def _clear_message(self, event):
         message = FormationTimedTrajectoryMsg()

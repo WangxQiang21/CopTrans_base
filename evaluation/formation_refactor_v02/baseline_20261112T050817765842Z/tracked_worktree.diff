@@ -1,0 +1,979 @@
+diff --git a/catkin_ws/src/fwis_v3_optimizer/scripts/formation_optimizer_node.py b/catkin_ws/src/fwis_v3_optimizer/scripts/formation_optimizer_node.py
+index 20ca2a2..d75cc9d 100755
+--- a/catkin_ws/src/fwis_v3_optimizer/scripts/formation_optimizer_node.py
++++ b/catkin_ws/src/fwis_v3_optimizer/scripts/formation_optimizer_node.py
+@@ -15,6 +15,7 @@ from collections.abc import Mapping as MappingABC
+ from dataclasses import dataclass, field, replace
+ import json
+ import math
++import threading
+ import time as _time
+ from typing import Mapping, Optional, Tuple
+ 
+@@ -820,6 +821,11 @@ class FormationNodeEvent:
+ class FormationNodeCore:
+     """ROS-independent transactional request/seed/map state machine."""
+ 
++    # A front-end failure and its request are separate topics.  If the status
++    # callback wins the race, keep the failure briefly so the request that is
++    # already on the wire still reaches an explicit terminal state.
++    FRONTEND_FAILURE_WINDOW_S = 5.0
++
+     def __init__(self, pipeline_config=None, gate=None):
+         self.pipeline_config = (pipeline_config or
+                                 FormationPipelineConfig())
+@@ -845,6 +851,14 @@ class FormationNodeCore:
+         self._last_seed_status = None
+         self._last_pipeline = None
+         self._last_publication = None
++        self._frontend_failed_plan_id = None
++        self._pending_frontend_failures = {}
++        # rospy dispatches each subscription on its own receive thread, so a
++        # request, its seed and its front-end status can call the core
++        # concurrently.  Plan state and the publication gate are one
++        # transaction and must be serialized (RLock because on_map may
++        # re-enter with a synthesized error map).
++        self._lock = threading.RLock()
+ 
+     # ---- status / quality helpers -------------------------------------
+ 
+@@ -962,6 +976,10 @@ class FormationNodeCore:
+     # ---- request -------------------------------------------------------
+ 
+     def on_request(self, message, publication_stamp=None):
++        with self._lock:
++            return self._on_request(message, publication_stamp)
++
++    def _on_request(self, message, publication_stamp=None):
+         self.requests_seen += 1
+         try:
+             validation = validate_formation_request(message)
+@@ -992,6 +1010,7 @@ class FormationNodeCore:
+             self._seed_attempts.clear()
+             self._last_seed_status = None
+             self._last_pipeline = None
++            self._frontend_failed_plan_id = None
+             reason = (INVALID_REQUEST if validation is None
+                       else validation.reason)
+             detail = (validation_error if validation is None
+@@ -1027,6 +1046,19 @@ class FormationNodeCore:
+         self._last_pipeline = None
+         self._last_publication = decision.as_status()
+         self._last_seed_status = None
++        self._frontend_failed_plan_id = None
++
++        pending_failure = self._pending_frontend_failures.pop(
++            snapshot.plan_id, None)
++        if pending_failure is not None:
++            received, report = pending_failure
++            formation_id = report.get("formation_id")
++            if (_time.monotonic() - received <=
++                    self.FRONTEND_FAILURE_WINDOW_S and
++                    not (isinstance(formation_id, str) and
++                         formation_id != snapshot.formation_id)):
++                return self._frontend_failure_event(
++                    report, publication_stamp, request_status)
+ 
+         if self._pending_seed_matches_snapshot(snapshot, pending_seed):
+             seed_key = self._seed_key(pending_seed, pending_stamp)
+@@ -1077,6 +1109,10 @@ class FormationNodeCore:
+                 _seed_primitive_key(seed))
+ 
+     def on_seed(self, seed, publication_stamp=None, seed_stamp=None):
++        with self._lock:
++            return self._on_seed(seed, publication_stamp, seed_stamp)
++
++    def _on_seed(self, seed, publication_stamp=None, seed_stamp=None):
+         self.seeds_seen += 1
+         if seed_stamp is None:
+             seed_stamp = _message_stamp(seed)
+@@ -1157,6 +1193,17 @@ class FormationNodeCore:
+                 seed=seed_status, publication=decision.as_status(),
+                 clear=decision.clear, stamp=publication_stamp)
+ 
++        if self._frontend_failed_plan_id == plan_id:
++            return self._event(
++                "SEED_REJECTED", REJECTED, "FRONTEND_FAILED",
++                "the front end already ended plan_id={} without a seed".format(
++                    plan_id),
++                failure={"code": REJECTED, "field": "frontend_status",
++                         "vehicle_id": None,
++                         "detail": "no seed is accepted after a terminal "
++                                   "front-end failure"},
++                seed=seed_status, clear=False, stamp=publication_stamp)
++
+         key = self._seed_key(seed, seed_stamp)
+         if key in self._seed_attempts:
+             return self._event(
+@@ -1168,6 +1215,100 @@ class FormationNodeCore:
+             self.snapshot, seed, seed_stamp, key, publication_stamp,
+             pre_clear=False)
+ 
++    @staticmethod
++    def _frontend_failure(report):
++        """Return the report if it is an explicit front-end failure."""
++        if not isinstance(report, MappingABC):
++            return None
++        plan_id = report.get("plan_id")
++        if not isinstance(plan_id, int) or isinstance(plan_id, bool):
++            return None
++        if (report.get("trajectory_published") is True or
++                report.get("executable") is True):
++            return None
++        # MAP_UNAVAILABLE is provisional here: the C++ front end keeps the
++        # request pending and publishes a seed when its map arrives.  The
++        # optimizer's own map gate handles a map that never arrives.
++        failure_states = (
++            "REJECTED", "MAP_FRAME_MISMATCH", "GEOMETRY_SEARCH_FAILED")
++        if (report.get("valid") is not False and
++                report.get("node_state") not in failure_states):
++            return None
++        return report
++
++    def _frontend_failure_event(self, report, publication_stamp=None,
++                                request_status=None):
++        plan_id = self.snapshot.plan_id
++        reason = report.get("reason")
++        if not isinstance(reason, str) or not reason:
++            reason = "GEOMETRY_SEARCH_FAILED"
++        detail = report.get("detail")
++        if not isinstance(detail, str) or not detail:
++            detail = "the geometry front end ended the request without a seed"
++        decision = self.gate.fail(plan_id, reason, detail)
++        self._last_publication = decision.as_status()
++        self._frontend_failed_plan_id = plan_id
++        extra = {"planning_started": False, "frontend": report}
++        if request_status is not None:
++            extra.update({"valid": True, "request": request_status})
++        return self._event(
++            "FRONTEND_FAILED", REJECTED, reason, detail,
++            failure={"code": "FRONTEND_FAILED",
++                     "field": (report.get("field") or "frontend_status"),
++                     "vehicle_id": report.get("vehicle_id"),
++                     "detail": detail},
++            publication=decision.as_status(), clear=True,
++            stamp=publication_stamp, extra=extra)
++
++    def _store_pending_frontend_failure(self, report):
++        plan_id = report["plan_id"]
++        now = _time.monotonic()
++        for key, (received, _) in list(
++                self._pending_frontend_failures.items()):
++            if now - received > self.FRONTEND_FAILURE_WINDOW_S:
++                del self._pending_frontend_failures[key]
++        self._pending_frontend_failures[plan_id] = (now, report)
++        while len(self._pending_frontend_failures) > 16:
++            oldest = min(
++                self._pending_frontend_failures,
++                key=lambda key: self._pending_frontend_failures[key][0])
++            del self._pending_frontend_failures[oldest]
++
++    def on_frontend_status(self, report, publication_stamp=None):
++        with self._lock:
++            return self._on_frontend_status(report, publication_stamp)
++
++    def _on_frontend_status(self, report, publication_stamp=None):
++        """End the active request when the geometry front end fails.
++
++        The front end publishes only a status document on rejection, a map
++        frame failure or an exhausted geometry search.  Without this path the
++        optimizer would remain ``REQUEST_VALIDATED`` forever.  A success
++        status (``GEOMETRY_ONLY_UNCERTIFIED``) and any status carrying a
++        published trajectory are ignored: only an explicit failure ends the
++        matching plan_id.
++
++        The request and status travel on different topics.  A failure for a
++        plan newer than the active snapshot is kept briefly so the request
++        callback, when it arrives second, still ends in ``FRONTEND_FAILED``.
++        """
++        report = self._frontend_failure(report)
++        if report is None:
++            return None
++        plan_id = report["plan_id"]
++        formation_id = report.get("formation_id")
++        if self.snapshot is not None:
++            if plan_id == self.snapshot.plan_id:
++                if (isinstance(formation_id, str) and
++                        formation_id != self.snapshot.formation_id):
++                    return None
++                return self._frontend_failure_event(
++                    report, publication_stamp)
++            if plan_id < self.snapshot.plan_id:
++                return None
++        self._store_pending_frontend_failure(report)
++        return None
++
+     def _run_seed(self, snapshot, seed, seed_stamp, seed_key,
+                   publication_stamp, pre_clear):
+         plan_id = snapshot.plan_id
+@@ -1326,6 +1467,10 @@ class FormationNodeCore:
+     # ---- map -----------------------------------------------------------
+ 
+     def on_map(self, grid, error=None, frame_id=None, stamp=None):
++        with self._lock:
++            return self._on_map(grid, error, frame_id, stamp)
++
++    def _on_map(self, grid, error=None, frame_id=None, stamp=None):
+         previous_signature = self.map_signature
+         if grid is None or error:
+             self.grid = None
+@@ -1395,6 +1540,13 @@ class FormationNodeCore:
+     def publication_rejected(self, failure_code, detail,
+                              field="trajectory", vehicle_id=None,
+                              stamp=None):
++        with self._lock:
++            return self._publication_rejected(
++                failure_code, detail, field, vehicle_id, stamp)
++
++    def _publication_rejected(self, failure_code, detail,
++                              field="trajectory", vehicle_id=None,
++                              stamp=None):
+         decision = self.gate.invalidate()
+         self._last_publication = decision.as_status()
+         return self._event(
+@@ -1480,6 +1632,7 @@ class FormationOptimizerNode:
+ 
+     REQUEST_TOPIC = "/formation/plan_request"
+     SEED_TOPIC = "/formation/plan_seed"
++    FRONTEND_STATUS_TOPIC = "/formation/status"
+     MAP_TOPIC = "/map"
+     STATUS_TOPIC = "/formation/optimizer_status"
+     QUALITY_TOPIC = "/formation/quality_report"
+@@ -1493,6 +1646,10 @@ class FormationOptimizerNode:
+         self.core = core or FormationNodeCore(
+             pipeline_config=_load_pipeline_config())
+         self.start_on_publication = bool(rospy.get_param("~start_on_publication", False))
++        # rospy invokes each subscription on its own receive thread.  Keep the
++        # core transaction and the status/trajectory publication atomic so a
++        # newer terminal event cannot be overwritten by an older one.
++        self._callback_lock = threading.RLock()
+         self.status_pub = rospy.Publisher(
+             self.STATUS_TOPIC, String, queue_size=1, latch=True)
+         self.quality_pub = rospy.Publisher(
+@@ -1506,6 +1663,8 @@ class FormationOptimizerNode:
+                          self.on_request, queue_size=1)
+         rospy.Subscriber(self.SEED_TOPIC, FormationPlanSeed, self.on_seed,
+                          queue_size=1)
++        rospy.Subscriber(self.FRONTEND_STATUS_TOPIC, String,
++                         self.on_frontend_status, queue_size=1)
+ 
+     def _now(self):
+         try:
+@@ -1520,22 +1679,44 @@ class FormationOptimizerNode:
+         return 1, 0
+ 
+     def on_map(self, message):
+-        grid, error = grid_from_occupancy_grid(message)
+-        stamp = self._now()
+-        event = self.core.on_map(
+-            grid, error=error,
+-            frame_id=getattr(message.header, "frame_id", None),
+-            stamp=stamp)
+-        self._publish_event(event)
++        with self._callback_lock:
++            grid, error = grid_from_occupancy_grid(message)
++            stamp = self._now()
++            event = self.core.on_map(
++                grid, error=error,
++                frame_id=getattr(message.header, "frame_id", None),
++                stamp=stamp)
++            self._publish_event(event)
+ 
+     def on_request(self, message):
+-        self._publish_event(self.core.on_request(
+-            message, publication_stamp=self._now()))
++        with self._callback_lock:
++            self._publish_event(self.core.on_request(
++                message, publication_stamp=self._now()))
+ 
+     def on_seed(self, message):
+-        self._publish_event(self.core.on_seed(
+-            message, publication_stamp=self._now(),
+-            seed_stamp=_message_stamp(message)))
++        with self._callback_lock:
++            self._publish_event(self.core.on_seed(
++                message, publication_stamp=self._now(),
++                seed_stamp=_message_stamp(message)))
++
++    def on_frontend_status(self, message):
++        with self._callback_lock:
++            try:
++                report = json.loads(message.data)
++            except (TypeError, ValueError) as exc:
++                rospy.logwarn(
++                    "[formation optimizer] ignoring invalid frontend status "
++                    "JSON: %s", exc)
++                return
++            if not isinstance(report, dict):
++                rospy.logwarn(
++                    "[formation optimizer] ignoring non-object frontend "
++                    "status")
++                return
++            event = self.core.on_frontend_status(
++                report, publication_stamp=self._now())
++            if event is not None:
++                self._publish_event(event)
+ 
+     def _clear_message(self, event):
+         message = FormationTimedTrajectoryMsg()
+diff --git a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_geometry.py b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_geometry.py
+index 7faecc6..a88cbc8 100644
+--- a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_geometry.py
++++ b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_geometry.py
+@@ -14,6 +14,7 @@ modified.
+ """
+ from dataclasses import dataclass
+ import math
++from types import SimpleNamespace
+ from typing import Mapping, Optional, Tuple
+ 
+ from .formation import (
+@@ -821,6 +822,158 @@ def _seed_signature(seed):
+         return (signature,)
+ 
+ 
++@dataclass(frozen=True)
++class _SeedVariant:
++    """A seed copy carrying one exact-goal connection order."""
++
++    header: object
++    plan_id: int
++    formation_id: str
++    formation_start: object
++    formation_goal: object
++    primitives: tuple
++    map_signature: object = None
++    source_signature: tuple = ()
++
++
++def _seed_variant(seed, primitives):
++    return _SeedVariant(
++        header=_attribute(seed, "header", "seed"),
++        plan_id=_attribute(seed, "plan_id", "seed"),
++        formation_id=_attribute(seed, "formation_id", "seed"),
++        formation_start=_attribute(seed, "formation_start", "seed"),
++        formation_goal=_attribute(seed, "formation_goal", "seed"),
++        primitives=tuple(primitives),
++        map_signature=getattr(seed, "map_signature", None),
++        source_signature=_seed_signature(seed))
++
++
++def _primitive_signature(primitive):
++    try:
++        kind = _primitive_type(primitive)
++    except FormationValidationError:
++        return None
++    values = (
++        kind,
++        float(getattr(primitive, "dx", 0.0)),
++        float(getattr(primitive, "dy", 0.0)),
++        float(getattr(primitive, "dpsi", 0.0)),
++        float(getattr(primitive, "pivot_x", 0.0)),
++        float(getattr(primitive, "pivot_y", 0.0)),
++    )
++    return tuple(round(value, 12) if isinstance(value, float) else value
++                 for value in values)
++
++
++def _integrate_primitives(start_qf, primitives, offsets):
++    """Return the exact endpoint of a primitive sequence, or ``None``."""
++    pose = start_qf
++    for primitive in primitives:
++        try:
++            block = FormationKinematicBlock.from_primitive(
++                pose, primitive, offsets)
++        except FormationValidationError as exc:
++            message = str(exc)
++            if "ZERO_LENGTH_TRANSLATION_BLOCK" in message or (
++                    "ZERO_ROTATION_BLOCK" in message):
++                continue
++            return None
++        pose = block.end_qf
++    return pose
++
++
++def _exact_connection_variants(start_qf, goal_qf, primitives, offsets):
++    """Return both geometric orders for an exact terminal T/R connection.
++
++    ``connect_exact_goal`` in S4 tries translate-then-rotate and
++    rotate-then-translate but publishes only the first order whose *geometric*
++    sweep is clear.  Mode feasibility, pre-spin and dynamics are decided later,
++    so a geometrically clear first order can be non-executable while the other
++    order is executable.  This helper reconstructs both exact orders locally
++    without changing the external seed message; the caller audits each one
++    through the normal S6/S8/S9 path.
++    """
++    original = tuple(primitives)
++    if len(original) < 2:
++        return (original,)
++    first_kind = _primitive_signature(original[-2])
++    second_kind = _primitive_signature(original[-1])
++    if first_kind is None or second_kind is None:
++        return (original,)
++    first_type, second_type = first_kind[0], second_kind[0]
++    if {first_type, second_type} != {TRANSLATION, ROTATION}:
++        return (original,)
++    prefix = original[:-2]
++    prefix_end = _integrate_primitives(start_qf, prefix, offsets)
++    if prefix_end is None:
++        return (original,)
++    original_end = _integrate_primitives(prefix_end, original[-2:], offsets)
++    if original_end is None:
++        return (original,)
++    if (math.hypot(original_end.x - goal_qf.x,
++                   original_end.y - goal_qf.y) > _GEOMETRY_TOL or
++            _angle_error(original_end.psi, goal_qf.psi) > _GEOMETRY_TOL):
++        return (original,)
++
++    if first_type == TRANSLATION:
++        translation = original[-2]
++        rotation = original[-1]
++    else:
++        rotation = original[-2]
++        translation = original[-1]
++    pivot_x = float(getattr(rotation, "pivot_x", 0.0))
++    pivot_y = float(getattr(rotation, "pivot_y", 0.0))
++    dpsi = _wrap(goal_qf.psi - prefix_end.psi)
++    alternate = []
++    if first_type == TRANSLATION:
++        # rotate first, then translate in the rotated frame.
++        if abs(dpsi) > _GEOMETRY_TOL:
++            rotated = SimpleNamespace(
++                geometry_type=ROTATION, dpsi=dpsi,
++                pivot_x=pivot_x, pivot_y=pivot_y)
++            alternate.append(rotated)
++            rotation_end = _integrate_primitives(
++                prefix_end, (rotated,), offsets)
++            if rotation_end is None:
++                return (original,)
++        else:
++            rotation_end = prefix_end
++        dx_world = goal_qf.x - rotation_end.x
++        dy_world = goal_qf.y - rotation_end.y
++        cosine, sine = math.cos(rotation_end.psi), math.sin(rotation_end.psi)
++        dx = cosine * dx_world + sine * dy_world
++        dy = -sine * dx_world + cosine * dy_world
++        if math.hypot(dx, dy) > _GEOMETRY_TOL:
++            alternate.append(SimpleNamespace(
++                geometry_type=TRANSLATION, dx=dx, dy=dy))
++    else:
++        # translate first, then rotate about the same pivot at the goal.
++        dx_world = goal_qf.x - prefix_end.x
++        dy_world = goal_qf.y - prefix_end.y
++        cosine, sine = math.cos(prefix_end.psi), math.sin(prefix_end.psi)
++        dx = cosine * dx_world + sine * dy_world
++        dy = -sine * dx_world + cosine * dy_world
++        if math.hypot(dx, dy) > _GEOMETRY_TOL:
++            alternate.append(SimpleNamespace(
++                geometry_type=TRANSLATION, dx=dx, dy=dy))
++        if abs(dpsi) > _GEOMETRY_TOL:
++            alternate.append(SimpleNamespace(
++                geometry_type=ROTATION, dpsi=dpsi,
++                pivot_x=pivot_x, pivot_y=pivot_y))
++    alternate = tuple(prefix + tuple(alternate))
++    alternate_end = _integrate_primitives(start_qf, alternate, offsets)
++    if alternate_end is None:
++        return (original,)
++    if (math.hypot(alternate_end.x - goal_qf.x,
++                   alternate_end.y - goal_qf.y) > _GEOMETRY_TOL or
++            _angle_error(alternate_end.psi, goal_qf.psi) > _GEOMETRY_TOL):
++        return (original,)
++    if tuple(_primitive_signature(item) for item in alternate) == tuple(
++            _primitive_signature(item) for item in original):
++        return (original,)
++    return (original, alternate)
++
++
+ def _path_control(kinematic):
+     return FormationPathControl(
+         kinematic.geometry_type,
+@@ -1130,7 +1283,8 @@ def build_continuous_plans(
+         snapshot, seed, limits=None, max_candidates=4,
+         max_schedule_combinations=64, max_schedules_per_block=4,
+         expected_map_signature=None, terminal_tolerance_m=_GEOMETRY_TOL,
+-        terminal_tolerance_rad=_GEOMETRY_TOL, allowed_modes=None):
++        terminal_tolerance_rad=_GEOMETRY_TOL, allowed_modes=None,
++        _expand_exact_connections=True):
+     """Convert one S4 geometry-only seed into up to K continuous candidates."""
+     limits = limits or KinematicLimits()
+     allowed_modes = normalize_allowed_modes(allowed_modes)
+@@ -1195,6 +1349,91 @@ def build_continuous_plans(
+         return _empty_build("INVALID_SEED", str(exc))
+ 
+     offsets = tuple(snapshot.model.offsets)
++    if _expand_exact_connections:
++        variants = _exact_connection_variants(
++            snapshot.start, snapshot.goal, primitives, offsets)
++        if len(variants) > 1:
++            builds = []
++            for variant in variants:
++                builds.append(build_continuous_plans(
++                    snapshot, _seed_variant(seed, variant),
++                    limits=limits, max_candidates=max_candidates,
++                    max_schedule_combinations=max_schedule_combinations,
++                    max_schedules_per_block=max_schedules_per_block,
++                    expected_map_signature=expected_map_signature,
++                    terminal_tolerance_m=terminal_tolerance_m,
++                    terminal_tolerance_rad=terminal_tolerance_rad,
++                    allowed_modes=allowed_modes,
++                    _expand_exact_connections=False))
++            plans = []
++            seen_plans = set()
++            rejections = []
++            for build in builds:
++                rejections.extend(build.rejections)
++                for plan in build.plans:
++                    key = plan.candidate_key()
++                    if key in seen_plans:
++                        continue
++                    seen_plans.add(key)
++                    plans.append(plan)
++            plans.sort(key=lambda plan: (
++                plan_candidate_score(plan), plan.candidate_key()))
++            # Keep at least the best plan from each geometric order before
++            # filling the remaining finite budget by score.  Otherwise the
++            # first order can consume every slot and the alternate order is
++            # never independently audited by S8/S9.
++            selected_plans = []
++            selected_keys = set()
++            for build in builds:
++                if not build.plans:
++                    continue
++                plan = build.plans[0]
++                key = plan.candidate_key()
++                if key in selected_keys:
++                    continue
++                selected_keys.add(key)
++                selected_plans.append(plan)
++            for plan in plans:
++                if len(selected_plans) >= max_candidates:
++                    break
++                key = plan.candidate_key()
++                if key in selected_keys:
++                    continue
++                selected_keys.add(key)
++                selected_plans.append(plan)
++            detail = "EXACT_CONNECTION_ORDERS_AUDITED={}; {}".format(
++                len(variants), " | ".join(
++                    "order={}:{}:{}".format(
++                        index + 1, build.reason, build.detail)
++                    for index, build in enumerate(builds)))
++            if plans:
++                return FormationPlanBuild(
++                    success=True, reason="OK", detail=detail,
++                    plans=tuple(selected_plans[:max_candidates]),
++                    rejections=tuple(rejections),
++                    map_version_checked=any(
++                        build.map_version_checked for build in builds),
++                    terminal_max_xy_m=max(
++                        build.terminal_max_xy_m for build in builds),
++                    terminal_max_yaw_rad=max(
++                        build.terminal_max_yaw_rad for build in builds),
++                    certification=GEOMETRY_VALID)
++            first = builds[0] if builds else None
++            return FormationPlanBuild(
++                success=False,
++                reason=("NO_CONTINUOUS_CANDIDATE" if first is None
++                        else first.reason),
++                detail=detail, plans=(), rejections=tuple(rejections),
++                map_version_checked=any(
++                    build.map_version_checked for build in builds),
++                terminal_max_xy_m=max(
++                    (build.terminal_max_xy_m for build in builds),
++                    default=0.0),
++                terminal_max_yaw_rad=max(
++                    (build.terminal_max_yaw_rad for build in builds),
++                    default=0.0),
++                certification=GEOMETRY_VALID)
++
+     model = snapshot.model
+     headings = dict(snapshot.start_headings)
+     start_headings = tuple(sorted(headings.items()))
+diff --git a/tests/ros_cargo_smoke.py b/tests/ros_cargo_smoke.py
+index f965b08..edd341c 100644
+--- a/tests/ros_cargo_smoke.py
++++ b/tests/ros_cargo_smoke.py
+@@ -155,6 +155,7 @@ class Observations:
+     def __init__(self):
+         self.requests = []
+         self.optimizer = []
++        self.frontend = []
+         self.quality = []
+         self.playback = []
+         self.markers = []
+@@ -180,6 +181,10 @@ class Observations:
+         self.optimizer.append((time.time(), self.parse(message)))
+         del self.optimizer[:-300]
+ 
++    def add_frontend(self, message):
++        self.frontend.append((time.time(), self.parse(message)))
++        del self.frontend[:-100]
++
+     def add_quality(self, message):
+         self.quality.append((time.time(), self.parse(message)))
+         del self.quality[:-100]
+@@ -502,6 +507,8 @@ def main(argv=None):
+                          observations.add_request, queue_size=20)
+         rospy.Subscriber("/formation/optimizer_status", String,
+                          observations.add_optimizer, queue_size=100)
++        rospy.Subscriber("/formation/status", String,
++                         observations.add_frontend, queue_size=20)
+         rospy.Subscriber("/formation/quality_report", String,
+                          observations.add_quality, queue_size=50)
+         rospy.Subscriber("/formation/playback_status", String,
+@@ -1151,13 +1158,354 @@ def main(argv=None):
+                         for item in lateral_hold.get("vehicles", [])}},
+         }
+ 
++        # ---- T5 E09: mixed translation + cargo rotation ----------------
++        # This is the canonical E09 mission from the acceptance matrix.  It
++        # starts from a fresh zero-heading experiment so both connection
++        # orders of the final translate/rotate pair are reachable.
++        t5_reset_time = time.time()
++        send_initial(initial_pub, 10.0, 10.0, 0.0)
++        wait_for(
++            lambda: next(
++                ((wall, document) for wall, document
++                 in observations.playback
++                 if wall >= t5_reset_time
++                 and document.get("state") == "STATIC"
++                 and document.get("reason") == "START"
++                 and document.get("plan_id") is None
++                 and document.get("trajectory_published") is False),
++                None), "T5 reset static preview", 10.0, run_demo,
++            observations)
++
++        e09_time = time.time()
++        e09_plan_id = 700020
++        e09_start = (10.0, 10.0, 0.0)
++        e09_goal = (13.0, 10.0, math.pi / 2.0)
++        e09_headings = {1: 0.0, 2: 0.0, 3: 0.0}
++        e09_request = make_plan_request(
++            config, e09_plan_id, e09_start, e09_goal, e09_headings)
++        request_pub.publish(e09_request)
++        e09_request = wait_for(
++            lambda: next(
++                ((wall, item) for wall, item in observations.requests
++                 if wall >= e09_time and item["plan_id"] == e09_plan_id),
++                None), "E09 request on the wire", 10.0, run_demo,
++            observations)[1]
++        check(summary, "e09_request_is_mixed_translation_rotation",
++              math.hypot(e09_request["formation_goal"][0] - 13.0,
++                         e09_request["formation_goal"][1] - 10.0) <= 1e-6
++              and close_angle(e09_request["formation_goal"][2], math.pi / 2.0)
++              and all(abs(wrap(item["start_center"][2])) <= 1e-6
++                      for item in e09_request["vehicles"]),
++              "start={} goal={} headings={}".format(
++                  e09_request["formation_start"],
++                  e09_request["formation_goal"],
++                  [item["start_center"][2]
++                   for item in e09_request["vehicles"]]))
++        e09_validated = wait_for(
++            lambda: next(
++                ((wall, document) for wall, document in observations.optimizer
++                 if wall >= e09_time
++                 and document.get("plan_id") == e09_plan_id
++                 and document.get("node_state") == "REQUEST_VALIDATED"),
++                None), "E09 request validated", 10.0, run_demo, observations)
++        e09_frontend = wait_for(
++            lambda: next(
++                ((wall, document) for wall, document in observations.frontend
++                 if wall >= e09_time
++                 and document.get("plan_id") == e09_plan_id
++                 and document.get("node_state") in
++                 ("GEOMETRY_ONLY_UNCERTIFIED", "GEOMETRY_SEARCH_FAILED")),
++                None), "E09 front-end geometry status", 120.0, run_demo,
++            observations)
++        e09_frontend_document = e09_frontend[1]
++        check(summary, "e09_geometry_candidate_is_not_a_timed_trajectory",
++              e09_frontend_document.get("node_state") ==
++              "GEOMETRY_ONLY_UNCERTIFIED"
++              and e09_frontend_document.get("certification") ==
++              "GEOMETRY_ONLY"
++              and e09_frontend_document.get("trajectory_published") is False
++              and e09_frontend_document.get("executable") is False,
++              "frontend node_state={} certification={} published={}".format(
++                  e09_frontend_document.get("node_state"),
++                  e09_frontend_document.get("certification"),
++                  e09_frontend_document.get("trajectory_published")))
++        e09_terminal_pair = wait_for(
++            lambda: observations.terminal(e09_plan_id, e09_time),
++            "E09 terminal optimizer status", 180.0, run_demo, observations)
++        e09_terminal = e09_terminal_pair[1]
++        check(summary, "e09_mixed_request_is_feasible",
++              e09_terminal.get("status") == "FEASIBLE"
++              and e09_terminal.get("trajectory_published") is True,
++              "status={} reason={} duration={}".format(
++                  e09_terminal.get("status"),
++                  e09_terminal.get("reason"),
++                  e09_terminal.get("duration")))
++        check(summary, "e09_geometry_candidate_precedes_timed_audit",
++              e09_validated[0] <= e09_terminal_pair[0]
++              and e09_frontend[0] < e09_terminal_pair[0],
++              "validated_at={:.6f} geometry_at={:.6f} feasible_at={:.6f}"
++              .format(e09_validated[0], e09_frontend[0],
++                      e09_terminal_pair[0]))
++        e09_quality = wait_for(
++            lambda: next(
++                ((wall, document) for wall, document in observations.quality
++                 if wall >= e09_time
++                 and document.get("plan_id") == e09_plan_id
++                 and document.get("status") == "FEASIBLE"),
++                None), "E09 independent audit", 10.0, run_demo,
++            observations)[1]
++        check(summary, "e09_independent_audit_and_collision_certificate",
++              e09_quality.get("independent_audit") is True
++              and e09_quality.get("collision_certificate") is True,
++              "independent_audit={} collision_certificate={}".format(
++                  e09_quality.get("independent_audit"),
++                  e09_quality.get("collision_certificate")))
++        e09_trajectory = wait_for(
++            lambda: next(
++                (message for _, message in observations.trajectories
++                 if int(message.plan_id) == e09_plan_id
++                 and message.vehicles and message.trajectories),
++                None), "E09 published trajectory", 10.0, run_demo,
++            observations)
++        e09_formation = list(e09_trajectory.formation_poses)
++        e09_travel = math.hypot(
++            float(e09_formation[-1].x) - float(e09_formation[0].x),
++            float(e09_formation[-1].y) - float(e09_formation[0].y))
++        e09_turn = abs(wrap(
++            float(e09_formation[-1].theta) -
++            float(e09_formation[0].theta)))
++        e09_modes = {
++            int(point.mode)
++            for item in e09_trajectory.trajectories
++            for point in item.points}
++        check(summary, "e09_trajectory_mixes_translation_and_cargo_rotation",
++              abs(e09_travel - 3.0) <= 1e-6
++              and e09_turn >= math.pi / 2.0 - 1e-3
++              and 2 in e09_modes
++              and (0 in e09_modes or 1 in e09_modes),
++              "cargo travel={:.6f} m turn={:.6f} rad modes={}".format(
++                  e09_travel, e09_turn, sorted(e09_modes)))
++        e09_hold = wait_for(
++            lambda: observations.hold_end(e09_plan_id, e09_time),
++            "E09 HOLD_END",
++            float(e09_trajectory.times_from_start[-1].to_sec()) + 20.0,
++            run_demo, observations)[1]
++        e09_terminal_headings = {
++            int(item["vehicle_id"]): float(item["theta"])
++            for item in e09_hold.get("vehicles", [])}
++        check(summary, "e09_terminal_headings_are_per_vehicle",
++              set(e09_terminal_headings) == set(config["vehicle_ids"])
++              and any(abs(wrap(value - e09_goal[2])) > 0.5
++                      for value in e09_terminal_headings.values()),
++              "terminal theta={} psi_F={}".format(
++                  e09_terminal_headings, e09_goal[2]))
++        e09_reference = wait_for(
++            lambda: reference_at(e09_goal),
++            "E09 terminal cargo TF", 5.0, run_demo, observations)
++        check(summary, "e09_terminal_cargo_pose",
++              math.hypot(
++                  e09_reference["translation"][0] - e09_goal[0],
++                  e09_reference["translation"][1] - e09_goal[1]) <= 1e-3
++              and close_angle(e09_reference["yaw"], e09_goal[2], 1e-3),
++              "TF reference=({:.6f}, {:.6f}, {:.6f}) expected={}".format(
++                  e09_reference["translation"][0],
++                  e09_reference["translation"][1],
++                  e09_reference["yaw"], e09_goal))
++        summary["observed"]["e09"] = {
++            "plan_id": e09_plan_id,
++            "request": e09_request,
++            "frontend": e09_frontend_document,
++            "terminal_optimizer_status": e09_terminal,
++            "terminal_headings": e09_terminal_headings,
++            "cargo_travel_m": e09_travel,
++            "cargo_turn_rad": e09_turn,
++            "modes": sorted(e09_modes),
++        }
++
++        # ---- T5: no geometric solution is an explicit terminal state ----
++        # A goal far outside the map cannot be made collision-free by any
++        # heading scheme.  The front end must end the request; the optimizer
++        # must not remain REQUEST_VALIDATED or claim an old trajectory.
++        e10_time = time.time()
++        e10_plan_id = 700021
++        e10_goal = (-5.0, -5.0, 0.0)
++        e10_request = make_plan_request(
++            config, e10_plan_id, e09_goal, e10_goal,
++            e09_terminal_headings)
++        request_pub.publish(e10_request)
++        e10_request = wait_for(
++            lambda: next(
++                ((wall, item) for wall, item in observations.requests
++                 if wall >= e10_time and item["plan_id"] == e10_plan_id),
++                None), "E10 request on the wire", 10.0, run_demo,
++            observations)[1]
++        e10_frontend = wait_for(
++            lambda: next(
++                ((wall, document) for wall, document in observations.frontend
++                 if wall >= e10_time
++                 and document.get("plan_id") == e10_plan_id
++                 and document.get("node_state") == "GEOMETRY_SEARCH_FAILED"),
++                None), "E10 front-end failure status", 120.0, run_demo,
++            observations)
++        e10_frontend_document = e10_frontend[1]
++        check(summary, "e10_no_solution_is_a_frontend_failure",
++              e10_frontend_document.get("reason") ==
++              "GOAL_FORMATION_COLLISION"
++              and e10_frontend_document.get("trajectory_published") is False
++              and e10_frontend_document.get("executable") is False,
++              "frontend reason={} detail={}".format(
++                  e10_frontend_document.get("reason"),
++                  e10_frontend_document.get("detail")))
++        e10_terminal = wait_for(
++            lambda: observations.terminal(e10_plan_id, e10_time),
++            "E10 terminal optimizer status", 30.0, run_demo, observations)[1]
++        check(summary, "e10_optimizer_does_not_stay_request_validated",
++              e10_terminal.get("node_state") == "FRONTEND_FAILED"
++              and e10_terminal.get("status") == "REJECTED"
++              and e10_terminal.get("reason") ==
++              "GOAL_FORMATION_COLLISION"
++              and e10_terminal.get("trajectory_published") is False
++              and e10_terminal.get("executable") is False
++              and e10_terminal.get("published_plan_id") is None,
++              "node_state={} status={} reason={} published_plan_id={}".format(
++                  e10_terminal.get("node_state"),
++                  e10_terminal.get("status"),
++                  e10_terminal.get("reason"),
++                  e10_terminal.get("published_plan_id")))
++        check(summary, "e10_publishes_no_trajectory",
++              not any(
++                  int(message.plan_id) == e10_plan_id
++                  and message.vehicles and message.trajectories
++                  for _, message in observations.trajectories),
++              "no executable trajectory carries plan_id={}".format(
++                  e10_plan_id))
++        summary["observed"]["e10"] = {
++            "plan_id": e10_plan_id,
++            "request": e10_request,
++            "frontend": e10_frontend_document,
++            "terminal_optimizer_status": e10_terminal,
++            "elapsed_to_terminal_s": round(e10_frontend[0] - e10_time, 3),
++        }
++
++        # ---- T5: two consecutive goals, old result cannot override ------
++        # The display is reset to a known static pose, then A and B are
++        # issued back-to-back.  B must win; any late A seed/result is stale.
++        t5b_reset_time = time.time()
++        send_initial(initial_pub, 13.0, 10.0, math.pi / 2.0)
++        wait_for(
++            lambda: next(
++                ((wall, document) for wall, document
++                 in observations.playback
++                 if wall >= t5b_reset_time
++                 and document.get("state") == "STATIC"
++                 and document.get("reason") == "START"
++                 and document.get("plan_id") is None),
++                None), "T5 consecutive reset preview", 10.0, run_demo,
++            observations)
++        e11_time = time.time()
++        e11_plan_id = 700030
++        e11_goal = (16.0, 13.0, math.pi / 2.0)
++        e11_request = make_plan_request(
++            config, e11_plan_id, (13.0, 10.0, math.pi / 2.0), e11_goal,
++            {1: math.pi / 2.0, 2: math.pi / 2.0, 3: math.pi / 2.0})
++        request_pub.publish(e11_request)
++        e11_request = wait_for(
++            lambda: next(
++                ((wall, item) for wall, item in observations.requests
++                 if wall >= e11_time and item["plan_id"] == e11_plan_id),
++                None), "E11 request on the wire", 10.0, run_demo,
++            observations)[1]
++        e12_time = time.time()
++        e12_plan_id = 700031
++        e12_goal = (13.0, 13.0, math.pi / 2.0)
++        e12_request = make_plan_request(
++            config, e12_plan_id, (13.0, 10.0, math.pi / 2.0), e12_goal,
++            {1: math.pi / 2.0, 2: math.pi / 2.0, 3: math.pi / 2.0})
++        request_pub.publish(e12_request)
++        e12_request = wait_for(
++            lambda: next(
++                ((wall, item) for wall, item in observations.requests
++                 if wall >= e12_time and item["plan_id"] == e12_plan_id),
++                None), "E12 request on the wire", 10.0, run_demo,
++            observations)[1]
++        e12_validated = wait_for(
++            lambda: next(
++                ((wall, document) for wall, document in observations.optimizer
++                 if wall >= e12_time
++                 and document.get("plan_id") == e12_plan_id
++                 and document.get("node_state") == "REQUEST_VALIDATED"),
++                None), "E12 request validated", 120.0, run_demo,
++            observations)
++        e12_terminal = wait_for(
++            lambda: observations.terminal(e12_plan_id, e12_time),
++            "E12 terminal optimizer status", 120.0, run_demo, observations)[1]
++        check(summary, "e12_new_goal_reaches_a_terminal_state",
++              e12_terminal.get("status") == "FEASIBLE"
++              and e12_terminal.get("trajectory_published") is True
++              and e12_terminal.get("published_plan_id") == e12_plan_id,
++              "status={} reason={} published_plan_id={}".format(
++                  e12_terminal.get("status"), e12_terminal.get("reason"),
++                  e12_terminal.get("published_plan_id")))
++        late_e11 = [
++            document for wall, document in observations.optimizer
++            if wall >= e12_validated[0]
++            and document.get("plan_id") == e11_plan_id
++            and document.get("status") == "FEASIBLE"
++            and document.get("trajectory_published") is True]
++        late_e11_trajectories = [
++            message for wall, message in observations.trajectories
++            if wall >= e12_validated[0]
++            and int(message.plan_id) == e11_plan_id]
++        check(summary, "e11_old_result_cannot_override_the_new_goal",
++              not late_e11 and not late_e11_trajectories,
++              "after E12 validation, late E11 FEASIBLE statuses={} late "
++              "trajectories={}".format(
++                  len(late_e11), len(late_e11_trajectories)))
++        e12_trajectory = wait_for(
++            lambda: next(
++                (message for _, message in observations.trajectories
++                 if int(message.plan_id) == e12_plan_id
++                 and message.vehicles and message.trajectories),
++                None), "E12 published trajectory", 10.0, run_demo,
++            observations)
++        e12_hold = wait_for(
++            lambda: observations.hold_end(e12_plan_id, e12_time),
++            "E12 HOLD_END",
++            float(e12_trajectory.times_from_start[-1].to_sec()) + 20.0,
++            run_demo, observations)[1]
++        e12_reference = wait_for(
++            lambda: reference_at(e12_goal),
++            "E12 terminal cargo TF", 5.0, run_demo, observations)
++        check(summary, "e12_terminal_cargo_pose",
++              math.hypot(
++                  e12_reference["translation"][0] - e12_goal[0],
++                  e12_reference["translation"][1] - e12_goal[1]) <= 1e-3
++              and close_angle(e12_reference["yaw"], e12_goal[2], 1e-3),
++              "TF reference=({:.6f}, {:.6f}, {:.6f}) expected={}".format(
++                  e12_reference["translation"][0],
++                  e12_reference["translation"][1],
++                  e12_reference["yaw"], e12_goal))
++        summary["observed"]["consecutive_goals"] = {
++            "first": {"plan_id": e11_plan_id,
++                      "goal": list(e11_goal)},
++            "second": {"plan_id": e12_plan_id,
++                       "goal": list(e12_goal),
++                       "terminal_status": e12_terminal,
++                       "end_headings": {
++                           int(item["vehicle_id"]): item["theta"]
++                           for item in e12_hold.get("vehicles", [])}},
++            "late_first_feasible": len(late_e11),
++            "late_first_trajectories": len(late_e11_trajectories),
++        }
++
+         # ---- request / marker / TF / config five-way agreement --------
+         for label, request, terminal, hold in (
+                 ("E05", e05_request, e05_terminal, e05_hold),
+                 ("continuous", continuous_request, continuous_terminal,
+                  continuous_hold),
+                 ("E01", forward_request, forward_terminal, forward_hold),
+-                ("E02", lateral_request, lateral_terminal, lateral_hold)):
++                ("E02", lateral_request, lateral_terminal, lateral_hold),
++                ("E09", e09_request, e09_terminal, e09_hold)):
+             check(summary, label + "_request_uses_config",
+                   request["formation_id"] == config["formation_id"]
+                   and [item["vehicle_id"] for item in

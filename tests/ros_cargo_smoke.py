@@ -155,6 +155,7 @@ class Observations:
     def __init__(self):
         self.requests = []
         self.optimizer = []
+        self.frontend = []
         self.quality = []
         self.playback = []
         self.markers = []
@@ -179,6 +180,10 @@ class Observations:
     def add_optimizer(self, message):
         self.optimizer.append((time.time(), self.parse(message)))
         del self.optimizer[:-300]
+
+    def add_frontend(self, message):
+        self.frontend.append((time.time(), self.parse(message)))
+        del self.frontend[:-100]
 
     def add_quality(self, message):
         self.quality.append((time.time(), self.parse(message)))
@@ -502,6 +507,8 @@ def main(argv=None):
                          observations.add_request, queue_size=20)
         rospy.Subscriber("/formation/optimizer_status", String,
                          observations.add_optimizer, queue_size=100)
+        rospy.Subscriber("/formation/status", String,
+                         observations.add_frontend, queue_size=20)
         rospy.Subscriber("/formation/quality_report", String,
                          observations.add_quality, queue_size=50)
         rospy.Subscriber("/formation/playback_status", String,
@@ -1151,13 +1158,354 @@ def main(argv=None):
                         for item in lateral_hold.get("vehicles", [])}},
         }
 
+        # ---- T5 E09: mixed translation + cargo rotation ----------------
+        # This is the canonical E09 mission from the acceptance matrix.  It
+        # starts from a fresh zero-heading experiment so both connection
+        # orders of the final translate/rotate pair are reachable.
+        t5_reset_time = time.time()
+        send_initial(initial_pub, 10.0, 10.0, 0.0)
+        wait_for(
+            lambda: next(
+                ((wall, document) for wall, document
+                 in observations.playback
+                 if wall >= t5_reset_time
+                 and document.get("state") == "STATIC"
+                 and document.get("reason") == "START"
+                 and document.get("plan_id") is None
+                 and document.get("trajectory_published") is False),
+                None), "T5 reset static preview", 10.0, run_demo,
+            observations)
+
+        e09_time = time.time()
+        e09_plan_id = 700020
+        e09_start = (10.0, 10.0, 0.0)
+        e09_goal = (13.0, 10.0, math.pi / 2.0)
+        e09_headings = {1: 0.0, 2: 0.0, 3: 0.0}
+        e09_request = make_plan_request(
+            config, e09_plan_id, e09_start, e09_goal, e09_headings)
+        request_pub.publish(e09_request)
+        e09_request = wait_for(
+            lambda: next(
+                ((wall, item) for wall, item in observations.requests
+                 if wall >= e09_time and item["plan_id"] == e09_plan_id),
+                None), "E09 request on the wire", 10.0, run_demo,
+            observations)[1]
+        check(summary, "e09_request_is_mixed_translation_rotation",
+              math.hypot(e09_request["formation_goal"][0] - 13.0,
+                         e09_request["formation_goal"][1] - 10.0) <= 1e-6
+              and close_angle(e09_request["formation_goal"][2], math.pi / 2.0)
+              and all(abs(wrap(item["start_center"][2])) <= 1e-6
+                      for item in e09_request["vehicles"]),
+              "start={} goal={} headings={}".format(
+                  e09_request["formation_start"],
+                  e09_request["formation_goal"],
+                  [item["start_center"][2]
+                   for item in e09_request["vehicles"]]))
+        e09_validated = wait_for(
+            lambda: next(
+                ((wall, document) for wall, document in observations.optimizer
+                 if wall >= e09_time
+                 and document.get("plan_id") == e09_plan_id
+                 and document.get("node_state") == "REQUEST_VALIDATED"),
+                None), "E09 request validated", 10.0, run_demo, observations)
+        e09_frontend = wait_for(
+            lambda: next(
+                ((wall, document) for wall, document in observations.frontend
+                 if wall >= e09_time
+                 and document.get("plan_id") == e09_plan_id
+                 and document.get("node_state") in
+                 ("GEOMETRY_ONLY_UNCERTIFIED", "GEOMETRY_SEARCH_FAILED")),
+                None), "E09 front-end geometry status", 120.0, run_demo,
+            observations)
+        e09_frontend_document = e09_frontend[1]
+        check(summary, "e09_geometry_candidate_is_not_a_timed_trajectory",
+              e09_frontend_document.get("node_state") ==
+              "GEOMETRY_ONLY_UNCERTIFIED"
+              and e09_frontend_document.get("certification") ==
+              "GEOMETRY_ONLY"
+              and e09_frontend_document.get("trajectory_published") is False
+              and e09_frontend_document.get("executable") is False,
+              "frontend node_state={} certification={} published={}".format(
+                  e09_frontend_document.get("node_state"),
+                  e09_frontend_document.get("certification"),
+                  e09_frontend_document.get("trajectory_published")))
+        e09_terminal_pair = wait_for(
+            lambda: observations.terminal(e09_plan_id, e09_time),
+            "E09 terminal optimizer status", 180.0, run_demo, observations)
+        e09_terminal = e09_terminal_pair[1]
+        check(summary, "e09_mixed_request_is_feasible",
+              e09_terminal.get("status") == "FEASIBLE"
+              and e09_terminal.get("trajectory_published") is True,
+              "status={} reason={} duration={}".format(
+                  e09_terminal.get("status"),
+                  e09_terminal.get("reason"),
+                  e09_terminal.get("duration")))
+        check(summary, "e09_geometry_candidate_precedes_timed_audit",
+              e09_validated[0] <= e09_terminal_pair[0]
+              and e09_frontend[0] < e09_terminal_pair[0],
+              "validated_at={:.6f} geometry_at={:.6f} feasible_at={:.6f}"
+              .format(e09_validated[0], e09_frontend[0],
+                      e09_terminal_pair[0]))
+        e09_quality = wait_for(
+            lambda: next(
+                ((wall, document) for wall, document in observations.quality
+                 if wall >= e09_time
+                 and document.get("plan_id") == e09_plan_id
+                 and document.get("status") == "FEASIBLE"),
+                None), "E09 independent audit", 10.0, run_demo,
+            observations)[1]
+        check(summary, "e09_independent_audit_and_collision_certificate",
+              e09_quality.get("independent_audit") is True
+              and e09_quality.get("collision_certificate") is True,
+              "independent_audit={} collision_certificate={}".format(
+                  e09_quality.get("independent_audit"),
+                  e09_quality.get("collision_certificate")))
+        e09_trajectory = wait_for(
+            lambda: next(
+                (message for _, message in observations.trajectories
+                 if int(message.plan_id) == e09_plan_id
+                 and message.vehicles and message.trajectories),
+                None), "E09 published trajectory", 10.0, run_demo,
+            observations)
+        e09_formation = list(e09_trajectory.formation_poses)
+        e09_travel = math.hypot(
+            float(e09_formation[-1].x) - float(e09_formation[0].x),
+            float(e09_formation[-1].y) - float(e09_formation[0].y))
+        e09_turn = abs(wrap(
+            float(e09_formation[-1].theta) -
+            float(e09_formation[0].theta)))
+        e09_modes = {
+            int(point.mode)
+            for item in e09_trajectory.trajectories
+            for point in item.points}
+        check(summary, "e09_trajectory_mixes_translation_and_cargo_rotation",
+              abs(e09_travel - 3.0) <= 1e-6
+              and e09_turn >= math.pi / 2.0 - 1e-3
+              and 2 in e09_modes
+              and (0 in e09_modes or 1 in e09_modes),
+              "cargo travel={:.6f} m turn={:.6f} rad modes={}".format(
+                  e09_travel, e09_turn, sorted(e09_modes)))
+        e09_hold = wait_for(
+            lambda: observations.hold_end(e09_plan_id, e09_time),
+            "E09 HOLD_END",
+            float(e09_trajectory.times_from_start[-1].to_sec()) + 20.0,
+            run_demo, observations)[1]
+        e09_terminal_headings = {
+            int(item["vehicle_id"]): float(item["theta"])
+            for item in e09_hold.get("vehicles", [])}
+        check(summary, "e09_terminal_headings_are_per_vehicle",
+              set(e09_terminal_headings) == set(config["vehicle_ids"])
+              and any(abs(wrap(value - e09_goal[2])) > 0.5
+                      for value in e09_terminal_headings.values()),
+              "terminal theta={} psi_F={}".format(
+                  e09_terminal_headings, e09_goal[2]))
+        e09_reference = wait_for(
+            lambda: reference_at(e09_goal),
+            "E09 terminal cargo TF", 5.0, run_demo, observations)
+        check(summary, "e09_terminal_cargo_pose",
+              math.hypot(
+                  e09_reference["translation"][0] - e09_goal[0],
+                  e09_reference["translation"][1] - e09_goal[1]) <= 1e-3
+              and close_angle(e09_reference["yaw"], e09_goal[2], 1e-3),
+              "TF reference=({:.6f}, {:.6f}, {:.6f}) expected={}".format(
+                  e09_reference["translation"][0],
+                  e09_reference["translation"][1],
+                  e09_reference["yaw"], e09_goal))
+        summary["observed"]["e09"] = {
+            "plan_id": e09_plan_id,
+            "request": e09_request,
+            "frontend": e09_frontend_document,
+            "terminal_optimizer_status": e09_terminal,
+            "terminal_headings": e09_terminal_headings,
+            "cargo_travel_m": e09_travel,
+            "cargo_turn_rad": e09_turn,
+            "modes": sorted(e09_modes),
+        }
+
+        # ---- T5: no geometric solution is an explicit terminal state ----
+        # A goal far outside the map cannot be made collision-free by any
+        # heading scheme.  The front end must end the request; the optimizer
+        # must not remain REQUEST_VALIDATED or claim an old trajectory.
+        e10_time = time.time()
+        e10_plan_id = 700021
+        e10_goal = (-5.0, -5.0, 0.0)
+        e10_request = make_plan_request(
+            config, e10_plan_id, e09_goal, e10_goal,
+            e09_terminal_headings)
+        request_pub.publish(e10_request)
+        e10_request = wait_for(
+            lambda: next(
+                ((wall, item) for wall, item in observations.requests
+                 if wall >= e10_time and item["plan_id"] == e10_plan_id),
+                None), "E10 request on the wire", 10.0, run_demo,
+            observations)[1]
+        e10_frontend = wait_for(
+            lambda: next(
+                ((wall, document) for wall, document in observations.frontend
+                 if wall >= e10_time
+                 and document.get("plan_id") == e10_plan_id
+                 and document.get("node_state") == "GEOMETRY_SEARCH_FAILED"),
+                None), "E10 front-end failure status", 120.0, run_demo,
+            observations)
+        e10_frontend_document = e10_frontend[1]
+        check(summary, "e10_no_solution_is_a_frontend_failure",
+              e10_frontend_document.get("reason") ==
+              "GOAL_FORMATION_COLLISION"
+              and e10_frontend_document.get("trajectory_published") is False
+              and e10_frontend_document.get("executable") is False,
+              "frontend reason={} detail={}".format(
+                  e10_frontend_document.get("reason"),
+                  e10_frontend_document.get("detail")))
+        e10_terminal = wait_for(
+            lambda: observations.terminal(e10_plan_id, e10_time),
+            "E10 terminal optimizer status", 30.0, run_demo, observations)[1]
+        check(summary, "e10_optimizer_does_not_stay_request_validated",
+              e10_terminal.get("node_state") == "FRONTEND_FAILED"
+              and e10_terminal.get("status") == "REJECTED"
+              and e10_terminal.get("reason") ==
+              "GOAL_FORMATION_COLLISION"
+              and e10_terminal.get("trajectory_published") is False
+              and e10_terminal.get("executable") is False
+              and e10_terminal.get("published_plan_id") is None,
+              "node_state={} status={} reason={} published_plan_id={}".format(
+                  e10_terminal.get("node_state"),
+                  e10_terminal.get("status"),
+                  e10_terminal.get("reason"),
+                  e10_terminal.get("published_plan_id")))
+        check(summary, "e10_publishes_no_trajectory",
+              not any(
+                  int(message.plan_id) == e10_plan_id
+                  and message.vehicles and message.trajectories
+                  for _, message in observations.trajectories),
+              "no executable trajectory carries plan_id={}".format(
+                  e10_plan_id))
+        summary["observed"]["e10"] = {
+            "plan_id": e10_plan_id,
+            "request": e10_request,
+            "frontend": e10_frontend_document,
+            "terminal_optimizer_status": e10_terminal,
+            "elapsed_to_terminal_s": round(e10_frontend[0] - e10_time, 3),
+        }
+
+        # ---- T5: two consecutive goals, old result cannot override ------
+        # The display is reset to a known static pose, then A and B are
+        # issued back-to-back.  B must win; any late A seed/result is stale.
+        t5b_reset_time = time.time()
+        send_initial(initial_pub, 13.0, 10.0, math.pi / 2.0)
+        wait_for(
+            lambda: next(
+                ((wall, document) for wall, document
+                 in observations.playback
+                 if wall >= t5b_reset_time
+                 and document.get("state") == "STATIC"
+                 and document.get("reason") == "START"
+                 and document.get("plan_id") is None),
+                None), "T5 consecutive reset preview", 10.0, run_demo,
+            observations)
+        e11_time = time.time()
+        e11_plan_id = 700030
+        e11_goal = (16.0, 13.0, math.pi / 2.0)
+        e11_request = make_plan_request(
+            config, e11_plan_id, (13.0, 10.0, math.pi / 2.0), e11_goal,
+            {1: math.pi / 2.0, 2: math.pi / 2.0, 3: math.pi / 2.0})
+        request_pub.publish(e11_request)
+        e11_request = wait_for(
+            lambda: next(
+                ((wall, item) for wall, item in observations.requests
+                 if wall >= e11_time and item["plan_id"] == e11_plan_id),
+                None), "E11 request on the wire", 10.0, run_demo,
+            observations)[1]
+        e12_time = time.time()
+        e12_plan_id = 700031
+        e12_goal = (13.0, 13.0, math.pi / 2.0)
+        e12_request = make_plan_request(
+            config, e12_plan_id, (13.0, 10.0, math.pi / 2.0), e12_goal,
+            {1: math.pi / 2.0, 2: math.pi / 2.0, 3: math.pi / 2.0})
+        request_pub.publish(e12_request)
+        e12_request = wait_for(
+            lambda: next(
+                ((wall, item) for wall, item in observations.requests
+                 if wall >= e12_time and item["plan_id"] == e12_plan_id),
+                None), "E12 request on the wire", 10.0, run_demo,
+            observations)[1]
+        e12_validated = wait_for(
+            lambda: next(
+                ((wall, document) for wall, document in observations.optimizer
+                 if wall >= e12_time
+                 and document.get("plan_id") == e12_plan_id
+                 and document.get("node_state") == "REQUEST_VALIDATED"),
+                None), "E12 request validated", 120.0, run_demo,
+            observations)
+        e12_terminal = wait_for(
+            lambda: observations.terminal(e12_plan_id, e12_time),
+            "E12 terminal optimizer status", 120.0, run_demo, observations)[1]
+        check(summary, "e12_new_goal_reaches_a_terminal_state",
+              e12_terminal.get("status") == "FEASIBLE"
+              and e12_terminal.get("trajectory_published") is True
+              and e12_terminal.get("published_plan_id") == e12_plan_id,
+              "status={} reason={} published_plan_id={}".format(
+                  e12_terminal.get("status"), e12_terminal.get("reason"),
+                  e12_terminal.get("published_plan_id")))
+        late_e11 = [
+            document for wall, document in observations.optimizer
+            if wall >= e12_validated[0]
+            and document.get("plan_id") == e11_plan_id
+            and document.get("status") == "FEASIBLE"
+            and document.get("trajectory_published") is True]
+        late_e11_trajectories = [
+            message for wall, message in observations.trajectories
+            if wall >= e12_validated[0]
+            and int(message.plan_id) == e11_plan_id]
+        check(summary, "e11_old_result_cannot_override_the_new_goal",
+              not late_e11 and not late_e11_trajectories,
+              "after E12 validation, late E11 FEASIBLE statuses={} late "
+              "trajectories={}".format(
+                  len(late_e11), len(late_e11_trajectories)))
+        e12_trajectory = wait_for(
+            lambda: next(
+                (message for _, message in observations.trajectories
+                 if int(message.plan_id) == e12_plan_id
+                 and message.vehicles and message.trajectories),
+                None), "E12 published trajectory", 10.0, run_demo,
+            observations)
+        e12_hold = wait_for(
+            lambda: observations.hold_end(e12_plan_id, e12_time),
+            "E12 HOLD_END",
+            float(e12_trajectory.times_from_start[-1].to_sec()) + 20.0,
+            run_demo, observations)[1]
+        e12_reference = wait_for(
+            lambda: reference_at(e12_goal),
+            "E12 terminal cargo TF", 5.0, run_demo, observations)
+        check(summary, "e12_terminal_cargo_pose",
+              math.hypot(
+                  e12_reference["translation"][0] - e12_goal[0],
+                  e12_reference["translation"][1] - e12_goal[1]) <= 1e-3
+              and close_angle(e12_reference["yaw"], e12_goal[2], 1e-3),
+              "TF reference=({:.6f}, {:.6f}, {:.6f}) expected={}".format(
+                  e12_reference["translation"][0],
+                  e12_reference["translation"][1],
+                  e12_reference["yaw"], e12_goal))
+        summary["observed"]["consecutive_goals"] = {
+            "first": {"plan_id": e11_plan_id,
+                      "goal": list(e11_goal)},
+            "second": {"plan_id": e12_plan_id,
+                       "goal": list(e12_goal),
+                       "terminal_status": e12_terminal,
+                       "end_headings": {
+                           int(item["vehicle_id"]): item["theta"]
+                           for item in e12_hold.get("vehicles", [])}},
+            "late_first_feasible": len(late_e11),
+            "late_first_trajectories": len(late_e11_trajectories),
+        }
+
         # ---- request / marker / TF / config five-way agreement --------
         for label, request, terminal, hold in (
                 ("E05", e05_request, e05_terminal, e05_hold),
                 ("continuous", continuous_request, continuous_terminal,
                  continuous_hold),
                 ("E01", forward_request, forward_terminal, forward_hold),
-                ("E02", lateral_request, lateral_terminal, lateral_hold)):
+                ("E02", lateral_request, lateral_terminal, lateral_hold),
+                ("E09", e09_request, e09_terminal, e09_hold)):
             check(summary, label + "_request_uses_config",
                   request["formation_id"] == config["formation_id"]
                   and [item["vehicle_id"] for item in

@@ -14,6 +14,7 @@ modified.
 """
 from dataclasses import dataclass
 import math
+from types import SimpleNamespace
 from typing import Mapping, Optional, Tuple
 
 from .formation import (
@@ -821,6 +822,158 @@ def _seed_signature(seed):
         return (signature,)
 
 
+@dataclass(frozen=True)
+class _SeedVariant:
+    """A seed copy carrying one exact-goal connection order."""
+
+    header: object
+    plan_id: int
+    formation_id: str
+    formation_start: object
+    formation_goal: object
+    primitives: tuple
+    map_signature: object = None
+    source_signature: tuple = ()
+
+
+def _seed_variant(seed, primitives):
+    return _SeedVariant(
+        header=_attribute(seed, "header", "seed"),
+        plan_id=_attribute(seed, "plan_id", "seed"),
+        formation_id=_attribute(seed, "formation_id", "seed"),
+        formation_start=_attribute(seed, "formation_start", "seed"),
+        formation_goal=_attribute(seed, "formation_goal", "seed"),
+        primitives=tuple(primitives),
+        map_signature=getattr(seed, "map_signature", None),
+        source_signature=_seed_signature(seed))
+
+
+def _primitive_signature(primitive):
+    try:
+        kind = _primitive_type(primitive)
+    except FormationValidationError:
+        return None
+    values = (
+        kind,
+        float(getattr(primitive, "dx", 0.0)),
+        float(getattr(primitive, "dy", 0.0)),
+        float(getattr(primitive, "dpsi", 0.0)),
+        float(getattr(primitive, "pivot_x", 0.0)),
+        float(getattr(primitive, "pivot_y", 0.0)),
+    )
+    return tuple(round(value, 12) if isinstance(value, float) else value
+                 for value in values)
+
+
+def _integrate_primitives(start_qf, primitives, offsets):
+    """Return the exact endpoint of a primitive sequence, or ``None``."""
+    pose = start_qf
+    for primitive in primitives:
+        try:
+            block = FormationKinematicBlock.from_primitive(
+                pose, primitive, offsets)
+        except FormationValidationError as exc:
+            message = str(exc)
+            if "ZERO_LENGTH_TRANSLATION_BLOCK" in message or (
+                    "ZERO_ROTATION_BLOCK" in message):
+                continue
+            return None
+        pose = block.end_qf
+    return pose
+
+
+def _exact_connection_variants(start_qf, goal_qf, primitives, offsets):
+    """Return both geometric orders for an exact terminal T/R connection.
+
+    ``connect_exact_goal`` in S4 tries translate-then-rotate and
+    rotate-then-translate but publishes only the first order whose *geometric*
+    sweep is clear.  Mode feasibility, pre-spin and dynamics are decided later,
+    so a geometrically clear first order can be non-executable while the other
+    order is executable.  This helper reconstructs both exact orders locally
+    without changing the external seed message; the caller audits each one
+    through the normal S6/S8/S9 path.
+    """
+    original = tuple(primitives)
+    if len(original) < 2:
+        return (original,)
+    first_kind = _primitive_signature(original[-2])
+    second_kind = _primitive_signature(original[-1])
+    if first_kind is None or second_kind is None:
+        return (original,)
+    first_type, second_type = first_kind[0], second_kind[0]
+    if {first_type, second_type} != {TRANSLATION, ROTATION}:
+        return (original,)
+    prefix = original[:-2]
+    prefix_end = _integrate_primitives(start_qf, prefix, offsets)
+    if prefix_end is None:
+        return (original,)
+    original_end = _integrate_primitives(prefix_end, original[-2:], offsets)
+    if original_end is None:
+        return (original,)
+    if (math.hypot(original_end.x - goal_qf.x,
+                   original_end.y - goal_qf.y) > _GEOMETRY_TOL or
+            _angle_error(original_end.psi, goal_qf.psi) > _GEOMETRY_TOL):
+        return (original,)
+
+    if first_type == TRANSLATION:
+        translation = original[-2]
+        rotation = original[-1]
+    else:
+        rotation = original[-2]
+        translation = original[-1]
+    pivot_x = float(getattr(rotation, "pivot_x", 0.0))
+    pivot_y = float(getattr(rotation, "pivot_y", 0.0))
+    dpsi = _wrap(goal_qf.psi - prefix_end.psi)
+    alternate = []
+    if first_type == TRANSLATION:
+        # rotate first, then translate in the rotated frame.
+        if abs(dpsi) > _GEOMETRY_TOL:
+            rotated = SimpleNamespace(
+                geometry_type=ROTATION, dpsi=dpsi,
+                pivot_x=pivot_x, pivot_y=pivot_y)
+            alternate.append(rotated)
+            rotation_end = _integrate_primitives(
+                prefix_end, (rotated,), offsets)
+            if rotation_end is None:
+                return (original,)
+        else:
+            rotation_end = prefix_end
+        dx_world = goal_qf.x - rotation_end.x
+        dy_world = goal_qf.y - rotation_end.y
+        cosine, sine = math.cos(rotation_end.psi), math.sin(rotation_end.psi)
+        dx = cosine * dx_world + sine * dy_world
+        dy = -sine * dx_world + cosine * dy_world
+        if math.hypot(dx, dy) > _GEOMETRY_TOL:
+            alternate.append(SimpleNamespace(
+                geometry_type=TRANSLATION, dx=dx, dy=dy))
+    else:
+        # translate first, then rotate about the same pivot at the goal.
+        dx_world = goal_qf.x - prefix_end.x
+        dy_world = goal_qf.y - prefix_end.y
+        cosine, sine = math.cos(prefix_end.psi), math.sin(prefix_end.psi)
+        dx = cosine * dx_world + sine * dy_world
+        dy = -sine * dx_world + cosine * dy_world
+        if math.hypot(dx, dy) > _GEOMETRY_TOL:
+            alternate.append(SimpleNamespace(
+                geometry_type=TRANSLATION, dx=dx, dy=dy))
+        if abs(dpsi) > _GEOMETRY_TOL:
+            alternate.append(SimpleNamespace(
+                geometry_type=ROTATION, dpsi=dpsi,
+                pivot_x=pivot_x, pivot_y=pivot_y))
+    alternate = tuple(prefix + tuple(alternate))
+    alternate_end = _integrate_primitives(start_qf, alternate, offsets)
+    if alternate_end is None:
+        return (original,)
+    if (math.hypot(alternate_end.x - goal_qf.x,
+                   alternate_end.y - goal_qf.y) > _GEOMETRY_TOL or
+            _angle_error(alternate_end.psi, goal_qf.psi) > _GEOMETRY_TOL):
+        return (original,)
+    if tuple(_primitive_signature(item) for item in alternate) == tuple(
+            _primitive_signature(item) for item in original):
+        return (original,)
+    return (original, alternate)
+
+
 def _path_control(kinematic):
     return FormationPathControl(
         kinematic.geometry_type,
@@ -1130,7 +1283,8 @@ def build_continuous_plans(
         snapshot, seed, limits=None, max_candidates=4,
         max_schedule_combinations=64, max_schedules_per_block=4,
         expected_map_signature=None, terminal_tolerance_m=_GEOMETRY_TOL,
-        terminal_tolerance_rad=_GEOMETRY_TOL, allowed_modes=None):
+        terminal_tolerance_rad=_GEOMETRY_TOL, allowed_modes=None,
+        _expand_exact_connections=True):
     """Convert one S4 geometry-only seed into up to K continuous candidates."""
     limits = limits or KinematicLimits()
     allowed_modes = normalize_allowed_modes(allowed_modes)
@@ -1195,6 +1349,91 @@ def build_continuous_plans(
         return _empty_build("INVALID_SEED", str(exc))
 
     offsets = tuple(snapshot.model.offsets)
+    if _expand_exact_connections:
+        variants = _exact_connection_variants(
+            snapshot.start, snapshot.goal, primitives, offsets)
+        if len(variants) > 1:
+            builds = []
+            for variant in variants:
+                builds.append(build_continuous_plans(
+                    snapshot, _seed_variant(seed, variant),
+                    limits=limits, max_candidates=max_candidates,
+                    max_schedule_combinations=max_schedule_combinations,
+                    max_schedules_per_block=max_schedules_per_block,
+                    expected_map_signature=expected_map_signature,
+                    terminal_tolerance_m=terminal_tolerance_m,
+                    terminal_tolerance_rad=terminal_tolerance_rad,
+                    allowed_modes=allowed_modes,
+                    _expand_exact_connections=False))
+            plans = []
+            seen_plans = set()
+            rejections = []
+            for build in builds:
+                rejections.extend(build.rejections)
+                for plan in build.plans:
+                    key = plan.candidate_key()
+                    if key in seen_plans:
+                        continue
+                    seen_plans.add(key)
+                    plans.append(plan)
+            plans.sort(key=lambda plan: (
+                plan_candidate_score(plan), plan.candidate_key()))
+            # Keep at least the best plan from each geometric order before
+            # filling the remaining finite budget by score.  Otherwise the
+            # first order can consume every slot and the alternate order is
+            # never independently audited by S8/S9.
+            selected_plans = []
+            selected_keys = set()
+            for build in builds:
+                if not build.plans:
+                    continue
+                plan = build.plans[0]
+                key = plan.candidate_key()
+                if key in selected_keys:
+                    continue
+                selected_keys.add(key)
+                selected_plans.append(plan)
+            for plan in plans:
+                if len(selected_plans) >= max_candidates:
+                    break
+                key = plan.candidate_key()
+                if key in selected_keys:
+                    continue
+                selected_keys.add(key)
+                selected_plans.append(plan)
+            detail = "EXACT_CONNECTION_ORDERS_AUDITED={}; {}".format(
+                len(variants), " | ".join(
+                    "order={}:{}:{}".format(
+                        index + 1, build.reason, build.detail)
+                    for index, build in enumerate(builds)))
+            if plans:
+                return FormationPlanBuild(
+                    success=True, reason="OK", detail=detail,
+                    plans=tuple(selected_plans[:max_candidates]),
+                    rejections=tuple(rejections),
+                    map_version_checked=any(
+                        build.map_version_checked for build in builds),
+                    terminal_max_xy_m=max(
+                        build.terminal_max_xy_m for build in builds),
+                    terminal_max_yaw_rad=max(
+                        build.terminal_max_yaw_rad for build in builds),
+                    certification=GEOMETRY_VALID)
+            first = builds[0] if builds else None
+            return FormationPlanBuild(
+                success=False,
+                reason=("NO_CONTINUOUS_CANDIDATE" if first is None
+                        else first.reason),
+                detail=detail, plans=(), rejections=tuple(rejections),
+                map_version_checked=any(
+                    build.map_version_checked for build in builds),
+                terminal_max_xy_m=max(
+                    (build.terminal_max_xy_m for build in builds),
+                    default=0.0),
+                terminal_max_yaw_rad=max(
+                    (build.terminal_max_yaw_rad for build in builds),
+                    default=0.0),
+                certification=GEOMETRY_VALID)
+
     model = snapshot.model
     headings = dict(snapshot.start_headings)
     start_headings = tuple(sorted(headings.items()))

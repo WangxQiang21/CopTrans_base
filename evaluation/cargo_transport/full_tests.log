@@ -1,0 +1,37 @@
+.....................................E.................................................................................................................................................................................................................................usage: python3 -m unittest [-h] [--cases-file CASES_FILE] --output-dir
+                           OUTPUT_DIR [--repeats REPEATS]
+                           [--ids IDS [IDS ...]]
+                           [--ablation {no_oblique,no_spin,no_spin_no_oblique,none}]
+                           [--enable-nlp] [--ros-summary ROS_SUMMARY]
+python3 -m unittest: error: --repeats must be at least 3 for the S10 contract
+.[E19] repeat 1/1 kind=group expectation=statistical
+    status=GROUP_COMPLETE reason= feasible=True passed=True
+summary: /tmp/tmpzuzozsi7/summary.json
+all_pass: True (1/1)
+.[E11] repeat 1/2 kind=request_invalid expectation=must_fail
+    status=INVALID reason=INVALID_REQUEST feasible=False passed=True
+[E11] repeat 2/2 kind=request_invalid expectation=must_fail
+    status=INVALID reason=INVALID_REQUEST feasible=False passed=True
+[E13] repeat 1/2 kind=evaluator expectation=must_fail
+    status=REJECTED reason=KINEMATIC_INFEASIBLE feasible=False passed=True
+[E13] repeat 2/2 kind=evaluator expectation=must_fail
+    status=REJECTED reason=KINEMATIC_INFEASIBLE feasible=False passed=True
+[E18] repeat 1/2 kind=node expectation=scenario_pass
+    status=SCENARIO_CLEARED reason= feasible=None passed=True
+[E18] repeat 2/2 kind=node expectation=scenario_pass
+    status=SCENARIO_CLEARED reason= feasible=None passed=True
+summary: /tmp/tmpxfs1850o/summary.json
+all_pass: True (3/3)
+.....................................................................................................
+======================================================================
+ERROR: test_short_translation_has_finite_acceleration_and_zero_end_speed (test_continuous_retiming.ContinuousRetiming)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/wq/whut_thesis/expv3_multi/tests/test_continuous_retiming.py", line 271, in test_short_translation_has_finite_acceleration_and_zero_end_speed
+    self.assertLessEqual(timed.phases[0]["dynamic_peaks"]["acceleration"],
+KeyError: 'dynamic_peaks'
+
+----------------------------------------------------------------------
+Ran 366 tests in 21.601s
+
+FAILED (errors=1)

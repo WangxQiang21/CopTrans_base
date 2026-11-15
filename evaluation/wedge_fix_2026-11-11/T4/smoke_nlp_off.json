@@ -1,0 +1,645 @@
+{
+  "schema": "ros_cargo_smoke_t1/v1",
+  "started_at": "2026-11-11T16:47:29Z",
+  "finished_at": "2026-11-11T16:48:59Z",
+  "duration_s": 89.492,
+  "pass": false,
+  "port": 11448,
+  "command": [
+    "bash",
+    "run_demo.sh",
+    "--map",
+    "/home/wq/whut_thesis/expv3_multi/evaluation/wedge_fix_2026-11-11/maps/empty30",
+    "--scale",
+    "1.0",
+    "auto_goal:=false",
+    "rviz:=false",
+    "enable_nlp:=false"
+  ],
+  "config": {
+    "path": "/home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_demo/config/transport_formation.yaml",
+    "sha256": "21b9ff574bbfe2e190958a415ae0232a4d9df0146165960aa66f00f9e3f9ca92",
+    "formation_id": "cargo_wedge",
+    "vehicle_ids": [
+      1,
+      2,
+      3
+    ],
+    "offsets": [
+      [
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0
+      ],
+      [
+        0.0,
+        -1.0
+      ]
+    ],
+    "body_length_m": 0.738,
+    "body_width_m": 0.5,
+    "allow_reverse": true,
+    "goal_heading_free": true,
+    "initial_heading_policy": "cargo_heading"
+  },
+  "checks": {
+    "real_entry_point_started": {
+      "ok": true,
+      "detail": "run_demo.sh pid=1782334"
+    },
+    "one_config_for_area_tool": {
+      "ok": true,
+      "detail": "footprint tool read the same YAML: sha256=21b9ff574bbfe2e190958a415ae0232a4d9df0146165960aa66f00f9e3f9ca92"
+    },
+    "new_wedge_pair_distances": {
+      "ok": true,
+      "detail": "pair distances={'1-2': 1.4142135623730951, '1-3': 1.4142135623730951, '2-3': 2.0}"
+    },
+    "new_wedge_area_contract": {
+      "ok": true,
+      "detail": "AABB=[1.738, 2.5] hull=3.345 envelope=6.5662084606402 axis=5.0 disk=5.782856135530851"
+    },
+    "static_preview_uses_config_offsets_and_headings": {
+      "ok": true,
+      "detail": "max marker/config error=4.44e-16 m or rad; offsets=[[1.0, 0.0], [0.0, 1.0], [0.0, -1.0]]"
+    },
+    "static_tf_matches_markers_and_config": {
+      "ok": true,
+      "detail": "TF reference=(10,10,0), body frames match marker OBBs; max error=0"
+    },
+    "E01_forward_initial_request_start": {
+      "ok": true,
+      "detail": "start=[10.0, 10.0, 0.0] expected=(10.0, 10.0, 0.0)"
+    },
+    "E01_forward_initial_feasible": {
+      "ok": true,
+      "detail": "status=FEASIBLE reason=OK"
+    },
+    "E01_forward_initial_terminal_goal": {
+      "ok": true,
+      "detail": "terminal centres=[[14.0, 10.0], [13.0, 11.0], [13.0, 9.0]] max goal error=0"
+    },
+    "e05_request_distinct_theta_from_psi": {
+      "ok": true,
+      "detail": "theta_i=[1.5707963267948966, 3.141592653589793, 0.0] psi_F=0.0"
+    },
+    "e05_feasible_without_cargo_heading_lock": {
+      "ok": true,
+      "detail": "status=FEASIBLE reason=OK"
+    },
+    "e05_trajectory_identity": {
+      "ok": true,
+      "detail": "plan=700000 formation=cargo_wedge vehicles=3"
+    },
+    "e05_terminal_headings_are_the_orbit_tangents": {
+      "ok": true,
+      "detail": "terminal theta={1: 3.1415926535897922, 2: 4.712388980384688, 3: 1.5707963267948966} expected={1: 3.141592653589793, 2: 4.71238898038469, 3: 1.5707963267948966}"
+    },
+    "e05_terminal_cargo_pose": {
+      "ok": true,
+      "detail": "TF reference=(10.000000, 10.000000, 1.570796) expected=(10.0, 10.0, 1.5707963267948966)"
+    },
+    "continuous_request_starts_at_displayed_terminal": {
+      "ok": true,
+      "detail": "start=[10.0, 10.0, 1.5707963267948963] expected displayed E05 terminal"
+    },
+    "continuous_request_keeps_real_body_headings": {
+      "ok": true,
+      "detail": "bridge start theta={1: 3.1415926535897922, 2: -1.5707963267948986, 3: 1.5707963267948963} displayed terminal={1: 3.1415926535897922, 2: 4.712388980384688, 3: 1.5707963267948966} (cargo-heading policy would give all 1.571)"
+    },
+    "continuous_translation_feasible": {
+      "ok": true,
+      "detail": "status=FEASIBLE reason=OK"
+    },
+    "continuous_plan_keeps_body_headings": {
+      "ok": true,
+      "detail": "end theta={1: 3.1415926535897922, 2: -1.5707963267948986, 3: 1.5707963267948963} start theta={1: 3.1415926535897922, 2: -1.5707963267948986, 3: 1.5707963267948963}"
+    },
+    "continuous_terminal_cargo_pose": {
+      "ok": true,
+      "detail": "TF reference=(10.000000, 13.000000, 1.570796)"
+    },
+    "manual_reset_reinitialises_policy_headings": {
+      "ok": true,
+      "detail": "reset reason=START, policy headings=0; max heading error=0"
+    },
+    "e06_starts_with_three_zero_headings": {
+      "ok": true,
+      "detail": "start headings=[0.0, 0.0, 0.0]"
+    },
+    "e06_feasible_with_independent_body_spin": {
+      "ok": true,
+      "detail": "status=FEASIBLE reason=OK duration=22.43680925462205"
+    },
+    "e06_independent_audit_and_collision_certificate": {
+      "ok": true,
+      "detail": "independent_audit=True collision_certificate=True"
+    },
+    "e06_common_time_grid_for_every_vehicle": {
+      "ok": true,
+      "detail": "samples=1130 vehicles=[1, 2, 3]"
+    },
+    "e06_centres_remain_rigid_at_every_sample": {
+      "ok": true,
+      "detail": "max p_i-(q_F+R r_i)=0 m over 1130 samples"
+    },
+    "e06_has_a_stationary_vehicle_body_spin": {
+      "ok": true,
+      "detail": "vehicle=1 spin heading change=1.570796 rad centre error=0 m speed=0 m/s"
+    },
+    "e06_spin_is_followed_by_an_A_orbit": {
+      "ok": true,
+      "detail": "A sample=True centre travel after spin=1.414 m"
+    },
+    "e06_terminal_headings_are_per_vehicle": {
+      "ok": true,
+      "detail": "terminal theta={1: 3.1415926535897922, 2: 1.5707963267948963, 3: 1.5707963267948963} psi_F=1.5707963267948966 displayed error=0"
+    },
+    "e06_terminal_cargo_pose": {
+      "ok": true,
+      "detail": "TF reference=(10.000000, 10.000000, 1.570796) expected=(10.0, 10.0, 1.5707963267948966)"
+    },
+    "retired_cargo_heading_lock_not_default": {
+      "ok": true,
+      "detail": "no optimizer status cites ('CARGO_ROTATION_REQUIRES_GENERAL_4WIS', 'CARGO_HEADING_MISMATCH')"
+    },
+    "E01_forward_request_start": {
+      "ok": false,
+      "detail": "start=[10.0, 10.0, 1.5707963267948963] expected=(10.0, 10.0, 0.0)"
+    }
+  },
+  "observed": {
+    "static_preview": {
+      "reference": [
+        10.0,
+        10.0,
+        0.0
+      ],
+      "vehicles": [
+        {
+          "vehicle_id": 1,
+          "centre": [
+            11.0,
+            10.0
+          ],
+          "heading": 0.0
+        },
+        {
+          "vehicle_id": 2,
+          "centre": [
+            10.0,
+            11.0
+          ],
+          "heading": 0.0
+        },
+        {
+          "vehicle_id": 3,
+          "centre": [
+            10.0,
+            9.0
+          ],
+          "heading": 0.0
+        }
+      ],
+      "marker_count": 12
+    },
+    "e05": {
+      "plan_id": 700000,
+      "request": {
+        "wall": 1794415670.664142,
+        "plan_id": 700000,
+        "formation_id": "cargo_wedge",
+        "frame_id": "map",
+        "formation_start": [
+          10.0,
+          10.0,
+          0.0
+        ],
+        "formation_goal": [
+          10.0,
+          10.0,
+          1.5707963267948966
+        ],
+        "allow_reverse": true,
+        "vehicles": [
+          {
+            "vehicle_id": 1,
+            "offset": [
+              1.0,
+              0.0
+            ],
+            "start_center": [
+              11.0,
+              10.0,
+              1.5707963267948966
+            ],
+            "goal_center": [
+              10.0,
+              11.0,
+              1.5707963267948966
+            ],
+            "goal_heading_free": true,
+            "body_length_m": 0.738,
+            "body_width_m": 0.5
+          },
+          {
+            "vehicle_id": 2,
+            "offset": [
+              0.0,
+              1.0
+            ],
+            "start_center": [
+              10.0,
+              11.0,
+              3.141592653589793
+            ],
+            "goal_center": [
+              9.0,
+              10.0,
+              1.5707963267948966
+            ],
+            "goal_heading_free": true,
+            "body_length_m": 0.738,
+            "body_width_m": 0.5
+          },
+          {
+            "vehicle_id": 3,
+            "offset": [
+              0.0,
+              -1.0
+            ],
+            "start_center": [
+              10.0,
+              9.0,
+              0.0
+            ],
+            "goal_center": [
+              11.0,
+              10.0,
+              1.5707963267948966
+            ],
+            "goal_heading_free": true,
+            "body_length_m": 0.738,
+            "body_width_m": 0.5
+          }
+        ]
+      },
+      "terminal_optimizer_status": {
+        "detail": "independent S9 evaluation passed and the current plan_id was published through the transaction gate",
+        "duration": 15.706332192214306,
+        "executable": true,
+        "feasible": true,
+        "formation_id": "cargo_wedge",
+        "hold_contract": null,
+        "map_frame_id": "map",
+        "map_ready": true,
+        "map_signature": "438cc7f87732d246ffd912ff97b2195aaad047617dcaf6f3cbaf406183c895be",
+        "no_motion": false,
+        "node_state": "FEASIBLE_PUBLISHED",
+        "plan_id": 700000,
+        "planning_started": true,
+        "publication_version": 2,
+        "published_plan_id": 700000,
+        "reason": "OK",
+        "request_map_signature": "438cc7f87732d246ffd912ff97b2195aaad047617dcaf6f3cbaf406183c895be",
+        "requests_seen": 2,
+        "schema": "formation_optimizer_status/v1",
+        "seeds_seen": 2,
+        "selected_candidate_id": 1,
+        "status": "FEASIBLE",
+        "trajectory_published": true
+      },
+      "terminal_headings": {
+        "1": 3.1415926535897922,
+        "2": 4.712388980384688,
+        "3": 1.5707963267948966
+      }
+    },
+    "continuous_after_e05": {
+      "plan_id": 600001,
+      "request": {
+        "wall": 1794415691.556593,
+        "plan_id": 600001,
+        "formation_id": "cargo_wedge",
+        "frame_id": "map",
+        "formation_start": [
+          10.0,
+          10.0,
+          1.5707963267948963
+        ],
+        "formation_goal": [
+          10.0,
+          13.0,
+          1.5707963267948963
+        ],
+        "allow_reverse": true,
+        "vehicles": [
+          {
+            "vehicle_id": 1,
+            "offset": [
+              1.0,
+              0.0
+            ],
+            "start_center": [
+              10.0,
+              11.0,
+              3.1415926535897922
+            ],
+            "goal_center": [
+              10.0,
+              14.0,
+              1.5707963267948963
+            ],
+            "goal_heading_free": true,
+            "body_length_m": 0.738,
+            "body_width_m": 0.5
+          },
+          {
+            "vehicle_id": 2,
+            "offset": [
+              0.0,
+              1.0
+            ],
+            "start_center": [
+              9.0,
+              10.0,
+              -1.5707963267948986
+            ],
+            "goal_center": [
+              9.0,
+              13.0,
+              1.5707963267948963
+            ],
+            "goal_heading_free": true,
+            "body_length_m": 0.738,
+            "body_width_m": 0.5
+          },
+          {
+            "vehicle_id": 3,
+            "offset": [
+              0.0,
+              -1.0
+            ],
+            "start_center": [
+              11.0,
+              10.0,
+              1.5707963267948963
+            ],
+            "goal_center": [
+              11.0,
+              13.0,
+              1.5707963267948963
+            ],
+            "goal_heading_free": true,
+            "body_length_m": 0.738,
+            "body_width_m": 0.5
+          }
+        ]
+      },
+      "terminal_optimizer_status": {
+        "detail": "independent S9 evaluation passed and the current plan_id was published through the transaction gate",
+        "duration": 14.871258808212731,
+        "executable": true,
+        "feasible": true,
+        "formation_id": "cargo_wedge",
+        "hold_contract": null,
+        "map_frame_id": "map",
+        "map_ready": true,
+        "map_signature": "438cc7f87732d246ffd912ff97b2195aaad047617dcaf6f3cbaf406183c895be",
+        "no_motion": false,
+        "node_state": "FEASIBLE_PUBLISHED",
+        "plan_id": 600001,
+        "planning_started": true,
+        "publication_version": 3,
+        "published_plan_id": 600001,
+        "reason": "OK",
+        "request_map_signature": "438cc7f87732d246ffd912ff97b2195aaad047617dcaf6f3cbaf406183c895be",
+        "requests_seen": 3,
+        "schema": "formation_optimizer_status/v1",
+        "seeds_seen": 3,
+        "selected_candidate_id": 1,
+        "status": "FEASIBLE",
+        "trajectory_published": true
+      },
+      "end_headings": {
+        "1": 3.1415926535897922,
+        "2": -1.5707963267948986,
+        "3": 1.5707963267948963
+      }
+    },
+    "e06": {
+      "plan_id": 600002,
+      "request": {
+        "wall": 1794415709.0429149,
+        "plan_id": 600002,
+        "formation_id": "cargo_wedge",
+        "frame_id": "map",
+        "formation_start": [
+          10.0,
+          10.0,
+          0.0
+        ],
+        "formation_goal": [
+          10.0,
+          10.0,
+          1.5707963267948963
+        ],
+        "allow_reverse": true,
+        "vehicles": [
+          {
+            "vehicle_id": 1,
+            "offset": [
+              1.0,
+              0.0
+            ],
+            "start_center": [
+              11.0,
+              10.0,
+              0.0
+            ],
+            "goal_center": [
+              10.0,
+              11.0,
+              1.5707963267948963
+            ],
+            "goal_heading_free": true,
+            "body_length_m": 0.738,
+            "body_width_m": 0.5
+          },
+          {
+            "vehicle_id": 2,
+            "offset": [
+              0.0,
+              1.0
+            ],
+            "start_center": [
+              10.0,
+              11.0,
+              0.0
+            ],
+            "goal_center": [
+              9.0,
+              10.0,
+              1.5707963267948963
+            ],
+            "goal_heading_free": true,
+            "body_length_m": 0.738,
+            "body_width_m": 0.5
+          },
+          {
+            "vehicle_id": 3,
+            "offset": [
+              0.0,
+              -1.0
+            ],
+            "start_center": [
+              10.0,
+              9.0,
+              0.0
+            ],
+            "goal_center": [
+              11.0,
+              10.0,
+              1.5707963267948963
+            ],
+            "goal_heading_free": true,
+            "body_length_m": 0.738,
+            "body_width_m": 0.5
+          }
+        ]
+      },
+      "terminal_optimizer_status": {
+        "detail": "independent S9 evaluation passed and the current plan_id was published through the transaction gate",
+        "duration": 22.43680925462205,
+        "executable": true,
+        "feasible": true,
+        "formation_id": "cargo_wedge",
+        "hold_contract": null,
+        "map_frame_id": "map",
+        "map_ready": true,
+        "map_signature": "438cc7f87732d246ffd912ff97b2195aaad047617dcaf6f3cbaf406183c895be",
+        "no_motion": false,
+        "node_state": "FEASIBLE_PUBLISHED",
+        "plan_id": 600002,
+        "planning_started": true,
+        "publication_version": 4,
+        "published_plan_id": 600002,
+        "reason": "OK",
+        "request_map_signature": "438cc7f87732d246ffd912ff97b2195aaad047617dcaf6f3cbaf406183c895be",
+        "requests_seen": 4,
+        "schema": "formation_optimizer_status/v1",
+        "seeds_seen": 4,
+        "selected_candidate_id": 1,
+        "status": "FEASIBLE",
+        "trajectory_published": true
+      },
+      "terminal_headings": {
+        "1": 3.1415926535897922,
+        "2": 1.5707963267948963,
+        "3": 1.5707963267948963
+      },
+      "spin_vehicle": 1,
+      "spin_heading_change": 1.5707963267948966,
+      "orbit_moved_m": 1.4142135623730951,
+      "max_rigidity_error_m": 0.0
+    },
+    "failure_snapshot": {
+      "last_requests": [
+        {
+          "plan_id": 600001,
+          "start": [
+            10.0,
+            10.0,
+            1.5707963267948963
+          ],
+          "goal": [
+            10.0,
+            13.0,
+            1.5707963267948963
+          ]
+        },
+        {
+          "plan_id": 600002,
+          "start": [
+            10.0,
+            10.0,
+            0.0
+          ],
+          "goal": [
+            10.0,
+            10.0,
+            1.5707963267948963
+          ]
+        },
+        {
+          "plan_id": 600003,
+          "start": [
+            10.0,
+            10.0,
+            1.5707963267948963
+          ],
+          "goal": [
+            13.0,
+            10.0,
+            0.0
+          ]
+        }
+      ],
+      "last_optimizer": [
+        {
+          "plan_id": 600002,
+          "status": "VALIDATED",
+          "reason": "OK"
+        },
+        {
+          "plan_id": 600002,
+          "status": "FEASIBLE",
+          "reason": "OK"
+        },
+        {
+          "plan_id": 600003,
+          "status": "VALIDATED",
+          "reason": "OK"
+        }
+      ],
+      "last_playback": [
+        {
+          "plan_id": null,
+          "state": "CLEARED",
+          "reason": "empty trajectory clears previous markers"
+        },
+        {
+          "plan_id": 600003,
+          "state": "STATIC",
+          "reason": "PLANNING"
+        },
+        {
+          "plan_id": 600003,
+          "state": "STATIC",
+          "reason": "PLANNING"
+        }
+      ]
+    }
+  },
+  "errors": [
+    {
+      "type": "SmokeError",
+      "detail": "E01_forward_request_start: start=[10.0, 10.0, 1.5707963267948963] expected=(10.0, 10.0, 0.0)"
+    }
+  ],
+  "cleanup": {
+    "exit_codes": {
+      "run_demo": 0,
+      "roscore": 0
+    },
+    "port_released": true
+  },
+  "logs": {
+    "run_demo": "/home/wq/whut_thesis/expv3_multi/evaluation/wedge_fix_2026-11-11/T4/runtime_nlp_off/run_demo.log",
+    "roscore": "/home/wq/whut_thesis/expv3_multi/evaluation/wedge_fix_2026-11-11/T4/runtime_nlp_off/roscore.log",
+    "ros_logs": "/home/wq/whut_thesis/expv3_multi/evaluation/wedge_fix_2026-11-11/T4/runtime_nlp_off/ros_logs"
+  }
+}

@@ -1,0 +1,187 @@
+{
+  "schema": "ros_cargo_smoke_t1/v1",
+  "started_at": "2026-11-11T17:11:42Z",
+  "finished_at": "2026-11-11T17:11:51Z",
+  "duration_s": 8.321,
+  "pass": false,
+  "port": 11449,
+  "command": [
+    "bash",
+    "run_demo.sh",
+    "--map",
+    "/home/wq/whut_thesis/expv3_multi/evaluation/wedge_fix_2026-11-11/maps/empty30",
+    "--scale",
+    "1.0",
+    "auto_goal:=false",
+    "rviz:=false",
+    "enable_nlp:=false"
+  ],
+  "config": {
+    "path": "/home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_demo/config/transport_formation.yaml",
+    "sha256": "21b9ff574bbfe2e190958a415ae0232a4d9df0146165960aa66f00f9e3f9ca92",
+    "formation_id": "cargo_wedge",
+    "vehicle_ids": [
+      1,
+      2,
+      3
+    ],
+    "offsets": [
+      [
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0
+      ],
+      [
+        0.0,
+        -1.0
+      ]
+    ],
+    "body_length_m": 0.738,
+    "body_width_m": 0.5,
+    "allow_reverse": true,
+    "goal_heading_free": true,
+    "initial_heading_policy": "cargo_heading"
+  },
+  "checks": {
+    "real_entry_point_started": {
+      "ok": true,
+      "detail": "run_demo.sh pid=1790719"
+    },
+    "one_config_for_area_tool": {
+      "ok": true,
+      "detail": "footprint tool read the same YAML: sha256=21b9ff574bbfe2e190958a415ae0232a4d9df0146165960aa66f00f9e3f9ca92"
+    },
+    "new_wedge_pair_distances": {
+      "ok": true,
+      "detail": "pair distances={'1-2': 1.4142135623730951, '1-3': 1.4142135623730951, '2-3': 2.0}"
+    },
+    "new_wedge_area_contract": {
+      "ok": true,
+      "detail": "AABB=[1.738, 2.5] hull=3.345 envelope=6.5662084606402 axis=5.0 disk=5.782856135530851"
+    },
+    "static_preview_uses_config_offsets_and_headings": {
+      "ok": true,
+      "detail": "max marker/config error=4.44e-16 m or rad; offsets=[[1.0, 0.0], [0.0, 1.0], [0.0, -1.0]]"
+    },
+    "static_tf_matches_markers_and_config": {
+      "ok": true,
+      "detail": "TF reference=(10,10,0), body frames match marker OBBs; max error=0"
+    },
+    "E01_forward_initial_request_start": {
+      "ok": true,
+      "detail": "start=[10.0, 10.0, 0.0] expected=(10.0, 10.0, 0.0)"
+    },
+    "E01_forward_initial_feasible": {
+      "ok": false,
+      "detail": "status=REJECTED reason=MAP_UNAVAILABLE"
+    }
+  },
+  "observed": {
+    "static_preview": {
+      "reference": [
+        10.0,
+        10.0,
+        0.0
+      ],
+      "vehicles": [
+        {
+          "vehicle_id": 1,
+          "centre": [
+            11.0,
+            10.0
+          ],
+          "heading": 0.0
+        },
+        {
+          "vehicle_id": 2,
+          "centre": [
+            10.0,
+            11.0
+          ],
+          "heading": 0.0
+        },
+        {
+          "vehicle_id": 3,
+          "centre": [
+            10.0,
+            9.0
+          ],
+          "heading": 0.0
+        }
+      ],
+      "marker_count": 12
+    },
+    "failure_snapshot": {
+      "last_requests": [
+        {
+          "plan_id": 600000,
+          "start": [
+            10.0,
+            10.0,
+            0.0
+          ],
+          "goal": [
+            13.0,
+            10.0,
+            0.0
+          ]
+        }
+      ],
+      "last_optimizer": [
+        {
+          "plan_id": 600000,
+          "status": "VALIDATED",
+          "reason": "OK"
+        },
+        {
+          "plan_id": 600000,
+          "status": "REJECTED",
+          "reason": "MAP_UNAVAILABLE"
+        },
+        {
+          "plan_id": 600000,
+          "status": "REJECTED",
+          "reason": "FRONTEND_FAILED"
+        }
+      ],
+      "last_playback": [
+        {
+          "plan_id": 600000,
+          "state": "STATIC",
+          "reason": "PLANNING"
+        },
+        {
+          "plan_id": null,
+          "state": "CLEARED",
+          "reason": "empty trajectory clears previous markers"
+        },
+        {
+          "plan_id": 600000,
+          "state": "STATIC",
+          "reason": "WAITING: MAP_UNAVAILABLE"
+        }
+      ]
+    }
+  },
+  "errors": [
+    {
+      "type": "SmokeError",
+      "detail": "E01_forward_initial_feasible: status=REJECTED reason=MAP_UNAVAILABLE"
+    }
+  ],
+  "cleanup": {
+    "exit_codes": {
+      "run_demo": 0,
+      "roscore": 0
+    },
+    "port_released": true
+  },
+  "logs": {
+    "run_demo": "/home/wq/whut_thesis/expv3_multi/evaluation/wedge_fix_2026-11-11/T5/runtime_nlp_off/run_demo.log",
+    "roscore": "/home/wq/whut_thesis/expv3_multi/evaluation/wedge_fix_2026-11-11/T5/runtime_nlp_off/roscore.log",
+    "ros_logs": "/home/wq/whut_thesis/expv3_multi/evaluation/wedge_fix_2026-11-11/T5/runtime_nlp_off/ros_logs"
+  }
+}

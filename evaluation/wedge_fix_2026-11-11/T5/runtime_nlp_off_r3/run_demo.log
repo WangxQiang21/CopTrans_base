@@ -1,0 +1,172 @@
+[expv3] 地图比例 1.0，中心点固定；栅格尺寸保持不变。
+[expv3] 货物中心楔形编队，车体航向独立（新实验按配置策略初始化）；地图绝对比例 1.0
+[expv3] 构建 ROS overlay...
+[expv3] 启动 Demo：auto_goal:=false rviz:=false enable_nlp:=false map_dir:=/tmp/expv3-map-scale.CIsbsi/empty30 scene:=manual_map rviz_config:=/tmp/expv3-map-scale.CIsbsi/formation.rviz
+... logging to /home/wq/whut_thesis/expv3_multi/evaluation/wedge_fix_2026-11-11/T5/runtime_nlp_off_r3/ros_logs/8f553472-ddf3-11f1-a57b-1b4c90db486b/roslaunch-wq-ubuntu-1794171.log
+Checking log directory for disk usage. This may take a while.
+Press Ctrl-C to interrupt
+Done checking log file disk usage. Usage is <1GB.
+]2;/home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch
+[1mstarted roslaunch server http://127.0.0.1:44339/[0m
+
+SUMMARY
+========
+
+PARAMETERS
+ * /formation_goal_bridge/allow_reverse: True
+ * /formation_goal_bridge/body_length_m: 0.738
+ * /formation_goal_bridge/body_width_m: 0.5
+ * /formation_goal_bridge/formation_id: cargo_wedge
+ * /formation_goal_bridge/frame_id: map
+ * /formation_goal_bridge/goal_heading_free: True
+ * /formation_goal_bridge/initial_heading_policy: cargo_heading
+ * /formation_goal_bridge/initial_plan_id: 600000
+ * /formation_goal_bridge/map_timeout_s: 8.0
+ * /formation_goal_bridge/offsets: [[1.0, 0.0], [0.0...
+ * /formation_goal_bridge/playback_tf_timeout_s: 0.5
+ * /formation_goal_bridge/start_theta: 0.0
+ * /formation_goal_bridge/start_x: 10.0
+ * /formation_goal_bridge/start_y: 3.6
+ * /formation_goal_bridge/vehicle_ids: [1, 2, 3]
+ * /formation_optimizer/collision_margin: 0.05
+ * /formation_optimizer/enable_nlp: False
+ * /formation_optimizer/kinematic_limits/require_cargo_heading: False
+ * /formation_optimizer/max_candidates: 4
+ * /formation_optimizer/optimizer_time_limit: 1.0
+ * /formation_optimizer/planning_dt: 0.02
+ * /formation_optimizer/publication_dt: 0.02
+ * /formation_optimizer/require_collision_precheck: True
+ * /formation_optimizer/start_on_publication: True
+ * /formation_optimizer/sweep_spacing: 0.01
+ * /formation_planner/formation/cost/clearance: 0.25
+ * /formation_planner/formation/cost/risk_horizon_m: 0.5
+ * /formation_planner/formation/cost/rotation: 0.5
+ * /formation_planner/formation/cost/switch: 0.2
+ * /formation_planner/formation/cost/translation: 1.0
+ * /formation_planner/formation/search/goal_xy_tol_m: 0.16
+ * /formation_planner/formation/search/goal_yaw_tol_rad: 0.16
+ * /formation_planner/formation/search/max_candidates: 4
+ * /formation_planner/formation/search/max_corner_step_m: 0.05
+ * /formation_planner/formation/search/max_expansions: 50000
+ * /formation_planner/formation/search/max_wall_time_s: 8.0
+ * /formation_planner/formation/search/rotation_step_rad: 0.17453292519943295
+ * /formation_planner/formation/search/translation_step_m: 0.5
+ * /formation_planner/formation/search/xy_res: 0.2
+ * /formation_planner/formation/search/yaw_res: 0.17453292519943295
+ * /formation_playback/allow_reverse: True
+ * /formation_playback/body_length_m: 0.738
+ * /formation_playback/body_width_m: 0.5
+ * /formation_playback/formation_id: cargo_wedge
+ * /formation_playback/frame_id: map
+ * /formation_playback/goal_heading_free: True
+ * /formation_playback/initial_heading_policy: cargo_heading
+ * /formation_playback/offsets: [[1.0, 0.0], [0.0...
+ * /formation_playback/publish_tf: True
+ * /formation_playback/rate: 25.0
+ * /formation_playback/transport_ui: True
+ * /formation_playback/vehicle_ids: [1, 2, 3]
+ * /fwis_map_publisher/map_dir: /tmp/expv3-map-sc...
+ * /rosdistro: noetic
+ * /rosversion: 1.17.4
+
+NODES
+  /
+    formation_goal_bridge (fwis_v3_demo/formation_goal_bridge.py)
+    formation_optimizer (fwis_v3_optimizer/formation_optimizer_node.py)
+    formation_planner (fwis_v3_planner/formation_planner_node)
+    formation_playback (fwis_v3_playback/formation_playback.py)
+    fwis_map_publisher (fwis_map_server/map_publisher.py)
+
+[1mROS_MASTER_URI=http://127.0.0.1:11449[0m
+]2;/home/wq/whut_thesis/expv3_multi/catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch http://127.0.0.1:11449
+[1mprocess[fwis_map_publisher-1]: started with pid [1794185][0m
+[1mprocess[formation_planner-2]: started with pid [1794186][0m
+[1mprocess[formation_optimizer-3]: started with pid [1794187][0m
+[1mprocess[formation_playback-4]: started with pid [1794192][0m
+[1mprocess[formation_goal_bridge-5]: started with pid [1794194][0m
+[INFO] [1794417360.360946]: [fwis_map_publisher] /map published: 600x600, res=0.050 m
+[INFO] [1794417360.380322]: [formation playback] common-clock display ready; GEOMETRY_ONLY is shown until an independent FEASIBLE status is received
+[INFO] [1794417360.397829]: [formation goal bridge] ready: formation=cargo_wedge offsets=((1.0, 0.0), (0.0, 1.0), (0.0, -1.0)), start=(10.000, 3.600, 0.000), goal topic=/move_base_simple/goal
+[INFO] [1794417360.450838]: [formation optimizer] S9 independent evaluator ready; only FEASIBLE trajectories are published on /formation/timed_trajectory
+[INFO] [1794417360.490527]: [formation goal bridge] 2D Pose Estimate recorded; new experiment policy=cargo_heading headings={1: 0.0, 2: 0.0, 3: 0.0}
+[INFO] [1794417360.541314]: [formation goal bridge] plan 600000: start=(10.000, 10.000, 0.000) goal=(13.000, 10.000, 0.000) vehicles=3
+[INFO] [1794417360.542984]: [formation optimizer] state=REQUEST_VALIDATED status=VALIDATED plan_id=600000 published=False reason=OK
+[INFO] [1794417360.543311]: [formation playback] cleared: empty trajectory clears previous markers
+[INFO] [1794417360.543758]: [formation goal bridge] start from manual start; body headings {1: 0.0, 2: 0.0, 3: 0.0}
+[33m[WARN] [1794417360.656926312]: [formation planner] geometry search failed: MAP_UNAVAILABLE [0m
+[INFO] [1794417363.190182]: [formation optimizer] state=FEASIBLE_PUBLISHED status=FEASIBLE plan_id=600000 published=True reason=OK
+[INFO] [1794417363.190796]: [formation goal bridge] plan 600000 FEASIBLE and published
+[INFO] [1794417363.232265]: [formation playback] accepted plan 600000 formation cargo_wedge: 3 vehicles, 745 shared samples, T_end=14.871259 s from header.stamp
+[INFO] [1794417363.241218]: [formation playback] plan=600000 state=PLAYING elapsed=0.074993 clamped=0.074993 fraction=0.751849 executable=True
+[INFO] [1794417378.078652]: [formation playback] plan=600000 state=HOLD_END elapsed=14.901638 clamped=14.871259 fraction=0.000000 executable=True
+[INFO] [1794417378.092751]: [formation optimizer] state=REQUEST_VALIDATED status=VALIDATED plan_id=700000 published=False reason=OK
+[INFO] [1794417378.110555]: [formation playback] cleared: empty trajectory clears previous markers
+[INFO] [1794417383.341152]: [formation optimizer] state=FEASIBLE_PUBLISHED status=FEASIBLE plan_id=700000 published=True reason=OK
+[INFO] [1794417383.367457]: [formation playback] accepted plan 700000 formation cargo_wedge: 3 vehicles, 793 shared samples, T_end=15.706332 s from header.stamp
+[INFO] [1794417383.376689]: [formation playback] plan=700000 state=PLAYING elapsed=0.061213 clamped=0.061213 fraction=0.086698 executable=True
+[INFO] [1794417399.033460]: [formation playback] plan=700000 state=HOLD_END elapsed=15.712749 clamped=15.706332 fraction=0.000000 executable=True
+[INFO] [1794417399.084862]: [formation goal bridge] plan 600001: start=(10.000, 10.000, 1.571) goal=(10.000, 13.000, 1.571) vehicles=3
+[INFO] [1794417399.087491]: [formation goal bridge] start from current playback; body headings {1: 3.141593, 2: -1.570796, 3: 1.570796}
+[INFO] [1794417399.092788]: [formation playback] cleared: empty trajectory clears previous markers
+[INFO] [1794417399.107164]: [formation optimizer] state=REQUEST_VALIDATED status=VALIDATED plan_id=600001 published=False reason=OK
+[INFO] [1794417401.647108]: [formation optimizer] state=FEASIBLE_PUBLISHED status=FEASIBLE plan_id=600001 published=True reason=OK
+[INFO] [1794417401.647222]: [formation goal bridge] plan 600001 FEASIBLE and published
+[INFO] [1794417401.668379]: [formation playback] accepted plan 600001 formation cargo_wedge: 3 vehicles, 745 shared samples, T_end=14.871259 s from header.stamp
+[INFO] [1794417401.676511]: [formation playback] plan=600001 state=PLAYING elapsed=0.054326 clamped=0.054326 fraction=0.717911 executable=True
+[INFO] [1794417416.521484]: [formation playback] plan=600001 state=HOLD_END elapsed=14.884985 clamped=14.871259 fraction=0.000000 executable=True
+[INFO] [1794417416.793351]: [formation goal bridge] 2D Pose Estimate recorded; new experiment policy=cargo_heading headings={1: 0.0, 2: 0.0, 3: 0.0}
+[INFO] [1794417416.844064]: [formation goal bridge] plan 600002: start=(10.000, 10.000, 0.000) goal=(10.000, 10.000, 1.571) vehicles=3
+[INFO] [1794417416.845464]: [formation goal bridge] start from manual start; body headings {1: 0.0, 2: 0.0, 3: 0.0}
+[INFO] [1794417416.849097]: [formation optimizer] state=REQUEST_VALIDATED status=VALIDATED plan_id=600002 published=False reason=OK
+[INFO] [1794417416.865617]: [formation playback] cleared: empty trajectory clears previous markers
+[INFO] [1794417422.223782]: [formation goal bridge] plan 600002 FEASIBLE and published
+[INFO] [1794417422.224220]: [formation optimizer] state=FEASIBLE_PUBLISHED status=FEASIBLE plan_id=600002 published=True reason=OK
+[INFO] [1794417422.272467]: [formation playback] accepted plan 600002 formation cargo_wedge: 3 vehicles, 1130 shared samples, T_end=22.436809 s from header.stamp
+[INFO] [1794417422.284520]: [formation playback] plan=600002 state=PLAYING elapsed=0.097185 clamped=0.097185 fraction=0.859307 executable=True
+[INFO] [1794417444.640687]: [formation playback] plan=600002 state=HOLD_END elapsed=22.443760 clamped=22.436809 fraction=0.000000 executable=True
+[INFO] [1794417444.668942]: [formation goal bridge] plan 600003: start=(10.000, 10.000, 1.571) goal=(13.000, 10.000, 1.571) vehicles=3
+[INFO] [1794417444.670476]: [formation goal bridge] start from current playback; body headings {1: 3.141593, 2: 1.570796, 3: 1.570796}
+[INFO] [1794417444.680580]: [formation optimizer] state=REQUEST_VALIDATED status=VALIDATED plan_id=600003 published=False reason=OK
+[INFO] [1794417444.681826]: [formation playback] cleared: empty trajectory clears previous markers
+[INFO] [1794417447.813434]: [formation goal bridge] plan 600003 FEASIBLE and published
+[INFO] [1794417447.813786]: [formation optimizer] state=FEASIBLE_PUBLISHED status=FEASIBLE plan_id=600003 published=True reason=OK
+[INFO] [1794417447.838466]: [formation playback] accepted plan 600003 formation cargo_wedge: 3 vehicles, 745 shared samples, T_end=14.871259 s from header.stamp
+[INFO] [1794417447.847244]: [formation playback] plan=600003 state=PLAYING elapsed=0.058266 clamped=0.058266 fraction=0.914997 executable=True
+[INFO] [1794417462.670763]: [formation playback] plan=600003 state=HOLD_END elapsed=14.878791 clamped=14.871259 fraction=0.000000 executable=True
+[INFO] [1794417462.945976]: [formation goal bridge] plan 600004: start=(13.000, 10.000, 1.571) goal=(13.000, 13.000, 1.571) vehicles=3
+[INFO] [1794417462.947304]: [formation goal bridge] start from current playback; body headings {1: 3.141593, 2: 1.570796, 3: 1.570796}
+[INFO] [1794417462.951270]: [formation optimizer] state=REQUEST_VALIDATED status=VALIDATED plan_id=600004 published=False reason=OK
+[INFO] [1794417462.967848]: [formation playback] cleared: empty trajectory clears previous markers
+[INFO] [1794417465.510691]: [formation optimizer] state=FEASIBLE_PUBLISHED status=FEASIBLE plan_id=600004 published=True reason=OK
+[INFO] [1794417465.511050]: [formation goal bridge] plan 600004 FEASIBLE and published
+[INFO] [1794417465.537042]: [formation playback] accepted plan 600004 formation cargo_wedge: 3 vehicles, 745 shared samples, T_end=14.871259 s from header.stamp
+[INFO] [1794417465.545606]: [formation playback] plan=600004 state=PLAYING elapsed=0.058770 clamped=0.058770 fraction=0.940248 executable=True
+[INFO] [1794417480.390358]: [formation playback] plan=600004 state=HOLD_END elapsed=14.900743 clamped=14.871259 fraction=0.000000 executable=True
+[INFO] [1794417480.440620]: [formation goal bridge] 2D Pose Estimate recorded; new experiment policy=cargo_heading headings={1: 0.0, 2: 0.0, 3: 0.0}
+[INFO] [1794417480.496631]: [formation optimizer] state=REQUEST_VALIDATED status=VALIDATED plan_id=700020 published=False reason=OK
+[INFO] [1794417480.497809]: [formation playback] cleared: empty trajectory clears previous markers
+[INFO] [1794417489.212263]: [formation optimizer] state=FEASIBLE_PUBLISHED status=FEASIBLE plan_id=700020 published=True reason=OK
+[INFO] [1794417489.279124]: [formation playback] accepted plan 700020 formation cargo_wedge: 3 vehicles, 1992 shared samples, T_end=39.651278 s from header.stamp
+[INFO] [1794417489.308383]: [formation playback] plan=700020 state=PLAYING elapsed=0.151883 clamped=0.151883 fraction=0.598620 executable=True
+[INFO] [1794417528.821177]: [formation playback] plan=700020 state=HOLD_END elapsed=39.651587 clamped=39.651278 fraction=0.000000 executable=True
+[33m[WARN] [1794417529.160550241]: [formation planner] geometry search failed: GOAL_FORMATION_COLLISION goal formation is not clear of the map or itself[0m
+[INFO] [1794417529.172607]: [formation optimizer] state=FRONTEND_FAILED status=REJECTED plan_id=700021 published=False reason=GOAL_FORMATION_COLLISION
+[INFO] [1794417529.173268]: [formation optimizer] state=REQUEST_VALIDATED status=VALIDATED plan_id=700021 published=False reason=OK
+[INFO] [1794417529.186743]: [formation playback] cleared: empty trajectory clears previous markers
+[INFO] [1794417529.189933]: [formation playback] cleared: empty trajectory clears previous markers
+[formation_goal_bridge-5] killing on exit[formation_playback-4] killing on exit
+
+[formation_optimizer-3] killing on exit
+[formation_planner-2] killing on exit
+[fwis_map_publisher-1] killing on exit
+[0m[INFO] [1794417360.092131617]: [formation planner] S4 geometry-only front end ready[0m
+[0m[INFO] [1794417360.663767703]: [formation planner] published GEOMETRY_ONLY seed plan_id=600000 formation_id=cargo_wedge primitives=6[0m
+[0m[INFO] [1794417378.088286920]: [formation planner] published GEOMETRY_ONLY seed plan_id=700000 formation_id=cargo_wedge primitives=9[0m
+[0m[INFO] [1794417399.085537313]: [formation planner] published GEOMETRY_ONLY seed plan_id=600001 formation_id=cargo_wedge primitives=6[0m
+[0m[INFO] [1794417416.845069145]: [formation planner] published GEOMETRY_ONLY seed plan_id=600002 formation_id=cargo_wedge primitives=9[0m
+[0m[INFO] [1794417444.669508339]: [formation planner] published GEOMETRY_ONLY seed plan_id=600003 formation_id=cargo_wedge primitives=6[0m
+[0m[INFO] [1794417462.946408344]: [formation planner] published GEOMETRY_ONLY seed plan_id=600004 formation_id=cargo_wedge primitives=6[0m
+[0m[INFO] [1794417480.526817943]: [formation planner] published GEOMETRY_ONLY seed plan_id=700020 formation_id=cargo_wedge primitives=15[0m
+shutting down processing monitor...
+... shutting down processing monitor complete
+[1mdone[0m

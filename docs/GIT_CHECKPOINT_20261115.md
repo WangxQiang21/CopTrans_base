@@ -1,0 +1,16 @@
+# Git 工作区保存记录（2026-11-15）
+
+本次按用户明确要求，仅保存 `expv3_multi` 与 `expv3_multi_v02` 的现有状态；不推送远端、不合并两套实现、不修改算法/测试/配置。
+
+- 本工作区：`expv3_multi`。
+- 当前快照分支：`snapshot/formation-t5-20261115`。
+- 保存前分支：`feat/formation-eval`，HEAD `6227833011e2d92b711179bfdec979bb0b878b29`；旧分支引用保留。
+- 现有已跟踪修改、未跟踪项目文件、文档、实验结果及相关证据日志纳入快照；构建目录和Python缓存不新增。
+- Git提交只用于保存状态，不新增算法验收。T5历史开发状态与V0.2已验收基线分属不同分支，不互相套用。
+- 历史验收报告中的旧分支/HEAD是当时的事实，未批量改写。提交后工作区diff为空不代表T5丢失；应对照快照提交、保存前HEAD及原始文件哈希审核。
+
+原T5三个已跟踪文件的修改可用以下命令与旧保护patch对照（其他新增资料不混入这一局部diff）：
+
+```bash
+git diff --binary 6227833011e2d92b711179bfdec979bb0b878b29 HEAD -- catkin_ws/src/fwis_v3_optimizer/scripts/formation_optimizer_node.py catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_geometry.py tests/ros_cargo_smoke.py
+```
