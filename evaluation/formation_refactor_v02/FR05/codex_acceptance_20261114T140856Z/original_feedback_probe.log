@@ -1,0 +1,104 @@
+[
+  {
+    "case": "original_wrong_digest",
+    "initial_state": "PLAYING",
+    "published": true,
+    "active_model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "feedback": {
+      "state": "HOLD_END",
+      "plan_id": 700124,
+      "formation_id": "cargo_wedge",
+      "backend": "uniform_v02",
+      "executable": false,
+      "model_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    },
+    "final_state": "PLAYING",
+    "playback_seen": false,
+    "events": []
+  },
+  {
+    "case": "published_matching_digest",
+    "initial_state": "PLAYING",
+    "published": true,
+    "active_model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "feedback": {
+      "state": "HOLD_END",
+      "plan_id": 700124,
+      "formation_id": "cargo_wedge",
+      "backend": "uniform_v02",
+      "executable": false,
+      "model_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    "final_state": "HOLD_END",
+    "playback_seen": true,
+    "events": [
+      {
+        "kind": "job",
+        "state": "HOLD_END"
+      },
+      {
+        "kind": "status",
+        "document": {
+          "plan_id": 700124,
+          "formation_id": "cargo_wedge",
+          "feasible": true,
+          "executable": true,
+          "published": true,
+          "extra": {
+            "terminal": true,
+            "playback_confirmed": true
+          }
+        }
+      }
+    ]
+  },
+  {
+    "case": "prepublication_missing_digest",
+    "initial_state": "PLANNING",
+    "published": false,
+    "active_model_sha256": null,
+    "feedback": {
+      "state": "HOLD_END",
+      "plan_id": 700124,
+      "formation_id": "cargo_wedge",
+      "backend": "uniform_v02",
+      "executable": false
+    },
+    "final_state": "PLANNING",
+    "playback_seen": false,
+    "events": []
+  },
+  {
+    "case": "prepublication_null_digest",
+    "initial_state": "PLANNING",
+    "published": false,
+    "active_model_sha256": null,
+    "feedback": {
+      "state": "HOLD_END",
+      "plan_id": 700124,
+      "formation_id": "cargo_wedge",
+      "backend": "uniform_v02",
+      "executable": false,
+      "model_sha256": null
+    },
+    "final_state": "PLANNING",
+    "playback_seen": false,
+    "events": []
+  },
+  {
+    "case": "prepublication_missing_start_digest",
+    "initial_state": "PLANNING",
+    "published": false,
+    "active_model_sha256": null,
+    "feedback": {
+      "state": "HOLD_START",
+      "plan_id": 700124,
+      "formation_id": "cargo_wedge",
+      "backend": "uniform_v02",
+      "executable": false
+    },
+    "final_state": "PLANNING",
+    "playback_seen": false,
+    "events": []
+  }
+]

@@ -1,0 +1,842 @@
+diff --git a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_trajectory.py b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_trajectory.py
+--- a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_trajectory.py
++++ b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_trajectory.py
+@@ -36,7 +36,7 @@
+     FormationTimingReport,
+ )
+ from .mode_switch_timing import mode_switch_event
+-from .retiming import MotionLimits, quintic, wheel_configuration
++from .retiming import MotionLimits, wheel_configuration
+ from .uniform_motion import (
+     MODE_A,
+     MODE_O,
+@@ -316,8 +316,41 @@
+         .format(context, type(expected).__name__))
+ 
+ 
+-def _quintic_third(tau):
+-    return 60.0 - 360.0 * tau + 360.0 * tau * tau
++def _quintic_basic(tau):
++    """Unit quintic and its first three derivatives in factorized form."""
++    return (
++        tau ** 3 * (10.0 - 15.0 * tau + 6.0 * tau * tau),
++        30.0 * tau * tau * (1.0 - tau) * (1.0 - tau),
++        60.0 * tau * (1.0 - tau) * (1.0 - 2.0 * tau),
++        60.0 - 360.0 * tau + 360.0 * tau * tau,
++    )
++
++
++def _stable_quintic(tau):
++    """Evaluate the unit quintic without endpoint cancellation.
++
++    The quintic satisfies ``s(tau) = 1 - s(1-tau)``, while its first and
++    third derivatives are symmetric and its second derivative is
++    antisymmetric.  Evaluating the small complement in the second half keeps
++    the progress from rounding just above one near the motion endpoint.
++    """
++    if tau <= 0.0:
++        return 0.0, 0.0, 0.0, 60.0
++    if tau >= 1.0:
++        return 1.0, 0.0, 0.0, 60.0
++    if tau > 0.5:
++        complement = 1.0 - tau
++        progress, first, second, third = _quintic_basic(complement)
++        return 1.0 - progress, first, -second, third
++    return _quintic_basic(tau)
++
++
++def _wheel_positions(limits):
++    """Wheel coordinates in the same order as ``wheel_configuration``."""
++    return tuple(
++        (x, y)
++        for x in (limits.wheelbase / 2.0, -limits.wheelbase / 2.0)
++        for y in (limits.track / 2.0, -limits.track / 2.0))
+ 
+ 
+ def _normalise_shapes(shapes, vehicle_ids):
+@@ -756,10 +789,10 @@
+             accel_factor = 0.0
+         else:
+             tau = steering_tau
+-            _, first, second = quintic(tau)
++            _, first, second, _ = _stable_quintic(tau)
+             rate_factor = first / phase.steering_duration_s
+             accel_factor = second / phase.steering_duration_s ** 2
+-        progress, _, _ = quintic(tau)
++        progress, _, _, _ = _stable_quintic(tau)
+         vehicles = []
+         for demand in phase.demands:
+             angles = tuple(
+@@ -796,8 +829,14 @@
+             tau = 1.0
+         else:
+             tau = (time_s - phase.t0_s) / duration
+-        progress_unitless, first, second = quintic(tau)
+-        third = _quintic_third(tau)
++            # The requested time is already inside the closed phase interval.
++            # A would-be 1+ulp quotient is only floating subtraction rounding,
++            # not permission to accept an out-of-domain time.
++            if tau < 0.0:
++                tau = 0.0
++            elif tau > 1.0:
++                tau = 1.0
++        progress_unitless, first, second, third = _stable_quintic(tau)
+         length = phase.edge.control.parameter_length
+         progress = length * progress_unitless
+         progress_rate = length * first / duration
+@@ -825,6 +864,7 @@
+ 
+         qf_velocity, qf_acceleration, qf_jerk = chained(
+             derivatives.q_first, derivatives.q_second, derivatives.q_third)
++        wheel_positions = _wheel_positions(self.motion_limits)
+         vehicles = []
+         for item in derivatives.vehicles:
+             velocity, acceleration, jerk = chained(
+@@ -840,8 +880,15 @@
+                 center_speed = 0.0
+                 longitudinal = 0.0
+                 lateral_speed = 0.0
+-                rolling = tuple(factor * yaw_rate
+-                                for factor in item.wheel_factors)
++                # Canonical S wheel angles are folded into [-pi/2, pi/2].
++                # The per-wheel factor is an unsigned magnitude, so project
++                # the body-spin wheel-plane velocity onto the actual folded
++                # rolling direction to retain the needed sign changes.
++                rolling = tuple(
++                    (-yaw_rate * position_y) * math.cos(angle)
++                    + (yaw_rate * position_x) * math.sin(angle)
++                    for (position_x, position_y), angle in zip(
++                        wheel_positions, item.wheel_angles))
+                 lateral_acceleration = 0.0
+             else:
+                 center_speed = item.direction * speed
+
+diff --git a/tests/test_uniform_trajectory.py b/tests/test_uniform_trajectory.py
+--- a/tests/test_uniform_trajectory.py
++++ b/tests/test_uniform_trajectory.py
+@@ -9,11 +9,13 @@
+ import copy
+ from dataclasses import replace
+ from datetime import datetime, timezone
++from fractions import Fraction
+ import json
+ import math
+ import os
+ from pathlib import Path
+ import platform
++import struct
+ import sys
+ import unittest
+ 
+@@ -85,6 +87,13 @@
+     return plan_for((edge,))
+ 
+ 
++def negative_spin_plan():
++    edge = s_spin_edge(
++        model(), FormationPose(0.0, 0.0, 0.0), headings(),
++        {1: -math.pi / 2.0, 2: -math.pi / 3.0, 3: 0.0})
++    return plan_for((edge,))
++
++
+ def straight_plan(displacement=(2.0, 0.0)):
+     edge = a_straight_edge(
+         model(), FormationPose(0.0, 0.0, 0.0), headings(), displacement,
+@@ -260,6 +269,159 @@
+         payload, indent=2, sort_keys=True, allow_nan=False) + "\n")
+ 
+ 
++def previous_float(value):
++    """Adjacent double below ``value`` without relying on math.nextafter."""
++    bits = struct.unpack("Q", struct.pack("d", float(value)))[0]
++    if bits & 0x8000000000000000:
++        return struct.unpack("d", struct.pack("Q", bits + 1))[0]
++    if bits == 0:
++        return struct.unpack("d", struct.pack("Q", 0x8000000000000001))[0]
++    return struct.unpack("d", struct.pack("Q", bits - 1))[0]
++
++
++def next_float(value):
++    """Adjacent double above ``value`` without relying on math.nextafter."""
++    bits = struct.unpack("Q", struct.pack("d", float(value)))[0]
++    if bits & 0x8000000000000000:
++        if bits == 0x8000000000000000:
++            return 0.0
++        return struct.unpack("d", struct.pack("Q", bits - 1))[0]
++    return struct.unpack("d", struct.pack("Q", bits + 1))[0]
++
++
++def exact_unit_quintic(tau):
++    """Exact rational unit quintic for a rational time fraction."""
++    return 10 * tau ** 3 - 15 * tau ** 4 + 6 * tau ** 5
++
++
++def exact_motion_progress(time_s, phase):
++    """Independent rational progress for a legal motion-phase time."""
++    tau = ((Fraction.from_float(float(time_s))
++            - Fraction.from_float(phase.t0_s))
++           / Fraction.from_float(phase.duration_s))
++    return float(Fraction.from_float(phase.edge.control.parameter_length)
++                 * exact_unit_quintic(tau))
++
++
++def exact_motion_progress_rate(time_s, phase):
++    """Independent rational progress rate for a legal motion-phase time."""
++    tau = ((Fraction.from_float(float(time_s))
++            - Fraction.from_float(phase.t0_s))
++           / Fraction.from_float(phase.duration_s))
++    rate = 30 * tau ** 2 * (1 - tau) ** 2
++    length = Fraction.from_float(phase.edge.control.parameter_length)
++    return float(length * rate / Fraction.from_float(phase.duration_s))
++
++
++def exact_setup_progress(time_s, phase):
++    """Independent rational steering progress for a setup-phase time."""
++    elapsed = (Fraction.from_float(float(time_s))
++               - Fraction.from_float(phase.t0_s)
++               - Fraction.from_float(phase.setup_overhead_s))
++    tau = elapsed / Fraction.from_float(phase.steering_duration_s)
++    return exact_unit_quintic(tau)
++
++
++def nonfinite_paths(value, path="state"):
++    """Return all non-finite leaf paths in a JSON-shaped state."""
++    if isinstance(value, bool) or value is None or isinstance(value, str):
++        return []
++    if isinstance(value, (int, float)):
++        return [] if math.isfinite(float(value)) else [path]
++    if isinstance(value, dict):
++        result = []
++        for key, item in value.items():
++            result.extend(nonfinite_paths(item, "{}.{}".format(path, key)))
++        return result
++    if isinstance(value, (list, tuple)):
++        result = []
++        for index, item in enumerate(value):
++            result.extend(nonfinite_paths(item, "{}[{}]".format(path, index)))
++        return result
++    return [path]
++
++
++def spin_canonical_wheels(plan):
++    """FR01 canonical S angles and magnitude factors for this plan."""
++    angles, factors = wheel_configuration(
++        Action(SPIN, 0.0, 0.0), plan.limits)
++    return (tuple(float(value) for value in angles),
++            tuple(float(value) for value in factors))
++
++
++def spin_reference_yaw_rates(plan, motion, time_s):
++    """Independent per-vehicle omega from the S segment headings."""
++    tau = (time_s - motion.t0_s) / motion.duration_s
++    progress_rate = (
++        motion.edge.control.parameter_length
++        * 30.0 * tau * tau * (1.0 - tau) * (1.0 - tau)
++        / motion.duration_s)
++    rates = {}
++    for segment in motion.edge.segments:
++        station_span = segment.end_station - segment.start_station
++        if station_span <= 0.0:
++            raise AssertionError("nonpositive S segment station span")
++        rates[segment.vehicle_id] = (
++            (segment.theta_end - segment.theta_start)
++            / station_span * progress_rate)
++    return rates
++
++
++def spin_wheel_vector_rows(plan, state, motion, time_s):
++    """Independent wheel-vector projection against canonical folded angles."""
++    positions = tuple(
++        (x, y)
++        for x in (plan.limits.wheelbase / 2.0, -plan.limits.wheelbase / 2.0)
++        for y in (plan.limits.track / 2.0, -plan.limits.track / 2.0))
++    canonical_angles, canonical_factors = spin_canonical_wheels(plan)
++    reference_omega = spin_reference_yaw_rates(plan, motion, time_s)
++    rows = []
++    for vehicle in state.vehicles:
++        if len(vehicle.wheel_angles) != 4:
++            raise AssertionError("vehicle {} has {} wheel angles".format(
++                vehicle.vehicle_id, len(vehicle.wheel_angles)))
++        if len(vehicle.wheel_rolling_speeds) != 4:
++            raise AssertionError(
++                "vehicle {} has {} rolling speeds".format(
++                    vehicle.vehicle_id,
++                    len(vehicle.wheel_rolling_speeds)))
++        omega = reference_omega[vehicle.vehicle_id]
++        for index, ((wheel_x, wheel_y), angle, rolling) in enumerate(
++                zip(positions, vehicle.wheel_angles,
++                    vehicle.wheel_rolling_speeds)):
++            canonical_angle = canonical_angles[index]
++            expected_vector = (-omega * wheel_y, omega * wheel_x)
++            represented_vector = (rolling * math.cos(canonical_angle),
++                                  rolling * math.sin(canonical_angle))
++            expected_signed = (
++                expected_vector[0] * math.cos(canonical_angle)
++                + expected_vector[1] * math.sin(canonical_angle))
++            raw_angle = math.atan2(wheel_x, -wheel_y)
++            rows.append({
++                "vehicle_id": vehicle.vehicle_id,
++                "wheel_index": index,
++                "wheel_x_m": wheel_x,
++                "wheel_y_m": wheel_y,
++                "reference_yaw_rate_radps": omega,
++                "canonical_wheel_angle_rad": canonical_angle,
++                "canonical_wheel_factor_m": canonical_factors[index],
++                "reported_yaw_rate_radps": float(vehicle.yaw_rate_radps),
++                "wheel_angle_rad": float(angle),
++                "raw_spin_direction_rad": raw_angle,
++                "folded": (abs(raw_angle) > math.pi / 2.0),
++                "rolling_speed_mps": float(rolling),
++                "expected_signed_mps": expected_signed,
++                "represented_vector": list(represented_vector),
++                "expected_vector": list(expected_vector),
++                "vector_error_mps": math.hypot(
++                    represented_vector[0] - expected_vector[0],
++                    represented_vector[1] - expected_vector[1]),
++            })
++    if len(rows) != 4 * len(state.vehicles):
++        raise AssertionError("expected four wheel rows per vehicle")
++    return rows
++
++
+ class UniformTrajectoryAcceptance(unittest.TestCase):
+     maxDiff = None
+ 
+@@ -861,6 +1023,537 @@
+             self.assertEqual(error.vehicle_id, 1)
+             save_json(ARTIFACT_DIR / "negative_cases.json", record)
+ 
++    def test_R1_stable_near_endpoint_progress_and_roundtrip(self):
++        with record_case("R1", "Legal near-endpoint times never overflow progress", {
++                "plans": ["straight", "mixed_sign_spin", "negative_spin",
++                          "S_arc_S_O"],
++                "relative_distances": ["1e-5", "1e-6", "1e-7", "1e-8",
++                                       "1e-9", "1e-10", "1e-11", "1e-12",
++                                       "1e-13", "1e-14", "1e-15"],
++                "includes_predecessor_floats": True,
++                "includes_serialized_models": True}) as record:
++            scenarios = (
++                ("straight", straight_plan()),
++                ("mixed_sign_spin", spin_plan()),
++                ("negative_spin", negative_spin_plan()),
++                ("S_arc_S_O", plan_for(complex_edges())),
++            )
++            max_progress_overshoot = 0.0
++            min_progress = math.inf
++            max_monotonic_drop = 0.0
++            max_roundtrip_error = 0.0
++            max_center_error = 0.0
++            max_rigidity_error = 0.0
++            max_arc_error = 0.0
++            max_progress_reference_error = 0.0
++            max_progress_rate_reference_error = 0.0
++            max_setup_angle_overshoot = 0.0
++            max_setup_angle_reference_error = 0.0
++            max_sample_error = 0.0
++            near_count = 0
++            boundary_side_checks = 0
++            rounded_boundary_count = 0
++            skipped_boundary_requests = []
++            phase_records = []
++            for scenario_name, plan in scenarios:
++                restored = UniformTimedPlan.from_model_dict(plan.to_model_dict())
++                expected_distances = {}
++                offsets = {item.vehicle_id: (item.x, item.y)
++                           for item in plan.model.offsets}
++                ids = sorted(offsets)
++                for first_index, first in enumerate(ids):
++                    for second in ids[first_index + 1:]:
++                        expected_distances[(first, second)] = math.hypot(
++                            offsets[first][0] - offsets[second][0],
++                            offsets[first][1] - offsets[second][1])
++                for phase_index, phase in enumerate(plan.phases):
++                    if not isinstance(phase, MotionTiming):
++                        continue
++                    length = phase.edge.control.parameter_length
++                    near = {}
++
++                    def add_near(time_s, label):
++                        if phase.t0_s <= time_s < phase.end_time:
++                            near.setdefault(time_s, []).append(label)
++                        else:
++                            nonlocal rounded_boundary_count
++                            rounded_boundary_count += 1
++                            skipped_boundary_requests.append({
++                                "scenario": scenario_name,
++                                "phase_id": phase.phase_id,
++                                "label": label,
++                                "requested_time_s": time_s,
++                                "t0_s": phase.t0_s,
++                                "end_time_s": phase.end_time,
++                            })
++
++                    for exponent in range(5, 16):
++                        fraction = 10.0 ** (-exponent)
++                        add_near(phase.end_time - phase.duration_s * fraction,
++                                 "end_relative_1e-{}".format(exponent))
++                        add_near(phase.t0_s + phase.duration_s * fraction,
++                                 "start_relative_1e-{}".format(exponent))
++                    add_near(previous_float(phase.end_time), "predecessor_end_float")
++                    add_near(next_float(phase.t0_s), "successor_start_float")
++
++                    start_state = plan.state_at(phase.t0_s, side="right")
++                    end_state = plan.state_at(phase.end_time, side="left")
++                    self.assertEqual(start_state.phase_id, phase.phase_id)
++                    self.assertEqual(end_state.phase_id, phase.phase_id)
++                    self.assertGreaterEqual(start_state.progress, 0.0)
++                    self.assertEqual(start_state.progress, 0.0)
++                    self.assertLessEqual(end_state.progress, length)
++                    self.assertEqual(end_state.progress, length)
++
++                    for boundary_time, expected in (
++                            (phase.t0_s, "start"),
++                            (phase.end_time, "end")):
++                        for side in ("left", "right"):
++                            boundary_state = plan.state_at(
++                                boundary_time, side=side)
++                            restored_boundary = restored.state_at(
++                                boundary_time, side=side)
++                            comparison = assert_state_equal(
++                                self, boundary_state, restored_boundary)
++                            max_roundtrip_error = max(
++                                max_roundtrip_error,
++                                comparison["max_abs_error"])
++                            self.assertEqual(
++                                nonfinite_paths(boundary_state.as_dict()), [])
++                            if expected == "start" and side == "right":
++                                self.assertEqual(
++                                    boundary_state.phase_id, phase.phase_id)
++                                self.assertEqual(boundary_state.progress, 0.0)
++                            if expected == "end" and side == "left":
++                                self.assertEqual(
++                                    boundary_state.phase_id, phase.phase_id)
++                                self.assertEqual(boundary_state.progress, length)
++                            boundary_side_checks += 1
++
++                    checkpoint_states = [(phase.t0_s, 0.0, start_state),
++                                         (phase.end_time, length, end_state)]
++                    for time_s, labels in sorted(near.items()):
++                        state = plan.state_at(time_s)
++                        self.assertEqual(state.phase_id, phase.phase_id)
++                        restored_state = restored.state_at(time_s)
++                        self.assertEqual(restored_state.phase_id, phase.phase_id)
++                        comparison = assert_state_equal(
++                            self, state, restored_state)
++                        max_roundtrip_error = max(
++                            max_roundtrip_error, comparison["max_abs_error"])
++                        self.assertEqual(nonfinite_paths(state.as_dict()), [])
++                        overshoot = state.progress - length
++                        max_progress_overshoot = max(
++                            max_progress_overshoot, overshoot)
++                        min_progress = min(min_progress, state.progress)
++                        self.assertGreaterEqual(state.progress, 0.0)
++                        self.assertLessEqual(state.progress, length)
++
++                        expected_progress = exact_motion_progress(
++                            time_s, phase)
++                        expected_rate = exact_motion_progress_rate(
++                            time_s, phase)
++                        progress_error = abs(
++                            state.progress - expected_progress)
++                        rate_error = abs(
++                            state.progress_rate - expected_rate)
++                        max_progress_reference_error = max(
++                            max_progress_reference_error, progress_error)
++                        max_progress_rate_reference_error = max(
++                            max_progress_rate_reference_error, rate_error)
++                        self.assertLessEqual(
++                            progress_error, 1e-12 * max(1.0, length),
++                            "{} progress disagrees with exact time->quintic"
++                            .format(phase.phase_id))
++                        self.assertLessEqual(
++                            rate_error,
++                            1e-12 * max(1.0, abs(expected_rate)),
++                            "{} progress_rate disagrees with exact quintic"
++                            .format(phase.phase_id))
++
++                        expected_geometric = phase.edge.state_at(
++                            expected_progress)
++                        centers = plan.model.centers(expected_geometric.qf)
++                        center_error = 0.0
++                        for vehicle in state.vehicles:
++                            center_error = max(
++                                center_error,
++                                abs(vehicle.x - centers[vehicle.vehicle_id][0]),
++                                abs(vehicle.y - centers[vehicle.vehicle_id][1]))
++                        max_center_error = max(max_center_error, center_error)
++                        self.assertLessEqual(center_error, 1e-7)
++                        centers_by_id = {
++                            vehicle_id: (x, y)
++                            for vehicle_id, x, y in state.centers}
++                        for (first, second), expected_distance in (
++                                expected_distances.items()):
++                            actual_distance = math.hypot(
++                                centers_by_id[first][0] - centers_by_id[second][0],
++                                centers_by_id[first][1] - centers_by_id[second][1])
++                            error = abs(actual_distance - expected_distance)
++                            max_rigidity_error = max(max_rigidity_error, error)
++                            self.assertLessEqual(error, 1e-7)
++                        if phase.edge.primitive == PRIMITIVE_A_ARC:
++                            expected_qf = independent_arc_qf(
++                                phase.edge, expected_progress)
++                            error = max(
++                                abs(state.qf.x - expected_qf.x),
++                                abs(state.qf.y - expected_qf.y),
++                                abs(state.qf.psi - expected_qf.psi))
++                            max_arc_error = max(max_arc_error, error)
++                            self.assertLessEqual(error, 1e-9)
++                        checkpoint_states.append(
++                            (time_s, state.progress, state))
++                        near_count += 1
++                        phase_records.append({
++                            "scenario": scenario_name,
++                            "phase_id": phase.phase_id,
++                            "time_s": time_s,
++                            "labels": labels,
++                            "progress": state.progress,
++                            "expected_progress": expected_progress,
++                            "progress_reference_error": progress_error,
++                            "progress_rate_reference_error": rate_error,
++                            "length": length,
++                            "progress_overshoot": overshoot,
++                            "roundtrip_max_abs_error":
++                                comparison["max_abs_error"],
++                            "center_error_m": center_error,
++                            "step_from_end_s": phase.end_time - time_s,
++                        })
++
++                    checkpoints = [(time_s, progress)
++                                   for time_s, progress, _ in checkpoint_states]
++                    checkpoints.sort(key=lambda item: item[0])
++                    for (_, before), (_, after) in zip(
++                            checkpoints, checkpoints[1:]):
++                        drop = before - after
++                        max_monotonic_drop = max(max_monotonic_drop, drop)
++                        self.assertLessEqual(
++                            drop, 1e-12 * max(1.0, length),
++                            "{} nonmonotone near endpoint".format(
++                                phase.phase_id))
++                    self.assertLessEqual(max_progress_overshoot, 0.0)
++                    self.assertGreaterEqual(min_progress, 0.0)
++                    self.assertLess(min_progress, math.inf)
++                    phase_records.append({
++                        "scenario": scenario_name,
++                        "phase_id": phase.phase_id,
++                        "near_time_count": len(near),
++                        "start_progress": start_state.progress,
++                        "end_progress": end_state.progress,
++                        "length": length,
++                    })
++
++                # Setup phases share the stable normalized quintic as well.
++                for phase in plan.phases:
++                    if not isinstance(phase, SetupTiming):
++                        continue
++                    for exponent in range(5, 16):
++                        time_s = (
++                            phase.end_time
++                            - phase.duration_s * 10.0 ** (-exponent))
++                        if not phase.t0_s <= time_s < phase.end_time:
++                            rounded_boundary_count += 1
++                            skipped_boundary_requests.append({
++                                "scenario": scenario_name,
++                                "phase_id": phase.phase_id,
++                                "label": "setup_end_relative_1e-{}".format(
++                                    exponent),
++                                "requested_time_s": time_s,
++                                "t0_s": phase.t0_s,
++                                "end_time_s": phase.end_time,
++                            })
++                            continue
++                        state = plan.state_at(time_s)
++                        restored_state = restored.state_at(time_s)
++                        self.assertEqual(state.phase_id, phase.phase_id)
++                        comparison = assert_state_equal(
++                            self, state, restored_state)
++                        max_roundtrip_error = max(
++                            max_roundtrip_error, comparison["max_abs_error"])
++                        self.assertEqual(nonfinite_paths(state.as_dict()), [])
++                        expected_setup_level = exact_setup_progress(
++                            time_s, phase)
++                        sample_overshoot = 0.0
++                        sample_reference_error = 0.0
++                        for vehicle in state.vehicles:
++                            demand = phase.demand(vehicle.vehicle_id)
++                            for actual, start, delta in zip(
++                                    vehicle.wheel_angles,
++                                    demand.wheel_angles_start,
++                                    demand.wheel_angle_deltas):
++                                low = min(start, start + delta)
++                                high = max(start, start + delta)
++                                overshoot = max(low - actual, actual - high, 0.0)
++                                sample_overshoot = max(
++                                    sample_overshoot, overshoot)
++                                expected_angle = float(
++                                    Fraction.from_float(start)
++                                    + Fraction.from_float(delta)
++                                    * expected_setup_level)
++                                reference_error = abs(
++                                    actual - expected_angle)
++                                sample_reference_error = max(
++                                    sample_reference_error, reference_error)
++                                self.assertLessEqual(overshoot, 1e-12)
++                                self.assertLessEqual(
++                                    reference_error, 1e-12,
++                                    "{} setup wheel angle disagrees with "
++                                    "exact time->quintic".format(
++                                        phase.phase_id))
++                        max_setup_angle_overshoot = max(
++                            max_setup_angle_overshoot, sample_overshoot)
++                        max_setup_angle_reference_error = max(
++                            max_setup_angle_reference_error,
++                            sample_reference_error)
++                        phase_records.append({
++                            "scenario": scenario_name,
++                            "phase_id": phase.phase_id,
++                            "time_s": time_s,
++                            "setup_step_from_end_s":
++                                phase.end_time - time_s,
++                            "wheel_angle_overshoot_rad": sample_overshoot,
++                            "wheel_angle_reference_error_rad":
++                                sample_reference_error,
++                        })
++
++                # Projection near the final endpoint uses the same evaluator.
++                last_motion = next(
++                    item for item in reversed(plan.phases)
++                    if isinstance(item, MotionTiming))
++                near_sample = max(
++                    last_motion.t0_s,
++                    plan.duration_s - plan.duration_s * 1e-5)
++                times = (0.0, near_sample, plan.duration_s)
++                self.assertGreater(times[1] - times[0], 1e-9)
++                self.assertGreater(times[2] - times[1], 1e-9)
++                projection = plan.sample(times)
++                for index, time_s in enumerate(times):
++                    comparison = assert_state_equal(
++                        self, projection.states[index], plan.state_at(time_s))
++                    max_sample_error = max(
++                        max_sample_error, comparison["max_abs_error"])
++                passed(record, "projection_near_final_endpoint",
++                       scenario=scenario_name, times=list(times),
++                       max_projection_state_error=max_sample_error)
++
++            for scenario_name, plan in scenarios:
++                above = next_float(plan.duration_s)
++                expect_rejection(
++                    self, record, "{}_one_ulp_above_plan_end".format(
++                        scenario_name), "TIME_OUT_OF_RANGE",
++                    lambda plan=plan, above=above: plan.state_at(above),
++                    plan=scenario_name, time=repr(above),
++                    duration_s=plan.duration_s)
++            expect_rejection(
++                self, record, "negative_one_ulp_time", "TIME_OUT_OF_RANGE",
++                lambda: scenarios[0][1].state_at(previous_float(0.0)),
++                time=repr(previous_float(0.0)))
++
++            save_json(ARTIFACT_DIR / "R1_near_endpoint.json", {
++                "scenarios": [name for name, _ in scenarios],
++                "near_time_count": near_count,
++                "boundary_side_checks": boundary_side_checks,
++                "rounded_boundary_skipped_count": rounded_boundary_count,
++                "skipped_boundary_requests": skipped_boundary_requests,
++                "max_progress_overshoot": max_progress_overshoot,
++                "min_progress": min_progress,
++                "max_monotonic_drop": max_monotonic_drop,
++                "monotonic_tolerance": 1e-12,
++                "max_roundtrip_abs_error": max_roundtrip_error,
++                "max_center_error_m": max_center_error,
++                "max_rigidity_error_m": max_rigidity_error,
++                "max_arc_qf_error": max_arc_error,
++                "max_progress_reference_error":
++                    max_progress_reference_error,
++                "max_progress_rate_reference_error":
++                    max_progress_rate_reference_error,
++                "max_setup_wheel_angle_overshoot_rad":
++                    max_setup_angle_overshoot,
++                "max_setup_wheel_angle_reference_error_rad":
++                    max_setup_angle_reference_error,
++                "max_projection_state_error": max_sample_error,
++                "records": phase_records,
++            })
++            passed(record, "near_endpoint_evaluations",
++                   near_time_count=near_count,
++                   boundary_side_checks=boundary_side_checks,
++                   rounded_boundary_skipped_count=rounded_boundary_count,
++                   max_progress_overshoot=max_progress_overshoot,
++                   max_monotonic_drop=max_monotonic_drop,
++                   max_roundtrip_abs_error=max_roundtrip_error,
++                   max_center_error_m=max_center_error,
++                   max_rigidity_error_m=max_rigidity_error,
++                   max_arc_qf_error=max_arc_error,
++                   max_progress_reference_error=
++                       max_progress_reference_error,
++                   max_progress_rate_reference_error=
++                       max_progress_rate_reference_error,
++                   max_setup_wheel_angle_overshoot_rad=
++                       max_setup_angle_overshoot,
++                   max_setup_wheel_angle_reference_error_rad=
++                       max_setup_angle_reference_error,
++                   max_projection_state_error=max_sample_error)
++
++    def test_R2_signed_spin_wheel_rolling_vectors(self):
++        with record_case("R2", "S rolling speeds follow folded wheel directions", {
++                "plans": ["mixed_sign_spin", "negative_spin"],
++                "samples_per_motion": [0.05, 0.25, 0.5, 0.75, 0.95],
++                "vector_tolerance_mps": 1e-7}) as record:
++            scenarios = (
++                ("mixed_sign_spin", spin_plan()),
++                ("negative_spin", negative_spin_plan()),
++            )
++            max_vector_error = 0.0
++            max_peak_error = 0.0
++            max_roundtrip_error = 0.0
++            max_yaw_reference_error = 0.0
++            max_angle_error = 0.0
++            max_speed_reference_error = 0.0
++            row_records = []
++            zero_vehicle_records = []
++            folded_count = 0
++            unfolded_count = 0
++            for scenario_name, plan in scenarios:
++                restored = UniformTimedPlan.from_model_dict(plan.to_model_dict())
++                motion = motion_at(plan, 0)
++                canonical_angles, canonical_factors = spin_canonical_wheels(plan)
++                for fraction in (0.05, 0.25, 0.5, 0.75, 0.95):
++                    time_s = motion.t0_s + fraction * motion.duration_s
++                    state = plan.state_at(time_s)
++                    restored_state = restored.state_at(time_s)
++                    comparison = assert_state_equal(self, state, restored_state)
++                    max_roundtrip_error = max(
++                        max_roundtrip_error, comparison["max_abs_error"])
++                    reference_omega = spin_reference_yaw_rates(
++                        plan, motion, time_s)
++                    rows = spin_wheel_vector_rows(plan, state, motion, time_s)
++                    self.assertEqual(len(rows), 4 * len(state.vehicles))
++                    folded_count += sum(row["folded"] for row in rows)
++                    unfolded_count += sum(not row["folded"] for row in rows)
++                    state_wheel_peak_error = 0.0
++                    for row in rows:
++                        self.assertLessEqual(
++                            row["vector_error_mps"], 1e-7,
++                            "{} vehicle {} wheel {} vector mismatch".format(
++                                scenario_name, row["vehicle_id"],
++                                row["wheel_index"]))
++                        max_vector_error = max(
++                            max_vector_error, row["vector_error_mps"])
++                        rolling_error = abs(
++                            row["rolling_speed_mps"]
++                            - row["expected_signed_mps"])
++                        self.assertLessEqual(
++                            rolling_error,
++                            1e-12 * max(1.0,
++                                        abs(row["expected_signed_mps"])))
++                        yaw_error = abs(
++                            row["reported_yaw_rate_radps"]
++                            - row["reference_yaw_rate_radps"])
++                        max_yaw_reference_error = max(
++                            max_yaw_reference_error, yaw_error)
++                        self.assertLessEqual(
++                            yaw_error,
++                            1e-12 * max(1.0,
++                                        abs(row["reference_yaw_rate_radps"])))
++                        row["scenario"] = scenario_name
++                        row["time_s"] = time_s
++                        row_records.append(row)
++                    for vehicle in state.vehicles:
++                        self.assertEqual(len(vehicle.wheel_angles), 4)
++                        self.assertEqual(
++                            len(vehicle.wheel_rolling_speeds), 4)
++                        angle_error = max(
++                            abs(actual - canonical)
++                            for actual, canonical in zip(
++                                vehicle.wheel_angles, canonical_angles))
++                        max_angle_error = max(max_angle_error, angle_error)
++                        self.assertLessEqual(angle_error, 1e-15)
++                        omega_ref = reference_omega[vehicle.vehicle_id]
++                        expected_peak_now = max(canonical_factors) * abs(omega_ref)
++                        speed_error = abs(
++                            vehicle.wheel_speed_mps - expected_peak_now)
++                        max_speed_reference_error = max(
++                            max_speed_reference_error, speed_error)
++                        self.assertLessEqual(
++                            speed_error,
++                            1e-12 * max(1.0, expected_peak_now))
++                        expected_peak = motion.peaks[
++                            vehicle.vehicle_id]["wheel_speed"]
++                        self.assertLessEqual(
++                            vehicle.wheel_speed_mps, expected_peak + 1e-12)
++                        error = 0.0
++                        if fraction == 0.5:
++                            error = abs(
++                                vehicle.wheel_speed_mps - expected_peak)
++                            state_wheel_peak_error = max(
++                                state_wheel_peak_error, error)
++                            max_peak_error = max(max_peak_error, error)
++                            self.assertLessEqual(error, 1e-12)
++                        if omega_ref == 0.0:
++                            self.assertEqual(vehicle.yaw_rate_radps, 0.0)
++                            self.assertTrue(all(
++                                value == 0.0 for value in
++                                vehicle.wheel_rolling_speeds))
++                            self.assertGreater(max(abs(value) for value in
++                                                   vehicle.wheel_angles), 0.9)
++                            zero_vehicle_records.append({
++                                "scenario": scenario_name,
++                                "time_s": time_s,
++                                "vehicle_id": vehicle.vehicle_id,
++                                "wheel_angles_rad": list(vehicle.wheel_angles),
++                                "rolling_speeds_mps": list(
++                                    vehicle.wheel_rolling_speeds),
++                            })
++                    signs = {1 if row["rolling_speed_mps"] > 0.0
++                             else -1 if row["rolling_speed_mps"] < 0.0 else 0
++                             for row in rows
++                             if row["reference_yaw_rate_radps"] != 0.0}
++                    self.assertEqual(signs, {-1, 1})
++                    passed(record, "{}_fraction_{}".format(
++                        scenario_name, fraction),
++                        time_s=time_s,
++                        max_vector_error_mps=max(row["vector_error_mps"]
++                                                 for row in rows),
++                        max_yaw_reference_error_radps=max_yaw_reference_error,
++                        max_canonical_angle_error_rad=max_angle_error,
++                        max_wheel_speed_reference_error_mps=
++                            max_speed_reference_error,
++                        max_peak_error_mps=state_wheel_peak_error,
++                        roundtrip_max_abs_error=comparison["max_abs_error"])
++
++            self.assertGreater(folded_count, 0)
++            self.assertGreater(unfolded_count, 0)
++            self.assertGreater(len(zero_vehicle_records), 0)
++            save_json(ARTIFACT_DIR / "R2_spin_wheel_vectors.json", {
++                "scenarios": [name for name, _ in scenarios],
++                "folded_wheel_samples": folded_count,
++                "unfolded_wheel_samples": unfolded_count,
++                "zero_yaw_vehicle_samples": zero_vehicle_records,
++                "max_vector_error_mps": max_vector_error,
++                "max_yaw_rate_reference_error_radps":
++                    max_yaw_reference_error,
++                "max_canonical_wheel_angle_error_rad": max_angle_error,
++                "max_wheel_speed_reference_error_mps":
++                    max_speed_reference_error,
++                "max_peak_wheel_speed_error_mps": max_peak_error,
++                "max_roundtrip_abs_error": max_roundtrip_error,
++                "rows": row_records,
++            })
++            passed(record, "folded_unfolded_and_zero_yaw_wheels",
++                   folded_wheel_samples=folded_count,
++                   unfolded_wheel_samples=unfolded_count,
++                   zero_yaw_vehicle_samples=len(zero_vehicle_records),
++                   max_vector_error_mps=max_vector_error,
++                   max_yaw_rate_reference_error_radps=
++                       max_yaw_reference_error,
++                   max_canonical_wheel_angle_error_rad=max_angle_error,
++                   max_wheel_speed_reference_error_mps=
++                       max_speed_reference_error,
++                   max_peak_wheel_speed_error_mps=max_peak_error,
++                   max_roundtrip_abs_error=max_roundtrip_error)
++
+     @classmethod
+     def tearDownClass(cls):
+         RESULTS_PATH.parent.mkdir(parents=True, exist_ok=True)

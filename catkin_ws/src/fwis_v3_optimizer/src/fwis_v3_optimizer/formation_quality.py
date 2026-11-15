@@ -1109,7 +1109,8 @@ class _IndependentEvaluator:
                        "plan geometry does not reach the request goal",
                        field="goal")
 
-    def _check_block_kinematics(self, block, motion_limits, current_headings):
+    def _check_block_kinematics(self, block, motion_limits, current_headings,
+                                uniform_v02=False):
         length = block.parameter_length
         start_centers = self.model.centers(block.control.start_qf)
         end_centers = self.model.centers(block.control.end_qf)
@@ -1325,21 +1326,55 @@ class _IndependentEvaluator:
                 if segment.mode == SPIN:
                     if abs(theta_rate) <= (
                             self.config.heading_tolerance_rad + _GEOMETRY_TOL):
-                        self._fail(
-                            KINEMATIC_INFEASIBLE,
-                            "S body-spin has no heading change",
-                            field="theta", vehicle_id=vehicle_id,
-                            block_index=block.block_index,
-                            max_error=abs(theta_rate))
-                    expected_direction = 1 if theta_rate > 0.0 else -1
-                    if segment.direction != expected_direction:
-                        self._fail(
-                            KINEMATIC_INFEASIBLE,
-                            "Spin direction sign contradicts its heading "
-                            "change",
-                            field="direction", vehicle_id=vehicle_id,
-                            block_index=block.block_index,
-                            max_error=abs(theta_rate))
+                        if not uniform_v02:
+                            self._fail(
+                                KINEMATIC_INFEASIBLE,
+                                "S body-spin has no heading change",
+                                field="theta", vehicle_id=vehicle_id,
+                                block_index=block.block_index,
+                                max_error=abs(theta_rate))
+                        # V0.2 allows one vehicle to hold its heading inside a
+                        # multi-vehicle S edge.  It remains a legal S hold only
+                        # with the canonical S wheel set, a fixed centre and
+                        # the +1 zero-angle placeholder direction.  The fixed
+                        # centre/travel/control checks above are unchanged.
+                        expected_angles, expected_factors = wheel_configuration(
+                            Action(SPIN, 0.0, 0.0), motion_limits)
+                        angle_error = max(
+                            abs(first - float(second))
+                            for first, second in zip(
+                                angles, expected_angles))
+                        factor_error = max(
+                            abs(first - float(second))
+                            for first, second in zip(
+                                factors, expected_factors))
+                        if angle_error > _WHEEL_ANGLE_TOL or (
+                                factor_error > _WHEEL_ANGLE_TOL):
+                            self._fail(
+                                KINEMATIC_INFEASIBLE,
+                                "zero-angle S vehicle has non-canonical S "
+                                "wheels",
+                                field="wheel_angles", vehicle_id=vehicle_id,
+                                block_index=block.block_index,
+                                max_error=max(angle_error, factor_error))
+                        if segment.direction != 1:
+                            self._fail(
+                                KINEMATIC_INFEASIBLE,
+                                "zero-angle S placeholder direction must be +1",
+                                field="direction", vehicle_id=vehicle_id,
+                                block_index=block.block_index,
+                                max_error=abs(segment.direction - 1))
+                        self._count(2)
+                    else:
+                        expected_direction = 1 if theta_rate > 0.0 else -1
+                        if segment.direction != expected_direction:
+                            self._fail(
+                                KINEMATIC_INFEASIBLE,
+                                "Spin direction sign contradicts its heading "
+                                "change",
+                                field="direction", vehicle_id=vehicle_id,
+                                block_index=block.block_index,
+                                max_error=abs(theta_rate))
                 elif segment.mode == ACKERMANN:
                     if abs(theta_rate) > (
                             self.config.heading_tolerance_rad + _GEOMETRY_TOL):

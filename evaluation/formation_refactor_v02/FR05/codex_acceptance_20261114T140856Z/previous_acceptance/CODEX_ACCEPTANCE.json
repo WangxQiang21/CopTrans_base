@@ -1,0 +1,70 @@
+{
+  "task": "FR05",
+  "rework": "rework_20261114T095659Z",
+  "status": "CHANGES_REQUESTED",
+  "reviewer": "Codex",
+  "reviewed_at_utc": "2026-11-14T11:43:31.668278+00:00",
+  "branch": "refactor/formation-v02",
+  "head": "6227833011e2d92b711179bfdec979bb0b878b29",
+  "reviewed_source_sha256": {
+    "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_playback.py": "acd43413c1abaf6ff8281b0b0bb93e4b57dd22890de75052e208ec996cc6459e",
+    "catkin_ws/src/fwis_v3_optimizer/scripts/formation_uniform_planner_node.py": "3175e62d22ede7d7b0620b81910e254435c19ff333f8d4a9bd415f46a9843d24",
+    "catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch": "b9a34bfb57526f713987e28d1083d7cb566d82d1668eea9703831f07eddc03cd",
+    "catkin_ws/src/fwis_v3_playback/scripts/formation_playback.py": "bbdd6fab86729899d59fa41c470390c005625431df45bc70e6766a25a893d3ed",
+    "tests/test_uniform_feedback_identity.py": "4bf36e7c6a54d14dbb9646dc02d290e68394dca8745e26dbb73b779a0c71c440",
+    "tests/test_uniform_playback_plan.py": "a4ebb3103c5ac878a70e06c551b8cf30cf961f1cca7aafe45e03b3cfc5dc051f",
+    "tests/ros_uniform_playback_smoke.py": "fedef53f8fa6819b71861b0dcf319ed38c8a38b3c2df211b9f8dee1cfb66256f"
+  },
+  "report": "CODEX_ACCEPTANCE.md",
+  "detailed_report": "codex_acceptance_20261114T113812Z/ACCEPTANCE.md",
+  "evidence_directory": "codex_acceptance_20261114T113812Z",
+  "previous_acceptance": "codex_acceptance_20261114T113812Z/previous_acceptance/CODEX_ACCEPTANCE.json",
+  "resolved_findings": [
+    "FR05-R1_default_contract_drift",
+    "submitted_source_manifest_mismatch"
+  ],
+  "partially_resolved_findings": [
+    "FR05-R2_published_model_identity_checks_correct"
+  ],
+  "blocking_findings": [
+    {
+      "id": "FR05-R2",
+      "remaining_case": "prepublication_missing_or_null_active_digest",
+      "location": "formation_uniform_planner_node.py:on_playback_status",
+      "summary": "Before a model exists, absent/null feedback digest equals active None; HOLD_END releases PLANNING job and publishes executable=True despite no model publication.",
+      "evidence": "codex_acceptance_20261114T113812Z/feedback_phase_boundary_probe.json",
+      "observation_scope": "Direct actual-callback fault injection, not an observed spontaneous normal-GUI failure."
+    }
+  ],
+  "independent_unit_regression_tests_passed": 182,
+  "FR03_S09_performance_rerun": false,
+  "live_ROS_near_goal_probe_executed": true,
+  "live_ROS_near_goal_result": "FAILED/TIME_BUDGET_EXHAUSTED, no executable envelope",
+  "live_ROS_master": "http://127.0.0.1:11461",
+  "live_ROS_process_groups_cleaned_up": true,
+  "submitted_source_manifest_entries": 174,
+  "submitted_source_manifest_mismatches": [],
+  "submitted_ROS_checks": {
+    "main": 112,
+    "near_goal": 8,
+    "failure": 57,
+    "tamper": 14
+  },
+  "submitted_ROS_checks_all_true": true,
+  "full_ROS_main_failure_tamper_rerun_this_review": false,
+  "GUI_screenshots_reviewed": 2,
+  "GUI_clicks_rerun_this_review": false,
+  "minimal_rework_scope": [
+    "formation_uniform_planner_node.py:on_playback_status",
+    "tests/test_uniform_feedback_identity.py",
+    "new FR05 evidence"
+  ],
+  "full_ROS_GUI_rerun_required_for_guard_only_fix": false,
+  "FR01_to_FR04_remain_ACCEPTED": true,
+  "implementation_modified_by_codex": false,
+  "tests_modified_by_codex": false,
+  "configuration_modified_by_codex": false,
+  "git_committed": false,
+  "FR06_started": false,
+  "original_T5_preserved": true
+}

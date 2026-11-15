@@ -1,0 +1,2046 @@
+{
+  "cases": [
+    {
+      "case": "A06",
+      "inputs": {
+        "finite_difference_relative_h": 0.0001,
+        "finite_difference_tolerance": 0.0001
+      },
+      "status": "PASSED",
+      "subcases": [
+        {
+          "duration_driver": {
+            "block_index": 0,
+            "constraint": "speed",
+            "limit": 0.8,
+            "peak": 0.7960199004975126,
+            "tau": 0.5,
+            "utilization": 0.9950248756218907,
+            "vehicle_id": 1
+          },
+          "max_difference_error": 2.2955797152057755e-08,
+          "max_mode_residual": 0.0,
+          "name": "A_straight_metre_progress",
+          "status": "PASSED"
+        },
+        {
+          "duration_driver": {
+            "block_index": 1,
+            "constraint": "speed",
+            "limit": 0.8,
+            "peak": 0.7960199004975126,
+            "tau": 0.5,
+            "utilization": 0.9950248756218907,
+            "vehicle_id": 3
+          },
+          "max_difference_error": 4.726362223816949e-08,
+          "max_mode_residual": 0.0,
+          "name": "A_arc_radian_progress",
+          "status": "PASSED"
+        },
+        {
+          "duration_driver": {
+            "block_index": 0,
+            "constraint": "yaw_rate",
+            "limit": 0.8,
+            "peak": 0.7960199004975126,
+            "tau": 0.5,
+            "utilization": 0.9950248756218907,
+            "vehicle_id": 1
+          },
+          "max_difference_error": 3.7213747861031266e-08,
+          "max_mode_residual": 0.0,
+          "name": "S_radian_progress_and_yaw_driver",
+          "status": "PASSED"
+        },
+        {
+          "duration_driver": {
+            "block_index": 0,
+            "constraint": "speed",
+            "limit": 0.8,
+            "peak": 0.7960199004975126,
+            "tau": 0.5,
+            "utilization": 0.9950248756218907,
+            "vehicle_id": 1
+          },
+          "duration_s": 23.554687499999996,
+          "max_mode_residual": 0.0,
+          "name": "speed_driver",
+          "status": "PASSED"
+        },
+        {
+          "duration_driver": {
+            "block_index": 0,
+            "constraint": "acceleration",
+            "limit": 0.6,
+            "peak": 0.5940447018638154,
+            "tau": 0.21132486540518713,
+            "utilization": 0.990074503106359,
+            "vehicle_id": 1
+          },
+          "limits": {
+            "a_max": 0.6,
+            "jerk_max": 1000.0,
+            "lateral_accel_max": 0.6,
+            "max_block_duration_s": 120.0,
+            "min_mode_dwell_s": 0.3,
+            "mode_setup_time": 0.15,
+            "mode_switch_duration": 0.3,
+            "r_min_ackermann": 0.81,
+            "steer_accel_max": 1.5,
+            "steer_angle_max": 1.5707963267948966,
+            "steer_rate_max": 0.8,
+            "track": 0.364,
+            "v_max": 2.0,
+            "wheel_speed_max": 1.0,
+            "wheelbase": 0.494,
+            "yaw_accel_max": 0.8,
+            "yaw_jerk_max": 3.0,
+            "yaw_rate_max": 0.8
+          },
+          "max_mode_residual": 0.0,
+          "name": "acceleration_driver",
+          "status": "PASSED"
+        },
+        {
+          "duration_driver": {
+            "block_index": 0,
+            "constraint": "wheel_speed",
+            "limit": 1.0,
+            "peak": 0.9950248756218906,
+            "tau": 0.5,
+            "utilization": 0.9950248756218906,
+            "vehicle_id": 1
+          },
+          "limits": {
+            "a_max": 100.0,
+            "jerk_max": 10000.0,
+            "lateral_accel_max": 0.6,
+            "max_block_duration_s": 120.0,
+            "min_mode_dwell_s": 0.3,
+            "mode_setup_time": 0.15,
+            "mode_switch_duration": 0.3,
+            "r_min_ackermann": 0.81,
+            "steer_accel_max": 1.5,
+            "steer_angle_max": 1.5707963267948966,
+            "steer_rate_max": 0.8,
+            "track": 0.364,
+            "v_max": 10.0,
+            "wheel_speed_max": 1.0,
+            "wheelbase": 0.494,
+            "yaw_accel_max": 0.8,
+            "yaw_jerk_max": 3.0,
+            "yaw_rate_max": 0.8
+          },
+          "max_mode_residual": 0.0,
+          "name": "wheel_speed_driver",
+          "status": "PASSED"
+        }
+      ],
+      "title": "Quintic chain rule and speed/acceleration/yaw/wheel drivers"
+    },
+    {
+      "case": "A07",
+      "inputs": {
+        "boundary_policy": "left-closed/right-open; final endpoint defined",
+        "interior_samples_per_phase": 12
+      },
+      "status": "PASSED",
+      "subcases": [
+        {
+          "motion": {
+            "duration_driver": {
+              "block_index": 0,
+              "constraint": "yaw_rate",
+              "limit": 0.8,
+              "peak": 0.7960199004975126,
+              "tau": 0.5,
+              "utilization": 0.9950248756218907,
+              "vehicle_id": 1
+            },
+            "duration_s": 3.6999616603801657,
+            "dynamic_duration_s": 3.6999616603801657,
+            "edge_index": 0,
+            "end_time_s": 6.0431716402346565,
+            "kind": "motion",
+            "limiting_constraints": [
+              {
+                "block_index": 0,
+                "constraint": "yaw_rate",
+                "limit": 0.8,
+                "peak": 0.7960199004975126,
+                "tau": 0.5,
+                "utilization": 0.9950248756218907,
+                "vehicle_id": 1
+              }
+            ],
+            "mode": "S",
+            "phase_id": "motion_0000",
+            "progress_unit": "rad",
+            "required_duration_s": 3.6815538909255383,
+            "t0_s": 2.3432099798544908,
+            "vehicle_peaks": [
+              {
+                "peaks": {
+                  "acceleration": 0.0,
+                  "jerk": 0.0,
+                  "lateral_acceleration": 0.0,
+                  "speed": 0.0,
+                  "steer_acceleration": 0.0,
+                  "steer_rate": 0.0,
+                  "wheel_angle": 0.9357695914045828,
+                  "wheel_speed": 0.2442276750259539,
+                  "yaw_acceleration": 0.662467843028502,
+                  "yaw_jerk": 1.860713274074357,
+                  "yaw_rate": 0.7960199004975126
+                },
+                "vehicle_id": 1
+              },
+              {
+                "peaks": {
+                  "acceleration": 0.0,
+                  "jerk": 0.0,
+                  "lateral_acceleration": 0.0,
+                  "speed": 0.0,
+                  "steer_acceleration": 0.0,
+                  "steer_rate": 0.0,
+                  "wheel_angle": 0.9357695914045828,
+                  "wheel_speed": 0.0,
+                  "yaw_acceleration": 0.0,
+                  "yaw_jerk": 0.0,
+                  "yaw_rate": 0.0
+                },
+                "vehicle_id": 2
+              },
+              {
+                "peaks": {
+                  "acceleration": 0.0,
+                  "jerk": 0.0,
+                  "lateral_acceleration": 0.0,
+                  "speed": 0.0,
+                  "steer_acceleration": 0.0,
+                  "steer_rate": 0.0,
+                  "wheel_angle": 0.9357695914045828,
+                  "wheel_speed": 0.12211383751297696,
+                  "yaw_acceleration": 0.331233921514251,
+                  "yaw_jerk": 0.9303566370371785,
+                  "yaw_rate": 0.3980099502487563
+                },
+                "vehicle_id": 3
+              }
+            ]
+          },
+          "name": "initial_setup_boundary_and_quintic_wheels",
+          "sampled_max_steer_acceleration": 1.1085521712272448,
+          "sampled_max_steer_rate": 0.79981791457543,
+          "setup": {
+            "common_steer_accel_peak_radps2": 1.1231761532955618,
+            "common_steer_rate_peak_radps": 0.8,
+            "demands": [
+              {
+                "event_duration_s": 2.3432099798544908,
+                "event_steer_accel_peak_radps2": 1.1231761532955618,
+                "event_steer_rate_peak_radps": 0.8,
+                "from_control": 0.0,
+                "from_direction": 1,
+                "from_mode": "A",
+                "max_wheel_angle_delta_rad": 0.9357695914045828,
+                "setup_s": 0.15,
+                "steering_profile": "shared_rate_accel_bound",
+                "steering_s": 2.193209979854491,
+                "to_control": 0.0,
+                "to_direction": 1,
+                "to_mode": "S",
+                "vehicle_id": 1,
+                "wheel_angle_deltas_rad": [
+                  -0.9357695914045827,
+                  0.9357695914045828,
+                  0.9357695914045827,
+                  -0.9357695914045828
+                ],
+                "wheel_angles_end_rad": [
+                  -0.9357695914045827,
+                  0.9357695914045828,
+                  0.9357695914045827,
+                  -0.9357695914045828
+                ],
+                "wheel_angles_start_rad": [
+                  0.0,
+                  0.0,
+                  -0.0,
+                  -0.0
+                ]
+              },
+              {
+                "event_duration_s": 2.3432099798544908,
+                "event_steer_accel_peak_radps2": 1.1231761532955618,
+                "event_steer_rate_peak_radps": 0.8,
+                "from_control": 0.0,
+                "from_direction": 1,
+                "from_mode": "A",
+                "max_wheel_angle_delta_rad": 0.9357695914045828,
+                "setup_s": 0.15,
+                "steering_profile": "shared_rate_accel_bound",
+                "steering_s": 2.193209979854491,
+                "to_control": 0.0,
+                "to_direction": 1,
+                "to_mode": "S",
+                "vehicle_id": 2,
+                "wheel_angle_deltas_rad": [
+                  -0.9357695914045827,
+                  0.9357695914045828,
+                  0.9357695914045827,
+                  -0.9357695914045828
+                ],
+                "wheel_angles_end_rad": [
+                  -0.9357695914045827,
+                  0.9357695914045828,
+                  0.9357695914045827,
+                  -0.9357695914045828
+                ],
+                "wheel_angles_start_rad": [
+                  0.0,
+                  0.0,
+                  -0.0,
+                  -0.0
+                ]
+              },
+              {
+                "event_duration_s": 2.3432099798544908,
+                "event_steer_accel_peak_radps2": 1.1231761532955618,
+                "event_steer_rate_peak_radps": 0.8,
+                "from_control": 0.0,
+                "from_direction": 1,
+                "from_mode": "A",
+                "max_wheel_angle_delta_rad": 0.9357695914045828,
+                "setup_s": 0.15,
+                "steering_profile": "shared_rate_accel_bound",
+                "steering_s": 2.193209979854491,
+                "to_control": 0.0,
+                "to_direction": -1,
+                "to_mode": "S",
+                "vehicle_id": 3,
+                "wheel_angle_deltas_rad": [
+                  -0.9357695914045827,
+                  0.9357695914045828,
+                  0.9357695914045827,
+                  -0.9357695914045828
+                ],
+                "wheel_angles_end_rad": [
+                  -0.9357695914045827,
+                  0.9357695914045828,
+                  0.9357695914045827,
+                  -0.9357695914045828
+                ],
+                "wheel_angles_start_rad": [
+                  0.0,
+                  0.0,
+                  -0.0,
+                  -0.0
+                ]
+              }
+            ],
+            "duration_s": 2.3432099798544908,
+            "edge_index": 0,
+            "end_time_s": 2.3432099798544908,
+            "from_mode": "A",
+            "headings": [
+              {
+                "theta": 0.0,
+                "vehicle_id": 1
+              },
+              {
+                "theta": 0.0,
+                "vehicle_id": 2
+              },
+              {
+                "theta": 0.0,
+                "vehicle_id": 3
+              }
+            ],
+            "initial": true,
+            "kind": "initial_setup",
+            "mode_during_phase": "A",
+            "phase_id": "initial_setup_0000",
+            "qf": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "setup_overhead_s": 0.15,
+            "steering_duration_s": 2.193209979854491,
+            "t0_s": 0.0,
+            "to_mode": "S"
+          },
+          "setup_heading_error": 0.0,
+          "setup_position_error": 0.0,
+          "status": "PASSED",
+          "totals": {
+            "duration_s": 6.0431716402346565,
+            "initial_setup_count": 1,
+            "initial_setup_s": 2.3432099798544908,
+            "inter_edge_setup_count": 0,
+            "inter_edge_setup_s": 0,
+            "motion_count": 1,
+            "motion_s": 3.6999616603801657
+          }
+        }
+      ],
+      "title": "Initial setup and S motion are separate bounded phases"
+    },
+    {
+      "case": "A08",
+      "inputs": {
+        "interior_samples_per_phase": 12,
+        "model_version": "uniform_timed_plan.v1",
+        "projection_semantics": "uniform_v02_signed_center_speed.v1"
+      },
+      "status": "PASSED",
+      "subcases": [
+        {
+          "arc_samples": 12,
+          "artifacts": "/home/wq/whut_thesis/expv3_multi_v02/evaluation/formation_refactor_v02/FR02/B/regression/artifacts",
+          "max_arc_qf_abs_error": 0.0,
+          "max_arc_vs_chord_deviation_m": 0.08761565699930644,
+          "max_projection_abs_error": 6.661338147750939e-16,
+          "max_rigidity_error_m": 4.440892098500626e-16,
+          "max_roundtrip_abs_error": 6.661338147750939e-16,
+          "name": "roundtrip_and_projection",
+          "projection_samples": 105,
+          "state_comparisons": 126,
+          "status": "PASSED"
+        }
+      ],
+      "title": "All phases >=11 nonuniform interior samples and exact nonzero-pivot arc"
+    },
+    {
+      "case": "A09",
+      "inputs": {
+        "hold_duration_s": 0.0,
+        "hold_sample_count": 1
+      },
+      "status": "PASSED",
+      "subcases": [
+        {
+          "name": "true_zero_motion_single_sample",
+          "projection": {
+            "certification": "GEOMETRY_ONLY_NO_S9_NO_COLLISION",
+            "formation_id": "uniform_v02",
+            "formation_poses": [
+              [
+                1.0,
+                -2.0,
+                0.4
+              ]
+            ],
+            "model_sha256": "323464beef131535758dc83adab03543b352e487e2ce2ec592150f3f16ffa406",
+            "model_version": "uniform_timed_plan.v1",
+            "offsets": [
+              {
+                "vehicle_id": 1,
+                "x": 1.0,
+                "y": 0.0
+              },
+              {
+                "vehicle_id": 2,
+                "x": 0.0,
+                "y": 1.0
+              },
+              {
+                "vehicle_id": 3,
+                "x": 0.0,
+                "y": -1.0
+              }
+            ],
+            "phases": [],
+            "plan_id": 0,
+            "semantic_version": "uniform_v02_signed_center_speed.v1",
+            "times_from_start": [
+              0.0
+            ],
+            "timing_report": {
+              "active_constraints": [],
+              "block_durations": [],
+              "certification": "GEOMETRY_ONLY",
+              "collision_certificate": false,
+              "direction_changes": [],
+              "dt": 0.0,
+              "duration_s": 0.0,
+              "dynamic_profile": "formation_piecewise_quintic_v1",
+              "executable": false,
+              "feasible": false,
+              "independent_timing_audit": false,
+              "limits": {
+                "a_max": 0.6,
+                "jerk_max": 2.0,
+                "lateral_accel_max": 0.6,
+                "max_block_duration_s": 120.0,
+                "min_mode_dwell_s": 0.3,
+                "mode_setup_time": 0.15,
+                "mode_switch_duration": 0.3,
+                "r_min_ackermann": 0.81,
+                "steer_accel_max": 1.5,
+                "steer_angle_max": 1.5707963267948966,
+                "steer_rate_max": 0.8,
+                "track": 0.364,
+                "uniform_semantics": "uniform_v02_signed_center_speed.v1",
+                "v_max": 0.8,
+                "wheel_speed_max": 1.0,
+                "wheelbase": 0.494,
+                "yaw_accel_max": 0.8,
+                "yaw_jerk_max": 3.0,
+                "yaw_rate_max": 0.8
+              },
+              "mode_intervals": {
+                "1": [],
+                "2": [],
+                "3": []
+              },
+              "moving_seconds": 0.0,
+              "phases": [],
+              "stationary_events": [
+                {
+                  "duration_s": 0.0,
+                  "headings": [
+                    {
+                      "theta": 0.2,
+                      "vehicle_id": 1
+                    },
+                    {
+                      "theta": -0.3,
+                      "vehicle_id": 2
+                    },
+                    {
+                      "theta": 0.7,
+                      "vehicle_id": 3
+                    }
+                  ],
+                  "kind": "NO_MOTION",
+                  "qf": [
+                    1.0,
+                    -2.0,
+                    0.4
+                  ],
+                  "t0_s": 0.0
+                }
+              ],
+              "stationary_seconds": 0.0,
+              "timing_audit": "SELF_CONSISTENCY_ONLY",
+              "trajectory_published": false,
+              "vehicle_peaks": {
+                "1": {
+                  "acceleration": 0.0,
+                  "jerk": 0.0,
+                  "lateral_acceleration": 0.0,
+                  "speed": 0.0,
+                  "steer_acceleration": 0.0,
+                  "steer_rate": 0.0,
+                  "wheel_angle": 0.0,
+                  "wheel_speed": 0.0,
+                  "yaw_acceleration": 0.0,
+                  "yaw_jerk": 0.0,
+                  "yaw_rate": 0.0
+                },
+                "2": {
+                  "acceleration": 0.0,
+                  "jerk": 0.0,
+                  "lateral_acceleration": 0.0,
+                  "speed": 0.0,
+                  "steer_acceleration": 0.0,
+                  "steer_rate": 0.0,
+                  "wheel_angle": 0.0,
+                  "wheel_speed": 0.0,
+                  "yaw_acceleration": 0.0,
+                  "yaw_jerk": 0.0,
+                  "yaw_rate": 0.0
+                },
+                "3": {
+                  "acceleration": 0.0,
+                  "jerk": 0.0,
+                  "lateral_acceleration": 0.0,
+                  "speed": 0.0,
+                  "steer_acceleration": 0.0,
+                  "steer_rate": 0.0,
+                  "wheel_angle": 0.0,
+                  "wheel_speed": 0.0,
+                  "yaw_acceleration": 0.0,
+                  "yaw_jerk": 0.0,
+                  "yaw_rate": 0.0
+                }
+              }
+            },
+            "trajectories": {
+              "1": [
+                {
+                  "block_index": 0,
+                  "center_acceleration_mps2": 0.0,
+                  "center_jerk_mps3": 0.0,
+                  "center_speed_mps": 0.0,
+                  "center_x": 1.921060994002885,
+                  "center_y": -1.6105816576913494,
+                  "center_yaw_rate_radps": 0.0,
+                  "lateral_acceleration_mps2": 0.0,
+                  "mode": 0,
+                  "mode_control": 0.0,
+                  "station": 0.0,
+                  "stationary": true,
+                  "theta": 0.2,
+                  "time_from_start": 0.0,
+                  "wheel_speed_mps": 0.0
+                }
+              ],
+              "2": [
+                {
+                  "block_index": 0,
+                  "center_acceleration_mps2": 0.0,
+                  "center_jerk_mps3": 0.0,
+                  "center_speed_mps": 0.0,
+                  "center_x": 0.6105816576913494,
+                  "center_y": -1.078939005997115,
+                  "center_yaw_rate_radps": 0.0,
+                  "lateral_acceleration_mps2": 0.0,
+                  "mode": 0,
+                  "mode_control": 0.0,
+                  "station": 0.0,
+                  "stationary": true,
+                  "theta": -0.3,
+                  "time_from_start": 0.0,
+                  "wheel_speed_mps": 0.0
+                }
+              ],
+              "3": [
+                {
+                  "block_index": 0,
+                  "center_acceleration_mps2": 0.0,
+                  "center_jerk_mps3": 0.0,
+                  "center_speed_mps": 0.0,
+                  "center_x": 1.3894183423086506,
+                  "center_y": -2.921060994002885,
+                  "center_yaw_rate_radps": 0.0,
+                  "lateral_acceleration_mps2": 0.0,
+                  "mode": 0,
+                  "mode_control": 0.0,
+                  "station": 0.0,
+                  "stationary": true,
+                  "theta": 0.7,
+                  "time_from_start": 0.0,
+                  "wheel_speed_mps": 0.0
+                }
+              ]
+            }
+          },
+          "state": {
+            "centers": [
+              {
+                "vehicle_id": 1,
+                "x": 1.921060994002885,
+                "y": -1.6105816576913494
+              },
+              {
+                "vehicle_id": 2,
+                "x": 0.6105816576913494,
+                "y": -1.078939005997115
+              },
+              {
+                "vehicle_id": 3,
+                "x": 1.3894183423086506,
+                "y": -2.921060994002885
+              }
+            ],
+            "edge_index": null,
+            "from_mode": "A",
+            "headings": [
+              {
+                "theta": 0.2,
+                "vehicle_id": 1
+              },
+              {
+                "theta": -0.3,
+                "vehicle_id": 2
+              },
+              {
+                "theta": 0.7,
+                "vehicle_id": 3
+              }
+            ],
+            "mode": "A",
+            "phase_id": "hold",
+            "phase_index": -1,
+            "phase_kind": "hold",
+            "progress": 0.0,
+            "progress_acceleration": 0.0,
+            "progress_jerk": 0.0,
+            "progress_rate": 0.0,
+            "progress_unit": "m",
+            "qf": [
+              1.0,
+              -2.0,
+              0.4
+            ],
+            "qf_acceleration": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "qf_jerk": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "qf_velocity": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "stationary": true,
+            "time_s": 0.0,
+            "to_mode": "A",
+            "vehicles": [
+              {
+                "acceleration": [
+                  0.0,
+                  0.0
+                ],
+                "center": [
+                  1.921060994002885,
+                  -1.6105816576913494
+                ],
+                "center_acceleration_mps2": 0.0,
+                "center_jerk_mps3": 0.0,
+                "center_speed_mps": 0.0,
+                "direction": 1,
+                "jerk": [
+                  0.0,
+                  0.0
+                ],
+                "lateral_acceleration_mps2": 0.0,
+                "lateral_speed_mps": 0.0,
+                "longitudinal_speed_mps": 0.0,
+                "mode_control": 0.0,
+                "theta": 0.2,
+                "vehicle_id": 1,
+                "velocity": [
+                  0.0,
+                  0.0
+                ],
+                "wheel_angles_rad": [
+                  0.0,
+                  0.0,
+                  -0.0,
+                  -0.0
+                ],
+                "wheel_angular_accelerations_radps2": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "wheel_angular_rates_radps": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "wheel_rolling_speeds_mps": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "wheel_speed_mps": 0.0,
+                "yaw_acceleration_radps2": 0.0,
+                "yaw_jerk_radps3": 0.0,
+                "yaw_rate_radps": 0.0
+              },
+              {
+                "acceleration": [
+                  0.0,
+                  0.0
+                ],
+                "center": [
+                  0.6105816576913494,
+                  -1.078939005997115
+                ],
+                "center_acceleration_mps2": 0.0,
+                "center_jerk_mps3": 0.0,
+                "center_speed_mps": 0.0,
+                "direction": 1,
+                "jerk": [
+                  0.0,
+                  0.0
+                ],
+                "lateral_acceleration_mps2": 0.0,
+                "lateral_speed_mps": 0.0,
+                "longitudinal_speed_mps": 0.0,
+                "mode_control": 0.0,
+                "theta": -0.3,
+                "vehicle_id": 2,
+                "velocity": [
+                  0.0,
+                  0.0
+                ],
+                "wheel_angles_rad": [
+                  0.0,
+                  0.0,
+                  -0.0,
+                  -0.0
+                ],
+                "wheel_angular_accelerations_radps2": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "wheel_angular_rates_radps": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "wheel_rolling_speeds_mps": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "wheel_speed_mps": 0.0,
+                "yaw_acceleration_radps2": 0.0,
+                "yaw_jerk_radps3": 0.0,
+                "yaw_rate_radps": 0.0
+              },
+              {
+                "acceleration": [
+                  0.0,
+                  0.0
+                ],
+                "center": [
+                  1.3894183423086506,
+                  -2.921060994002885
+                ],
+                "center_acceleration_mps2": 0.0,
+                "center_jerk_mps3": 0.0,
+                "center_speed_mps": 0.0,
+                "direction": 1,
+                "jerk": [
+                  0.0,
+                  0.0
+                ],
+                "lateral_acceleration_mps2": 0.0,
+                "lateral_speed_mps": 0.0,
+                "longitudinal_speed_mps": 0.0,
+                "mode_control": 0.0,
+                "theta": 0.7,
+                "vehicle_id": 3,
+                "velocity": [
+                  0.0,
+                  0.0
+                ],
+                "wheel_angles_rad": [
+                  0.0,
+                  0.0,
+                  -0.0,
+                  -0.0
+                ],
+                "wheel_angular_accelerations_radps2": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "wheel_angular_rates_radps": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "wheel_rolling_speeds_mps": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "wheel_speed_mps": 0.0,
+                "yaw_acceleration_radps2": 0.0,
+                "yaw_jerk_radps3": 0.0,
+                "yaw_rate_radps": 0.0
+              }
+            ]
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "goal_headings": {
+              "1": 0.2,
+              "2": 0.10000000000000003,
+              "3": 0.7
+            },
+            "start_headings": {
+              "1": 0.2,
+              "2": -0.3,
+              "3": 0.7
+            }
+          },
+          "name": "empty_sequence_heading_request_not_hold",
+          "rejection": {
+            "constraint": null,
+            "detail": "zero-motion request vehicle_id=2 unwrapped heading mismatch",
+            "edge_index": null,
+            "exception": "UniformTrajectoryError",
+            "phase_id": null,
+            "reason": "REQUESTED_HEADING_MISMATCH",
+            "vehicle_id": 2
+          },
+          "status": "PASSED"
+        },
+        {
+          "duration_s": 4.3532099798544905,
+          "name": "same_position_heading_change_is_real_S",
+          "phases": [
+            {
+              "common_steer_accel_peak_radps2": 1.1231761532955618,
+              "common_steer_rate_peak_radps": 0.8,
+              "duration_s": 2.3432099798544908,
+              "edge_index": 0,
+              "end_time_s": 2.3432099798544908,
+              "from_mode": "A",
+              "initial": true,
+              "kind": "initial_setup",
+              "mode": "A",
+              "phase_id": "initial_setup_0000",
+              "setup_overhead_s": 0.15,
+              "steering_duration_s": 2.193209979854491,
+              "t0_s": 0.0,
+              "to_mode": "S"
+            },
+            {
+              "duration_driver": {
+                "block_index": 0,
+                "constraint": "yaw_jerk",
+                "limit": 3.0,
+                "peak": 2.9554462779294304,
+                "tau": 0.0,
+                "utilization": 0.9851487593098102,
+                "vehicle_id": 2
+              },
+              "duration_s": 2.01,
+              "dynamic_duration_s": 2.01,
+              "edge_index": 0,
+              "end_time_s": 4.3532099798544905,
+              "kind": "motion",
+              "mode": "S",
+              "phase_id": "motion_0000",
+              "primitive": "S_SPIN",
+              "progress_unit": "rad",
+              "required_duration_s": 2.0,
+              "t0_s": 2.3432099798544908
+            }
+          ],
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "requested_goal": [
+              1.1,
+              -2.0,
+              0.4
+            ]
+          },
+          "name": "empty_sequence_position_request_not_hold",
+          "rejection": {
+            "constraint": null,
+            "detail": "zero-motion request error=(0.10000000000000009, 0.0, 0.0) exceeds raw-pose continuity",
+            "edge_index": null,
+            "exception": "UniformTrajectoryError",
+            "phase_id": null,
+            "reason": "REQUESTED_POSE_MISMATCH",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "factory_goal": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "requested_goal": [
+              2.0,
+              0.0,
+              0.0
+            ]
+          },
+          "name": "nonempty_plan_unmet_goal_rejected",
+          "rejection": {
+            "constraint": null,
+            "detail": "requested goal error=(1.0, 0.0, 0.0) exceeds raw-pose continuity",
+            "edge_index": null,
+            "exception": "UniformTrajectoryError",
+            "phase_id": null,
+            "reason": "REQUESTED_POSE_MISMATCH",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        }
+      ],
+      "title": "Only an explicit identical start/goal is a zero-duration hold"
+    },
+    {
+      "case": "A10",
+      "inputs": {
+        "max_block_duration_s": 120.0,
+        "time_continuity_tolerance_s": 1e-09
+      },
+      "status": "PASSED",
+      "subcases": [
+        {
+          "inputs": {
+            "jump_m": 0.01
+          },
+          "name": "qf_position_jump",
+          "rejection": {
+            "constraint": null,
+            "detail": "edge 1 position jump=(0.01, 0) m",
+            "edge_index": 1,
+            "exception": "UniformTimingError",
+            "phase_id": null,
+            "reason": "EDGE_QF_DISCONTINUITY",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "jump_rad": 0.2
+          },
+          "name": "unwrapped_heading_jump",
+          "rejection": {
+            "constraint": null,
+            "detail": "edge 1 vehicle_id=1 unwrapped heading jump=0.2 rad; setup cannot repair it",
+            "edge_index": 1,
+            "exception": "UniformTimingError",
+            "phase_id": null,
+            "reason": "EDGE_HEADING_DISCONTINUITY",
+            "vehicle_id": 1
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "first_ids": [
+              1,
+              2,
+              3
+            ],
+            "second_ids": [
+              1,
+              2,
+              4
+            ]
+          },
+          "name": "vehicle_ids_mismatch",
+          "rejection": {
+            "constraint": null,
+            "detail": "edge 1 IDs (1, 2, 4) != (1, 2, 3)",
+            "edge_index": 1,
+            "exception": "UniformTimingError",
+            "phase_id": null,
+            "reason": "EDGE_VEHICLE_IDS_MISMATCH",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "first_offset_x": 1.0,
+            "second_offset_x": 1.1
+          },
+          "name": "offsets_mismatch",
+          "rejection": {
+            "constraint": null,
+            "detail": "edge 1 offsets differ from edge 0",
+            "edge_index": 1,
+            "exception": "UniformTimingError",
+            "phase_id": null,
+            "reason": "EDGE_OFFSETS_MISMATCH",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "edge_wheelbase": 0.55,
+            "timing_wheelbase": 0.494
+          },
+          "name": "geometry_limits_mismatch",
+          "rejection": {
+            "constraint": "wheelbase",
+            "detail": "edge 0 wheelbase=0.55000000000000004 does not match TimingLimits 0.49399999999999999",
+            "edge_index": 0,
+            "exception": "UniformTimingError",
+            "phase_id": null,
+            "reason": "TIMING_GEOMETRY_LIMIT_MISMATCH",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "min_mode_dwell_s": 0.0
+          },
+          "name": "zero_min_mode_dwell",
+          "rejection": {
+            "constraint": null,
+            "detail": "V0.2 requires a positive min_mode_dwell_s; got 0.0",
+            "edge_index": null,
+            "exception": "UniformTimingError",
+            "phase_id": null,
+            "reason": "MIN_MODE_DWELL_REQUIRED",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "model_version": "uniform_timed_plan.v999"
+          },
+          "name": "unknown_model_version",
+          "rejection": {
+            "constraint": null,
+            "detail": "model_version='uniform_timed_plan.v999'; expected uniform_timed_plan.v1",
+            "edge_index": null,
+            "exception": "UniformTrajectoryError",
+            "phase_id": null,
+            "reason": "UNKNOWN_MODEL_VERSION",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "field": "phases[-1].duration_s",
+            "value": "NaN"
+          },
+          "name": "nonfinite_model_input",
+          "rejection": {
+            "constraint": null,
+            "detail": "model.phases[1].duration_s=nan is not finite",
+            "edge_index": null,
+            "exception": "UniformTrajectoryError",
+            "phase_id": null,
+            "reason": "NONFINITE_VALUE",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "removed_vehicle_id": 3
+          },
+          "name": "missing_vehicle_id",
+          "rejection": {
+            "constraint": null,
+            "detail": "vehicle shape IDs do not match offsets",
+            "edge_index": null,
+            "exception": "UniformTrajectoryError",
+            "phase_id": null,
+            "reason": "INVALID_VEHICLE_ID_SET",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "duplicated_vehicle_id": 1
+          },
+          "name": "duplicate_vehicle_id",
+          "rejection": {
+            "constraint": null,
+            "detail": "duplicate shape vehicle_id=1",
+            "edge_index": null,
+            "exception": "UniformTrajectoryError",
+            "phase_id": null,
+            "reason": "DUPLICATE_VEHICLE_ID",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "key": "plan_id"
+          },
+          "name": "duplicate_json_key",
+          "rejection": {
+            "constraint": null,
+            "detail": "duplicate key 'plan_id'",
+            "edge_index": null,
+            "exception": "UniformTrajectoryError",
+            "phase_id": null,
+            "reason": "DUPLICATE_JSON_KEY",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "primitive": "not_a_primitive"
+          },
+          "name": "illegal_primitive",
+          "rejection": {
+            "constraint": null,
+            "detail": "primitive='not_a_primitive'",
+            "edge_index": null,
+            "exception": "UniformTrajectoryError",
+            "phase_id": null,
+            "reason": "INVALID_PRIMITIVE",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "field": "phases[-1].end_time_s",
+            "increment_s": 0.1
+          },
+          "name": "redundant_value_conflict",
+          "rejection": {
+            "constraint": null,
+            "detail": "model.phases[1].end_time_s: 6.0431716402346565 != recomputed 6.1431716402346561",
+            "edge_index": null,
+            "exception": "UniformTrajectoryError",
+            "phase_id": null,
+            "reason": "REDUNDANT_VALUE_MISMATCH",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "L": 1.5707963267948966,
+            "progress": "-1e-06"
+          },
+          "name": "negative_progress",
+          "rejection": {
+            "constraint": null,
+            "detail": "progress=-9.9999999999999995e-07 is outside [0, 1.5707963267948966]",
+            "edge_index": 0,
+            "exception": "UniformTimingError",
+            "phase_id": "motion_0000",
+            "reason": "PROGRESS_OUT_OF_RANGE",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "L": 1.5707963267948966,
+            "progress": "1.5707973267948965"
+          },
+          "name": "progress_above_L",
+          "rejection": {
+            "constraint": null,
+            "detail": "progress=1.5707973267948965 is outside [0, 1.5707963267948966]",
+            "edge_index": 0,
+            "exception": "UniformTimingError",
+            "phase_id": "motion_0000",
+            "reason": "PROGRESS_OUT_OF_RANGE",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "L": 1.5707963267948966,
+            "progress": "nan"
+          },
+          "name": "nan_progress",
+          "rejection": {
+            "constraint": null,
+            "detail": "motion progress=nan is not finite",
+            "edge_index": null,
+            "exception": "UniformTimingError",
+            "phase_id": null,
+            "reason": "NONFINITE_VALUE",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "duration_s": 6.0431716402346565,
+            "time_s": "-1e-06"
+          },
+          "name": "negative_time",
+          "rejection": {
+            "constraint": null,
+            "detail": "time=-9.9999999999999995e-07 is outside [0, 6.0431716402346565]",
+            "edge_index": null,
+            "exception": "UniformTrajectoryError",
+            "phase_id": null,
+            "reason": "TIME_OUT_OF_RANGE",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "duration_s": 6.0431716402346565,
+            "time_s": "6.043172640234657"
+          },
+          "name": "time_above_end",
+          "rejection": {
+            "constraint": null,
+            "detail": "time=6.0431726402346566 is outside [0, 6.0431716402346565]",
+            "edge_index": null,
+            "exception": "UniformTrajectoryError",
+            "phase_id": null,
+            "reason": "TIME_OUT_OF_RANGE",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "duration_s": 6.0431716402346565,
+            "time_s": "nan"
+          },
+          "name": "nan_time",
+          "rejection": {
+            "constraint": null,
+            "detail": "state_at.time_s=nan is not finite",
+            "edge_index": null,
+            "exception": "UniformTrajectoryError",
+            "phase_id": null,
+            "reason": "NONFINITE_VALUE",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "duration_s": 0.0
+          },
+          "name": "zero_phase_duration",
+          "rejection": {
+            "constraint": null,
+            "detail": "phase motion_0000 duration=0.0",
+            "edge_index": null,
+            "exception": "UniformTrajectoryError",
+            "phase_id": "motion_0000",
+            "reason": "NONPOSITIVE_PHASE_DURATION",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "duration_s": -1.0
+          },
+          "name": "negative_phase_duration",
+          "rejection": {
+            "constraint": null,
+            "detail": "phase motion_0000 duration=-1.0",
+            "edge_index": null,
+            "exception": "UniformTrajectoryError",
+            "phase_id": "motion_0000",
+            "reason": "NONPOSITIVE_PHASE_DURATION",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "motion_t0_shift_s": 0.05
+          },
+          "name": "phase_time_gap",
+          "rejection": {
+            "constraint": null,
+            "detail": "phase motion_0000 has gap 0.05 s",
+            "edge_index": null,
+            "exception": "UniformTrajectoryError",
+            "phase_id": "motion_0000",
+            "reason": "PHASE_TIME_DISCONTINUITY",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "motion_t0_shift_s": -0.05
+          },
+          "name": "phase_time_overlap",
+          "rejection": {
+            "constraint": null,
+            "detail": "phase motion_0000 has overlap 0.05 s",
+            "edge_index": null,
+            "exception": "UniformTrajectoryError",
+            "phase_id": "motion_0000",
+            "reason": "PHASE_TIME_DISCONTINUITY",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "displacement_m": 1000.0,
+            "max_block_duration_s": 120.0
+          },
+          "name": "max_block_duration_exceeded",
+          "rejection": {
+            "constraint": "speed",
+            "detail": "speed requires 2343.750000 s, exceeds max_block_duration_s=120.000000",
+            "edge_index": 0,
+            "exception": "UniformTimingError",
+            "phase_id": "motion_0000",
+            "reason": "MOTION_DURATION_LIMIT",
+            "vehicle_id": 1
+          },
+          "status": "PASSED"
+        }
+      ],
+      "title": "Continuity, identity, finite values, progress/time and duration rejection"
+    },
+    {
+      "case": "R1",
+      "inputs": {
+        "includes_predecessor_floats": true,
+        "includes_serialized_models": true,
+        "plans": [
+          "straight",
+          "mixed_sign_spin",
+          "negative_spin",
+          "S_arc_S_O"
+        ],
+        "relative_distances": [
+          "1e-5",
+          "1e-6",
+          "1e-7",
+          "1e-8",
+          "1e-9",
+          "1e-10",
+          "1e-11",
+          "1e-12",
+          "1e-13",
+          "1e-14",
+          "1e-15"
+        ]
+      },
+      "status": "PASSED",
+      "subcases": [
+        {
+          "max_projection_state_error": 0.0,
+          "name": "projection_near_final_endpoint",
+          "scenario": "straight",
+          "status": "PASSED",
+          "times": [
+            0.0,
+            4.710890390624999,
+            4.710937499999999
+          ]
+        },
+        {
+          "max_projection_state_error": 0.0,
+          "name": "projection_near_final_endpoint",
+          "scenario": "mixed_sign_spin",
+          "status": "PASSED",
+          "times": [
+            0.0,
+            6.043111208518254,
+            6.0431716402346565
+          ]
+        },
+        {
+          "max_projection_state_error": 0.0,
+          "name": "projection_near_final_endpoint",
+          "scenario": "negative_spin",
+          "status": "PASSED",
+          "times": [
+            0.0,
+            6.043111208518254,
+            6.0431716402346565
+          ]
+        },
+        {
+          "max_projection_state_error": 0.0,
+          "name": "projection_near_final_endpoint",
+          "scenario": "S_arc_S_O",
+          "status": "PASSED",
+          "times": [
+            0.0,
+            23.148816627485086,
+            23.149048117966267
+          ]
+        },
+        {
+          "inputs": {
+            "duration_s": 4.710937499999999,
+            "plan": "straight",
+            "time": "4.7109375"
+          },
+          "name": "straight_one_ulp_above_plan_end",
+          "rejection": {
+            "constraint": null,
+            "detail": "time=4.7109375 is outside [0, 4.7109374999999991]",
+            "edge_index": null,
+            "exception": "UniformTrajectoryError",
+            "phase_id": null,
+            "reason": "TIME_OUT_OF_RANGE",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "duration_s": 6.0431716402346565,
+            "plan": "mixed_sign_spin",
+            "time": "6.043171640234657"
+          },
+          "name": "mixed_sign_spin_one_ulp_above_plan_end",
+          "rejection": {
+            "constraint": null,
+            "detail": "time=6.0431716402346574 is outside [0, 6.0431716402346565]",
+            "edge_index": null,
+            "exception": "UniformTrajectoryError",
+            "phase_id": null,
+            "reason": "TIME_OUT_OF_RANGE",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "duration_s": 6.0431716402346565,
+            "plan": "negative_spin",
+            "time": "6.043171640234657"
+          },
+          "name": "negative_spin_one_ulp_above_plan_end",
+          "rejection": {
+            "constraint": null,
+            "detail": "time=6.0431716402346574 is outside [0, 6.0431716402346565]",
+            "edge_index": null,
+            "exception": "UniformTrajectoryError",
+            "phase_id": null,
+            "reason": "TIME_OUT_OF_RANGE",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "duration_s": 23.149048117966267,
+            "plan": "S_arc_S_O",
+            "time": "23.14904811796627"
+          },
+          "name": "S_arc_S_O_one_ulp_above_plan_end",
+          "rejection": {
+            "constraint": null,
+            "detail": "time=23.14904811796627 is outside [0, 23.149048117966267]",
+            "edge_index": null,
+            "exception": "UniformTrajectoryError",
+            "phase_id": null,
+            "reason": "TIME_OUT_OF_RANGE",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "time": "-5e-324"
+          },
+          "name": "negative_one_ulp_time",
+          "rejection": {
+            "constraint": null,
+            "detail": "time=-4.9406564584124654e-324 is outside [0, 4.7109374999999991]",
+            "edge_index": null,
+            "exception": "UniformTrajectoryError",
+            "phase_id": null,
+            "reason": "TIME_OUT_OF_RANGE",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "boundary_side_checks": 28,
+          "max_arc_qf_error": 0.0,
+          "max_center_error_m": 3.1554436208840472e-30,
+          "max_monotonic_drop": 0.0,
+          "max_progress_overshoot": 0.0,
+          "max_progress_rate_reference_error": 1.3390192960855274e-20,
+          "max_progress_reference_error": 6.310887241768095e-30,
+          "max_projection_state_error": 0.0,
+          "max_rigidity_error_m": 4.440892098500626e-16,
+          "max_roundtrip_abs_error": 8.881784197001252e-16,
+          "max_setup_wheel_angle_overshoot_rad": 0.0,
+          "max_setup_wheel_angle_reference_error_rad": 1.1102230246251565e-16,
+          "name": "near_endpoint_evaluations",
+          "near_time_count": 164,
+          "rounded_boundary_skipped_count": 1,
+          "status": "PASSED"
+        }
+      ],
+      "title": "Legal near-endpoint times never overflow progress"
+    },
+    {
+      "case": "R2",
+      "inputs": {
+        "plans": [
+          "mixed_sign_spin",
+          "negative_spin"
+        ],
+        "samples_per_motion": [
+          0.05,
+          0.25,
+          0.5,
+          0.75,
+          0.95
+        ],
+        "vector_tolerance_mps": 1e-07
+      },
+      "status": "PASSED",
+      "subcases": [
+        {
+          "max_canonical_angle_error_rad": 0.0,
+          "max_peak_error_mps": 0.0,
+          "max_vector_error_mps": 1.2266347333466993e-18,
+          "max_wheel_speed_reference_error_mps": 0.0,
+          "max_yaw_reference_error_radps": 0.0,
+          "name": "mixed_sign_spin_fraction_0.05",
+          "roundtrip_max_abs_error": 0.0,
+          "status": "PASSED",
+          "time_s": 2.528208062873499
+        },
+        {
+          "max_canonical_angle_error_rad": 0.0,
+          "max_peak_error_mps": 0.0,
+          "max_vector_error_mps": 2.7755575615628914e-17,
+          "max_wheel_speed_reference_error_mps": 2.7755575615628914e-17,
+          "max_yaw_reference_error_radps": 0.0,
+          "name": "mixed_sign_spin_fraction_0.25",
+          "roundtrip_max_abs_error": 0.0,
+          "status": "PASSED",
+          "time_s": 3.268200394949532
+        },
+        {
+          "max_canonical_angle_error_rad": 0.0,
+          "max_peak_error_mps": 8.326672684688674e-17,
+          "max_vector_error_mps": 5.551115123125783e-17,
+          "max_wheel_speed_reference_error_mps": 5.551115123125783e-17,
+          "max_yaw_reference_error_radps": 0.0,
+          "name": "mixed_sign_spin_fraction_0.5",
+          "roundtrip_max_abs_error": 0.0,
+          "status": "PASSED",
+          "time_s": 4.193190810044573
+        },
+        {
+          "max_canonical_angle_error_rad": 0.0,
+          "max_peak_error_mps": 0.0,
+          "max_vector_error_mps": 1.962615573354719e-17,
+          "max_wheel_speed_reference_error_mps": 5.551115123125783e-17,
+          "max_yaw_reference_error_radps": 0.0,
+          "name": "mixed_sign_spin_fraction_0.75",
+          "roundtrip_max_abs_error": 0.0,
+          "status": "PASSED",
+          "time_s": 5.118181225139615
+        },
+        {
+          "max_canonical_angle_error_rad": 0.0,
+          "max_peak_error_mps": 0.0,
+          "max_vector_error_mps": 3.127317220692751e-18,
+          "max_wheel_speed_reference_error_mps": 5.551115123125783e-17,
+          "max_yaw_reference_error_radps": 3.469446951953614e-18,
+          "name": "mixed_sign_spin_fraction_0.95",
+          "roundtrip_max_abs_error": 0.0,
+          "status": "PASSED",
+          "time_s": 5.858173557215649
+        },
+        {
+          "max_canonical_angle_error_rad": 0.0,
+          "max_peak_error_mps": 0.0,
+          "max_vector_error_mps": 1.2266347333466993e-18,
+          "max_wheel_speed_reference_error_mps": 5.551115123125783e-17,
+          "max_yaw_reference_error_radps": 3.469446951953614e-18,
+          "name": "negative_spin_fraction_0.05",
+          "roundtrip_max_abs_error": 0.0,
+          "status": "PASSED",
+          "time_s": 2.528208062873499
+        },
+        {
+          "max_canonical_angle_error_rad": 0.0,
+          "max_peak_error_mps": 0.0,
+          "max_vector_error_mps": 2.7755575615628914e-17,
+          "max_wheel_speed_reference_error_mps": 5.551115123125783e-17,
+          "max_yaw_reference_error_radps": 3.469446951953614e-18,
+          "name": "negative_spin_fraction_0.25",
+          "roundtrip_max_abs_error": 0.0,
+          "status": "PASSED",
+          "time_s": 3.268200394949532
+        },
+        {
+          "max_canonical_angle_error_rad": 0.0,
+          "max_peak_error_mps": 8.326672684688674e-17,
+          "max_vector_error_mps": 5.551115123125783e-17,
+          "max_wheel_speed_reference_error_mps": 5.551115123125783e-17,
+          "max_yaw_reference_error_radps": 3.469446951953614e-18,
+          "name": "negative_spin_fraction_0.5",
+          "roundtrip_max_abs_error": 0.0,
+          "status": "PASSED",
+          "time_s": 4.193190810044573
+        },
+        {
+          "max_canonical_angle_error_rad": 0.0,
+          "max_peak_error_mps": 0.0,
+          "max_vector_error_mps": 1.962615573354719e-17,
+          "max_wheel_speed_reference_error_mps": 5.551115123125783e-17,
+          "max_yaw_reference_error_radps": 3.469446951953614e-18,
+          "name": "negative_spin_fraction_0.75",
+          "roundtrip_max_abs_error": 0.0,
+          "status": "PASSED",
+          "time_s": 5.118181225139615
+        },
+        {
+          "max_canonical_angle_error_rad": 0.0,
+          "max_peak_error_mps": 0.0,
+          "max_vector_error_mps": 3.127317220692751e-18,
+          "max_wheel_speed_reference_error_mps": 5.551115123125783e-17,
+          "max_yaw_reference_error_radps": 3.469446951953614e-18,
+          "name": "negative_spin_fraction_0.95",
+          "roundtrip_max_abs_error": 0.0,
+          "status": "PASSED",
+          "time_s": 5.858173557215649
+        },
+        {
+          "folded_wheel_samples": 60,
+          "max_canonical_wheel_angle_error_rad": 0.0,
+          "max_peak_wheel_speed_error_mps": 8.326672684688674e-17,
+          "max_roundtrip_abs_error": 0.0,
+          "max_vector_error_mps": 5.551115123125783e-17,
+          "max_wheel_speed_reference_error_mps": 5.551115123125783e-17,
+          "max_yaw_rate_reference_error_radps": 3.469446951953614e-18,
+          "name": "folded_unfolded_and_zero_yaw_wheels",
+          "status": "PASSED",
+          "unfolded_wheel_samples": 60,
+          "zero_yaw_vehicle_samples": 10
+        }
+      ],
+      "title": "S rolling speeds follow folded wheel directions"
+    },
+    {
+      "case": "R3",
+      "inputs": {
+        "numeric_support_domain_s": [
+          1e-100,
+          1e+100
+        ],
+        "old_time_continuity_tol_s": 1e-09,
+        "strict_boundary_rule": "adjacent t0 == previous end; first t0 == 0; final end == duration"
+      },
+      "status": "PASSED",
+      "subcases": [
+        {
+          "inputs": {
+            "actual_delta_s": 5.000000413701855e-10,
+            "phase_id": "motion_0000",
+            "requested_t0_s": 2.343209980354491
+          },
+          "name": "codex_motion_gap_5e-10",
+          "rejection": {
+            "constraint": null,
+            "detail": "phase motion_0000 has gap 5.0000004137e-10 s",
+            "edge_index": null,
+            "exception": "UniformTrajectoryError",
+            "phase_id": "motion_0000",
+            "reason": "PHASE_TIME_DISCONTINUITY",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "actual_delta_s": 4.440892098500626e-16,
+            "phase_id": "motion_0000",
+            "requested_t0_s": 2.343209979854491
+          },
+          "name": "motion_gap_one_ulp",
+          "rejection": {
+            "constraint": null,
+            "detail": "phase motion_0000 has gap 4.4408920985e-16 s",
+            "edge_index": null,
+            "exception": "UniformTrajectoryError",
+            "phase_id": "motion_0000",
+            "reason": "PHASE_TIME_DISCONTINUITY",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "actual_delta_s": 9.999991945619513e-10,
+            "phase_id": "motion_0000",
+            "requested_t0_s": 2.34320998085449
+          },
+          "name": "motion_gap_just_below_tolerance",
+          "rejection": {
+            "constraint": null,
+            "detail": "phase motion_0000 has gap 9.99999194562e-10 s",
+            "edge_index": null,
+            "exception": "UniformTrajectoryError",
+            "phase_id": "motion_0000",
+            "reason": "PHASE_TIME_DISCONTINUITY",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "actual_delta_s": 1e-09,
+            "phase_id": "initial_setup_0000",
+            "requested_t0_s": 1e-09
+          },
+          "name": "first_phase_gap_equal_tolerance",
+          "rejection": {
+            "constraint": null,
+            "detail": "phase initial_setup_0000 has gap 1e-09 s",
+            "edge_index": null,
+            "exception": "UniformTrajectoryError",
+            "phase_id": "initial_setup_0000",
+            "reason": "PHASE_TIME_DISCONTINUITY",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "actual_delta_s": -5.000000413701855e-10,
+            "phase_id": "motion_0000",
+            "requested_t0_s": 2.3432099793544907
+          },
+          "name": "motion_overlap_5e-10",
+          "rejection": {
+            "constraint": null,
+            "detail": "phase motion_0000 has overlap 5.0000004137e-10 s",
+            "edge_index": null,
+            "exception": "UniformTrajectoryError",
+            "phase_id": "motion_0000",
+            "reason": "PHASE_TIME_DISCONTINUITY",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "actual_delta_s": -4.440892098500626e-16,
+            "phase_id": "motion_0000",
+            "requested_t0_s": 2.3432099798544903
+          },
+          "name": "motion_overlap_one_ulp",
+          "rejection": {
+            "constraint": null,
+            "detail": "phase motion_0000 has overlap 4.4408920985e-16 s",
+            "edge_index": null,
+            "exception": "UniformTrajectoryError",
+            "phase_id": "motion_0000",
+            "reason": "PHASE_TIME_DISCONTINUITY",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "actual_delta_s": -9.999991945619513e-10,
+            "phase_id": "motion_0000",
+            "requested_t0_s": 2.3432099788544916
+          },
+          "name": "motion_overlap_just_below_tolerance",
+          "rejection": {
+            "constraint": null,
+            "detail": "phase motion_0000 has overlap 9.99999194562e-10 s",
+            "edge_index": null,
+            "exception": "UniformTrajectoryError",
+            "phase_id": "motion_0000",
+            "reason": "PHASE_TIME_DISCONTINUITY",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "actual_delta_s": -1e-09,
+            "phase_id": "initial_setup_0000",
+            "requested_t0_s": -1e-09
+          },
+          "name": "first_phase_overlap_equal_tolerance",
+          "rejection": {
+            "constraint": null,
+            "detail": "phase initial_setup_0000 has overlap 1e-09 s",
+            "edge_index": null,
+            "exception": "UniformTrajectoryError",
+            "phase_id": "initial_setup_0000",
+            "reason": "PHASE_TIME_DISCONTINUITY",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "phase_id": "motion_0000",
+            "stored_duration_s": 1e-20,
+            "stored_end_time_s": 2.3432099798544908
+          },
+          "name": "codex_motion_collapsed_1e-20",
+          "rejection": {
+            "constraint": null,
+            "detail": "phase motion_0000 t0=2.3432099798544908 duration=9.9999999999999995e-21 end=2.3432099798544908",
+            "edge_index": null,
+            "exception": "UniformTrajectoryError",
+            "phase_id": "motion_0000",
+            "reason": "PHASE_TIME_UNREPRESENTABLE",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "final_phase_end_s": 6.0431716402346565,
+            "stored_duration_s": 6.043171640234656
+          },
+          "name": "total_duration_short_one_ulp",
+          "rejection": {
+            "constraint": null,
+            "detail": "phase sum 6.0431716402346565 != duration 6.0431716402346556",
+            "edge_index": null,
+            "exception": "UniformTrajectoryError",
+            "phase_id": null,
+            "reason": "PLAN_DURATION_MISMATCH",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "final_phase_end_s": 6.0431716402346565,
+            "stored_duration_s": 6.043171639734656
+          },
+          "name": "total_duration_short_5e-10",
+          "rejection": {
+            "constraint": null,
+            "detail": "phase sum 6.0431716402346565 != duration 6.0431716397346564",
+            "edge_index": null,
+            "exception": "UniformTrajectoryError",
+            "phase_id": null,
+            "reason": "PLAN_DURATION_MISMATCH",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "final_phase_end_s": 6.0431716402346565,
+            "stored_duration_s": 6.0431716407346565
+          },
+          "name": "total_duration_long_5e-10",
+          "rejection": {
+            "constraint": null,
+            "detail": "phase sum 6.0431716402346565 != duration 6.0431716407346565",
+            "edge_index": null,
+            "exception": "UniformTrajectoryError",
+            "phase_id": null,
+            "reason": "PLAN_DURATION_MISMATCH",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "duration_s": 1e-101
+          },
+          "name": "motion_below_minimum_clock",
+          "rejection": {
+            "constraint": null,
+            "detail": "phase.duration_s=1.0000000000000001e-101 s is outside numeric support [1e-100, 1e+100] s",
+            "edge_index": null,
+            "exception": "UniformTrajectoryError",
+            "phase_id": "motion_0000",
+            "reason": "PHASE_DURATION_UNSUPPORTED",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "duration_s": 1e+101
+          },
+          "name": "motion_above_maximum_clock",
+          "rejection": {
+            "constraint": null,
+            "detail": "phase.duration_s=9.9999999999999998e+100 s is outside numeric support [1e-100, 1e+100] s",
+            "edge_index": null,
+            "exception": "UniformTrajectoryError",
+            "phase_id": "motion_0000",
+            "reason": "PHASE_DURATION_UNSUPPORTED",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "phase_id": "initial_setup_0000",
+            "steering_duration_s": 1e-101
+          },
+          "name": "setup_steering_below_minimum_clock",
+          "rejection": {
+            "constraint": null,
+            "detail": "phase.steering_duration_s=1.0000000000000001e-101 s is outside numeric support [1e-100, 1e+100] s",
+            "edge_index": null,
+            "exception": "UniformTrajectoryError",
+            "phase_id": "initial_setup_0000",
+            "reason": "PHASE_DURATION_UNSUPPORTED",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "inputs": {
+            "phase_id": "initial_setup_0000",
+            "steering_duration_s": 1e+101
+          },
+          "name": "setup_steering_above_maximum_clock",
+          "rejection": {
+            "constraint": null,
+            "detail": "phase.steering_duration_s=9.9999999999999998e+100 s is outside numeric support [1e-100, 1e+100] s",
+            "edge_index": null,
+            "exception": "UniformTrajectoryError",
+            "phase_id": "initial_setup_0000",
+            "reason": "PHASE_DURATION_UNSUPPORTED",
+            "vehicle_id": null
+          },
+          "status": "PASSED"
+        },
+        {
+          "accepted_support_boundaries": 2,
+          "collapsed_cases": 1,
+          "duration_mismatch_cases": 3,
+          "gap_overlap_cases": 8,
+          "legal_hold_duration_s": 0.0,
+          "name": "strict_boundaries_and_numeric_support",
+          "normal_roundtrips": 3,
+          "rejected_unsupported_inputs": 4,
+          "status": "PASSED"
+        }
+      ],
+      "title": "Decoded phase clocks cover [0,T_end] exactly and are numerically representable"
+    }
+  ],
+  "generated_at_utc": "2026-11-13T14:02:19.894908+00:00",
+  "import_paths": {
+    "uniform_motion": "/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_motion.py",
+    "uniform_timing": "/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_timing.py",
+    "uniform_trajectory": "/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_trajectory.py"
+  },
+  "package_src": "/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_optimizer/src",
+  "platform": "Linux-5.15.0-139-generic-x86_64-with-glibc2.29",
+  "python": "3.8.10 (default, Mar 18 2025, 20:04:55) \n[GCC 9.4.0]",
+  "repo_root": "/home/wq/whut_thesis/expv3_multi_v02",
+  "schema": "fr02a.trajectory_results.v1",
+  "status": "PASSED"
+}

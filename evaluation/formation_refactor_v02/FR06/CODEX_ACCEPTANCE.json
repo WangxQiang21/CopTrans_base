@@ -1,0 +1,80 @@
+{
+  "task": "FR06",
+  "status": "ACCEPTED",
+  "reviewer": "Codex",
+  "reviewed_at_utc": "2026-11-14T15:02:07.079041+00:00",
+  "branch": "refactor/formation-v02",
+  "head": "6227833011e2d92b711179bfdec979bb0b878b29",
+  "report": "CODEX_ACCEPTANCE.md",
+  "detailed_report": "codex_acceptance_20261114T145547Z/ACCEPTANCE.md",
+  "evidence_directory": "codex_acceptance_20261114T145547Z",
+  "reviewed_FR06_artifact_sha256": {
+    "experiment_summary.json": "a6a57b67fa6b1059f73c5d84b02218eb8c4b1d46235c9b3071acd6a7769e1be8",
+    "COMMANDS.md": "50b8802dea40c871ab51adf6dc62b27bd8a986c48197fbb92bc1b5a4c480d398",
+    "freeze_reference.py": "e4ac85794e0a4049bec0111a8c95d39460345a394f05a8ad6f2f1e80ce327af2",
+    "run_experiments.py": "473940d3691de4809968ef15ef3704369ee29acd761f3e56345284f76ff535a9",
+    "scene_frozen.json": "92aa8c9684bf40d8de9685fc80dfececa2231618037f78aa08fd39134dfec5b0",
+    "REPORT.md": "0c0039d5625378ef4b1461b46b67673b15fceade62cceb65caca24e9053b9d00",
+    "make_scene.py": "ba679f8a4066d66c8f385393b1b3b9cb69795e2e1327c26e2037b9ded8561266",
+    "fr06_scene.py": "3e7a2879d4938c048955adbe47b050c6a1a890646b6a2c9b005b238098697613"
+  },
+  "blocking_findings": [],
+  "original_six_attempts_verified": {
+    "wide_3_2m": {
+      "attempts": 3,
+      "successes": 0,
+      "budget_exhausted": 3
+    },
+    "tight_2_8m": {
+      "attempts": 3,
+      "successes": 3
+    }
+  },
+  "independent_reference_reaudits": {
+    "wide_3_2m": "FEASIBLE",
+    "tight_2_8m": "FEASIBLE",
+    "exploratory_2_6m": "FORMATION_SWEEP_COLLISION"
+  },
+  "independent_saved_success_plan_reaudits_passed": 3,
+  "independent_fresh_tight_search": {
+    "status": "SUCCESS",
+    "wall_s": 11.070857600076124,
+    "expansions": 6,
+    "duration_s": 33.02449442722614,
+    "request_sha256": "72112bbb8549f67e19a16d6286cedc2f307388fc9db043db5f80e91b9c3edc1e"
+  },
+  "seed_injection_found": false,
+  "ROS_log_model_digest_matches_identity_rebuilt_saved_route": true,
+  "ROS_model_digest": "a39818b8125ce7d3cd212e16108f7e91b849c952f534dfcf3b559e4bac0cc967",
+  "new_ROS_GUI_run_this_review": false,
+  "screenshots_visually_reviewed": 3,
+  "submitted_manifest_entries_verified": 106,
+  "FR05_frozen_manifest_entries_verified": 175,
+  "independent_metrics": {
+    "reference_total_s": 29.95529475329162,
+    "plan_total_s": 33.02449442722614,
+    "extra_duration_s": 3.0691996739345164,
+    "reference_setup_s": 7.322127230419466,
+    "plan_setup_s": 7.322127230419466,
+    "extra_setup_s": 0.0,
+    "nominal_band_clearance_analytic_m": 0.12911923176646445,
+    "nominal_band_after_margin_m": 0.07911923176646445,
+    "clearance_is_not_a_raster_distance": true
+  },
+  "nonblocking_reporting_corrections": [
+    "extra_duration_is_repeated_O_motion_accel_decel_not_extra_setup",
+    "clearance_is_nominal_continuous_band_not_exact_raster_distance",
+    "use_raw_JSON_collision_timings",
+    "screenshots_start_after_S_spin",
+    "COMMANDS_demo_path_must_be_worktree_root"
+  ],
+  "research_bottleneck": "Wide feasible corridor exhausts fixed search budget; analytic sweep consumes about 97.6% of wall time, many live branches remain. Need separate candidate count, per-sweep work and expansion order before choosing an optimization.",
+  "acceptance_scope": "One frozen static narrow-corner scene; not global success rate, completeness, optimality or nonzero-pivot causal benefit.",
+  "FR01_to_FR05_remain_ACCEPTED": true,
+  "implementation_modified_by_codex": false,
+  "tests_modified_by_codex": false,
+  "configuration_modified_by_codex": false,
+  "git_committed": false,
+  "optimization_started": false,
+  "original_T5_preserved": true
+}

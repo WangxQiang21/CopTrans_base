@@ -1,0 +1,87 @@
+{
+  "task": "FR01 rework_01",
+  "generated_at_utc": "2026-11-13T05:25:54.819238+00:00",
+  "worktree": "/home/wq/whut_thesis/expv3_multi_v02",
+  "branch": "refactor/formation-v02",
+  "head": "6227833011e2d92b711179bfdec979bb0b878b29",
+  "python_executable": "/usr/bin/python3",
+  "python_version": "3.8.10 (default, Mar 18 2025, 20:04:55) \n[GCC 9.4.0]",
+  "platform": "Linux-5.15.0-139-generic-x86_64-with-glibc2.29",
+  "environment_overrides": {
+    "OPENBLAS_NUM_THREADS": "1",
+    "PYTHONDONTWRITEBYTECODE": "1",
+    "FR01_RESULTS_PATH": "/home/wq/whut_thesis/expv3_multi_v02/evaluation/formation_refactor_v02/FR01/rework_01/primitive_results.json"
+  },
+  "runs": [
+    {
+      "name": "FR01 uniform-motion targeted tests",
+      "command": "OPENBLAS_NUM_THREADS=1 PYTHONDONTWRITEBYTECODE=1 FR01_RESULTS_PATH=/home/wq/whut_thesis/expv3_multi_v02/evaluation/formation_refactor_v02/FR01/rework_01/primitive_results.json python3 -m unittest discover -s tests -p 'test_uniform_motion.py' -v",
+      "exit_code": 0,
+      "stdout_stderr_log": "logs/test_uniform_motion.log",
+      "result": "Ran 13 tests in 0.027s",
+      "terminal_result": "OK",
+      "case_status_counts": {
+        "PASSED": 13
+      },
+      "machine_results": "primitive_results.json"
+    },
+    {
+      "name": "Copied Codex independent probes",
+      "command": "OPENBLAS_NUM_THREADS=1 PYTHONDONTWRITEBYTECODE=1 python3 evaluation/formation_refactor_v02/FR01/rework_01/independent_probes.py",
+      "exit_code": 0,
+      "stdout_stderr_log": "logs/independent_probes.log",
+      "result": "24 positive A arcs; 7/7 injected faults rejected",
+      "machine_results": "independent_probes.json",
+      "positive_count": 24,
+      "unexpected_acceptances": 0,
+      "positive_metrics": {
+        "max_center_error_m": 8.881784197001252e-16,
+        "max_finite_difference_error": 8.878187074401467e-10,
+        "max_lateral_residual": 2.890250261344818e-10
+      },
+      "negative_reasons": {
+        "N01_A_arc_body_not_tangent": "EDGE_VALIDATION_FAILED",
+        "N02_S_zero_angle_end_wheels_A": "EDGE_VALIDATION_FAILED",
+        "N03_wheel_limit_exceeded": "EDGE_VALIDATION_FAILED",
+        "N04_turn_radius_below_limit": "EDGE_VALIDATION_FAILED",
+        "N05_mode_primitive_mismatch": "MODE_PRIMITIVE_MISMATCH",
+        "N06_S_zero_angle_segment_A": "EDGE_VALIDATION_FAILED",
+        "N07_NaN_wheel": "NONFINITE_VALUE"
+      }
+    },
+    {
+      "name": "Legacy formation model suite",
+      "command": "OPENBLAS_NUM_THREADS=1 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -p 'test_formation_model.py' -v",
+      "exit_code": 0,
+      "stdout_stderr_log": "logs/legacy_test_formation_model.log",
+      "result": "Ran 26 tests in 0.002s",
+      "terminal_result": "OK",
+      "expected_test_count": 26
+    },
+    {
+      "name": "Legacy formation geometry suite",
+      "command": "OPENBLAS_NUM_THREADS=1 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -p 'test_formation_geometry.py' -v",
+      "exit_code": 0,
+      "stdout_stderr_log": "logs/legacy_test_formation_geometry.log",
+      "result": "Ran 15 tests in 0.074s",
+      "terminal_result": "OK",
+      "expected_test_count": 15
+    },
+    {
+      "name": "Legacy formation kinematics suite",
+      "command": "OPENBLAS_NUM_THREADS=1 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -p 'test_formation_kinematics.py' -v",
+      "exit_code": 0,
+      "stdout_stderr_log": "logs/legacy_test_formation_kinematics.log",
+      "result": "Ran 28 tests in 0.008s",
+      "terminal_result": "OK",
+      "expected_test_count": 28
+    },
+    {
+      "name": "git diff --check",
+      "command": "git diff --check",
+      "exit_code": 0,
+      "stdout_stderr_log": "logs/git_diff_check.log",
+      "result": "no output (note: new source files are untracked)"
+    }
+  ]
+}

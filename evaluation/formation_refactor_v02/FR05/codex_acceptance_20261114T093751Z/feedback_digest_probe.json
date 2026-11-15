@@ -1,0 +1,33 @@
+{
+  "case": "terminal_feedback_wrong_model_hash",
+  "expected_active_digest": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "feedback": {
+    "state": "HOLD_END",
+    "plan_id": 700124,
+    "formation_id": "formation_three",
+    "backend": "uniform_v02",
+    "model_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "executable": false
+  },
+  "resulting_job_state": "HOLD_END",
+  "events": [
+    {
+      "kind": "job",
+      "state": "HOLD_END"
+    },
+    {
+      "kind": "status",
+      "document": {
+        "plan_id": 700124,
+        "formation_id": "formation_three",
+        "feasible": true,
+        "executable": true,
+        "published": true,
+        "extra": {
+          "terminal": true,
+          "playback_confirmed": true
+        }
+      }
+    }
+  ]
+}

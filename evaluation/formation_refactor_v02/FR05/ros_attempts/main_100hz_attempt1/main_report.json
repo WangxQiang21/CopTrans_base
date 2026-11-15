@@ -1,0 +1,271 @@
+{
+ "checks": {
+  "busy_job_state_is_playing": {
+   "detail": "PLANNING",
+   "ok": false
+  },
+  "envelope_backend": {
+   "detail": "uniform_v02",
+   "ok": true
+  },
+  "envelope_certification": {
+   "detail": "GEOMETRY_ONLY_NO_S9_NO_COLLISION",
+   "ok": true
+  },
+  "envelope_digest_shape": {
+   "detail": "c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186",
+   "ok": true
+  },
+  "envelope_model_version": {
+   "detail": "uniform_timed_plan.v1",
+   "ok": true
+  },
+  "envelope_semantic_version": {
+   "detail": "uniform_playback_plan/v1",
+   "ok": true
+  },
+  "envelope_stamp_equals_embedded_trajectory": {
+   "detail": "envelope (1794639909, 670104742) trajectory (1794639909, 670104742)",
+   "ok": true
+  },
+  "forward_planner_published": {
+   "detail": "['PLANNING', 'FEASIBLE']",
+   "ok": true
+  },
+  "forward_planner_wall_matches_T_end": {
+   "detail": "6.245537336967255 vs 6.245537336967255",
+   "ok": true
+  },
+  "forward_playback_identity": {
+   "detail": "600000",
+   "ok": true
+  },
+  "forward_stamp_not_after_receipt": {
+   "detail": "stamp 1794639909.670105 receipt 1794639909.684314",
+   "ok": true
+  },
+  "identity_formation_id": {
+   "detail": "cargo_wedge",
+   "ok": true
+  },
+  "identity_plan_id": {
+   "detail": "600000 vs 600000",
+   "ok": true
+  },
+  "interior_samples_per_phase": {
+   "detail": "{'counts': {'motion_0000': 157, 'motion_0001': 158}, 'short': {}, 'required': 11}",
+   "ok": true
+  },
+  "model_digest_verified": {
+   "detail": "c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186",
+   "ok": true
+  },
+  "model_rebuild_identity": {
+   "detail": "600000 cargo_wedge",
+   "ok": true
+  },
+  "sample_centers_derived_from_qf": {
+   "detail": "0.0",
+   "ok": true
+  },
+  "sample_vs_model_angle": {
+   "detail": "0.0",
+   "ok": true
+  },
+  "sample_vs_model_position": {
+   "detail": "2.9037572346624074e-10",
+   "ok": true
+  },
+  "shared_time_axis_lengths": {
+   "detail": "{1: 316, 2: 316, 3: 316}",
+   "ok": true
+  },
+  "trajectory_plan_id": {
+   "detail": "600000",
+   "ok": true
+  }
+ },
+ "error": "SmokeError('busy_job_state_is_playing: PLANNING')",
+ "generated_at_utc": "2026-11-14T07:05:07Z",
+ "job_state_history": [
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": null,
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": null,
+    "reason": "",
+    "request_map_signature": null,
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "IDLE"
+   },
+   "received_s": 1794639906.3955705
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": null,
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": null,
+    "reason": "",
+    "request_map_signature": null,
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "IDLE"
+   },
+   "received_s": 1794639906.757553
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": null,
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": null,
+    "reason": "",
+    "request_map_signature": null,
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "IDLE"
+   },
+   "received_s": 1794639908.2574558
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600000,
+    "reason": "planning",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794639908.8014295
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186",
+    "plan_id": 600000,
+    "reason": "playback accepted the atomic envelope",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "e6889532ecb08b762719489511268614a718758a76f5496d8e40dedc058127bf",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794639909.7958589
+  }
+ ],
+ "ok": false,
+ "params": {
+  "playback": {
+   "allow_reverse": true,
+   "backend": "uniform_v02",
+   "body_length_m": 0.738,
+   "body_width_m": 0.5,
+   "formation_id": "cargo_wedge",
+   "frame_id": "map",
+   "goal_heading_free": true,
+   "initial_heading_policy": "cargo_heading",
+   "offsets": [
+    [
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0
+    ],
+    [
+     0.0,
+     -1.0
+    ]
+   ],
+   "publish_tf": true,
+   "rate": 100,
+   "transport_ui": true,
+   "vehicle_ids": [
+    1,
+    2,
+    3
+   ]
+  },
+  "uniform_planner": {
+   "collision_margin": 0.05,
+   "frame_id": "map",
+   "goal_heading_tol": 0.16,
+   "goal_psi_tol": 0.16,
+   "goal_xy_tol": 0.16,
+   "max_expansions": 50000,
+   "max_seconds": 20.0,
+   "playback_finish_grace_s": 3.0,
+   "playback_start_timeout_s": 5.0,
+   "publication_dt": 0.02,
+   "sweep_spacing": 0.01,
+   "translation_step": 1.0
+  }
+ },
+ "request_history": [
+  {
+   "formation_goal": [
+    12.0,
+    10.0,
+    0.0
+   ],
+   "formation_start": [
+    10.0,
+    10.0,
+    0.0
+   ],
+   "plan_id": 600000,
+   "received_s": 1794639908.7988281
+  }
+ ],
+ "ros_master_uri": "http://127.0.0.1:11411",
+ "scenario": "main",
+ "schema": "fr05.ros_uniform_playback_smoke.v1",
+ "topic_types": {
+  "/formation/display_pose": "geometry_msgs/PoseStamped",
+  "/formation/job_state": "std_msgs/String",
+  "/formation/markers": "visualization_msgs/MarkerArray",
+  "/formation/optimizer_status": "std_msgs/String",
+  "/formation/plan_request": "fwis_v3_msgs/FormationPlanRequest",
+  "/formation/playback_plan": "fwis_v3_msgs/FormationPlaybackPlan",
+  "/formation/playback_status": "std_msgs/String",
+  "/formation/quality_report": "std_msgs/String",
+  "/map": "nav_msgs/OccupancyGrid",
+  "/rosout": "rosgraph_msgs/Log",
+  "/rosout_agg": "rosgraph_msgs/Log",
+  "/start_pose": "geometry_msgs/PoseStamped",
+  "/tf": "tf2_msgs/TFMessage",
+  "/tf_static": "tf2_msgs/TFMessage"
+ }
+}

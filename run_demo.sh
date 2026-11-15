@@ -17,9 +17,12 @@ done
 usage() {
   if [[ "$demo_kind" == formation ]]; then
     cat <<'EOF'
-用法：./run_demo.sh [--map map01] [--scale 比例] [auto_goal:=false] [rviz:=true]
+用法：./run_demo.sh [--map map01] [--scale 比例] [--backend uniform_v02|legacy] [auto_goal:=false] [rviz:=true]
 默认启动货物中心楔形编队：car1(1,0)、car2(0,1)、car3(0,-1)，单位米。
 2D Pose Estimate 设置货物起点与航向，2D Nav Goal 设置货物终点与航向。
+编队后端默认 uniform_v02（V0.2 自主统一规划，原子 /formation/playback_plan 信封）；
+--backend legacy 或 backend:=legacy 仅启动旧 C++ 前端与旧优化器用于对照。
+同一时刻只会启动一个规划发布后端，不会同时发布两套轨迹。
 编队默认比例为原单车比例 × 3.75（旧策略，尚待按新构型重新验收）；--scale 指定绝对比例。
 --list-maps 查看地图。--single 使用原单车流程（含 --collect-data）。
 EOF
@@ -81,6 +84,7 @@ collect_data=false
 data_root=""
 requested_map=""
 requested_map_scale=""
+requested_backend=""
 list_maps=false
 dry_run=false
 has_map_dir_arg=false
@@ -163,6 +167,30 @@ while (($#)); do
       fi
       shift
       ;;
+    --backend)
+      if (($# < 2)) || [[ -z "$2" ]]; then
+        echo "错误：--backend 需要 uniform_v02 或 legacy。" >&2
+        exit 2
+      fi
+      if [[ -n "${requested_backend}" && "${requested_backend}" != "$2" ]]; then
+        echo "错误：编队后端只能指定一次。" >&2
+        exit 2
+      fi
+      requested_backend="$2"
+      shift 2
+      ;;
+    --backend=*)
+      if [[ -n "${requested_backend}" && "${requested_backend}" != "${1#--backend=}" ]]; then
+        echo "错误：编队后端只能指定一次。" >&2
+        exit 2
+      fi
+      requested_backend="${1#--backend=}"
+      if [[ -z "${requested_backend}" ]]; then
+        echo "错误：--backend 后需要 uniform_v02 或 legacy。" >&2
+        exit 2
+      fi
+      shift
+      ;;
     --list-maps)
       list_maps=true
       shift
@@ -181,6 +209,10 @@ done
 
 if [[ "$demo_kind" == formation && "$collect_data" == true ]]; then
   echo "错误：现有 --collect-data 采集器仅支持单车，请加 --single。编队规划诊断见 /formation/quality_report。" >&2
+  exit 2
+fi
+if [[ "$demo_kind" == single && -n "${requested_backend}" ]]; then
+  echo "错误：--backend 仅用于编队 demo；单车流程固定使用 ${branch_backend}。" >&2
   exit 2
 fi
 if [[ "$demo_kind" == formation && -z "$requested_map" && "$has_map_dir_arg" == false ]]; then
@@ -329,6 +361,44 @@ if [[ "$demo_kind" == single ]]; then
   if [[ "${has_planning_backend}" == false ]]; then
     launch_args+=("planning_backend:=${branch_backend}")
   fi
+fi
+
+# FR05: the formation demo runs exactly one trajectory-publishing backend.
+# --backend is the CLI convenience form; backend:= in the pass-through
+# arguments is the roslaunch form.  Both are accepted, but they may not
+# disagree, and only the two known backends are allowed.
+if [[ "$demo_kind" == formation ]]; then
+  formation_backend=""
+  backend_in_launch_args=false
+  for arg in "${launch_args[@]}"; do
+    if [[ "${arg}" == backend:=* ]]; then
+      candidate="${arg#backend:=}"
+      if [[ "${backend_in_launch_args}" == true && "${candidate}" != "${formation_backend}" ]]; then
+        echo "错误：backend:= 只能指定一次。" >&2
+        exit 2
+      fi
+      formation_backend="${candidate}"
+      backend_in_launch_args=true
+    fi
+  done
+  if [[ -n "${requested_backend}" ]]; then
+    if [[ "${backend_in_launch_args}" == true && "${formation_backend}" != "${requested_backend}" ]]; then
+      echo "错误：--backend ${requested_backend} 与 backend:=${formation_backend} 冲突。" >&2
+      exit 2
+    fi
+    formation_backend="${requested_backend}"
+  fi
+  if [[ -z "${formation_backend}" ]]; then
+    formation_backend="uniform_v02"
+  fi
+  if [[ "${formation_backend}" != "uniform_v02" && "${formation_backend}" != "legacy" ]]; then
+    echo "错误：formation backend 只能是 uniform_v02 或 legacy，收到 ${formation_backend}。" >&2
+    exit 2
+  fi
+  if [[ "${backend_in_launch_args}" == false ]]; then
+    launch_args+=("backend:=${formation_backend}")
+  fi
+  echo "[expv3] 编队发布后端 ${formation_backend}（同一时刻只启动这一个发布后端）"
 fi
 
 if [[ "${collect_data}" == true ]]; then

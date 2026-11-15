@@ -417,7 +417,11 @@ class FormationBlock:
                 delta = _wrap(
                     segment.theta_end - segment.theta_start)
                 if abs(delta) <= _GEOMETRY_TOL:
-                    if segment.mode != ACKERMANN:
+                    # Keep legacy mixed A/S plans valid, and additionally
+                    # accept an all-S edge whose individual vehicle has zero
+                    # yaw.  Fixed centre/control/travel were checked above;
+                    # canonical S wheels are checked by the timing context.
+                    if segment.mode not in (ACKERMANN, SPIN):
                         raise FormationValidationError(
                             "BODY_SPIN_HOLD_MODE vehicle_id={} mode={}".format(
                                 segment.vehicle_id, segment.mode))

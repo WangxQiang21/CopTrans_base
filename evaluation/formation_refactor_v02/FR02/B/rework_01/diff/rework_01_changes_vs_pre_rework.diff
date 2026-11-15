@@ -1,0 +1,804 @@
+--- pre_rework/sources/uniform_quality.py
++++ current/uniform_quality.py
+@@ -108,6 +108,11 @@
+ UNIFORM_PROJECTION_MISMATCH = "UNIFORM_PROJECTION_MISMATCH"
+ UNIFORM_PHASE_SCHEDULE_INVALID = "UNIFORM_PHASE_SCHEDULE_INVALID"
+ UNIFORM_SWEEP_BUDGET_EXCEEDED = "UNIFORM_SWEEP_BUDGET_EXCEEDED"
++# A full-interval dynamic bound that does not fit under the limit is *not*
++# evidence that the trajectory exceeds the limit; it only means that the
++# audit cannot certify it.  Keep that state explicitly non-publishable and
++# distinct from FORMATION_RETIMING_INFEASIBLE (a demonstrated exceedance).
++UNIFORM_DYNAMIC_UNCONFIRMED = "UNIFORM_DYNAMIC_UNCONFIRMED"
+ 
+ _GEOMETRY_TOL = 1e-7
+ _TIME_TOL = 1e-9
+@@ -347,6 +352,7 @@
+         self._boundary_errors = []
+         self._dynamic_evidence = {}
+         self._dynamic_peak_ratio = 0.0
++        self._dynamic_bound_ratio = 0.0
+         self._dynamic_continuous_certificate = True
+         self._dynamic_limitations = []
+         self._sweep_evidence = {}
+@@ -2338,14 +2344,63 @@
+             self._count(len(self.vehicle_ids) * 3)
+ 
+     # -- dynamics ------------------------------------------------------
++    def _dynamic_derivative_bound(self, name, edge, vehicle_id, factors,
++                                  bounds):
++        """Same-phase conservative bound for d(quantity)/dt, if available.
++
++        ``_dynamic_bounds`` already returns an analytic full-interval
++        supremum for the quantity itself.  The derivative bound lets the
++        candidate-grid peak be corrected for the maximum distance between a
++        query time and its nearest candidate::
++
++            sup ||q|| <= max_grid ||q|| + sup ||q_dot|| * h / 2
++
++        with ``h`` the largest adjacent physical time gap.  This is the
++        jerk-error bound used for acceleration; the other entries are the
++        same construction where the existing analytic quantities provide a
++        valid derivative bound.  No second time model is introduced.
++        """
++        if name == "speed":
++            return "acceleration", bounds["acceleration"]
++        if name == "acceleration":
++            return "jerk", bounds["jerk"]
++        if name == "yaw_rate":
++            return "yaw_acceleration", bounds["yaw_acceleration"]
++        if name == "yaw_acceleration":
++            return "yaw_jerk", bounds["yaw_jerk"]
++        if name == "wheel_speed":
++            if edge.mode == MODE_S:
++                return ("yaw_acceleration",
++                        max(factors) * bounds["yaw_acceleration"])
++            return "acceleration", max(factors) * bounds["acceleration"]
++        if name == "lateral_acceleration":
++            if edge.mode != MODE_A:
++                return "acceleration", 0.0
++            control = abs(self._edge_control_value(edge, vehicle_id))
++            return ("acceleration",
++                    2.0 * control * bounds["speed"] * bounds["acceleration"])
++        # No same-phase derivative bound (snap) is available for jerk, so
++        # jerk uses the analytic supremum only.
++        return None, None
++
+     def _check_dynamic_peaks(self):
+         limits = self.request.timing_limits
++        tolerance = 1.0 + self.config.dynamics_tolerance_ratio
+         maximum_ratio = 0.0
++        maximum_adopted_ratio = 0.0
++        unconfirmed = []
++        tau_gaps = tuple(b - a for a, b in zip(_TAUS, _TAUS[1:]))
++        max_tau_gap = max(tau_gaps)
++        endpoint_coverage = {
++            "tau_start_present": bool(_TAUS[0] == 0.0),
++            "tau_end_present": bool(_TAUS[-1] == 1.0),
++        }
+         for record in self.motion_data:
+             phase = record["phase"]
+             edge_index = record["edge_index"]
+             block = record["block"]
+             duration = phase.duration_s
++            max_gap_s = max_tau_gap * duration
+             for vehicle_id in self.vehicle_ids:
+                 segment = block.segment_map[vehicle_id]
+                 factors = tuple(float(value) for value in wheel_configuration(
+@@ -2371,11 +2426,13 @@
+                 bounds = self._dynamic_bounds(
+                     record["edge"], vehicle_id, duration, factors)
+                 bound_ratios = {}
++                adopted_bound_ratios = {}
++                confirmation = {}
+                 for name, limit_name in _DYNAMIC_LIMITS:
+                     limit = getattr(limits, limit_name)
+                     ratio = peaks[name] / limit
+                     maximum_ratio = max(maximum_ratio, ratio)
+-                    if ratio > 1.0 + self.config.dynamics_tolerance_ratio:
++                    if ratio > tolerance:
+                         self._fail(
+                             FORMATION_RETIMING_INFEASIBLE,
+                             "{} peak {:.12g} exceeds limit {:.12g}".format(
+@@ -2384,20 +2441,74 @@
+                             block_index=edge_index,
+                             time_s=phase.t0_s + taus[name] * duration,
+                             station=taus[name], max_error=peaks[name])
+-                    bound_ratio = bounds[name] / limit
+-                    bound_ratios[name] = bound_ratio
+-                    if bound_ratio > 1.0 + self.config.dynamics_tolerance_ratio:
+-                        self._dynamic_continuous_certificate = False
++                    derivative_name, derivative_bound = (
++                        self._dynamic_derivative_bound(
++                            name, record["edge"], vehicle_id, factors, bounds))
++                    if derivative_bound is None:
++                        refined = None
++                        adopted = bounds[name]
++                        method = "analytic_supremum"
++                    else:
++                        refined = peaks[name] + derivative_bound * max_gap_s / 2.0
++                        if refined < bounds[name]:
++                            adopted = refined
++                            method = "candidate_plus_derivative_lipschitz"
++                        else:
++                            adopted = bounds[name]
++                            method = "analytic_supremum"
++                    adopted_ratio = adopted / limit
++                    maximum_adopted_ratio = max(
++                        maximum_adopted_ratio, adopted_ratio)
++                    bound_ratios[name] = bounds[name] / limit
++                    adopted_bound_ratios[name] = adopted_ratio
++                    confirmed = (
++                        endpoint_coverage["tau_start_present"]
++                        and endpoint_coverage["tau_end_present"]
++                        and adopted_ratio <= tolerance)
++                    confirmation[name] = {
++                        "candidate_peak": float(peaks[name]),
++                        "candidate_peak_tau": float(taus[name]),
++                        "limit": float(limit),
++                        "analytic_bound": float(bounds[name]),
++                        "analytic_bound_exceeds_limit":
++                            bool(bounds[name] / limit > tolerance),
++                        "derivative_constraint": derivative_name,
++                        "derivative_bound": (
++                            None if derivative_bound is None
++                            else float(derivative_bound)),
++                        "lipschitz_error": (
++                            None if refined is None
++                            else float(refined - peaks[name])),
++                        "refined_bound": (
++                            None if refined is None else float(refined)),
++                        "adopted_bound": float(adopted),
++                        "adopted_bound_ratio": float(adopted_ratio),
++                        "confirmed": bool(confirmed),
++                        "method": method,
++                    }
++                    if not confirmed:
+                         limitation = {
+                             "block_index": edge_index,
+                             "vehicle_id": vehicle_id,
+                             "constraint": name,
+-                            "conservative_bound": bounds[name],
+-                            "limit": limit,
+-                            "bound_ratio": bound_ratio,
+-                            "candidate_peak_ratio": ratio,
++                            "candidate_peak": float(peaks[name]),
++                            "candidate_peak_ratio": float(ratio),
++                            "analytic_bound": float(bounds[name]),
++                            "refined_bound": (
++                                None if refined is None else float(refined)),
++                            "adopted_bound": float(adopted),
++                            "limit": float(limit),
++                            "adopted_bound_ratio": float(adopted_ratio),
++                            "max_adjacent_time_gap_s": float(max_gap_s),
++                            "endpoint_coverage": dict(endpoint_coverage),
++                            "unconfirmed": True,
+                         }
+                         self._dynamic_limitations.append(limitation)
++                        unconfirmed.append(limitation)
++                self._dynamic_continuous_certificate = (
++                    self._dynamic_continuous_certificate
++                    and all(item["confirmed"]
++                            for item in confirmation.values()))
+                 self._dynamic_evidence.setdefault(
+                     edge_index, {})[vehicle_id] = {
+                         "peaks": {name: peaks[name]
+@@ -2408,17 +2519,29 @@
+                             name: bounds[name]
+                             for name, _ in _DYNAMIC_LIMITS},
+                         "bound_ratios": bound_ratios,
++                        "adopted_bound_ratios": adopted_bound_ratios,
++                        "confirmation": confirmation,
+                         "candidate_count": len(_TAUS),
+                         "duration_s": duration,
++                        "max_adjacent_time_gap_s": float(max_gap_s),
++                        "endpoint_coverage": dict(endpoint_coverage),
+                         "continuous_certificate": all(
+-                            value <= 1.0 + self.config.dynamics_tolerance_ratio
+-                            for value in bound_ratios.values()),
++                            item["confirmed"]
++                            for item in confirmation.values()),
+                     }
+                 self._count(len(_DYNAMIC_LIMITS) + len(_TAUS))
+         self._dynamic_peak_ratio = maximum_ratio
++        self._dynamic_bound_ratio = maximum_adopted_ratio
+         self.metrics["dynamic_peak_ratio"] = float(maximum_ratio)
++        self.metrics["dynamic_bound_ratio"] = float(maximum_adopted_ratio)
++        self.metrics["dynamic_confirmation"] = {
++            "all_constraints_confirmed": bool(not unconfirmed),
++            "endpoint_coverage": dict(endpoint_coverage),
++            "max_tau_gap": float(max_tau_gap),
++            "unconfirmed": [dict(item) for item in unconfirmed],
++        }
+         self.metrics["dynamic_continuous_certificate"] = bool(
+-            self._dynamic_continuous_certificate)
++            self._dynamic_continuous_certificate and not unconfirmed)
+         self.metrics["dynamic_limitations"] = [
+             dict(item) for item in self._dynamic_limitations]
+         self.metrics["dynamic_evidence"] = {
+@@ -2429,12 +2552,40 @@
+                     "conservative_bounds": dict(
+                         values["conservative_bounds"]),
+                     "bound_ratios": dict(values["bound_ratios"]),
++                    "adopted_bound_ratios": dict(
++                        values["adopted_bound_ratios"]),
++                    "confirmation": {
++                        name: dict(item)
++                        for name, item in values["confirmation"].items()},
+                     "candidate_count": int(values["candidate_count"]),
+                     "duration_s": float(values["duration_s"]),
++                    "max_adjacent_time_gap_s": float(
++                        values["max_adjacent_time_gap_s"]),
++                    "endpoint_coverage": dict(values["endpoint_coverage"]),
+                     "continuous_certificate": bool(
+                         values["continuous_certificate"]),
+                 } for vehicle_id, values in vehicles.items()}
+             for edge_index, vehicles in self._dynamic_evidence.items()}
++        if unconfirmed:
++            first = unconfirmed[0]
++            detail = (
++                "dynamic {} remains unconfirmed: candidate peak {:.12g} is "
++                "below limit {:.12g}, but the adopted full-interval bound "
++                "{:.12g} exceeds it (analytic {:.12g}, refined {!r}, "
++                "max adjacent time gap {:.12g} s); this is not a "
++                "demonstrated physical exceedance".format(
++                    first["constraint"], first["candidate_peak"],
++                    first["limit"], first["adopted_bound"],
++                    first["analytic_bound"], first["refined_bound"],
++                    first["max_adjacent_time_gap_s"]))
++            self._fail(
++                UNIFORM_DYNAMIC_UNCONFIRMED, detail,
++                field="dynamic_confirmation",
++                block_index=first["block_index"],
++                vehicle_id=first["vehicle_id"],
++                constraint=first["constraint"],
++                time_s=None,
++                max_error=first["adopted_bound"])
+ 
+     def _dynamic_bounds(self, edge, vehicle_id, duration, factors):
+         """Conservative per-unit-time suprema for every dynamic quantity."""
+@@ -3127,6 +3278,13 @@
+ 
+     # -- success -------------------------------------------------------
+     def _uniform_success(self):
++        confirmation = self.metrics.get("dynamic_confirmation", {})
++        if self.motion_data and not confirmation.get(
++                "all_constraints_confirmed", False):
++            self._fail(
++                UNIFORM_DYNAMIC_UNCONFIRMED,
++                "dynamic confirmation was not completed for every motion "
++                "phase and vehicle", field="dynamic_confirmation")
+         self.metrics.update({
+             "checks": int(self.checks),
+             "certification": FEASIBLE,
+@@ -3159,6 +3317,7 @@
+                 dict(item) for item in self._setup_evidence],
+             "dynamic_candidate_count": int(len(_TAUS)),
+             "dynamic_candidate_taus": [float(tau) for tau in _TAUS],
++            "dynamic_bound_ratio": float(self._dynamic_bound_ratio),
+             "dynamic_method": {
+                 "candidate_grid": (
+                     "801 uniform samples plus the 0.5, 0.5+/-sqrt(3)/6 "
+@@ -3171,12 +3330,20 @@
+                     "lambda_dddot_over_length_per_duration_cubed": 60.0,
+                 },
+                 "candidate_peak_meaning": (
+-                    "maximum over the shared S9 candidate grid; not a "
+-                    "continuous-time proof by itself"),
++                    "maximum over the shared S9 candidate grid; it is only "
++                    "the starting point of the full-interval confirmation"),
++                "full_interval_confirmation": (
++                    "per constraint the audit adopts the smaller of the "
++                    "analytic per-unit-time supremum and candidate peak + "
++                    "sup(dq/dt) * h / 2, with h the largest adjacent "
++                    "candidate time gap and the endpoint candidates present; "
++                    "FEASIBLE requires every adopted bound <= its limit"),
+                 "conservative_bound_meaning": (
+-                    "per-unit-time supremum from the quintic derivative "
+-                    "suprema; a bound above the limit means the candidate "
+-                    "grid alone cannot certify the continuous interval"),
++                    "analytic supremum from the quintic derivative suprema; "
++                    "when it exceeds the limit the derivative-Lipschitz "
++                    "refinement may still confirm the interval, otherwise "
++                    "the result is UNIFORM_DYNAMIC_UNCONFIRMED and is not "
++                    "publishable"),
+                 "strict_continuous_certificate":
+                     bool(self._dynamic_continuous_certificate),
+             },
+@@ -3185,6 +3352,7 @@
+                 self.metrics.get("duration_s", 0.0),
+                 self.metrics.get("max_rigidity_error_m", 0.0),
+                 self.metrics.get("dynamic_peak_ratio", 0.0),
++                self.metrics.get("dynamic_bound_ratio", 0.0),
+                 self.metrics.get("max_interior_geometry_error_m_or_rad", 0.0),
+                 self.metrics.get("max_wheel_start_error_rad", 0.0),
+                 self.metrics.get("max_wheel_end_error_rad", 0.0))):
+--- pre_rework/tests/test_uniform_quality.py
++++ current/tests/test_uniform_quality.py
+@@ -1,4 +1,4 @@
+-"""FR02-B B01--B08: independent V0.2 uniform-plan audit and tamper rejection.
++"""FR02-B B01--B09: independent V0.2 uniform-plan audit and tamper rejection.
+ 
+ The audit under test re-derives every edge field, the common-time schedule,
+ the analytic state at phase boundaries and interior times, the dynamic peak
+@@ -6,10 +6,15 @@
+ analytic swept collisions.  These acceptance tests prove both directions:
+ 
+ * every legal A/O/S manual plan, zero-angle-S vehicle, reverse edge and hold
+-  passes the full S9/collision audit before and after a model roundtrip;
++  passes the full S9/collision audit before and after a model roundtrip, and
++  every complete FEASIBLE result carries a completed full-interval dynamic
++  bound (candidate peak plus a same-phase derivative Lipschitz error);
+ * a coherently tampered plan/projection is rejected with a structured first
+   failure, even when the tampering preserves the formation centre path or the
+-  projection's internal rigidity.
++  projection's internal rigidity;
++* an interval whose candidate peak is below the limit but whose conservative
++  full-interval bound is not returns UNIFORM_DYNAMIC_UNCONFIRMED, is not
++  feasible/executable, and cannot pass the publication gate.
+ 
+ Evidence is written to ``FR02/B/uniform_quality_results.json`` (override with
+ ``FR02_QUALITY_RESULTS_PATH``) and ``FR02/B/collision_map_b06.json`` (override
+@@ -60,10 +65,12 @@
+     INVALID,
+     INVALID_REQUEST,
+     REJECTED,
++    FormationPublicationGate,
+     FormationQualityConfig,
+     _TAUS,
+     grid_signature,
+ )
++from fwis_v3_optimizer.formation_retiming import FormationTimingLimits
+ from fwis_v3_optimizer.retiming import wheel_configuration
+ from fwis_v3_optimizer.uniform_motion import (
+     a_arc_edge,
+@@ -73,6 +80,7 @@
+     s_spin_edge,
+ )
+ from fwis_v3_optimizer.uniform_quality import (
++    UNIFORM_DYNAMIC_UNCONFIRMED,
+     UNIFORM_MODEL_MISMATCH,
+     UNIFORM_PHASE_SCHEDULE_INVALID,
+     UNIFORM_PROJECTION_MISMATCH,
+@@ -80,7 +88,11 @@
+     UniformAuditRequest,
+     audit_uniform_timed_plan,
+ )
+-from fwis_v3_optimizer.uniform_timing import MotionTiming, SetupTiming
++from fwis_v3_optimizer.uniform_timing import (
++    MotionTiming,
++    SetupTiming,
++    timing_motion_limits,
++)
+ from fwis_v3_optimizer.uniform_trajectory import (
+     MODEL_VERSION,
+     PROJECTION_SEMANTICS,
+@@ -515,6 +527,8 @@
+         "interior_counts": metrics.get("interior_counts"),
+         "setup_evidence": metrics.get("setup_evidence"),
+         "dynamic_peak_ratio": metrics.get("dynamic_peak_ratio"),
++        "dynamic_bound_ratio": metrics.get("dynamic_bound_ratio"),
++        "dynamic_confirmation": metrics.get("dynamic_confirmation"),
+         "dynamic_continuous_certificate": metrics.get(
+             "dynamic_continuous_certificate"),
+         "dynamic_limitations": metrics.get("dynamic_limitations"),
+@@ -657,6 +671,7 @@
+                     entry["budget"][0]["sample_count"],
+                     entry["budget"][0]["max_samples_per_segment"])
+                 self.assertGreaterEqual(entry["checked_samples"], 2)
++        self.assert_dynamic_confirmation(metrics)
+         if clone_result is not None:
+             self.assertTrue(clone_result.feasible, clone_result.detail)
+             self.assertEqual(clone_result.status, FEASIBLE)
+@@ -664,6 +679,75 @@
+             self.assertEqual(
+                 result.metrics.get("model_sha256"),
+                 clone_result.metrics.get("model_sha256"))
++            self.assert_dynamic_confirmation(clone_result.metrics)
++
++    def assert_dynamic_confirmation(self, metrics):
++        """Every FEASIBLE result has a completed full-interval bound."""
++        tolerance = 1.0 + ACCEPTANCE_THRESHOLDS["dynamic_peak_ratio_s9"]
++        self.assertTrue(metrics.get("dynamic_continuous_certificate"))
++        self.assertEqual(metrics.get("dynamic_limitations"), [])
++        self.assertLessEqual(
++            metrics.get("dynamic_bound_ratio", float("inf")), tolerance)
++        confirmation = metrics.get("dynamic_confirmation") or {}
++        self.assertTrue(confirmation.get("all_constraints_confirmed"))
++        coverage = confirmation.get("endpoint_coverage") or {}
++        self.assertTrue(coverage.get("tau_start_present"))
++        self.assertTrue(coverage.get("tau_end_present"))
++        self.assertGreater(confirmation.get("max_tau_gap", 0.0), 0.0)
++        for edge_index, vehicles in (
++                metrics.get("dynamic_evidence") or {}).items():
++            for vehicle_id, values in vehicles.items():
++                context = "edge{} vehicle{}".format(edge_index, vehicle_id)
++                self.assertTrue(values.get("continuous_certificate"), context)
++                self.assertGreater(
++                    values.get("max_adjacent_time_gap_s", 0.0), 0.0, context)
++                vehicle_coverage = values.get("endpoint_coverage") or {}
++                self.assertTrue(
++                    vehicle_coverage.get("tau_start_present"), context)
++                self.assertTrue(
++                    vehicle_coverage.get("tau_end_present"), context)
++                self.assertEqual(
++                    set(values.get("confirmation") or {}),
++                    set(values.get("peaks") or {}), context)
++                self.assertEqual(
++                    set(values.get("bound_ratios") or {}),
++                    set(values["confirmation"]), context)
++                self.assertEqual(
++                    set(values.get("adopted_bound_ratios") or {}),
++                    set(values["confirmation"]), context)
++                for name, item in values["confirmation"].items():
++                    label = "{} {}".format(context, name)
++                    self.assertTrue(item.get("confirmed"), label)
++                    self.assertLessEqual(
++                        item["adopted_bound"],
++                        item["limit"] * tolerance + 1e-15, label)
++                    self.assertLessEqual(
++                        item["candidate_peak"],
++                        item["adopted_bound"] + 1e-15, label)
++                    self.assertGreaterEqual(item["limit"], 0.0, label)
++                    self.assertAlmostEqual(
++                        values["bound_ratios"][name],
++                        item["analytic_bound"] / item["limit"], places=12)
++                    self.assertAlmostEqual(
++                        values["adopted_bound_ratios"][name],
++                        item["adopted_bound_ratio"], places=12)
++                    self.assertIn(item.get("method"), (
++                        "analytic_supremum",
++                        "candidate_plus_derivative_lipschitz"), label)
++                    self.assertEqual(
++                        item.get("analytic_bound_exceeds_limit"),
++                        item["analytic_bound"] > item["limit"] * tolerance,
++                        label)
++                    if item.get("derivative_constraint") is not None:
++                        self.assertIsNotNone(
++                            item.get("derivative_bound"), label)
++                        self.assertIsNotNone(item.get("refined_bound"), label)
++                        self.assertIsNotNone(item.get("lipschitz_error"), label)
++                        self.assertGreaterEqual(
++                            item["refined_bound"],
++                            item["candidate_peak"] - 1e-12, label)
++                        self.assertGreaterEqual(
++                            item["derivative_bound"], 0.0, label)
+ 
+     # -- B01 ---------------------------------------------------------------
+     def test_B01_legal_plans_and_model_roundtrip(self):
+@@ -1443,6 +1527,48 @@
+                    endpoint_only_detection_would_miss=True,
+                    rejection=failure_evidence(result))
+ 
++            # Spin in place: both endpoint formations are clear, but a single
++            # occupied cell sweeps through car 1 near the middle of the spin.
++            plan = spin_plan()
++            spin_file = write_model_artifact("B06_spin_mid_sweep", plan)
++            empty_grid = Grid(
++                np.zeros((400, 400), dtype=bool), 0.05, -10.0, -10.0)
++            empty_result = audit(plan, plan.sample(), empty_grid)
++            self.assertTrue(empty_result.feasible)
++            grid, cells = self._obstacle_grid((1.075, 0.475), half_cells=0)
++            self.assertEqual(cells, [[209, 221]])
++            endpoints = self._assert_endpoints_clear(grid, plan)
++            result = audit(plan, plan.sample(), grid)
++            collision, state = self._assert_first_collision(
++                plan, result, grid)
++            self.assertEqual(collision["vehicle_id"], 1)
++            self.assertAlmostEqual(
++                collision["time_s"], 4.088966537921189, places=9)
++            self.assertAlmostEqual(
++                collision["station"], 0.47183098591549294, places=9)
++            self.assertGreater(collision["station"], 0.0)
++            self.assertLess(collision["station"], 1.0)
++            passed(record, "spin_endpoint_clear_mid_sweep_collision",
++                   model_input_file=spin_file,
++                   map_change={
++                       "before_signature": grid_signature(empty_grid),
++                       "after_signature": grid_signature(grid),
++                       "before_status": str(empty_result.status),
++                       "after_status": str(result.status),
++                       "changed_cells": cells,
++                   },
++                   grid={"resolution": grid.res, "origin": [grid.ox, grid.oy],
++                         "shape": [grid.height, grid.width],
++                         "length": grid.half_l * 2 - 0.04,
++                         "width": grid.half_w * 2 - 0.04,
++                         "margin": 0.04},
++                   obstacle_cells=cells,
++                   endpoint_checks=endpoints,
++                   first_collision=collision,
++                   analytic_state=state.as_dict(),
++                   endpoint_only_detection_would_miss=True,
++                   rejection=failure_evidence(result))
++
+     # -- B07 ---------------------------------------------------------------
+     def _grid_times(self, duration, dt, extra=()):
+         values = [0.0]
+@@ -1453,16 +1579,25 @@
+         return sorted(set(values) | set(float(value) for value in extra))
+ 
+     def test_B07_projection_rate_consistency_and_chord_tamper(self):
++        setup_times = [0.137, 0.419, 0.777]
+         with record_case(
+                 "B07", "0.02 s and 0.05 s projections of the same model agree "
+-                "exactly at common off-grid times; chord interpolation is "
+-                "rejected",
++                "exactly at common off-grid setup times and inside every "
++                "motion phase; chord interpolation is rejected",
+                 {"fixture": "S_A_S_O_complex", "rates_s": [0.02, 0.05],
+-                 "common_offgrid_times_s": [0.137, 0.419, 0.777]}) as record:
++                 "setup_offgrid_times_s": setup_times,
++                 "motion_relative_fraction_of_phase_duration": 0.371}) as record:
+             plan = complex_plan()
+             model_file = write_model_artifact("S_A_S_O_complex", plan)
+             duration = plan.duration_s
+-            common = [0.137, 0.419, 0.777]
++            motion_times = [
++                phase.t0_s + 0.371 * phase.duration_s
++                for phase in plan.phases if isinstance(phase, MotionTiming)]
++            self.assertEqual(len(motion_times), 4)
++            common = setup_times + motion_times
++            record["inputs"]["common_offgrid_times_s"] = common
++            record["inputs"]["motion_offgrid_times_s"] = motion_times
++            self.assertEqual(len(common), len(set(common)))
+             times_02 = self._grid_times(duration, 0.02, common)
+             times_05 = self._grid_times(duration, 0.05, common)
+             for value in common:
+@@ -1478,7 +1613,11 @@
+             result_05 = audit(plan, projection_05)
+             self.assert_legal(plan, result_02)
+             self.assert_legal(plan, result_05)
++            motion_phase_by_id = {
++                phase.phase_id: phase for phase in plan.phases
++                if isinstance(phase, MotionTiming)}
+             comparisons = []
++            motion_modes = []
+             for time_s in common:
+                 state_02 = projection_02.states[times_02.index(time_s)]
+                 state_05 = projection_05.states[times_05.index(time_s)]
+@@ -1487,11 +1626,21 @@
+                 self.assertEqual(state_05.time_s, time_s)
+                 self.assertEqual(state_02.as_dict(), state_05.as_dict())
+                 self.assertEqual(state_02.as_dict(), analytic.as_dict())
++                if time_s in setup_times:
++                    self.assertEqual(analytic.phase_kind, "initial_setup")
++                else:
++                    self.assertEqual(analytic.phase_kind, "motion")
++                    self.assertIn(analytic.phase_id, motion_phase_by_id)
++                    motion_modes.append(analytic.mode)
+                 comparisons.append({
+                     "time_s": time_s,
++                    "phase_id": analytic.phase_id,
++                    "phase_kind": analytic.phase_kind,
++                    "mode": analytic.mode,
+                     "states_bit_identical": True,
+                     "qf": [analytic.qf.x, analytic.qf.y, analytic.qf.psi],
+                 })
++            self.assertEqual(motion_modes, ["S", "A", "S", "O"])
+             passed(record, "same_model_two_sampling_rates",
+                    model_input_file=model_file,
+                    duration_s=duration,
+@@ -1501,6 +1650,9 @@
+                        "0.02": legal_metrics(result_02),
+                        "0.05": legal_metrics(result_05),
+                    },
++                   setup_times_s=setup_times,
++                   motion_times_s=motion_times,
++                   motion_phase_modes=motion_modes,
+                    common_time_comparisons=comparisons,
+                    discrete_clearance_values_compared=False,
+                    note="clearance grids differ; only exact states are "
+@@ -1690,6 +1842,173 @@
+                    tamper=tamper_evidence("config", default_config, config),
+                    rejection=failure_evidence(result))
+ 
++    # -- B09 ---------------------------------------------------------------
++    def test_B09_dynamic_confirmation_and_gate(self):
++        with record_case(
++                "B09", "every complete FEASIBLE result carries a completed "
++                "full-interval dynamic confirmation; an interval that cannot "
++                "be confirmed is rejected and cannot be published",
++                {"confirmed": ["A_arc_nonzero_pivot", "S_A_S_O_complex"],
++                 "unconfirmed": "A_arc_nonzero_pivot with jerk_max=1.5"}) \
++                as record:
++            plan = arc_plan()
++            arc_file = write_model_artifact("B09_arc_confirmed", plan)
++            projection = plan.sample()
++            result = audit(plan, projection)
++            self.assert_legal(plan, result)
++            evidence = result.metrics["dynamic_evidence"][0][3]
++            acceleration = evidence["confirmation"]["acceleration"]
++            self.assertEqual(acceleration["derivative_constraint"], "jerk")
++            self.assertEqual(acceleration["method"],
++                             "candidate_plus_derivative_lipschitz")
++            self.assertTrue(acceleration["analytic_bound_exceeds_limit"])
++            self.assertGreater(acceleration["analytic_bound"],
++                               acceleration["limit"])
++            self.assertGreater(acceleration["candidate_peak"], 0.0)
++            self.assertLess(acceleration["candidate_peak"],
++                            acceleration["refined_bound"])
++            self.assertLess(acceleration["refined_bound"],
++                            acceleration["limit"])
++            self.assertLess(acceleration["adopted_bound"],
++                            acceleration["limit"])
++            self.assertEqual(acceleration["adopted_bound"],
++                             acceleration["refined_bound"])
++            self.assertGreater(acceleration["derivative_bound"], 0.0)
++            self.assertAlmostEqual(
++                acceleration["refined_bound"],
++                acceleration["candidate_peak"]
++                + acceleration["derivative_bound"]
++                * evidence["max_adjacent_time_gap_s"] / 2.0, places=12)
++            gate = FormationPublicationGate()
++            gate.begin_request(plan.plan_id)
++            decision = gate.offer(
++                plan.plan_id, projection.timed_trajectory, result)
++            self.assertTrue(decision.publish, decision.detail)
++            self.assertEqual(decision.reason, "OK")
++            self.assertIs(decision.trajectory,
++                          projection.timed_trajectory)
++            passed(record, "confirmed_arc_publishes",
++                   model_input_file=arc_file,
++                   acceleration_confirmation=dict(acceleration),
++                   max_adjacent_time_gap_s=evidence[
++                       "max_adjacent_time_gap_s"],
++                   endpoint_coverage=evidence["endpoint_coverage"],
++                   gate=decision.as_status())
++
++            complex_view = complex_plan()
++            complex_file = write_model_artifact(
++                "B09_complex_confirmed", complex_view)
++            complex_projection = complex_view.sample()
++            complex_result = audit(complex_view, complex_projection)
++            self.assert_legal(complex_view, complex_result)
++            motion_indices = {
++                phase.edge_index for phase in complex_view.phases
++                if isinstance(phase, MotionTiming)}
++            evidence_by_edge = complex_result.metrics["dynamic_evidence"]
++            self.assertEqual(set(evidence_by_edge), motion_indices)
++            confirmed_counts = {}
++            for edge_index, vehicles in evidence_by_edge.items():
++                self.assertEqual(set(vehicles), {1, 2, 3})
++                confirmed_counts[edge_index] = {}
++                for vehicle_id, values in vehicles.items():
++                    self.assertTrue(values["continuous_certificate"])
++                    self.assertEqual(set(values["confirmation"]),
++                                     set(values["peaks"]))
++                    for name, item in values["confirmation"].items():
++                        self.assertTrue(
++                            item["confirmed"],
++                            "edge{} vehicle{} {}".format(
++                                edge_index, vehicle_id, name))
++                    confirmed_counts[edge_index][vehicle_id] = sum(
++                        1 for item in values["confirmation"].values()
++                        if item["confirmed"])
++            complex_gate = FormationPublicationGate()
++            complex_gate.begin_request(complex_view.plan_id)
++            complex_decision = complex_gate.offer(
++                complex_view.plan_id, complex_projection.timed_trajectory,
++                complex_result)
++            self.assertTrue(complex_decision.publish,
++                            complex_decision.detail)
++            passed(record, "confirmed_complex_publishes",
++                   model_input_file=complex_file,
++                   motion_edge_indices=sorted(motion_indices),
++                   confirmed_constraint_counts=confirmed_counts,
++                   confirmation=complex_result.metrics[
++                       "dynamic_confirmation"],
++                   gate=complex_decision.as_status())
++
++            # The same A arc, retimed by S8 for a tighter jerk limit, has a
++            # candidate peak below the limit but an analytic full-interval
++            # bound above it.  That is an unconfirmed audit, not an observed
++            # exceedance, and it must not reach FEASIBLE or the gate.
++            limits = FormationTimingLimits(jerk_max=1.5)
++            motion_limits = timing_motion_limits(limits)
++            qf = FormationPose(2.0, -1.0, 0.35)
++            start_headings = {1: 0.10, 2: -0.20, 3: 0.30}
++            pivot = (0.0, 2.0)
++            delta = 0.60
++            arc_headings = a_arc_required_headings(
++                model(), qf, delta, pivot, directions(),
++                limits=motion_limits)
++            edge = a_arc_edge(
++                model(), qf, arc_headings, delta, pivot, directions(),
++                limits=motion_limits)
++            unconfirmed_plan = plan_for((edge,), limits=limits)
++            unconfirmed_projection = unconfirmed_plan.sample()
++            unconfirmed_file = write_model_artifact(
++                "B09_arc_jerk_unconfirmed", unconfirmed_plan)
++            unconfirmed = audit(
++                unconfirmed_plan, unconfirmed_projection)
++            self.assert_rejected(
++                unconfirmed, UNIFORM_DYNAMIC_UNCONFIRMED,
++                field_contains="dynamic_confirmation",
++                vehicle_id=3, constraint="jerk")
++            self.assertEqual(unconfirmed.status, REJECTED)
++            self.assertFalse(unconfirmed.feasible)
++            self.assertFalse(unconfirmed.executable)
++            self.assertNotEqual(
++                unconfirmed.reason, FORMATION_RETIMING_INFEASIBLE)
++            self.assertFalse(unconfirmed.metrics[
++                "dynamic_continuous_certificate"])
++            confirmation = unconfirmed.metrics["dynamic_confirmation"]
++            self.assertFalse(confirmation["all_constraints_confirmed"])
++            self.assertEqual(len(confirmation["unconfirmed"]), 1)
++            item = confirmation["unconfirmed"][0]
++            self.assertEqual(item["vehicle_id"], 3)
++            self.assertEqual(item["constraint"], "jerk")
++            self.assertLess(item["candidate_peak"], item["limit"])
++            self.assertGreater(item["adopted_bound"], item["limit"])
++            self.assertTrue(item["unconfirmed"])
++            self.assertEqual(item["endpoint_coverage"], {
++                "tau_start_present": True, "tau_end_present": True})
++            self.assertGreater(item["max_adjacent_time_gap_s"], 0.0)
++            self.assertAlmostEqual(
++                unconfirmed.failure.max_error,
++                item["adopted_bound"], places=12)
++            unconfirmed_gate = FormationPublicationGate()
++            unconfirmed_gate.begin_request(unconfirmed_plan.plan_id)
++            unconfirmed_decision = unconfirmed_gate.offer(
++                unconfirmed_plan.plan_id,
++                unconfirmed_projection.timed_trajectory, unconfirmed)
++            self.assertFalse(unconfirmed_decision.publish)
++            self.assertEqual(unconfirmed_decision.reason,
++                             UNIFORM_DYNAMIC_UNCONFIRMED)
++            self.assertIsNone(unconfirmed_decision.trajectory)
++            self.assertTrue(unconfirmed_decision.clear)
++            passed(record, "unconfirmed_arc_is_not_publishable",
++                   model_input_file=unconfirmed_file,
++                   timing_limits={"jerk_max": limits.jerk_max},
++                   duration_s=unconfirmed_plan.duration_s,
++                   dynamic_continuous_certificate=False,
++                   confirmation=confirmation,
++                   rejection=failure_evidence(unconfirmed),
++                   gate=unconfirmed_decision.as_status(),
++                   not_a_physical_exceedance=True,
++                   note="the candidate grid peak is below the jerk limit; "
++                        "only the conservative full-interval bound exceeds "
++                        "it, so this is UNIFORM_DYNAMIC_UNCONFIRMED rather "
++                        "than FORMATION_RETIMING_INFEASIBLE")
++
+     # -- results -----------------------------------------------------------
+     @classmethod
+     def tearDownClass(cls):
+@@ -1707,7 +2026,7 @@
+             source_hashes[name] = hashlib.sha256(
+                 path.read_bytes()).hexdigest()
+         payload = {
+-            "schema": "fr02b.uniform_quality_results.v1",
++            "schema": "fr02b.uniform_quality_results.v2",
+             "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+             "status": "PASSED" if RESULTS and all(
+                 item["status"] == "PASSED" for item in RESULTS) else "FAILED",
+@@ -1734,11 +2053,27 @@
+                 },
+                 "candidate_peak_meaning": (
+                     "maximum over the shared S9 candidate grid; the grid "
+-                    "alone is not a continuous-time proof"),
++                    "alone is not a continuous-time proof and is never "
++                    "recorded as a continuous certificate"),
++                "lipschitz_bound_meaning": (
++                    "candidate peak + sup|dq/dt| * h / 2, where sup|dq/dt| "
++                    "is the same-phase full-interval derivative bound and h "
++                    "is the largest adjacent candidate time gap; valid "
++                    "because the nearest candidate is at most h/2 away"),
++                "adopted_bound_meaning": (
++                    "the smaller of the analytic quintic supremum and the "
++                    "Lipschitz-refined bound, per constraint and vehicle"),
++                "confirmation_meaning": (
++                    "a complete success requires both candidate endpoints "
++                    "0 and 1 and adopted_bound / limit <= 1 + tolerance for "
++                    "every motion phase, vehicle and dynamic constraint; an "
++                    "unconfirmed interval returns UNIFORM_DYNAMIC_UNCONFIRMED "
++                    "and is not publishable, without being reported as a "
++                    "demonstrated physical exceedance"),
+                 "conservative_bound_meaning": (
+                     "per-unit-time supremum from quintic derivative "
+-                    "suprema; bound_ratio > 1 disables the strict "
+-                    "continuous certificate"),
++                    "suprema; it is retained as the analytic fallback when "
++                    "no same-phase derivative bound is available"),
+             },
+             "cases": RESULTS,
+         }

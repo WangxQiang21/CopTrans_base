@@ -1,0 +1,16 @@
+[ERROR] [1794650493.969862]: [fr05 smoke] playback_terminal_is_certified_for_that_digest: [False, True, True]
+WROTE evaluation/formation_refactor_v02/FR05/rework_20261114T095659Z/ros/main_report.json ok= False
+Traceback (most recent call last):
+  File "tests/ros_uniform_playback_smoke.py", line 1782, in <module>
+    main()
+  File "tests/ros_uniform_playback_smoke.py", line 1744, in main
+    scenario_main(session, evidence, envelope_dir, checks)
+  File "tests/ros_uniform_playback_smoke.py", line 1181, in scenario_main
+    forward = run_experiment(
+  File "tests/ros_uniform_playback_smoke.py", line 950, in run_experiment
+    check_shared_identity(checks, session, plan_id)
+  File "tests/ros_uniform_playback_smoke.py", line 813, in check_shared_identity
+    note(checks, "playback_terminal_is_certified_for_that_digest",
+  File "tests/ros_uniform_playback_smoke.py", line 159, in note
+    raise SmokeError("{}: {}".format(name, detail))
+__main__.SmokeError: playback_terminal_is_certified_for_that_digest: [False, True, True]

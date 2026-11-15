@@ -1,0 +1,64 @@
+{
+  "round": "rviz/round1 run3 (intended zoomed round, plan 600003)",
+  "demo": {
+    "launch": "./run_demo.sh --map evaluation/formation_refactor_v02/FR05/empty_map --scale 1.0 backend:=uniform_v02 rviz:=true playback_rate:=30",
+    "master": "http://127.0.0.1:11472",
+    "display": ":1",
+    "planner_budget": "10000 expansions / 30.0 s (frozen defaults)"
+  },
+  "view_calibration": {
+    "source": "two 2D Pose Estimate clicks recorded on /initialpose (clicks.json entries at wall 1794651464.99 and 1794651466.62)",
+    "mapping": {
+      "world_x": "0.00854193 * pixel_x - 0.110167",
+      "world_y": "-0.00854193 * pixel_y + 12.749111"
+    },
+    "calibration_clicks_world": [
+      {"wall": 1794651464.9918523, "x": 9.285956382751465, "y": 9.3323392868042},
+      {"wall": 1794651466.6204512, "x": 11.84853458404541, "y": 9.3323392868042}
+    ]
+  },
+  "input": {
+    "method": "real xdotool clicks on the RViz window (2D Pose Estimate, then 2D Nav Goal)",
+    "pixels": {"pose": [1184, 322], "goal": [1418, 322]},
+    "pose_click_wall": 1794651565.625691,
+    "goal_click_wall": 1794651568.154455,
+    "recorded_world": {
+      "pose": [10.003478050231934, 9.99860954284668, 0.0],
+      "goal": [12.002290725708008, 9.99860954284668, 0.0]
+    },
+    "note": "clicks.json holds the same coordinates from the earlier refused attempt (wall 1794651478.24 / 1794651480.06); the click recorder had already exited for the replay, so the replay inputs are evidenced by the bridge lines at 1794651565.63 / 1794651568.15."
+  },
+  "plan": {
+    "plan_id": "600003",
+    "start": [10.003, 9.999, 0.0],
+    "goal": [12.002, 9.999, 0.0],
+    "free_headings": true,
+    "reverse": true,
+    "published_wall": 1794651569.047713,
+    "T_end_s": 6.244301,
+    "samples": 316,
+    "model_sha256": "f8d0717c1eff7f366c4fb1aa92a157a3b852c44414d4a93a6cf5d7ffd2b0dfb8",
+    "planner_wall_s": 0.822,
+    "verification_to_stamp_delay_s": 0.0665
+  },
+  "playback": {
+    "accepted_wall": 1794651569.094848,
+    "playing_wall": 1794651569.099441,
+    "playing_executable": true,
+    "hold_end_wall": 1794651575.313616,
+    "hold_end_executable": true,
+    "planner_busy_released_wall": 1794651575.314338,
+    "bridge_verdict": "plan 600003 FEASIBLE and published (twice: publication and terminal)"
+  },
+  "screenshots": {
+    "run3_01.png": "immediately after the two clicks: previous job label still FAILED/STATIC, goal preview arrow visible",
+    "run3_08.png": "PLAYING | FEASIBLE, vehicles translated to the right along the straight path",
+    "run3_45.png": "HOLD_END | FEASIBLE, terminal headway 0.000 m, last vehicle frame",
+    "zoom_after_round2.png": "zoomed view with legible 'plan_600001 HOLD_END: FEASIBLE' text (round 2)",
+    "zoom_mid_round1.png": "zoomed mid-playback crop (round 1)"
+  },
+  "honest_notes": [
+    "This round was replayed because the first attempt (same clicks, wall 1794651478-1480) was refused while the accidental plan 600002 was PLANNING; see NOTE_stray_round.md.",
+    "The GUI round is qualitative evidence; the frozen 100 Hz quantitative checks with >=11 interior display instants per phase come from tests/ros_uniform_playback_smoke.py (logs/main_smoke3.log, ros/main_report.json)."
+  ]
+}

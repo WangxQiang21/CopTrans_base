@@ -1,0 +1,50 @@
+{
+  "task": "FR04",
+  "rework": "FR04-R1 / rework_01",
+  "status": "ACCEPTED",
+  "reviewer": "Codex",
+  "reviewed_at_utc": "2026-11-14T05:29:42.656143+00:00",
+  "branch": "refactor/formation-v02",
+  "head": "6227833011e2d92b711179bfdec979bb0b878b29",
+  "reviewed_source_sha256": {
+    "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_search.py": "1ef36bfd04340c79c549bc5b40b388ced7628d3147bf146dabcaf5ed09087058",
+    "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_pipeline.py": "1c2355e4e80c45addaa5c81afe4cc33e5ccc67e15281c46804fce5c541109a74",
+    "tests/test_uniform_pipeline.py": "8bc6e91718877d875dfe3809e548462d3f5112bbd980d0e7b3f8685a391f4e5f"
+  },
+  "report": "CODEX_ACCEPTANCE.md",
+  "detailed_report": "codex_acceptance_20261114T052627Z/ACCEPTANCE.md",
+  "evidence_directory": "codex_acceptance_20261114T052627Z",
+  "previous_acceptance": "codex_acceptance_20261114T052627Z/previous_acceptance/CODEX_ACCEPTANCE.json",
+  "resolved_findings": [
+    "FR04-R1_pipeline_request_and_search_output_binding"
+  ],
+  "blocking_findings": [],
+  "independently_executed_tests_passed": 175,
+  "FR04_tests_passed": 19,
+  "related_regression_tests_passed": 145,
+  "FR03_functional_tests_passed": 11,
+  "FR03_S09_rerun_this_review": false,
+  "original_probe_scenarios_passed": 3,
+  "additional_contract_probe_scenarios_passed": 8,
+  "submitted_evidence_files_verified": 338,
+  "previous_Codex_audit_files_verified": 155,
+  "acceptance_scope": "Offline bounded search, authoritative edge binding, request-bound FR02 timing/audit and structured failure; no ROS/RViz, optimality or narrow-scene claims.",
+  "evidence_preservation_exception": {
+    "affected_old_Claude_submission_files": [
+      "pipeline_results.json",
+      "cases/F01_hold.json",
+      "cases/F02_forward.json"
+    ],
+    "original_bytes_recovered": false,
+    "replacement_runs_are_not_byte_restoration": true,
+    "old_Codex_independent_run_preserved": true,
+    "original_T5_preserved": true
+  },
+  "FR01_FR02_FR03_remain_ACCEPTED": true,
+  "implementation_modified_by_codex": false,
+  "tests_modified_by_codex": false,
+  "ROS_started": false,
+  "FR05_started": false,
+  "FR05_execution_authorized": false,
+  "git_committed": false
+}

@@ -1,0 +1,415 @@
+{
+  "case": "A10",
+  "inputs": {
+    "max_block_duration_s": 120.0,
+    "time_continuity_tolerance_s": 1e-09
+  },
+  "status": "FAILED",
+  "subcases": [
+    {
+      "inputs": {
+        "jump_m": 0.01
+      },
+      "name": "qf_position_jump",
+      "rejection": {
+        "constraint": null,
+        "detail": "edge 1 position jump=(0.01, 0) m",
+        "edge_index": 1,
+        "exception": "UniformTimingError",
+        "phase_id": null,
+        "reason": "EDGE_QF_DISCONTINUITY",
+        "vehicle_id": null
+      },
+      "status": "PASSED"
+    },
+    {
+      "inputs": {
+        "jump_rad": 0.2
+      },
+      "name": "unwrapped_heading_jump",
+      "rejection": {
+        "constraint": null,
+        "detail": "edge 1 vehicle_id=1 unwrapped heading jump=0.2 rad; setup cannot repair it",
+        "edge_index": 1,
+        "exception": "UniformTimingError",
+        "phase_id": null,
+        "reason": "EDGE_HEADING_DISCONTINUITY",
+        "vehicle_id": 1
+      },
+      "status": "PASSED"
+    },
+    {
+      "inputs": {
+        "first_ids": [
+          1,
+          2,
+          3
+        ],
+        "second_ids": [
+          1,
+          2,
+          4
+        ]
+      },
+      "name": "vehicle_ids_mismatch",
+      "rejection": {
+        "constraint": null,
+        "detail": "edge 1 IDs (1, 2, 4) != (1, 2, 3)",
+        "edge_index": 1,
+        "exception": "UniformTimingError",
+        "phase_id": null,
+        "reason": "EDGE_VEHICLE_IDS_MISMATCH",
+        "vehicle_id": null
+      },
+      "status": "PASSED"
+    },
+    {
+      "inputs": {
+        "first_offset_x": 1.0,
+        "second_offset_x": 1.1
+      },
+      "name": "offsets_mismatch",
+      "rejection": {
+        "constraint": null,
+        "detail": "edge 1 offsets differ from edge 0",
+        "edge_index": 1,
+        "exception": "UniformTimingError",
+        "phase_id": null,
+        "reason": "EDGE_OFFSETS_MISMATCH",
+        "vehicle_id": null
+      },
+      "status": "PASSED"
+    },
+    {
+      "inputs": {
+        "edge_wheelbase": 0.55,
+        "timing_wheelbase": 0.494
+      },
+      "name": "geometry_limits_mismatch",
+      "rejection": {
+        "constraint": "wheelbase",
+        "detail": "edge 0 wheelbase=0.55000000000000004 does not match TimingLimits 0.49399999999999999",
+        "edge_index": 0,
+        "exception": "UniformTimingError",
+        "phase_id": null,
+        "reason": "TIMING_GEOMETRY_LIMIT_MISMATCH",
+        "vehicle_id": null
+      },
+      "status": "PASSED"
+    },
+    {
+      "inputs": {
+        "min_mode_dwell_s": 0.0
+      },
+      "name": "zero_min_mode_dwell",
+      "rejection": {
+        "constraint": null,
+        "detail": "V0.2 requires a positive min_mode_dwell_s; got 0.0",
+        "edge_index": null,
+        "exception": "UniformTimingError",
+        "phase_id": null,
+        "reason": "MIN_MODE_DWELL_REQUIRED",
+        "vehicle_id": null
+      },
+      "status": "PASSED"
+    },
+    {
+      "inputs": {
+        "model_version": "uniform_timed_plan.v999"
+      },
+      "name": "unknown_model_version",
+      "rejection": {
+        "constraint": null,
+        "detail": "model_version='uniform_timed_plan.v999'; expected uniform_timed_plan.v1",
+        "edge_index": null,
+        "exception": "UniformTrajectoryError",
+        "phase_id": null,
+        "reason": "UNKNOWN_MODEL_VERSION",
+        "vehicle_id": null
+      },
+      "status": "PASSED"
+    },
+    {
+      "inputs": {
+        "field": "phases[-1].duration_s",
+        "value": "NaN"
+      },
+      "name": "nonfinite_model_input",
+      "rejection": {
+        "constraint": null,
+        "detail": "model.phases[1].duration_s=nan is not finite",
+        "edge_index": null,
+        "exception": "UniformTrajectoryError",
+        "phase_id": null,
+        "reason": "NONFINITE_VALUE",
+        "vehicle_id": null
+      },
+      "status": "PASSED"
+    },
+    {
+      "inputs": {
+        "removed_vehicle_id": 3
+      },
+      "name": "missing_vehicle_id",
+      "rejection": {
+        "constraint": null,
+        "detail": "vehicle shape IDs do not match offsets",
+        "edge_index": null,
+        "exception": "UniformTrajectoryError",
+        "phase_id": null,
+        "reason": "INVALID_VEHICLE_ID_SET",
+        "vehicle_id": null
+      },
+      "status": "PASSED"
+    },
+    {
+      "inputs": {
+        "duplicated_vehicle_id": 1
+      },
+      "name": "duplicate_vehicle_id",
+      "rejection": {
+        "constraint": null,
+        "detail": "duplicate shape vehicle_id=1",
+        "edge_index": null,
+        "exception": "UniformTrajectoryError",
+        "phase_id": null,
+        "reason": "DUPLICATE_VEHICLE_ID",
+        "vehicle_id": null
+      },
+      "status": "PASSED"
+    },
+    {
+      "inputs": {
+        "key": "plan_id"
+      },
+      "name": "duplicate_json_key",
+      "rejection": {
+        "constraint": null,
+        "detail": "duplicate key 'plan_id'",
+        "edge_index": null,
+        "exception": "UniformTrajectoryError",
+        "phase_id": null,
+        "reason": "DUPLICATE_JSON_KEY",
+        "vehicle_id": null
+      },
+      "status": "PASSED"
+    },
+    {
+      "inputs": {
+        "primitive": "not_a_primitive"
+      },
+      "name": "illegal_primitive",
+      "rejection": {
+        "constraint": null,
+        "detail": "primitive='not_a_primitive'",
+        "edge_index": null,
+        "exception": "UniformTrajectoryError",
+        "phase_id": null,
+        "reason": "INVALID_PRIMITIVE",
+        "vehicle_id": null
+      },
+      "status": "PASSED"
+    },
+    {
+      "inputs": {
+        "field": "phases[-1].end_time_s",
+        "increment_s": 0.1
+      },
+      "name": "redundant_value_conflict",
+      "rejection": {
+        "constraint": null,
+        "detail": "model.phases[1].end_time_s: 6.0431716402346565 != recomputed 6.1431716402346561",
+        "edge_index": null,
+        "exception": "UniformTrajectoryError",
+        "phase_id": null,
+        "reason": "REDUNDANT_VALUE_MISMATCH",
+        "vehicle_id": null
+      },
+      "status": "PASSED"
+    },
+    {
+      "inputs": {
+        "L": 1.5707963267948966,
+        "progress": "-1e-06"
+      },
+      "name": "negative_progress",
+      "rejection": {
+        "constraint": null,
+        "detail": "progress=-9.9999999999999995e-07 is outside [0, 1.5707963267948966]",
+        "edge_index": 0,
+        "exception": "UniformTimingError",
+        "phase_id": "motion_0000",
+        "reason": "PROGRESS_OUT_OF_RANGE",
+        "vehicle_id": null
+      },
+      "status": "PASSED"
+    },
+    {
+      "inputs": {
+        "L": 1.5707963267948966,
+        "progress": "1.5707973267948965"
+      },
+      "name": "progress_above_L",
+      "rejection": {
+        "constraint": null,
+        "detail": "progress=1.5707973267948965 is outside [0, 1.5707963267948966]",
+        "edge_index": 0,
+        "exception": "UniformTimingError",
+        "phase_id": "motion_0000",
+        "reason": "PROGRESS_OUT_OF_RANGE",
+        "vehicle_id": null
+      },
+      "status": "PASSED"
+    },
+    {
+      "inputs": {
+        "L": 1.5707963267948966,
+        "progress": "nan"
+      },
+      "name": "nan_progress",
+      "rejection": {
+        "constraint": null,
+        "detail": "motion progress=nan is not finite",
+        "edge_index": null,
+        "exception": "UniformTimingError",
+        "phase_id": null,
+        "reason": "NONFINITE_VALUE",
+        "vehicle_id": null
+      },
+      "status": "PASSED"
+    },
+    {
+      "inputs": {
+        "duration_s": 6.0431716402346565,
+        "time_s": "-1e-06"
+      },
+      "name": "negative_time",
+      "rejection": {
+        "constraint": null,
+        "detail": "time=-9.9999999999999995e-07 is outside [0, 6.0431716402346565]",
+        "edge_index": null,
+        "exception": "UniformTrajectoryError",
+        "phase_id": null,
+        "reason": "TIME_OUT_OF_RANGE",
+        "vehicle_id": null
+      },
+      "status": "PASSED"
+    },
+    {
+      "inputs": {
+        "duration_s": 6.0431716402346565,
+        "time_s": "6.043172640234657"
+      },
+      "name": "time_above_end",
+      "rejection": {
+        "constraint": null,
+        "detail": "time=6.0431726402346566 is outside [0, 6.0431716402346565]",
+        "edge_index": null,
+        "exception": "UniformTrajectoryError",
+        "phase_id": null,
+        "reason": "TIME_OUT_OF_RANGE",
+        "vehicle_id": null
+      },
+      "status": "PASSED"
+    },
+    {
+      "inputs": {
+        "duration_s": 6.0431716402346565,
+        "time_s": "nan"
+      },
+      "name": "nan_time",
+      "rejection": {
+        "constraint": null,
+        "detail": "state_at.time_s=nan is not finite",
+        "edge_index": null,
+        "exception": "UniformTrajectoryError",
+        "phase_id": null,
+        "reason": "NONFINITE_VALUE",
+        "vehicle_id": null
+      },
+      "status": "PASSED"
+    },
+    {
+      "inputs": {
+        "duration_s": 0.0
+      },
+      "name": "zero_phase_duration",
+      "rejection": {
+        "constraint": null,
+        "detail": "phase motion_0000 duration=0.0",
+        "edge_index": null,
+        "exception": "UniformTrajectoryError",
+        "phase_id": "motion_0000",
+        "reason": "NONPOSITIVE_PHASE_DURATION",
+        "vehicle_id": null
+      },
+      "status": "PASSED"
+    },
+    {
+      "inputs": {
+        "duration_s": -1.0
+      },
+      "name": "negative_phase_duration",
+      "rejection": {
+        "constraint": null,
+        "detail": "phase motion_0000 duration=-1.0",
+        "edge_index": null,
+        "exception": "UniformTrajectoryError",
+        "phase_id": "motion_0000",
+        "reason": "NONPOSITIVE_PHASE_DURATION",
+        "vehicle_id": null
+      },
+      "status": "PASSED"
+    },
+    {
+      "inputs": {
+        "motion_t0_shift_s": 0.05
+      },
+      "name": "phase_time_gap",
+      "rejection": {
+        "constraint": null,
+        "detail": "phase motion_0000 has gap 0.05 s",
+        "edge_index": null,
+        "exception": "UniformTrajectoryError",
+        "phase_id": "motion_0000",
+        "reason": "PHASE_TIME_DISCONTINUITY",
+        "vehicle_id": null
+      },
+      "status": "PASSED"
+    },
+    {
+      "inputs": {
+        "motion_t0_shift_s": -0.05
+      },
+      "name": "phase_time_overlap",
+      "rejection": {
+        "constraint": null,
+        "detail": "phase motion_0000 has overlap 0.05 s",
+        "edge_index": null,
+        "exception": "UniformTrajectoryError",
+        "phase_id": "motion_0000",
+        "reason": "PHASE_TIME_DISCONTINUITY",
+        "vehicle_id": null
+      },
+      "status": "PASSED"
+    },
+    {
+      "inputs": {
+        "displacement_m": 1000.0,
+        "max_block_duration_s": 120.0
+      },
+      "name": "max_block_duration_exceeded",
+      "rejection": {
+        "constraint": "speed",
+        "detail": "speed requires 2343.750000 s, exceeds max_block_duration_s=120.000000",
+        "edge_index": 0,
+        "exception": "UniformTimingError",
+        "phase_id": "motion_0000",
+        "reason": "MOTION_DURATION_LIMIT",
+        "vehicle_id": 1
+      },
+      "status": "PASSED"
+    }
+  ],
+  "title": "Continuity, identity, finite values, progress/time and duration rejection"
+}

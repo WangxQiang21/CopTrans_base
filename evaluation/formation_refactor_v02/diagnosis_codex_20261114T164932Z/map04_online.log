@@ -1,0 +1,50 @@
+[rospy.client][INFO] 2026-11-14 23:38:49,543: init_node, name[/formation_uniform_planner], pid[3223339]
+[xmlrpc][INFO] 2026-11-14 23:38:49,543: XML-RPC server binding to 127.0.0.1:0
+[xmlrpc][INFO] 2026-11-14 23:38:49,543: Started XML-RPC server [http://127.0.0.1:32947/]
+[rospy.init][INFO] 2026-11-14 23:38:49,544: ROS Slave URI: [http://127.0.0.1:32947/]
+[rospy.impl.masterslave][INFO] 2026-11-14 23:38:49,544: _ready: http://127.0.0.1:32947/
+[rospy.registration][INFO] 2026-11-14 23:38:49,545: Registering with master node http://127.0.0.1:57303
+[xmlrpc][INFO] 2026-11-14 23:38:49,545: xml rpc node: starting XML-RPC server
+[rospy.init][INFO] 2026-11-14 23:38:49,644: registered with master
+[rospy.rosout][INFO] 2026-11-14 23:38:49,644: initializing /rosout core topic
+[rospy.rosout][INFO] 2026-11-14 23:38:49,646: connected to core topic /rosout
+[rospy.simtime][INFO] 2026-11-14 23:38:49,647: /use_sim_time is not set, will not subscribe to simulated time [/clock] topic
+[rosout][INFO] 2026-11-14 23:38:49,660: [uniform planner] autonomous V0.2 planner ready; backend=uniform_v02 budget=10000 expansions / 30.0 s
+[rospy.internal][INFO] 2026-11-14 23:38:49,662: topic[/formation/plan_request] adding connection to [http://127.0.0.1:44671/], count 0
+[rospy.internal][INFO] 2026-11-14 23:38:49,662: topic[/formation/playback_status] adding connection to [http://127.0.0.1:38761/], count 0
+[rospy.internal][INFO] 2026-11-14 23:38:49,682: topic[/map] adding connection to [http://127.0.0.1:37743/], count 0
+[rospy.internal][INFO] 2026-11-14 23:38:49,786: topic[/formation/optimizer_status] adding connection to [/formation_playback], count 0
+[rospy.internal][INFO] 2026-11-14 23:38:49,789: topic[/formation/optimizer_status] adding connection to [/formation_goal_bridge], count 1
+[rosout][INFO] 2026-11-14 23:38:49,787: [uniform planner] exact map 1431x1431 res=0.021 origin=(-5.12, -5.12) signature=25d803b4ec0c8d88
+[rospy.internal][INFO] 2026-11-14 23:38:49,790: topic[/formation/quality_report] adding connection to [/formation_playback], count 0
+[rospy.internal][INFO] 2026-11-14 23:38:49,791: topic[/formation/job_state] adding connection to [/formation_playback], count 0
+[rospy.internal][INFO] 2026-11-14 23:38:49,792: topic[/formation/job_state] adding connection to [/formation_goal_bridge], count 1
+[rospy.internal][INFO] 2026-11-14 23:38:49,792: topic[/formation/playback_plan] adding connection to [/formation_playback], count 0
+[rospy.internal][INFO] 2026-11-14 23:38:49,943: topic[/rosout] adding connection to [/rosout], count 0
+[rosout][INFO] 2026-11-14 23:38:50,238: [uniform planner] plan 600000 admitted from cargo_wedge: start=(1.420, 22.597, 0.000) goal=(15.960, 17.545, 0.000) free_headings=True reverse=True
+[rosout][ERROR] 2026-11-14 23:38:50,268: [uniform planner] plan 600000 not executable: status=REQUEST_REJECTED reason=MAP_OBB_COLLISION layer=request wall=0.027s
+[rosout][WARNING] 2026-11-14 23:38:50,269: [uniform planner] plan 600000 has no executable envelope (MAP_OBB_COLLISION)
+[rosout][INFO] 2026-11-14 23:39:03,015: [uniform planner] plan 600001 admitted from cargo_wedge: start=(4.704, 22.243, -0.016) goal=(11.763, 22.226, -0.011) free_headings=True reverse=True
+[rosout][INFO] 2026-11-14 23:39:28,251: [uniform planner] plan 600001 published: T_end=26.236 s model_sha256=d8d8145b104e50162a72755fc11e70a44d20f5e7935fced16c4999d3468e6a3f samples=1320 wall=24.940 s verification_to_stamp_delay=0.2865 s
+[rosout][INFO] 2026-11-14 23:39:28,409: [uniform planner] plan 600001 playback confirmed
+[rosout][INFO] 2026-11-14 23:39:54,527: [uniform planner] plan 600001 HOLD_END; busy released
+[rosout][INFO] 2026-11-14 23:40:05,420: [uniform planner] plan 600002 admitted from cargo_wedge: start=(11.763, 22.226, -0.016) goal=(20.151, 22.179, -0.016) free_headings=True reverse=True
+[rosout][INFO] 2026-11-14 23:40:31,784: [uniform planner] plan 600002 published: T_end=28.657 s model_sha256=41ffe61f3de6f97443ed208af960c17f217448ca0afe7b0e1db5af05405c7664 samples=1442 wall=26.039 s verification_to_stamp_delay=0.3149 s
+[rosout][INFO] 2026-11-14 23:40:31,965: [uniform planner] plan 600002 playback confirmed
+[rosout][INFO] 2026-11-14 23:41:00,495: [uniform planner] plan 600002 HOLD_END; busy released
+[rosout][INFO] 2026-11-14 23:41:29,817: [uniform planner] plan 600003 admitted from cargo_wedge: start=(20.151, 22.179, -0.016) goal=(22.086, 16.640, -1.547) free_headings=True reverse=True
+[rosout][ERROR] 2026-11-14 23:42:01,875: [uniform planner] plan 600003 not executable: status=BUDGET_EXHAUSTED reason=TIME_BUDGET_EXHAUSTED layer=budget wall=32.055s
+[rosout][WARNING] 2026-11-14 23:42:01,878: [uniform planner] plan 600003 has no executable envelope (TIME_BUDGET_EXHAUSTED)
+[rospy.core][INFO] 2026-11-14 23:42:03,801: signal_shutdown [signal-2]
+[rospy.internal][INFO] 2026-11-14 23:42:03,807: topic[/rosout] removing connection to /rosout
+[rospy.internal][INFO] 2026-11-14 23:42:03,807: topic[/formation/optimizer_status] removing connection to /formation_playback
+[rospy.internal][INFO] 2026-11-14 23:42:03,807: topic[/formation/optimizer_status] removing connection to /formation_goal_bridge
+[rospy.internal][INFO] 2026-11-14 23:42:03,807: topic[/formation/quality_report] removing connection to /formation_playback
+[rospy.internal][INFO] 2026-11-14 23:42:03,807: topic[/formation/job_state] removing connection to /formation_playback
+[rospy.internal][INFO] 2026-11-14 23:42:03,807: topic[/formation/job_state] removing connection to /formation_goal_bridge
+[rospy.internal][INFO] 2026-11-14 23:42:03,807: topic[/formation/playback_plan] removing connection to /formation_playback
+[rospy.internal][INFO] 2026-11-14 23:42:03,807: topic[/map] removing connection to http://127.0.0.1:37743/
+[rospy.internal][INFO] 2026-11-14 23:42:03,807: topic[/formation/plan_request] removing connection to http://127.0.0.1:44671/
+[rospy.internal][INFO] 2026-11-14 23:42:03,808: topic[/formation/playback_status] removing connection to http://127.0.0.1:38761/
+[rospy.impl.masterslave][INFO] 2026-11-14 23:42:03,808: signal-2
+[rospy.core][INFO] 2026-11-14 23:42:04,402: signal_shutdown [atexit]

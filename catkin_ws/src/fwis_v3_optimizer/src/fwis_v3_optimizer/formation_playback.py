@@ -14,7 +14,8 @@ geometry-only trajectory into an executable one and it never claims the
 independent S9 audit passed on its own.
 """
 from bisect import bisect_right
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+import hashlib
 import math
 from typing import Mapping, Optional, Tuple
 
@@ -36,6 +37,8 @@ STATUS_OK_COLOR = (0.20, 1.00, 0.35, 1.00)
 STATUS_FAIL_COLOR = (1.00, 0.25, 0.20, 1.00)
 
 PLAYBACK_SCHEMA = "formation_playback/v1"
+PLAYBACK_PLAN_SCHEMA = "uniform_playback_plan/v1"
+PLAYBACK_PLAN_BACKEND = "uniform_v02"
 TIME_SOURCE = "header_stamp_common_clock"
 GEOMETRY_ONLY_LABEL = "GEOMETRY_ONLY"
 CLEARED = "CLEARED"
@@ -221,6 +224,16 @@ class FormationPlaybackTrajectory:
     formation_poses: Tuple[Tuple[float, float, float], ...]
     times_from_start: Tuple[float, ...]
     points: Mapping[int, Tuple[PlaybackPoint, ...]]
+    # Present only for the uniform_v02 atomic playback envelope.  When set,
+    # frame_at derives every display value from this FR02 analytic plan
+    # instead of linearly interpolating the published sample columns.
+    uniform_plan: Optional[object] = None
+    # Authoritative model digest, set only by ``verify_uniform_playback_plan``
+    # for a verified uniform_v02 envelope.  Legacy trajectories leave it None
+    # and keep the historical plan_id-only audit label behavior.  The display
+    # binds its audit label to this digest, so an audit status for another
+    # model with the same plan_id can never mark this display executable.
+    model_sha256: Optional[str] = None
 
     def __post_init__(self):
         object.__setattr__(self, "plan_id", _integer(
@@ -316,6 +329,13 @@ class FormationPlaybackTrajectory:
                         "time axis".format(vehicle_id, index))
             checked_points[vehicle_id] = samples
         object.__setattr__(self, "points", checked_points)
+        digest = self.model_sha256
+        if digest is not None:
+            if (not isinstance(digest, str) or len(digest) != 64 or
+                    any(character not in "0123456789abcdef"
+                        for character in digest)):
+                raise PlaybackValidationError(
+                    "model_sha256 must be 64 lowercase hex digits")
 
     @property
     def duration(self):
@@ -444,6 +464,306 @@ def trajectory_from_fields(fields):
             "trajectory field conversion failed: {!r}".format(exc)) from exc
 
 
+def _message_seconds(value):
+    if hasattr(value, "to_sec"):
+        return float(value.to_sec())
+    return float(value)
+
+
+def fields_from_timed_message(message):
+    """Convert a ``FormationTimedTrajectory`` message into plain fields.
+
+    The same converter is used by the legacy playback subscription and by the
+    uniform_v02 planner before it publishes an atomic playback envelope, so
+    both sides validate identical values.  Start/goal vehicle metadata is
+    retained for model/trajectory identity checks when present.
+    """
+    if not hasattr(message, "header"):
+        raise PlaybackValidationError("message has no header")
+    vehicles = []
+    for vehicle in message.vehicles:
+        offset = vehicle.offset_in_formation
+        start = getattr(vehicle, "start_center", None)
+        goal = getattr(vehicle, "goal_center", None)
+        vehicles.append({
+            "vehicle_id": int(vehicle.vehicle_id),
+            "offset": (float(offset.x), float(offset.y)),
+            "body_length_m": float(vehicle.body_length_m),
+            "body_width_m": float(vehicle.body_width_m),
+            "start_center": (None if start is None else (
+                float(start.x), float(start.y), float(start.theta))),
+            "goal_center": (None if goal is None else (
+                float(goal.x), float(goal.y), float(goal.theta))),
+            "goal_heading_free": bool(getattr(
+                vehicle, "goal_heading_free", False)),
+        })
+    trajectories = []
+    for trajectory in message.trajectories:
+        points = []
+        for point in trajectory.points:
+            pose = point.center_pose
+            points.append((
+                _message_seconds(point.time_from_start),
+                float(pose.x), float(pose.y), float(pose.theta),
+                float(point.center_speed_mps),
+                float(point.center_yaw_rate_radps),
+                int(point.mode), float(point.mode_control)))
+        trajectories.append({
+            "vehicle_id": int(trajectory.vehicle_id),
+            "points": tuple(points),
+        })
+    return {
+        "frame_id": message.header.frame_id,
+        "stamp": (int(message.header.stamp.secs),
+                  int(message.header.stamp.nsecs)),
+        "plan_id": int(message.plan_id),
+        "formation_id": message.formation_id,
+        "vehicles": tuple(vehicles),
+        "formation_poses": tuple(
+            (float(pose.x), float(pose.y), float(pose.theta))
+            for pose in message.formation_poses),
+        "times_from_start": tuple(
+            _message_seconds(value) for value in message.times_from_start),
+        "trajectories": tuple(trajectories),
+    }
+
+
+def _check_close(actual, expected, context, tolerance):
+    if not math.isfinite(actual) or not math.isfinite(expected):
+        raise PlaybackValidationError(
+            "{} is not finite".format(context))
+    error = abs(actual - expected)
+    if error > tolerance:
+        raise PlaybackValidationError(
+            "{}={:.17g} differs from the model {:.17g} by {:.6g} > {:.6g}"
+            .format(context, actual, expected, error, tolerance))
+
+
+def verify_uniform_playback_plan(*, plan_id, formation_id, backend,
+                                 semantic_version, model_version,
+                                 model_sha256, model_json, certification,
+                                 trajectory_fields,
+                                 position_tolerance=1e-9,
+                                 angle_tolerance=1e-9,
+                                 speed_tolerance=1e-9):
+    """Validate one atomic V0.2 envelope against its authoritative model.
+
+    The embedded model is the authority: the plan is rebuilt from
+    ``model_json`` with the FR02 model loader, its versioned digest must equal
+    the transmitted digest, and every published sample must equal
+    ``state_at(sample_time)``.  Locations, headings, modes, controls, speeds
+    and yaw rates all participate; equal endpoints or a plausible sample
+    table alone are not accepted.
+    """
+    from .uniform_trajectory import MODEL_VERSION, UniformTimedPlan
+
+    if backend != PLAYBACK_PLAN_BACKEND:
+        raise PlaybackValidationError(
+            "backend {!r} is not {!r}".format(
+                backend, PLAYBACK_PLAN_BACKEND))
+    if semantic_version != PLAYBACK_PLAN_SCHEMA:
+        raise PlaybackValidationError(
+            "unsupported playback semantic_version {!r}; expected {!r}"
+            .format(semantic_version, PLAYBACK_PLAN_SCHEMA))
+    if model_version != MODEL_VERSION:
+        raise PlaybackValidationError(
+            "unsupported model_version {!r}; expected {!r}".format(
+                model_version, MODEL_VERSION))
+    if not isinstance(model_sha256, str) or len(model_sha256) != 64:
+        raise PlaybackValidationError("model_sha256 must be 64 hex digits")
+    if not isinstance(model_json, str) or not model_json.strip():
+        raise PlaybackValidationError("model_json must be a non-empty string")
+    if not isinstance(certification, str) or not certification:
+        raise PlaybackValidationError("certification must be a non-empty string")
+
+    if plan_id != trajectory_fields.get("plan_id"):
+        raise PlaybackValidationError(
+            "envelope plan_id={!r} differs from the trajectory {!r}".format(
+                plan_id, trajectory_fields.get("plan_id")))
+    if formation_id != trajectory_fields.get("formation_id"):
+        raise PlaybackValidationError(
+            "envelope formation_id={!r} differs from the trajectory {!r}"
+            .format(formation_id, trajectory_fields.get("formation_id")))
+
+    try:
+        plan = UniformTimedPlan.from_model_json(model_json)
+    except (ValueError, TypeError, KeyError) as exc:
+        raise PlaybackValidationError(
+            "model_json does not rebuild a UniformTimedPlan: {}".format(exc)
+        ) from exc
+    except Exception as exc:  # FR02 model errors subclass ValueError
+        raise PlaybackValidationError(
+            "model_json was rejected: {}".format(exc)) from exc
+    if plan.plan_id != plan_id or plan.formation_id != formation_id:
+        raise PlaybackValidationError(
+            "model identity plan_id={} formation_id={!r} differs from the "
+            "envelope {} / {!r}".format(
+                plan.plan_id, plan.formation_id, plan_id, formation_id))
+    digest = plan.model_sha256()
+    if digest != model_sha256:
+        raise PlaybackValidationError(
+            "model_sha256 mismatch: message={} rebuilt={}".format(
+                model_sha256, digest))
+    if plan.to_model_dict().get("certification") != certification:
+        raise PlaybackValidationError(
+            "certification differs from the authoritative model")
+
+    try:
+        trajectory = trajectory_from_fields(trajectory_fields)
+    except PlaybackValidationError:
+        raise
+    except Exception as exc:
+        raise PlaybackValidationError(
+            "trajectory fields are invalid: {}".format(exc)) from exc
+    _check_close(trajectory.duration, plan.duration_s,
+                 "trajectory duration", position_tolerance)
+
+    model_offsets = {
+        offset.vehicle_id: (float(offset.x), float(offset.y))
+        for offset in plan.model.offsets}
+    model_shapes = {
+        vehicle_id: (float(shape.length_m), float(shape.width_m))
+        for vehicle_id, shape in plan.vehicle_shapes.items()}
+    field_vehicles = trajectory_fields.get("vehicles", ())
+    field_by_id = {}
+    for item in field_vehicles:
+        vehicle_id = int(item["vehicle_id"])
+        if vehicle_id in field_by_id:
+            raise PlaybackValidationError(
+                "duplicate vehicle_id {} in the envelope".format(vehicle_id))
+        field_by_id[vehicle_id] = item
+    if set(field_by_id) != set(model_offsets):
+        raise PlaybackValidationError(
+            "envelope vehicle_ids {} differ from the model {}".format(
+                sorted(field_by_id), sorted(model_offsets)))
+
+    start_centers = plan.model.centers(plan.start_qf)
+    goal_centers = plan.model.centers(plan.goal_qf)
+    start_headings = dict(plan.start_headings)
+    goal_headings = dict(plan.goal_headings)
+    for vehicle_id in sorted(model_offsets):
+        item = field_by_id[vehicle_id]
+        offset = item["offset"]
+        _check_close(offset[0], model_offsets[vehicle_id][0],
+                     "vehicle {} offset_x".format(vehicle_id),
+                     position_tolerance)
+        _check_close(offset[1], model_offsets[vehicle_id][1],
+                     "vehicle {} offset_y".format(vehicle_id),
+                     position_tolerance)
+        shape = model_shapes[vehicle_id]
+        _check_close(float(item["body_length_m"]), shape[0],
+                     "vehicle {} body_length_m".format(vehicle_id),
+                     position_tolerance)
+        _check_close(float(item["body_width_m"]), shape[1],
+                     "vehicle {} body_width_m".format(vehicle_id),
+                     position_tolerance)
+        start = item.get("start_center")
+        if start is not None:
+            _check_close(start[0], start_centers[vehicle_id][0],
+                         "vehicle {} start_center.x".format(vehicle_id),
+                         position_tolerance)
+            _check_close(start[1], start_centers[vehicle_id][1],
+                         "vehicle {} start_center.y".format(vehicle_id),
+                         position_tolerance)
+            _check_close(math.atan2(math.sin(start[2] - start_headings[
+                vehicle_id]), math.cos(start[2] - start_headings[
+                    vehicle_id])), 0.0,
+                "vehicle {} start heading".format(vehicle_id),
+                angle_tolerance)
+        goal = item.get("goal_center")
+        if goal is not None:
+            _check_close(goal[0], goal_centers[vehicle_id][0],
+                         "vehicle {} goal_center.x".format(vehicle_id),
+                         position_tolerance)
+            _check_close(goal[1], goal_centers[vehicle_id][1],
+                         "vehicle {} goal_center.y".format(vehicle_id),
+                         position_tolerance)
+            if not bool(item.get("goal_heading_free", False)):
+                _check_close(math.atan2(math.sin(
+                    goal[2] - goal_headings[vehicle_id]),
+                    math.cos(goal[2] - goal_headings[vehicle_id])), 0.0,
+                    "vehicle {} goal heading".format(vehicle_id),
+                    angle_tolerance)
+
+    if not trajectory.formation_poses:
+        raise PlaybackValidationError("trajectory has no formation poses")
+    first_pose = trajectory.formation_poses[0]
+    last_pose = trajectory.formation_poses[-1]
+    _check_close(first_pose[0], plan.start_qf.x, "start formation x",
+                 position_tolerance)
+    _check_close(first_pose[1], plan.start_qf.y, "start formation y",
+                 position_tolerance)
+    _check_close(math.atan2(math.sin(first_pose[2] - plan.start_qf.psi),
+                            math.cos(first_pose[2] - plan.start_qf.psi)),
+                 0.0, "start formation psi", angle_tolerance)
+    _check_close(last_pose[0], plan.goal_qf.x, "goal formation x",
+                 position_tolerance)
+    _check_close(last_pose[1], plan.goal_qf.y, "goal formation y",
+                 position_tolerance)
+    _check_close(math.atan2(math.sin(last_pose[2] - plan.goal_qf.psi),
+                            math.cos(last_pose[2] - plan.goal_qf.psi)),
+                 0.0, "goal formation psi", angle_tolerance)
+
+    raw_points = {
+        int(item["vehicle_id"]): tuple(item["points"])
+        for item in trajectory_fields.get("trajectories", ())
+    }
+    if set(raw_points) != set(model_offsets):
+        raise PlaybackValidationError(
+            "trajectory vehicle_ids {} differ from the model {}".format(
+                sorted(raw_points), sorted(model_offsets)))
+    times = trajectory.times_from_start
+    for index, time_s in enumerate(times):
+        state = plan.state_at(time_s)
+        _check_close(state.qf.x, trajectory.formation_poses[index][0],
+                     "formation_poses[{}].x".format(index),
+                     position_tolerance)
+        _check_close(state.qf.y, trajectory.formation_poses[index][1],
+                     "formation_poses[{}].y".format(index),
+                     position_tolerance)
+        _check_close(math.atan2(math.sin(
+            state.qf.psi - trajectory.formation_poses[index][2]),
+            math.cos(state.qf.psi - trajectory.formation_poses[index][2])),
+            0.0, "formation_poses[{}].psi".format(index), angle_tolerance)
+        state_by_id = {vehicle.vehicle_id: vehicle
+                       for vehicle in state.vehicles}
+        for vehicle_id in sorted(model_offsets):
+            sample = raw_points[vehicle_id][index]
+            vehicle = state_by_id[vehicle_id]
+            _check_close(float(sample[0]), time_s,
+                         "vehicle {} sample {} time".format(
+                             vehicle_id, index), 1e-9)
+            _check_close(float(sample[1]), vehicle.x,
+                         "vehicle {} sample {} x".format(vehicle_id, index),
+                         position_tolerance)
+            _check_close(float(sample[2]), vehicle.y,
+                         "vehicle {} sample {} y".format(vehicle_id, index),
+                         position_tolerance)
+            _check_close(math.atan2(math.sin(float(sample[3]) - vehicle.theta),
+                                    math.cos(float(sample[3]) - vehicle.theta)),
+                         0.0,
+                         "vehicle {} sample {} theta".format(
+                             vehicle_id, index), angle_tolerance)
+            _check_close(float(sample[4]), vehicle.center_speed_mps,
+                         "vehicle {} sample {} speed".format(
+                             vehicle_id, index), speed_tolerance)
+            _check_close(float(sample[5]), vehicle.yaw_rate_radps,
+                         "vehicle {} sample {} yaw rate".format(
+                             vehicle_id, index), speed_tolerance)
+            expected_mode = {"A": ACKERMANN, "O": OBLIQUE,
+                             "S": SPIN}[state.mode]
+            if int(sample[6]) != expected_mode:
+                raise PlaybackValidationError(
+                    "vehicle {} sample {} mode {} differs from the model {}"
+                    .format(vehicle_id, index, sample[6], expected_mode))
+            _check_close(float(sample[7]), vehicle.mode_control,
+                         "vehicle {} sample {} mode_control".format(
+                             vehicle_id, index), speed_tolerance)
+
+    return replace(trajectory, uniform_plan=plan,
+                   model_sha256=digest), plan, digest
+
+
 @dataclass(frozen=True)
 class PlaybackVehicleState:
     vehicle_id: int
@@ -505,6 +825,8 @@ def frame_at(trajectory, elapsed_s):
         raise PlaybackValidationError(
             "expected FormationPlaybackTrajectory")
     elapsed = _finite(elapsed_s, "elapsed_s")
+    if trajectory.uniform_plan is not None:
+        return _uniform_frame_at(trajectory, elapsed)
     times = trajectory.times_from_start
     duration = trajectory.duration
     if elapsed <= 0.0:
@@ -576,6 +898,85 @@ def frame_at(trajectory, elapsed_s):
         formation_x=formation_x,
         formation_y=formation_y,
         formation_psi=formation_psi,
+        vehicles=tuple(states))
+
+
+def _uniform_frame_at(trajectory, elapsed):
+    """Derive the display frame from the FR02 analytic model.
+
+    No published point column is interpolated here.  Position, heading, mode,
+    control and speed all come from ``UniformTimedPlan.state_at`` at the same
+    common clock; non-zero-pivot cargo arcs therefore stay exact between
+    samples, and each vehicle centre is derived from ``q_F`` by the model.
+    """
+    times = trajectory.times_from_start
+    duration = trajectory.duration
+    if elapsed <= 0.0:
+        lower = upper = 0
+        fraction = 0.0
+        state_name = HOLD_START
+        clamped = 0.0
+    elif elapsed >= duration:
+        lower = upper = len(times) - 1
+        fraction = 0.0
+        state_name = HOLD_END
+        clamped = duration
+    else:
+        upper = bisect_right(times, elapsed)
+        lower = max(0, upper - 1)
+        span = times[upper] - times[lower]
+        if span <= 0.0:
+            raise PlaybackValidationError(
+                "shared time axis is not strictly increasing")
+        fraction = (elapsed - times[lower]) / span
+        if fraction <= 0.0:
+            fraction = 0.0
+        state_name = PLAYING
+        clamped = elapsed
+    try:
+        state = trajectory.uniform_plan.state_at(clamped)
+    except Exception as exc:
+        raise PlaybackValidationError(
+            "authoritative model cannot evaluate t={:.17g}: {}".format(
+                clamped, exc)) from exc
+    if state.qf is None:
+        raise PlaybackValidationError("model state has no formation pose")
+    specs = trajectory.vehicle_map()
+    states = []
+    for vehicle in state.vehicles:
+        spec = specs.get(vehicle.vehicle_id)
+        if spec is None:
+            raise PlaybackValidationError(
+                "model vehicle_id={} is absent from the envelope".format(
+                    vehicle.vehicle_id))
+        mode = {"A": ACKERMANN, "O": OBLIQUE, "S": SPIN}[state.mode]
+        states.append(PlaybackVehicleState(
+            vehicle_id=vehicle.vehicle_id,
+            center_x=float(vehicle.x),
+            center_y=float(vehicle.y),
+            theta=float(vehicle.theta),
+            mode=mode,
+            mode_control=float(vehicle.mode_control),
+            center_speed_mps=float(vehicle.center_speed_mps),
+            offset_x=spec.offset_x,
+            offset_y=spec.offset_y,
+            body_length_m=spec.body_length_m,
+            body_width_m=spec.body_width_m))
+    return PlaybackFrame(
+        plan_id=trajectory.plan_id,
+        formation_id=trajectory.formation_id,
+        frame_id=trajectory.frame_id,
+        stamp=trajectory.stamp,
+        duration_s=duration,
+        elapsed_s=elapsed,
+        clamped_elapsed_s=clamped,
+        state=state_name,
+        lower_index=lower,
+        upper_index=upper,
+        fraction=fraction,
+        formation_x=float(state.qf.x),
+        formation_y=float(state.qf.y),
+        formation_psi=float(state.qf.psi),
         vehicles=tuple(states))
 
 
@@ -667,20 +1068,40 @@ def _mode_text(state):
         state.vehicle_id, state.mode_name, direction, detail)
 
 
-def _status_label(status, plan_id):
-    """Interpret the optimizer status without ever upgrading its claims."""
+def _status_label(status, plan_id, model_sha256=None, formation_id=None,
+                  backend=None):
+    """Interpret the optimizer status without ever upgrading its claims.
+
+    ``model_sha256`` is the digest of the verified uniform_v02 envelope this
+    display belongs to.  When it is present the audit status must carry the
+    same plan_id, formation_id, backend and digest; a status for another
+    model, or one missing the identity fields, can never certify this
+    display.  Legacy trajectories pass None and keep the historical
+    plan_id-only rule.
+    """
     if not isinstance(status, Mapping):
         return "AUDIT_PENDING", False, GEOMETRY_ONLY_LABEL, "no status report"
     status_plan = status.get("plan_id")
+    identity_ok = True
+    if model_sha256 is not None:
+        identity_ok = bool(
+            status.get("model_sha256") == model_sha256
+            and status.get("formation_id") == formation_id
+            and status.get("backend") == backend)
     executable = bool(
         status.get("trajectory_published") and status.get("executable")
-        and status.get("feasible") and status_plan == plan_id)
+        and status.get("feasible") and status_plan == plan_id
+        and identity_ok)
     if executable:
         if status.get("status") == "NO_MOTION":
             return "NO_MOTION", True, "NO_MOTION", (
                 "audited zero-motion hold; static state published")
         return "FEASIBLE", True, "FEASIBLE", (
             "independent audit and transactional publication")
+    if not identity_ok:
+        return "GEOMETRY_ONLY", False, GEOMETRY_ONLY_LABEL, (
+            "audit status identity does not match the displayed model "
+            "(plan_id/formation_id/backend/model_sha256)")
     reason = status.get("reason") or status.get("status") or "UNKNOWN"
     if status.get("status") == "FEASIBLE":
         return "GEOMETRY_ONLY", False, GEOMETRY_ONLY_LABEL, str(reason)
@@ -851,8 +1272,13 @@ def build_markers(trajectory, frame, options=None, status=None):
         scale=(0.0, 0.0, 1.2 * options.text_size_m))
 
     # Honest status label: GEOMETRY_ONLY until the S9 status proves otherwise.
+    # A verified uniform_v02 envelope additionally binds the label to its own
+    # model digest; legacy trajectories keep the plan_id-only rule.
+    audit_digest = trajectory.model_sha256
     audit_state, executable, label, detail = _status_label(
-        status, trajectory.plan_id)
+        status, trajectory.plan_id, audit_digest,
+        trajectory.formation_id if audit_digest is not None else None,
+        PLAYBACK_PLAN_BACKEND if audit_digest is not None else None)
     status_color = STATUS_OK_COLOR if executable else STATUS_FAIL_COLOR
     status_text = (
         "plan {} | {} | {}\nT_end={:.3f} s | {} / {}\n{}".format(
@@ -915,7 +1341,9 @@ def status_document(trajectory=None, frame=None, status=None, *,
                     cleared=False, marker_count=0, namespaces=(),
                     invalid_reason="", frame_id="map",
                     terminal_center_error_m=None,
-                    terminal_heading_error_rad=None):
+                    terminal_heading_error_rad=None,
+                    model_sha256=None, backend=None,
+                    semantic_version=None):
     """Strict-JSON playback status for smoke tests and RViz-side inspection."""
     if cleared:
         return {
@@ -925,6 +1353,9 @@ def status_document(trajectory=None, frame=None, status=None, *,
             "frame_id": frame_id,
             "plan_id": None,
             "formation_id": None,
+            "backend": backend,
+            "model_sha256": model_sha256,
+            "semantic_version": semantic_version,
             "time_source": TIME_SOURCE,
             "marker_count": 0,
             "marker_namespaces": [],
@@ -942,6 +1373,9 @@ def status_document(trajectory=None, frame=None, status=None, *,
                         else trajectory.plan_id),
             "formation_id": (None if trajectory is None
                              else trajectory.formation_id),
+            "backend": backend,
+            "model_sha256": model_sha256,
+            "semantic_version": semantic_version,
             "time_source": TIME_SOURCE,
             "marker_count": 0,
             "marker_namespaces": [],
@@ -953,8 +1387,18 @@ def status_document(trajectory=None, frame=None, status=None, *,
             isinstance(frame, PlaybackFrame)):
         raise PlaybackValidationError(
             "status_document requires a trajectory and frame")
+    audit_digest = trajectory.model_sha256
+    if audit_digest is not None:
+        if model_sha256 is not None and model_sha256 != audit_digest:
+            raise PlaybackValidationError(
+                "status_document model_sha256 differs from the verified "
+                "uniform envelope")
+        # The verified envelope is the authority for the advertised identity.
+        model_sha256 = audit_digest
     audit_state, executable, label, detail = _status_label(
-        status, trajectory.plan_id)
+        status, trajectory.plan_id, audit_digest,
+        trajectory.formation_id if audit_digest is not None else None,
+        PLAYBACK_PLAN_BACKEND if audit_digest is not None else None)
     return {
         "schema": PLAYBACK_SCHEMA,
         "state": frame.state,
@@ -962,6 +1406,9 @@ def status_document(trajectory=None, frame=None, status=None, *,
         "frame_id": trajectory.frame_id,
         "plan_id": trajectory.plan_id,
         "formation_id": trajectory.formation_id,
+        "backend": backend,
+        "model_sha256": model_sha256,
+        "semantic_version": semantic_version,
         "time_source": TIME_SOURCE,
         "trajectory_stamp": {
             "secs": int(trajectory.stamp[0]),

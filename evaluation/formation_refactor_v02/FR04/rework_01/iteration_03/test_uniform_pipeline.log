@@ -1,0 +1,84 @@
+test_f01_exact_hold (test_uniform_pipeline.UniformPipelineTest) ... FR04 F01_hold status=NO_MOTION reason=OK search_wall=0.000013s pipeline_wall=0.008522s T_end=0.0 expansions=0 candidates=0 terminal_audits=0
+ok
+test_f02_forward (test_uniform_pipeline.UniformPipelineTest) ... FR04 F02_forward status=SUCCESS reason=OK search_wall=1.036698s pipeline_wall=1.189169s T_end=9.368306005450883 expansions=3 candidates=429 terminal_audits=1
+ok
+test_f03_reverse (test_uniform_pipeline.UniformPipelineTest) ... FR04 F03_reverse status=SUCCESS reason=OK search_wall=1.030067s pipeline_wall=1.184240s T_end=9.368306005450883 expansions=3 candidates=429 terminal_audits=1
+ok
+test_f04_lateral (test_uniform_pipeline.UniformPipelineTest) ... FR04 F04_lateral status=SUCCESS reason=OK search_wall=2.702588s pipeline_wall=2.863471s T_end=13.19985989637642 expansions=9 candidates=1302 terminal_audits=1
+ok
+test_f05_diagonal (test_uniform_pipeline.UniformPipelineTest) ... FR04 F05_diagonal status=SUCCESS reason=OK search_wall=1.945915s pipeline_wall=2.200272s T_end=18.551871641156414 expansions=6 candidates=869 terminal_audits=1
+ok
+test_f06_in_place_positive_90 (test_uniform_pipeline.UniformPipelineTest) ... FR04 F06_in_place_positive_90 status=BUDGET_EXHAUSTED reason=TIME_BUDGET_EXHAUSTED search_wall=30.048348s pipeline_wall=30.070539s T_end=None expansions=112 candidates=16493 terminal_audits=10
+FAIL
+test_f07_in_place_negative_90 (test_uniform_pipeline.UniformPipelineTest) ... FR04 F07_in_place_negative_90 status=BUDGET_EXHAUSTED reason=TIME_BUDGET_EXHAUSTED search_wall=30.126239s pipeline_wall=30.148690s T_end=None expansions=109 candidates=16253 terminal_audits=11
+FAIL
+test_f08_translate_and_rotate (test_uniform_pipeline.UniformPipelineTest) ... FR04 F08_translate_and_rotate status=BUDGET_EXHAUSTED reason=TIME_BUDGET_EXHAUSTED search_wall=30.031904s pipeline_wall=30.048883s T_end=None expansions=112 candidates=16876 terminal_audits=5
+FAIL
+test_f09_enclosed_obstacle_no_solution (test_uniform_pipeline.UniformPipelineTest) ... FR04 F09_enclosed_obstacle status=NO_SOLUTION reason=NO_SOLUTION search_wall=0.028945s pipeline_wall=0.032862s T_end=None expansions=1 candidates=143 terminal_audits=0
+ok
+test_f10_out_of_bounds_goal_rejected (test_uniform_pipeline.UniformPipelineTest) ... FR04 F10_out_of_bounds status=REQUEST_REJECTED reason=GOAL_CENTER_OUT_OF_BOUNDS search_wall=-1.000000s pipeline_wall=0.002319s T_end=None expansions=-1 candidates=-1 terminal_audits=0
+ok
+test_f11_deliberate_expansion_budget_exhaustion (test_uniform_pipeline.UniformPipelineTest) ... FR04 F11_budget_exhausted status=BUDGET_EXHAUSTED reason=EXPANSION_BUDGET_EXHAUSTED search_wall=0.291755s pipeline_wall=0.294919s T_end=None expansions=1 candidates=143 terminal_audits=0
+ok
+test_f12_terminal_screen_and_final_rebuilt_path_audit (test_uniform_pipeline.UniformPipelineTest) ... FR04 F12_final_reaudit status=SUCCESS reason=OK search_wall=1.030059s pipeline_wall=1.183775s T_end=9.368306005450883 expansions=3 candidates=429 terminal_audits=1
+ok
+test_f13_in_tolerance_goal_and_free_terminal_headings (test_uniform_pipeline.UniformPipelineTest) ... FR04 F13_tolerant_goal_free_headings status=SUCCESS reason=OK search_wall=1.107514s pipeline_wall=1.265395s T_end=9.668306005450882 expansions=3 candidates=555 terminal_audits=1
+ok
+test_f14_in_tolerance_hold_and_free_terminal_headings (test_uniform_pipeline.UniformPipelineTest) ... FR04 F14_tolerant_hold status=NO_MOTION reason=OK search_wall=0.000009s pipeline_wall=0.007455s T_end=0.0 expansions=0 candidates=0 terminal_audits=0
+ok
+test_f15_wrong_start_and_goal_rebuild_rejected (test_uniform_pipeline.UniformPipelineTest) ... FR04 F15_wrong_rebuild status=AUDIT_REJECTED reason=PLAN_START_MISMATCH search_wall=1.037260s pipeline_wall=1.041293s T_end=None expansions=3 candidates=429 terminal_audits=1
+ok
+test_f16_request_id_contract_mismatch_rejected (test_uniform_pipeline.UniformPipelineTest) ... FR04 F16_plan_id_mismatch status=AUDIT_REJECTED reason=PLAN_IDENTITY_MISMATCH search_wall=1.046779s pipeline_wall=1.071401s T_end=None expansions=3 candidates=429 terminal_audits=1
+ok
+test_f17_same_endpoints_but_different_path_rejected (test_uniform_pipeline.UniformPipelineTest) ... FR04 F17_same_endpoints_other_path status=AUDIT_REJECTED reason=PLAN_EDGE_SEQUENCE_MISMATCH search_wall=1.030255s pipeline_wall=1.034433s T_end=None expansions=3 candidates=429 terminal_audits=1
+ok
+test_f18_timing_limit_contract_mismatch_rejected (test_uniform_pipeline.UniformPipelineTest) ... FR04 F18_timing_limit_mismatch status=AUDIT_REJECTED reason=PLAN_IDENTITY_MISMATCH search_wall=1.055373s pipeline_wall=1.059611s T_end=None expansions=3 candidates=429 terminal_audits=1
+ok
+
+======================================================================
+FAIL: test_f06_in_place_positive_90 (test_uniform_pipeline.UniformPipelineTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_pipeline.py", line 314, in test_f06_in_place_positive_90
+    self._in_place_rotation("F06_in_place_positive_90", math.pi / 2.0, 6)
+  File "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_pipeline.py", line 298, in _in_place_rotation
+    self._success(case_id, result)
+  File "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_pipeline.py", line 233, in _success
+    self.assertEqual(expected_status, result.status)
+AssertionError: 'SUCCESS' != 'BUDGET_EXHAUSTED'
+- SUCCESS
++ BUDGET_EXHAUSTED
+
+
+======================================================================
+FAIL: test_f07_in_place_negative_90 (test_uniform_pipeline.UniformPipelineTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_pipeline.py", line 317, in test_f07_in_place_negative_90
+    self._in_place_rotation("F07_in_place_negative_90", -math.pi / 2.0, 7)
+  File "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_pipeline.py", line 298, in _in_place_rotation
+    self._success(case_id, result)
+  File "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_pipeline.py", line 233, in _success
+    self.assertEqual(expected_status, result.status)
+AssertionError: 'SUCCESS' != 'BUDGET_EXHAUSTED'
+- SUCCESS
++ BUDGET_EXHAUSTED
+
+
+======================================================================
+FAIL: test_f08_translate_and_rotate (test_uniform_pipeline.UniformPipelineTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_pipeline.py", line 322, in test_f08_translate_and_rotate
+    self._success("F08_translate_and_rotate", result)
+  File "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_pipeline.py", line 233, in _success
+    self.assertEqual(expected_status, result.status)
+AssertionError: 'SUCCESS' != 'BUDGET_EXHAUSTED'
+- SUCCESS
++ BUDGET_EXHAUSTED
+
+
+----------------------------------------------------------------------
+Ran 18 tests in 106.327s
+
+FAILED (failures=3)

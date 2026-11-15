@@ -1,0 +1,24 @@
+[
+  {
+    "case": "subtolerance_gap",
+    "expected": "REJECT_INVALID_TIME_STRUCTURE",
+    "time": 2.3432099801044908,
+    "motion_t0": 2.343209980354491,
+    "motion_duration": 3.6999616598801657,
+    "motion_end": 6.0431716402346565,
+    "decoder": "REJECTED",
+    "reason": "PHASE_TIME_DISCONTINUITY",
+    "status": "PASSED"
+  },
+  {
+    "case": "unrepresentable_motion_interval",
+    "expected": "REJECT_INVALID_TIME_STRUCTURE",
+    "time": 2.3432099798544908,
+    "motion_t0": 2.3432099798544908,
+    "motion_duration": 1e-20,
+    "motion_end": 2.3432099798544908,
+    "decoder": "REJECTED",
+    "reason": "PHASE_TIME_UNREPRESENTABLE",
+    "status": "PASSED"
+  }
+]

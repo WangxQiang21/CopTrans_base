@@ -1,0 +1,109 @@
+[
+  {
+    "command": [
+      "python3",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "tests",
+      "-p",
+      "test_uniform_motion.py",
+      "-v"
+    ],
+    "exit_code": 0,
+    "log": "test_uniform_motion.py.log",
+    "environment_overrides": {
+      "OPENBLAS_NUM_THREADS": "1",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "FR01_RESULTS_PATH": "/home/wq/whut_thesis/expv3_multi_v02/evaluation/formation_refactor_v02/FR01/codex_acceptance_20261113T062110Z/rerun_primitive_results.json"
+    }
+  },
+  {
+    "command": [
+      "python3",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "tests",
+      "-p",
+      "test_formation_model.py",
+      "-v"
+    ],
+    "exit_code": 0,
+    "log": "test_formation_model.py.log",
+    "environment_overrides": {
+      "OPENBLAS_NUM_THREADS": "1",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "FR01_RESULTS_PATH": "/home/wq/whut_thesis/expv3_multi_v02/evaluation/formation_refactor_v02/FR01/codex_acceptance_20261113T062110Z/rerun_primitive_results.json"
+    }
+  },
+  {
+    "command": [
+      "python3",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "tests",
+      "-p",
+      "test_formation_geometry.py",
+      "-v"
+    ],
+    "exit_code": 0,
+    "log": "test_formation_geometry.py.log",
+    "environment_overrides": {
+      "OPENBLAS_NUM_THREADS": "1",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "FR01_RESULTS_PATH": "/home/wq/whut_thesis/expv3_multi_v02/evaluation/formation_refactor_v02/FR01/codex_acceptance_20261113T062110Z/rerun_primitive_results.json"
+    }
+  },
+  {
+    "command": [
+      "python3",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "tests",
+      "-p",
+      "test_formation_kinematics.py",
+      "-v"
+    ],
+    "exit_code": 0,
+    "log": "test_formation_kinematics.py.log",
+    "environment_overrides": {
+      "OPENBLAS_NUM_THREADS": "1",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "FR01_RESULTS_PATH": "/home/wq/whut_thesis/expv3_multi_v02/evaluation/formation_refactor_v02/FR01/codex_acceptance_20261113T062110Z/rerun_primitive_results.json"
+    }
+  },
+  {
+    "command": [
+      "python3",
+      "/home/wq/whut_thesis/expv3_multi_v02/evaluation/formation_refactor_v02/FR01/codex_acceptance_20261113T062110Z/independent_probes.py"
+    ],
+    "exit_code": 0,
+    "log": "independent_probes.log",
+    "environment_overrides": {
+      "OPENBLAS_NUM_THREADS": "1",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "FR01_RESULTS_PATH": "/home/wq/whut_thesis/expv3_multi_v02/evaluation/formation_refactor_v02/FR01/codex_acceptance_20261113T062110Z/rerun_primitive_results.json"
+    }
+  },
+  {
+    "command": [
+      "git",
+      "diff",
+      "--check"
+    ],
+    "exit_code": 0,
+    "log": "git_diff_check.log",
+    "environment_overrides": {
+      "OPENBLAS_NUM_THREADS": "1",
+      "PYTHONDONTWRITEBYTECODE": "1",
+      "FR01_RESULTS_PATH": "/home/wq/whut_thesis/expv3_multi_v02/evaluation/formation_refactor_v02/FR01/codex_acceptance_20261113T062110Z/rerun_primitive_results.json"
+    }
+  }
+]

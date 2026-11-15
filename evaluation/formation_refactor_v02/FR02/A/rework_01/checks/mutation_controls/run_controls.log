@@ -1,0 +1,12 @@
+r1_baseline: expected PASSED observed PASSED -> OK
+r1_large_epsilon_clamp_negative_control: expected FAILED observed FAILED -> OK
+  AssertionError: 1.2736292935336124e-11 not less than or equal to 1e-12 : motion_0000 progress_rate disagrees with exact quintic
+r2_baseline: expected PASSED observed PASSED -> OK
+r2_rolling_sign_flip_negative_control: expected FAILED observed FAILED -> OK
+  AssertionError: 0.01763323813687388 not less than or equal to 1e-07 : mixed_sign_spin vehicle 1 wheel 0 vector mismatch
+r2_yaw_sign_flip_negative_control: expected FAILED observed FAILED -> OK
+  AssertionError: 0.01763323813687388 not less than or equal to 1e-07 : mixed_sign_spin vehicle 1 wheel 0 vector mismatch
+r2_unfolded_angles_negative_control: expected FAILED observed FAILED -> OK
+  AssertionError: 0.01763323813687388 not less than or equal to 1e-07 : mixed_sign_spin vehicle 1 wheel 0 vector mismatch
+r2_two_wheel_negative_control: expected FAILED observed FAILED -> OK
+  AssertionError: vehicle 1 has 2 rolling speeds

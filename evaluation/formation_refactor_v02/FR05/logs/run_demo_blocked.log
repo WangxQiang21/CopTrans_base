@@ -1,0 +1,217 @@
+[expv3] 地图比例 1.0，中心点固定；栅格尺寸保持不变。
+[expv3] 编队发布后端 uniform_v02（同一时刻只启动这一个发布后端）
+[expv3] 货物中心楔形编队，车体航向独立（新实验按配置策略初始化）；地图绝对比例 1.0
+[expv3] 构建 ROS overlay...
+[expv3] 启动 Demo：backend:=uniform_v02 rviz:=false playback_rate:=100 map_dir:=/tmp/expv3-map-scale.C2yolZ/blocked_map scene:=manual_map auto_goal:=false rviz_config:=/tmp/expv3-map-scale.C2yolZ/formation.rviz
+... logging to /home/wq/.ros/log/a100fd5c-dff4-11f1-a57b-1b4c90db486b/roslaunch-wq-ubuntu-3054210.log
+Checking log directory for disk usage. This may take a while.
+Press Ctrl-C to interrupt
+Done checking log file disk usage. Usage is <1GB.
+]2;/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch
+[1mstarted roslaunch server http://127.0.0.1:41321/[0m
+
+SUMMARY
+========
+
+PARAMETERS
+ * /formation_goal_bridge/admission_backend: uniform_v02
+ * /formation_goal_bridge/allow_reverse: True
+ * /formation_goal_bridge/body_length_m: 0.738
+ * /formation_goal_bridge/body_width_m: 0.5
+ * /formation_goal_bridge/formation_id: cargo_wedge
+ * /formation_goal_bridge/frame_id: map
+ * /formation_goal_bridge/goal_heading_free: True
+ * /formation_goal_bridge/initial_heading_policy: cargo_heading
+ * /formation_goal_bridge/initial_plan_id: 600000
+ * /formation_goal_bridge/job_state_timeout_s: 3.0
+ * /formation_goal_bridge/map_timeout_s: 8.0
+ * /formation_goal_bridge/offsets: [[1.0, 0.0], [0.0...
+ * /formation_goal_bridge/playback_tf_timeout_s: 0.5
+ * /formation_goal_bridge/start_theta: 0.0
+ * /formation_goal_bridge/start_x: 10.0
+ * /formation_goal_bridge/start_y: 3.6
+ * /formation_goal_bridge/vehicle_ids: [1, 2, 3]
+ * /formation_playback/allow_reverse: True
+ * /formation_playback/backend: uniform_v02
+ * /formation_playback/body_length_m: 0.738
+ * /formation_playback/body_width_m: 0.5
+ * /formation_playback/formation_id: cargo_wedge
+ * /formation_playback/frame_id: map
+ * /formation_playback/goal_heading_free: True
+ * /formation_playback/initial_heading_policy: cargo_heading
+ * /formation_playback/offsets: [[1.0, 0.0], [0.0...
+ * /formation_playback/publish_tf: True
+ * /formation_playback/rate: 100
+ * /formation_playback/transport_ui: True
+ * /formation_playback/vehicle_ids: [1, 2, 3]
+ * /formation_uniform_planner/collision_margin: 0.05
+ * /formation_uniform_planner/frame_id: map
+ * /formation_uniform_planner/goal_heading_tol: 0.16
+ * /formation_uniform_planner/goal_psi_tol: 0.16
+ * /formation_uniform_planner/goal_xy_tol: 0.16
+ * /formation_uniform_planner/max_expansions: 50000
+ * /formation_uniform_planner/max_seconds: 20.0
+ * /formation_uniform_planner/playback_finish_grace_s: 3.0
+ * /formation_uniform_planner/playback_start_timeout_s: 5.0
+ * /formation_uniform_planner/publication_dt: 0.02
+ * /formation_uniform_planner/sweep_spacing: 0.01
+ * /formation_uniform_planner/translation_step: 1.0
+ * /fwis_map_publisher/map_dir: /tmp/expv3-map-sc...
+ * /rosdistro: noetic
+ * /rosversion: 1.17.4
+
+NODES
+  /
+    formation_goal_bridge (fwis_v3_demo/formation_goal_bridge.py)
+    formation_playback (fwis_v3_playback/formation_playback.py)
+    formation_uniform_planner (fwis_v3_optimizer/formation_uniform_planner_node.py)
+    fwis_map_publisher (fwis_map_server/map_publisher.py)
+
+[1mROS_MASTER_URI=http://127.0.0.1:11411[0m
+]2;/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch http://127.0.0.1:11411
+[1mprocess[fwis_map_publisher-1]: started with pid [3054224][0m
+[1mprocess[formation_uniform_planner-2]: started with pid [3054225][0m
+[1mprocess[formation_playback-3]: started with pid [3054226][0m
+[1mprocess[formation_goal_bridge-4]: started with pid [3054227][0m
+[INFO] [1794640445.351254]: [fwis_map_publisher] /map published: 600x600, res=0.050 m
+[INFO] [1794640445.466198]: [formation playback] common-clock display ready; GEOMETRY_ONLY is shown until an independent FEASIBLE status is received
+[INFO] [1794640445.565059]: [uniform planner] autonomous V0.2 planner ready; backend=uniform_v02 budget=50000 expansions / 20.0 s
+[INFO] [1794640445.580949]: [uniform planner] exact map 600x600 res=0.050 origin=(-15.00, -15.00) signature=9830a2bd7444fe30
+[INFO] [1794640445.632149]: [formation goal bridge] ready: formation=cargo_wedge offsets=((1.0, 0.0), (0.0, 1.0), (0.0, -1.0)), start=(10.000, 3.600, 0.000), goal topic=/move_base_simple/goal
+[INFO] [1794640460.902545]: [formation goal bridge] 2D Pose Estimate recorded; new experiment policy=cargo_heading headings={1: 0.0, 2: 0.0, 3: 0.0}
+[INFO] [1794640461.905668]: [formation goal bridge] plan 600000: start=(10.000, 10.000, 0.000) goal=(11.000, 10.000, 0.000) vehicles=3
+[INFO] [1794640461.906561]: [uniform planner] plan 600000 admitted from cargo_wedge: start=(10.000, 10.000, 0.000) goal=(11.000, 10.000, 0.000) free_headings=True reverse=True
+[INFO] [1794640461.907215]: [formation goal bridge] start from manual start; body headings {1: 0.0, 2: 0.0, 3: 0.0}
+[INFO] [1794640465.987984]: [uniform planner] plan 600000 published: T_end=3.123 s model_sha256=49da033ab72b25a02dba8acd944f75e222e9af79081807c9a8c58f9b1ef94136 samples=159 wall=4.042 s verification_to_stamp_delay=0.0367 s
+[INFO] [1794640465.988459]: [formation goal bridge] plan 600000 FEASIBLE and published
+[INFO] [1794640466.094585]: [formation playback] accepted uniform_v02 plan 600000 formation cargo_wedge model_sha256=49da033ab72b25a02dba8acd944f75e222e9af79081807c9a8c58f9b1ef94136: 3 vehicles, 159 shared samples, T_end=3.122769 s
+[INFO] [1794640466.098332]: [formation playback] plan=600000 state=PLAYING elapsed=0.109402 clamped=0.109402 fraction=0.470047 executable=False
+[INFO] [1794640466.098991]: [uniform planner] plan 600000 playback confirmed
+[INFO] [1794640469.116356]: [formation playback] plan=600000 state=HOLD_END elapsed=3.126286 clamped=3.122769 fraction=0.000000 executable=True
+[INFO] [1794640469.117099]: [uniform planner] plan 600000 HOLD_END; busy released
+[INFO] [1794640469.117384]: [formation goal bridge] plan 600000 FEASIBLE and published
+[INFO] [1794640469.623581]: [formation goal bridge] plan 600001: start=(11.000, 10.000, 0.000) goal=(13.500, 10.000, 0.000) vehicles=3
+[INFO] [1794640469.623924]: [uniform planner] plan 600001 admitted from cargo_wedge: start=(11.000, 10.000, 0.000) goal=(13.500, 10.000, 0.000) free_headings=True reverse=True
+[INFO] [1794640469.624891]: [formation goal bridge] start from current playback; body headings {1: 0.0, 2: 0.0, 3: 0.0}
+[ERROR] [1794640490.213315]: [uniform planner] plan 600001 not executable: status=BUDGET_EXHAUSTED reason=TIME_BUDGET_EXHAUSTED layer=budget wall=20.588s
+[WARN] [1794640490.214940]: [uniform planner] plan 600001 has no executable envelope (TIME_BUDGET_EXHAUSTED)
+[WARN] [1794640490.215520]: [formation goal bridge] plan 600001 status=REJECTED reason=TIME_BUDGET_EXHAUSTED
+[ERROR] [1794640490.215867]: [formation playback] rejecting playback plan 600001: model_sha256 must be 64 hex digits
+[INFO] [1794640490.217574]: [formation playback] cleared: invalid playback plan: model_sha256 must be 64 hex digits
+[INFO] [1794640563.581608]: [formation goal bridge] 2D Pose Estimate recorded; new experiment policy=cargo_heading headings={1: 0.0, 2: 0.0, 3: 0.0}
+[INFO] [1794640564.584678]: [formation goal bridge] plan 600002: start=(10.000, 10.000, 0.000) goal=(11.000, 10.000, 0.000) vehicles=3
+[INFO] [1794640564.585061]: [uniform planner] plan 600002 admitted from cargo_wedge: start=(10.000, 10.000, 0.000) goal=(11.000, 10.000, 0.000) free_headings=True reverse=True
+[INFO] [1794640564.586155]: [formation goal bridge] start from manual start; body headings {1: 0.0, 2: 0.0, 3: 0.0}
+[INFO] [1794640568.642339]: [uniform planner] plan 600002 published: T_end=3.123 s model_sha256=09b32ba5be31dd285f3d13b880deebbfae20ba9cbcc18b7dc27ee5f4433ff153 samples=159 wall=4.017 s verification_to_stamp_delay=0.0369 s
+[INFO] [1794640568.642464]: [formation goal bridge] plan 600002 FEASIBLE and published
+[INFO] [1794640568.670256]: [formation playback] accepted uniform_v02 plan 600002 formation cargo_wedge model_sha256=09b32ba5be31dd285f3d13b880deebbfae20ba9cbcc18b7dc27ee5f4433ff153: 3 vehicles, 159 shared samples, T_end=3.122769 s
+[INFO] [1794640568.675664]: [formation playback] plan=600002 state=PLAYING elapsed=0.031002 clamped=0.031002 fraction=0.550064 executable=True
+[INFO] [1794640568.675772]: [uniform planner] plan 600002 playback confirmed
+[INFO] [1794640571.774442]: [formation playback] plan=600002 state=HOLD_END elapsed=3.130719 clamped=3.122769 fraction=0.000000 executable=True
+[INFO] [1794640571.774793]: [uniform planner] plan 600002 HOLD_END; busy released
+[INFO] [1794640571.775295]: [formation goal bridge] plan 600002 FEASIBLE and published
+[INFO] [1794640572.284389]: [formation goal bridge] plan 600003: start=(11.000, 10.000, 0.000) goal=(13.500, 10.000, 0.000) vehicles=3
+[INFO] [1794640572.285058]: [uniform planner] plan 600003 admitted from cargo_wedge: start=(11.000, 10.000, 0.000) goal=(13.500, 10.000, 0.000) free_headings=True reverse=True
+[INFO] [1794640572.285928]: [formation goal bridge] start from current playback; body headings {1: 0.0, 2: 0.0, 3: 0.0}
+[ERROR] [1794640592.523663]: [uniform planner] plan 600003 not executable: status=BUDGET_EXHAUSTED reason=TIME_BUDGET_EXHAUSTED layer=budget wall=20.237s
+[WARN] [1794640592.525095]: [uniform planner] plan 600003 has no executable envelope (TIME_BUDGET_EXHAUSTED)
+[WARN] [1794640592.525488]: [formation goal bridge] plan 600003 status=REJECTED reason=TIME_BUDGET_EXHAUSTED
+[ERROR] [1794640592.525714]: [formation playback] rejecting playback plan 600003: model_sha256 must be 64 hex digits
+[INFO] [1794640592.527076]: [formation playback] cleared: invalid playback plan: model_sha256 must be 64 hex digits
+[INFO] [1794640606.401824]: [formation goal bridge] 2D Pose Estimate recorded; new experiment policy=cargo_heading headings={1: 0.0, 2: 0.0, 3: 0.0}
+[INFO] [1794640607.405967]: [formation goal bridge] plan 600004: start=(10.000, 10.000, 0.000) goal=(11.000, 10.000, 0.000) vehicles=3
+[INFO] [1794640607.406446]: [uniform planner] plan 600004 admitted from cargo_wedge: start=(10.000, 10.000, 0.000) goal=(11.000, 10.000, 0.000) free_headings=True reverse=True
+[INFO] [1794640607.407967]: [formation goal bridge] start from manual start; body headings {1: 0.0, 2: 0.0, 3: 0.0}
+[INFO] [1794640611.472980]: [formation goal bridge] plan 600004 FEASIBLE and published
+[INFO] [1794640611.473075]: [uniform planner] plan 600004 published: T_end=3.123 s model_sha256=96b3f7de32b9a9538a324a400c19bca3697b5e37f7b2069b3fd2ea7b0d1f32e6 samples=159 wall=4.017 s verification_to_stamp_delay=0.0462 s
+[INFO] [1794640611.494884]: [formation playback] accepted uniform_v02 plan 600004 formation cargo_wedge model_sha256=96b3f7de32b9a9538a324a400c19bca3697b5e37f7b2069b3fd2ea7b0d1f32e6: 3 vehicles, 159 shared samples, T_end=3.122769 s
+[INFO] [1794640611.498416]: [formation playback] plan=600004 state=PLAYING elapsed=0.024582 clamped=0.024582 fraction=0.229069 executable=True
+[INFO] [1794640611.499093]: [uniform planner] plan 600004 playback confirmed
+[INFO] [1794640614.606547]: [formation playback] plan=600004 state=HOLD_END elapsed=3.129831 clamped=3.122769 fraction=0.000000 executable=True
+[INFO] [1794640614.618014]: [uniform planner] plan 600004 HOLD_END; busy released
+[INFO] [1794640614.618397]: [formation goal bridge] plan 600004 FEASIBLE and published
+[INFO] [1794640615.123590]: [formation goal bridge] plan 600005: start=(11.000, 10.000, 0.000) goal=(13.500, 10.000, 0.000) vehicles=3
+[INFO] [1794640615.124241]: [uniform planner] plan 600005 admitted from cargo_wedge: start=(11.000, 10.000, 0.000) goal=(13.500, 10.000, 0.000) free_headings=True reverse=True
+[INFO] [1794640615.125620]: [formation goal bridge] start from current playback; body headings {1: 0.0, 2: 0.0, 3: 0.0}
+[ERROR] [1794640635.565223]: [uniform planner] plan 600005 not executable: status=BUDGET_EXHAUSTED reason=TIME_BUDGET_EXHAUSTED layer=budget wall=20.439s
+[WARN] [1794640635.566841]: [formation goal bridge] plan 600005 status=REJECTED reason=TIME_BUDGET_EXHAUSTED
+[WARN] [1794640635.566997]: [uniform planner] plan 600005 has no executable envelope (TIME_BUDGET_EXHAUSTED)
+[ERROR] [1794640635.567463]: [formation playback] rejecting playback plan 600005: model_sha256 must be 64 hex digits
+[INFO] [1794640635.569070]: [formation playback] cleared: invalid playback plan: model_sha256 must be 64 hex digits
+[INFO] [1794640636.787475]: [formation goal bridge] plan 600006: start=(11.000, 10.000, 0.000) goal=(11.000, 10.000, 0.000) vehicles=3
+[INFO] [1794640636.788283]: [uniform planner] plan 600006 admitted from cargo_wedge: start=(11.000, 10.000, 0.000) goal=(11.000, 10.000, 0.000) free_headings=True reverse=True
+[INFO] [1794640636.788845]: [formation goal bridge] start from current playback; body headings {1: 0.0, 2: 0.0, 3: 0.0}
+[INFO] [1794640636.804839]: [uniform planner] plan 600006 published: T_end=0.000 s model_sha256=c613f2e2a2a945e74482414d079eda62b613ca9da4f9996ad3aeb6ee70e925d4 samples=1 wall=0.012 s verification_to_stamp_delay=0.0018 s
+[INFO] [1794640636.805467]: [formation goal bridge] plan 600006 NO_MOTION and published
+[INFO] [1794640636.807258]: [formation playback] accepted uniform_v02 plan 600006 formation cargo_wedge model_sha256=c613f2e2a2a945e74482414d079eda62b613ca9da4f9996ad3aeb6ee70e925d4: 3 vehicles, 1 shared samples, T_end=0.000000 s
+[INFO] [1794640636.810374]: [formation playback] plan=600006 state=HOLD_END elapsed=0.004653 clamped=0.000000 fraction=0.000000 executable=True
+[INFO] [1794640636.810448]: [uniform planner] plan 600006 HOLD_END; busy released
+[INFO] [1794640636.810749]: [formation goal bridge] plan 600006 NO_MOTION and published
+[INFO] [1794640670.449883]: [formation goal bridge] 2D Pose Estimate recorded; new experiment policy=cargo_heading headings={1: 0.0, 2: 0.0, 3: 0.0}
+[INFO] [1794640671.453713]: [formation goal bridge] plan 600007: start=(10.000, 10.000, 0.000) goal=(11.000, 10.000, 0.000) vehicles=3
+[INFO] [1794640671.454431]: [uniform planner] plan 600007 admitted from cargo_wedge: start=(10.000, 10.000, 0.000) goal=(11.000, 10.000, 0.000) free_headings=True reverse=True
+[INFO] [1794640671.455040]: [formation goal bridge] start from manual start; body headings {1: 0.0, 2: 0.0, 3: 0.0}
+[INFO] [1794640675.517975]: [uniform planner] plan 600007 published: T_end=3.123 s model_sha256=f2279749b6aa83ad08e7e09fdfd4616df547479dfce3003ad8fa11167e5f6ebb samples=159 wall=4.024 s verification_to_stamp_delay=0.0360 s
+[INFO] [1794640675.518652]: [formation goal bridge] plan 600007 FEASIBLE and published
+[INFO] [1794640675.536395]: [formation playback] accepted uniform_v02 plan 600007 formation cargo_wedge model_sha256=f2279749b6aa83ad08e7e09fdfd4616df547479dfce3003ad8fa11167e5f6ebb: 3 vehicles, 159 shared samples, T_end=3.122769 s
+[INFO] [1794640675.540064]: [formation playback] plan=600007 state=PLAYING elapsed=0.021103 clamped=0.021103 fraction=0.055119 executable=True
+[INFO] [1794640675.540484]: [uniform planner] plan 600007 playback confirmed
+[INFO] [1794640678.646303]: [formation playback] plan=600007 state=HOLD_END elapsed=3.124857 clamped=3.122769 fraction=0.000000 executable=True
+[INFO] [1794640678.647120]: [uniform planner] plan 600007 HOLD_END; busy released
+[INFO] [1794640678.647481]: [formation goal bridge] plan 600007 FEASIBLE and published
+[INFO] [1794640679.161130]: [formation goal bridge] plan 600008: start=(11.000, 10.000, 0.000) goal=(13.500, 10.000, 0.000) vehicles=3
+[INFO] [1794640679.162040]: [uniform planner] plan 600008 admitted from cargo_wedge: start=(11.000, 10.000, 0.000) goal=(13.500, 10.000, 0.000) free_headings=True reverse=True
+[INFO] [1794640679.162503]: [formation goal bridge] start from current playback; body headings {1: 0.0, 2: 0.0, 3: 0.0}
+[INFO] [1794640679.168904]: [formation playback] cleared: new experiment 600008 admitted
+[ERROR] [1794640699.879471]: [uniform planner] plan 600008 not executable: status=BUDGET_EXHAUSTED reason=TIME_BUDGET_EXHAUSTED layer=budget wall=20.716s
+[WARN] [1794640699.880965]: [uniform planner] plan 600008 has no executable envelope (TIME_BUDGET_EXHAUSTED)
+[WARN] [1794640699.881414]: [formation goal bridge] plan 600008 status=REJECTED reason=TIME_BUDGET_EXHAUSTED
+[ERROR] [1794640699.881510]: [formation playback] rejecting playback plan 600008: model_sha256 must be 64 hex digits
+[INFO] [1794640699.882763]: [formation playback] cleared: invalid playback plan: model_sha256 must be 64 hex digits
+[INFO] [1794640701.156052]: [formation goal bridge] plan 600009: start=(11.000, 10.000, 0.000) goal=(11.000, 10.000, 0.000) vehicles=3
+[INFO] [1794640701.156929]: [uniform planner] plan 600009 admitted from cargo_wedge: start=(11.000, 10.000, 0.000) goal=(11.000, 10.000, 0.000) free_headings=True reverse=True
+[INFO] [1794640701.158082]: [formation goal bridge] start from current playback; body headings {1: 0.0, 2: 0.0, 3: 0.0}
+[INFO] [1794640701.177265]: [uniform planner] plan 600009 published: T_end=0.000 s model_sha256=ff5748de7d65173cbab926f9bb55d8535853e8f3991e89c3b1216e3f88211a40 samples=1 wall=0.015 s verification_to_stamp_delay=0.0019 s
+[INFO] [1794640701.177727]: [formation goal bridge] plan 600009 NO_MOTION and published
+[INFO] [1794640701.179456]: [formation playback] accepted uniform_v02 plan 600009 formation cargo_wedge model_sha256=ff5748de7d65173cbab926f9bb55d8535853e8f3991e89c3b1216e3f88211a40: 3 vehicles, 1 shared samples, T_end=0.000000 s
+[INFO] [1794640701.182611]: [formation playback] plan=600009 state=HOLD_END elapsed=0.004235 clamped=0.000000 fraction=0.000000 executable=True
+[INFO] [1794640701.182859]: [uniform planner] plan 600009 HOLD_END; busy released
+[INFO] [1794640701.183279]: [formation goal bridge] plan 600009 NO_MOTION and published
+[INFO] [1794640757.252826]: [formation goal bridge] 2D Pose Estimate recorded; new experiment policy=cargo_heading headings={1: 0.0, 2: 0.0, 3: 0.0}
+[INFO] [1794640758.256428]: [formation goal bridge] plan 600010: start=(10.000, 10.000, 0.000) goal=(11.000, 10.000, 0.000) vehicles=3
+[INFO] [1794640758.257052]: [uniform planner] plan 600010 admitted from cargo_wedge: start=(10.000, 10.000, 0.000) goal=(11.000, 10.000, 0.000) free_headings=True reverse=True
+[INFO] [1794640758.257538]: [formation goal bridge] start from manual start; body headings {1: 0.0, 2: 0.0, 3: 0.0}
+[INFO] [1794640762.255548]: [uniform planner] plan 600010 published: T_end=3.123 s model_sha256=26b943b30536fafa025567ee81edf7646e957161ba693d5e1bce60e059f30a24 samples=159 wall=3.960 s verification_to_stamp_delay=0.0350 s
+[INFO] [1794640762.256415]: [formation goal bridge] plan 600010 FEASIBLE and published
+[INFO] [1794640762.276691]: [formation playback] accepted uniform_v02 plan 600010 formation cargo_wedge model_sha256=26b943b30536fafa025567ee81edf7646e957161ba693d5e1bce60e059f30a24: 3 vehicles, 159 shared samples, T_end=3.122769 s
+[INFO] [1794640762.296851]: [formation playback] plan=600010 state=PLAYING elapsed=0.024452 clamped=0.024452 fraction=0.222572 executable=False
+[INFO] [1794640762.297327]: [uniform planner] plan 600010 playback confirmed
+[INFO] [1794640765.386757]: [formation playback] plan=600010 state=HOLD_END elapsed=3.129710 clamped=3.122769 fraction=0.000000 executable=True
+[INFO] [1794640765.389985]: [uniform planner] plan 600010 HOLD_END; busy released
+[INFO] [1794640765.390371]: [formation goal bridge] plan 600010 FEASIBLE and published
+[INFO] [1794640765.892854]: [formation goal bridge] plan 600011: start=(11.000, 10.000, 0.000) goal=(13.500, 10.000, 0.000) vehicles=3
+[INFO] [1794640765.893456]: [uniform planner] plan 600011 admitted from cargo_wedge: start=(11.000, 10.000, 0.000) goal=(13.500, 10.000, 0.000) free_headings=True reverse=True
+[INFO] [1794640765.894847]: [formation goal bridge] start from current playback; body headings {1: 0.0, 2: 0.0, 3: 0.0}
+[ERROR] [1794640786.550114]: [uniform planner] plan 600011 not executable: status=BUDGET_EXHAUSTED reason=TIME_BUDGET_EXHAUSTED layer=budget wall=20.655s
+[WARN] [1794640786.551565]: [formation goal bridge] plan 600011 status=REJECTED reason=TIME_BUDGET_EXHAUSTED
+[WARN] [1794640786.551708]: [uniform planner] plan 600011 has no executable envelope (TIME_BUDGET_EXHAUSTED)
+[ERROR] [1794640786.552303]: [formation playback] rejecting playback plan 600011: model_sha256 must be 64 hex digits
+[INFO] [1794640786.553987]: [formation playback] cleared: invalid playback plan: model_sha256 must be 64 hex digits
+[INFO] [1794640787.775966]: [formation goal bridge] plan 600012: start=(11.000, 10.000, 0.000) goal=(10.000, 10.000, 0.000) vehicles=3
+[INFO] [1794640787.776762]: [uniform planner] plan 600012 admitted from cargo_wedge: start=(11.000, 10.000, 0.000) goal=(10.000, 10.000, 0.000) free_headings=True reverse=True
+[INFO] [1794640787.777490]: [formation goal bridge] start from current playback; body headings {1: 0.0, 2: 0.0, 3: 0.0}
+[INFO] [1794640791.591447]: [uniform planner] plan 600012 published: T_end=3.123 s model_sha256=b294f153cd8fa10d039edf329cb722d5eacd302ac0bbb9c7b104070134e01201 samples=159 wall=3.775 s verification_to_stamp_delay=0.0362 s
+[INFO] [1794640791.592518]: [formation goal bridge] plan 600012 FEASIBLE and published
+[INFO] [1794640791.614997]: [formation playback] accepted uniform_v02 plan 600012 formation cargo_wedge model_sha256=b294f153cd8fa10d039edf329cb722d5eacd302ac0bbb9c7b104070134e01201: 3 vehicles, 159 shared samples, T_end=3.122769 s
+[INFO] [1794640791.618436]: [formation playback] plan=600012 state=PLAYING elapsed=0.026313 clamped=0.026313 fraction=0.315603 executable=True
+[INFO] [1794640791.618916]: [uniform planner] plan 600012 playback confirmed
+[INFO] [1794640794.716977]: [formation playback] plan=600012 state=HOLD_END elapsed=3.123711 clamped=3.122769 fraction=0.000000 executable=True
+[INFO] [1794640794.726055]: [uniform planner] plan 600012 HOLD_END; busy released
+[INFO] [1794640794.726543]: [formation goal bridge] plan 600012 FEASIBLE and published
+[formation_goal_bridge-4] killing on exit
+[formation_playback-3] killing on exit[formation_uniform_planner-2] killing on exit
+
+[fwis_map_publisher-1] killing on exit
+shutting down processing monitor...
+... shutting down processing monitor complete
+[1mdone[0m

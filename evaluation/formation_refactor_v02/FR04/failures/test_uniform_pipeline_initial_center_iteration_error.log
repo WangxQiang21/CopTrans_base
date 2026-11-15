@@ -1,0 +1,189 @@
+test_f01_exact_hold (test_uniform_pipeline.UniformPipelineTest) ... ERROR
+test_f02_forward (test_uniform_pipeline.UniformPipelineTest) ... ERROR
+test_f03_reverse (test_uniform_pipeline.UniformPipelineTest) ... ERROR
+test_f04_lateral (test_uniform_pipeline.UniformPipelineTest) ... ERROR
+test_f05_diagonal (test_uniform_pipeline.UniformPipelineTest) ... ERROR
+test_f06_in_place_positive_90 (test_uniform_pipeline.UniformPipelineTest) ... ERROR
+test_f07_in_place_negative_90 (test_uniform_pipeline.UniformPipelineTest) ... ERROR
+test_f08_translate_and_rotate (test_uniform_pipeline.UniformPipelineTest) ... ERROR
+test_f09_enclosed_obstacle_no_solution (test_uniform_pipeline.UniformPipelineTest) ... ERROR
+test_f10_out_of_bounds_goal_rejected (test_uniform_pipeline.UniformPipelineTest) ... ERROR
+test_f11_deliberate_expansion_budget_exhaustion (test_uniform_pipeline.UniformPipelineTest) ... ERROR
+test_f12_terminal_screen_and_final_rebuilt_path_audit (test_uniform_pipeline.UniformPipelineTest) ... ERROR
+
+======================================================================
+ERROR: test_f01_exact_hold (test_uniform_pipeline.UniformPipelineTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_pipeline.py", line 219, in test_f01_exact_hold
+    result = self._run("F01_hold", "exact zero-motion hold",
+  File "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_pipeline.py", line 153, in _run
+    result = plan_uniform(request)
+  File "/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_pipeline.py", line 244, in plan_uniform
+    if _goal_center_outside(request.grid, request.model, request.goal_qf):
+  File "/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_pipeline.py", line 212, in _goal_center_outside
+    for x, y in model.centers(goal_qf):
+TypeError: cannot unpack non-iterable int object
+
+======================================================================
+ERROR: test_f02_forward (test_uniform_pipeline.UniformPipelineTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_pipeline.py", line 228, in test_f02_forward
+    result = self._run("F02_forward", "forward (13,10,0)",
+  File "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_pipeline.py", line 153, in _run
+    result = plan_uniform(request)
+  File "/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_pipeline.py", line 244, in plan_uniform
+    if _goal_center_outside(request.grid, request.model, request.goal_qf):
+  File "/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_pipeline.py", line 212, in _goal_center_outside
+    for x, y in model.centers(goal_qf):
+TypeError: cannot unpack non-iterable int object
+
+======================================================================
+ERROR: test_f03_reverse (test_uniform_pipeline.UniformPipelineTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_pipeline.py", line 234, in test_f03_reverse
+    result = self._run("F03_reverse", "reverse (7,10,0)",
+  File "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_pipeline.py", line 153, in _run
+    result = plan_uniform(request)
+  File "/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_pipeline.py", line 244, in plan_uniform
+    if _goal_center_outside(request.grid, request.model, request.goal_qf):
+  File "/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_pipeline.py", line 212, in _goal_center_outside
+    for x, y in model.centers(goal_qf):
+TypeError: cannot unpack non-iterable int object
+
+======================================================================
+ERROR: test_f04_lateral (test_uniform_pipeline.UniformPipelineTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_pipeline.py", line 242, in test_f04_lateral
+    result = self._run("F04_lateral", "lateral (10,13,0)",
+  File "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_pipeline.py", line 153, in _run
+    result = plan_uniform(request)
+  File "/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_pipeline.py", line 244, in plan_uniform
+    if _goal_center_outside(request.grid, request.model, request.goal_qf):
+  File "/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_pipeline.py", line 212, in _goal_center_outside
+    for x, y in model.centers(goal_qf):
+TypeError: cannot unpack non-iterable int object
+
+======================================================================
+ERROR: test_f05_diagonal (test_uniform_pipeline.UniformPipelineTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_pipeline.py", line 248, in test_f05_diagonal
+    result = self._run("F05_diagonal", "diagonal (13,12,0)",
+  File "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_pipeline.py", line 153, in _run
+    result = plan_uniform(request)
+  File "/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_pipeline.py", line 244, in plan_uniform
+    if _goal_center_outside(request.grid, request.model, request.goal_qf):
+  File "/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_pipeline.py", line 212, in _goal_center_outside
+    for x, y in model.centers(goal_qf):
+TypeError: cannot unpack non-iterable int object
+
+======================================================================
+ERROR: test_f06_in_place_positive_90 (test_uniform_pipeline.UniformPipelineTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_pipeline.py", line 269, in test_f06_in_place_positive_90
+    self._in_place_rotation("F06_in_place_positive_90", math.pi / 2.0, 6)
+  File "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_pipeline.py", line 253, in _in_place_rotation
+    result = self._run(case_id, "cargo in-place rotation", make_request(
+  File "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_pipeline.py", line 153, in _run
+    result = plan_uniform(request)
+  File "/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_pipeline.py", line 244, in plan_uniform
+    if _goal_center_outside(request.grid, request.model, request.goal_qf):
+  File "/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_pipeline.py", line 212, in _goal_center_outside
+    for x, y in model.centers(goal_qf):
+TypeError: cannot unpack non-iterable int object
+
+======================================================================
+ERROR: test_f07_in_place_negative_90 (test_uniform_pipeline.UniformPipelineTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_pipeline.py", line 272, in test_f07_in_place_negative_90
+    self._in_place_rotation("F07_in_place_negative_90", -math.pi / 2.0, 7)
+  File "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_pipeline.py", line 253, in _in_place_rotation
+    result = self._run(case_id, "cargo in-place rotation", make_request(
+  File "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_pipeline.py", line 153, in _run
+    result = plan_uniform(request)
+  File "/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_pipeline.py", line 244, in plan_uniform
+    if _goal_center_outside(request.grid, request.model, request.goal_qf):
+  File "/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_pipeline.py", line 212, in _goal_center_outside
+    for x, y in model.centers(goal_qf):
+TypeError: cannot unpack non-iterable int object
+
+======================================================================
+ERROR: test_f08_translate_and_rotate (test_uniform_pipeline.UniformPipelineTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_pipeline.py", line 275, in test_f08_translate_and_rotate
+    result = self._run("F08_translate_and_rotate", "goal (13,10,pi/2)",
+  File "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_pipeline.py", line 153, in _run
+    result = plan_uniform(request)
+  File "/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_pipeline.py", line 244, in plan_uniform
+    if _goal_center_outside(request.grid, request.model, request.goal_qf):
+  File "/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_pipeline.py", line 212, in _goal_center_outside
+    for x, y in model.centers(goal_qf):
+TypeError: cannot unpack non-iterable int object
+
+======================================================================
+ERROR: test_f09_enclosed_obstacle_no_solution (test_uniform_pipeline.UniformPipelineTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_pipeline.py", line 283, in test_f09_enclosed_obstacle_no_solution
+    result = self._run(
+  File "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_pipeline.py", line 153, in _run
+    result = plan_uniform(request)
+  File "/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_pipeline.py", line 244, in plan_uniform
+    if _goal_center_outside(request.grid, request.model, request.goal_qf):
+  File "/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_pipeline.py", line 212, in _goal_center_outside
+    for x, y in model.centers(goal_qf):
+TypeError: cannot unpack non-iterable int object
+
+======================================================================
+ERROR: test_f10_out_of_bounds_goal_rejected (test_uniform_pipeline.UniformPipelineTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_pipeline.py", line 299, in test_f10_out_of_bounds_goal_rejected
+    result = self._run(
+  File "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_pipeline.py", line 153, in _run
+    result = plan_uniform(request)
+  File "/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_pipeline.py", line 244, in plan_uniform
+    if _goal_center_outside(request.grid, request.model, request.goal_qf):
+  File "/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_pipeline.py", line 212, in _goal_center_outside
+    for x, y in model.centers(goal_qf):
+TypeError: cannot unpack non-iterable int object
+
+======================================================================
+ERROR: test_f11_deliberate_expansion_budget_exhaustion (test_uniform_pipeline.UniformPipelineTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_pipeline.py", line 312, in test_f11_deliberate_expansion_budget_exhaustion
+    result = self._run(
+  File "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_pipeline.py", line 153, in _run
+    result = plan_uniform(request)
+  File "/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_pipeline.py", line 244, in plan_uniform
+    if _goal_center_outside(request.grid, request.model, request.goal_qf):
+  File "/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_pipeline.py", line 212, in _goal_center_outside
+    for x, y in model.centers(goal_qf):
+TypeError: cannot unpack non-iterable int object
+
+======================================================================
+ERROR: test_f12_terminal_screen_and_final_rebuilt_path_audit (test_uniform_pipeline.UniformPipelineTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_pipeline.py", line 329, in test_f12_terminal_screen_and_final_rebuilt_path_audit
+    result = self._run(
+  File "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_pipeline.py", line 153, in _run
+    result = plan_uniform(request)
+  File "/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_pipeline.py", line 244, in plan_uniform
+    if _goal_center_outside(request.grid, request.model, request.goal_qf):
+  File "/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_pipeline.py", line 212, in _goal_center_outside
+    for x, y in model.centers(goal_qf):
+TypeError: cannot unpack non-iterable int object
+
+----------------------------------------------------------------------
+Ran 12 tests in 0.029s
+
+FAILED (errors=12)

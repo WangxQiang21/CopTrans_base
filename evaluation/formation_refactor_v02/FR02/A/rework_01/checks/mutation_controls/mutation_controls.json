@@ -1,0 +1,117 @@
+{
+  "schema": "fr02a.rework.mutation_controls.v1",
+  "source_sha256": "d8c26261e64e1ab742aa9223b3c920316341984c6dc56755e6f69833edfaf014",
+  "test_sha256": "cc334d75c3ddae77feb564aefe5d5c683e6c844bc84aa9dd1b10b4a37ae01874",
+  "controls": [
+    {
+      "name": "r1_baseline",
+      "method": "test_R1_stable_near_endpoint_progress_and_roundtrip",
+      "expected_test": "PASSED",
+      "observed_test": "PASSED",
+      "matched_expectation": true,
+      "failure": null,
+      "output_tail": [
+        "----------------------------------------------------------------------",
+        "Ran 1 test in 0.211s",
+        "",
+        "OK"
+      ]
+    },
+    {
+      "name": "r1_large_epsilon_clamp_negative_control",
+      "method": "test_R1_stable_near_endpoint_progress_and_roundtrip",
+      "expected_test": "FAILED",
+      "observed_test": "FAILED",
+      "matched_expectation": true,
+      "failure": "AssertionError: 1.2736292935336124e-11 not less than or equal to 1e-12 : motion_0000 progress_rate disagrees with exact quintic",
+      "output_tail": [
+        "AssertionError: 1.2736292935336124e-11 not less than or equal to 1e-12 : motion_0000 progress_rate disagrees with exact quintic",
+        "",
+        "----------------------------------------------------------------------",
+        "Ran 1 test in 0.070s",
+        "",
+        "FAILED (failures=1)"
+      ]
+    },
+    {
+      "name": "r2_baseline",
+      "method": "test_R2_signed_spin_wheel_rolling_vectors",
+      "expected_test": "PASSED",
+      "observed_test": "PASSED",
+      "matched_expectation": true,
+      "failure": null,
+      "output_tail": [
+        "----------------------------------------------------------------------",
+        "Ran 1 test in 0.026s",
+        "",
+        "OK"
+      ]
+    },
+    {
+      "name": "r2_rolling_sign_flip_negative_control",
+      "method": "test_R2_signed_spin_wheel_rolling_vectors",
+      "expected_test": "FAILED",
+      "observed_test": "FAILED",
+      "matched_expectation": true,
+      "failure": "AssertionError: 0.01763323813687388 not less than or equal to 1e-07 : mixed_sign_spin vehicle 1 wheel 0 vector mismatch",
+      "output_tail": [
+        "AssertionError: 0.01763323813687388 not less than or equal to 1e-07 : mixed_sign_spin vehicle 1 wheel 0 vector mismatch",
+        "",
+        "----------------------------------------------------------------------",
+        "Ran 1 test in 0.025s",
+        "",
+        "FAILED (failures=1)"
+      ]
+    },
+    {
+      "name": "r2_yaw_sign_flip_negative_control",
+      "method": "test_R2_signed_spin_wheel_rolling_vectors",
+      "expected_test": "FAILED",
+      "observed_test": "FAILED",
+      "matched_expectation": true,
+      "failure": "AssertionError: 0.01763323813687388 not less than or equal to 1e-07 : mixed_sign_spin vehicle 1 wheel 0 vector mismatch",
+      "output_tail": [
+        "AssertionError: 0.01763323813687388 not less than or equal to 1e-07 : mixed_sign_spin vehicle 1 wheel 0 vector mismatch",
+        "",
+        "----------------------------------------------------------------------",
+        "Ran 1 test in 0.018s",
+        "",
+        "FAILED (failures=1)"
+      ]
+    },
+    {
+      "name": "r2_unfolded_angles_negative_control",
+      "method": "test_R2_signed_spin_wheel_rolling_vectors",
+      "expected_test": "FAILED",
+      "observed_test": "FAILED",
+      "matched_expectation": true,
+      "failure": "AssertionError: 0.01763323813687388 not less than or equal to 1e-07 : mixed_sign_spin vehicle 1 wheel 0 vector mismatch",
+      "output_tail": [
+        "AssertionError: 0.01763323813687388 not less than or equal to 1e-07 : mixed_sign_spin vehicle 1 wheel 0 vector mismatch",
+        "",
+        "----------------------------------------------------------------------",
+        "Ran 1 test in 0.018s",
+        "",
+        "FAILED (failures=1)"
+      ]
+    },
+    {
+      "name": "r2_two_wheel_negative_control",
+      "method": "test_R2_signed_spin_wheel_rolling_vectors",
+      "expected_test": "FAILED",
+      "observed_test": "FAILED",
+      "matched_expectation": true,
+      "failure": "AssertionError: vehicle 1 has 2 rolling speeds",
+      "output_tail": [
+        "AssertionError: vehicle 1 has 2 rolling speeds",
+        "",
+        "----------------------------------------------------------------------",
+        "Ran 1 test in 0.019s",
+        "",
+        "FAILED (failures=1)"
+      ]
+    }
+  ],
+  "all_controls_matched": true,
+  "interpretation": "A negative control is successful when the deliberately wrong evaluator or mutated state makes the test FAILED; the baseline must remain PASSED."
+}

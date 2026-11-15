@@ -1,0 +1,45 @@
+[rospy.client][INFO] 2026-11-14 19:41:11,067: init_node, name[/formation_uniform_planner], pid[3143346]
+[xmlrpc][INFO] 2026-11-14 19:41:11,067: XML-RPC server binding to 127.0.0.1:0
+[xmlrpc][INFO] 2026-11-14 19:41:11,067: Started XML-RPC server [http://127.0.0.1:37987/]
+[rospy.impl.masterslave][INFO] 2026-11-14 19:41:11,067: _ready: http://127.0.0.1:37987/
+[rospy.init][INFO] 2026-11-14 19:41:11,068: ROS Slave URI: [http://127.0.0.1:37987/]
+[rospy.registration][INFO] 2026-11-14 19:41:11,068: Registering with master node http://127.0.0.1:11461
+[xmlrpc][INFO] 2026-11-14 19:41:11,068: xml rpc node: starting XML-RPC server
+[rospy.init][INFO] 2026-11-14 19:41:11,168: registered with master
+[rospy.rosout][INFO] 2026-11-14 19:41:11,168: initializing /rosout core topic
+[rospy.rosout][INFO] 2026-11-14 19:41:11,172: connected to core topic /rosout
+[rospy.simtime][INFO] 2026-11-14 19:41:11,172: /use_sim_time is not set, will not subscribe to simulated time [/clock] topic
+[rosout][INFO] 2026-11-14 19:41:11,189: [uniform planner] autonomous V0.2 planner ready; backend=uniform_v02 budget=10000 expansions / 30.0 s
+[rospy.internal][INFO] 2026-11-14 19:41:11,190: topic[/formation/plan_request] adding connection to [http://127.0.0.1:39019/], count 0
+[rospy.internal][INFO] 2026-11-14 19:41:11,191: topic[/map] adding connection to [http://127.0.0.1:38191/], count 0
+[rospy.internal][INFO] 2026-11-14 19:41:11,191: topic[/formation/playback_status] adding connection to [http://127.0.0.1:39453/], count 0
+[rosout][INFO] 2026-11-14 19:41:11,208: [uniform planner] exact map 600x600 res=0.050 origin=(-15.00, -15.00) signature=25facb0cd0e35d7a
+[rospy.internal][INFO] 2026-11-14 19:41:11,243: topic[/formation/optimizer_status] adding connection to [/codex_fr05_live_contract_probe_3142731_1794656468944], count 0
+[rospy.internal][INFO] 2026-11-14 19:41:11,244: topic[/formation/optimizer_status] adding connection to [/formation_playback], count 1
+[rospy.internal][INFO] 2026-11-14 19:41:11,245: topic[/formation/optimizer_status] adding connection to [/formation_goal_bridge], count 2
+[rospy.internal][INFO] 2026-11-14 19:41:11,245: topic[/formation/job_state] adding connection to [/codex_fr05_live_contract_probe_3142731_1794656468944], count 0
+[rospy.internal][INFO] 2026-11-14 19:41:11,245: topic[/formation/quality_report] adding connection to [/formation_playback], count 0
+[rospy.internal][INFO] 2026-11-14 19:41:11,245: topic[/formation/job_state] adding connection to [/formation_goal_bridge], count 1
+[rospy.internal][INFO] 2026-11-14 19:41:11,246: topic[/formation/playback_plan] adding connection to [/codex_fr05_live_contract_probe_3142731_1794656468944], count 0
+[rospy.internal][INFO] 2026-11-14 19:41:11,246: topic[/formation/job_state] adding connection to [/formation_playback], count 2
+[rospy.internal][INFO] 2026-11-14 19:41:11,246: topic[/formation/playback_plan] adding connection to [/formation_playback], count 1
+[rospy.internal][INFO] 2026-11-14 19:41:11,437: topic[/rosout] adding connection to [/rosout], count 0
+[rosout][INFO] 2026-11-14 19:41:13,385: [uniform planner] plan 600000 admitted from cargo_wedge: start=(10.000, 10.000, 0.000) goal=(10.100, 10.000, 0.100) free_headings=True reverse=True
+[rosout][ERROR] 2026-11-14 19:41:43,473: [uniform planner] plan 600000 not executable: status=BUDGET_EXHAUSTED reason=TIME_BUDGET_EXHAUSTED layer=budget wall=30.085s
+[rosout][WARNING] 2026-11-14 19:41:43,474: [uniform planner] plan 600000 has no executable envelope (TIME_BUDGET_EXHAUSTED)
+[rospy.internal][INFO] 2026-11-14 19:41:44,473: topic[/formation/optimizer_status] removing connection to /codex_fr05_live_contract_probe_3142731_1794656468944
+[rospy.internal][INFO] 2026-11-14 19:41:44,474: topic[/formation/job_state] removing connection to /codex_fr05_live_contract_probe_3142731_1794656468944
+[rospy.internal][INFO] 2026-11-14 19:41:44,474: topic[/formation/playback_plan] removing connection to /codex_fr05_live_contract_probe_3142731_1794656468944
+[rospy.core][INFO] 2026-11-14 19:41:45,223: signal_shutdown [signal-2]
+[rospy.internal][INFO] 2026-11-14 19:41:45,226: topic[/formation/plan_request] removing connection to http://127.0.0.1:39019/
+[rospy.internal][INFO] 2026-11-14 19:41:45,228: topic[/formation/playback_status] removing connection to http://127.0.0.1:39453/
+[rospy.internal][INFO] 2026-11-14 19:41:45,228: topic[/rosout] removing connection to /rosout
+[rospy.internal][INFO] 2026-11-14 19:41:45,228: topic[/map] removing connection to http://127.0.0.1:38191/
+[rospy.internal][INFO] 2026-11-14 19:41:45,229: topic[/formation/optimizer_status] removing connection to /formation_playback
+[rospy.internal][INFO] 2026-11-14 19:41:45,229: topic[/formation/optimizer_status] removing connection to /formation_goal_bridge
+[rospy.internal][INFO] 2026-11-14 19:41:45,230: topic[/formation/quality_report] removing connection to /formation_playback
+[rospy.internal][INFO] 2026-11-14 19:41:45,230: topic[/formation/job_state] removing connection to /formation_goal_bridge
+[rospy.internal][INFO] 2026-11-14 19:41:45,230: topic[/formation/job_state] removing connection to /formation_playback
+[rospy.internal][INFO] 2026-11-14 19:41:45,230: topic[/formation/playback_plan] removing connection to /formation_playback
+[rospy.impl.masterslave][INFO] 2026-11-14 19:41:45,230: signal-2
+[rospy.core][INFO] 2026-11-14 19:41:45,824: signal_shutdown [atexit]

@@ -1,0 +1,32 @@
+[
+  {
+    "group": "unit_61",
+    "command": [
+      "/usr/bin/python3",
+      "-c",
+      "import unittest,sys;mods=['tests.test_formation_demo_assets', 'tests.test_uniform_trajectory', 'tests.test_uniform_timing', 'tests.test_uniform_motion', 'tests.test_uniform_playback_plan'];s=unittest.TestSuite();loader=unittest.defaultTestLoader;[s.addTests(loader.loadTestsFromName(m)) for m in mods];flat=lambda s:[t for x in s for t in (flat(x) if isinstance(x,unittest.TestSuite) else [x])];s=unittest.TestSuite(x for x in flat(s) if 'test_S09_' not in x.id());r=unittest.TextTestRunner(verbosity=2).run(s);sys.exit(not r.wasSuccessful())"
+    ],
+    "exit_code": 0,
+    "wall_s": 4.348804390057921
+  },
+  {
+    "group": "unit_84",
+    "command": [
+      "/usr/bin/python3",
+      "-c",
+      "import unittest,sys;mods=['tests.test_uniform_pipeline', 'tests.test_uniform_search', 'tests.test_uniform_quality', 'tests.test_formation_playback', 'tests.test_formation_hold', 'tests.test_transport_contract'];s=unittest.TestSuite();loader=unittest.defaultTestLoader;[s.addTests(loader.loadTestsFromName(m)) for m in mods];flat=lambda s:[t for x in s for t in (flat(x) if isinstance(x,unittest.TestSuite) else [x])];s=unittest.TestSuite(x for x in flat(s) if 'test_S09_' not in x.id());r=unittest.TextTestRunner(verbosity=2).run(s);sys.exit(not r.wasSuccessful())"
+    ],
+    "exit_code": 0,
+    "wall_s": 114.69018708204385
+  },
+  {
+    "group": "unit_node",
+    "command": [
+      "/usr/bin/python3",
+      "-c",
+      "import unittest,sys;mods=['tests.test_formation_optimizer_node'];s=unittest.TestSuite();loader=unittest.defaultTestLoader;[s.addTests(loader.loadTestsFromName(m)) for m in mods];flat=lambda s:[t for x in s for t in (flat(x) if isinstance(x,unittest.TestSuite) else [x])];s=unittest.TestSuite(x for x in flat(s) if 'test_S09_' not in x.id());r=unittest.TextTestRunner(verbosity=2).run(s);sys.exit(not r.wasSuccessful())"
+    ],
+    "exit_code": 0,
+    "wall_s": 4.7776872519170865
+  }
+]

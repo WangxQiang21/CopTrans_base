@@ -1,0 +1,170 @@
+{
+  "cropped_nonzero_pivot": {
+    "neg": {
+      "arc": {
+        "continuity": {
+          "heading_rad": 0.0,
+          "position_m": 0.0,
+          "psi_rad": 0.0
+        },
+        "cost_s": 8.921001627508437,
+        "end_headings": {
+          "1": -4.248741371383884,
+          "2": 1.5707963267948966,
+          "3": 1.5707963267948966
+        },
+        "end_qf": [
+          -2.0,
+          1.9999999999999998,
+          -1.5707963267948966
+        ],
+        "label": "A_arc_crop_p0_2_neg_gear+++",
+        "mode": "A",
+        "motion_proxy_s": 5.890486225480862,
+        "primitive": "A_ARC",
+        "setup_s": 3.0305154020275746
+      },
+      "audit": {
+        "duration_s": 23.873533683782895,
+        "dynamic_continuous_certificate": true,
+        "executable": true,
+        "failure_code": null,
+        "failure_constraint": null,
+        "failure_detail": null,
+        "failure_vehicle_id": null,
+        "feasible": true,
+        "reason": "OK",
+        "status": "FEASIBLE"
+      },
+      "delta_psi": -1.5707963267948966
+    },
+    "pos": {
+      "arc": {
+        "continuity": {
+          "heading_rad": 0.0,
+          "position_m": 0.0,
+          "psi_rad": 0.0
+        },
+        "cost_s": 8.921001627508435,
+        "end_headings": {
+          "1": 2.0344439357957027,
+          "2": 1.5707963267948966,
+          "3": 1.5707963267948966
+        },
+        "end_qf": [
+          2.0,
+          1.9999999999999998,
+          1.5707963267948966
+        ],
+        "label": "A_arc_crop_p0_2_pos_gear+++",
+        "mode": "A",
+        "motion_proxy_s": 5.890486225480862,
+        "primitive": "A_ARC",
+        "setup_s": 3.0305154020275737
+      },
+      "audit": {
+        "duration_s": 18.585017904754224,
+        "dynamic_continuous_certificate": true,
+        "executable": true,
+        "failure_code": null,
+        "failure_constraint": null,
+        "failure_detail": null,
+        "failure_vehicle_id": null,
+        "feasible": true,
+        "reason": "OK",
+        "status": "FEASIBLE"
+      },
+      "delta_psi": 1.5707963267948966
+    }
+  },
+  "fixed_step_10deg": {
+    "A_arc_p0_2_neg_gear+++": {
+      "arc": {
+        "continuity": {
+          "heading_rad": 0.0,
+          "position_m": 0.0,
+          "psi_rad": 0.0
+        },
+        "cost_s": 3.685013871525448,
+        "end_headings": {
+          "1": -2.85247796978842,
+          "2": 2.9670597283903604,
+          "3": 2.9670597283903604
+        },
+        "end_qf": [
+          -0.34729635533386066,
+          0.03038449397558396,
+          -0.17453292519943295
+        ],
+        "label": "A_arc_p0_2_neg_gear+++",
+        "mode": "A",
+        "motion_proxy_s": 0.6544984694978735,
+        "primitive": "A_ARC",
+        "setup_s": 3.0305154020275746
+      },
+      "audit": {
+        "duration_s": 15.290587686567562,
+        "dynamic_continuous_certificate": false,
+        "executable": false,
+        "failure_code": "UNIFORM_DYNAMIC_UNCONFIRMED",
+        "failure_constraint": "jerk",
+        "failure_detail": "dynamic jerk remains unconfirmed: candidate peak 1.97029751862 is below limit 2, but the adopted full-interval bound 2.16302284782 exceeds it (analytic 2.16302284782, refined None, max adjacent time gap 0.00314617372991 s); this is not a demonstrated physical exceedance",
+        "failure_vehicle_id": 3,
+        "feasible": false,
+        "reason": "UNIFORM_DYNAMIC_UNCONFIRMED",
+        "status": "REJECTED"
+      },
+      "duration_s": 15.290587686567562,
+      "exact_peaks": {
+        "acceleration": 0.47729678717925406,
+        "jerk": 1.9702975186196203,
+        "speed": 0.3900562178443329
+      }
+    },
+    "A_arc_p0_2_pos_gear+++": {
+      "arc": {
+        "continuity": {
+          "heading_rad": 0.0,
+          "position_m": 0.0,
+          "psi_rad": 0.0
+        },
+        "cost_s": 3.685013871525447,
+        "end_headings": {
+          "1": 0.638180534200239,
+          "2": 0.17453292519943295,
+          "3": 0.17453292519943295
+        },
+        "end_qf": [
+          0.34729635533386066,
+          0.03038449397558396,
+          0.17453292519943295
+        ],
+        "label": "A_arc_p0_2_pos_gear+++",
+        "mode": "A",
+        "motion_proxy_s": 0.6544984694978735,
+        "primitive": "A_ARC",
+        "setup_s": 3.0305154020275737
+      },
+      "audit": {
+        "duration_s": 10.002071907538895,
+        "dynamic_continuous_certificate": false,
+        "executable": false,
+        "failure_code": "UNIFORM_DYNAMIC_UNCONFIRMED",
+        "failure_constraint": "jerk",
+        "failure_detail": "dynamic jerk remains unconfirmed: candidate peak 1.97029751862 is below limit 2, but the adopted full-interval bound 2.16302284782 exceeds it (analytic 2.16302284782, refined None, max adjacent time gap 0.00314617372991 s); this is not a demonstrated physical exceedance",
+        "failure_vehicle_id": 3,
+        "feasible": false,
+        "reason": "UNIFORM_DYNAMIC_UNCONFIRMED",
+        "status": "REJECTED"
+      },
+      "duration_s": 10.002071907538895,
+      "exact_peaks": {
+        "acceleration": 0.47729674244902714,
+        "jerk": 1.9702975186196203,
+        "speed": 0.3900561978029127
+      }
+    }
+  },
+  "note": "cropped angles near the goal heading are the certifiable nonzero-pivot rotation path; the fixed 10 deg step is generated in both directions but its jerk-limited S8 duration is not certifiable by the conservative FR02 bound (not a physical exceedance)",
+  "schema": "fr03.arc_step_audit.v1"
+}

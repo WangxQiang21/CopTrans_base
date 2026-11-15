@@ -1,0 +1,463 @@
+{
+ "checks": {
+  "frozen_goal_psi_tolerance": {
+   "detail": "{'configured': 0.017453292519943295, 'frozen': 0.017453292519943295}",
+   "ok": true
+  },
+  "frozen_goal_xy_tolerance": {
+   "detail": "{'configured': 0.02, 'frozen': 0.02}",
+   "ok": true
+  },
+  "frozen_search_expansion_budget": {
+   "detail": "{'configured': 10000.0, 'frozen': 10000}",
+   "ok": true
+  },
+  "frozen_search_time_budget": {
+   "detail": "{'configured': 30.0, 'frozen': 30.0}",
+   "ok": true
+  },
+  "frozen_terminal_heading_tolerance": {
+   "detail": "{'configured': 0.017453292519943295, 'frozen': 0.017453292519943295}",
+   "ok": true
+  },
+  "late_legacy_trajectory_is_ignored": {
+   "detail": "{'documents': 79, 'states': ['PLAYING']}",
+   "ok": true
+  },
+  "tamper_baseline_accepted": {
+   "detail": "PLAYING",
+   "ok": true
+  },
+  "tamper_baseline_markers_present": {
+   "detail": "20",
+   "ok": true
+  },
+  "tamper_digest_mismatch": {
+   "detail": {
+    "backend": "uniform_v02",
+    "cleared": true,
+    "executable": false,
+    "formation_id": null,
+    "frame_id": "map",
+    "geometry_only": true,
+    "marker_count": 0,
+    "marker_namespaces": [],
+    "model_sha256": "c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186",
+    "plan_id": null,
+    "reason": "invalid playback plan: model_sha256 mismatch: message=08d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186 rebuilt=c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186",
+    "schema": "formation_playback/v1",
+    "semantic_version": "uniform_playback_plan/v1",
+    "state": "CLEARED",
+    "time_source": "header_stamp_common_clock"
+   },
+   "ok": true
+  },
+  "tamper_stamp_mismatch": {
+   "detail": {
+    "backend": "uniform_v02",
+    "cleared": true,
+    "executable": false,
+    "formation_id": null,
+    "frame_id": "map",
+    "geometry_only": true,
+    "marker_count": 0,
+    "marker_namespaces": [],
+    "model_sha256": "c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186",
+    "plan_id": null,
+    "reason": "invalid playback plan: envelope header stamp differs from the embedded trajectory stamp",
+    "schema": "formation_playback/v1",
+    "semantic_version": "uniform_playback_plan/v1",
+    "state": "CLEARED",
+    "time_source": "header_stamp_common_clock"
+   },
+   "ok": true
+  },
+  "tamper_tampered_model": {
+   "detail": {
+    "backend": "uniform_v02",
+    "cleared": true,
+    "executable": false,
+    "formation_id": null,
+    "frame_id": "map",
+    "geometry_only": true,
+    "marker_count": 0,
+    "marker_namespaces": [],
+    "model_sha256": "c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186",
+    "plan_id": null,
+    "reason": "invalid playback plan: model_json does not rebuild a UniformTimedPlan: REQUESTED_POSE_MISMATCH: requested goal error=(0.25, 0.0, 0.0) exceeds raw-pose continuity",
+    "schema": "formation_playback/v1",
+    "semantic_version": "uniform_playback_plan/v1",
+    "state": "CLEARED",
+    "time_source": "header_stamp_common_clock"
+   },
+   "ok": true
+  },
+  "tamper_tampered_sample": {
+   "detail": {
+    "backend": "uniform_v02",
+    "cleared": true,
+    "executable": false,
+    "formation_id": null,
+    "frame_id": "map",
+    "geometry_only": true,
+    "marker_count": 0,
+    "marker_namespaces": [],
+    "model_sha256": "c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186",
+    "plan_id": null,
+    "reason": "invalid playback plan: vehicle 1 sample 158 x=12.000999999999999 differs from the model 12 by 0.001 > 1e-09",
+    "schema": "formation_playback/v1",
+    "semantic_version": "uniform_playback_plan/v1",
+    "state": "CLEARED",
+    "time_source": "header_stamp_common_clock"
+   },
+   "ok": true
+  },
+  "tamper_unknown_model_version": {
+   "detail": {
+    "backend": "uniform_v02",
+    "cleared": true,
+    "executable": false,
+    "formation_id": null,
+    "frame_id": "map",
+    "geometry_only": true,
+    "marker_count": 0,
+    "marker_namespaces": [],
+    "model_sha256": "c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186",
+    "plan_id": null,
+    "reason": "invalid playback plan: unsupported model_version 'uniform_timed_plan.v0'; expected 'uniform_timed_plan.v1'",
+    "schema": "formation_playback/v1",
+    "semantic_version": "uniform_playback_plan/v1",
+    "state": "CLEARED",
+    "time_source": "header_stamp_common_clock"
+   },
+   "ok": true
+  },
+  "tamper_unknown_semantic_version": {
+   "detail": {
+    "backend": "uniform_v02",
+    "cleared": true,
+    "executable": false,
+    "formation_id": null,
+    "frame_id": "map",
+    "geometry_only": true,
+    "marker_count": 0,
+    "marker_namespaces": [],
+    "model_sha256": "c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186",
+    "plan_id": null,
+    "reason": "invalid playback plan: unsupported playback semantic_version 'uniform_playback_plan/v0'; expected 'uniform_playback_plan/v1'",
+    "schema": "formation_playback/v1",
+    "semantic_version": "uniform_playback_plan/v1",
+    "state": "CLEARED",
+    "time_source": "header_stamp_common_clock"
+   },
+   "ok": true
+  }
+ },
+ "generated_at_utc": "2026-11-14T10:12:57Z",
+ "job_state_history": [],
+ "late_legacy": {
+  "documents_after_publish": 79,
+  "plan_id": 600000,
+  "states_after_publish": [
+   "PLAYING"
+  ]
+ },
+ "ok": true,
+ "params": {
+  "playback": {
+   "allow_reverse": true,
+   "backend": "uniform_v02",
+   "body_length_m": 0.738,
+   "body_width_m": 0.5,
+   "formation_id": "cargo_wedge",
+   "frame_id": "map",
+   "goal_heading_free": true,
+   "initial_heading_policy": "cargo_heading",
+   "offsets": [
+    [
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0
+    ],
+    [
+     0.0,
+     -1.0
+    ]
+   ],
+   "publish_tf": true,
+   "rate": 100,
+   "transport_ui": true,
+   "vehicle_ids": [
+    1,
+    2,
+    3
+   ]
+  },
+  "uniform_planner": {
+   "collision_margin": 0.05,
+   "frame_id": "map",
+   "goal_heading_tol": 0.017453292519943295,
+   "goal_psi_tol": 0.017453292519943295,
+   "goal_xy_tol": 0.02,
+   "max_expansions": 10000,
+   "max_seconds": 30.0,
+   "playback_finish_grace_s": 3.0,
+   "playback_start_timeout_s": 5.0,
+   "publication_dt": 0.02,
+   "sweep_spacing": 0.01,
+   "translation_step": 1.0
+  }
+ },
+ "request_history": [
+  {
+   "formation_goal": [
+    12.0,
+    10.0,
+    0.0
+   ],
+   "formation_start": [
+    10.0,
+    10.0,
+    0.0
+   ],
+   "plan_id": 600000,
+   "received_s": 1794651178.1497536
+  }
+ ],
+ "ros_master_uri": "http://127.0.0.1:11472",
+ "scenario": "tamper",
+ "schema": "fr05.ros_uniform_playback_smoke.v1",
+ "tamper_baseline_accepted": {
+  "audit_detail": "no status report",
+  "audit_status": "AUDIT_PENDING",
+  "backend": "uniform_v02",
+  "certification": "GEOMETRY_ONLY",
+  "clamped_elapsed_s": 0.343134165,
+  "cleared": false,
+  "duration_s": 6.245537336,
+  "elapsed_s": 0.343134165,
+  "executable": false,
+  "formation_id": "cargo_wedge",
+  "fraction": 0.15665824999999953,
+  "frame_id": "map",
+  "geometry_only": true,
+  "lower_index": 18,
+  "marker_count": 20,
+  "marker_namespaces": [
+   "formation/cargo_wedge/links",
+   "formation/cargo_wedge/reference",
+   "formation/cargo_wedge/status",
+   "formation/cargo_wedge/vehicle_1",
+   "formation/cargo_wedge/vehicle_2",
+   "formation/cargo_wedge/vehicle_3"
+  ],
+  "model_sha256": "c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186",
+  "plan_id": 600000,
+  "sample_count": 316,
+  "schema": "formation_playback/v1",
+  "semantic_version": "uniform_playback_plan/v1",
+  "state": "PLAYING",
+  "terminal": false,
+  "terminal_center_error_m": null,
+  "terminal_heading_error_rad": null,
+  "time_source": "header_stamp_common_clock",
+  "trajectory_stamp": {
+   "nsecs": 451876640,
+   "secs": 1794651178
+  },
+  "upper_index": 19,
+  "vehicle_ids": [
+   1,
+   2,
+   3
+  ],
+  "vehicles": [
+   {
+    "center": [
+     11.011176408896679,
+     10.0
+    ],
+    "center_speed_mps": 0.09190211359162918,
+    "mode": 0,
+    "mode_control": 0.0,
+    "mode_name": "A",
+    "namespace": "formation/cargo_wedge/vehicle_1",
+    "theta": 0.0,
+    "vehicle_id": 1
+   },
+   {
+    "center": [
+     10.011176408896679,
+     11.0
+    ],
+    "center_speed_mps": 0.09190211359162918,
+    "mode": 0,
+    "mode_control": 0.0,
+    "mode_name": "A",
+    "namespace": "formation/cargo_wedge/vehicle_2",
+    "theta": 0.0,
+    "vehicle_id": 2
+   },
+   {
+    "center": [
+     10.011176408896679,
+     9.0
+    ],
+    "center_speed_mps": 0.09190211359162918,
+    "mode": 0,
+    "mode_control": 0.0,
+    "mode_name": "A",
+    "namespace": "formation/cargo_wedge/vehicle_3",
+    "theta": 0.0,
+    "vehicle_id": 3
+   }
+  ]
+ },
+ "tamper_cases": [
+  {
+   "expected_reason_fragment": "semantic",
+   "name": "unknown_semantic_version",
+   "ok": true,
+   "rejected": {
+    "backend": "uniform_v02",
+    "cleared": true,
+    "executable": false,
+    "formation_id": null,
+    "frame_id": "map",
+    "geometry_only": true,
+    "marker_count": 0,
+    "marker_namespaces": [],
+    "model_sha256": "c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186",
+    "plan_id": null,
+    "reason": "invalid playback plan: unsupported playback semantic_version 'uniform_playback_plan/v0'; expected 'uniform_playback_plan/v1'",
+    "schema": "formation_playback/v1",
+    "semantic_version": "uniform_playback_plan/v1",
+    "state": "CLEARED",
+    "time_source": "header_stamp_common_clock"
+   }
+  },
+  {
+   "expected_reason_fragment": "model_version",
+   "name": "unknown_model_version",
+   "ok": true,
+   "rejected": {
+    "backend": "uniform_v02",
+    "cleared": true,
+    "executable": false,
+    "formation_id": null,
+    "frame_id": "map",
+    "geometry_only": true,
+    "marker_count": 0,
+    "marker_namespaces": [],
+    "model_sha256": "c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186",
+    "plan_id": null,
+    "reason": "invalid playback plan: unsupported model_version 'uniform_timed_plan.v0'; expected 'uniform_timed_plan.v1'",
+    "schema": "formation_playback/v1",
+    "semantic_version": "uniform_playback_plan/v1",
+    "state": "CLEARED",
+    "time_source": "header_stamp_common_clock"
+   }
+  },
+  {
+   "expected_reason_fragment": "sha256",
+   "name": "digest_mismatch",
+   "ok": true,
+   "rejected": {
+    "backend": "uniform_v02",
+    "cleared": true,
+    "executable": false,
+    "formation_id": null,
+    "frame_id": "map",
+    "geometry_only": true,
+    "marker_count": 0,
+    "marker_namespaces": [],
+    "model_sha256": "c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186",
+    "plan_id": null,
+    "reason": "invalid playback plan: model_sha256 mismatch: message=08d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186 rebuilt=c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186",
+    "schema": "formation_playback/v1",
+    "semantic_version": "uniform_playback_plan/v1",
+    "state": "CLEARED",
+    "time_source": "header_stamp_common_clock"
+   }
+  },
+  {
+   "expected_reason_fragment": "model",
+   "name": "tampered_model",
+   "ok": true,
+   "rejected": {
+    "backend": "uniform_v02",
+    "cleared": true,
+    "executable": false,
+    "formation_id": null,
+    "frame_id": "map",
+    "geometry_only": true,
+    "marker_count": 0,
+    "marker_namespaces": [],
+    "model_sha256": "c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186",
+    "plan_id": null,
+    "reason": "invalid playback plan: model_json does not rebuild a UniformTimedPlan: REQUESTED_POSE_MISMATCH: requested goal error=(0.25, 0.0, 0.0) exceeds raw-pose continuity",
+    "schema": "formation_playback/v1",
+    "semantic_version": "uniform_playback_plan/v1",
+    "state": "CLEARED",
+    "time_source": "header_stamp_common_clock"
+   }
+  },
+  {
+   "expected_reason_fragment": "sample",
+   "name": "tampered_sample",
+   "ok": true,
+   "rejected": {
+    "backend": "uniform_v02",
+    "cleared": true,
+    "executable": false,
+    "formation_id": null,
+    "frame_id": "map",
+    "geometry_only": true,
+    "marker_count": 0,
+    "marker_namespaces": [],
+    "model_sha256": "c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186",
+    "plan_id": null,
+    "reason": "invalid playback plan: vehicle 1 sample 158 x=12.000999999999999 differs from the model 12 by 0.001 > 1e-09",
+    "schema": "formation_playback/v1",
+    "semantic_version": "uniform_playback_plan/v1",
+    "state": "CLEARED",
+    "time_source": "header_stamp_common_clock"
+   }
+  },
+  {
+   "expected_reason_fragment": "stamp",
+   "name": "stamp_mismatch",
+   "ok": true,
+   "rejected": {
+    "backend": "uniform_v02",
+    "cleared": true,
+    "executable": false,
+    "formation_id": null,
+    "frame_id": "map",
+    "geometry_only": true,
+    "marker_count": 0,
+    "marker_namespaces": [],
+    "model_sha256": "c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186",
+    "plan_id": null,
+    "reason": "invalid playback plan: envelope header stamp differs from the embedded trajectory stamp",
+    "schema": "formation_playback/v1",
+    "semantic_version": "uniform_playback_plan/v1",
+    "state": "CLEARED",
+    "time_source": "header_stamp_common_clock"
+   }
+  }
+ ],
+ "topic_types": {
+  "/formation/markers": "visualization_msgs/MarkerArray",
+  "/formation/playback_status": "std_msgs/String",
+  "/map": "nav_msgs/OccupancyGrid",
+  "/rosout": "rosgraph_msgs/Log",
+  "/rosout_agg": "rosgraph_msgs/Log",
+  "/start_pose": "geometry_msgs/PoseStamped",
+  "/tf": "tf2_msgs/TFMessage",
+  "/tf_static": "tf2_msgs/TFMessage"
+ }
+}

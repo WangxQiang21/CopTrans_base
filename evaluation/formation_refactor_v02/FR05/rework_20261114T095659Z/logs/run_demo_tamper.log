@@ -1,0 +1,78 @@
+[expv3] 地图比例 1.0，中心点固定；栅格尺寸保持不变。
+[expv3] 编队发布后端 uniform_v02（同一时刻只启动这一个发布后端）
+[expv3] 货物中心楔形编队，车体航向独立（新实验按配置策略初始化）；地图绝对比例 1.0
+[expv3] 构建 ROS overlay...
+[expv3] 启动 Demo：backend:=uniform_v02 rviz:=false playback_rate:=100 planner:=false goal_bridge:=false map_dir:=/tmp/expv3-map-scale.VrH5km/empty_map scene:=manual_map auto_goal:=false rviz_config:=/tmp/expv3-map-scale.VrH5km/formation.rviz
+... logging to /home/wq/whut_thesis/expv3_multi_v02/evaluation/formation_refactor_v02/FR05/rework_20261114T095659Z/ros_home/log/c02ea2e8-e011-11f1-a57b-1b4c90db486b/roslaunch-wq-ubuntu-3110897.log
+Checking log directory for disk usage. This may take a while.
+Press Ctrl-C to interrupt
+Done checking log file disk usage. Usage is <1GB.
+]2;/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch
+[1mstarted roslaunch server http://127.0.0.1:34919/[0m
+
+SUMMARY
+========
+
+PARAMETERS
+ * /formation_playback/allow_reverse: True
+ * /formation_playback/backend: uniform_v02
+ * /formation_playback/body_length_m: 0.738
+ * /formation_playback/body_width_m: 0.5
+ * /formation_playback/formation_id: cargo_wedge
+ * /formation_playback/frame_id: map
+ * /formation_playback/goal_heading_free: True
+ * /formation_playback/initial_heading_policy: cargo_heading
+ * /formation_playback/offsets: [[1.0, 0.0], [0.0...
+ * /formation_playback/publish_tf: True
+ * /formation_playback/rate: 100
+ * /formation_playback/transport_ui: True
+ * /formation_playback/vehicle_ids: [1, 2, 3]
+ * /fwis_map_publisher/map_dir: /tmp/expv3-map-sc...
+ * /rosdistro: noetic
+ * /rosversion: 1.17.4
+
+NODES
+  /
+    formation_playback (fwis_v3_playback/formation_playback.py)
+    fwis_map_publisher (fwis_map_server/map_publisher.py)
+
+[1mROS_MASTER_URI=http://127.0.0.1:11472[0m
+]2;/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch http://127.0.0.1:11472
+[1mprocess[fwis_map_publisher-1]: started with pid [3110913][0m
+[1mprocess[formation_playback-2]: started with pid [3110914][0m
+[INFO] [1794651170.512884]: [formation playback] common-clock display ready; GEOMETRY_ONLY is shown until an independent FEASIBLE status is received
+[INFO] [1794651170.607301]: [fwis_map_publisher] /map published: 600x600, res=0.050 m
+[INFO] [1794651178.793448]: [formation playback] accepted uniform_v02 plan 600000 formation cargo_wedge model_sha256=c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186: 3 vehicles, 316 shared samples, T_end=6.245537 s
+[INFO] [1794651178.801016]: [formation playback] plan=600000 state=PLAYING elapsed=0.343134 clamped=0.343134 fraction=0.156658 executable=False
+[INFO] [1794651179.061750]: [formation playback] accepted uniform_v02 plan 600000 formation cargo_wedge model_sha256=c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186: 3 vehicles, 316 shared samples, T_end=6.245537 s
+[INFO] [1794651179.067016]: [formation playback] plan=600000 state=PLAYING elapsed=0.258793 clamped=0.258793 fraction=0.939582 executable=False
+[ERROR] [1794651179.323433]: [formation playback] rejecting playback plan 600000: unsupported playback semantic_version 'uniform_playback_plan/v0'; expected 'uniform_playback_plan/v1'
+[INFO] [1794651179.324978]: [formation playback] cleared: invalid playback plan: unsupported playback semantic_version 'uniform_playback_plan/v0'; expected 'uniform_playback_plan/v1'
+[INFO] [1794651179.641823]: [formation playback] accepted uniform_v02 plan 600000 formation cargo_wedge model_sha256=c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186: 3 vehicles, 316 shared samples, T_end=6.245537 s
+[INFO] [1794651179.646627]: [formation playback] plan=600000 state=PLAYING elapsed=0.255626 clamped=0.255626 fraction=0.781260 executable=False
+[ERROR] [1794651179.885968]: [formation playback] rejecting playback plan 600000: unsupported model_version 'uniform_timed_plan.v0'; expected 'uniform_timed_plan.v1'
+[INFO] [1794651179.887509]: [formation playback] cleared: invalid playback plan: unsupported model_version 'uniform_timed_plan.v0'; expected 'uniform_timed_plan.v1'
+[INFO] [1794651180.207632]: [formation playback] accepted uniform_v02 plan 600000 formation cargo_wedge model_sha256=c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186: 3 vehicles, 316 shared samples, T_end=6.245537 s
+[INFO] [1794651180.212733]: [formation playback] plan=600000 state=PLAYING elapsed=0.256106 clamped=0.256106 fraction=0.805257 executable=False
+[ERROR] [1794651180.455570]: [formation playback] rejecting playback plan 600000: model_sha256 mismatch: message=08d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186 rebuilt=c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186
+[INFO] [1794651180.457026]: [formation playback] cleared: invalid playback plan: model_sha256 mismatch: message=08d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186 rebuilt=c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186
+[INFO] [1794651180.799318]: [formation playback] accepted uniform_v02 plan 600000 formation cargo_wedge model_sha256=c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186: 3 vehicles, 316 shared samples, T_end=6.245537 s
+[INFO] [1794651180.804492]: [formation playback] plan=600000 state=PLAYING elapsed=0.282497 clamped=0.282497 fraction=0.124808 executable=False
+[ERROR] [1794651181.048680]: [formation playback] rejecting playback plan 600000: model_json does not rebuild a UniformTimedPlan: REQUESTED_POSE_MISMATCH: requested goal error=(0.25, 0.0, 0.0) exceeds raw-pose continuity
+[INFO] [1794651181.049944]: [formation playback] cleared: invalid playback plan: model_json does not rebuild a UniformTimedPlan: REQUESTED_POSE_MISMATCH: requested goal error=(0.25, 0.0, 0.0) exceeds raw-pose continuity
+[INFO] [1794651181.356514]: [formation playback] accepted uniform_v02 plan 600000 formation cargo_wedge model_sha256=c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186: 3 vehicles, 316 shared samples, T_end=6.245537 s
+[INFO] [1794651181.361982]: [formation playback] plan=600000 state=PLAYING elapsed=0.251437 clamped=0.251437 fraction=0.571797 executable=False
+[ERROR] [1794651181.628554]: [formation playback] rejecting playback plan 600000: vehicle 1 sample 158 x=12.000999999999999 differs from the model 12 by 0.001 > 1e-09
+[INFO] [1794651181.630073]: [formation playback] cleared: invalid playback plan: vehicle 1 sample 158 x=12.000999999999999 differs from the model 12 by 0.001 > 1e-09
+[INFO] [1794651181.928419]: [formation playback] accepted uniform_v02 plan 600000 formation cargo_wedge model_sha256=c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186: 3 vehicles, 316 shared samples, T_end=6.245537 s
+[INFO] [1794651181.933341]: [formation playback] plan=600000 state=PLAYING elapsed=0.257366 clamped=0.257366 fraction=0.868235 executable=False
+[ERROR] [1794651182.168373]: [formation playback] rejecting playback plan 600000: envelope header stamp differs from the embedded trajectory stamp
+[INFO] [1794651182.169947]: [formation playback] cleared: invalid playback plan: envelope header stamp differs from the embedded trajectory stamp
+[INFO] [1794651182.486083]: [formation playback] accepted uniform_v02 plan 600000 formation cargo_wedge model_sha256=c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186: 3 vehicles, 316 shared samples, T_end=6.245537 s
+[INFO] [1794651182.491015]: [formation playback] plan=600000 state=PLAYING elapsed=0.253798 clamped=0.253798 fraction=0.689850 executable=False
+[INFO] [1794651188.487350]: [formation playback] plan=600000 state=HOLD_END elapsed=6.248088 clamped=6.245537 fraction=0.000000 executable=False
+[formation_playback-2] killing on exit
+[fwis_map_publisher-1] killing on exit
+shutting down processing monitor...
+... shutting down processing monitor complete
+[1mdone[0m

@@ -1,0 +1,915 @@
+{
+  "status": "CHANGES_REQUESTED",
+  "files": [
+    {
+      "path": "ACCEPTANCE.md",
+      "bytes": 7776,
+      "sha256": "50c74f2358d5f2ac8111434ddeec0c0c222cca1ac91ecf67295551240d790e3a"
+    },
+    {
+      "path": "after_checks.json",
+      "bytes": 451,
+      "sha256": "98663ba2f2212d5eb543210c550ffdef701eb670222643f12ac557a71905f588"
+    },
+    {
+      "path": "audit_digest_binding_probe.json",
+      "bytes": 2579,
+      "sha256": "4fe1cb9ce62ae7f62b56ab069317928c352680f153e3b5a9b31240fd0b94278f"
+    },
+    {
+      "path": "audit_digest_binding_probe.py",
+      "bytes": 1804,
+      "sha256": "091efd177f25cdf5ab1128e7bee963bf6cc637bff3710f31d626f239c482df6a"
+    },
+    {
+      "path": "baseline_checks.json",
+      "bytes": 615,
+      "sha256": "ed03cd98eedcd913685f6e12565cb7c07e69f125adb12311ae67539380bb9f8d"
+    },
+    {
+      "path": "before_hashes.json",
+      "bytes": 186039,
+      "sha256": "cb7cb1190ba992a5f1d6306ad1864062833ea48dd85d973dc457b70230aa7cb4"
+    },
+    {
+      "path": "feedback_phase_boundary_probe.json",
+      "bytes": 3496,
+      "sha256": "d807490d0dd6fea33b5232ba1a765baf1cf5a25346d2d7f1620f37a8ec1c8ecc"
+    },
+    {
+      "path": "feedback_phase_boundary_probe.py",
+      "bytes": 1869,
+      "sha256": "accbeaed65cb1c6455e2bb040f56093a8bc29ce91af818fd81b712160d13ad5e"
+    },
+    {
+      "path": "fr01_results_path.json",
+      "bytes": 138560,
+      "sha256": "eb2fad05a06377b35b342d773b7083f4bbcc19188755ff0064795aed8c4507e0"
+    },
+    {
+      "path": "fr02_artifact_dir/R1_near_endpoint.json",
+      "bytes": 108549,
+      "sha256": "fd056afa407d6e548df8dcefd76a65dd96d6ab20d05badf0cae99af34f94e581"
+    },
+    {
+      "path": "fr02_artifact_dir/R2_spin_wheel_vectors.json",
+      "bytes": 101525,
+      "sha256": "20d2622f9fdede63dd8196a1de7aff726b2497a69d40e78ee85edb0343632a0f"
+    },
+    {
+      "path": "fr02_artifact_dir/R3_decoder_time_axis.json",
+      "bytes": 14846,
+      "sha256": "606a71e52077dca26047600d85bb6578b569c0e3df07b21cca9d3660beb82df2"
+    },
+    {
+      "path": "fr02_artifact_dir/arc_internal_samples.json",
+      "bytes": 4282,
+      "sha256": "a7f6b1cc8b7357560c122c40a93a103b4a60540b2c0b73fc29dce3f1d994b442"
+    },
+    {
+      "path": "fr02_artifact_dir/collision_map_b06.json",
+      "bytes": 23766,
+      "sha256": "0ff3117f038d7ea5530258779ca1fb772568ec8a6bdbf7b00d2a6dd03fff2373"
+    },
+    {
+      "path": "fr02_artifact_dir/initial_state_limits.json",
+      "bytes": 2856,
+      "sha256": "3b3a02cfa5ec55328d0dcf8483acae8ee3c19dd7873c7ea9142a51ee6f577586"
+    },
+    {
+      "path": "fr02_artifact_dir/model.json",
+      "bytes": 67845,
+      "sha256": "2957ebb36e8b76867023907f5df52414c15f92ed4709c1413aa13586e90918b6"
+    },
+    {
+      "path": "fr02_artifact_dir/models/A_arc_nonzero_pivot.json",
+      "bytes": 17762,
+      "sha256": "504878c98b316914bd190c8dc41172076dbf2e35483c905eb54a3038b2e3d7c9"
+    },
+    {
+      "path": "fr02_artifact_dir/models/A_straight_forward.json",
+      "bytes": 12329,
+      "sha256": "760d383908b78442396068845fe80eacff19d56a25781cc216ffde6e9c7cea4c"
+    },
+    {
+      "path": "fr02_artifact_dir/models/A_straight_reverse.json",
+      "bytes": 30615,
+      "sha256": "370b0d42d7c941d0ccf242146647fa9f37ad45b3db9f89864a6d4b742196bacc"
+    },
+    {
+      "path": "fr02_artifact_dir/models/B06_spin_mid_sweep.json",
+      "bytes": 16804,
+      "sha256": "78ccf4f1123c578e84f961c725240ecfeb643847d60677994d47f74fcc2cf2cf"
+    },
+    {
+      "path": "fr02_artifact_dir/models/B06_straight_goal_6m.json",
+      "bytes": 12340,
+      "sha256": "a6b9f1521d3042af2d911279faf9a9a06e0c9d0fcfa4e05abf151c3a130771fc"
+    },
+    {
+      "path": "fr02_artifact_dir/models/B09_arc_confirmed.json",
+      "bytes": 17762,
+      "sha256": "504878c98b316914bd190c8dc41172076dbf2e35483c905eb54a3038b2e3d7c9"
+    },
+    {
+      "path": "fr02_artifact_dir/models/B09_arc_jerk_unconfirmed.json",
+      "bytes": 17762,
+      "sha256": "c884cc6391bb3de2389bf99f248fc68141f70775f1de1ef25569fe3e629a2aba"
+    },
+    {
+      "path": "fr02_artifact_dir/models/B09_complex_confirmed.json",
+      "bytes": 60535,
+      "sha256": "602bfa24a4b79ac1a4b89b1459b2d8f17ab8bc2ad2b7d4359c4cea75f04f4da7"
+    },
+    {
+      "path": "fr02_artifact_dir/models/O_lateral_forward.json",
+      "bytes": 17097,
+      "sha256": "1aada7f5d30275479ae1107d2fce0ebc204d27a036205ec83ceaf491296ebb0b"
+    },
+    {
+      "path": "fr02_artifact_dir/models/O_lateral_reverse.json",
+      "bytes": 17180,
+      "sha256": "0ae2ec6a383dd6093cfb4146e99f0065f4e0b54f1a9fca33cbacf726b10fbc30"
+    },
+    {
+      "path": "fr02_artifact_dir/models/O_same_mode_wheel_change.json",
+      "bytes": 39554,
+      "sha256": "7954fa72bab104c77c21896f03cf7d37efd63c42ad2ef1c8abaf2d51631cf94c"
+    },
+    {
+      "path": "fr02_artifact_dir/models/S_A_S_O_complex.json",
+      "bytes": 60535,
+      "sha256": "602bfa24a4b79ac1a4b89b1459b2d8f17ab8bc2ad2b7d4359c4cea75f04f4da7"
+    },
+    {
+      "path": "fr02_artifact_dir/models/S_spin_with_zero_angle_vehicle.json",
+      "bytes": 16804,
+      "sha256": "78ccf4f1123c578e84f961c725240ecfeb643847d60677994d47f74fcc2cf2cf"
+    },
+    {
+      "path": "fr02_artifact_dir/models/zero_motion_hold.json",
+      "bytes": 3255,
+      "sha256": "f905aac33a56c415e8ab404f489e518a915c912f0726b56eb3f80290bc602d06"
+    },
+    {
+      "path": "fr02_artifact_dir/motion_peaks.json",
+      "bytes": 9904,
+      "sha256": "29c0a11562a973eef11b39324d5331792f46dfcce5ff8106297234e2fdf05426"
+    },
+    {
+      "path": "fr02_artifact_dir/negative_cases.json",
+      "bytes": 11108,
+      "sha256": "0525da794d479f72257e550521496457d624f77e5447b69f851d1ac557254b7e"
+    },
+    {
+      "path": "fr02_artifact_dir/phase_table.json",
+      "bytes": 4652,
+      "sha256": "bbcc254d8e06486694f4666ec0ed6f43bdc82e40ebb4bfede829dcd87eedd3e2"
+    },
+    {
+      "path": "fr02_artifact_dir/projection.json",
+      "bytes": 858486,
+      "sha256": "83f02367b215e0f2f453299e48e00e35243dfbd154be8564b35ef64e6ce6b25a"
+    },
+    {
+      "path": "fr02_artifact_dir/roundtrip_errors.json",
+      "bytes": 1188,
+      "sha256": "b8577c22d49302bdb6d62ed1e6f40538ef6aed5d7c84bd23ea37d375169358e5"
+    },
+    {
+      "path": "fr02_artifact_dir/setup_demands.json",
+      "bytes": 15515,
+      "sha256": "4a0b910633a6d02efa58196049e810742199a9a70c30abed363b20eed859b14e"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b02_O_signed_speed_tamper.plan.after_payload.json",
+      "bytes": 17097,
+      "sha256": "baa68eace2d55130e391a2edd8f620cc706e1dbfc92f7f13c9f3d0311573e4ab"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b02_O_signed_speed_tamper.plan.before_payload.json",
+      "bytes": 17097,
+      "sha256": "1aada7f5d30275479ae1107d2fce0ebc204d27a036205ec83ceaf491296ebb0b"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b02_arc_curvature_tamper.plan.after_payload.json",
+      "bytes": 17763,
+      "sha256": "b010b49f28e99dd8df1102e0a93909c1e9613cec5974e2b2d4a5387aff570f76"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b02_arc_curvature_tamper.plan.before_payload.json",
+      "bytes": 17762,
+      "sha256": "504878c98b316914bd190c8dc41172076dbf2e35483c905eb54a3038b2e3d7c9"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b02_coherent_heading_off_tangent.plan.after_payload.json",
+      "bytes": 17762,
+      "sha256": "31f143a16f50352fe1e542a55a684a3443fbf3ac51547ae0631c8a5a9a598f76"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b02_coherent_heading_off_tangent.plan.before_payload.json",
+      "bytes": 17762,
+      "sha256": "504878c98b316914bd190c8dc41172076dbf2e35483c905eb54a3038b2e3d7c9"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b02_spin_direction_tamper.plan.after_payload.json",
+      "bytes": 16811,
+      "sha256": "336c21c544ebead2a02035d81b5c3d659b1ef6e2e847cc0263369934b9d8daeb"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b02_spin_direction_tamper.plan.before_payload.json",
+      "bytes": 16804,
+      "sha256": "78ccf4f1123c578e84f961c725240ecfeb643847d60677994d47f74fcc2cf2cf"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b03_NaN_tamper.plan.after_payload.json",
+      "bytes": 12331,
+      "sha256": "19aa7434687892a19dd3aa70b3b225e876639b9a9b657d81309b27fd5610c862"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b03_NaN_tamper.plan.before_payload.json",
+      "bytes": 12329,
+      "sha256": "760d383908b78442396068845fe80eacff19d56a25781cc216ffde6e9c7cea4c"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b03_global_mode_conflict.plan.after_payload.json",
+      "bytes": 12329,
+      "sha256": "e52287436e712b724eaaca6ff503e5d288e2e932e0ba9053cd6b2ee01ac19886"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b03_global_mode_conflict.plan.before_payload.json",
+      "bytes": 12329,
+      "sha256": "760d383908b78442396068845fe80eacff19d56a25781cc216ffde6e9c7cea4c"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b03_segment_mode_conflict.plan.after_payload.json",
+      "bytes": 16804,
+      "sha256": "261f2522bb8a71800dd37ff6bfc800dab0b1a605cb2cb3ee1588aa3d77366591"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b03_segment_mode_conflict.plan.before_payload.json",
+      "bytes": 16804,
+      "sha256": "78ccf4f1123c578e84f961c725240ecfeb643847d60677994d47f74fcc2cf2cf"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b03_wheel_factor_tamper.plan.after_payload.json",
+      "bytes": 16804,
+      "sha256": "2e5a63ee7fd1d8d8dc436d6b3a86867e17c7d47cd94292ddbc7de083722e18fb"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b03_wheel_factor_tamper.plan.before_payload.json",
+      "bytes": 16804,
+      "sha256": "78ccf4f1123c578e84f961c725240ecfeb643847d60677994d47f74fcc2cf2cf"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b03_wheel_id_tamper.plan.after_payload.json",
+      "bytes": 16804,
+      "sha256": "78ccf4f1123c578e84f961c725240ecfeb643847d60677994d47f74fcc2cf2cf"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b03_wheel_id_tamper.plan.before_payload.json",
+      "bytes": 16804,
+      "sha256": "78ccf4f1123c578e84f961c725240ecfeb643847d60677994d47f74fcc2cf2cf"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b03_wheel_id_tamper.plan.live_after.json",
+      "bytes": 5836,
+      "sha256": "1fe544869e9c3ea62294691e1bf70bd568030b28d8cb2ba2c02b8c48cba308eb"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b03_wheel_id_tamper.plan.live_before.json",
+      "bytes": 5836,
+      "sha256": "f8625c75a8981cd7b488fe118b17ec66214b409860df0b528e610aeea5011d60"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b03_zero_angle_S_replaced_by_A_wheels.plan.after_payload.json",
+      "bytes": 16607,
+      "sha256": "7fbc226752f2d4bc5bdd930643607416e25da7fe9af6d1ca24431e136545150c"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b03_zero_angle_S_replaced_by_A_wheels.plan.before_payload.json",
+      "bytes": 16804,
+      "sha256": "78ccf4f1123c578e84f961c725240ecfeb643847d60677994d47f74fcc2cf2cf"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b04_delete_initial_setup.plan.after_payload.json",
+      "bytes": 12838,
+      "sha256": "dd0a73e6866f904686c604eb0f5f8902039aa2fbbe5fbdf998fa60f792a3fd49"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b04_delete_initial_setup.plan.before_payload.json",
+      "bytes": 16804,
+      "sha256": "78ccf4f1123c578e84f961c725240ecfeb643847d60677994d47f74fcc2cf2cf"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b04_early_mode_switch.plan.after_payload.json",
+      "bytes": 16804,
+      "sha256": "07e1737aec714ed7bd7ad25760c289205c5d148e1841cb2708ec34e2f3a6a4cc"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b04_early_mode_switch.plan.before_payload.json",
+      "bytes": 16804,
+      "sha256": "78ccf4f1123c578e84f961c725240ecfeb643847d60677994d47f74fcc2cf2cf"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b04_omit_slowest_vehicle_demand.plan.after_payload.json",
+      "bytes": 15760,
+      "sha256": "ef981ddf151c21c08f298e99583327bfd62c535512806e6d6678a0962b0148d3"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b04_omit_slowest_vehicle_demand.plan.before_payload.json",
+      "bytes": 16804,
+      "sha256": "78ccf4f1123c578e84f961c725240ecfeb643847d60677994d47f74fcc2cf2cf"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b04_shorten_adjacent_setup.plan.after_payload.json",
+      "bytes": 60589,
+      "sha256": "7ec3c7a5676ad0f68be76567b65af144b12b821cfdb6553c725713557b92b490"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b04_shorten_adjacent_setup.plan.before_payload.json",
+      "bytes": 60535,
+      "sha256": "602bfa24a4b79ac1a4b89b1459b2d8f17ab8bc2ad2b7d4359c4cea75f04f4da7"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b04_shorten_initial_setup.plan.after_payload.json",
+      "bytes": 16803,
+      "sha256": "530151a4092462377fc404aebe10d491d01dfe60d51e591d891cec096d77861c"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b04_shorten_initial_setup.plan.before_payload.json",
+      "bytes": 16804,
+      "sha256": "78ccf4f1123c578e84f961c725240ecfeb643847d60677994d47f74fcc2cf2cf"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b04_shorten_motion_exceeds_speed.plan.after_payload.json",
+      "bytes": 12332,
+      "sha256": "59670c2061607e12e39c2a2f12f0ec32c3cf2f9c55f096ee220a8f3dd67806fd"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b04_shorten_motion_exceeds_speed.plan.before_payload.json",
+      "bytes": 12329,
+      "sha256": "760d383908b78442396068845fe80eacff19d56a25781cc216ffde6e9c7cea4c"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b04_time_axis_gap.plan.after_payload.json",
+      "bytes": 12331,
+      "sha256": "142151e50be5643e3c385381a86c82508122eb8c0b3d4160b6bfe9f44ec8ba74"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b04_time_axis_gap.plan.before_payload.json",
+      "bytes": 12329,
+      "sha256": "760d383908b78442396068845fe80eacff19d56a25781cc216ffde6e9c7cea4c"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b04_time_axis_overlap.plan.after_payload.json",
+      "bytes": 16803,
+      "sha256": "b562fa48ad3212a462618562807ffc67c493780a2de237fce1f66867ae8536da"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b04_time_axis_overlap.plan.before_payload.json",
+      "bytes": 16804,
+      "sha256": "78ccf4f1123c578e84f961c725240ecfeb643847d60677994d47f74fcc2cf2cf"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b05_projection_formation_chord.projection.after_payload.json",
+      "bytes": 35089,
+      "sha256": "a345f91a2101bb87b72bd8c17a435d2d70440e952506445e03c8d120d58315af"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b05_projection_formation_chord.projection.before_payload.json",
+      "bytes": 35045,
+      "sha256": "551fb9f4fc3f49f29464ce9def388e4ba8ef6eabc6a1e68754c1b8aa52416dc9"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b05_projection_formation_pose_psi.projection.after_payload.json",
+      "bytes": 35046,
+      "sha256": "ce23725e9434600601bd89905cde5a5700d60b4685f0599d72134e4a8050fe9d"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b05_projection_formation_pose_psi.projection.before_payload.json",
+      "bytes": 35045,
+      "sha256": "551fb9f4fc3f49f29464ce9def388e4ba8ef6eabc6a1e68754c1b8aa52416dc9"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b05_projection_qf_position.projection.after_payload.json",
+      "bytes": 35046,
+      "sha256": "ccf8a5597eccc5ba796c143cdfeb3645d8887d14e2e4b848faf392bcbf874658"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b05_projection_qf_position.projection.before_payload.json",
+      "bytes": 35045,
+      "sha256": "551fb9f4fc3f49f29464ce9def388e4ba8ef6eabc6a1e68754c1b8aa52416dc9"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b05_projection_qf_psi.projection.after_payload.json",
+      "bytes": 35046,
+      "sha256": "3cfbb6d6eab31f527357e5ca0b8424765abdf1546657e0ff23f9cfe3bf2311ba"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b05_projection_qf_psi.projection.before_payload.json",
+      "bytes": 35045,
+      "sha256": "551fb9f4fc3f49f29464ce9def388e4ba8ef6eabc6a1e68754c1b8aa52416dc9"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b05_projection_rigid_translation.projection.after_payload.json",
+      "bytes": 35049,
+      "sha256": "da865181fe62fc63b334b909ca5ad01136a43b2d26b3884da3ed66f6cc89d487"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b05_projection_rigid_translation.projection.before_payload.json",
+      "bytes": 35045,
+      "sha256": "551fb9f4fc3f49f29464ce9def388e4ba8ef6eabc6a1e68754c1b8aa52416dc9"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b05_projection_state_time.projection.after_payload.json",
+      "bytes": 35045,
+      "sha256": "585a8637fc775f9a9673d74e1ec50c7ae97a02b0f88e9b2c9179ac36ed5cd690"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b05_projection_state_time.projection.before_payload.json",
+      "bytes": 35045,
+      "sha256": "551fb9f4fc3f49f29464ce9def388e4ba8ef6eabc6a1e68754c1b8aa52416dc9"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b05_projection_timed_center.projection.after_payload.json",
+      "bytes": 35045,
+      "sha256": "c6b050bd650b0ecad4130777a5a2b9f8d4fb8a45e149e8ea77ea9014523f1735"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b05_projection_timed_center.projection.before_payload.json",
+      "bytes": 35045,
+      "sha256": "551fb9f4fc3f49f29464ce9def388e4ba8ef6eabc6a1e68754c1b8aa52416dc9"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b05_projection_timed_mode.projection.after_payload.json",
+      "bytes": 35045,
+      "sha256": "a94c471678f5d940bc61d770506232606e5eedae0a85050bfa771cce0ad76c51"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b05_projection_timed_mode.projection.before_payload.json",
+      "bytes": 35045,
+      "sha256": "551fb9f4fc3f49f29464ce9def388e4ba8ef6eabc6a1e68754c1b8aa52416dc9"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b05_projection_timed_speed.projection.after_payload.json",
+      "bytes": 35045,
+      "sha256": "c6020c07fe4d566ef0a105c1d7b11e003ea6fbef3217ad32b5210e8efed8d254"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b05_projection_timed_speed.projection.before_payload.json",
+      "bytes": 35045,
+      "sha256": "551fb9f4fc3f49f29464ce9def388e4ba8ef6eabc6a1e68754c1b8aa52416dc9"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b05_projection_timed_theta.projection.after_payload.json",
+      "bytes": 35045,
+      "sha256": "6a5e4e4bfd8800e775de0068d1ed425b9d0d6b4b54691217c640d21268f097a7"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b05_projection_timed_theta.projection.before_payload.json",
+      "bytes": 35045,
+      "sha256": "551fb9f4fc3f49f29464ce9def388e4ba8ef6eabc6a1e68754c1b8aa52416dc9"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b05_projection_timed_theta_unwrapped.projection.after_payload.json",
+      "bytes": 35045,
+      "sha256": "82bc795330a1e4f1abfacb5caa9fb1e123a5eb7beeb3bce1a3acebeb6d868a53"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b05_projection_timed_theta_unwrapped.projection.before_payload.json",
+      "bytes": 35045,
+      "sha256": "551fb9f4fc3f49f29464ce9def388e4ba8ef6eabc6a1e68754c1b8aa52416dc9"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b05_projection_vehicle_x.projection.after_payload.json",
+      "bytes": 35045,
+      "sha256": "8e12f7f56912ffc730897710c82cbf5f91c29d13e9a342c8560e0e01d07598c4"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b05_projection_vehicle_x.projection.before_payload.json",
+      "bytes": 35045,
+      "sha256": "551fb9f4fc3f49f29464ce9def388e4ba8ef6eabc6a1e68754c1b8aa52416dc9"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b07_formation_chord_interpolation_rejected.projection.after_payload.json",
+      "bytes": 3729781,
+      "sha256": "a8b0368397ac9832157fcb17b01c978e04346a5b80f1cf05ea4dbdb9f239efac"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b07_formation_chord_interpolation_rejected.projection.before_payload.json",
+      "bytes": 3729781,
+      "sha256": "692544435148e7992936575ef68ef211b65738db745d1027223faf83a5e74434"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b08_illegal_map_signature.config.after_payload.json",
+      "bytes": 1061,
+      "sha256": "7dca86af62b4108c58b42d2e9b7164f445de9c095e914974ca84d1a8cc6f9b2b"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b08_illegal_map_signature.config.before_payload.json",
+      "bytes": 1055,
+      "sha256": "5bd9b43e80f4ef2ef5947c4f6f766d98e7fc94e31a424974a0e247d86804f613"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b08_projection_certification_mismatch.projection.after_payload.json",
+      "bytes": 21013,
+      "sha256": "5491d42f4b1c7567fca6fc17fff3646159812807e942abe0ac6bc3aa80b9eca3"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b08_projection_certification_mismatch.projection.before_payload.json",
+      "bytes": 21036,
+      "sha256": "ba0564e6f1eaee8fb12a7acb6bd7873766cfae4611553feb3cfb478f4ffe3bb3"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b08_projection_model_hash_mismatch.projection.after_payload.json",
+      "bytes": 21036,
+      "sha256": "a09413bf26635af1a5424d4b3b1f52bbc8b85155f0947d811607daf8fa77e3bb"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b08_projection_model_hash_mismatch.projection.before_payload.json",
+      "bytes": 21036,
+      "sha256": "ba0564e6f1eaee8fb12a7acb6bd7873766cfae4611553feb3cfb478f4ffe3bb3"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b08_projection_plan_id_mismatch.projection.after_payload.json",
+      "bytes": 21036,
+      "sha256": "fc4c86d6e1203628589bf5b744e783181c0e20c5e5d0d1be983286acb21af691"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b08_projection_plan_id_mismatch.projection.before_payload.json",
+      "bytes": 21036,
+      "sha256": "ba0564e6f1eaee8fb12a7acb6bd7873766cfae4611553feb3cfb478f4ffe3bb3"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b08_sweep_budget_exhaustion.config.after_payload.json",
+      "bytes": 1050,
+      "sha256": "1b0744ef402773eb5cd24215a75f1f69e1ee000478218a28830e26c0666f8ce3"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b08_sweep_budget_exhaustion.config.before_payload.json",
+      "bytes": 1055,
+      "sha256": "5bd9b43e80f4ef2ef5947c4f6f766d98e7fc94e31a424974a0e247d86804f613"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b08_unknown_model_version.projection.after_payload.json",
+      "bytes": 21017,
+      "sha256": "b4dfff3624af5398561e9f94c5dfbf182de20c651e6ecb54daadfe3482af7482"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b08_unknown_model_version.projection.before_payload.json",
+      "bytes": 21036,
+      "sha256": "ba0564e6f1eaee8fb12a7acb6bd7873766cfae4611553feb3cfb478f4ffe3bb3"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b08_unknown_projection_semantics.projection.after_payload.json",
+      "bytes": 21016,
+      "sha256": "1ff62975f41b59cc0060215b0a91df8fc0146d6ad74e00aeba78a844890c97ff"
+    },
+    {
+      "path": "fr02_artifact_dir/tampers/b08_unknown_projection_semantics.projection.before_payload.json",
+      "bytes": 21036,
+      "sha256": "ba0564e6f1eaee8fb12a7acb6bd7873766cfae4611553feb3cfb478f4ffe3bb3"
+    },
+    {
+      "path": "fr02_quality_results_path.json",
+      "bytes": 1256628,
+      "sha256": "c91fbbf68ea53fda0fa7a1811563d8a227728d1c3c7d43542b263fddc7687688"
+    },
+    {
+      "path": "fr02_timing_results_path.json",
+      "bytes": 48611,
+      "sha256": "81f63b19caa86dc64652c03ff153c23d9b4499dfbad01d7afec6fe50a8034f69"
+    },
+    {
+      "path": "fr02_trajectory_results_path.json",
+      "bytes": 66742,
+      "sha256": "cc4b85bd17b4d0290a3fa797f09907c24e999762da9bdaca1a4f3b7e5514c3a1"
+    },
+    {
+      "path": "fr03_artifact_dir/arc_step_audit.json",
+      "bytes": 5469,
+      "sha256": "98d535e211a44b47a0647ab21f9c08707944667102aeca555c1e1ca646c527dc"
+    },
+    {
+      "path": "fr03_artifact_dir/rework_r1_label_domain.json",
+      "bytes": 14401,
+      "sha256": "02b71ebb11342b14096e08f1cc04b7fe6e31a20768bc34ea54b283cdf181e15f"
+    },
+    {
+      "path": "fr03_artifact_dir/rework_r1_small_angle.json",
+      "bytes": 17332,
+      "sha256": "f39880e7b499a68ee82e95c79fe0777c9c99ee7290101dc7a312b58f1f8f247b"
+    },
+    {
+      "path": "fr03_artifact_dir/state_key_samples.json",
+      "bytes": 9918,
+      "sha256": "77439a4bd2364b75323eb5c6c1c13bff164eaaddda7a38824679ddceb11f140d"
+    },
+    {
+      "path": "fr03_artifact_dir/successor_fr02_audit.json",
+      "bytes": 5944,
+      "sha256": "dcc35d2331a804dac2f56f61293c1af4e6733d04844382d049bc84967787ffa1"
+    },
+    {
+      "path": "fr03_results_path.json",
+      "bytes": 57300,
+      "sha256": "0db1e713b713a8ce7fee7bd82c8623671d2ef4a1dd158caf96016b7601d6714f"
+    },
+    {
+      "path": "fr04_artifact_dir/cases/F01_hold.json",
+      "bytes": 58913,
+      "sha256": "2f273caa1f886e5d4640b6e9d22ad5eb63b9b571bae6f0923e7d768b74a036c5"
+    },
+    {
+      "path": "fr04_artifact_dir/cases/F02_forward.json",
+      "bytes": 316196,
+      "sha256": "8db4655361ae550d18cdc62a8f594951bee31487bb942ed20f6b5cf46c0d4343"
+    },
+    {
+      "path": "fr04_artifact_dir/cases/F03_reverse.json",
+      "bytes": 316392,
+      "sha256": "e692efa6c470197a5338820997bf0e3b69eba16302c7fee600e12239901e0258"
+    },
+    {
+      "path": "fr04_artifact_dir/cases/F04_lateral.json",
+      "bytes": 348404,
+      "sha256": "212d64df5c4851df25bbed15e88324c9e332908a3031d96c31c32ce0785c2415"
+    },
+    {
+      "path": "fr04_artifact_dir/cases/F05_diagonal.json",
+      "bytes": 568986,
+      "sha256": "a097662f6fb0b85cd7542020c307d32ca5c3223db8567ec40ab2e6b1eaa9d14d"
+    },
+    {
+      "path": "fr04_artifact_dir/cases/F06_in_place_positive_90.json",
+      "bytes": 593153,
+      "sha256": "202d10d4f4a51a276ef9d6f57739bcd818a5f02d30b2910120156500eec8103f"
+    },
+    {
+      "path": "fr04_artifact_dir/cases/F07_in_place_negative_90.json",
+      "bytes": 588427,
+      "sha256": "6f6975d2ef936e403ec3676c580bbf0dd2357535eff016501043ec08821200d2"
+    },
+    {
+      "path": "fr04_artifact_dir/cases/F08_translate_and_rotate.json",
+      "bytes": 854741,
+      "sha256": "20c707d5623bab6dd4342dc6fd6a70b2f878a70de7209b0f8822a153e3d2b09b"
+    },
+    {
+      "path": "fr04_artifact_dir/cases/F09_enclosed_obstacle.json",
+      "bytes": 5744,
+      "sha256": "2caee2521fbf720f0eac4e8c68742ebed1edbc00995cab2118de94ee20d979d5"
+    },
+    {
+      "path": "fr04_artifact_dir/cases/F10_out_of_bounds.json",
+      "bytes": 4011,
+      "sha256": "3d6c92c0b4a3ad274960ba6e4bebb5447e429abdf870b8dcd83d86e616b81432"
+    },
+    {
+      "path": "fr04_artifact_dir/cases/F11_budget_exhausted.json",
+      "bytes": 4542,
+      "sha256": "8375a53af6c9a97a4c73fb06b0ea913f81f191905cc32a32d897c40ac4ae2c93"
+    },
+    {
+      "path": "fr04_artifact_dir/cases/F12_final_reaudit.json",
+      "bytes": 316233,
+      "sha256": "8f7f2299f3c5207ed34fe07fbccf3426971035b2050ec76b48a91f1872f5a939"
+    },
+    {
+      "path": "fr04_artifact_dir/cases/F13_tolerant_goal_free_headings.json",
+      "bytes": 339644,
+      "sha256": "eb363be63235a0007017a92ce555179fbd8864f0be5ebbb7dba1633cfa4c780b"
+    },
+    {
+      "path": "fr04_artifact_dir/cases/F14_tolerant_hold.json",
+      "bytes": 59255,
+      "sha256": "ecece8f3a426933587da101175179ff5d4ae22d6ab122fa42a8b051f30055d9c"
+    },
+    {
+      "path": "fr04_artifact_dir/cases/F15_wrong_rebuild.json",
+      "bytes": 13019,
+      "sha256": "827aebaf1e040d1348030c7ea3ab82f07ea0a40a53a80c6cf56e473653b5ffad"
+    },
+    {
+      "path": "fr04_artifact_dir/cases/F16_plan_id_mismatch.json",
+      "bytes": 12977,
+      "sha256": "2c82e7a3f24002a414b2b27574d58ab4bc1bd124f9715383ed9c4c1f30ab5bfc"
+    },
+    {
+      "path": "fr04_artifact_dir/cases/F17_same_endpoints_other_path.json",
+      "bytes": 13178,
+      "sha256": "02b27b57e523abe9fb1430ec82aef1f0a327384e190d2d783b94499b655b3bca"
+    },
+    {
+      "path": "fr04_artifact_dir/cases/F18_timing_limit_mismatch.json",
+      "bytes": 13012,
+      "sha256": "ed20378042c029c8101ac3fd6e00769aa870fdca542a20dbadabb901df390880"
+    },
+    {
+      "path": "fr04_artifact_dir/cases/F19_same_count_other_controls.json",
+      "bytes": 13210,
+      "sha256": "96ec6ecbf65179489e32157bdc6cd85bb66642bcbdf132d4f010132b3c6430af"
+    },
+    {
+      "path": "fr04_results_path.json",
+      "bytes": 5016611,
+      "sha256": "14c602d75fccc309987eec464903355221a4819349abbfd1914380b3c12594ce"
+    },
+    {
+      "path": "git_diff_before.patch",
+      "bytes": 95626,
+      "sha256": "26ca25d5cfa22e6163761f077a28a29c504619e6621e8fa28aa841308f17cb2a"
+    },
+    {
+      "path": "git_status_after.txt",
+      "bytes": 1835,
+      "sha256": "3908fa8f702ee02558368c4e87e57decf1eb59cce90a66577f335fe1bfef9875"
+    },
+    {
+      "path": "git_status_before.txt",
+      "bytes": 1835,
+      "sha256": "3908fa8f702ee02558368c4e87e57decf1eb59cce90a66577f335fe1bfef9875"
+    },
+    {
+      "path": "historical_protection.json",
+      "bytes": 531,
+      "sha256": "9d5cb520598a45f587f03b9ae8f2e38f3d65c0ac3f8a4b91a8d859eba51e4da7"
+    },
+    {
+      "path": "live_contract_probe.json",
+      "bytes": 836263,
+      "sha256": "ad1b26e119d8f8673e181d767ca8fefecd71bae64d4cc1de84cb52ffbc0a9af9"
+    },
+    {
+      "path": "live_contract_probe.log",
+      "bytes": 128,
+      "sha256": "2bad1e94db4e0e25040056829143c4c8fb6f54e5409fdb53c27d30c9471f3337"
+    },
+    {
+      "path": "live_contract_probe.py",
+      "bytes": 2262,
+      "sha256": "af36ec1be729241bf6bdc0028ffbc6defaff410e28986e99c4008a813392add8"
+    },
+    {
+      "path": "previous_acceptance/CODEX_ACCEPTANCE.json",
+      "bytes": 5205,
+      "sha256": "446ea3f53a8178931496410ff07b15f6dfada9d86edbb1e88630d73ccbc7898e"
+    },
+    {
+      "path": "previous_acceptance/CODEX_ACCEPTANCE.md",
+      "bytes": 1044,
+      "sha256": "67ef7911a3cb95e729271b59abf24b6230df1368211bbbb25142fe69b7d6ed48"
+    },
+    {
+      "path": "reviewed_source/catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch",
+      "bytes": 7705,
+      "sha256": "b9a34bfb57526f713987e28d1083d7cb566d82d1668eea9703831f07eddc03cd"
+    },
+    {
+      "path": "reviewed_source/catkin_ws/src/fwis_v3_optimizer/scripts/formation_uniform_planner_node.py",
+      "bytes": 56040,
+      "sha256": "3175e62d22ede7d7b0620b81910e254435c19ff333f8d4a9bd415f46a9843d24"
+    },
+    {
+      "path": "reviewed_source/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_playback.py",
+      "bytes": 60713,
+      "sha256": "acd43413c1abaf6ff8281b0b0bb93e4b57dd22890de75052e208ec996cc6459e"
+    },
+    {
+      "path": "reviewed_source/catkin_ws/src/fwis_v3_playback/scripts/formation_playback.py",
+      "bytes": 27115,
+      "sha256": "bbdd6fab86729899d59fa41c470390c005625431df45bc70e6766a25a893d3ed"
+    },
+    {
+      "path": "reviewed_source/tests/ros_uniform_playback_smoke.py",
+      "bytes": 79065,
+      "sha256": "fedef53f8fa6819b71861b0dcf319ed38c8a38b3c2df211b9f8dee1cfb66256f"
+    },
+    {
+      "path": "reviewed_source/tests/test_uniform_feedback_identity.py",
+      "bytes": 4151,
+      "sha256": "4bf36e7c6a54d14dbb9646dc02d290e68394dca8745e26dbb73b779a0c71c440"
+    },
+    {
+      "path": "reviewed_source/tests/test_uniform_playback_plan.py",
+      "bytes": 25146,
+      "sha256": "a4ebb3103c5ac878a70e06c551b8cf30cf961f1cca7aafe45e03b3cfc5dc051f"
+    },
+    {
+      "path": "ros_commands.json",
+      "bytes": 265,
+      "sha256": "ca07f73917dd95f962839df0d8e8d6cf0a69c22e8753462f96fdf21dc15e2b90"
+    },
+    {
+      "path": "ros_home/log/486228a2-e020-11f1-a57b-1b4c90db486b/formation_goal_bridge-4.log",
+      "bytes": 5628,
+      "sha256": "29cb9503af06002ea3c0f6117a2a267f31038011f1c21df5fce6c7a4f99fb6e2"
+    },
+    {
+      "path": "ros_home/log/486228a2-e020-11f1-a57b-1b4c90db486b/formation_playback-3.log",
+      "bytes": 5025,
+      "sha256": "14d13ff40ff0f561dce4ac22e73545c6906bd49744651bed83ace26281993d85"
+    },
+    {
+      "path": "ros_home/log/486228a2-e020-11f1-a57b-1b4c90db486b/formation_uniform_planner-2.log",
+      "bytes": 5391,
+      "sha256": "bacee3ea2da8f640b722c1f4a91241372194bec9c04c8ee0a27359aba4c58222"
+    },
+    {
+      "path": "ros_home/log/486228a2-e020-11f1-a57b-1b4c90db486b/fwis_map_publisher-1.log",
+      "bytes": 2385,
+      "sha256": "4d607b5912378ac8f6e9097f99e60a5a651ca8015c18b23e5e4b935160b24ced"
+    },
+    {
+      "path": "ros_home/log/486228a2-e020-11f1-a57b-1b4c90db486b/master.log",
+      "bytes": 37992,
+      "sha256": "31f868ec4c3fd57f062235afaa86001cc342302f021943c0c4e2ccd8dd279a3b"
+    },
+    {
+      "path": "ros_home/log/486228a2-e020-11f1-a57b-1b4c90db486b/roslaunch-wq-ubuntu-3142707.log",
+      "bytes": 17547,
+      "sha256": "a2515d4a2d68df5b0fc5cfd431aef636fefb2f403eeeba9e26c8f49f5c3cff8d"
+    },
+    {
+      "path": "ros_home/log/486228a2-e020-11f1-a57b-1b4c90db486b/roslaunch-wq-ubuntu-3143325.log",
+      "bytes": 38945,
+      "sha256": "a4854dcb89ac59a3440341a4b0821a839f5bb59eb5cc02aed227d140ad2acd99"
+    },
+    {
+      "path": "ros_home/log/486228a2-e020-11f1-a57b-1b4c90db486b/rosout-1-stdout.log",
+      "bytes": 253,
+      "sha256": "1d9d1e730551e4b8b93114cf326c966c58d408ad324add0e43d2807771604750"
+    },
+    {
+      "path": "ros_home/log/486228a2-e020-11f1-a57b-1b4c90db486b/rosout.log",
+      "bytes": 5314,
+      "sha256": "a188abdb0d625c5cfee99387bf122fa7be285708fc6dc7d611c8cabd5d072b6e"
+    },
+    {
+      "path": "ros_home/log/codex_fr05_live_contract_probe_3142731_1794656468944.log",
+      "bytes": 4102,
+      "sha256": "21b848318d6a5867934a91452b62f972d218bc344c18ec3d628c08658877b727"
+    },
+    {
+      "path": "ros_home/roscore-11461.pid",
+      "bytes": 7,
+      "sha256": "7a234a424bd1755b3a90227b08ae446b3c64cb6320663efddc98f30c8d8cde98"
+    },
+    {
+      "path": "roscore.log",
+      "bytes": 980,
+      "sha256": "5e401c82e1fe7fcec3f0cad4d151fc501d0412f487ba726fe864a81d224e4a96"
+    },
+    {
+      "path": "run_demo.log",
+      "bytes": 6054,
+      "sha256": "306b20d4f7e7b1b0a1e632ac96f0a9e56d15484de5b0d3fa0b31a58fe396f6f0"
+    },
+    {
+      "path": "run_ros_audit.py",
+      "bytes": 1610,
+      "sha256": "a77a5c2b0cc1c1483a4bfab206dcd62aca58530f1cf351e43d2ee1eb2357b356"
+    },
+    {
+      "path": "run_ros_audit.sh",
+      "bytes": 553,
+      "sha256": "27f79ab9263ca606736465cbb07e091b127ecc32b67ce46b857891883439caa8"
+    },
+    {
+      "path": "run_unit_tests.py",
+      "bytes": 1679,
+      "sha256": "0f30303489069009bd0d5aa51408471fa510d553a9d9d6d42d454017ba23846d"
+    },
+    {
+      "path": "submitted_SOURCE_MANIFEST.sha256",
+      "bytes": 19886,
+      "sha256": "e71a68650a2a0ed30c0838a962d1f84be59a24a12f09e5acba1379cda4739307"
+    },
+    {
+      "path": "submitted_reports_verification.json",
+      "bytes": 2277,
+      "sha256": "dfa982c429fdd1d53cde8db6ed49558c245d9b4c616ffc4f2296f17dc47a9a51"
+    },
+    {
+      "path": "test_commands.json",
+      "bytes": 2037,
+      "sha256": "a0dbd06386891f605de510857e3dbc875a871218e11e0f39558840a16c1ffe77"
+    },
+    {
+      "path": "unit_61.log",
+      "bytes": 8741,
+      "sha256": "011819d0766ada5c7044c722ee2df1b2ee1aec299531d2e74662d89564d3bb65"
+    },
+    {
+      "path": "unit_84.log",
+      "bytes": 12590,
+      "sha256": "bc1cd367847b0eb6c6da76e93fa4c180b0418e41350efcf3d365dc69b1c6bb5d"
+    },
+    {
+      "path": "unit_node.log",
+      "bytes": 2877,
+      "sha256": "b93881d59c178f2eeb4f3082867e56f40aab693989af78c237eef68a5ead762b"
+    }
+  ]
+}

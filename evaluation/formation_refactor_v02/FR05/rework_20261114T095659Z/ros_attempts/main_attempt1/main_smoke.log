@@ -1,0 +1,16 @@
+[ERROR] [1794650336.885040]: [fr05 smoke] s_to_a_interior_ticks_per_phase: {'counts': {'tf': {'initial_setup_0000': 9, 'motion_0000': 186, 'setup_0001': 137, 'motion_0001': 111, 'setup_0002': 167, 'motion_0002': 229, 'setup_0003': 178, 'motion_0003': 132}, 'marker': {'initial_setup_0000': 9, 'motion_0000': 181, 'setup_0001': 128, 'motion_0001': 107, 'setup_0002': 148, 'motion_0002': 189, 'setup_0003': 142, 'motion_0003': 77}, 'status': {'initial_setup_0000': 9, 'motion_0000': 186, 'setup_0001': 137, 'motion_0001': 111, 'setup_0002': 167, 'motion_0002': 229, 'setup_0003': 178, 'motion_0003': 134}}, 'short': {'tf': {'initial_setup_0000': 9}, 'marker': {'initial_setup_0000': 9}, 'status': {'initial_setup_0000': 9}}, 'required_per_source': 11, 'samples': {'tf': 1149, 'marker': 981, 'status': 1152}}
+WROTE evaluation/formation_refactor_v02/FR05/rework_20261114T095659Z/ros/main_report.json ok= False
+Traceback (most recent call last):
+  File "tests/ros_uniform_playback_smoke.py", line 1759, in <module>
+    evidence["ok"] = False
+  File "tests/ros_uniform_playback_smoke.py", line 1721, in main
+    output = Path(arguments.output)
+  File "tests/ros_uniform_playback_smoke.py", line 1209, in scenario_main
+    session, checks, "rviz_style",
+  File "tests/ros_uniform_playback_smoke.py", line 913, in run_experiment
+    float(terminal["terminal_center_error_m"]) <= POSITION_TOL_M),
+  File "tests/ros_uniform_playback_smoke.py", line 737, in display_checks
+    short = {source: values for source, values in short.items() if values}
+  File "tests/ros_uniform_playback_smoke.py", line 158, in note
+    if not ok:
+__main__.SmokeError: s_to_a_interior_ticks_per_phase: {'counts': {'tf': {'initial_setup_0000': 9, 'motion_0000': 186, 'setup_0001': 137, 'motion_0001': 111, 'setup_0002': 167, 'motion_0002': 229, 'setup_0003': 178, 'motion_0003': 132}, 'marker': {'initial_setup_0000': 9, 'motion_0000': 181, 'setup_0001': 128, 'motion_0001': 107, 'setup_0002': 148, 'motion_0002': 189, 'setup_0003': 142, 'motion_0003': 77}, 'status': {'initial_setup_0000': 9, 'motion_0000': 186, 'setup_0001': 137, 'motion_0001': 111, 'setup_0002': 167, 'motion_0002': 229, 'setup_0003': 178, 'motion_0003': 134}}, 'short': {'tf': {'initial_setup_0000': 9}, 'marker': {'initial_setup_0000': 9}, 'status': {'initial_setup_0000': 9}}, 'required_per_source': 11, 'samples': {'tf': 1149, 'marker': 981, 'status': 1152}}

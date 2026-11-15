@@ -1,0 +1,37 @@
+{
+  "task": "FR01",
+  "status": "CHANGES_REQUESTED",
+  "reviewer": "Codex",
+  "reviewed_at_utc": "2026-11-12T08:24:59.778487+00:00",
+  "branch": "refactor/formation-v02",
+  "head": "6227833011e2d92b711179bfdec979bb0b878b29",
+  "report": "CODEX_ACCEPTANCE.md",
+  "evidence_directory": "codex_acceptance_20261112T081727Z",
+  "allowed_to_enter_FR02": false,
+  "submitted_files_manifest_verified": true,
+  "submitted_sources_and_original_results_unchanged_by_review": {
+    "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_motion.py": true,
+    "tests/test_uniform_motion.py": true,
+    "evaluation/formation_refactor_v02/FR01/primitive_results.json": true,
+    "evaluation/formation_refactor_v02/FR01/REPORT.md": true
+  },
+  "positive_analytic_arc_probes": 24,
+  "negative_probe_unexpected_acceptances": 7,
+  "blocking_findings": [
+    "R1_A_arc_heading_kinematics_not_audited",
+    "R2_end_wheels_and_uniform_mode_structure_not_audited",
+    "R3_limits_and_nonfinite_values_not_rejected"
+  ],
+  "targeted_test_exit_codes": {
+    "test_uniform_motion.py": 0,
+    "test_formation_model.py": 0,
+    "test_formation_geometry.py": 0,
+    "test_formation_kinematics.py": 0,
+    "test_continuous_retiming.py": 1,
+    "git_diff_check": 0
+  },
+  "implementation_modified_by_codex": false,
+  "legacy_tests_modified": false,
+  "ROS_started": false,
+  "git_committed": false
+}

@@ -1,0 +1,111 @@
+--- a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_trajectory.py
++++ b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_trajectory.py
+@@ -36,7 +36,7 @@
+     FormationTimingReport,
+ )
+ from .mode_switch_timing import mode_switch_event
+-from .retiming import MotionLimits, quintic, wheel_configuration
++from .retiming import MotionLimits, wheel_configuration
+ from .uniform_motion import (
+     MODE_A,
+     MODE_O,
+@@ -316,8 +316,41 @@
+         .format(context, type(expected).__name__))
+ 
+ 
+-def _quintic_third(tau):
+-    return 60.0 - 360.0 * tau + 360.0 * tau * tau
++def _quintic_basic(tau):
++    """Unit quintic and its first three derivatives in factorized form."""
++    return (
++        tau ** 3 * (10.0 - 15.0 * tau + 6.0 * tau * tau),
++        30.0 * tau * tau * (1.0 - tau) * (1.0 - tau),
++        60.0 * tau * (1.0 - tau) * (1.0 - 2.0 * tau),
++        60.0 - 360.0 * tau + 360.0 * tau * tau,
++    )
++
++
++def _stable_quintic(tau):
++    """Evaluate the unit quintic without endpoint cancellation.
++
++    The quintic satisfies ``s(tau) = 1 - s(1-tau)``, while its first and
++    third derivatives are symmetric and its second derivative is
++    antisymmetric.  Evaluating the small complement in the second half keeps
++    the progress from rounding just above one near the motion endpoint.
++    """
++    if tau <= 0.0:
++        return 0.0, 0.0, 0.0, 60.0
++    if tau >= 1.0:
++        return 1.0, 0.0, 0.0, 60.0
++    if tau > 0.5:
++        complement = 1.0 - tau
++        progress, first, second, third = _quintic_basic(complement)
++        return 1.0 - progress, first, -second, third
++    return _quintic_basic(tau)
++
++
++def _wheel_positions(limits):
++    """Wheel coordinates in the same order as ``wheel_configuration``."""
++    return tuple(
++        (x, y)
++        for x in (limits.wheelbase / 2.0, -limits.wheelbase / 2.0)
++        for y in (limits.track / 2.0, -limits.track / 2.0))
+ 
+ 
+ def _normalise_shapes(shapes, vehicle_ids):
+@@ -756,10 +789,10 @@
+             accel_factor = 0.0
+         else:
+             tau = steering_tau
+-            _, first, second = quintic(tau)
++            _, first, second, _ = _stable_quintic(tau)
+             rate_factor = first / phase.steering_duration_s
+             accel_factor = second / phase.steering_duration_s ** 2
+-        progress, _, _ = quintic(tau)
++        progress, _, _, _ = _stable_quintic(tau)
+         vehicles = []
+         for demand in phase.demands:
+             angles = tuple(
+@@ -796,8 +829,14 @@
+             tau = 1.0
+         else:
+             tau = (time_s - phase.t0_s) / duration
+-        progress_unitless, first, second = quintic(tau)
+-        third = _quintic_third(tau)
++            # The requested time is already inside the closed phase interval.
++            # A would-be 1+ulp quotient is only floating subtraction rounding,
++            # not permission to accept an out-of-domain time.
++            if tau < 0.0:
++                tau = 0.0
++            elif tau > 1.0:
++                tau = 1.0
++        progress_unitless, first, second, third = _stable_quintic(tau)
+         length = phase.edge.control.parameter_length
+         progress = length * progress_unitless
+         progress_rate = length * first / duration
+@@ -825,6 +864,7 @@
+ 
+         qf_velocity, qf_acceleration, qf_jerk = chained(
+             derivatives.q_first, derivatives.q_second, derivatives.q_third)
++        wheel_positions = _wheel_positions(self.motion_limits)
+         vehicles = []
+         for item in derivatives.vehicles:
+             velocity, acceleration, jerk = chained(
+@@ -840,8 +880,15 @@
+                 center_speed = 0.0
+                 longitudinal = 0.0
+                 lateral_speed = 0.0
+-                rolling = tuple(factor * yaw_rate
+-                                for factor in item.wheel_factors)
++                # Canonical S wheel angles are folded into [-pi/2, pi/2].
++                # The per-wheel factor is an unsigned magnitude, so project
++                # the body-spin wheel-plane velocity onto the actual folded
++                # rolling direction to retain the needed sign changes.
++                rolling = tuple(
++                    (-yaw_rate * position_y) * math.cos(angle)
++                    + (yaw_rate * position_x) * math.sin(angle)
++                    for (position_x, position_y), angle in zip(
++                        wheel_positions, item.wheel_angles))
+                 lateral_acceleration = 0.0
+             else:
+                 center_speed = item.direction * speed

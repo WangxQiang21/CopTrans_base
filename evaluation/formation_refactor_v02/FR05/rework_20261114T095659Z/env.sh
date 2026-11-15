@@ -1,0 +1,9 @@
+export ROS_MASTER_URI=http://127.0.0.1:11472
+export ROS_HOSTNAME=127.0.0.1
+export ROS_IP=127.0.0.1
+export ROS_HOME=/home/wq/whut_thesis/expv3_multi_v02/evaluation/formation_refactor_v02/FR05/rework_20261114T095659Z/ros_home
+export OPENBLAS_NUM_THREADS=1
+export PYTHONUNBUFFERED=1
+export PYTHONDONTWRITEBYTECODE=1
+source /opt/ros/noetic/setup.bash
+source /home/wq/whut_thesis/expv3_multi_v02/catkin_ws/devel/setup.bash

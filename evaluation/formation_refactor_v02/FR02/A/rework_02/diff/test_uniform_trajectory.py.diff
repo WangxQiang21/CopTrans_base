@@ -1,0 +1,360 @@
+--- a/tests/test_uniform_trajectory.py
++++ b/tests/test_uniform_trajectory.py
+@@ -40,7 +40,8 @@
+     MotionTiming, SetupTiming, motion_derivatives, schedule_uniform_edges,
+ )
+ from fwis_v3_optimizer.uniform_trajectory import (
+-    CERTIFICATION, MODEL_VERSION, PROJECTION_SEMANTICS,
++    CERTIFICATION, MAX_STABLE_PHASE_DURATION_S, MIN_STABLE_PHASE_DURATION_S,
++    MODEL_VERSION, PROJECTION_SEMANTICS,
+     UniformTimedPlan, UniformTrajectoryError,
+ )
+ 
+@@ -1554,6 +1555,347 @@
+                    max_peak_wheel_speed_error_mps=max_peak_error,
+                    max_roundtrip_abs_error=max_roundtrip_error)
+ 
++    def test_R3_decoded_time_axis_is_contiguous_and_representable(self):
++        with record_case("R3", "Decoded phase clocks cover [0,T_end] exactly and are numerically representable", {
++                "old_time_continuity_tol_s": 1e-9,
++                "strict_boundary_rule":
++                    "adjacent t0 == previous end; first t0 == 0; "
++                    "final end == duration",
++                "numeric_support_domain_s": [MIN_STABLE_PHASE_DURATION_S,
++                                             MAX_STABLE_PHASE_DURATION_S]}) as record:
++            spin = spin_plan()
++            values = spin.to_model_dict()
++            motion_index = next(
++                index for index, item in enumerate(values["phases"])
++                if item["kind"] == "motion")
++            previous_end = values["phases"][motion_index - 1]["end_time_s"]
++            original_end = values["phases"][motion_index]["end_time_s"]
++
++            def with_shift(index, new_t0):
++                result = copy.deepcopy(values)
++                target = result["phases"][index]
++                target["t0_s"] = float(new_t0)
++                target["duration_s"] = target["end_time_s"] - target["t0_s"]
++                target["end_time_s"] = target["t0_s"] + target["duration_s"]
++                result["duration_s"] = result["phases"][-1]["end_time_s"]
++                untouched = copy.deepcopy(result)
++                return result, untouched
++
++            gap_overlap_cases = (
++                ("codex_motion_gap_5e-10", motion_index,
++                 previous_end + 5e-10, 1),
++                ("motion_gap_one_ulp", motion_index,
++                 next_float(previous_end), 1),
++                ("motion_gap_just_below_tolerance", motion_index,
++                 previous_end + 9.99999e-10, 1),
++                ("first_phase_gap_equal_tolerance", 0, 1e-9, 1),
++                ("motion_overlap_5e-10", motion_index,
++                 previous_end - 5e-10, -1),
++                ("motion_overlap_one_ulp", motion_index,
++                 previous_float(previous_end), -1),
++                ("motion_overlap_just_below_tolerance", motion_index,
++                 previous_end - 9.99999e-10, -1),
++                ("first_phase_overlap_equal_tolerance", 0, -1e-9, -1),
++            )
++            gap_overlap_rows = []
++            for name, index, requested_t0, sign in gap_overlap_cases:
++                corrupted, untouched = with_shift(index, requested_t0)
++                phase = corrupted["phases"][index]
++                predecessor = 0.0 if index == 0 else previous_end
++                actual_delta = phase["t0_s"] - predecessor
++                self.assertNotEqual(actual_delta, 0.0)
++                self.assertEqual(actual_delta > 0.0, sign > 0)
++                self.assertLessEqual(abs(actual_delta), 1e-9)
++                error = expect_rejection(
++                    self, record, name, "PHASE_TIME_DISCONTINUITY",
++                    lambda payload=corrupted: UniformTimedPlan.from_model_dict(
++                        payload),
++                    phase_id=phase["phase_id"], requested_t0_s=requested_t0,
++                    actual_delta_s=actual_delta)
++                self.assertEqual(error.phase_id, phase["phase_id"])
++                self.assertEqual(corrupted, untouched,
++                                 "{}: decoder mutated its input".format(name))
++                gap_overlap_rows.append({
++                    "name": name,
++                    "phase_id": phase["phase_id"],
++                    "requested_t0_s": requested_t0,
++                    "actual_delta_s": actual_delta,
++                    "old_tolerance_s": 1e-9,
++                    "within_old_tolerance": abs(actual_delta) <= 1e-9,
++                    "decode_reason": error.reason,
++                })
++
++            collapsed_rows = []
++            for name, index in (("codex_motion_collapsed_1e-20", motion_index),):
++                corrupted = copy.deepcopy(values)
++                target = corrupted["phases"][index]
++                target["duration_s"] = 1e-20
++                target["end_time_s"] = target["t0_s"] + target["duration_s"]
++                corrupted["duration_s"] = corrupted["phases"][-1]["end_time_s"]
++                self.assertEqual(target["end_time_s"], target["t0_s"])
++                error = expect_rejection(
++                    self, record, name, "PHASE_TIME_UNREPRESENTABLE",
++                    lambda payload=corrupted: UniformTimedPlan.from_model_dict(
++                        payload),
++                    phase_id=target["phase_id"],
++                    stored_duration_s=target["duration_s"],
++                    stored_end_time_s=target["end_time_s"])
++                self.assertEqual(error.phase_id, target["phase_id"])
++                collapsed_rows.append({
++                    "name": name,
++                    "phase_id": target["phase_id"],
++                    "stored_duration_s": target["duration_s"],
++                    "t0_s": target["t0_s"],
++                    "stored_end_time_s": target["end_time_s"],
++                    "collapsed_to_t0": target["end_time_s"] == target["t0_s"],
++                    "decode_reason": error.reason,
++                })
++
++            duration_rows = []
++            duration_cases = (
++                ("total_duration_short_one_ulp",
++                 previous_float(values["duration_s"])),
++                ("total_duration_short_5e-10",
++                 values["duration_s"] - 5e-10),
++                ("total_duration_long_5e-10",
++                 values["duration_s"] + 5e-10),
++            )
++            for name, corrupted_duration in duration_cases:
++                corrupted = copy.deepcopy(values)
++                original_duration = corrupted["duration_s"]
++                corrupted["duration_s"] = corrupted_duration
++                error = expect_rejection(
++                    self, record, name, "PLAN_DURATION_MISMATCH",
++                    lambda payload=corrupted: UniformTimedPlan.from_model_dict(
++                        payload),
++                    stored_duration_s=corrupted_duration,
++                    final_phase_end_s=corrupted["phases"][-1]["end_time_s"])
++                self.assertIsNone(error.phase_id)
++                duration_rows.append({
++                    "name": name,
++                    "stored_duration_s": corrupted_duration,
++                    "final_phase_end_s":
++                        corrupted["phases"][-1]["end_time_s"],
++                    "delta_s": corrupted_duration - original_duration,
++                    "decode_reason": error.reason,
++                })
++
++            straight_values = straight_plan().to_model_dict()
++
++            def with_motion_duration(duration):
++                result = copy.deepcopy(straight_values)
++                target = result["phases"][0]
++                target["duration_s"] = float(duration)
++                target["end_time_s"] = (
++                    target["t0_s"] + target["duration_s"])
++                result["duration_s"] = target["end_time_s"]
++                return result
++
++            accepted_rows = []
++            for name, duration in (
++                    ("minimum_supported_clock", MIN_STABLE_PHASE_DURATION_S),
++                    ("maximum_supported_clock", MAX_STABLE_PHASE_DURATION_S)):
++                payload = with_motion_duration(duration)
++                restored = UniformTimedPlan.from_model_dict(payload)
++                restored_motion = motion_at(restored, 0)
++                self.assertEqual(restored_motion.duration_s, duration)
++                self.assertEqual(
++                    restored_motion.end_time,
++                    payload["phases"][0]["end_time_s"])
++                fraction_rows = []
++                for fraction in (0.0, 0.25, 0.5, 0.75, 1.0):
++                    time_s = (restored_motion.t0_s
++                              + fraction * restored_motion.duration_s)
++                    state = restored.state_at(time_s)
++                    self.assertEqual(nonfinite_paths(state.as_dict()), [],
++                                     "{} non-finite state".format(name))
++                    self.assertGreaterEqual(state.progress, 0.0)
++                    self.assertLessEqual(
++                        state.progress,
++                        restored_motion.edge.control.parameter_length)
++                    fraction_rows.append({
++                        "fraction": fraction,
++                        "time_s": time_s,
++                        "progress_rad": state.progress,
++                        "progress_rate_radps": state.progress_rate,
++                        "progress_acceleration_radps2":
++                            state.progress_acceleration,
++                        "progress_jerk_radps3": state.progress_jerk,
++                    })
++                terminal = restored.state_at(restored.duration_s)
++                self.assertEqual(terminal.phase_id, restored_motion.phase_id)
++                self.assertEqual(
++                    terminal.progress,
++                    restored_motion.edge.control.parameter_length)
++                accepted_rows.append({
++                    "name": name,
++                    "duration_s": duration,
++                    "t0_s": restored_motion.t0_s,
++                    "end_time_s": restored_motion.end_time,
++                    "terminal_progress_rad": terminal.progress,
++                    "expected_progress_rad":
++                        restored_motion.edge.control.parameter_length,
++                    "states": fraction_rows,
++                })
++
++            unsupported_rows = []
++            unsupported_cases = (
++                ("motion_below_minimum_clock",
++                 with_motion_duration(MIN_STABLE_PHASE_DURATION_S / 10.0),
++                 "motion_0000"),
++                ("motion_above_maximum_clock",
++                 with_motion_duration(MAX_STABLE_PHASE_DURATION_S * 10.0),
++                 "motion_0000"),
++            )
++            for name, payload, expected_phase_id in unsupported_cases:
++                error = expect_rejection(
++                    self, record, name, "PHASE_DURATION_UNSUPPORTED",
++                    lambda value=payload: UniformTimedPlan.from_model_dict(value),
++                    duration_s=payload["phases"][0]["duration_s"])
++                self.assertEqual(error.phase_id, expected_phase_id)
++                unsupported_rows.append({
++                    "name": name,
++                    "phase_id": error.phase_id,
++                    "duration_s": payload["phases"][0]["duration_s"],
++                    "decode_reason": error.reason,
++                })
++            for name, steering_duration in (
++                    ("setup_steering_below_minimum_clock",
++                     MIN_STABLE_PHASE_DURATION_S / 10.0),
++                    ("setup_steering_above_maximum_clock",
++                     MAX_STABLE_PHASE_DURATION_S * 10.0)):
++                corrupted = copy.deepcopy(values)
++                target = corrupted["phases"][0]
++                target["steering_duration_s"] = steering_duration
++                error = expect_rejection(
++                    self, record, name, "PHASE_DURATION_UNSUPPORTED",
++                    lambda payload=corrupted: UniformTimedPlan.from_model_dict(
++                        payload),
++                    phase_id=target["phase_id"],
++                    steering_duration_s=steering_duration)
++                self.assertEqual(error.phase_id, target["phase_id"])
++                unsupported_rows.append({
++                    "name": name,
++                    "phase_id": error.phase_id,
++                    "steering_duration_s": steering_duration,
++                    "decode_reason": error.reason,
++                })
++
++            hold_qf = FormationPose(1.0, -2.0, 0.4)
++            hold_headings = {1: 0.2, 2: -0.3, 3: 0.7}
++            hold = UniformTimedPlan.from_edges(
++                (), BODY_SHAPES, model=model(), start_qf=hold_qf,
++                start_headings=hold_headings, expected_end_qf=hold_qf,
++                expected_end_headings=hold_headings)
++            restored_hold = UniformTimedPlan.from_model_dict(
++                hold.to_model_dict())
++            self.assertEqual(restored_hold.duration_s, 0.0)
++            self.assertEqual(restored_hold.phases, ())
++            hold_projection = restored_hold.sample()
++            self.assertEqual(hold_projection.times, (0.0,))
++            self.assertEqual(len(hold_projection.states), 1)
++            hold_state = hold_projection.states[0]
++            self.assertEqual(hold_state.phase_kind, "hold")
++            self.assertEqual(hold_state.qf, hold_qf)
++            self.assertEqual(dict(hold_state.headings), hold_headings)
++            self.assertTrue(hold_state.stationary)
++            self.assertEqual(nonfinite_paths(hold_state.as_dict()), [])
++            self.assertTrue(all(
++                vehicle.velocity == (0.0, 0.0)
++                and vehicle.yaw_rate_radps == 0.0
++                and all(value == 0.0 for value in vehicle.wheel_rolling_speeds)
++                for vehicle in hold_state.vehicles))
++            self.assertEqual(hold_state.progress, 0.0)
++            self.assertEqual(hold_state.progress_rate, 0.0)
++            self.assertEqual(hold_state.progress_acceleration, 0.0)
++            self.assertEqual(hold_state.progress_jerk, 0.0)
++
++            normal_rows = []
++            normal_plans = (
++                ("straight", straight_plan()),
++                ("spin", spin),
++                ("complex", plan_for(complex_edges())),
++            )
++            for name, plan in normal_plans:
++                restored = UniformTimedPlan.from_model_dict(
++                    copy.deepcopy(plan.to_model_dict()))
++                previous_boundary = 0.0
++                for phase in restored.phases:
++                    self.assertEqual(phase.t0_s, previous_boundary,
++                                     "{} non-exact boundary".format(name))
++                    previous_boundary = phase.end_time
++                self.assertEqual(previous_boundary, restored.duration_s,
++                                 "{} final boundary mismatch".format(name))
++                last_motion = motion_at(restored, len(restored.edges) - 1)
++                terminal = restored.state_at(restored.duration_s)
++                self.assertEqual(terminal.phase_id, last_motion.phase_id)
++                self.assertEqual(
++                    terminal.progress,
++                    last_motion.edge.control.parameter_length)
++                self.assertAlmostEqual(
++                    terminal.qf.x, restored.goal_qf.x, places=12)
++                self.assertAlmostEqual(
++                    terminal.qf.y, restored.goal_qf.y, places=12)
++                self.assertAlmostEqual(
++                    terminal.qf.psi, restored.goal_qf.psi, places=12)
++                comparison_times = (
++                    0.0, restored.duration_s,
++                    last_motion.t0_s + 0.5 * last_motion.duration_s)
++                comparison_errors = []
++                for time_s in comparison_times:
++                    comparison = assert_state_equal(
++                        self, plan.state_at(time_s),
++                        restored.state_at(time_s))
++                    comparison_errors.append(comparison["max_abs_error"])
++                normal_rows.append({
++                    "name": name,
++                    "edge_count": len(restored.edges),
++                    "phase_boundaries_s": [phase.t0_s
++                                           for phase in restored.phases],
++                    "phase_end_times_s": [phase.end_time
++                                          for phase in restored.phases],
++                    "duration_s": restored.duration_s,
++                    "last_motion_end_s": last_motion.end_time,
++                    "terminal_progress_rad": terminal.progress,
++                    "terminal_expected_progress_rad":
++                        last_motion.edge.control.parameter_length,
++                    "terminal_qf": [terminal.qf.x, terminal.qf.y,
++                                    terminal.qf.psi],
++                    "goal_qf": [restored.goal_qf.x, restored.goal_qf.y,
++                                restored.goal_qf.psi],
++                    "max_roundtrip_abs_error": max(comparison_errors),
++                })
++
++            save_json(ARTIFACT_DIR / "R3_decoder_time_axis.json", {
++                "old_time_continuity_tol_s": 1e-9,
++                "strict_boundary_rule":
++                    "adjacent t0 == previous end; first t0 == 0; "
++                    "final end == duration",
++                "numeric_support_domain_s": [
++                    MIN_STABLE_PHASE_DURATION_S,
++                    MAX_STABLE_PHASE_DURATION_S],
++                "gap_overlap_cases": gap_overlap_rows,
++                "collapsed_cases": collapsed_rows,
++                "duration_mismatch_cases": duration_rows,
++                "support_boundary_acceptance": accepted_rows,
++                "support_boundary_rejection": unsupported_rows,
++                "legal_zero_motion_hold": {
++                    "duration_s": restored_hold.duration_s,
++                    "phase_count": len(restored_hold.phases),
++                    "sample_times_s": list(hold_projection.times),
++                    "state": hold_state.as_dict(),
++                },
++                "normal_roundtrips": normal_rows,
++            })
++            passed(record, "strict_boundaries_and_numeric_support",
++                   gap_overlap_cases=len(gap_overlap_rows),
++                   collapsed_cases=len(collapsed_rows),
++                   duration_mismatch_cases=len(duration_rows),
++                   accepted_support_boundaries=len(accepted_rows),
++                   rejected_unsupported_inputs=len(unsupported_rows),
++                   legal_hold_duration_s=restored_hold.duration_s,
++                   normal_roundtrips=len(normal_rows))
++
+     @classmethod
+     def tearDownClass(cls):
+         RESULTS_PATH.parent.mkdir(parents=True, exist_ok=True)

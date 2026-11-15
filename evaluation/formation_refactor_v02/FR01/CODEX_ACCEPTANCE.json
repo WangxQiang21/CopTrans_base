@@ -1,0 +1,41 @@
+{
+  "task": "FR01",
+  "rework": "rework_01",
+  "status": "ACCEPTED",
+  "reviewer": "Codex",
+  "reviewed_at_utc": "2026-11-13T06:23:13.712312+00:00",
+  "branch": "refactor/formation-v02",
+  "head": "6227833011e2d92b711179bfdec979bb0b878b29",
+  "reviewed_source_sha256": {
+    "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_motion.py": "1df4140684c155ea5dc5533c13278c8e4cf8e590b49e77b0360194695aa333b2",
+    "tests/test_uniform_motion.py": "7c25e85b14d8c11ecb460daf76eead60d82270dd9ad74b0d2531f490b98f360a"
+  },
+  "report": "CODEX_ACCEPTANCE.md",
+  "detailed_report": "codex_acceptance_20261113T062110Z/ACCEPTANCE.md",
+  "evidence_directory": "codex_acceptance_20261113T062110Z",
+  "previous_acceptance": "codex_acceptance_20261113T062110Z/previous_acceptance/CODEX_ACCEPTANCE.json",
+  "resolved_findings": [
+    "R1",
+    "R2",
+    "R3"
+  ],
+  "blocking_findings": [],
+  "allowed_to_enter_FR02": true,
+  "FR02_execution_authorized": false,
+  "FR02_started": false,
+  "acceptance_scope": "FR01 analytic geometry, uniform modes, canonical wheel boundaries and scoped validation only. FR02 stage prerequisite satisfied; no execution authorization.",
+  "independent_test_counts": {
+    "uniform_motion": 13,
+    "formation_model": 26,
+    "formation_geometry": 15,
+    "formation_kinematics": 28,
+    "additional_arc_positives": 24,
+    "negative_probes_rejected": 7
+  },
+  "all_commands_exit_zero": true,
+  "known_out_of_scope_issue": "Legacy continuous_retiming KeyError dynamic_peaks reproduced in previous review; unchanged and not rerun in this review. Not counted as passed.",
+  "implementation_modified_by_codex": false,
+  "legacy_tests_modified": false,
+  "ROS_started": false,
+  "git_committed": false
+}

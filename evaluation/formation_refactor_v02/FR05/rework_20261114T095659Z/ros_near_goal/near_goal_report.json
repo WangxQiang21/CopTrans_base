@@ -1,0 +1,716 @@
+{
+ "checks": {
+  "frozen_goal_psi_tolerance": {
+   "detail": "{'configured': 0.017453292519943295, 'frozen': 0.017453292519943295}",
+   "ok": true
+  },
+  "frozen_goal_xy_tolerance": {
+   "detail": "{'configured': 0.02, 'frozen': 0.02}",
+   "ok": true
+  },
+  "frozen_search_expansion_budget": {
+   "detail": "{'configured': 10000.0, 'frozen': 10000}",
+   "ok": true
+  },
+  "frozen_search_time_budget": {
+   "detail": "{'configured': 30.0, 'frozen': 30.0}",
+   "ok": true
+  },
+  "frozen_terminal_heading_tolerance": {
+   "detail": "{'configured': 0.017453292519943295, 'frozen': 0.017453292519943295}",
+   "ok": true
+  },
+  "near_goal_failure_is_honest": {
+   "detail": "{'backend': 'uniform_v02', 'detail': 'wall time 30.0478943 s >= 30 s', 'formation_id': 'cargo_wedge', 'map_error': None, 'map_frame_id': 'map', 'map_ready': True, 'map_signature': '25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819', 'model_sha256': None, 'plan_id': 600005, 'reason': 'TIME_BUDGET_EXHAUSTED', 'request_map_signature': '25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819', 'request_sha256': None, 'schema': 'formation_job_state/v1', 'state': 'FAILED'}",
+   "ok": true
+  },
+  "near_goal_failure_layer_recorded": {
+   "detail": "{'reason': 'TIME_BUDGET_EXHAUSTED', 'first_failure_layer': 'budget', 'pipeline_status': 'BUDGET_EXHAUSTED', 'search': {'accepted_successors': 2159, 'candidate_count': 17013, 'collision_s': 22.560208153445274, 'detail': 'wall time 30.0478943 s >= 30 s', 'duplicate_key_rejections': 1177, 'expansions': 97, 'first_failure_layer': 'budget', 'generation_s': 7.200925711309537, 'goal_qf': [10.1, 10.0, 0.09999999999999999], 'goal_state': None, 'open_size': 2061, 'reason': 'TIME_BUDGET_EXHAUSTED', 'redundant_s_pruned': 2209, 'rejection_histogram': {'A_HEADING_REQUIRES_S_ALIGNMENT': 11468}, 'stale_heap_entries': 0, 'status': 'BUDGET_EXHAUSTED', 'terminal_rejection_histogram': {'UNIFORM_DYNAMIC_UNCONFIRMED': 2}, 'wall_time_s': 30.04790023888927}}",
+   "ok": true
+  },
+  "near_goal_request_starts_at_the_probe_pose": {
+   "detail": "[10.0, 10.0, 0.0]",
+   "ok": true
+  }
+ },
+ "generated_at_utc": "2026-11-14T10:10:41Z",
+ "job_state_history": [
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600004,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "FAILED"
+   },
+   "received_s": 1794651040.7536814
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600004,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "FAILED"
+   },
+   "received_s": 1794651041.5194957
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600004,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "FAILED"
+   },
+   "received_s": 1794651043.0196044
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600005,
+    "reason": "planning",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794651043.7718062
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600005,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794651045.0337505
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600005,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794651046.0349412
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600005,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794651047.5442905
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600005,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794651049.024477
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600005,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794651050.5344281
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600005,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794651052.0443501
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600005,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794651053.0348115
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600005,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794651054.529723
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600005,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794651055.5440133
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600005,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794651057.02995
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600005,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794651058.5398455
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600005,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794651060.0399187
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600005,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794651061.5500476
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600005,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794651063.03452
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600005,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794651064.0298288
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600005,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794651065.5411997
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600005,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794651066.544152
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600005,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794651068.0245497
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600005,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794651069.034855
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600005,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794651070.5242126
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600005,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794651071.5398757
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600005,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794651072.5444598
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "wall time 30.0478943 s >= 30 s",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600005,
+    "reason": "TIME_BUDGET_EXHAUSTED",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "FAILED"
+   },
+   "received_s": 1794651073.8400362
+  }
+ ],
+ "near_goal": {
+  "failure_layer": {
+   "first_failure_layer": "budget",
+   "pipeline_status": "BUDGET_EXHAUSTED",
+   "reason": "TIME_BUDGET_EXHAUSTED",
+   "search": {
+    "accepted_successors": 2159,
+    "candidate_count": 17013,
+    "collision_s": 22.560208153445274,
+    "detail": "wall time 30.0478943 s >= 30 s",
+    "duplicate_key_rejections": 1177,
+    "expansions": 97,
+    "first_failure_layer": "budget",
+    "generation_s": 7.200925711309537,
+    "goal_qf": [
+     10.1,
+     10.0,
+     0.09999999999999999
+    ],
+    "goal_state": null,
+    "open_size": 2061,
+    "reason": "TIME_BUDGET_EXHAUSTED",
+    "redundant_s_pruned": 2209,
+    "rejection_histogram": {
+     "A_HEADING_REQUIRES_S_ALIGNMENT": 11468
+    },
+    "stale_heap_entries": 0,
+    "status": "BUDGET_EXHAUSTED",
+    "terminal_rejection_histogram": {
+     "UNIFORM_DYNAMIC_UNCONFIRMED": 2
+    },
+    "wall_time_s": 30.04790023888927
+   }
+  },
+  "frozen_psi_tolerance_rad": 0.017453292519943295,
+  "frozen_xy_tolerance_m": 0.02,
+  "job": {
+   "backend": "uniform_v02",
+   "detail": "wall time 30.0478943 s >= 30 s",
+   "formation_id": "cargo_wedge",
+   "map_error": null,
+   "map_frame_id": "map",
+   "map_ready": true,
+   "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+   "model_sha256": null,
+   "plan_id": 600005,
+   "reason": "TIME_BUDGET_EXHAUSTED",
+   "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+   "request_sha256": null,
+   "schema": "formation_job_state/v1",
+   "state": "FAILED"
+  },
+  "outcome": "failed",
+  "plan_id": 600005,
+  "request_start": [
+   10.0,
+   10.0,
+   0.0
+  ],
+  "requested_goal": [
+   10.1,
+   10.0,
+   0.1
+  ],
+  "wall_s": 30.490589380264282
+ },
+ "ok": true,
+ "params": {
+  "playback": {
+   "allow_reverse": true,
+   "backend": "uniform_v02",
+   "body_length_m": 0.738,
+   "body_width_m": 0.5,
+   "formation_id": "cargo_wedge",
+   "frame_id": "map",
+   "goal_heading_free": true,
+   "initial_heading_policy": "cargo_heading",
+   "offsets": [
+    [
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0
+    ],
+    [
+     0.0,
+     -1.0
+    ]
+   ],
+   "publish_tf": true,
+   "rate": 100,
+   "transport_ui": true,
+   "vehicle_ids": [
+    1,
+    2,
+    3
+   ]
+  },
+  "uniform_planner": {
+   "collision_margin": 0.05,
+   "frame_id": "map",
+   "goal_heading_tol": 0.017453292519943295,
+   "goal_psi_tol": 0.017453292519943295,
+   "goal_xy_tol": 0.02,
+   "max_expansions": 10000,
+   "max_seconds": 30.0,
+   "playback_finish_grace_s": 3.0,
+   "playback_start_timeout_s": 5.0,
+   "publication_dt": 0.02,
+   "sweep_spacing": 0.01,
+   "translation_step": 1.0
+  }
+ },
+ "request_history": [
+  {
+   "formation_goal": [
+    10.1,
+    10.0,
+    0.09999999999999999
+   ],
+   "formation_start": [
+    10.0,
+    10.0,
+    0.0
+   ],
+   "plan_id": 600004,
+   "received_s": 1794651040.7594447
+  },
+  {
+   "formation_goal": [
+    10.1,
+    10.0,
+    0.09999999999999999
+   ],
+   "formation_start": [
+    10.0,
+    10.0,
+    0.0
+   ],
+   "plan_id": 600005,
+   "received_s": 1794651043.770901
+  }
+ ],
+ "ros_master_uri": "http://127.0.0.1:11472",
+ "scenario": "near_goal",
+ "schema": "fr05.ros_uniform_playback_smoke.v1",
+ "topic_types": {
+  "/formation/display_pose": "geometry_msgs/PoseStamped",
+  "/formation/job_state": "std_msgs/String",
+  "/formation/markers": "visualization_msgs/MarkerArray",
+  "/formation/optimizer_status": "std_msgs/String",
+  "/formation/plan_request": "fwis_v3_msgs/FormationPlanRequest",
+  "/formation/playback_plan": "fwis_v3_msgs/FormationPlaybackPlan",
+  "/formation/playback_status": "std_msgs/String",
+  "/formation/quality_report": "std_msgs/String",
+  "/map": "nav_msgs/OccupancyGrid",
+  "/rosout": "rosgraph_msgs/Log",
+  "/rosout_agg": "rosgraph_msgs/Log",
+  "/start_pose": "geometry_msgs/PoseStamped",
+  "/tf": "tf2_msgs/TFMessage",
+  "/tf_static": "tf2_msgs/TFMessage"
+ }
+}

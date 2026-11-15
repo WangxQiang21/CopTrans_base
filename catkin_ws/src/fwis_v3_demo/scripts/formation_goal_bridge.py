@@ -17,6 +17,7 @@ of a trajectory is not treated as arrival; the live playback pose is.
 """
 import json
 import math
+import time as _time
 
 import rospy
 import tf2_ros
@@ -36,7 +37,10 @@ GOAL_TOPIC = "/move_base_simple/goal"
 INITIAL_POSE_TOPIC = "/initialpose"
 REQUEST_TOPIC = "/formation/plan_request"
 STATUS_TOPIC = "/formation/optimizer_status"
+JOB_STATE_TOPIC = "/formation/job_state"
+PLAYBACK_PLAN_BACKEND = "uniform_v02"
 PLAN_ID_LIMIT = 2 ** 32 - 1
+BUSY_STATES = ("PLANNING", "PLAYING")
 
 
 def quaternion_to_yaw(quaternion):
@@ -77,6 +81,20 @@ class FormationGoalBridge(object):
                 "~playback_tf_timeout_s must be a positive finite value")
         self.rigid_start_tolerance_m = float(
             rospy.get_param("~rigid_start_tolerance_m", 1e-3))
+        self.admission_backend = str(
+            rospy.get_param("~admission_backend", "legacy"))
+        if self.admission_backend not in ("legacy", PLAYBACK_PLAN_BACKEND):
+            raise ValueError(
+                "~admission_backend must be 'legacy' or {!r}, got {!r}"
+                .format(PLAYBACK_PLAN_BACKEND, self.admission_backend))
+        self.job_state_timeout_s = float(
+            rospy.get_param("~job_state_timeout_s", 3.0))
+        if (not math.isfinite(self.job_state_timeout_s)
+                or self.job_state_timeout_s <= 0.0):
+            raise ValueError(
+                "~job_state_timeout_s must be a positive finite value")
+        self._job_state = None
+        self._job_state_received = None
         self.initial_plan_id = int(
             rospy.get_param("~initial_plan_id", 600000))
         self.vehicle_ids = self.contract.vehicle_ids
@@ -109,6 +127,8 @@ class FormationGoalBridge(object):
             self.on_initial_pose, queue_size=1)
         rospy.Subscriber(
             STATUS_TOPIC, String, self.on_optimizer_status, queue_size=10)
+        rospy.Subscriber(
+            JOB_STATE_TOPIC, String, self.on_job_state, queue_size=10)
         rospy.Subscriber("/start_pose", PoseStamped, self.on_map_start,
                          queue_size=1)
 
@@ -120,6 +140,15 @@ class FormationGoalBridge(object):
             rospy.logwarn(
                 "[formation goal bridge] /map not received within %.1f s; "
                 "the next goal will retry", self.map_timeout_s)
+        if self.admission_backend == PLAYBACK_PLAN_BACKEND:
+            try:
+                self.on_job_state(rospy.wait_for_message(
+                    JOB_STATE_TOPIC, String, timeout=3.0))
+            except rospy.ROSException:
+                rospy.logwarn(
+                    "[formation goal bridge] no %s within 3.0 s; goals and "
+                    "initial poses are refused until the uniform planner "
+                    "publishes a fresh job state", JOB_STATE_TOPIC)
 
         rospy.loginfo(
             "[formation goal bridge] ready: formation=%s offsets=%s, "
@@ -135,6 +164,54 @@ class FormationGoalBridge(object):
         if not isinstance(value, str) or not value.strip():
             raise ValueError("{} must be a non-empty string".format(name))
         return value.strip()
+
+    # ---- uniform admission --------------------------------------------
+
+    def on_job_state(self, message):
+        try:
+            document = json.loads(message.data)
+        except (TypeError, ValueError):
+            return
+        if not isinstance(document, dict):
+            return
+        state = document.get("state")
+        if state not in ("IDLE", "PLANNING", "PLAYING", "HOLD_END", "FAILED"):
+            return
+        self._job_state = document
+        self._job_state_received = _time.monotonic()
+
+    def _admission_busy(self):
+        """Return True/False for a fresh uniform job, None when unavailable.
+
+        Only the V0.2 backend owns admission.  The legacy backend keeps the
+        historical behaviour of the bridge (no job state exists).
+        """
+        if self.admission_backend != PLAYBACK_PLAN_BACKEND:
+            return False
+        if self._job_state is None or self._job_state_received is None:
+            return None
+        if (_time.monotonic() - self._job_state_received >
+                self.job_state_timeout_s):
+            return None
+        return self._job_state.get("state") in BUSY_STATES
+
+    def _refuse_when_busy(self, action):
+        busy = self._admission_busy()
+        if busy is None:
+            rospy.logerr(
+                "[formation goal bridge] refusing %s: no fresh "
+                "/formation/job_state from the uniform planner; the start "
+                "override is not consumed", action)
+            return True
+        if busy:
+            rospy.logwarn(
+                "[formation goal bridge] refusing %s: job %s is %s; the "
+                "start override and plan_id are not consumed and no request "
+                "is published", action,
+                self._job_state.get("plan_id"),
+                self._job_state.get("state"))
+            return True
+        return False
 
     # ---- TF / goal input ---------------------------------------------
 
@@ -210,6 +287,8 @@ class FormationGoalBridge(object):
                 "[formation goal bridge] ignoring initial pose frame %r",
                 message.header.frame_id)
             return
+        if self._refuse_when_busy("2D Pose Estimate"):
+            return
         pose = message.pose.pose
         self._start_override = (
             float(pose.position.x), float(pose.position.y),
@@ -253,6 +332,8 @@ class FormationGoalBridge(object):
             rospy.logwarn(
                 "[formation goal bridge] ignoring goal frame %r",
                 message.header.frame_id)
+            return
+        if self._refuse_when_busy("2D Nav Goal"):
             return
         if not self._map_ready:
             try:

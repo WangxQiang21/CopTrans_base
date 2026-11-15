@@ -1,0 +1,181 @@
+{
+  "audit": null,
+  "corridor_width_m": 3.2,
+  "detail": "wall time 30.3097794 s >= 30 s",
+  "executable": false,
+  "feasible": false,
+  "first_failure_layer": "budget",
+  "geometry": null,
+  "label": "wide_3.2m_attempt2",
+  "phase_summary": null,
+  "plan_id": 6102,
+  "plan_model_file": null,
+  "plan_model_sha256": null,
+  "reason": "TIME_BUDGET_EXHAUSTED",
+  "request_inputs": {
+    "formation_id": "fr06_three_vehicle",
+    "goal_headings": null,
+    "goal_qf": [
+      10.0,
+      10.0,
+      1.5707963267948966
+    ],
+    "grid": {
+      "occupied_sha256": "0bc6089bd8d6461a1b9aa2a4bc85904b205ed3d786c3a4ea429d35f243eee8a7",
+      "origin": [
+        0.0,
+        0.0
+      ],
+      "resolution": 0.05,
+      "shape": [
+        320,
+        320
+      ]
+    },
+    "model": [
+      {
+        "vehicle_id": 1,
+        "x": 1.0,
+        "y": 0.0
+      },
+      {
+        "vehicle_id": 2,
+        "x": 0.0,
+        "y": 1.0
+      },
+      {
+        "vehicle_id": 3,
+        "x": 0.0,
+        "y": -1.0
+      }
+    ],
+    "plan_id": 6102,
+    "search_config": {
+      "heuristic_weight": 3.0,
+      "max_expansions": 10000,
+      "max_seconds": 30.0,
+      "rotation_weight": 3.0
+    },
+    "start_headings": [
+      {
+        "theta": 0.0,
+        "vehicle_id": 1
+      },
+      {
+        "theta": 0.0,
+        "vehicle_id": 2
+      },
+      {
+        "theta": 0.0,
+        "vehicle_id": 3
+      }
+    ],
+    "start_qf": [
+      6.0,
+      6.0,
+      0.0
+    ],
+    "successor_config": {
+      "allow_reverse": true,
+      "arc_pivots": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          2.0
+        ],
+        [
+          0.0,
+          -2.0
+        ],
+        [
+          2.0,
+          0.0
+        ],
+        [
+          -2.0,
+          0.0
+        ]
+      ],
+      "arc_step_rad": 0.17453292519943295,
+      "collision_margin_m": 0.05,
+      "control_bin": 0.01,
+      "goal_heading_free": true,
+      "goal_heading_tol_rad": 0.017453292519943295,
+      "goal_psi_tol_rad": 0.017453292519943295,
+      "goal_xy_tol_m": 0.02,
+      "heading_bin_rad": 0.17453292519943295,
+      "max_samples_per_segment": 200000,
+      "psi_bin_rad": 0.17453292519943295,
+      "sweep_spacing_m": 0.01,
+      "timing_limits": {
+        "a_max": 0.6,
+        "jerk_max": 2.0,
+        "lateral_accel_max": 0.6,
+        "max_block_duration_s": 120.0,
+        "min_mode_dwell_s": 0.3,
+        "mode_setup_time": 0.15,
+        "mode_switch_duration": 0.3,
+        "r_min_ackermann": 0.81,
+        "steer_accel_max": 1.5,
+        "steer_angle_max": 1.5707963267948966,
+        "steer_rate_max": 0.8,
+        "track": 0.364,
+        "v_max": 0.8,
+        "wheel_speed_max": 1.0,
+        "wheelbase": 0.494,
+        "yaw_accel_max": 0.8,
+        "yaw_jerk_max": 3.0,
+        "yaw_rate_max": 0.8
+      },
+      "translation_step_m": 1.0,
+      "xy_bin_m": 0.2
+    },
+    "vehicle_shapes": [
+      {
+        "length_m": 0.738,
+        "vehicle_id": 1,
+        "width_m": 0.5
+      },
+      {
+        "length_m": 0.738,
+        "vehicle_id": 2,
+        "width_m": 0.5
+      },
+      {
+        "length_m": 0.738,
+        "vehicle_id": 3,
+        "width_m": 0.5
+      }
+    ]
+  },
+  "request_sha256": "28cda460932b85f61c5b8513da50de280df3734a848d28e2444397eb6f80727a",
+  "schema": "fr06.narrow_corner.v1.attempt",
+  "search": {
+    "accepted_successors": 476,
+    "candidate_count": 1832,
+    "collision_s": 29.594710555509664,
+    "detail": "wall time 30.3097794 s >= 30 s",
+    "duplicate_key_rejections": 2,
+    "expansions": 10,
+    "first_failure_layer": "budget",
+    "generation_s": 0.7096748857293278,
+    "open_size": 467,
+    "reason": "TIME_BUDGET_EXHAUSTED",
+    "redundant_s_pruned": 0,
+    "rejection_histogram": {
+      "A_HEADING_REQUIRES_S_ALIGNMENT": 1272,
+      "MAP_OBB_COLLISION": 82
+    },
+    "stale_heap_entries": 0,
+    "status": "BUDGET_EXHAUSTED",
+    "terminal_audits": [],
+    "terminal_rejection_histogram": {},
+    "wall_time_s": 30.309785378049128
+  },
+  "status": "BUDGET_EXHAUSTED",
+  "t_end_s": null,
+  "wall_time_s": 30.315472645917907
+}

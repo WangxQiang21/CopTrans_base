@@ -1,0 +1,988 @@
+{
+  "cases": [
+    {
+      "case": "S01",
+      "inputs": {
+        "heading_bin_rad": 0.17453292519943295,
+        "psi_bin_rad": 0.17453292519943295,
+        "xy_bin_m": 0.2
+      },
+      "status": "PASSED",
+      "subcases": [
+        {
+          "key_labels": [
+            "A_headings_0",
+            "A_headings_0.3",
+            "O_headings_0",
+            "S_headings_0.3"
+          ],
+          "name": "keys_distinguish_heading_mode_wheel",
+          "representative_count": 2,
+          "status": "PASSED"
+        }
+      ],
+      "title": "state alias: exact state, finite key, representative"
+    },
+    {
+      "case": "S02",
+      "inputs": {
+        "goal": [
+          1.0,
+          0.6,
+          0.0
+        ]
+      },
+      "status": "PASSED",
+      "subcases": [
+        {
+          "alignment": {
+            "continuity": {
+              "heading_rad": 0.0,
+              "position_m": 0.0,
+              "psi_rad": 0.0
+            },
+            "cost_s": 3.018734355192721,
+            "end_headings": {
+              "1": 0.5404195002705842,
+              "2": 0.5404195002705842,
+              "3": 0.5404195002705842
+            },
+            "end_qf": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "label": "S_to_A_straight_goal_gear+++",
+            "mode": "S",
+            "motion_proxy_s": 0.6755243753382302,
+            "primitive": "S_SPIN",
+            "setup_s": 2.3432099798544908
+          },
+          "audit": {
+            "duration_s": 10.03123472463129,
+            "dynamic_continuous_certificate": true,
+            "executable": true,
+            "failure_code": null,
+            "failure_constraint": null,
+            "failure_detail": null,
+            "failure_vehicle_id": null,
+            "feasible": true,
+            "reason": "OK",
+            "status": "FEASIBLE"
+          },
+          "direct_A_rejections": 88,
+          "name": "A_rejected_then_S_then_A",
+          "status": "PASSED",
+          "straight": {
+            "continuity": {
+              "heading_rad": 0.0,
+              "position_m": 0.0,
+              "psi_rad": 0.0
+            },
+            "cost_s": 3.5932099798544908,
+            "end_headings": {
+              "1": 0.5404195002705842,
+              "2": 0.5404195002705842,
+              "3": 0.5404195002705842
+            },
+            "end_qf": [
+              0.8574929257125443,
+              0.5144957554275266,
+              0.0
+            ],
+            "label": "A_straight_goal_gear+++",
+            "mode": "A",
+            "motion_proxy_s": 1.25,
+            "primitive": "A_STRAIGHT",
+            "setup_s": 2.3432099798544908
+          }
+        }
+      ],
+      "title": "tangent: no direct A without S alignment"
+    },
+    {
+      "case": "S03",
+      "inputs": {
+        "goal": [
+          1.0,
+          0.0,
+          0.0
+        ],
+        "note": "one 1.0 m A step reaches the goal exactly"
+      },
+      "status": "PASSED",
+      "subcases": [
+        {
+          "forward": {
+            "continuity": {
+              "heading_rad": 0.0,
+              "position_m": 0.0,
+              "psi_rad": 0.0
+            },
+            "cost_s": 1.25,
+            "end_headings": {
+              "1": 0.0,
+              "2": 0.0,
+              "3": 0.0
+            },
+            "end_qf": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "label": "A_straight_goal_gear+++",
+            "mode": "A",
+            "motion_proxy_s": 1.25,
+            "primitive": "A_STRAIGHT",
+            "setup_s": 0.0
+          },
+          "forward_audit": {
+            "duration_s": 3.1227686684836273,
+            "dynamic_continuous_certificate": true,
+            "executable": true,
+            "failure_code": null,
+            "failure_constraint": null,
+            "failure_detail": null,
+            "failure_vehicle_id": null,
+            "feasible": true,
+            "reason": "OK",
+            "status": "FEASIBLE"
+          },
+          "name": "forward_and_reverse_reach_same_goal",
+          "reverse": {
+            "continuity": {
+              "heading_rad": 0.0,
+              "position_m": 0.0,
+              "psi_rad": 0.0
+            },
+            "cost_s": 3.5932099798544908,
+            "end_headings": {
+              "1": 3.141592653589793,
+              "2": 3.141592653589793,
+              "3": 3.141592653589793
+            },
+            "end_qf": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "label": "A_straight_goal_gear---",
+            "mode": "A",
+            "motion_proxy_s": 1.25,
+            "primitive": "A_STRAIGHT",
+            "setup_s": 2.3432099798544908
+          },
+          "reverse_audit": {
+            "duration_s": 15.209111948952941,
+            "dynamic_continuous_certificate": true,
+            "executable": true,
+            "failure_code": null,
+            "failure_constraint": null,
+            "failure_detail": null,
+            "failure_vehicle_id": null,
+            "feasible": true,
+            "reason": "OK",
+            "status": "FEASIBLE"
+          },
+          "status": "PASSED"
+        }
+      ],
+      "title": "same goal forward/reverse gear schemes"
+    },
+    {
+      "case": "S04",
+      "inputs": {
+        "cropped_deg": 90,
+        "fixed_step_deg": 10,
+        "pivot": [
+          0.0,
+          2.0
+        ]
+      },
+      "status": "PASSED",
+      "subcases": [
+        {
+          "cropped": {
+            "neg": {
+              "arc": {
+                "continuity": {
+                  "heading_rad": 0.0,
+                  "position_m": 0.0,
+                  "psi_rad": 0.0
+                },
+                "cost_s": 8.921001627508437,
+                "end_headings": {
+                  "1": -4.248741371383884,
+                  "2": 1.5707963267948966,
+                  "3": 1.5707963267948966
+                },
+                "end_qf": [
+                  -2.0,
+                  1.9999999999999998,
+                  -1.5707963267948966
+                ],
+                "label": "A_arc_crop_p0_2_neg_gear+++",
+                "mode": "A",
+                "motion_proxy_s": 5.890486225480862,
+                "primitive": "A_ARC",
+                "setup_s": 3.0305154020275746
+              },
+              "audit": {
+                "duration_s": 23.873533683782895,
+                "dynamic_continuous_certificate": true,
+                "executable": true,
+                "failure_code": null,
+                "failure_constraint": null,
+                "failure_detail": null,
+                "failure_vehicle_id": null,
+                "feasible": true,
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "delta_psi": -1.5707963267948966
+            },
+            "pos": {
+              "arc": {
+                "continuity": {
+                  "heading_rad": 0.0,
+                  "position_m": 0.0,
+                  "psi_rad": 0.0
+                },
+                "cost_s": 8.921001627508435,
+                "end_headings": {
+                  "1": 2.0344439357957027,
+                  "2": 1.5707963267948966,
+                  "3": 1.5707963267948966
+                },
+                "end_qf": [
+                  2.0,
+                  1.9999999999999998,
+                  1.5707963267948966
+                ],
+                "label": "A_arc_crop_p0_2_pos_gear+++",
+                "mode": "A",
+                "motion_proxy_s": 5.890486225480862,
+                "primitive": "A_ARC",
+                "setup_s": 3.0305154020275737
+              },
+              "audit": {
+                "duration_s": 18.585017904754224,
+                "dynamic_continuous_certificate": true,
+                "executable": true,
+                "failure_code": null,
+                "failure_constraint": null,
+                "failure_detail": null,
+                "failure_vehicle_id": null,
+                "feasible": true,
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "delta_psi": 1.5707963267948966
+            }
+          },
+          "fixed_step": {
+            "A_arc_p0_2_neg_gear+++": {
+              "arc": {
+                "continuity": {
+                  "heading_rad": 0.0,
+                  "position_m": 0.0,
+                  "psi_rad": 0.0
+                },
+                "cost_s": 3.685013871525448,
+                "end_headings": {
+                  "1": -2.85247796978842,
+                  "2": 2.9670597283903604,
+                  "3": 2.9670597283903604
+                },
+                "end_qf": [
+                  -0.34729635533386066,
+                  0.03038449397558396,
+                  -0.17453292519943295
+                ],
+                "label": "A_arc_p0_2_neg_gear+++",
+                "mode": "A",
+                "motion_proxy_s": 0.6544984694978735,
+                "primitive": "A_ARC",
+                "setup_s": 3.0305154020275746
+              },
+              "audit": {
+                "duration_s": 15.290587686567562,
+                "dynamic_continuous_certificate": false,
+                "executable": false,
+                "failure_code": "UNIFORM_DYNAMIC_UNCONFIRMED",
+                "failure_constraint": "jerk",
+                "failure_detail": "dynamic jerk remains unconfirmed: candidate peak 1.97029751862 is below limit 2, but the adopted full-interval bound 2.16302284782 exceeds it (analytic 2.16302284782, refined None, max adjacent time gap 0.00314617372991 s); this is not a demonstrated physical exceedance",
+                "failure_vehicle_id": 3,
+                "feasible": false,
+                "reason": "UNIFORM_DYNAMIC_UNCONFIRMED",
+                "status": "REJECTED"
+              },
+              "duration_s": 15.290587686567562,
+              "exact_peaks": {
+                "acceleration": 0.47729678717925406,
+                "jerk": 1.9702975186196203,
+                "speed": 0.3900562178443329
+              }
+            },
+            "A_arc_p0_2_pos_gear+++": {
+              "arc": {
+                "continuity": {
+                  "heading_rad": 0.0,
+                  "position_m": 0.0,
+                  "psi_rad": 0.0
+                },
+                "cost_s": 3.685013871525447,
+                "end_headings": {
+                  "1": 0.638180534200239,
+                  "2": 0.17453292519943295,
+                  "3": 0.17453292519943295
+                },
+                "end_qf": [
+                  0.34729635533386066,
+                  0.03038449397558396,
+                  0.17453292519943295
+                ],
+                "label": "A_arc_p0_2_pos_gear+++",
+                "mode": "A",
+                "motion_proxy_s": 0.6544984694978735,
+                "primitive": "A_ARC",
+                "setup_s": 3.0305154020275737
+              },
+              "audit": {
+                "duration_s": 10.002071907538895,
+                "dynamic_continuous_certificate": false,
+                "executable": false,
+                "failure_code": "UNIFORM_DYNAMIC_UNCONFIRMED",
+                "failure_constraint": "jerk",
+                "failure_detail": "dynamic jerk remains unconfirmed: candidate peak 1.97029751862 is below limit 2, but the adopted full-interval bound 2.16302284782 exceeds it (analytic 2.16302284782, refined None, max adjacent time gap 0.00314617372991 s); this is not a demonstrated physical exceedance",
+                "failure_vehicle_id": 3,
+                "feasible": false,
+                "reason": "UNIFORM_DYNAMIC_UNCONFIRMED",
+                "status": "REJECTED"
+              },
+              "duration_s": 10.002071907538895,
+              "exact_peaks": {
+                "acceleration": 0.47729674244902714,
+                "jerk": 1.9702975186196203,
+                "speed": 0.3900561978029127
+              }
+            }
+          },
+          "name": "both_cropped_directions_feasible",
+          "status": "PASSED"
+        }
+      ],
+      "title": "nonzero pivot two directions and fixed step audit"
+    },
+    {
+      "case": "S05",
+      "inputs": {
+        "map_origin": [
+          -15.0,
+          -15.0
+        ],
+        "map_resolution_m": 0.05
+      },
+      "status": "PASSED",
+      "subcases": [
+        {
+          "end_clear": true,
+          "generator_rejections": [
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "A_HEADING_REQUIRES_S_ALIGNMENT",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION",
+            "MAP_OBB_COLLISION"
+          ],
+          "name": "O_mid_path_obstacle",
+          "obstacle_cells": [
+            [
+              0.98,
+              0.43
+            ],
+            [
+              0.98,
+              0.45
+            ],
+            [
+              0.98,
+              0.47000000000000003
+            ],
+            [
+              1.0,
+              0.43
+            ],
+            [
+              1.0,
+              0.45
+            ],
+            [
+              1.0,
+              0.47000000000000003
+            ],
+            [
+              1.02,
+              0.43
+            ],
+            [
+              1.02,
+              0.45
+            ],
+            [
+              1.02,
+              0.47000000000000003
+            ]
+          ],
+          "reason": "MAP_OBB_COLLISION",
+          "start_clear": true,
+          "station": 0.15,
+          "status": "PASSED",
+          "vehicle_id": 1
+        },
+        {
+          "end_clear": true,
+          "name": "S_mid_spin_obstacle",
+          "obstacle_cells": [
+            [
+              0.98,
+              0.38
+            ],
+            [
+              0.98,
+              0.4
+            ],
+            [
+              0.98,
+              0.42000000000000004
+            ],
+            [
+              1.0,
+              0.38
+            ],
+            [
+              1.0,
+              0.4
+            ],
+            [
+              1.0,
+              0.42000000000000004
+            ],
+            [
+              1.02,
+              0.38
+            ],
+            [
+              1.02,
+              0.4
+            ],
+            [
+              1.02,
+              0.42000000000000004
+            ]
+          ],
+          "reason": "MAP_OBB_COLLISION",
+          "start_clear": true,
+          "station": 0.15894039735099338,
+          "status": "PASSED",
+          "vehicle_id": 1
+        }
+      ],
+      "title": "mid-motion and mid-spin obstacles"
+    },
+    {
+      "case": "S06",
+      "inputs": {
+        "pivot": [
+          0.0,
+          2.0
+        ],
+        "wall_x_m": 2.3
+      },
+      "status": "PASSED",
+      "subcases": [
+        {
+          "name": "wall_angle_difference",
+          "outcomes": {
+            "neg": {
+              "delta_psi": -1.5707963267948966,
+              "reason": null,
+              "start_clear": true,
+              "station": null,
+              "sweep_success": true,
+              "vehicle_id": null
+            },
+            "pos": {
+              "delta_psi": 1.5707963267948966,
+              "reason": "MAP_OBB_COLLISION",
+              "start_clear": true,
+              "station": 0.3180987202925046,
+              "sweep_success": false,
+              "vehicle_id": 1
+            }
+          },
+          "status": "PASSED"
+        }
+      ],
+      "title": "wall edge: usable vs unusable angle"
+    },
+    {
+      "case": "S07",
+      "inputs": {
+        "goal": [
+          0.6,
+          -0.4,
+          0.25
+        ]
+      },
+      "status": "PASSED",
+      "subcases": [
+        {
+          "goal_heading_free": true,
+          "name": "free_heading_goal_test",
+          "placeholder_heading_excluded": false,
+          "status": "PASSED",
+          "strict_heading_required_when_disabled": true
+        }
+      ],
+      "title": "free terminal body heading"
+    },
+    {
+      "case": "S08",
+      "inputs": {
+        "goal": [
+          1.0,
+          0.6,
+          1.5707963267948966
+        ]
+      },
+      "status": "PASSED",
+      "subcases": [
+        {
+          "classes": {
+            "A_ARC_CROPPED": {
+              "audit": {
+                "duration_s": 18.585017904754224,
+                "dynamic_continuous_certificate": true,
+                "executable": true,
+                "failure_code": null,
+                "failure_constraint": null,
+                "failure_detail": null,
+                "failure_vehicle_id": null,
+                "feasible": true,
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "continuity_sup": 0.0,
+              "successors": [
+                {
+                  "continuity": {
+                    "heading_rad": 0.0,
+                    "position_m": 0.0,
+                    "psi_rad": 0.0
+                  },
+                  "cost_s": 2.922769491105498,
+                  "end_headings": {
+                    "1": 0.4636476090008061,
+                    "2": 0.0,
+                    "3": 0.0
+                  },
+                  "end_qf": [
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  "label": "S_to_A_arc_p0_2_pos_gear+++",
+                  "mode": "S",
+                  "motion_proxy_s": 0.5795595112510076,
+                  "primitive": "S_SPIN",
+                  "setup_s": 2.3432099798544908
+                },
+                {
+                  "continuity": {
+                    "heading_rad": 0.0,
+                    "position_m": 0.0,
+                    "psi_rad": 0.0
+                  },
+                  "cost_s": 8.921001627508435,
+                  "end_headings": {
+                    "1": 2.0344439357957027,
+                    "2": 1.5707963267948966,
+                    "3": 1.5707963267948966
+                  },
+                  "end_qf": [
+                    2.0,
+                    1.9999999999999998,
+                    1.5707963267948966
+                  ],
+                  "label": "A_arc_crop_p0_2_pos_gear+++",
+                  "mode": "A",
+                  "motion_proxy_s": 5.890486225480862,
+                  "primitive": "A_ARC",
+                  "setup_s": 3.0305154020275737
+                }
+              ]
+            },
+            "A_STRAIGHT": {
+              "audit": {
+                "duration_s": 10.03123472463129,
+                "dynamic_continuous_certificate": true,
+                "executable": true,
+                "failure_code": null,
+                "failure_constraint": null,
+                "failure_detail": null,
+                "failure_vehicle_id": null,
+                "feasible": true,
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "continuity_sup": 0.0,
+              "successors": [
+                {
+                  "continuity": {
+                    "heading_rad": 0.0,
+                    "position_m": 0.0,
+                    "psi_rad": 0.0
+                  },
+                  "cost_s": 3.018734355192721,
+                  "end_headings": {
+                    "1": 0.5404195002705842,
+                    "2": 0.5404195002705842,
+                    "3": 0.5404195002705842
+                  },
+                  "end_qf": [
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  "label": "S_to_A_straight_goal_gear+++",
+                  "mode": "S",
+                  "motion_proxy_s": 0.6755243753382302,
+                  "primitive": "S_SPIN",
+                  "setup_s": 2.3432099798544908
+                },
+                {
+                  "continuity": {
+                    "heading_rad": 0.0,
+                    "position_m": 0.0,
+                    "psi_rad": 0.0
+                  },
+                  "cost_s": 3.5932099798544908,
+                  "end_headings": {
+                    "1": 0.5404195002705842,
+                    "2": 0.5404195002705842,
+                    "3": 0.5404195002705842
+                  },
+                  "end_qf": [
+                    0.8574929257125443,
+                    0.5144957554275266,
+                    0.0
+                  ],
+                  "label": "A_straight_goal_gear+++",
+                  "mode": "A",
+                  "motion_proxy_s": 1.25,
+                  "primitive": "A_STRAIGHT",
+                  "setup_s": 2.3432099798544908
+                }
+              ]
+            },
+            "O_TRANSLATION": {
+              "audit": {
+                "duration_s": 4.715015397159746,
+                "dynamic_continuous_certificate": true,
+                "executable": true,
+                "failure_code": null,
+                "failure_constraint": null,
+                "failure_detail": null,
+                "failure_vehicle_id": null,
+                "feasible": true,
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "continuity_sup": 0.0,
+              "successors": [
+                {
+                  "continuity": {
+                    "heading_rad": 0.0,
+                    "position_m": 0.0,
+                    "psi_rad": 0.0
+                  },
+                  "cost_s": 2.842246728676119,
+                  "end_headings": {
+                    "1": 0.0,
+                    "2": 0.0,
+                    "3": 0.0
+                  },
+                  "end_qf": [
+                    0.8574929257125443,
+                    0.5144957554275266,
+                    0.0
+                  ],
+                  "label": "O_goal_sig+++",
+                  "mode": "O",
+                  "motion_proxy_s": 1.25,
+                  "primitive": "O_TRANSLATION",
+                  "setup_s": 1.5922467286761186
+                }
+              ]
+            },
+            "S_SPIN": {
+              "audit": {
+                "duration_s": 4.454617521586154,
+                "dynamic_continuous_certificate": true,
+                "executable": true,
+                "failure_code": null,
+                "failure_constraint": null,
+                "failure_detail": null,
+                "failure_vehicle_id": null,
+                "feasible": true,
+                "reason": "OK",
+                "status": "FEASIBLE"
+              },
+              "continuity_sup": 0.0,
+              "successors": [
+                {
+                  "continuity": {
+                    "heading_rad": 0.0,
+                    "position_m": 0.0,
+                    "psi_rad": 0.0
+                  },
+                  "cost_s": 2.922769491105498,
+                  "end_headings": {
+                    "1": 0.4636476090008061,
+                    "2": 0.0,
+                    "3": 0.0
+                  },
+                  "end_qf": [
+                    0.0,
+                    0.0,
+                    0.0
+                  ],
+                  "label": "S_to_A_arc_p0_2_pos_gear+++",
+                  "mode": "S",
+                  "motion_proxy_s": 0.5795595112510076,
+                  "primitive": "S_SPIN",
+                  "setup_s": 2.3432099798544908
+                }
+              ]
+            }
+          },
+          "name": "all_legal_classes_feasible",
+          "status": "PASSED"
+        }
+      ],
+      "title": "successor classes to FR02 and seconds-dimension cost"
+    },
+    {
+      "case": "S09",
+      "inputs": {
+        "goal": [
+          5.0,
+          3.0,
+          0.4
+        ],
+        "seed": 20261114,
+        "states": 200
+      },
+      "status": "PASSED",
+      "subcases": [
+        {
+          "candidate_mean": 167.835,
+          "candidate_total": 33567,
+          "collision_total_s": 107.80197528353892,
+          "fallback_states": 0,
+          "generation_total_s": 9.308538257377222,
+          "mean_generation_s": 0.04654269128688611,
+          "name": "200_states_measured",
+          "peak_memory_bytes": 3682267,
+          "peak_memory_mb": 3.511683464050293,
+          "rejection_histogram": {
+            "A_HEADING_REQUIRES_S_ALIGNMENT": 21904
+          },
+          "state_count": 200,
+          "status": "PASSED",
+          "walk_states": 200
+        }
+      ],
+      "title": "fixed-seed 200-state local successor measurement"
+    },
+    {
+      "case": "S10",
+      "inputs": {
+        "patched": [
+          "uniform_timing.schedule_uniform_edges",
+          "uniform_quality.audit_uniform_timed_plan"
+        ]
+      },
+      "status": "PASSED",
+      "subcases": [
+        {
+          "accepted": 57,
+          "audit_calls": 0,
+          "candidates": 185,
+          "name": "expansion_is_local_only",
+          "status": "PASSED",
+          "timing_calls": 0
+        }
+      ],
+      "title": "no full S8/S9 per expansion"
+    }
+  ],
+  "contract": {
+    "cost": "actual FR02 common setup demand + first-order center/yaw motion proxy in seconds; not the S8 T_end, not admissible, not optimal",
+    "key": "finite labels only: XY 0.20 m, psi 10 deg, body heading 10 deg plus gear, mode and wheel control; a dedup label, not a dominance certificate",
+    "legality": "FR01 authoritative edge derivation + real analytic-pose OBB sweep; full S8/S9 is not run per expansion",
+    "state": "exact q_F, exact unwrapped body headings, mode, previous canonical wheel/primitive signature",
+    "successors": "fixed A pivot library c=(0,0),(0,+/-2),(+/-2,0) with +/-10 deg steps plus the goal-cropped angle, O eight cargo directions plus goal, S alignment to required A headings"
+  },
+  "generated_at_utc": "2026-11-13T16:29:43.277725+00:00",
+  "import_paths": {
+    "formation_collision": "/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_collision.py",
+    "uniform_motion": "/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_motion.py",
+    "uniform_quality": "/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_quality.py",
+    "uniform_search": "/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_search.py",
+    "uniform_timing": "/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_timing.py",
+    "uniform_trajectory": "/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_trajectory.py"
+  },
+  "package_src": "/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_optimizer/src",
+  "platform": "Linux-5.15.0-139-generic-x86_64-with-glibc2.29",
+  "python": "3.8.10 (default, Mar 18 2025, 20:04:55) \n[GCC 9.4.0]",
+  "repo_root": "/home/wq/whut_thesis/expv3_multi_v02",
+  "schema": "fr03.successors.v1",
+  "source_hashes": {
+    "formation_collision.py": "31ea1831b0fd4fe05ff9292e560ea11d8b7392787fba3f4971d157c961fd5fc5",
+    "uniform_motion.py": "1df4140684c155ea5dc5533c13278c8e4cf8e590b49e77b0360194695aa333b2",
+    "uniform_quality.py": "7164decbf79beb812d075146eae9c0b936efa00aa7d0a3b73c16ac91492efa96",
+    "uniform_search.py": "cbfd5597abed18e899e7c18f327a1fc184fb0d45e952934abc7cb4f955e5f77a",
+    "uniform_timing.py": "91678441d589e48e5bb81c688bce8518df4bc2d4119a7de749fff3ba4dd9af18",
+    "uniform_trajectory.py": "a93c2b2faba8bda7ac4592888cd502ea3850e6138505df851a12f44a5e86b579"
+  },
+  "status": "PASSED"
+}

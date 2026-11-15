@@ -1,0 +1,39 @@
+# cwd: /home/wq/whut_thesis/expv3_multi_v02
+# command: OPENBLAS_NUM_THREADS=1 python3 -m unittest discover -s tests -p 'test_formation_kinematics.py' -v
+# python: /usr/bin/python3 (Python 3.8.10)
+# started_utc: 2026-11-12T05:32:39Z
+test_allowed_modes_can_disable_ackermann_on_a_rotation (test_formation_kinematics.FormationKinematicsTests) ... ok
+test_allowed_modes_can_disable_oblique_translation (test_formation_kinematics.FormationKinematicsTests) ... ok
+test_allowed_modes_can_disable_spin_on_a_rotation (test_formation_kinematics.FormationKinematicsTests) ... ok
+test_allowed_modes_validation_is_fail_closed (test_formation_kinematics.FormationKinematicsTests) ... ok
+test_audit_rejects_tampered_rotation_curvature (test_formation_kinematics.FormationKinematicsTests) ... ok
+test_audit_rejects_tampered_rotation_direction_and_signed_speed (test_formation_kinematics.FormationKinematicsTests) ... ok
+test_audit_rejects_tampered_rotation_travel_magnitude (test_formation_kinematics.FormationKinematicsTests) ... ok
+test_clockwise_rotation_uses_reverse_and_positive_curvature (test_formation_kinematics.FormationKinematicsTests) ... ok
+test_clockwise_rotation_with_opposite_headings_is_forward (test_formation_kinematics.FormationKinematicsTests) ... ok
+test_clockwise_tangent_rotation_requires_reverse_authorization (test_formation_kinematics.FormationKinematicsTests) ... ok
+test_composite_and_zero_length_are_rejected_fail_closed (test_formation_kinematics.FormationKinematicsTests) ... ok
+test_goal_heading_constraint_is_explicit_and_heading_free_only_skips (test_formation_kinematics.FormationKinematicsTests) ... ok
+test_independent_audit_recomputes_centers_heading_and_control (test_formation_kinematics.FormationKinematicsTests) ... ok
+test_joint_enumeration_retains_k_and_all_are_auditable (test_formation_kinematics.FormationKinematicsTests) ... ok
+test_nonpivot_spin_assignment_is_rejected_by_independent_audit (test_formation_kinematics.FormationKinematicsTests) ... ok
+test_oblique_reverse_is_not_hidden_in_a_huge_forward_angle (test_formation_kinematics.FormationKinematicsTests) ... ok
+test_oblique_translation_holds_body_heading_and_uses_signed_phi (test_formation_kinematics.FormationKinematicsTests) ... ok
+test_rotation_about_a_nonzero_offset_pivot (test_formation_kinematics.FormationKinematicsTests) ... ok
+test_rotation_crosses_pi_from_a_nonzero_heading (test_formation_kinematics.FormationKinematicsTests) ... ok
+test_rotation_pivot_is_spin_and_nonpivot_vehicles_use_a (test_formation_kinematics.FormationKinematicsTests) ... ok
+test_rotation_radius_below_rmin_is_rejected (test_formation_kinematics.FormationKinematicsTests) ... ok
+test_rotation_requires_heading_to_match_a_tangent (test_formation_kinematics.FormationKinematicsTests) ... ok
+test_rotation_reverse_travel_requires_allow_reverse (test_formation_kinematics.FormationKinematicsTests) ... ok
+test_spin_requires_an_identically_fixed_center (test_formation_kinematics.FormationKinematicsTests) ... ok
+test_status_never_claims_execution (test_formation_kinematics.FormationKinematicsTests) ... ok
+test_translation_a_forward_and_reverse_are_signed_consistently (test_formation_kinematics.FormationKinematicsTests) ... ok
+test_translation_audit_uses_the_independent_center_derivative (test_formation_kinematics.FormationKinematicsTests) ... ok
+test_world_headings_include_the_formation_heading_offset (test_formation_kinematics.FormationKinematicsTests) ... ok
+
+----------------------------------------------------------------------
+Ran 28 tests in 0.008s
+
+OK
+# exit_code: 0
+# finished_utc: 2026-11-12T05:32:39Z

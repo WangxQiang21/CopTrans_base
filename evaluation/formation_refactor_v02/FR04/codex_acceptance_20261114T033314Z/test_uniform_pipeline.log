@@ -1,0 +1,29 @@
+test_f01_exact_hold (test_uniform_pipeline.UniformPipelineTest) ... FR04 F01_hold status=NO_MOTION reason=OK search_wall=0.000012s pipeline_wall=0.012761s T_end=0.0 expansions=0 candidates=0 terminal_audits=0
+ok
+test_f02_forward (test_uniform_pipeline.UniformPipelineTest) ... FR04 F02_forward status=SUCCESS reason=OK search_wall=1.841090s pipeline_wall=2.107889s T_end=9.368306005450883 expansions=3 candidates=429 terminal_audits=1
+ok
+test_f03_reverse (test_uniform_pipeline.UniformPipelineTest) ... FR04 F03_reverse status=SUCCESS reason=OK search_wall=1.809699s pipeline_wall=2.068618s T_end=9.368306005450883 expansions=3 candidates=429 terminal_audits=1
+ok
+test_f04_lateral (test_uniform_pipeline.UniformPipelineTest) ... FR04 F04_lateral status=SUCCESS reason=OK search_wall=4.601149s pipeline_wall=4.870228s T_end=13.19985989637642 expansions=9 candidates=1302 terminal_audits=1
+ok
+test_f05_diagonal (test_uniform_pipeline.UniformPipelineTest) ... FR04 F05_diagonal status=SUCCESS reason=OK search_wall=3.330391s pipeline_wall=3.762703s T_end=18.551871641156414 expansions=6 candidates=869 terminal_audits=1
+ok
+test_f06_in_place_positive_90 (test_uniform_pipeline.UniformPipelineTest) ... FR04 F06_in_place_positive_90 status=SUCCESS reason=OK search_wall=13.804899s pipeline_wall=14.404164s T_end=30.44149705334398 expansions=27 candidates=4367 terminal_audits=3
+ok
+test_f07_in_place_negative_90 (test_uniform_pipeline.UniformPipelineTest) ... FR04 F07_in_place_negative_90 status=SUCCESS reason=OK search_wall=14.055658s pipeline_wall=14.647272s T_end=30.44149705334398 expansions=27 candidates=4390 terminal_audits=3
+ok
+test_f08_translate_and_rotate (test_uniform_pipeline.UniformPipelineTest) ... FR04 F08_translate_and_rotate status=SUCCESS reason=OK search_wall=16.265494s pipeline_wall=17.106583s T_end=39.80980305879486 expansions=31 candidates=5208 terminal_audits=3
+ok
+test_f09_enclosed_obstacle_no_solution (test_uniform_pipeline.UniformPipelineTest) ... FR04 F09_enclosed_obstacle status=NO_SOLUTION reason=NO_SOLUTION search_wall=0.045062s pipeline_wall=0.051059s T_end=None expansions=1 candidates=143 terminal_audits=0
+ok
+test_f10_out_of_bounds_goal_rejected (test_uniform_pipeline.UniformPipelineTest) ... FR04 F10_out_of_bounds status=REQUEST_REJECTED reason=GOAL_CENTER_OUT_OF_BOUNDS search_wall=-1.000000s pipeline_wall=0.003573s T_end=None expansions=-1 candidates=-1 terminal_audits=0
+ok
+test_f11_deliberate_expansion_budget_exhaustion (test_uniform_pipeline.UniformPipelineTest) ... FR04 F11_budget_exhausted status=BUDGET_EXHAUSTED reason=EXPANSION_BUDGET_EXHAUSTED search_wall=0.500737s pipeline_wall=0.505784s T_end=None expansions=1 candidates=143 terminal_audits=0
+ok
+test_f12_terminal_screen_and_final_rebuilt_path_audit (test_uniform_pipeline.UniformPipelineTest) ... FR04 F12_final_reaudit status=SUCCESS reason=OK search_wall=1.797780s pipeline_wall=2.059856s T_end=9.368306005450883 expansions=3 candidates=429 terminal_audits=1
+ok
+
+----------------------------------------------------------------------
+Ran 12 tests in 65.128s
+
+OK

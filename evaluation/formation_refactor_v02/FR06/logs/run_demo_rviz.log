@@ -1,0 +1,133 @@
+[expv3] 地图比例 1.0，中心点固定；栅格尺寸保持不变。
+[expv3] 编队发布后端 uniform_v02（同一时刻只启动这一个发布后端）
+[expv3] 货物中心楔形编队，车体航向独立（新实验按配置策略初始化）；地图绝对比例 1.0
+[expv3] 构建 ROS overlay...
+[expv3] 启动 Demo：backend:=uniform_v02 rviz:=true playback_rate:=100 map_dir:=/tmp/expv3-map-scale.XuOmJ0/corridor_w2.8 scene:=manual_map auto_goal:=true rviz_config:=/tmp/expv3-map-scale.XuOmJ0/formation.rviz
+... logging to /home/wq/whut_thesis/expv3_multi_v02/evaluation/formation_refactor_v02/FR06/ros_home/log/95330c70-e037-11f1-a57b-1b4c90db486b/roslaunch-wq-ubuntu-3195941.log
+Checking log directory for disk usage. This may take a while.
+Press Ctrl-C to interrupt
+Done checking log file disk usage. Usage is <1GB.
+]2;/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch
+[1mstarted roslaunch server http://127.0.0.1:39419/[0m
+
+SUMMARY
+========
+
+PARAMETERS
+ * /formation_auto_goal/map_dir: /tmp/expv3-map-sc...
+ * /formation_goal_bridge/admission_backend: uniform_v02
+ * /formation_goal_bridge/allow_reverse: True
+ * /formation_goal_bridge/body_length_m: 0.738
+ * /formation_goal_bridge/body_width_m: 0.5
+ * /formation_goal_bridge/formation_id: cargo_wedge
+ * /formation_goal_bridge/frame_id: map
+ * /formation_goal_bridge/goal_heading_free: True
+ * /formation_goal_bridge/initial_heading_policy: cargo_heading
+ * /formation_goal_bridge/initial_plan_id: 600000
+ * /formation_goal_bridge/job_state_timeout_s: 3.0
+ * /formation_goal_bridge/map_timeout_s: 8.0
+ * /formation_goal_bridge/offsets: [[1.0, 0.0], [0.0...
+ * /formation_goal_bridge/playback_tf_timeout_s: 0.5
+ * /formation_goal_bridge/start_theta: 0.0
+ * /formation_goal_bridge/start_x: 10.0
+ * /formation_goal_bridge/start_y: 3.6
+ * /formation_goal_bridge/vehicle_ids: [1, 2, 3]
+ * /formation_playback/allow_reverse: True
+ * /formation_playback/backend: uniform_v02
+ * /formation_playback/body_length_m: 0.738
+ * /formation_playback/body_width_m: 0.5
+ * /formation_playback/formation_id: cargo_wedge
+ * /formation_playback/frame_id: map
+ * /formation_playback/goal_heading_free: True
+ * /formation_playback/initial_heading_policy: cargo_heading
+ * /formation_playback/offsets: [[1.0, 0.0], [0.0...
+ * /formation_playback/publish_tf: True
+ * /formation_playback/rate: 100
+ * /formation_playback/transport_ui: True
+ * /formation_playback/vehicle_ids: [1, 2, 3]
+ * /formation_uniform_planner/collision_margin: 0.05
+ * /formation_uniform_planner/frame_id: map
+ * /formation_uniform_planner/goal_heading_tol: 0.017453292519943295
+ * /formation_uniform_planner/goal_psi_tol: 0.017453292519943295
+ * /formation_uniform_planner/goal_xy_tol: 0.02
+ * /formation_uniform_planner/max_expansions: 10000
+ * /formation_uniform_planner/max_seconds: 30.0
+ * /formation_uniform_planner/playback_finish_grace_s: 3.0
+ * /formation_uniform_planner/playback_start_timeout_s: 5.0
+ * /formation_uniform_planner/publication_dt: 0.02
+ * /formation_uniform_planner/sweep_spacing: 0.01
+ * /formation_uniform_planner/translation_step: 1.0
+ * /fwis_map_publisher/map_dir: /tmp/expv3-map-sc...
+ * /rosdistro: noetic
+ * /rosversion: 1.17.4
+
+NODES
+  /
+    formation_auto_goal (fwis_v3_demo/auto_goal.py)
+    formation_goal_bridge (fwis_v3_demo/formation_goal_bridge.py)
+    formation_playback (fwis_v3_playback/formation_playback.py)
+    formation_uniform_planner (fwis_v3_optimizer/formation_uniform_planner_node.py)
+    fwis_map_publisher (fwis_map_server/map_publisher.py)
+    rviz (rviz/rviz)
+
+[1mROS_MASTER_URI=http://127.0.0.1:11483[0m
+]2;/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch http://127.0.0.1:11483
+[1mprocess[fwis_map_publisher-1]: started with pid [3195955][0m
+[1mprocess[formation_uniform_planner-2]: started with pid [3195957][0m
+[1mprocess[formation_playback-3]: started with pid [3195958][0m
+[1mprocess[formation_goal_bridge-4]: started with pid [3195959][0m
+[1mprocess[formation_auto_goal-5]: started with pid [3195960][0m
+[1mprocess[rviz-6]: started with pid [3195962][0m
+[INFO] [1794666494.970940]: [fwis_map_publisher] /map published: 320x320, res=0.050 m
+[INFO] [1794666494.972165]: [fwis_map_publisher] start pose latched at (6.00, 6.00, 0.00 rad)
+[INFO] [1794666494.992361]: [formation playback] common-clock display ready; GEOMETRY_ONLY is shown until an independent FEASIBLE status is received
+[INFO] [1794666495.080225]: [uniform planner] autonomous V0.2 planner ready; backend=uniform_v02 budget=10000 expansions / 30.0 s
+[INFO] [1794666495.086697]: [uniform planner] exact map 320x320 res=0.050 origin=(0.00, 0.00) signature=78ee2661bae50653
+[INFO] [1794666495.172920]: [formation goal bridge] ready: formation=cargo_wedge offsets=((1.0, 0.0), (0.0, 1.0), (0.0, -1.0)), start=(10.000, 3.600, 0.000), goal topic=/move_base_simple/goal
+[INFO] [1794666495.586915]: [v3 auto goal] sent center goal (10.000, 10.000, 1.571)
+[INFO] [1794666495.587374]: [formation goal bridge] plan 600000: start=(6.000, 6.000, 0.000) goal=(10.000, 10.000, 1.571) vehicles=3
+[INFO] [1794666495.588635]: [uniform planner] plan 600000 admitted from cargo_wedge: start=(6.000, 6.000, 0.000) goal=(10.000, 10.000, 1.571) free_headings=True reverse=True
+[INFO] [1794666495.588953]: [formation goal bridge] start from manual start; body headings {1: 0.0, 2: 0.0, 3: 0.0}
+[1m[formation_auto_goal-5] process has finished cleanly
+log file: /home/wq/whut_thesis/expv3_multi_v02/evaluation/formation_refactor_v02/FR06/ros_home/log/95330c70-e037-11f1-a57b-1b4c90db486b/formation_auto_goal-5*.log[0m
+[INFO] [1794666505.192176]: [uniform planner] plan 600000 published: T_end=33.024 s model_sha256=a39818b8125ce7d3cd212e16108f7e91b849c952f534dfcf3b559e4bac0cc967 samples=1659 wall=9.231 s verification_to_stamp_delay=0.3623 s
+[INFO] [1794666505.194169]: [formation goal bridge] plan 600000 FEASIBLE and published
+[INFO] [1794666505.444544]: [formation playback] accepted uniform_v02 plan 600000 formation cargo_wedge model_sha256=a39818b8125ce7d3cd212e16108f7e91b849c952f534dfcf3b559e4bac0cc967: 3 vehicles, 1659 shared samples, T_end=33.024494 s
+[INFO] [1794666505.461570]: [formation playback] plan=600000 state=PLAYING elapsed=0.261073 clamped=0.261073 fraction=0.053582 executable=True
+[INFO] [1794666505.462008]: [uniform planner] plan 600000 playback confirmed
+[INFO] [1794666538.252219]: [formation playback] plan=600000 state=HOLD_END elapsed=33.045216 clamped=33.024494 fraction=0.000000 executable=True
+[INFO] [1794666538.252849]: [uniform planner] plan 600000 HOLD_END; busy released
+[INFO] [1794666538.253327]: [formation goal bridge] plan 600000 FEASIBLE and published
+[rviz-6] killing on exit
+[formation_goal_bridge-4] killing on exit
+[formation_playback-3] killing on exit
+[formation_uniform_planner-2] killing on exit
+[fwis_map_publisher-1] killing on exit
+Exception in thread Thread-5:
+Traceback (most recent call last):
+  File "/usr/lib/python3.8/threading.py", line 932, in _bootstrap_inner
+    self.run()
+  File "/opt/ros/noetic/lib/python3/dist-packages/rospy/timer.py", line 240, in run
+    self._callback(TimerEvent(last_expected, last_real, current_expected, current_real, last_duration))
+  File "/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_playback/scripts/formation_playback.py", line 59, in call
+    return method(self, *args, **kwargs)
+  File "/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_playback/scripts/formation_playback.py", line 428, in tick
+    self._publish_tick()
+  File "/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_playback/scripts/formation_playback.py", line 505, in _publish_tick
+    self.marker_pub.publish(self._marker_array(markers, now))
+  File "/opt/ros/noetic/lib/python3/dist-packages/rospy/topics.py", line 882, in publish
+    self.impl.publish(data)
+  File "/opt/ros/noetic/lib/python3/dist-packages/rospy/topics.py", line 1041, in publish
+    raise ROSException("publish() to a closed topic")
+rospy.exceptions.ROSException: publish() to a closed topic
+[0m[INFO] [1794666494.841970470]: rviz version 1.14.26[0m
+[0m[INFO] [1794666494.842006090]: compiled against Qt version 5.12.8[0m
+[0m[INFO] [1794666494.842016776]: compiled against OGRE version 1.9.0 (Ghadamon)[0m
+[0m[INFO] [1794666494.844853295]: Forcing OpenGl version 0.[0m
+[0m[INFO] [1794666495.829831883]: Stereo is NOT SUPPORTED[0m
+[0m[INFO] [1794666495.829906685]: OpenGL device: NVIDIA GeForce RTX 4060 Laptop GPU/PCIe/SSE2[0m
+[0m[INFO] [1794666495.829924495]: OpenGl version: 4.6 (GLSL 4.6).[0m
+[0m[INFO] [1794666496.178177561]: Creating 1 swatches[0m
+shutting down processing monitor...
+... shutting down processing monitor complete
+[1mdone[0m

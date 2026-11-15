@@ -1,0 +1,119 @@
+test_f01_exact_hold (tests.test_uniform_pipeline.UniformPipelineTest) ... FR04 F01_hold status=NO_MOTION reason=OK search_wall=0.000013s pipeline_wall=0.012286s T_end=0.0 expansions=0 candidates=0 terminal_audits=0
+ok
+test_f02_forward (tests.test_uniform_pipeline.UniformPipelineTest) ... FR04 F02_forward status=SUCCESS reason=OK search_wall=1.764054s pipeline_wall=2.021929s T_end=9.368306005450883 expansions=3 candidates=429 terminal_audits=1
+ok
+test_f03_reverse (tests.test_uniform_pipeline.UniformPipelineTest) ... FR04 F03_reverse status=SUCCESS reason=OK search_wall=1.747254s pipeline_wall=2.004887s T_end=9.368306005450883 expansions=3 candidates=429 terminal_audits=1
+ok
+test_f04_lateral (tests.test_uniform_pipeline.UniformPipelineTest) ... FR04 F04_lateral status=SUCCESS reason=OK search_wall=4.590241s pipeline_wall=4.859358s T_end=13.19985989637642 expansions=9 candidates=1302 terminal_audits=1
+ok
+test_f05_diagonal (tests.test_uniform_pipeline.UniformPipelineTest) ... FR04 F05_diagonal status=SUCCESS reason=OK search_wall=3.326494s pipeline_wall=3.764565s T_end=18.551871641156414 expansions=6 candidates=869 terminal_audits=1
+ok
+test_f06_in_place_positive_90 (tests.test_uniform_pipeline.UniformPipelineTest) ... FR04 F06_in_place_positive_90 status=SUCCESS reason=OK search_wall=13.760056s pipeline_wall=14.369433s T_end=30.44149705334398 expansions=27 candidates=4367 terminal_audits=3
+ok
+test_f07_in_place_negative_90 (tests.test_uniform_pipeline.UniformPipelineTest) ... FR04 F07_in_place_negative_90 status=SUCCESS reason=OK search_wall=13.983178s pipeline_wall=14.573987s T_end=30.44149705334398 expansions=27 candidates=4390 terminal_audits=3
+ok
+test_f08_translate_and_rotate (tests.test_uniform_pipeline.UniformPipelineTest) ... FR04 F08_translate_and_rotate status=SUCCESS reason=OK search_wall=16.141107s pipeline_wall=16.977913s T_end=39.80980305879486 expansions=31 candidates=5208 terminal_audits=3
+ok
+test_f09_enclosed_obstacle_no_solution (tests.test_uniform_pipeline.UniformPipelineTest) ... FR04 F09_enclosed_obstacle status=NO_SOLUTION reason=NO_SOLUTION search_wall=0.042212s pipeline_wall=0.048132s T_end=None expansions=1 candidates=143 terminal_audits=0
+ok
+test_f10_out_of_bounds_goal_rejected (tests.test_uniform_pipeline.UniformPipelineTest) ... FR04 F10_out_of_bounds status=REQUEST_REJECTED reason=GOAL_CENTER_OUT_OF_BOUNDS search_wall=-1.000000s pipeline_wall=0.003570s T_end=None expansions=-1 candidates=-1 terminal_audits=0
+ok
+test_f11_deliberate_expansion_budget_exhaustion (tests.test_uniform_pipeline.UniformPipelineTest) ... FR04 F11_budget_exhausted status=BUDGET_EXHAUSTED reason=EXPANSION_BUDGET_EXHAUSTED search_wall=0.497712s pipeline_wall=0.502849s T_end=None expansions=1 candidates=143 terminal_audits=0
+ok
+test_f12_terminal_screen_and_final_rebuilt_path_audit (tests.test_uniform_pipeline.UniformPipelineTest) ... FR04 F12_final_reaudit status=SUCCESS reason=OK search_wall=1.749631s pipeline_wall=2.007146s T_end=9.368306005450883 expansions=3 candidates=429 terminal_audits=1
+ok
+test_f13_in_tolerance_goal_and_free_terminal_headings (tests.test_uniform_pipeline.UniformPipelineTest) ... FR04 F13_tolerant_goal_free_headings status=SUCCESS reason=OK search_wall=1.859311s pipeline_wall=2.126432s T_end=9.668306005450882 expansions=3 candidates=555 terminal_audits=1
+ok
+test_f14_in_tolerance_hold_and_free_terminal_headings (tests.test_uniform_pipeline.UniformPipelineTest) ... FR04 F14_tolerant_hold status=NO_MOTION reason=OK search_wall=0.000012s pipeline_wall=0.012007s T_end=0.0 expansions=0 candidates=0 terminal_audits=0
+ok
+test_f15_wrong_start_and_goal_rebuild_rejected (tests.test_uniform_pipeline.UniformPipelineTest) ... FR04 F15_wrong_rebuild status=AUDIT_REJECTED reason=PLAN_START_MISMATCH search_wall=1.768594s pipeline_wall=1.774888s T_end=None expansions=3 candidates=429 terminal_audits=1
+ok
+test_f16_request_id_contract_mismatch_rejected (tests.test_uniform_pipeline.UniformPipelineTest) ... FR04 F16_plan_id_mismatch status=AUDIT_REJECTED reason=PLAN_IDENTITY_MISMATCH search_wall=1.760933s pipeline_wall=1.801119s T_end=None expansions=3 candidates=429 terminal_audits=1
+ok
+test_f17_same_endpoints_but_different_path_rejected (tests.test_uniform_pipeline.UniformPipelineTest) ... FR04 F17_same_endpoints_other_path status=AUDIT_REJECTED reason=PLAN_EDGE_SEQUENCE_MISMATCH search_wall=1.753937s pipeline_wall=1.760206s T_end=None expansions=3 candidates=429 terminal_audits=1
+ok
+test_f18_timing_limit_contract_mismatch_rejected (tests.test_uniform_pipeline.UniformPipelineTest) ... FR04 F18_timing_limit_mismatch status=AUDIT_REJECTED reason=PLAN_IDENTITY_MISMATCH search_wall=1.762905s pipeline_wall=1.769166s T_end=None expansions=3 candidates=429 terminal_audits=1
+ok
+test_f19_same_edge_count_same_endpoints_other_controls_rejected (tests.test_uniform_pipeline.UniformPipelineTest) ... FR04 F19_same_count_other_controls status=AUDIT_REJECTED reason=PLAN_EDGE_SEQUENCE_MISMATCH search_wall=1.757513s pipeline_wall=1.763716s T_end=None expansions=3 candidates=429 terminal_audits=1
+ok
+test_S01_state_alias_keys_and_exact_representative (tests.test_uniform_search.UniformSearchAcceptance)
+Same q_F with different headings/mode/wheel must not share a key. ... ok
+test_S02_tangent_blocks_A_and_S_unlocks_it (tests.test_uniform_search.UniformSearchAcceptance)
+A straight without tangent headings is rejected; after S it passes. ... ok
+test_S03_same_goal_forward_and_reverse (tests.test_uniform_search.UniformSearchAcceptance)
+The same goal can be reached with forward and reverse A gears. ... ok
+test_S04_nonzero_pivot_two_directions_and_step_limit (tests.test_uniform_search.UniformSearchAcceptance)
+Both rotation directions at a nonzero pivot, and the 10 deg limit. ... ok
+test_S05_mid_sweep_and_spin_obstacles_rejected (tests.test_uniform_search.UniformSearchAcceptance)
+Obstacles hit only inside a sweep reject the successor. ... ok
+test_S06_wall_edge_angle_availability (tests.test_uniform_search.UniformSearchAcceptance)
+A wall admits one pivot direction and rejects the other. ... ok
+test_S07_free_terminal_heading (tests.test_uniform_search.UniformSearchAcceptance)
+A placeholder goal theta must not exclude a reachable state. ... ok
+test_S08_every_legal_successor_class_passes_fr02 (tests.test_uniform_search.UniformSearchAcceptance)
+Each legal successor class is audited by FR02, with real setup cost. ... ok
+test_S10_expansion_does_not_run_full_timing_or_audit (tests.test_uniform_search.UniformSearchAcceptance)
+Successor expansion calls neither S8 scheduling nor the S9 audit. ... ok
+test_S11_small_angle_S_alignment_kept_by_finite_labels (tests.test_uniform_search.UniformSearchAcceptance)
+A same-bin S alignment that unlocks A must survive the table. ... ok
+test_S12_finite_label_domain_and_consistency (tests.test_uniform_search.UniformSearchAcceptance)
+Labels are finite and equal the A schemes the generator accepts. ... ok
+test_B01_legal_plans_and_model_roundtrip (tests.test_uniform_quality.UniformQualityAcceptance) ... ok
+test_B02_heading_direction_curvature_speed_tamper (tests.test_uniform_quality.UniformQualityAcceptance) ... ok
+test_B03_mode_conflict_canonical_and_nan_tamper (tests.test_uniform_quality.UniformQualityAcceptance) ... ok
+test_B04_schedule_and_setup_tamper (tests.test_uniform_quality.UniformQualityAcceptance) ... ok
+test_B05_projection_only_tamper (tests.test_uniform_quality.UniformQualityAcceptance) ... ok
+test_B06_analytic_sweep_mid_motion_collision (tests.test_uniform_quality.UniformQualityAcceptance) ... ok
+test_B07_projection_rate_consistency_and_chord_tamper (tests.test_uniform_quality.UniformQualityAcceptance) ... ok
+test_B08_version_signature_identity_and_budget (tests.test_uniform_quality.UniformQualityAcceptance) ... ok
+test_B09_dynamic_confirmation_and_gate (tests.test_uniform_quality.UniformQualityAcceptance) ... ok
+test_after_end_holds_the_final_sample (tests.test_formation_playback.PlaybackClockTest) ... ok
+test_all_vehicles_use_one_clock_and_one_fraction (tests.test_formation_playback.PlaybackClockTest) ... ok
+test_before_stamp_holds_the_first_sample (tests.test_formation_playback.PlaybackClockTest) ... ok
+test_heading_interpolation_takes_the_short_arc (tests.test_formation_playback.PlaybackClockTest) ... ok
+test_mode_is_piecewise_constant_from_the_lower_sample (tests.test_formation_playback.PlaybackClockTest) ... ok
+test_single_sample_hold_is_the_static_terminal_state (tests.test_formation_playback.PlaybackClockTest) ... ok
+test_status_document_names_the_single_time_source (tests.test_formation_playback.PlaybackClockTest) ... ok
+test_audited_status_allows_feasible_label (tests.test_formation_playback.PlaybackMarkerTest) ... ok
+test_clear_is_a_single_deleteall_marker (tests.test_formation_playback.PlaybackMarkerTest) ... ok
+test_cleared_and_invalid_status_documents_are_strict (tests.test_formation_playback.PlaybackMarkerTest) ... ok
+test_marker_ids_are_unique_and_every_vehicle_is_present (tests.test_formation_playback.PlaybackMarkerTest) ... ok
+test_mode_band_colors_follow_each_sample_mode (tests.test_formation_playback.PlaybackMarkerTest) ... ok
+test_obb_uses_the_body_heading_not_the_formation_heading (tests.test_formation_playback.PlaybackMarkerTest) ... ok
+test_tf_frames_are_unique_and_formation_scoped (tests.test_formation_playback.PlaybackMarkerTest) ... ok
+test_unpublished_status_keeps_geometry_only_label (tests.test_formation_playback.PlaybackMarkerTest) ... ok
+test_vehicle_namespace_contains_formation_and_vehicle (tests.test_formation_playback.PlaybackMarkerTest) ... ok
+test_duplicate_vehicle_ids_fail_closed (tests.test_formation_playback.PlaybackTrajectoryTest) ... ok
+test_fields_validate_and_report_shared_samples (tests.test_formation_playback.PlaybackTrajectoryTest) ... ok
+test_nonfinite_sample_fails_closed (tests.test_formation_playback.PlaybackTrajectoryTest) ... ok
+test_per_vehicle_time_must_match_the_shared_axis (tests.test_formation_playback.PlaybackTrajectoryTest) ... ok
+test_time_axis_must_start_at_zero_and_increase (tests.test_formation_playback.PlaybackTrajectoryTest) ... ok
+test_zero_stamp_is_not_a_common_clock (tests.test_formation_playback.PlaybackTrajectoryTest) ... ok
+test_hold_rejects_colliding_start_pose (tests.test_formation_hold.ZeroMotionHoldTest) ... ok
+test_hold_rejects_fake_spin_mode (tests.test_formation_hold.ZeroMotionHoldTest) ... ok
+test_hold_rejects_map_signature_mismatch (tests.test_formation_hold.ZeroMotionHoldTest) ... ok
+test_hold_rejects_multiple_samples (tests.test_formation_hold.ZeroMotionHoldTest) ... ok
+test_hold_rejects_nonzero_center_speed (tests.test_formation_hold.ZeroMotionHoldTest) ... ok
+test_hold_rejects_shifted_center (tests.test_formation_hold.ZeroMotionHoldTest) ... ok
+test_hold_rejects_wrong_body_heading (tests.test_formation_hold.ZeroMotionHoldTest) ... ok
+test_static_wedge_hold_is_feasible_and_strictly_static (tests.test_formation_hold.ZeroMotionHoldTest) ... ok
+test_distinct_goal_is_not_a_hold (tests.test_formation_hold.ZeroMotionSeedTest) ... ok
+test_empty_seed_is_a_zero_motion_candidate (tests.test_formation_hold.ZeroMotionSeedTest) ... ok
+test_nonzero_primitive_is_not_a_hold (tests.test_formation_hold.ZeroMotionSeedTest) ... ok
+test_seed_identity_mismatch_is_not_a_hold (tests.test_formation_hold.ZeroMotionSeedTest) ... ok
+test_seed_start_mismatch_is_not_a_hold (tests.test_formation_hold.ZeroMotionSeedTest) ... ok
+test_zero_length_primitives_are_a_zero_motion_candidate (tests.test_formation_hold.ZeroMotionSeedTest) ... ok
+test_authoritative_ids_offsets_and_dimensions (tests.test_transport_contract.TransportContractTest) ... ok
+test_cargo_heading_policy_initialises_every_body_to_cargo (tests.test_transport_contract.TransportContractTest) ... ok
+test_contract_rejects_swapped_or_incomplete_values (tests.test_transport_contract.TransportContractTest) ... ok
+test_fixed_wedge_distances_and_radii (tests.test_transport_contract.TransportContractTest) ... ok
+test_load_contract_requires_every_field (tests.test_transport_contract.TransportContractTest) ... ok
+test_tangent_policy_is_the_analytic_rotation_baseline (tests.test_transport_contract.TransportContractTest) ... ok
+test_cargo_heading_lock_is_explicitly_non_default (tests.test_transport_contract.TransportLaunchTest) ... ok
+test_every_demo_node_loads_the_one_authoritative_config (tests.test_transport_contract.TransportLaunchTest) ... ok
+test_no_second_hard_coded_offset_list_survives (tests.test_transport_contract.TransportLaunchTest) ... ok
+
+----------------------------------------------------------------------
+Ran 84 tests in 113.654s
+
+OK

@@ -1,0 +1,244 @@
+"""Write the FR04 evidence and command manifests.
+
+Run from the worktree root:
+
+    python3 -I evaluation/formation_refactor_v02/FR04/make_manifest.py
+
+The evidence manifest hashes every file under FR04 except its own two output
+files.  The command manifest records the commands that produced the evidence,
+their exit codes and where their raw output lives.  Nothing here reruns a test
+or rewrites a result.
+"""
+import hashlib
+import json
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parents[2]
+EVIDENCE_OUT = HERE / "evidence_manifest.json"
+COMMAND_OUT = HERE / "command_manifest.json"
+EXCLUDE = {EVIDENCE_OUT.name, COMMAND_OUT.name}
+
+COMMANDS = [
+    {
+        "order": 1,
+        "purpose": "compile the FR04 search, pipeline and test modules",
+        "command": "python3 -m py_compile uniform_search.py uniform_pipeline.py "
+                   "tests/test_uniform_pipeline.py",
+        "exit_code": 0,
+        "output": None,
+    },
+    {
+        "order": 2,
+        "purpose": "first FR04 acceptance run (failed before search)",
+        "command": "OPENBLAS_NUM_THREADS=1 python3 -m unittest discover -s tests "
+                   "-p 'test_uniform_pipeline.py' -v",
+        "exit_code": 1,
+        "output": "failures/test_uniform_pipeline_initial_center_iteration_error.log",
+        "note": "12 TypeError errors in _goal_center_outside; FormationModel."
+                "centers() returns a dict",
+    },
+    {
+        "order": 3,
+        "purpose": "second FR04 acceptance run (11/12; reverse assertion only)",
+        "command": "OPENBLAS_NUM_THREADS=1 python3 -m unittest discover -s tests "
+                   "-p 'test_uniform_pipeline.py' -v",
+        "exit_code": 1,
+        "output": "failures/reverse_assertion_run/test_uniform_pipeline.log",
+        "note": "F03 asserted a negative parameter length; FR01 encodes "
+                "reverse through per-vehicle direction=-1",
+    },
+    {
+        "order": 4,
+        "purpose": "third FR04 run, 12/12 but before terminal-budget hardening",
+        "command": "OPENBLAS_NUM_THREADS=1 python3 -m unittest discover -s tests "
+                   "-p 'test_uniform_pipeline.py' -v",
+        "exit_code": 0,
+        "output": "previous_runs/round1_pre_terminal_budget_fix/"
+                  "test_uniform_pipeline.log",
+    },
+    {
+        "order": 5,
+        "purpose": "fourth FR04 run, 12/12 before repo-relative source-hash keys",
+        "command": "OPENBLAS_NUM_THREADS=1 python3 -m unittest discover -s tests "
+                   "-p 'test_uniform_pipeline.py' -v",
+        "exit_code": 0,
+        "output": "previous_runs/round2_final_before_path_keys/"
+                  "test_uniform_pipeline.log",
+    },
+    {
+        "order": 6,
+        "purpose": "final FR04 acceptance run",
+        "command": "OPENBLAS_NUM_THREADS=1 python3 -m unittest discover -s tests "
+                   "-p 'test_uniform_pipeline.py' -v",
+        "exit_code": 0,
+        "output": "test_uniform_pipeline.log",
+        "note": "12/12 in 38.3 s; writes pipeline_results.json and cases/",
+    },
+    {
+        "order": 7,
+        "purpose": "accepted FR03 suite regression",
+        "command": "OPENBLAS_NUM_THREADS=1 python3 -m unittest discover -s tests "
+                   "-p 'test_uniform_search.py' -v",
+        "exit_code": 0,
+        "output": "logs_fr03_tests.log",
+        "note": "12/12 in 159.7 s",
+    },
+    {
+        "order": 8,
+        "purpose": "ten accepted related suites",
+        "command": "for t in test_formation_collision test_formation_geometry "
+                   "test_formation_hold test_formation_kinematics "
+                   "test_formation_quality test_formation_retiming "
+                   "test_uniform_motion test_uniform_quality "
+                   "test_uniform_timing test_uniform_trajectory; do "
+                   "OPENBLAS_NUM_THREADS=1 python3 -m unittest discover -s tests "
+                   "-p \"$t.py\" -v > regression/$t.log 2>&1; done",
+        "exit_code": 0,
+        "output": "logs_regression_suites.log",
+        "note": "145/145 tests",
+    },
+    {
+        "order": 9,
+        "purpose": "accepted-source, frozen-document and FR03-prefix verification",
+        "command": "python3 -I evaluation/formation_refactor_v02/FR04/"
+                   "verify_baseline.py",
+        "exit_code": 0,
+        "output": "baseline_verification.json",
+    },
+    {
+        "order": 10,
+        "purpose": "write this evidence and command manifest",
+        "command": "python3 -I evaluation/formation_refactor_v02/FR04/"
+                   "make_manifest.py",
+        "exit_code": 0,
+        "output": "evidence_manifest.json, command_manifest.json",
+    },
+    {
+        "order": 11,
+        "purpose": "FR04-R1 pre-fix smoke run that accidentally used the "
+                   "default evidence path",
+        "command": "OPENBLAS_NUM_THREADS=1 python3 -m unittest "
+                   "tests.test_uniform_pipeline.UniformPipelineTest."
+                   "test_f01_exact_hold tests.test_uniform_pipeline."
+                   "UniformPipelineTest.test_f02_forward -v",
+        "exit_code": 0,
+        "output": "rework_01/accidental_overwrite/",
+        "note": "overwrote FR04/pipeline_results.json and cases/F01,F02; "
+                "disclosed in rework_01/REWORK_REPORT.md section 6.1",
+    },
+    {
+        "order": 12,
+        "purpose": "FR04-R1 final pipeline suite, 19/19 in 44.782 s",
+        "command": "FR04_ARTIFACT_DIR=$PWD/evaluation/formation_refactor_v02/"
+                   "FR04/rework_01/final FR04_RESULTS_PATH=$PWD/evaluation/"
+                   "formation_refactor_v02/FR04/rework_01/final/"
+                   "pipeline_results.json OPENBLAS_NUM_THREADS=1 python3 -m "
+                   "unittest discover -s tests -p 'test_uniform_pipeline.py' "
+                   "-v",
+        "exit_code": 0,
+        "output": "rework_01/final/test_uniform_pipeline.log",
+    },
+    {
+        "order": 13,
+        "purpose": "FR03 accepted suite regression after the rework",
+        "command": "OPENBLAS_NUM_THREADS=1 python3 -m unittest discover -s "
+                   "tests -p 'test_uniform_search.py' -v",
+        "exit_code": 0,
+        "output": "rework_01/fr03_tests.log",
+        "note": "12/12 in 158.544 s",
+    },
+    {
+        "order": 14,
+        "purpose": "ten accepted related suites after the rework",
+        "command": "for t in test_formation_collision test_formation_geometry "
+                   "test_formation_hold test_formation_kinematics "
+                   "test_formation_quality test_formation_retiming "
+                   "test_uniform_motion test_uniform_quality "
+                   "test_uniform_timing test_uniform_trajectory; do "
+                   "OPENBLAS_NUM_THREADS=1 python3 -m unittest discover -s "
+                   "tests -p \"$t.py\" -v > rework_01/regression/$t.log "
+                   "2>&1; done",
+        "exit_code": 0,
+        "output": "rework_01/logs_regression_suites.log",
+        "note": "145/145 tests, all ten exit codes 0",
+    },
+    {
+        "order": 15,
+        "purpose": "post-fix Codex fault-injection probe with rejection-safe "
+                   "plan access",
+        "command": "OPENBLAS_NUM_THREADS=1 PYTHONDONTWRITEBYTECODE=1 python3 "
+                   "evaluation/formation_refactor_v02/FR04/rework_01/"
+                   "codex_probe/adapted_independent_probes.py",
+        "exit_code": 0,
+        "output": "rework_01/codex_probe/"
+                  "adapted_independent_probes.{json,log}",
+    },
+    {
+        "order": 16,
+        "purpose": "baseline verification without overwriting the original "
+                   "baseline_verification.json",
+        "command": "python3 -I evaluation/formation_refactor_v02/FR04/"
+                   "rework_01/verify_baseline_rework.py",
+        "exit_code": 0,
+        "output": "rework_01/baseline_verification.json",
+        "note": "all_accepted_match, all_frozen_match and fr03_prefix_match "
+                "are true",
+    },
+    {
+        "order": 17,
+        "purpose": "preserved rework failure and intermediate rounds",
+        "command": "see rework_01/COMMANDS notes and rework_01/REWORK_REPORT.md",
+        "exit_code": 1,
+        "output": "rework_01/iteration_02/, rework_01/iteration_03/",
+        "note": "F18 self-audit fixture mismatch; over-strict allow_reverse "
+                "contract exhausted F06/F07/F08; final 19/19 is order 12",
+    },
+    {
+        "order": 18,
+        "purpose": "rewrite evidence and command manifests after the rework",
+        "command": "python3 -I evaluation/formation_refactor_v02/FR04/"
+                   "make_manifest.py",
+        "exit_code": 0,
+        "output": "evidence_manifest.json, command_manifest.json",
+    },
+]
+
+
+def sha256(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def main():
+    files = []
+    for path in sorted(HERE.rglob("*")):
+        if not path.is_file() or path.name in EXCLUDE:
+            continue
+        files.append({
+            "path": str(path.relative_to(HERE)),
+            "bytes": path.stat().st_size,
+            "sha256": sha256(path),
+        })
+    evidence = {
+        "schema": "fr04.evidence_manifest.v1",
+        "root": "evaluation/formation_refactor_v02/FR04",
+        "excluded_outputs": sorted(EXCLUDE),
+        "file_count": len(files),
+        "total_bytes": sum(item["bytes"] for item in files),
+        "files": files,
+    }
+    commands = {
+        "schema": "fr04.command_manifest.v1",
+        "worktree": str(ROOT),
+        "git_commit": None,
+        "git_commit_note": "no Git commit was made for FR04",
+        "commands": COMMANDS,
+    }
+    EVIDENCE_OUT.write_text(json.dumps(evidence, indent=1) + "\n")
+    COMMAND_OUT.write_text(json.dumps(commands, indent=1) + "\n")
+    print(json.dumps({"file_count": len(files),
+                      "total_bytes": evidence["total_bytes"]}, indent=1))
+
+
+if __name__ == "__main__":
+    main()

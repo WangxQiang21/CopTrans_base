@@ -1,0 +1,642 @@
+{
+  "cases": {
+    "initial_goal_straight": {
+      "a_labels": [
+        "A_straight_goal_gear+++"
+      ],
+      "accepted_A_labels": [
+        "A_straight_goal_gear+++"
+      ],
+      "key": {
+        "a_labels": [
+          "A_straight_goal_gear+++"
+        ],
+        "heading_label": [
+          [
+            1,
+            0,
+            1
+          ],
+          [
+            2,
+            0,
+            1
+          ],
+          [
+            3,
+            0,
+            1
+          ]
+        ],
+        "mode": "A",
+        "psi_bin": 0,
+        "wheel_label": [
+          [
+            1,
+            "A",
+            0
+          ],
+          [
+            2,
+            "A",
+            0
+          ],
+          [
+            3,
+            "A",
+            0
+          ]
+        ],
+        "xy_bin": [
+          0,
+          0
+        ]
+      },
+      "mode_and_wheel_still_distinguish_keys": true,
+      "state": {
+        "a_labels": [
+          "A_straight_goal_gear+++"
+        ],
+        "edge_primitive": null,
+        "g": 0.0,
+        "has_parent": false,
+        "headings": [
+          {
+            "theta": 0.0,
+            "vehicle_id": 1
+          },
+          {
+            "theta": 0.0,
+            "vehicle_id": 2
+          },
+          {
+            "theta": 0.0,
+            "vehicle_id": 3
+          }
+        ],
+        "mode": "A",
+        "qf": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "wheel": [
+          {
+            "control": 0.0,
+            "direction": 1,
+            "mode": "A",
+            "vehicle_id": 1,
+            "wheel_angles_rad": [
+              0.0,
+              0.0,
+              -0.0,
+              -0.0
+            ]
+          },
+          {
+            "control": 0.0,
+            "direction": 1,
+            "mode": "A",
+            "vehicle_id": 2,
+            "wheel_angles_rad": [
+              0.0,
+              0.0,
+              -0.0,
+              -0.0
+            ]
+          },
+          {
+            "control": 0.0,
+            "direction": 1,
+            "mode": "A",
+            "vehicle_id": 3,
+            "wheel_angles_rad": [
+              0.0,
+              0.0,
+              -0.0,
+              -0.0
+            ]
+          }
+        ]
+      },
+      "successors": [
+        {
+          "continuity": {
+            "heading_rad": 0.0,
+            "position_m": 0.0,
+            "psi_rad": 0.0
+          },
+          "cost_s": 1.25,
+          "end_headings": {
+            "1": 0.0,
+            "2": 0.0,
+            "3": 0.0
+          },
+          "end_qf": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "label": "A_straight_goal_gear+++",
+          "mode": "A",
+          "motion_proxy_s": 1.25,
+          "primitive": "A_STRAIGHT",
+          "setup_s": 0.0
+        }
+      ]
+    },
+    "nonzero_pivot_crop": {
+      "a_labels": [
+        "A_arc_crop_p0_2_pos_gear+++",
+        "A_arc_p0_2_neg_gear---",
+        "A_arc_p0_2_pos_gear+++"
+      ],
+      "accepted_A_labels": [
+        "A_arc_crop_p0_2_pos_gear+++",
+        "A_arc_p0_2_neg_gear---",
+        "A_arc_p0_2_pos_gear+++"
+      ],
+      "key": {
+        "a_labels": [
+          "A_arc_crop_p0_2_pos_gear+++",
+          "A_arc_p0_2_neg_gear---",
+          "A_arc_p0_2_pos_gear+++"
+        ],
+        "heading_label": [
+          [
+            1,
+            3,
+            1
+          ],
+          [
+            2,
+            0,
+            1
+          ],
+          [
+            3,
+            0,
+            1
+          ]
+        ],
+        "mode": "S",
+        "psi_bin": 0,
+        "wheel_label": [
+          [
+            1,
+            "S",
+            0
+          ],
+          [
+            2,
+            "S",
+            0
+          ],
+          [
+            3,
+            "S",
+            0
+          ]
+        ],
+        "xy_bin": [
+          0,
+          0
+        ]
+      },
+      "mode_and_wheel_still_distinguish_keys": true,
+      "state": {
+        "a_labels": [
+          "A_arc_crop_p0_2_pos_gear+++",
+          "A_arc_p0_2_neg_gear---",
+          "A_arc_p0_2_pos_gear+++"
+        ],
+        "edge_primitive": "S_SPIN",
+        "g": 2.922769491105498,
+        "has_parent": true,
+        "headings": [
+          {
+            "theta": 0.4636476090008061,
+            "vehicle_id": 1
+          },
+          {
+            "theta": 0.0,
+            "vehicle_id": 2
+          },
+          {
+            "theta": 0.0,
+            "vehicle_id": 3
+          }
+        ],
+        "mode": "S",
+        "qf": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "wheel": [
+          {
+            "control": 0.0,
+            "direction": 1,
+            "mode": "S",
+            "vehicle_id": 1,
+            "wheel_angles_rad": [
+              -0.9357695914045827,
+              0.9357695914045828,
+              0.9357695914045827,
+              -0.9357695914045828
+            ]
+          },
+          {
+            "control": 0.0,
+            "direction": 1,
+            "mode": "S",
+            "vehicle_id": 2,
+            "wheel_angles_rad": [
+              -0.9357695914045827,
+              0.9357695914045828,
+              0.9357695914045827,
+              -0.9357695914045828
+            ]
+          },
+          {
+            "control": 0.0,
+            "direction": 1,
+            "mode": "S",
+            "vehicle_id": 3,
+            "wheel_angles_rad": [
+              -0.9357695914045827,
+              0.9357695914045828,
+              0.9357695914045827,
+              -0.9357695914045828
+            ]
+          }
+        ]
+      },
+      "successors": [
+        {
+          "continuity": {
+            "heading_rad": 0.0,
+            "position_m": 0.0,
+            "psi_rad": 0.0
+          },
+          "cost_s": 3.685013871525447,
+          "end_headings": {
+            "1": 0.638180534200239,
+            "2": 0.17453292519943295,
+            "3": 0.17453292519943295
+          },
+          "end_qf": [
+            0.34729635533386066,
+            0.03038449397558396,
+            0.17453292519943295
+          ],
+          "label": "A_arc_p0_2_pos_gear+++",
+          "mode": "A",
+          "motion_proxy_s": 0.6544984694978735,
+          "primitive": "A_ARC",
+          "setup_s": 3.0305154020275737
+        },
+        {
+          "continuity": {
+            "heading_rad": 0.0,
+            "position_m": 0.0,
+            "psi_rad": 0.0
+          },
+          "cost_s": 3.685013871525447,
+          "end_headings": {
+            "1": 0.2891146838013732,
+            "2": -0.17453292519943295,
+            "3": -0.17453292519943295
+          },
+          "end_qf": [
+            -0.34729635533386066,
+            0.03038449397558396,
+            -0.17453292519943295
+          ],
+          "label": "A_arc_p0_2_neg_gear---",
+          "mode": "A",
+          "motion_proxy_s": 0.6544984694978735,
+          "primitive": "A_ARC",
+          "setup_s": 3.0305154020275737
+        },
+        {
+          "continuity": {
+            "heading_rad": 0.0,
+            "position_m": 0.0,
+            "psi_rad": 0.0
+          },
+          "cost_s": 8.921001627508435,
+          "end_headings": {
+            "1": 2.0344439357957027,
+            "2": 1.5707963267948966,
+            "3": 1.5707963267948966
+          },
+          "end_qf": [
+            2.0,
+            1.9999999999999998,
+            1.5707963267948966
+          ],
+          "label": "A_arc_crop_p0_2_pos_gear+++",
+          "mode": "A",
+          "motion_proxy_s": 5.890486225480862,
+          "primitive": "A_ARC",
+          "setup_s": 3.0305154020275737
+        }
+      ]
+    },
+    "nonzero_psi": {
+      "a_labels": [
+        "A_straight_goal_gear+++"
+      ],
+      "accepted_A_labels": [
+        "A_straight_goal_gear+++"
+      ],
+      "key": {
+        "a_labels": [
+          "A_straight_goal_gear+++"
+        ],
+        "heading_label": [
+          [
+            1,
+            3,
+            1
+          ],
+          [
+            2,
+            3,
+            1
+          ],
+          [
+            3,
+            3,
+            1
+          ]
+        ],
+        "mode": "S",
+        "psi_bin": 2,
+        "wheel_label": [
+          [
+            1,
+            "S",
+            0
+          ],
+          [
+            2,
+            "S",
+            0
+          ],
+          [
+            3,
+            "S",
+            0
+          ]
+        ],
+        "xy_bin": [
+          1,
+          -1
+        ]
+      },
+      "mode_and_wheel_still_distinguish_keys": true,
+      "state": {
+        "a_labels": [
+          "A_straight_goal_gear+++"
+        ],
+        "edge_primitive": "S_SPIN",
+        "g": 3.018734355192721,
+        "has_parent": true,
+        "headings": [
+          {
+            "theta": 0.5404195002705843,
+            "vehicle_id": 1
+          },
+          {
+            "theta": 0.5404195002705843,
+            "vehicle_id": 2
+          },
+          {
+            "theta": 0.5404195002705843,
+            "vehicle_id": 3
+          }
+        ],
+        "mode": "S",
+        "qf": [
+          0.3,
+          -0.2,
+          0.4
+        ],
+        "wheel": [
+          {
+            "control": 0.0,
+            "direction": 1,
+            "mode": "S",
+            "vehicle_id": 1,
+            "wheel_angles_rad": [
+              -0.9357695914045827,
+              0.9357695914045828,
+              0.9357695914045827,
+              -0.9357695914045828
+            ]
+          },
+          {
+            "control": 0.0,
+            "direction": 1,
+            "mode": "S",
+            "vehicle_id": 2,
+            "wheel_angles_rad": [
+              -0.9357695914045827,
+              0.9357695914045828,
+              0.9357695914045827,
+              -0.9357695914045828
+            ]
+          },
+          {
+            "control": 0.0,
+            "direction": 1,
+            "mode": "S",
+            "vehicle_id": 3,
+            "wheel_angles_rad": [
+              -0.9357695914045827,
+              0.9357695914045828,
+              0.9357695914045827,
+              -0.9357695914045828
+            ]
+          }
+        ]
+      },
+      "successors": [
+        {
+          "continuity": {
+            "heading_rad": 0.0,
+            "position_m": 0.0,
+            "psi_rad": 0.0
+          },
+          "cost_s": 3.5932099798544908,
+          "end_headings": {
+            "1": 0.5404195002705843,
+            "2": 0.5404195002705843,
+            "3": 0.5404195002705843
+          },
+          "end_qf": [
+            1.1574929257125441,
+            0.31449575542752656,
+            0.4
+          ],
+          "label": "A_straight_goal_gear+++",
+          "mode": "A",
+          "motion_proxy_s": 1.25,
+          "primitive": "A_STRAIGHT",
+          "setup_s": 2.3432099798544908
+        }
+      ]
+    },
+    "reverse_aligned": {
+      "a_labels": [
+        "A_straight_goal_gear---"
+      ],
+      "accepted_A_labels": [
+        "A_straight_goal_gear---"
+      ],
+      "key": {
+        "a_labels": [
+          "A_straight_goal_gear---"
+        ],
+        "heading_label": [
+          [
+            1,
+            -15,
+            -1
+          ],
+          [
+            2,
+            -15,
+            -1
+          ],
+          [
+            3,
+            -15,
+            -1
+          ]
+        ],
+        "mode": "S",
+        "psi_bin": 0,
+        "wheel_label": [
+          [
+            1,
+            "S",
+            0
+          ],
+          [
+            2,
+            "S",
+            0
+          ],
+          [
+            3,
+            "S",
+            0
+          ]
+        ],
+        "xy_bin": [
+          0,
+          0
+        ]
+      },
+      "mode_and_wheel_still_distinguish_keys": true,
+      "state": {
+        "a_labels": [
+          "A_straight_goal_gear---"
+        ],
+        "edge_primitive": "S_SPIN",
+        "g": 5.594676421503502,
+        "has_parent": true,
+        "headings": [
+          {
+            "theta": -2.6011731533192095,
+            "vehicle_id": 1
+          },
+          {
+            "theta": -2.6011731533192095,
+            "vehicle_id": 2
+          },
+          {
+            "theta": -2.6011731533192095,
+            "vehicle_id": 3
+          }
+        ],
+        "mode": "S",
+        "qf": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "wheel": [
+          {
+            "control": 0.0,
+            "direction": -1,
+            "mode": "S",
+            "vehicle_id": 1,
+            "wheel_angles_rad": [
+              -0.9357695914045827,
+              0.9357695914045828,
+              0.9357695914045827,
+              -0.9357695914045828
+            ]
+          },
+          {
+            "control": 0.0,
+            "direction": -1,
+            "mode": "S",
+            "vehicle_id": 2,
+            "wheel_angles_rad": [
+              -0.9357695914045827,
+              0.9357695914045828,
+              0.9357695914045827,
+              -0.9357695914045828
+            ]
+          },
+          {
+            "control": 0.0,
+            "direction": -1,
+            "mode": "S",
+            "vehicle_id": 3,
+            "wheel_angles_rad": [
+              -0.9357695914045827,
+              0.9357695914045828,
+              0.9357695914045827,
+              -0.9357695914045828
+            ]
+          }
+        ]
+      },
+      "successors": [
+        {
+          "continuity": {
+            "heading_rad": 0.0,
+            "position_m": 0.0,
+            "psi_rad": 0.0
+          },
+          "cost_s": 3.5932099798544908,
+          "end_headings": {
+            "1": -2.6011731533192095,
+            "2": -2.6011731533192095,
+            "3": -2.6011731533192095
+          },
+          "end_qf": [
+            0.8574929257125443,
+            0.5144957554275266,
+            0.0
+          ],
+          "label": "A_straight_goal_gear---",
+          "mode": "A",
+          "motion_proxy_s": 1.25,
+          "primitive": "A_STRAIGHT",
+          "setup_s": 2.3432099798544908
+        }
+      ]
+    }
+  },
+  "domain_bound": "8 goal-directed straight gear combos + <=20 fixed/cropped arc schemes x 8 gear combos",
+  "goal_absent_rule": "straight and cropped-arc labels omitted",
+  "label_rule": "a label is present iff the exact headings satisfy the FR01 required-heading set of that configuration scheme under the same goal, allow_reverse and gear combinations used by the generator; fixed/cropped arc labels use the same finite scheme list",
+  "schema": "fr03.rework_r1_label_domain.v1"
+}

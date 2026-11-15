@@ -1,0 +1,47 @@
+{
+  "task": "FR03",
+  "rework": "FR03-R1 / rework_01",
+  "status": "ACCEPTED",
+  "reviewer": "Codex",
+  "reviewed_at_utc": "2026-11-14T01:45:11.194074+00:00",
+  "review_date_local": "2026-11-14 Asia/Shanghai",
+  "branch": "refactor/formation-v02",
+  "head": "6227833011e2d92b711179bfdec979bb0b878b29",
+  "reviewed_source_sha256": {
+    "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_search.py": "982b2f96e1ab6dfcb3008d1e7232432bd861ebe8c8b9376e65bfbd96f8f96e83",
+    "tests/test_uniform_search.py": "87f3f032dc3732e59dd1c19282118d8ddbfb727a4d049609316ca6b462f997e5"
+  },
+  "report": "CODEX_ACCEPTANCE.md",
+  "detailed_report": "codex_acceptance_20261114T013949Z/ACCEPTANCE.md",
+  "evidence_directory": "codex_acceptance_20261114T013949Z",
+  "previous_acceptance": "codex_acceptance_20261114T013949Z/previous_acceptance/CODEX_ACCEPTANCE.json",
+  "resolved_findings": [
+    "FR03-R1_heading_key_alias_prunes_necessary_S_alignment"
+  ],
+  "blocking_findings": [],
+  "FR03_tests_passed": 12,
+  "related_regression_tests_passed": 145,
+  "original_key_probe_cases_passed": 2,
+  "library_preservation_contexts_passed": 15,
+  "local_measurement": {
+    "states": 200,
+    "candidates": 33567,
+    "generation_s": 44.08588538237382,
+    "collision_s": 148.0081273909891,
+    "peak_memory_bytes": 3792378
+  },
+  "acceptance_scope": "FR03 local finite A-capability labels, successors, representative rule, analytic collision and proxy cost under the documented default configuration and one consistent goal/config context. Not global search, strict dominance or full dynamic certification of every candidate.",
+  "FR04_interface_limitations": [
+    "Default fixed 10-degree nonzero-pivot A arcs remain UNIFORM_DYNAMIC_UNCONFIRMED/jerk in FR02; resolve separately before claiming a usable FR04 turning baseline.",
+    "Goal-dependent labels require goal-aware initialization and one goal/config per representative table.",
+    "The minimal A-capability label proof does not certify O-branch equivalence when allow_reverse=False."
+  ],
+  "FR01_FR02_remain_ACCEPTED": true,
+  "allowed_to_prepare_FR04": true,
+  "FR04_execution_authorized": false,
+  "FR04_started": false,
+  "implementation_modified_by_codex": false,
+  "tests_modified_by_codex": false,
+  "ROS_started": false,
+  "git_committed": false
+}

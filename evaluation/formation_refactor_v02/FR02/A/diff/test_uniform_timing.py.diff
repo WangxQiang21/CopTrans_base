@@ -1,0 +1,383 @@
+--- /dev/null
++++ b/tests/test_uniform_timing.py
+@@ -0,0 +1,380 @@
++"""FR02-A A01--A05: common timing, setup demands and V0.2 speed semantics.
++
++Run from the V0.2 worktree root:
++
++    FR02_TIMING_RESULTS_PATH=evaluation/formation_refactor_v02/FR02/A/timing_results.json \
++    OPENBLAS_NUM_THREADS=1 python3 -m unittest discover -s tests \
++        -p 'test_uniform_timing.py' -v
++"""
++from contextlib import contextmanager
++from datetime import datetime, timezone
++import json
++import math
++import os
++from pathlib import Path
++import platform
++import sys
++import unittest
++
++REPO_ROOT = Path(__file__).resolve().parents[1]
++PACKAGE_SRC = REPO_ROOT / "catkin_ws" / "src" / "fwis_v3_optimizer" / "src"
++if str(PACKAGE_SRC) not in sys.path:
++    sys.path.insert(0, str(PACKAGE_SRC))
++
++from fwis_v3_optimizer.core import Action
++from fwis_v3_optimizer.formation import FormationModel, FormationPose, VehicleOffset
++from fwis_v3_optimizer.formation_collision import VehicleShape
++from fwis_v3_optimizer.formation_kinematics import SPIN
++from fwis_v3_optimizer.formation_retiming import FormationTimingLimits
++from fwis_v3_optimizer.retiming import wheel_configuration
++from fwis_v3_optimizer.uniform_motion import (
++    MODE_A, MODE_O, MODE_S,
++    a_arc_edge, a_arc_required_headings, a_straight_edge,
++    o_translation_edge, s_spin_edge,
++)
++from fwis_v3_optimizer.uniform_timing import MotionTiming, SetupTiming
++from fwis_v3_optimizer.uniform_trajectory import UniformTimedPlan
++
++OFFSETS = ((1, 1.0, 0.0), (2, 0.0, 1.0), (3, 0.0, -1.0))
++BODY_SHAPES = {vehicle_id: VehicleShape(0.738, 0.500)
++               for vehicle_id, _, _ in OFFSETS}
++RESULTS_PATH = Path(os.environ.get(
++    "FR02_TIMING_RESULTS_PATH",
++    str(REPO_ROOT / "evaluation" / "formation_refactor_v02" / "FR02" / "A"
++        / "timing_results.json")))
++RESULTS = []
++
++
++def model(ids_offsets=OFFSETS):
++    return FormationModel(tuple(
++        VehicleOffset(vehicle_id, x, y) for vehicle_id, x, y in ids_offsets))
++
++
++def headings(value=0.0):
++    return {vehicle_id: float(value) for vehicle_id, _, _ in OFFSETS}
++
++
++def directions(value=1):
++    return {vehicle_id: int(value) for vehicle_id, _, _ in OFFSETS}
++
++
++def plan_for(edges, limits=None):
++    return UniformTimedPlan.from_edges(
++        tuple(edges), BODY_SHAPES, timing_limits=limits)
++
++
++def spin_fixture():
++    edge = s_spin_edge(
++        model(), FormationPose(0.0, 0.0, 0.0), headings(),
++        {1: math.pi / 2.0, 2: 0.0, 3: -math.pi / 4.0})
++    return plan_for((edge,))
++
++
++def complex_edges():
++    """Manual S alignment -> c=(0,2) A arc -> S -> O, with psi != 0."""
++    qf = FormationPose(2.0, -1.0, 0.35)
++    start_headings = {1: 0.10, 2: -0.20, 3: 0.30}
++    delta_psi = 0.60
++    pivot = (0.0, 2.0)
++    arc_headings = a_arc_required_headings(
++        model(), qf, delta_psi, pivot, directions())
++    alignment = s_spin_edge(
++        model(), qf, start_headings,
++        {vehicle_id: arc_headings[vehicle_id] - start_headings[vehicle_id]
++         for vehicle_id in start_headings})
++    arc = a_arc_edge(
++        model(), qf, dict(alignment.end_headings), delta_psi, pivot,
++        directions())
++    second_spin = s_spin_edge(
++        model(), arc.end_qf, dict(arc.end_headings),
++        {1: 0.13, 2: -0.17, 3: 0.11})
++    translation_angle = math.atan2(0.70, 0.45)
++    translation_headings = dict(second_spin.end_headings)
++    translation = o_translation_edge(
++        model(), arc.end_qf, translation_headings, (0.45, 0.70),
++        directions(),
++        {vehicle_id: translation_angle - translation_headings[vehicle_id]
++         for vehicle_id in translation_headings})
++    return (alignment, arc, second_spin, translation)
++
++
++@contextmanager
++def record_case(case_id, title, inputs):
++    record = {"case": case_id, "title": title, "status": "FAILED",
++              "inputs": inputs, "subcases": []}
++    RESULTS.append(record)
++    try:
++        yield record
++    except Exception as exc:
++        record["status"] = "FAILED" if isinstance(exc, AssertionError) else "ERROR"
++        record["error_type"] = type(exc).__name__
++        record["error"] = str(exc)
++        raise
++    else:
++        record["status"] = "PASSED"
++
++
++def passed(record, name, **values):
++    record["subcases"].append(dict(name=name, status="PASSED", **values))
++
++
++def pair_map(pairs):
++    return {vehicle_id: value for vehicle_id, value in pairs}
++
++
++def assert_dynamic_peaks(test, plan):
++    limit_names = {
++        "speed": "v_max", "acceleration": "a_max", "jerk": "jerk_max",
++        "yaw_rate": "yaw_rate_max", "yaw_acceleration": "yaw_accel_max",
++        "yaw_jerk": "yaw_jerk_max", "wheel_speed": "wheel_speed_max",
++        "lateral_acceleration": "lateral_accel_max",
++    }
++    utilizations = []
++    for phase in plan.phases:
++        if not isinstance(phase, MotionTiming):
++            continue
++        for vehicle_id, peaks in phase.peaks.items():
++            for name, limit_name in limit_names.items():
++                limit = getattr(plan.limits, limit_name)
++                utilization = peaks[name] / limit
++                utilizations.append(utilization)
++                test.assertLessEqual(
++                    peaks[name], limit * (1.0 + 1e-3),
++                    "{} {} {}={} > {}".format(
++                        phase.phase_id, vehicle_id, name, peaks[name], limit))
++    return max(utilizations, default=0.0)
++
++
++def motion_at(plan, edge_index):
++    return next(phase for phase in plan.phases
++                if isinstance(phase, MotionTiming) and phase.edge_index == edge_index)
++
++
++class UniformTimingAcceptance(unittest.TestCase):
++    maxDiff = None
++
++    def test_A01_initial_setup_presence_and_stationarity(self):
++        with record_case("A01", "A needs no pseudo setup; O/S need real common setup", {
++                "offsets": OFFSETS, "body_shapes": {1: [0.738, 0.500]}}) as record:
++            straight = a_straight_edge(
++                model(), FormationPose(0.0, 0.0, 0.0), headings(),
++                (1.2, 0.0), directions())
++            straight_plan = plan_for((straight,))
++            self.assertEqual(len(straight_plan.phases), 1)
++            self.assertIsInstance(straight_plan.phases[0], MotionTiming)
++            self.assertEqual(straight_plan.phases[0].mode, MODE_A)
++            self.assertEqual(straight_plan.duration_s,
++                             straight_plan.phases[0].duration_s)
++            passed(record, "A_zero_curvature_first_edge",
++                   phase_kinds=[phase.kind for phase in straight_plan.phases])
++
++            lateral = o_translation_edge(
++                model(), FormationPose(0.0, 0.0, 0.0), headings(),
++                (0.0, 0.8), directions(), headings(math.pi / 2.0))
++            lateral_plan = plan_for((lateral,))
++            setup = lateral_plan.phases[0]
++            self.assertIsInstance(setup, SetupTiming)
++            self.assertTrue(setup.initial)
++            self.assertGreater(setup.duration_s, 0.3)
++            self.assertEqual(setup.from_mode, MODE_A)
++            self.assertEqual(setup.to_mode, MODE_O)
++            middle = lateral_plan.state_at(setup.t0_s + 0.41 * setup.duration_s)
++            for vehicle in middle.vehicles:
++                self.assertEqual(vehicle.theta, 0.0)
++                self.assertEqual(vehicle.velocity, (0.0, 0.0))
++                self.assertEqual(vehicle.yaw_rate_radps, 0.0)
++                self.assertGreater(max(abs(value) for value in
++                                       vehicle.wheel_angles), 0.1)
++                self.assertLessEqual(max(abs(value) for value in
++                                         vehicle.wheel_angles), math.pi / 2.0)
++            self.assertEqual(middle.mode, MODE_A)
++            self.assertEqual(lateral_plan.phases[1].t0_s, setup.end_time)
++            passed(record, "O_lateral_initial_setup", setup=setup.as_dict(),
++                   max_dynamic_utilization=assert_dynamic_peaks(self, lateral_plan))
++
++            spin_plan = spin_fixture()
++            setup = spin_plan.phases[0]
++            self.assertTrue(setup.initial)
++            self.assertEqual(setup.to_mode, MODE_S)
++            before = spin_plan.state_at(setup.end_time - 1e-8)
++            after = spin_plan.state_at(setup.end_time)
++            self.assertEqual(before.mode, MODE_A)
++            self.assertEqual(after.mode, MODE_S)
++            self.assertEqual(before.headings, after.headings)
++            self.assertEqual(before.centers, after.centers)
++            passed(record, "S_initial_setup", setup=setup.as_dict(),
++                   max_dynamic_utilization=assert_dynamic_peaks(self, spin_plan))
++
++    def test_A02_zero_angle_vehicle_remains_canonical_S(self):
++        with record_case("A02", "S increments pi/2,0,-pi/4 share a yaw-limited T", {
++                "delta_theta": {1: math.pi / 2.0, 2: 0.0, 3: -math.pi / 4.0}}) as record:
++            plan = spin_fixture()
++            edge = plan.edges[0]
++            self.assertEqual(edge.mode, MODE_S)
++            self.assertTrue(all(segment.mode == SPIN for segment in edge.segments))
++            canonical_angles, canonical_factors = wheel_configuration(
++                Action(SPIN, 0.0, 0.0), edge.limits)
++            for at_end in (False, True):
++                configurations = {item.vehicle_id: item
++                                  for item in edge.wheel_configurations(at_end=at_end)}
++                car2 = configurations[2]
++                for actual, expected in zip(car2.angles, canonical_angles):
++                    self.assertAlmostEqual(actual, expected, places=12)
++                for actual, expected in zip(car2.factors, canonical_factors):
++                    self.assertAlmostEqual(actual, expected, places=12)
++                self.assertGreater(max(abs(value) for value in car2.angles), 0.9)
++            motion = motion_at(plan, 0)
++            self.assertEqual(motion.driver["constraint"], "yaw_rate")
++            self.assertEqual(motion.driver["vehicle_id"], 1)
++            expected_required = 1.875 * (math.pi / 2.0) / plan.limits.yaw_rate_max
++            self.assertAlmostEqual(motion.required_duration_s, expected_required,
++                                   places=10)
++            self.assertAlmostEqual(
++                motion.duration_s,
++                max(1.005 * expected_required, plan.limits.min_mode_dwell_s),
++                places=10)
++            setup = plan.phases[0]
++            self.assertGreater(setup.demand(2).max_wheel_angle_delta_rad, 0.9)
++            state = plan.state_at(motion.t0_s + 0.43 * motion.duration_s)
++            car2 = state.vehicle(2)
++            self.assertEqual(car2.theta, 0.0)
++            self.assertEqual(car2.velocity, (0.0, 0.0))
++            self.assertEqual(car2.yaw_rate_radps, 0.0)
++            self.assertEqual(car2.wheel_speed_mps, 0.0)
++            self.assertTrue(all(value == 0.0 for value in car2.wheel_rolling_speeds))
++            passed(record, "zero_angle_S_with_nonzero_setup_demand",
++                   motion=motion.as_dict(), car2_setup=setup.demand(2).as_dict(),
++                   max_dynamic_utilization=assert_dynamic_peaks(self, plan))
++
++    def test_A03_manual_S_arc_S_O_sequence(self):
++        with record_case("A03", "Explicit alignment and nonzero-psi c=(0,2) arc", {
++                "start_qf": [2.0, -1.0, 0.35], "pivot": [0.0, 2.0],
++                "delta_psi": 0.60, "modes": ["S", "A", "S", "O"]}) as record:
++            edges = complex_edges()
++            self.assertEqual(tuple(edge.mode for edge in edges),
++                             (MODE_S, MODE_A, MODE_S, MODE_O))
++            self.assertEqual(edges[1].start_qf.psi, 0.35)
++            self.assertEqual((edges[1].control.pivot_x,
++                              edges[1].control.pivot_y), (0.0, 2.0))
++            for previous, current in zip(edges, edges[1:]):
++                self.assertEqual(previous.end_qf, current.start_qf)
++                self.assertEqual(previous.end_headings, current.start_headings)
++            plan = plan_for(edges)
++            setups = [phase for phase in plan.phases if isinstance(phase, SetupTiming)]
++            motions = [phase for phase in plan.phases if isinstance(phase, MotionTiming)]
++            self.assertEqual([phase.edge_index for phase in setups], [0, 1, 2, 3])
++            self.assertEqual([phase.edge_index for phase in motions], [0, 1, 2, 3])
++            self.assertEqual(setups[0].kind, "initial_setup")
++            self.assertTrue(all(phase.kind == "setup" for phase in setups[1:]))
++            self.assertEqual(plan.phase_totals()["motion_count"], 4)
++            self.assertAlmostEqual(
++                plan.duration_s,
++                sum(phase.duration_s for phase in plan.phases), places=12)
++            passed(record, "S_A_S_O_common_phases", phases=plan.phase_table(),
++                   setup_demands=[[demand.as_dict() for demand in phase.demands]
++                                  for phase in setups],
++                   max_dynamic_utilization=assert_dynamic_peaks(self, plan))
++
++    def test_A04_same_mode_wheel_change_and_no_change(self):
++        with record_case("A04", "O control change needs setup; same configuration does not", {
++                "displacements": [[1.0, 0.0], [0.0, 0.7], [0.0, 0.4]],
++                "oblique_angles": [0.0, math.pi / 2.0, math.pi / 2.0]}) as record:
++            qf = FormationPose(0.0, 0.0, 0.0)
++            first = o_translation_edge(
++                model(), qf, headings(), (1.0, 0.0), directions(), headings(0.0))
++            second = o_translation_edge(
++                model(), first.end_qf, headings(), (0.0, 0.7), directions(),
++                headings(math.pi / 2.0))
++            third = o_translation_edge(
++                model(), second.end_qf, headings(), (0.0, 0.4), directions(),
++                headings(math.pi / 2.0))
++            plan = plan_for((first, second, third))
++            setups = [phase for phase in plan.phases if isinstance(phase, SetupTiming)]
++            self.assertEqual([phase.edge_index for phase in setups], [0, 1])
++            self.assertEqual([phase.kind for phase in plan.phases],
++                             ["initial_setup", "motion", "setup", "motion", "motion"])
++            changed = next(phase for phase in setups if phase.edge_index == 1)
++            self.assertEqual(changed.from_mode, MODE_O)
++            self.assertEqual(changed.to_mode, MODE_O)
++            self.assertGreater(changed.demand(1).max_wheel_angle_delta_rad, 1.0)
++            for phase in plan.phases:
++                if isinstance(phase, MotionTiming):
++                    for time_s in (phase.t0_s, phase.end_time):
++                        state = plan.state_at(time_s, side="left")
++                        for vehicle in state.vehicles:
++                            self.assertLessEqual(math.hypot(*vehicle.velocity), 1e-9)
++                            self.assertLessEqual(abs(vehicle.yaw_rate_radps), 1e-9)
++                    self.assertLessEqual(abs(plan.state_at(phase.t0_s).progress_acceleration),
++                                         1e-9)
++                    self.assertLessEqual(abs(plan.state_at(phase.end_time).progress_acceleration),
++                                         1e-9)
++            passed(record, "same_mode_reconfiguration_only_when_needed",
++                   phases=plan.phase_table(), changed_setup=changed.as_dict(),
++                   max_dynamic_utilization=assert_dynamic_peaks(self, plan))
++
++    def test_A05_oblique_lateral_and_reverse_signed_speed(self):
++        with record_case("A05", "O lateral velocity is nonzero even with zero longitudinal projection", {
++                "body_headings": headings(), "cases": ["+90", "-90", "reverse"]}) as record:
++            cases = (
++                ("+90", (0.0, 0.8), directions(), headings(math.pi / 2.0), False, 1.0),
++                ("-90", (0.0, -0.8), directions(), headings(-math.pi / 2.0), False, 1.0),
++                ("reverse", (0.0, 0.8), directions(-1), headings(-math.pi / 2.0), True, -1.0),
++            )
++            for name, displacement, sigmas, phis, allow_reverse, expected_sign in cases:
++                edge = o_translation_edge(
++                    model(), FormationPose(0.0, 0.0, 0.0), headings(), displacement,
++                    sigmas, phis, allow_reverse=allow_reverse)
++                plan = plan_for((edge,))
++                motion = motion_at(plan, 0)
++                state = plan.state_at(motion.t0_s + 0.47 * motion.duration_s)
++                vehicle = state.vehicle(1)
++                speed_norm = math.hypot(*vehicle.velocity)
++                self.assertGreater(speed_norm, 0.1)
++                self.assertAlmostEqual(vehicle.longitudinal_speed_mps, 0.0, places=12)
++                self.assertAlmostEqual(vehicle.center_speed_mps,
++                                       expected_sign * speed_norm, places=12)
++                self.assertGreater(abs(vehicle.lateral_speed_mps), 0.1)
++                if name == "+90":
++                    self.assertGreater(vehicle.velocity[1], 0.0)
++                elif name == "-90":
++                    self.assertLess(vehicle.velocity[1], 0.0)
++                    self.assertGreater(vehicle.center_speed_mps, 0.0)
++                else:
++                    self.assertGreater(vehicle.velocity[1], 0.0)
++                    self.assertLess(vehicle.center_speed_mps, 0.0)
++                projection = plan.sample((0.0, state.time_s, plan.duration_s))
++                projected = projection.timed_trajectory.trajectories[1][1]
++                self.assertAlmostEqual(projected.center_speed_mps,
++                                       vehicle.center_speed_mps, places=12)
++                passed(record, name, time_s=state.time_s,
++                       velocity=list(vehicle.velocity),
++                       center_speed_mps=vehicle.center_speed_mps,
++                       longitudinal_speed_mps=vehicle.longitudinal_speed_mps,
++                       lateral_speed_mps=vehicle.lateral_speed_mps,
++                       max_dynamic_utilization=assert_dynamic_peaks(self, plan))
++
++    @classmethod
++    def tearDownClass(cls):
++        RESULTS_PATH.parent.mkdir(parents=True, exist_ok=True)
++        payload = {
++            "schema": "fr02a.timing_results.v1",
++            "generated_at_utc": datetime.now(timezone.utc).isoformat(),
++            "status": "PASSED" if RESULTS and all(
++                item["status"] == "PASSED" for item in RESULTS) else "FAILED",
++            "python": sys.version,
++            "platform": platform.platform(),
++            "repo_root": str(REPO_ROOT),
++            "package_src": str(PACKAGE_SRC),
++            "import_paths": {
++                "uniform_motion": sys.modules["fwis_v3_optimizer.uniform_motion"].__file__,
++                "uniform_timing": sys.modules["fwis_v3_optimizer.uniform_timing"].__file__,
++                "uniform_trajectory": sys.modules["fwis_v3_optimizer.uniform_trajectory"].__file__,
++            },
++            "cases": RESULTS,
++        }
++        RESULTS_PATH.write_text(json.dumps(
++            payload, indent=2, sort_keys=True, allow_nan=False) + "\n")
++
++
++if __name__ == "__main__":
++    unittest.main(verbosity=2)

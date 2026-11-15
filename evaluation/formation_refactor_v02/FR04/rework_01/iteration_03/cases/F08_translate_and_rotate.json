@@ -1,0 +1,1750 @@
+{
+  "assertions_completed": false,
+  "budget": {
+    "heuristic_weight": 3.0,
+    "max_expansions": 10000,
+    "max_seconds": 30.0,
+    "rotation_weight": 3.0
+  },
+  "case_id": "F08_translate_and_rotate",
+  "description": "goal (13,10,pi/2)",
+  "independent_reaudit": null,
+  "map_metadata": {
+    "kind": "empty"
+  },
+  "model": null,
+  "request": {
+    "formation_id": "fr04_three_vehicle",
+    "goal_headings": null,
+    "goal_qf": [
+      13.0,
+      10.0,
+      1.5707963267948966
+    ],
+    "grid": {
+      "occupied_sha256": "e1038a405281e3a4ba6a65048621871508e751e77f2289c359b50edd90be6914",
+      "origin": [
+        -15.0,
+        -15.0
+      ],
+      "resolution": 0.05,
+      "shape": [
+        600,
+        600
+      ]
+    },
+    "model": [
+      {
+        "vehicle_id": 1,
+        "x": 1.0,
+        "y": 0.0
+      },
+      {
+        "vehicle_id": 2,
+        "x": 0.0,
+        "y": 1.0
+      },
+      {
+        "vehicle_id": 3,
+        "x": 0.0,
+        "y": -1.0
+      }
+    ],
+    "plan_id": 8,
+    "search_config": {
+      "heuristic_weight": 3.0,
+      "max_expansions": 10000,
+      "max_seconds": 30.0,
+      "rotation_weight": 3.0
+    },
+    "start_headings": [
+      {
+        "theta": 0.0,
+        "vehicle_id": 1
+      },
+      {
+        "theta": 0.0,
+        "vehicle_id": 2
+      },
+      {
+        "theta": 0.0,
+        "vehicle_id": 3
+      }
+    ],
+    "start_qf": [
+      10.0,
+      10.0,
+      0.0
+    ],
+    "successor_config": {
+      "allow_reverse": true,
+      "arc_pivots": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          2.0
+        ],
+        [
+          0.0,
+          -2.0
+        ],
+        [
+          2.0,
+          0.0
+        ],
+        [
+          -2.0,
+          0.0
+        ]
+      ],
+      "arc_step_rad": 0.17453292519943295,
+      "collision_margin_m": 0.05,
+      "control_bin": 0.01,
+      "goal_heading_free": true,
+      "goal_heading_tol_rad": 0.017453292519943295,
+      "goal_psi_tol_rad": 0.017453292519943295,
+      "goal_xy_tol_m": 0.02,
+      "heading_bin_rad": 0.17453292519943295,
+      "max_samples_per_segment": 200000,
+      "psi_bin_rad": 0.17453292519943295,
+      "sweep_spacing_m": 0.01,
+      "timing_limits": {
+        "a_max": 0.6,
+        "jerk_max": 2.0,
+        "lateral_accel_max": 0.6,
+        "max_block_duration_s": 120.0,
+        "min_mode_dwell_s": 0.3,
+        "mode_setup_time": 0.15,
+        "mode_switch_duration": 0.3,
+        "r_min_ackermann": 0.81,
+        "steer_accel_max": 1.5,
+        "steer_angle_max": 1.5707963267948966,
+        "steer_rate_max": 0.8,
+        "track": 0.364,
+        "v_max": 0.8,
+        "wheel_speed_max": 1.0,
+        "wheelbase": 0.494,
+        "yaw_accel_max": 0.8,
+        "yaw_jerk_max": 3.0,
+        "yaw_rate_max": 0.8
+      },
+      "translation_step_m": 1.0,
+      "xy_bin_m": 0.2
+    },
+    "vehicle_shapes": [
+      {
+        "length_m": 0.738,
+        "vehicle_id": 1,
+        "width_m": 0.5
+      },
+      {
+        "length_m": 0.738,
+        "vehicle_id": 2,
+        "width_m": 0.5
+      },
+      {
+        "length_m": 0.738,
+        "vehicle_id": 3,
+        "width_m": 0.5
+      }
+    ]
+  },
+  "request_sha256": "39b1cdb460c6cec522d83c4e1ac509b76615108352783bb7042e50cd5878624d",
+  "result": {
+    "detail": "wall time 30.0318973 s >= 30 s",
+    "duration_s": null,
+    "evaluation": null,
+    "executable": false,
+    "feasible": false,
+    "first_failure_layer": "budget",
+    "plan_model": null,
+    "projection_summary": null,
+    "reason": "TIME_BUDGET_EXHAUSTED",
+    "request_sha256": "39b1cdb460c6cec522d83c4e1ac509b76615108352783bb7042e50cd5878624d",
+    "schema": "fr04.uniform_planning_result.v1",
+    "search": {
+      "accepted_successors": 2209,
+      "candidate_count": 16876,
+      "collision_s": 23.46156156132929,
+      "detail": "wall time 30.0318973 s >= 30 s",
+      "duplicate_key_rejections": 480,
+      "expansions": 112,
+      "first_failure_layer": "budget",
+      "generation_s": 6.517555143684149,
+      "goal_qf": [
+        13.0,
+        10.0,
+        1.5707963267948966
+      ],
+      "goal_state": null,
+      "open_size": 2093,
+      "path": [],
+      "reason": "TIME_BUDGET_EXHAUSTED",
+      "redundant_s_pruned": 2863,
+      "rejection_histogram": {
+        "A_HEADING_REQUIRES_S_ALIGNMENT": 11121,
+        "MAP_OBB_COLLISION": 203
+      },
+      "stale_heap_entries": 0,
+      "status": "BUDGET_EXHAUSTED",
+      "terminal_audits": [
+        {
+          "accepted": false,
+          "audit_wall_time_s": 4.036794416606426e-05,
+          "detail": "authoritative edge 3 allow_reverse=False differs from the request True",
+          "duration_s": null,
+          "edge_count": 5,
+          "failure_code": "REQUEST_ALLOW_REVERSE_MISMATCH",
+          "failure_constraint": "",
+          "failure_detail": "authoritative edge 3 allow_reverse=False differs from the request True",
+          "failure_vehicle_id": null,
+          "feasible": false,
+          "path": [
+            {
+              "a_labels": [
+                "A_straight_goal_gear+++"
+              ],
+              "cumulative_proxy_g_s": 1.25,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "end_qf": [
+                11.0,
+                10.0,
+                0.0
+              ],
+              "index": 1,
+              "mode": "A",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "A_STRAIGHT",
+              "start_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "start_qf": [
+                10.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [
+                "A_straight_goal_gear+++"
+              ],
+              "cumulative_proxy_g_s": 2.5,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "end_qf": [
+                12.0,
+                10.0,
+                0.0
+              ],
+              "index": 2,
+              "mode": "A",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "A_STRAIGHT",
+              "start_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "start_qf": [
+                11.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [],
+              "cumulative_proxy_g_s": 3.75,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "end_qf": [
+                13.0,
+                10.0,
+                0.0
+              ],
+              "index": 3,
+              "mode": "A",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "A_STRAIGHT",
+              "start_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "start_qf": [
+                12.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_crop_p0_0_pos_gear--+",
+                "A_arc_p0_0_neg_gear++-",
+                "A_arc_p0_0_pos_gear--+"
+              ],
+              "cumulative_proxy_g_s": 8.056705388348112,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": -1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": -1.5707963267948968,
+                "2": -2.4492935982947064e-16,
+                "3": 0.0
+              },
+              "end_qf": [
+                13.0,
+                10.0,
+                0.0
+              ],
+              "index": 4,
+              "mode": "S",
+              "parameter_length": 1.5707963267948968,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "S_SPIN",
+              "start_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "start_qf": [
+                13.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p0_0_neg_gear++-",
+                "A_arc_p0_0_pos_gear--+"
+              ],
+              "cumulative_proxy_g_s": 13.050716198869308,
+              "delta_psi": 1.5707963267948966,
+              "directions": {
+                "1": -1,
+                "2": -1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": -2.220446049250313e-16,
+                "2": 1.5707963267948963,
+                "3": 1.5707963267948966
+              },
+              "end_qf": [
+                13.0,
+                10.0,
+                1.5707963267948966
+              ],
+              "index": 5,
+              "mode": "A",
+              "parameter_length": 1.5707963267948966,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "A_ARC",
+              "start_headings": {
+                "1": -1.5707963267948968,
+                "2": -2.4492935982947064e-16,
+                "3": 0.0
+              },
+              "start_qf": [
+                13.0,
+                10.0,
+                0.0
+              ]
+            }
+          ],
+          "path_proxy_g_s": 13.050716198869308,
+          "reason": "REQUEST_ALLOW_REVERSE_MISMATCH",
+          "search_elapsed_at_audit_s": 2.8453798349946737,
+          "status": "REJECTED"
+        },
+        {
+          "accepted": false,
+          "audit_wall_time_s": 4.630500916391611e-05,
+          "detail": "authoritative edge 3 allow_reverse=False differs from the request True",
+          "duration_s": null,
+          "edge_count": 5,
+          "failure_code": "REQUEST_ALLOW_REVERSE_MISMATCH",
+          "failure_constraint": "",
+          "failure_detail": "authoritative edge 3 allow_reverse=False differs from the request True",
+          "failure_vehicle_id": null,
+          "feasible": false,
+          "path": [
+            {
+              "a_labels": [
+                "A_straight_goal_gear+++"
+              ],
+              "cumulative_proxy_g_s": 1.25,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "end_qf": [
+                11.0,
+                10.0,
+                0.0
+              ],
+              "index": 1,
+              "mode": "A",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "A_STRAIGHT",
+              "start_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "start_qf": [
+                10.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [
+                "A_straight_goal_gear+++"
+              ],
+              "cumulative_proxy_g_s": 2.5,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "end_qf": [
+                12.0,
+                10.0,
+                0.0
+              ],
+              "index": 2,
+              "mode": "A",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "A_STRAIGHT",
+              "start_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "start_qf": [
+                11.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [],
+              "cumulative_proxy_g_s": 3.75,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "end_qf": [
+                13.0,
+                10.0,
+                0.0
+              ],
+              "index": 3,
+              "mode": "A",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "A_STRAIGHT",
+              "start_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "start_qf": [
+                12.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_crop_p0_0_pos_gear+-+",
+                "A_arc_p0_0_neg_gear-+-",
+                "A_arc_p0_0_pos_gear+-+"
+              ],
+              "cumulative_proxy_g_s": 8.056705388348112,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": 1.5707963267948966,
+                "2": -2.4492935982947064e-16,
+                "3": 0.0
+              },
+              "end_qf": [
+                13.0,
+                10.0,
+                0.0
+              ],
+              "index": 4,
+              "mode": "S",
+              "parameter_length": 1.5707963267948966,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "S_SPIN",
+              "start_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "start_qf": [
+                13.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p0_0_neg_gear-+-",
+                "A_arc_p0_0_pos_gear+-+"
+              ],
+              "cumulative_proxy_g_s": 13.050716198869308,
+              "delta_psi": 1.5707963267948966,
+              "directions": {
+                "1": 1,
+                "2": -1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": 3.141592653589793,
+                "2": 1.5707963267948963,
+                "3": 1.5707963267948966
+              },
+              "end_qf": [
+                13.0,
+                10.0,
+                1.5707963267948966
+              ],
+              "index": 5,
+              "mode": "A",
+              "parameter_length": 1.5707963267948966,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "A_ARC",
+              "start_headings": {
+                "1": 1.5707963267948966,
+                "2": -2.4492935982947064e-16,
+                "3": 0.0
+              },
+              "start_qf": [
+                13.0,
+                10.0,
+                0.0
+              ]
+            }
+          ],
+          "path_proxy_g_s": 13.050716198869308,
+          "reason": "REQUEST_ALLOW_REVERSE_MISMATCH",
+          "search_elapsed_at_audit_s": 3.6610932659823447,
+          "status": "REJECTED"
+        },
+        {
+          "accepted": false,
+          "audit_wall_time_s": 4.155607894062996e-05,
+          "detail": "authoritative edge 3 allow_reverse=False differs from the request True",
+          "duration_s": null,
+          "edge_count": 8,
+          "failure_code": "REQUEST_ALLOW_REVERSE_MISMATCH",
+          "failure_constraint": "",
+          "failure_detail": "authoritative edge 3 allow_reverse=False differs from the request True",
+          "failure_vehicle_id": null,
+          "feasible": false,
+          "path": [
+            {
+              "a_labels": [
+                "A_straight_goal_gear+++"
+              ],
+              "cumulative_proxy_g_s": 1.25,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "end_qf": [
+                11.0,
+                10.0,
+                0.0
+              ],
+              "index": 1,
+              "mode": "A",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "A_STRAIGHT",
+              "start_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "start_qf": [
+                10.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [
+                "A_straight_goal_gear+++"
+              ],
+              "cumulative_proxy_g_s": 2.5,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "end_qf": [
+                12.0,
+                10.0,
+                0.0
+              ],
+              "index": 2,
+              "mode": "A",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "A_STRAIGHT",
+              "start_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "start_qf": [
+                11.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [],
+              "cumulative_proxy_g_s": 3.75,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "end_qf": [
+                13.0,
+                10.0,
+                0.0
+              ],
+              "index": 3,
+              "mode": "A",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "A_STRAIGHT",
+              "start_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "start_qf": [
+                12.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_crop_p0_-2_pos_gear---",
+                "A_arc_p0_-2_neg_gear+++",
+                "A_arc_p0_-2_pos_gear---"
+              ],
+              "cumulative_proxy_g_s": 6.672769491105499,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": -1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": -0.4636476090008064,
+                "2": -2.4492935982947064e-16,
+                "3": -2.4492935982947064e-16
+              },
+              "end_qf": [
+                13.0,
+                10.0,
+                0.0
+              ],
+              "index": 4,
+              "mode": "S",
+              "parameter_length": 0.4636476090008064,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "S_SPIN",
+              "start_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "start_qf": [
+                13.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p0_-2_neg_gear+++",
+                "A_arc_p0_-2_pos_gear---"
+              ],
+              "cumulative_proxy_g_s": 15.593771118613935,
+              "delta_psi": 1.5707963267948966,
+              "directions": {
+                "1": -1,
+                "2": -1,
+                "3": -1
+              },
+              "end_headings": {
+                "1": 1.1071487177940902,
+                "2": 1.5707963267948963,
+                "3": 1.5707963267948963
+              },
+              "end_qf": [
+                11.0,
+                8.0,
+                1.5707963267948966
+              ],
+              "index": 5,
+              "mode": "A",
+              "parameter_length": 1.5707963267948966,
+              "pivot": [
+                0.0,
+                -2.0
+              ],
+              "primitive": "A_ARC",
+              "start_headings": {
+                "1": -0.4636476090008064,
+                "2": -2.4492935982947064e-16,
+                "3": -2.4492935982947064e-16
+              },
+              "start_qf": [
+                13.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p0_-2_neg_gear+++",
+                "A_arc_p0_-2_pos_gear---"
+              ],
+              "cumulative_proxy_g_s": 19.52185348624979,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": 1.1071487177940902,
+                "2": 1.5707963267948963,
+                "3": 1.5707963267948963
+              },
+              "end_qf": [
+                11.707106781186548,
+                8.707106781186548,
+                1.5707963267948966
+              ],
+              "index": 6,
+              "mode": "O",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "O_TRANSLATION",
+              "start_headings": {
+                "1": 1.1071487177940902,
+                "2": 1.5707963267948963,
+                "3": 1.5707963267948963
+              },
+              "start_qf": [
+                11.0,
+                8.0,
+                1.5707963267948966
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p0_-2_neg_gear+++",
+                "A_arc_p0_-2_pos_gear---"
+              ],
+              "cumulative_proxy_g_s": 20.77185348624979,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": 1.1071487177940902,
+                "2": 1.5707963267948963,
+                "3": 1.5707963267948963
+              },
+              "end_qf": [
+                12.414213562373096,
+                9.414213562373096,
+                1.5707963267948966
+              ],
+              "index": 7,
+              "mode": "O",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "O_TRANSLATION",
+              "start_headings": {
+                "1": 1.1071487177940902,
+                "2": 1.5707963267948963,
+                "3": 1.5707963267948963
+              },
+              "start_qf": [
+                11.707106781186548,
+                8.707106781186548,
+                1.5707963267948966
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p0_-2_neg_gear+++",
+                "A_arc_p0_-2_pos_gear---"
+              ],
+              "cumulative_proxy_g_s": 21.807387392182527,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": 1.1071487177940902,
+                "2": 1.5707963267948963,
+                "3": 1.5707963267948963
+              },
+              "end_qf": [
+                13.0,
+                10.0,
+                1.5707963267948966
+              ],
+              "index": 8,
+              "mode": "O",
+              "parameter_length": 0.8284271247461891,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "O_TRANSLATION",
+              "start_headings": {
+                "1": 1.1071487177940902,
+                "2": 1.5707963267948963,
+                "3": 1.5707963267948963
+              },
+              "start_qf": [
+                12.414213562373096,
+                9.414213562373096,
+                1.5707963267948966
+              ]
+            }
+          ],
+          "path_proxy_g_s": 21.807387392182527,
+          "reason": "REQUEST_ALLOW_REVERSE_MISMATCH",
+          "search_elapsed_at_audit_s": 8.65547094703652,
+          "status": "REJECTED"
+        },
+        {
+          "accepted": false,
+          "audit_wall_time_s": 3.9180973544716835e-05,
+          "detail": "authoritative edge 3 allow_reverse=False differs from the request True",
+          "duration_s": null,
+          "edge_count": 9,
+          "failure_code": "REQUEST_ALLOW_REVERSE_MISMATCH",
+          "failure_constraint": "",
+          "failure_detail": "authoritative edge 3 allow_reverse=False differs from the request True",
+          "failure_vehicle_id": null,
+          "feasible": false,
+          "path": [
+            {
+              "a_labels": [
+                "A_straight_goal_gear+++"
+              ],
+              "cumulative_proxy_g_s": 1.25,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "end_qf": [
+                11.0,
+                10.0,
+                0.0
+              ],
+              "index": 1,
+              "mode": "A",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "A_STRAIGHT",
+              "start_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "start_qf": [
+                10.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [
+                "A_straight_goal_gear+++"
+              ],
+              "cumulative_proxy_g_s": 2.5,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "end_qf": [
+                12.0,
+                10.0,
+                0.0
+              ],
+              "index": 2,
+              "mode": "A",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "A_STRAIGHT",
+              "start_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "start_qf": [
+                11.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [],
+              "cumulative_proxy_g_s": 3.75,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "end_qf": [
+                13.0,
+                10.0,
+                0.0
+              ],
+              "index": 3,
+              "mode": "A",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "A_STRAIGHT",
+              "start_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "start_qf": [
+                12.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_crop_p0_-2_pos_gear---",
+                "A_arc_p0_-2_neg_gear+++",
+                "A_arc_p0_-2_pos_gear---"
+              ],
+              "cumulative_proxy_g_s": 6.672769491105499,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": -1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": -0.4636476090008064,
+                "2": -2.4492935982947064e-16,
+                "3": -2.4492935982947064e-16
+              },
+              "end_qf": [
+                13.0,
+                10.0,
+                0.0
+              ],
+              "index": 4,
+              "mode": "S",
+              "parameter_length": 0.4636476090008064,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "S_SPIN",
+              "start_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "start_qf": [
+                13.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p0_-2_neg_gear+++",
+                "A_arc_p0_-2_pos_gear---"
+              ],
+              "cumulative_proxy_g_s": 15.593771118613935,
+              "delta_psi": 1.5707963267948966,
+              "directions": {
+                "1": -1,
+                "2": -1,
+                "3": -1
+              },
+              "end_headings": {
+                "1": 1.1071487177940902,
+                "2": 1.5707963267948963,
+                "3": 1.5707963267948963
+              },
+              "end_qf": [
+                11.0,
+                8.0,
+                1.5707963267948966
+              ],
+              "index": 5,
+              "mode": "A",
+              "parameter_length": 1.5707963267948966,
+              "pivot": [
+                0.0,
+                -2.0
+              ],
+              "primitive": "A_ARC",
+              "start_headings": {
+                "1": -0.4636476090008064,
+                "2": -2.4492935982947064e-16,
+                "3": -2.4492935982947064e-16
+              },
+              "start_qf": [
+                13.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p0_-2_neg_gear+++",
+                "A_arc_p0_-2_pos_gear---"
+              ],
+              "cumulative_proxy_g_s": 19.52185348624979,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": 1.1071487177940902,
+                "2": 1.5707963267948963,
+                "3": 1.5707963267948963
+              },
+              "end_qf": [
+                11.707106781186548,
+                8.707106781186548,
+                1.5707963267948966
+              ],
+              "index": 6,
+              "mode": "O",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "O_TRANSLATION",
+              "start_headings": {
+                "1": 1.1071487177940902,
+                "2": 1.5707963267948963,
+                "3": 1.5707963267948963
+              },
+              "start_qf": [
+                11.0,
+                8.0,
+                1.5707963267948966
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p0_-2_neg_gear+++",
+                "A_arc_p0_-2_pos_gear---"
+              ],
+              "cumulative_proxy_g_s": 20.77185348624979,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": 1.1071487177940902,
+                "2": 1.5707963267948963,
+                "3": 1.5707963267948963
+              },
+              "end_qf": [
+                12.414213562373096,
+                9.414213562373096,
+                1.5707963267948966
+              ],
+              "index": 7,
+              "mode": "O",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "O_TRANSLATION",
+              "start_headings": {
+                "1": 1.1071487177940902,
+                "2": 1.5707963267948963,
+                "3": 1.5707963267948963
+              },
+              "start_qf": [
+                11.707106781186548,
+                8.707106781186548,
+                1.5707963267948966
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p0_-2_neg_gear+++",
+                "A_arc_p0_-2_pos_gear---"
+              ],
+              "cumulative_proxy_g_s": 22.02185348624979,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": 1.1071487177940902,
+                "2": 1.5707963267948963,
+                "3": 1.5707963267948963
+              },
+              "end_qf": [
+                13.121320343559644,
+                10.121320343559644,
+                1.5707963267948966
+              ],
+              "index": 8,
+              "mode": "O",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "O_TRANSLATION",
+              "start_headings": {
+                "1": 1.1071487177940902,
+                "2": 1.5707963267948963,
+                "3": 1.5707963267948963
+              },
+              "start_qf": [
+                12.414213562373096,
+                9.414213562373096,
+                1.5707963267948966
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p0_-2_neg_gear+++",
+                "A_arc_p0_-2_pos_gear---"
+              ],
+              "cumulative_proxy_g_s": 22.236319580317055,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": -1,
+                "2": -1,
+                "3": -1
+              },
+              "end_headings": {
+                "1": 1.1071487177940902,
+                "2": 1.5707963267948963,
+                "3": 1.5707963267948963
+              },
+              "end_qf": [
+                13.0,
+                10.0,
+                1.5707963267948966
+              ],
+              "index": 9,
+              "mode": "O",
+              "parameter_length": 0.17157287525381154,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "O_TRANSLATION",
+              "start_headings": {
+                "1": 1.1071487177940902,
+                "2": 1.5707963267948963,
+                "3": 1.5707963267948963
+              },
+              "start_qf": [
+                13.121320343559644,
+                10.121320343559644,
+                1.5707963267948966
+              ]
+            }
+          ],
+          "path_proxy_g_s": 22.236319580317055,
+          "reason": "REQUEST_ALLOW_REVERSE_MISMATCH",
+          "search_elapsed_at_audit_s": 8.943465412943624,
+          "status": "REJECTED"
+        },
+        {
+          "accepted": false,
+          "audit_wall_time_s": 4.0368991903960705e-05,
+          "detail": "authoritative edge 3 allow_reverse=False differs from the request True",
+          "duration_s": null,
+          "edge_count": 9,
+          "failure_code": "REQUEST_ALLOW_REVERSE_MISMATCH",
+          "failure_constraint": "",
+          "failure_detail": "authoritative edge 3 allow_reverse=False differs from the request True",
+          "failure_vehicle_id": null,
+          "feasible": false,
+          "path": [
+            {
+              "a_labels": [
+                "A_straight_goal_gear+++"
+              ],
+              "cumulative_proxy_g_s": 1.25,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "end_qf": [
+                11.0,
+                10.0,
+                0.0
+              ],
+              "index": 1,
+              "mode": "A",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "A_STRAIGHT",
+              "start_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "start_qf": [
+                10.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [
+                "A_straight_goal_gear+++"
+              ],
+              "cumulative_proxy_g_s": 2.5,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "end_qf": [
+                12.0,
+                10.0,
+                0.0
+              ],
+              "index": 2,
+              "mode": "A",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "A_STRAIGHT",
+              "start_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "start_qf": [
+                11.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [],
+              "cumulative_proxy_g_s": 3.75,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "end_qf": [
+                13.0,
+                10.0,
+                0.0
+              ],
+              "index": 3,
+              "mode": "A",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "A_STRAIGHT",
+              "start_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "start_qf": [
+                12.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_crop_p0_-2_pos_gear---",
+                "A_arc_p0_-2_neg_gear+++",
+                "A_arc_p0_-2_pos_gear---"
+              ],
+              "cumulative_proxy_g_s": 6.672769491105499,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": -1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": -0.4636476090008064,
+                "2": -2.4492935982947064e-16,
+                "3": -2.4492935982947064e-16
+              },
+              "end_qf": [
+                13.0,
+                10.0,
+                0.0
+              ],
+              "index": 4,
+              "mode": "S",
+              "parameter_length": 0.4636476090008064,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "S_SPIN",
+              "start_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "start_qf": [
+                13.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p0_-2_neg_gear+++",
+                "A_arc_p0_-2_pos_gear---"
+              ],
+              "cumulative_proxy_g_s": 15.593771118613935,
+              "delta_psi": 1.5707963267948966,
+              "directions": {
+                "1": -1,
+                "2": -1,
+                "3": -1
+              },
+              "end_headings": {
+                "1": 1.1071487177940902,
+                "2": 1.5707963267948963,
+                "3": 1.5707963267948963
+              },
+              "end_qf": [
+                11.0,
+                8.0,
+                1.5707963267948966
+              ],
+              "index": 5,
+              "mode": "A",
+              "parameter_length": 1.5707963267948966,
+              "pivot": [
+                0.0,
+                -2.0
+              ],
+              "primitive": "A_ARC",
+              "start_headings": {
+                "1": -0.4636476090008064,
+                "2": -2.4492935982947064e-16,
+                "3": -2.4492935982947064e-16
+              },
+              "start_qf": [
+                13.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p0_-2_neg_gear+++",
+                "A_arc_p0_-2_pos_gear---"
+              ],
+              "cumulative_proxy_g_s": 18.492172967151337,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": 1.1071487177940902,
+                "2": 1.5707963267948963,
+                "3": 1.5707963267948963
+              },
+              "end_qf": [
+                11.0,
+                9.0,
+                1.5707963267948966
+              ],
+              "index": 6,
+              "mode": "O",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "O_TRANSLATION",
+              "start_headings": {
+                "1": 1.1071487177940902,
+                "2": 1.5707963267948963,
+                "3": 1.5707963267948963
+              },
+              "start_qf": [
+                11.0,
+                8.0,
+                1.5707963267948966
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p0_-2_neg_gear+++",
+                "A_arc_p0_-2_pos_gear---"
+              ],
+              "cumulative_proxy_g_s": 21.732949912614107,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": 1.1071487177940902,
+                "2": 1.5707963267948963,
+                "3": 1.5707963267948963
+              },
+              "end_qf": [
+                11.707106781186548,
+                9.707106781186548,
+                1.5707963267948966
+              ],
+              "index": 7,
+              "mode": "O",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "O_TRANSLATION",
+              "start_headings": {
+                "1": 1.1071487177940902,
+                "2": 1.5707963267948963,
+                "3": 1.5707963267948963
+              },
+              "start_qf": [
+                11.0,
+                9.0,
+                1.5707963267948966
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p0_-2_neg_gear+++",
+                "A_arc_p0_-2_pos_gear---"
+              ],
+              "cumulative_proxy_g_s": 24.604519111590108,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": 1.1071487177940902,
+                "2": 1.5707963267948963,
+                "3": 1.5707963267948963
+              },
+              "end_qf": [
+                12.682393643361515,
+                9.928049163876942,
+                1.5707963267948966
+              ],
+              "index": 8,
+              "mode": "O",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "O_TRANSLATION",
+              "start_headings": {
+                "1": 1.1071487177940902,
+                "2": 1.5707963267948963,
+                "3": 1.5707963267948963
+              },
+              "start_qf": [
+                11.707106781186548,
+                9.707106781186548,
+                1.5707963267948966
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p0_-2_neg_gear+++",
+                "A_arc_p0_-2_pos_gear---"
+              ],
+              "cumulative_proxy_g_s": 25.011586981768065,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": 1.1071487177940902,
+                "2": 1.5707963267948963,
+                "3": 1.5707963267948963
+              },
+              "end_qf": [
+                13.0,
+                10.0,
+                1.5707963267948966
+              ],
+              "index": 9,
+              "mode": "O",
+              "parameter_length": 0.32565429614236624,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "O_TRANSLATION",
+              "start_headings": {
+                "1": 1.1071487177940902,
+                "2": 1.5707963267948963,
+                "3": 1.5707963267948963
+              },
+              "start_qf": [
+                12.682393643361515,
+                9.928049163876942,
+                1.5707963267948966
+              ]
+            }
+          ],
+          "path_proxy_g_s": 25.011586981768065,
+          "reason": "REQUEST_ALLOW_REVERSE_MISMATCH",
+          "search_elapsed_at_audit_s": 12.271657777018845,
+          "status": "REJECTED"
+        }
+      ],
+      "terminal_rejection_histogram": {
+        "REQUEST_ALLOW_REVERSE_MISMATCH": 5
+      },
+      "wall_time_s": 30.031904386007227
+    },
+    "status": "BUDGET_EXHAUSTED",
+    "wall_time_s": 30.04888288094662
+  },
+  "samples": null
+}

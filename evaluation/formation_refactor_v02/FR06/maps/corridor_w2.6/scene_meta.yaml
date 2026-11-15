@@ -1,0 +1,42 @@
+name: FR06 narrow corner 2.6 m
+map_id: corridor_w2.6
+size_m:
+- 16.0
+- 16.0
+resolution: 0.05
+origin:
+- 0.0
+- 0.0
+- 0.0
+border: true
+kind: fr06_distance_band_corridor
+corridor_width_m: 2.6
+centreline:
+  approach:
+  - - 4.0
+    - 6.0
+  - - 8.0
+    - 6.0
+  arc:
+    centre:
+    - 8.0
+    - 8.0
+    radius_m: 2.0
+    from_rad: -1.5707963267948966
+    to_rad: 0.0
+  exit:
+  - - 10.0
+    - 8.0
+  - - 10.0
+    - 12.0
+start:
+  x: 6.0
+  y: 6.0
+  theta: 0.0
+goal:
+  x: 10.0
+  y: 10.0
+  theta: 1.5707963267948966
+description: static L corridor, 90 degree arc of radius 2 m
+test_point_source: project_defined_synthetic_test_case
+reference_is_not_a_search_seed: true

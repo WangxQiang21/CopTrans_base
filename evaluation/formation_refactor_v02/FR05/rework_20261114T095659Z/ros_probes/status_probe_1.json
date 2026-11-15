@@ -1,0 +1,94 @@
+{
+ "plan_id": 600001,
+ "records_total": 2304,
+ "selected_total": 2255,
+ "transitions": [
+  {
+   "kind": "playback",
+   "t": 1794650759.731055,
+   "doc": {
+    "state": "STATIC",
+    "plan_id": 600001,
+    "model_sha256": null,
+    "formation_id": "cargo_wedge",
+    "backend": null,
+    "executable": false,
+    "audit_state": null,
+    "reason": "PLANNING",
+    "elapsed_s": null
+   }
+  },
+  {
+   "kind": "optimizer",
+   "t": 1794650759.731563,
+   "doc": {
+    "node_state": "REQUEST_VALIDATED",
+    "plan_id": 600001,
+    "model_sha256": null,
+    "formation_id": "cargo_wedge",
+    "backend": "uniform_v02",
+    "status": "PLANNING",
+    "feasible": false,
+    "executable": false,
+    "trajectory_published": false,
+    "reason": "OK"
+   }
+  },
+  {
+   "kind": "optimizer",
+   "t": 1794650759.748411,
+   "doc": {
+    "node_state": "PUBLISHED",
+    "plan_id": 600001,
+    "model_sha256": "b0c895d5e070c9c2e218f7ef9c7e6d27f9dfee0c5ba138388e8c9941d5f2cbe0",
+    "formation_id": "cargo_wedge",
+    "backend": "uniform_v02",
+    "status": "NO_MOTION",
+    "feasible": true,
+    "executable": true,
+    "trajectory_published": true,
+    "reason": "OK"
+   }
+  },
+  {
+   "kind": "optimizer",
+   "t": 1794650759.753382,
+   "doc": {
+    "node_state": "HOLD_END",
+    "plan_id": 600001,
+    "model_sha256": "b0c895d5e070c9c2e218f7ef9c7e6d27f9dfee0c5ba138388e8c9941d5f2cbe0",
+    "formation_id": "cargo_wedge",
+    "backend": "uniform_v02",
+    "status": "NO_MOTION",
+    "feasible": true,
+    "executable": true,
+    "trajectory_published": true,
+    "reason": "OK"
+   }
+  },
+  {
+   "kind": "playback",
+   "t": 1794650759.753661,
+   "doc": {
+    "state": "HOLD_END",
+    "plan_id": 600001,
+    "model_sha256": "b0c895d5e070c9c2e218f7ef9c7e6d27f9dfee0c5ba138388e8c9941d5f2cbe0",
+    "formation_id": "cargo_wedge",
+    "backend": "uniform_v02",
+    "executable": true,
+    "audit_state": null,
+    "reason": null,
+    "elapsed_s": 0.005104065
+   }
+  }
+ ],
+ "hold_end_documents": 2249,
+ "hold_end_certified": [
+  true,
+  true,
+  true,
+  true,
+  true,
+  true
+ ]
+}

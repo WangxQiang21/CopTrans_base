@@ -1,0 +1,147 @@
+[expv3] 地图比例 1.0，中心点固定；栅格尺寸保持不变。
+[expv3] 编队发布后端 uniform_v02（同一时刻只启动这一个发布后端）
+[expv3] 货物中心楔形编队，车体航向独立（新实验按配置策略初始化）；地图绝对比例 1.0
+[expv3] 构建 ROS overlay...
+[expv3] 启动 Demo：backend:=uniform_v02 rviz:=false playback_rate:=100 map_dir:=/tmp/expv3-map-scale.qxY2Z8/empty_map scene:=manual_map auto_goal:=false rviz_config:=/tmp/expv3-map-scale.qxY2Z8/formation.rviz
+... logging to /home/wq/whut_thesis/expv3_multi_v02/evaluation/formation_refactor_v02/FR05/rework_20261114T095659Z/ros_home/log/c02ea2e8-e011-11f1-a57b-1b4c90db486b/roslaunch-wq-ubuntu-3102252.log
+Checking log directory for disk usage. This may take a while.
+Press Ctrl-C to interrupt
+Done checking log file disk usage. Usage is <1GB.
+]2;/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch
+[1mstarted roslaunch server http://127.0.0.1:40581/[0m
+
+SUMMARY
+========
+
+PARAMETERS
+ * /formation_goal_bridge/admission_backend: uniform_v02
+ * /formation_goal_bridge/allow_reverse: True
+ * /formation_goal_bridge/body_length_m: 0.738
+ * /formation_goal_bridge/body_width_m: 0.5
+ * /formation_goal_bridge/formation_id: cargo_wedge
+ * /formation_goal_bridge/frame_id: map
+ * /formation_goal_bridge/goal_heading_free: True
+ * /formation_goal_bridge/initial_heading_policy: cargo_heading
+ * /formation_goal_bridge/initial_plan_id: 600000
+ * /formation_goal_bridge/job_state_timeout_s: 3.0
+ * /formation_goal_bridge/map_timeout_s: 8.0
+ * /formation_goal_bridge/offsets: [[1.0, 0.0], [0.0...
+ * /formation_goal_bridge/playback_tf_timeout_s: 0.5
+ * /formation_goal_bridge/start_theta: 0.0
+ * /formation_goal_bridge/start_x: 10.0
+ * /formation_goal_bridge/start_y: 3.6
+ * /formation_goal_bridge/vehicle_ids: [1, 2, 3]
+ * /formation_playback/allow_reverse: True
+ * /formation_playback/backend: uniform_v02
+ * /formation_playback/body_length_m: 0.738
+ * /formation_playback/body_width_m: 0.5
+ * /formation_playback/formation_id: cargo_wedge
+ * /formation_playback/frame_id: map
+ * /formation_playback/goal_heading_free: True
+ * /formation_playback/initial_heading_policy: cargo_heading
+ * /formation_playback/offsets: [[1.0, 0.0], [0.0...
+ * /formation_playback/publish_tf: True
+ * /formation_playback/rate: 100
+ * /formation_playback/transport_ui: True
+ * /formation_playback/vehicle_ids: [1, 2, 3]
+ * /formation_uniform_planner/collision_margin: 0.05
+ * /formation_uniform_planner/frame_id: map
+ * /formation_uniform_planner/goal_heading_tol: 0.017453292519943295
+ * /formation_uniform_planner/goal_psi_tol: 0.017453292519943295
+ * /formation_uniform_planner/goal_xy_tol: 0.02
+ * /formation_uniform_planner/max_expansions: 10000
+ * /formation_uniform_planner/max_seconds: 30.0
+ * /formation_uniform_planner/playback_finish_grace_s: 3.0
+ * /formation_uniform_planner/playback_start_timeout_s: 5.0
+ * /formation_uniform_planner/publication_dt: 0.02
+ * /formation_uniform_planner/sweep_spacing: 0.01
+ * /formation_uniform_planner/translation_step: 1.0
+ * /fwis_map_publisher/map_dir: /tmp/expv3-map-sc...
+ * /rosdistro: noetic
+ * /rosversion: 1.17.4
+
+NODES
+  /
+    formation_goal_bridge (fwis_v3_demo/formation_goal_bridge.py)
+    formation_playback (fwis_v3_playback/formation_playback.py)
+    formation_uniform_planner (fwis_v3_optimizer/formation_uniform_planner_node.py)
+    fwis_map_publisher (fwis_map_server/map_publisher.py)
+
+[1mROS_MASTER_URI=http://127.0.0.1:11472[0m
+]2;/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch http://127.0.0.1:11472
+[1mprocess[fwis_map_publisher-1]: started with pid [3102266][0m
+[1mprocess[formation_uniform_planner-2]: started with pid [3102267][0m
+[1mprocess[formation_playback-3]: started with pid [3102268][0m
+[1mprocess[formation_goal_bridge-4]: started with pid [3102269][0m
+[INFO] [1794650236.932966]: [formation playback] common-clock display ready; GEOMETRY_ONLY is shown until an independent FEASIBLE status is received
+[INFO] [1794650236.939972]: [fwis_map_publisher] /map published: 600x600, res=0.050 m
+[INFO] [1794650237.017940]: [uniform planner] autonomous V0.2 planner ready; backend=uniform_v02 budget=10000 expansions / 30.0 s
+[INFO] [1794650237.041680]: [uniform planner] exact map 600x600 res=0.050 origin=(-15.00, -15.00) signature=25facb0cd0e35d7a
+[INFO] [1794650237.079503]: [formation goal bridge] ready: formation=cargo_wedge offsets=((1.0, 0.0), (0.0, 1.0), (0.0, -1.0)), start=(10.000, 3.600, 0.000), goal topic=/move_base_simple/goal
+[INFO] [1794650259.350091]: [formation goal bridge] 2D Pose Estimate recorded; new experiment policy=cargo_heading headings={1: 0.0, 2: 0.0, 3: 0.0}
+[WARN] [1794650259.352395]: [uniform planner] ignoring playback feedback for plan None: identity differs from the published model (model_sha256/formation_id/backend)
+[INFO] [1794650260.353320]: [formation goal bridge] plan 600000: start=(10.000, 10.000, 0.000) goal=(12.000, 10.000, 0.000) vehicles=3
+[INFO] [1794650260.354545]: [uniform planner] plan 600000 admitted from cargo_wedge: start=(10.000, 10.000, 0.000) goal=(12.000, 10.000, 0.000) free_headings=True reverse=True
+[INFO] [1794650260.354790]: [formation goal bridge] start from manual start; body headings {1: 0.0, 2: 0.0, 3: 0.0}
+[INFO] [1794650261.282615]: [uniform planner] plan 600000 published: T_end=6.246 s model_sha256=c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186 samples=316 wall=0.842 s verification_to_stamp_delay=0.0822 s
+[INFO] [1794650261.283846]: [formation goal bridge] plan 600000 FEASIBLE and published
+[INFO] [1794650261.410337]: [formation playback] accepted uniform_v02 plan 600000 formation cargo_wedge model_sha256=c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186: 3 vehicles, 316 shared samples, T_end=6.245537 s
+[WARN] [1794650261.411713]: [formation playback] ignoring audit status for plan 600000: identity differs from the verified envelope (model_sha256/formation_id/backend)
+[INFO] [1794650261.416854]: [uniform planner] plan 600000 playback confirmed
+[INFO] [1794650261.416993]: [formation playback] plan=600000 state=PLAYING elapsed=0.131130 clamped=0.131130 fraction=0.556425 executable=False
+[WARN] [1794650261.823772]: [formation goal bridge] refusing 2D Nav Goal: job 600000 is PLAYING; the start override and plan_id are not consumed and no request is published
+[WARN] [1794650262.329612]: [formation goal bridge] refusing 2D Pose Estimate: job 600000 is PLAYING; the start override and plan_id are not consumed and no request is published
+[WARN] [1794650264.349061]: [uniform planner] busy: rejecting plan 1100000 while job 600000 is PLAYING; no preemption and no override is consumed
+[WARN] [1794650264.353740]: [formation playback] ignoring busy plan_request 1100000 while job 600000 is PLAYING
+[INFO] [1794650267.531691]: [formation playback] plan=600000 state=HOLD_END elapsed=6.245835 clamped=6.245537 fraction=0.000000 executable=False
+[INFO] [1794650267.532275]: [uniform planner] plan 600000 HOLD_END; busy released
+[INFO] [1794650267.532562]: [formation goal bridge] plan 600000 FEASIBLE and published
+[INFO] [1794650268.227519]: [formation goal bridge] plan 600001: start=(12.000, 10.000, 0.000) goal=(10.000, 12.000, 0.000) vehicles=3
+[INFO] [1794650268.228228]: [uniform planner] plan 600001 admitted from cargo_wedge: start=(12.000, 10.000, 0.000) goal=(10.000, 12.000, 0.000) free_headings=True reverse=True
+[INFO] [1794650268.228738]: [formation goal bridge] start from current playback; body headings {1: 0.0, 2: 0.0, 3: 0.0}
+[WARN] [1794650268.233187]: [uniform planner] ignoring playback feedback for plan 600001: identity differs from the published model (model_sha256/formation_id/backend)
+[INFO] [1794650270.308563]: [uniform planner] plan 600001 published: T_end=15.429 s model_sha256=54ff432b6ddeb642105a8451366b7112ebec7236c28642e3edb7a7cf1a031588 samples=778 wall=1.903 s verification_to_stamp_delay=0.1720 s
+[INFO] [1794650270.309956]: [formation goal bridge] plan 600001 FEASIBLE and published
+[INFO] [1794650270.395384]: [formation playback] accepted uniform_v02 plan 600001 formation cargo_wedge model_sha256=54ff432b6ddeb642105a8451366b7112ebec7236c28642e3edb7a7cf1a031588: 3 vehicles, 778 shared samples, T_end=15.429103 s
+[INFO] [1794650270.404495]: [formation playback] plan=600001 state=PLAYING elapsed=0.092246 clamped=0.092246 fraction=0.612241 executable=True
+[INFO] [1794650270.405028]: [uniform planner] plan 600001 playback confirmed
+[INFO] [1794650285.756757]: [formation playback] plan=600001 state=HOLD_END elapsed=15.439895 clamped=15.429103 fraction=0.000000 executable=True
+[INFO] [1794650285.765975]: [uniform planner] plan 600001 HOLD_END; busy released
+[INFO] [1794650285.766505]: [formation goal bridge] plan 600001 FEASIBLE and published
+[INFO] [1794650286.855786]: [formation goal bridge] 2D Pose Estimate recorded; new experiment policy=cargo_heading headings={1: 0.013000000000000001, 2: 0.013000000000000001, 3: 0.013000000000000001}
+[INFO] [1794650287.799927]: [formation goal bridge] plan 600002: start=(10.000, 12.000, 0.013) goal=(12.000, 12.000, 0.018) vehicles=3
+[INFO] [1794650287.800874]: [uniform planner] plan 600002 admitted from cargo_wedge: start=(10.000, 12.000, 0.013) goal=(12.000, 12.000, 0.018) free_headings=True reverse=True
+[INFO] [1794650287.801405]: [formation goal bridge] start from manual start; body headings {1: 0.013, 2: 0.013, 3: 0.013}
+[WARN] [1794650287.803087]: [uniform planner] ignoring playback feedback for plan 600002: identity differs from the published model (model_sha256/formation_id/backend)
+[INFO] [1794650289.131493]: [uniform planner] plan 600002 published: T_end=7.012 s model_sha256=2335bb92ebc4293f707a174f78b5833012a49ea1f199e1655d2b185fa627011f samples=355 wall=1.250 s verification_to_stamp_delay=0.0762 s
+[INFO] [1794650289.132492]: [formation goal bridge] plan 600002 FEASIBLE and published
+[INFO] [1794650289.170691]: [formation playback] accepted uniform_v02 plan 600002 formation cargo_wedge model_sha256=2335bb92ebc4293f707a174f78b5833012a49ea1f199e1655d2b185fa627011f: 3 vehicles, 355 shared samples, T_end=7.011869 s
+[WARN] [1794650289.172148]: [formation playback] ignoring audit status for plan 600002: identity differs from the verified envelope (model_sha256/formation_id/backend)
+[INFO] [1794650289.177273]: [formation playback] plan=600002 state=PLAYING elapsed=0.043451 clamped=0.043451 fraction=0.172515 executable=False
+[INFO] [1794650289.177908]: [uniform planner] plan 600002 playback confirmed
+[INFO] [1794650296.154480]: [formation playback] plan=600002 state=HOLD_END elapsed=7.019344 clamped=7.011869 fraction=0.000000 executable=True
+[INFO] [1794650296.186002]: [uniform planner] plan 600002 HOLD_END; busy released
+[INFO] [1794650296.186372]: [formation goal bridge] plan 600002 FEASIBLE and published
+[INFO] [1794650296.989251]: [formation goal bridge] 2D Pose Estimate recorded; new experiment policy=cargo_heading headings={1: 0.0, 2: 0.0, 3: 0.0}
+[INFO] [1794650297.992526]: [formation goal bridge] plan 600003: start=(10.000, 10.000, 0.000) goal=(12.000, 11.000, 0.600) vehicles=3
+[INFO] [1794650297.993670]: [uniform planner] plan 600003 admitted from cargo_wedge: start=(10.000, 10.000, 0.000) goal=(12.000, 11.000, 0.600) free_headings=True reverse=True
+[INFO] [1794650297.993834]: [formation goal bridge] start from manual start; body headings {1: 0.0, 2: 0.0, 3: 0.0}
+[WARN] [1794650297.996115]: [uniform planner] ignoring playback feedback for plan 600003: identity differs from the published model (model_sha256/formation_id/backend)
+[WARN] [1794650303.004182]: [uniform planner] ignoring playback feedback for plan 600003: identity differs from the published model (model_sha256/formation_id/backend)
+[WARN] [1794650308.005223]: [uniform planner] ignoring playback feedback for plan 600003: identity differs from the published model (model_sha256/formation_id/backend)
+[WARN] [1794650313.009523]: [uniform planner] ignoring playback feedback for plan 600003: identity differs from the published model (model_sha256/formation_id/backend)
+[INFO] [1794650314.656751]: [uniform planner] plan 600003 published: T_end=21.444 s model_sha256=fdfd0e5c560b39ea3fa368af4bdefe99c1b85b871596322d568714d6a368d6c6 samples=1078 wall=16.430 s verification_to_stamp_delay=0.2260 s
+[INFO] [1794650314.658724]: [formation goal bridge] plan 600003 FEASIBLE and published
+[INFO] [1794650314.802238]: [formation playback] accepted uniform_v02 plan 600003 formation cargo_wedge model_sha256=fdfd0e5c560b39ea3fa368af4bdefe99c1b85b871596322d568714d6a368d6c6: 3 vehicles, 1078 shared samples, T_end=21.443573 s
+[INFO] [1794650314.814104]: [formation playback] plan=600003 state=PLAYING elapsed=0.151830 clamped=0.151830 fraction=0.591448 executable=True
+[INFO] [1794650314.814891]: [uniform planner] plan 600003 playback confirmed
+[INFO] [1794650336.118701]: [formation playback] plan=600003 state=HOLD_END elapsed=21.452536 clamped=21.443573 fraction=0.000000 executable=True
+[INFO] [1794650336.119344]: [uniform planner] plan 600003 HOLD_END; busy released
+[INFO] [1794650336.119973]: [formation goal bridge] plan 600003 FEASIBLE and published
+[formation_goal_bridge-4] killing on exit
+[formation_playback-3] killing on exit
+[formation_uniform_planner-2] killing on exit
+[fwis_map_publisher-1] killing on exit
+shutting down processing monitor...
+... shutting down processing monitor complete
+[1mdone[0m

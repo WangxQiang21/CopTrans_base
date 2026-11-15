@@ -1,0 +1,85 @@
+test_goal_bridge_script_is_installed_by_catkin (tests.test_formation_demo_assets.FormationLaunchTest) ... ok
+test_launch_defaults_match_the_frozen_uniform_contract (tests.test_formation_demo_assets.FormationLaunchTest)
+FR05-R1: the demo must not ship wider tolerances or budgets. ... ok
+test_launch_has_exactly_one_of_each_formation_process (tests.test_formation_demo_assets.FormationLaunchTest) ... ok
+test_launch_never_starts_single_vehicle_nodes_or_extra_planners (tests.test_formation_demo_assets.FormationLaunchTest) ... ok
+test_launch_starts_one_backend_at_a_time (tests.test_formation_demo_assets.FormationLaunchTest)
+Exactly two planner nodes exist and they can never co-start. ... ok
+test_launch_starts_one_interactive_goal_bridge (tests.test_formation_demo_assets.FormationLaunchTest) ... ok
+test_launch_uses_the_formation_params_and_rviz_files (tests.test_formation_demo_assets.FormationLaunchTest) ... ok
+test_launch_wires_backend_into_playback_and_bridge (tests.test_formation_demo_assets.FormationLaunchTest) ... ok
+test_playback_script_is_installed_by_catkin (tests.test_formation_demo_assets.FormationLaunchTest) ... ok
+test_uniform_planner_defaults_reference_frozen_config (tests.test_formation_demo_assets.FormationLaunchTest)
+FR05-R1: node fallbacks are the FR03/FR04 defaults, not copies. ... ok
+test_uniform_planner_script_is_installed_by_catkin (tests.test_formation_demo_assets.FormationLaunchTest) ... ok
+test_demo_rviz_does_not_reference_single_vehicle_topics (tests.test_formation_demo_assets.FormationRvizTest) ... ok
+test_demo_rviz_exposes_goal_and_initial_pose_tools (tests.test_formation_demo_assets.FormationRvizTest) ... ok
+test_map_and_formation_markers_are_displayed_in_map_frame (tests.test_formation_demo_assets.FormationRvizTest) ... ok
+test_backend_is_formation_only (tests.test_formation_demo_assets.RunDemoBackendTest) ... ok
+test_cli_and_launch_arg_forms_select_the_same_backend (tests.test_formation_demo_assets.RunDemoBackendTest) ... ok
+test_conflicting_or_unknown_backends_are_rejected (tests.test_formation_demo_assets.RunDemoBackendTest) ... ok
+test_default_backend_is_uniform_v02 (tests.test_formation_demo_assets.RunDemoBackendTest) ... ok
+test_A06_chain_rule_units_and_independent_duration_drivers (tests.test_uniform_trajectory.UniformTrajectoryAcceptance) ... ok
+test_A07_setup_interior_and_both_boundary_sides (tests.test_uniform_trajectory.UniformTrajectoryAcceptance) ... ok
+test_A08_versioned_roundtrip_all_phases_and_exact_arc_projection (tests.test_uniform_trajectory.UniformTrajectoryAcceptance) ... ok
+test_A09_explicit_zero_motion_and_unmet_requests (tests.test_uniform_trajectory.UniformTrajectoryAcceptance) ... ok
+test_A10_explicit_rejections_and_real_duration_limit (tests.test_uniform_trajectory.UniformTrajectoryAcceptance) ... ok
+test_R1_stable_near_endpoint_progress_and_roundtrip (tests.test_uniform_trajectory.UniformTrajectoryAcceptance) ... ok
+test_R2_signed_spin_wheel_rolling_vectors (tests.test_uniform_trajectory.UniformTrajectoryAcceptance) ... ok
+test_R3_decoded_time_axis_is_contiguous_and_representable (tests.test_uniform_trajectory.UniformTrajectoryAcceptance) ... ok
+test_A01_initial_setup_presence_and_stationarity (tests.test_uniform_timing.UniformTimingAcceptance) ... ok
+test_A02_zero_angle_vehicle_remains_canonical_S (tests.test_uniform_timing.UniformTimingAcceptance) ... ok
+test_A03_manual_S_arc_S_O_sequence (tests.test_uniform_timing.UniformTimingAcceptance) ... ok
+test_A04_same_mode_wheel_change_and_no_change (tests.test_uniform_timing.UniformTimingAcceptance) ... ok
+test_A05_oblique_lateral_and_reverse_signed_speed (tests.test_uniform_timing.UniformTimingAcceptance) ... ok
+test_n01_n07_independent_validator_negatives (tests.test_uniform_motion.UniformMotionAcceptanceTest) ... ok
+test_p01_a_straight_forward_and_reverse (tests.test_uniform_motion.UniformMotionAcceptanceTest) ... ok
+test_p02_a_arc_positive_around_zero_pivot (tests.test_uniform_motion.UniformMotionAcceptanceTest) ... ok
+test_p03_a_arc_clockwise_uses_reverse_branch (tests.test_uniform_motion.UniformMotionAcceptanceTest) ... ok
+test_p04_a_arc_offset_pivot_radii_and_curvatures (tests.test_uniform_motion.UniformMotionAcceptanceTest) ... ok
+test_p05_a_arc_nonzero_cargo_heading (tests.test_uniform_motion.UniformMotionAcceptanceTest) ... ok
+test_p06_a_arc_rejects_vehicle_radius_below_limit (tests.test_uniform_motion.UniformMotionAcceptanceTest) ... ok
+test_p07_a_arc_rejects_pivot_at_vehicle_centre (tests.test_uniform_motion.UniformMotionAcceptanceTest) ... ok
+test_p08_a_arc_requires_explicit_s_alignment (tests.test_uniform_motion.UniformMotionAcceptanceTest) ... ok
+test_p09_o_translation_and_oblique (tests.test_uniform_motion.UniformMotionAcceptanceTest) ... ok
+test_p10_s_spin_with_zero_angle_hold (tests.test_uniform_motion.UniformMotionAcceptanceTest) ... ok
+test_p11_s_spin_zero_and_exact_pi (tests.test_uniform_motion.UniformMotionAcceptanceTest) ... ok
+test_p12_rejections_and_tampering (tests.test_uniform_motion.UniformMotionAcceptanceTest) ... ok
+test_forward_plan_frame_uses_the_sampler (tests.test_uniform_playback_plan.AnalyticFrameTest) ... ok
+test_frame_hold_states_and_clamping (tests.test_uniform_playback_plan.AnalyticFrameTest) ... ok
+test_frame_matches_the_model_and_not_linear_interpolation (tests.test_uniform_playback_plan.AnalyticFrameTest) ... ok
+test_status_document_carries_the_envelope_identity (tests.test_uniform_playback_plan.AnalyticFrameTest) ... ok
+test_legacy_trajectory_keeps_the_plan_id_only_audit (tests.test_uniform_playback_plan.AuditIdentityBindingTest) ... ok
+test_matching_identity_certifies_the_display (tests.test_uniform_playback_plan.AuditIdentityBindingTest) ... ok
+test_missing_identity_fields_never_certify_the_display (tests.test_uniform_playback_plan.AuditIdentityBindingTest) ... ok
+test_same_plan_id_other_digest_never_certifies_the_display (tests.test_uniform_playback_plan.AuditIdentityBindingTest) ... ok
+test_status_document_rejects_a_digest_for_another_envelope (tests.test_uniform_playback_plan.AuditIdentityBindingTest) ... ok
+test_verified_envelope_carries_the_authoritative_digest (tests.test_uniform_playback_plan.AuditIdentityBindingTest) ... ok
+test_zero_motion_hold_still_certifies_with_matching_identity (tests.test_uniform_playback_plan.AuditIdentityBindingTest) ... ok
+test_certification_mismatch_is_rejected (tests.test_uniform_playback_plan.EnvelopeAcceptanceTest) ... ok
+test_digest_mismatch_is_rejected (tests.test_uniform_playback_plan.EnvelopeAcceptanceTest) ... ok
+test_fields_round_trip_through_the_message_converter (tests.test_uniform_playback_plan.EnvelopeAcceptanceTest) ... ok
+test_identity_mismatch_is_rejected (tests.test_uniform_playback_plan.EnvelopeAcceptanceTest) ... ok
+test_metadata_mismatches_are_rejected (tests.test_uniform_playback_plan.EnvelopeAcceptanceTest) ... ok
+test_rebuildable_but_different_model_is_rejected_by_digest (tests.test_uniform_playback_plan.EnvelopeAcceptanceTest)
+A plausible model with the original digest still fails closed. ... ok
+test_tampered_model_json_is_rejected (tests.test_uniform_playback_plan.EnvelopeAcceptanceTest)
+A model that no longer matches its own edges cannot be rebuilt. ... ok
+test_tampered_sample_is_rejected (tests.test_uniform_playback_plan.EnvelopeAcceptanceTest) ... ok
+test_tampered_timing_is_rejected (tests.test_uniform_playback_plan.EnvelopeAcceptanceTest) ... ok
+test_unknown_backend_is_rejected (tests.test_uniform_playback_plan.EnvelopeAcceptanceTest) ... ok
+test_unknown_semantic_or_model_version_is_rejected (tests.test_uniform_playback_plan.EnvelopeAcceptanceTest) ... ok
+test_valid_envelope_rebuilds_the_authoritative_model (tests.test_uniform_playback_plan.EnvelopeAcceptanceTest) ... ok
+test_zero_motion_hold_envelope_is_accepted (tests.test_uniform_playback_plan.EnvelopeAcceptanceTest) ... ok
+test_non_increasing_shared_clock_is_rejected (tests.test_uniform_playback_plan.TrajectoryFieldValidationTest) ... ok
+test_short_point_tuple_is_rejected (tests.test_uniform_playback_plan.TrajectoryFieldValidationTest) ... ok
+test_matching_identity_terminal_releases_busy (tests.test_uniform_feedback_identity.FeedbackIdentityTest) ... ok
+test_missing_identity_terminal_does_not_release_busy (tests.test_uniform_feedback_identity.FeedbackIdentityTest) ... ok
+test_wrong_digest_hold_start_does_not_confirm_playback (tests.test_uniform_feedback_identity.FeedbackIdentityTest) ... ok
+test_wrong_digest_terminal_does_not_release_busy (tests.test_uniform_feedback_identity.FeedbackIdentityTest) ... ok
+test_wrong_formation_or_backend_terminal_is_ignored (tests.test_uniform_feedback_identity.FeedbackIdentityTest) ... ok
+
+----------------------------------------------------------------------
+Ran 75 tests in 4.270s
+
+OK

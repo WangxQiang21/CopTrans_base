@@ -1,0 +1,56 @@
+FR05 live demo node/topic inventory
+====================================
+Captured while the RViz run_demo was still alive (private master
+http://127.0.0.1:11411, after plan 600002 reached HOLD_END), with:
+
+  ROS_MASTER_URI=http://127.0.0.1:11411 ROS_HOSTNAME=127.0.0.1 ROS_IP=127.0.0.1 \
+    rosnode list
+  rostopic list | sort
+  rostopic info /formation/playback_plan
+
+rosnode list
+------------
+/formation_goal_bridge
+/formation_playback
+/formation_uniform_planner
+/fwis_map_publisher
+/rosout
+/rviz
+
+rostopic list (sorted)
+----------------------
+/formation/display_pose
+/formation/job_state
+/formation/markers
+/formation/optimizer_status
+/formation/plan_request
+/formation/playback_plan
+/formation/playback_status
+/formation/quality_report
+/formation/status
+/initialpose
+/map
+/map_updates
+/move_base_simple/goal
+/rosout
+/rosout_agg
+/start_pose
+/tf
+/tf_static
+
+rostopic info /formation/playback_plan
+--------------------------------------
+Type: fwis_v3_msgs/FormationPlaybackPlan
+
+Publishers:
+ * /formation_uniform_planner (http://127.0.0.1:40329/)
+
+Subscribers:
+ * /formation_playback (http://127.0.0.1:33347/)
+
+Interpretation
+--------------
+Exactly one node publishes the new atomic envelope (the uniform_v02 planner);
+the legacy C++ front end and legacy formation optimizer are not in the node
+list and the launch log says
+"[expv3] 编队发布后端 uniform_v02（同一时刻只启动这一个发布后端）".

@@ -1,0 +1,102 @@
+{
+  "schema": "fr06.narrow_corner.v1.rviz_round",
+  "round": "round1",
+  "generated_at_local": "2026-11-14T22:30:00+08:00",
+  "purpose": "One real ROS/RViz synchronous replay of an autonomously searched FR06 tight-corridor plan.",
+  "ros": {
+    "master_uri": "http://127.0.0.1:11483",
+    "ros_home": "evaluation/formation_refactor_v02/FR06/ros_home",
+    "master_pid": 3195096,
+    "demo_wrapper_pid": 3195229,
+    "roslaunch_pid": 3195941,
+    "launch_command": "./run_demo.sh --map /home/wq/whut_thesis/expv3_multi_v02/evaluation/formation_refactor_v02/FR06/maps/corridor_w2.8 --scale 1.0 backend:=uniform_v02 rviz:=true playback_rate:=100",
+    "log": "logs/run_demo_rviz.log",
+    "shutdown": "roslaunch received SIGINT after capture; private master on 11483 stopped; no nodes or master left on that port"
+  },
+  "map": {
+    "directory": "maps/corridor_w2.8",
+    "corridor_width_m": 2.8,
+    "map_pgm_sha256": "b59dc888714540e4eb04c2dec4a6a53f40f186d820048069e7458f138483362f",
+    "scene_meta_sha256": "c1e85f2a53685569c05f9d3db96593065c6ff531c04d553c1e96c5f2b373ea7b",
+    "map_yaml_sha256_source": "42ea4de15ef308b6bd08bc3b42f5d586fb6e995f3f8662dde268da04f9c12e73",
+    "runtime_copy_note": "run_demo.sh with --scale 1.0 still copies the map through tools/scale_map_runtime.py into a mktemp directory and removes it on exit, so the runtime copy no longer exists. Re-running the same tool with the same source directory and scale 1.0 reproduces map.pgm b59dc888... and scene_meta.yaml c1e85f2a..., and rewrites map.yaml to 7904204c6113579d088f442c25d8dbb7d9067fccb37aeefd861913fbf23c110d (same origin/resolution)."
+  },
+  "goal_path": {
+    "mode": "auto_goal from scene_meta (scene:=manual_map auto_goal:=true)",
+    "start_pose_latched": [
+      6.0,
+      6.0,
+      0.0
+    ],
+    "goal_sent": [
+      10.0,
+      10.0,
+      1.571
+    ],
+    "manual_click": false,
+    "note": "The launch file prints its default bridge parameters before the scene_meta override; the admitted request logged at line 88 is start=(6.000, 6.000, 0.000) goal=(10.000, 10.000, 1.571)."
+  },
+  "plan": {
+    "plan_id": 600000,
+    "formation_id_logged": "cargo_wedge",
+    "model_sha256": "a39818b8125ce7d3cd212e16108f7e91b849c952f534dfcf3b559e4bac0cc967",
+    "t_end_s": 33.024494,
+    "shared_samples": 1659,
+    "planner_wall_s": 9.231,
+    "verification_to_stamp_delay_s": 0.3623,
+    "admission": "admitted from cargo_wedge: start=(6.000, 6.000, 0.000) goal=(10.000, 10.000, 1.571) free_headings=True reverse=True"
+  },
+  "playback": {
+    "state_sequence": [
+      "PLAYING",
+      "HOLD_END"
+    ],
+    "playing_logged": {
+      "wall_clock": "2026-11-14T22:28:25.461+08:00",
+      "elapsed_s": 0.261073,
+      "clamped_s": 0.261073,
+      "fraction": 0.053582,
+      "executable": true
+    },
+    "hold_end_logged": {
+      "wall_clock": "2026-11-14T22:28:58.252+08:00",
+      "elapsed_s": 33.045216,
+      "clamped_s": 33.024494,
+      "fraction": 0.0,
+      "executable": true
+    },
+    "busy_released": true,
+    "observed_wall_duration_s": 33.045216,
+    "rate_parameter": 100,
+    "rate_observation": "The /formation_playback/rate parameter was set to 100 by the launch request, but the observed PLAYING-to-HOLD_END wall duration was 33.045 s, i.e. the replay ran at approximately 1x. No acceleration is claimed."
+  },
+  "screenshots": {
+    "source": "import -window root at DISPLAY=:1, 3840x1080",
+    "originals": "rviz/round1/auto_01.png .. auto_30.png",
+    "rviz_window_crops": "rviz/round1/frames/auto_{01,10,20,24,28,30}.png",
+    "timestamps_local": {
+      "auto_01": "22:28:37",
+      "auto_10": "22:28:42",
+      "auto_20": "22:28:47",
+      "auto_21": "22:29:11",
+      "auto_28": "22:29:14",
+      "auto_30": "22:29:15"
+    },
+    "state_mapping": {
+      "auto_01..auto_20": "PLAYING (playback clock offset approx. 25.2 s after 22:28:25.2; elapsed approx. 12 s to 22.5 s)",
+      "auto_21..auto_30": "after HOLD_END at 22:28:58.252 (formation parked at the goal, executable=True)"
+    },
+    "visible_content": {
+      "auto_01_auto_10": "three vehicles leave the approach, vehicle 1 spins in place while vehicles 2 and 3 hold",
+      "auto_15_auto_20": "formation sweeps the quarter arc with all three bodies rotating",
+      "auto_24_auto_30": "formation parked at the exit goal (10, 10) heading +pi/2",
+      "overlay_read_in_auto_30": "plan 600000 | HOLD_END | FEASIBLE / T_end=33.024 s / inherited caution text: no transactional publication, no independent metrics reported"
+    },
+    "overlay_caution": "The RViz overlay text is the inherited FR05 display caution. It says that the playback layer itself reports no independent metric; it is not a failure of this plan. Quantitative evidence for FR06 comes from the FR02 audit JSON, not from this overlay."
+  },
+  "scope_notes": [
+    "This replay used the live planner node. Its plan carries plan_id 600000 and the launch-derived formation name cargo_wedge, so its model digest differs from the offline FR06 plans (6201-6203, formation_id fr06_three_vehicle) even though both end at T_end=33.02449442722614 s.",
+    "No hash-equality claim is made between the live plan and the offline plans; equality of T_end and of the logged geometry is what is observed.",
+    "This is one visual synchronous replay of one tight-corridor success. It is not a success-rate measurement."
+  ]
+}

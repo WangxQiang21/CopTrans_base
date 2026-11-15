@@ -1,0 +1,216 @@
+{
+  "expected_total_tests": 96,
+  "generated_at_utc": "2026-11-13T11:24:45.694360+00:00",
+  "overall_passed": true,
+  "results": {
+    "fr01": {
+      "all_cases_passed": true,
+      "case_count": 13,
+      "cases": [
+        {
+          "case": "N01-N07",
+          "status": "PASSED"
+        },
+        {
+          "case": "P01",
+          "status": "PASSED"
+        },
+        {
+          "case": "P02",
+          "status": "PASSED"
+        },
+        {
+          "case": "P03",
+          "status": "PASSED"
+        },
+        {
+          "case": "P04",
+          "status": "PASSED"
+        },
+        {
+          "case": "P05",
+          "status": "PASSED"
+        },
+        {
+          "case": "P06",
+          "status": "PASSED"
+        },
+        {
+          "case": "P07",
+          "status": "PASSED"
+        },
+        {
+          "case": "P08",
+          "status": "PASSED"
+        },
+        {
+          "case": "P09",
+          "status": "PASSED"
+        },
+        {
+          "case": "P10",
+          "status": "PASSED"
+        },
+        {
+          "case": "P11",
+          "status": "PASSED"
+        },
+        {
+          "case": "P12",
+          "status": "PASSED"
+        }
+      ],
+      "status": null
+    },
+    "timing": {
+      "all_cases_passed": true,
+      "case_count": 5,
+      "cases": [
+        {
+          "case": "A01",
+          "status": "PASSED"
+        },
+        {
+          "case": "A02",
+          "status": "PASSED"
+        },
+        {
+          "case": "A03",
+          "status": "PASSED"
+        },
+        {
+          "case": "A04",
+          "status": "PASSED"
+        },
+        {
+          "case": "A05",
+          "status": "PASSED"
+        }
+      ],
+      "status": "PASSED"
+    },
+    "trajectory": {
+      "all_cases_passed": true,
+      "case_count": 7,
+      "cases": [
+        {
+          "case": "A06",
+          "status": "PASSED"
+        },
+        {
+          "case": "A07",
+          "status": "PASSED"
+        },
+        {
+          "case": "A08",
+          "status": "PASSED"
+        },
+        {
+          "case": "A09",
+          "status": "PASSED"
+        },
+        {
+          "case": "A10",
+          "status": "PASSED"
+        },
+        {
+          "case": "R1",
+          "status": "PASSED"
+        },
+        {
+          "case": "R2",
+          "status": "PASSED"
+        }
+      ],
+      "status": "PASSED"
+    }
+  },
+  "schema": "fr02a.rework.regression_summary.v1",
+  "suites": [
+    {
+      "command": "env FR02_TIMING_RESULTS_PATH=/home/wq/whut_thesis/expv3_multi_v02/evaluation/formation_refactor_v02/FR02/A/rework_01/results/timing_results.json OPENBLAS_NUM_THREADS=1 PYTHONDONTWRITEBYTECODE=1 /usr/bin/python3 tests/test_uniform_timing.py -v",
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "expected_tests": 5,
+      "log_path": "logs/test_uniform_timing.log",
+      "log_tail": "test_A05_oblique_lateral_and_reverse_signed_speed (__main__.UniformTimingAcceptance) ... ok\n\n----------------------------------------------------------------------\nRan 5 tests in 0.116s\n\nOK",
+      "name": "test_uniform_timing",
+      "passed": true,
+      "ran_tests": 5,
+      "unittest_status": "OK"
+    },
+    {
+      "command": "env FR02_ARTIFACT_DIR=/home/wq/whut_thesis/expv3_multi_v02/evaluation/formation_refactor_v02/FR02/A/rework_01/artifacts FR02_TRAJECTORY_RESULTS_PATH=/home/wq/whut_thesis/expv3_multi_v02/evaluation/formation_refactor_v02/FR02/A/rework_01/results/trajectory_results.json OPENBLAS_NUM_THREADS=1 PYTHONDONTWRITEBYTECODE=1 /usr/bin/python3 tests/test_uniform_trajectory.py -v",
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "expected_tests": 7,
+      "log_path": "logs/test_uniform_trajectory.log",
+      "log_tail": "test_R2_signed_spin_wheel_rolling_vectors (__main__.UniformTrajectoryAcceptance) ... ok\n\n----------------------------------------------------------------------\nRan 7 tests in 0.549s\n\nOK",
+      "name": "test_uniform_trajectory",
+      "passed": true,
+      "ran_tests": 7,
+      "unittest_status": "OK"
+    },
+    {
+      "command": "env FR01_RESULTS_PATH=/home/wq/whut_thesis/expv3_multi_v02/evaluation/formation_refactor_v02/FR02/A/rework_01/results/fr01_primitive_results.json OPENBLAS_NUM_THREADS=1 PYTHONDONTWRITEBYTECODE=1 /usr/bin/python3 tests/test_uniform_motion.py -v",
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "expected_tests": 13,
+      "log_path": "logs/test_uniform_motion.log",
+      "log_tail": "test_p12_rejections_and_tampering (__main__.UniformMotionAcceptanceTest) ... ok\n\n----------------------------------------------------------------------\nRan 13 tests in 0.028s\n\nOK",
+      "name": "test_uniform_motion",
+      "passed": true,
+      "ran_tests": 13,
+      "unittest_status": "OK"
+    },
+    {
+      "command": "env OPENBLAS_NUM_THREADS=1 PYTHONDONTWRITEBYTECODE=1 /usr/bin/python3 tests/test_formation_geometry.py -v",
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "expected_tests": 15,
+      "log_path": "logs/test_formation_geometry.log",
+      "log_tail": "test_two_block_chain_propagates_body_headings (__main__.FormationGeometryTests) ... ok\n\n----------------------------------------------------------------------\nRan 15 tests in 0.080s\n\nOK",
+      "name": "test_formation_geometry",
+      "passed": true,
+      "ran_tests": 15,
+      "unittest_status": "OK"
+    },
+    {
+      "command": "env OPENBLAS_NUM_THREADS=1 PYTHONDONTWRITEBYTECODE=1 /usr/bin/python3 tests/test_formation_kinematics.py -v",
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "expected_tests": 28,
+      "log_path": "logs/test_formation_kinematics.log",
+      "log_tail": "test_world_headings_include_the_formation_heading_offset (__main__.FormationKinematicsTests) ... ok\n\n----------------------------------------------------------------------\nRan 28 tests in 0.008s\n\nOK",
+      "name": "test_formation_kinematics",
+      "passed": true,
+      "ran_tests": 28,
+      "unittest_status": "OK"
+    },
+    {
+      "command": "env OPENBLAS_NUM_THREADS=1 PYTHONDONTWRITEBYTECODE=1 /usr/bin/python3 tests/test_formation_retiming.py -v",
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "expected_tests": 14,
+      "log_path": "logs/test_formation_retiming.log",
+      "log_tail": "test_translation_common_grid_and_rigid_centers (__main__.FormationRetimingTest) ... ok\n\n----------------------------------------------------------------------\nRan 14 tests in 0.244s\n\nOK",
+      "name": "test_formation_retiming",
+      "passed": true,
+      "ran_tests": 14,
+      "unittest_status": "OK"
+    },
+    {
+      "command": "env OPENBLAS_NUM_THREADS=1 PYTHONDONTWRITEBYTECODE=1 /usr/bin/python3 tests/test_formation_hold.py -v",
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "expected_tests": 14,
+      "log_path": "logs/test_formation_hold.log",
+      "log_tail": "test_zero_length_primitives_are_a_zero_motion_candidate (__main__.ZeroMotionSeedTest) ... ok\n\n----------------------------------------------------------------------\nRan 14 tests in 0.009s\n\nOK",
+      "name": "test_formation_hold",
+      "passed": true,
+      "ran_tests": 14,
+      "unittest_status": "OK"
+    }
+  ],
+  "total_tests": 96
+}

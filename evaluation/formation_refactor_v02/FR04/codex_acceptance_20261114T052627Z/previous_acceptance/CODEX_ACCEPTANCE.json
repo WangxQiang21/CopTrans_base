@@ -1,0 +1,45 @@
+{
+  "task": "FR04",
+  "status": "CHANGES_REQUESTED",
+  "reviewer": "Codex",
+  "reviewed_at_utc": "2026-11-14T03:38:49.366633+00:00",
+  "branch": "refactor/formation-v02",
+  "head": "6227833011e2d92b711179bfdec979bb0b878b29",
+  "reviewed_source_sha256": {
+    "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_search.py": "1ef36bfd04340c79c549bc5b40b388ced7628d3147bf146dabcaf5ed09087058",
+    "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_pipeline.py": "8e0201b99f5db3c0b7a63e70cd00a0489a9b57315e9fd2c3d9a4d13aed7f284b",
+    "tests/test_uniform_pipeline.py": "7545a7fdc27cbc7d9469b1de80951c069ed9c0881f1b3e0af14acb26ab9982b6"
+  },
+  "report": "CODEX_ACCEPTANCE.md",
+  "detailed_report": "codex_acceptance_20261114T033314Z/ACCEPTANCE.md",
+  "evidence_directory": "codex_acceptance_20261114T033314Z",
+  "tests_passed": 169,
+  "FR04_tests_passed": 12,
+  "related_regression_tests_passed": 145,
+  "FR03_tests_passed": 12,
+  "submitted_evidence_files_hash_verified": 78,
+  "blocking_findings": [
+    {
+      "id": "FR04-R1",
+      "category": "pipeline_request_and_search_output_binding",
+      "location": "uniform_pipeline.py:_build_and_audit (line 204)",
+      "summary": "AuditRequest is derived from the plan under audit; a valid unrelated plan substituted at final reconstruction is returned SUCCESS/executable despite request mismatch.",
+      "evidence": "codex_acceptance_20261114T033314Z/independent_probes.json",
+      "normal_required_scenarios_passed": true,
+      "observation_scope": "Confirmed by targeted fault injection; no spontaneous wrong-request output observed in F01-F12."
+    }
+  ],
+  "scope_of_rework": [
+    "uniform_pipeline.py",
+    "tests/test_uniform_pipeline.py",
+    "FR04 evidence only"
+  ],
+  "FR01_FR02_FR03_remain_ACCEPTED": true,
+  "implementation_modified_by_codex": false,
+  "tests_modified_by_codex": false,
+  "ROS_started": false,
+  "FR05_started": false,
+  "git_committed": false,
+  "original_T5_preserved": true,
+  "reviewed_sources_and_submitted_evidence_unchanged": true
+}

@@ -1,0 +1,148 @@
+<launch>
+  <!-- S10 multi-vehicle formation demo.
+       Starts exactly one map publisher, at most one V0.2 planner and one
+       formation playback node.  It never starts three single-vehicle planners
+       or the single-vehicle optimizer/playback.
+
+       backend:=uniform_v02 (default) starts only the autonomous FR05 uniform
+       planner: it publishes the atomic /formation/playback_plan envelope and
+       the legacy C++ front end / legacy optimizer are not started.
+       backend:=legacy starts only the historical C++ formation_planner and
+       formation_optimizer_node.py; the uniform planner is not started.  The
+       two publishing backends can never run at the same time. -->
+  <arg name="backend" default="uniform_v02"/>
+  <arg name="planner" default="true"/>
+  <arg name="scene" default="S09_underground_garage"/>
+  <arg name="map_dir"
+       default="$(find fwis_v3_demo)/../../../maps/map16-s09-underground-garage"/>
+  <arg name="scene_yaml" default="$(arg map_dir)/scene_source.yaml"/>
+  <arg name="rviz" default="false"/>
+  <arg name="rviz_config" default="$(find fwis_v3_demo)/rviz/formation_demo.rviz"/>
+  <arg name="auto_goal" default="false"/>
+  <arg name="config_file"
+       default="$(find fwis_v3_demo)/config/formation_params.yaml"/>
+  <arg name="start_map" default="true"/>
+  <arg name="frontend" default="true"/>
+  <arg name="optimizer" default="true"/>
+  <arg name="playback" default="true"/>
+  <arg name="goal_bridge" default="true"/>
+  <arg name="goal_start_x" default="10.0"/>
+  <arg name="goal_start_y" default="3.6"/>
+  <arg name="goal_start_theta" default="0.0"/>
+  <!-- One authoritative transport contract: ids, offsets, body dimensions,
+       heading policies.  Loaded into the goal bridge and the playback node;
+       tools/transport_footprint.py reads the same file. -->
+  <arg name="transport_config"
+       default="$(find fwis_v3_demo)/config/transport_formation.yaml"/>
+  <arg name="enable_nlp" default="true"/>
+  <arg name="max_candidates" default="4"/>
+  <arg name="optimizer_time_limit" default="1.0"/>
+  <arg name="require_collision_precheck" default="true"/>
+  <!-- Legacy restricted experiment only: the transport contract has no
+       theta_i=psi_F lock.  Keep false for the default demo. -->
+  <arg name="require_cargo_heading" default="false"/>
+  <arg name="playback_rate" default="25.0"/>
+  <arg name="playback_publish_tf" default="true"/>
+  <!-- FR05 autonomous uniform planner budgets.  These are search/audit
+       budgets, not certified timing limits; T_end always comes from FR02. -->
+  <arg name="max_expansions" default="50000"/>
+  <arg name="uniform_max_seconds" default="20.0"/>
+  <arg name="uniform_translation_step" default="1.0"/>
+  <arg name="uniform_collision_margin" default="0.05"/>
+  <arg name="uniform_sweep_spacing" default="0.01"/>
+  <!-- Common publication grid of the sample carrier.  The model stays the
+       authority; playback re-evaluates it analytically at every tick. -->
+  <arg name="uniform_publication_dt" default="0.02"/>
+  <arg name="uniform_goal_xy_tol" default="0.16"/>
+  <arg name="uniform_goal_psi_tol" default="0.16"/>
+  <arg name="playback_start_timeout_s" default="5.0"/>
+  <arg name="playback_finish_grace_s" default="3.0"/>
+  <arg name="job_state_timeout_s" default="3.0"/>
+
+  <node if="$(arg start_map)" name="fwis_map_publisher"
+        pkg="fwis_map_server" type="map_publisher.py" output="screen">
+    <param name="map_dir" value="$(arg map_dir)"/>
+  </node>
+
+  <node if="$(eval arg('frontend') and arg('backend') == 'legacy')"
+        name="formation_planner"
+        pkg="fwis_v3_planner" type="formation_planner_node" output="screen">
+    <rosparam command="load" file="$(arg config_file)"/>
+  </node>
+
+  <!-- The only V0.2 publisher.  It does not start in legacy mode. -->
+  <node if="$(eval arg('planner') and arg('backend') == 'uniform_v02')"
+        name="formation_uniform_planner"
+        pkg="fwis_v3_optimizer" type="formation_uniform_planner_node.py"
+        output="screen">
+    <param name="frame_id" value="map"/>
+    <param name="max_expansions" value="$(arg max_expansions)"/>
+    <param name="max_seconds" value="$(arg uniform_max_seconds)"/>
+    <param name="translation_step" value="$(arg uniform_translation_step)"/>
+    <param name="collision_margin" value="$(arg uniform_collision_margin)"/>
+    <param name="sweep_spacing" value="$(arg uniform_sweep_spacing)"/>
+    <param name="publication_dt" value="$(arg uniform_publication_dt)"/>
+    <param name="goal_xy_tol" value="$(arg uniform_goal_xy_tol)"/>
+    <param name="goal_psi_tol" value="$(arg uniform_goal_psi_tol)"/>
+    <param name="goal_heading_tol" value="$(arg uniform_goal_psi_tol)"/>
+    <param name="playback_start_timeout_s"
+           value="$(arg playback_start_timeout_s)"/>
+    <param name="playback_finish_grace_s"
+           value="$(arg playback_finish_grace_s)"/>
+  </node>
+
+  <node if="$(eval arg('optimizer') and arg('backend') == 'legacy')"
+        name="formation_optimizer"
+        pkg="fwis_v3_optimizer" type="formation_optimizer_node.py"
+        output="screen">
+    <param name="enable_nlp" value="$(arg enable_nlp)"/>
+    <param name="max_candidates" value="$(arg max_candidates)"/>
+    <param name="optimizer_time_limit" value="$(arg optimizer_time_limit)"/>
+    <param name="require_collision_precheck"
+           value="$(arg require_collision_precheck)"/>
+    <param name="collision_margin" value="0.05"/>
+    <param name="sweep_spacing" value="0.01"/>
+    <param name="publication_dt" value="0.02"/>
+    <param name="planning_dt" value="0.02"/>
+    <param name="kinematic_limits/require_cargo_heading"
+           value="$(arg require_cargo_heading)"/>
+    <param name="start_on_publication" value="true"/>
+  </node>
+
+  <node if="$(arg playback)" name="formation_playback"
+        pkg="fwis_v3_playback" type="formation_playback.py"
+        output="screen">
+    <param name="frame_id" value="map"/>
+    <param name="rate" value="$(arg playback_rate)"/>
+    <param name="publish_tf" value="$(arg playback_publish_tf)"/>
+    <param name="transport_ui" value="true"/>
+    <!-- legacy subscribes /formation/timed_trajectory; uniform_v02 subscribes
+         the atomic /formation/playback_plan plus /formation/job_state. -->
+    <param name="backend" value="$(arg backend)"/>
+    <rosparam command="load" file="$(arg transport_config)"/>
+  </node>
+
+  <node if="$(arg goal_bridge)" name="formation_goal_bridge"
+        pkg="fwis_v3_demo" type="formation_goal_bridge.py"
+        output="screen">
+    <param name="frame_id" value="map"/>
+    <param name="start_x" value="$(arg goal_start_x)"/>
+    <param name="start_y" value="$(arg goal_start_y)"/>
+    <param name="start_theta" value="$(arg goal_start_theta)"/>
+    <param name="initial_plan_id" value="600000"/>
+    <param name="map_timeout_s" value="8.0"/>
+    <param name="playback_tf_timeout_s" value="0.5"/>
+    <param name="admission_backend" value="$(arg backend)"/>
+    <param name="job_state_timeout_s" value="$(arg job_state_timeout_s)"/>
+    <rosparam command="load" file="$(arg transport_config)"/>
+  </node>
+
+  <node if="$(arg auto_goal)" name="formation_auto_goal"
+        pkg="fwis_v3_demo" type="auto_goal.py" output="screen">
+    <param name="map_dir" value="$(arg map_dir)"/>
+  </node>
+
+  <node if="$(arg rviz)" name="rviz" pkg="rviz" type="rviz"
+        args="-d $(arg rviz_config)"
+        output="screen"/>
+</launch>

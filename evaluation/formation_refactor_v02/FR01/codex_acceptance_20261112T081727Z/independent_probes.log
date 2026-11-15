@@ -1,0 +1,122 @@
+{
+  "positive_count": 24,
+  "positive_metrics": {
+    "max_center_error_m": 8.881784197001252e-16,
+    "max_finite_difference_error": 8.878187074401467e-10,
+    "max_lateral_residual": 2.890250261344818e-10
+  },
+  "negative_cases": [
+    {
+      "case": "N01_A_arc_body_not_tangent",
+      "expected": "REJECT",
+      "actual": "INCORRECTLY_ACCEPTED",
+      "metrics": {
+        "primitive": "A_ARC",
+        "sample_count": 8,
+        "max_endpoint_qf_error_m": 0.0,
+        "max_endpoint_heading_error_rad": 0.0,
+        "max_rigidity_residual_m": 2.220446049250313e-16,
+        "max_mode_equation_residual": 0.0,
+        "max_derivative_error": 0.0,
+        "max_wheel_angle_rad": 0.2932503134605156
+      },
+      "invalidity": "All body headings shifted by 0.2 rad with end headings and segments consistent. Center velocity/body lateral residual=sin(0.2)=0.19866933 m/rad; no-slip A invalid."
+    },
+    {
+      "case": "N02_S_zero_angle_end_wheels_A",
+      "expected": "REJECT",
+      "actual": "INCORRECTLY_ACCEPTED",
+      "metrics": {
+        "primitive": "S_SPIN",
+        "sample_count": 8,
+        "max_endpoint_qf_error_m": 0.0,
+        "max_endpoint_heading_error_rad": 0.0,
+        "max_rigidity_residual_m": 2.220446049250313e-16,
+        "max_mode_equation_residual": 0.0,
+        "max_derivative_error": 0.0,
+        "max_wheel_angle_rad": 0.9357695914045828
+      },
+      "invalidity": "car2 starts canonical S but its end wheel angles/factors are A zero-curvature. FR02 would derive incorrect exit setup."
+    },
+    {
+      "case": "N03_wheel_limit_exceeded",
+      "expected": "REJECT",
+      "actual": "INCORRECTLY_ACCEPTED",
+      "metrics": {
+        "primitive": "A_ARC",
+        "sample_count": 8,
+        "max_endpoint_qf_error_m": 0.0,
+        "max_endpoint_heading_error_rad": 0.0,
+        "max_rigidity_residual_m": 2.220446049250313e-16,
+        "max_mode_equation_residual": 0.0,
+        "max_derivative_error": 0.0,
+        "max_wheel_angle_rad": 0.2932503134605156
+      },
+      "invalidity": "Actual max wheel angle about 0.29325 rad exceeds edge limits.steer_angle_max=0.1 rad."
+    },
+    {
+      "case": "N04_turn_radius_below_limit",
+      "expected": "REJECT",
+      "actual": "INCORRECTLY_ACCEPTED",
+      "metrics": {
+        "primitive": "A_ARC",
+        "sample_count": 8,
+        "max_endpoint_qf_error_m": 0.0,
+        "max_endpoint_heading_error_rad": 0.0,
+        "max_rigidity_residual_m": 2.220446049250313e-16,
+        "max_mode_equation_residual": 0.0,
+        "max_derivative_error": 0.0,
+        "max_wheel_angle_rad": 0.2932503134605156
+      },
+      "invalidity": "Every vehicle radius is 1 m, below edge limit 2 m."
+    },
+    {
+      "case": "N05_mode_primitive_mismatch",
+      "expected": "REJECT",
+      "actual": "INCORRECTLY_ACCEPTED",
+      "metrics": {
+        "primitive": "A_ARC",
+        "sample_count": 8,
+        "max_endpoint_qf_error_m": 0.0,
+        "max_endpoint_heading_error_rad": 0.0,
+        "max_rigidity_residual_m": 2.220446049250313e-16,
+        "max_mode_equation_residual": 0.0,
+        "max_derivative_error": 0.0,
+        "max_wheel_angle_rad": 0.2932503134605156
+      },
+      "invalidity": "Global mode S with A_ARC primitive and all A segments."
+    },
+    {
+      "case": "N06_S_zero_angle_segment_A",
+      "expected": "REJECT",
+      "actual": "INCORRECTLY_ACCEPTED",
+      "metrics": {
+        "primitive": "S_SPIN",
+        "sample_count": 8,
+        "max_endpoint_qf_error_m": 0.0,
+        "max_endpoint_heading_error_rad": 0.0,
+        "max_rigidity_residual_m": 2.220446049250313e-16,
+        "max_mode_equation_residual": 0.0,
+        "max_derivative_error": 0.0,
+        "max_wheel_angle_rad": 0.9357695914045828
+      },
+      "invalidity": "Global S edge contains zero-angle car2 segment.mode=A; violates uniform mode."
+    },
+    {
+      "case": "N07_NaN_wheel",
+      "expected": "REJECT",
+      "actual": "INCORRECTLY_ACCEPTED",
+      "metrics": {
+        "primitive": "A_ARC",
+        "sample_count": 8,
+        "max_endpoint_qf_error_m": 0.0,
+        "max_endpoint_heading_error_rad": 0.0,
+        "max_rigidity_residual_m": 2.220446049250313e-16,
+        "max_mode_equation_residual": 0.0,
+        "max_derivative_error": 0.0,
+        "max_wheel_angle_rad": 0.2932503134605156
+      },
+      "invalidity": "Canonical car1 wheel angle NaN must not yield a passing finite metrics report."
+    }
+  ]
+}

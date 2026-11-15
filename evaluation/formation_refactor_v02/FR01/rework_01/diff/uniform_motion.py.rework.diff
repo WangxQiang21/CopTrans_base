@@ -1,0 +1,725 @@
+--- a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_motion.py
++++ b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_motion.py
+@@ -580,7 +580,11 @@
+     max_endpoint_heading_error_rad: float
+     max_rigidity_residual_m: float
+     max_mode_equation_residual: float
++    max_a_tangent_residual: float
++    max_a_curvature_relation_residual: float
+     max_derivative_error: float
++    max_wheel_angle_start_rad: float
++    max_wheel_angle_end_rad: float
+     max_wheel_angle_rad: float
+ 
+     def as_dict(self):
+@@ -592,7 +596,12 @@
+                 self.max_endpoint_heading_error_rad,
+             "max_rigidity_residual_m": self.max_rigidity_residual_m,
+             "max_mode_equation_residual": self.max_mode_equation_residual,
++            "max_a_tangent_residual": self.max_a_tangent_residual,
++            "max_a_curvature_relation_residual":
++                self.max_a_curvature_relation_residual,
+             "max_derivative_error": self.max_derivative_error,
++            "max_wheel_angle_start_rad": self.max_wheel_angle_start_rad,
++            "max_wheel_angle_end_rad": self.max_wheel_angle_end_rad,
+             "max_wheel_angle_rad": self.max_wheel_angle_rad,
+         }
+ 
+@@ -1810,30 +1819,285 @@
+ 
+ def validate_uniform_edge(edge, sample_fractions=(0.0, 0.137, 0.413,
+                                                   0.769, 1.0)):
+-    """Independently audit one edge's geometry, derivatives and wheels.
++    """Independently audit one edge's structure, geometry, derivatives and wheels.
+ 
+-    The audit recomputes ``q_F``, headings, centres, derivatives and wheel
+-    configurations from the primitive definition and the fixed offsets.  It
+-    does not trust the edge's stored derived fields.  Any mismatch raises
+-    ``EDGE_VALIDATION_FAILED``; the returned metrics are geometry-only and
+-    carry no timing or collision certification.
++    The audit first checks consumed IDs, enums, directions, finite values and
++    the global mode/primitive/geometry pairing, then recomputes ``q_F``,
++    headings, centres, derivatives and both wheel boundaries from the
++    primitive definition and the fixed offsets.  For A it checks the actual
++    sampled body heading against the centre derivative, the no-slip and
++    signed-speed equation, and the direction/curvature relation; these are
++    *not* inferred from the stored initial headings.  Radius, curvature and
++    wheel-angle limits are checked against this edge's own ``limits`` for both
++    the start and end configurations.  Any mismatch raises
++    ``EDGE_VALIDATION_FAILED`` (or an earlier specific validation error); the
++    returned metrics are geometry-only and carry no timing or collision
++    certification.
+     """
+     if not isinstance(edge, UniformMotionEdge):
+         raise UniformMotionError(
+             "INVALID_EDGE", "expected a UniformMotionEdge")
++    if not isinstance(edge.model, FormationModel):
++        raise UniformMotionError(
++            "INVALID_MODEL", "edge.model must be a FormationModel")
++    if edge.mode not in UNIFORM_MODES:
++        raise UniformMotionError(
++            "INVALID_MODE", "mode={!r} is not one of {}".format(
++                edge.mode, UNIFORM_MODES))
++    if edge.primitive not in UNIFORM_PRIMITIVES:
++        raise UniformMotionError(
++            "INVALID_PRIMITIVE",
++            "primitive={!r} is not one of {}".format(
++                edge.primitive, UNIFORM_PRIMITIVES))
++    if _PRIMITIVE_MODE[edge.primitive] != edge.mode:
++        raise UniformMotionError(
++            "MODE_PRIMITIVE_MISMATCH",
++            "mode={} is inconsistent with primitive={}".format(
++                edge.mode, edge.primitive))
++    if not isinstance(edge.control, FormationPathControl):
++        raise UniformMotionError(
++            "INVALID_CONTROL", "edge.control must be a FormationPathControl")
++    if edge.control.geometry_type != _PRIMITIVE_GEOMETRY[edge.primitive]:
++        raise UniformMotionError(
++            "INVALID_CONTROL_FOR_PRIMITIVE",
++            "primitive={} requires geometry_type={}, got {}".format(
++                edge.primitive,
++                _PRIMITIVE_GEOMETRY[edge.primitive],
++                edge.control.geometry_type))
++    if not isinstance(edge.limits, MotionLimits):
++        raise UniformMotionError(
++            "INVALID_LIMITS", "edge.limits must be a MotionLimits")
++    if not isinstance(edge.allow_reverse, bool):
++        raise UniformMotionError(
++            "INVALID_ALLOW_REVERSE", "allow_reverse must be a bool")
+     if not sample_fractions:
+         raise UniformMotionError(
+             "INVALID_SAMPLES", "sample_fractions must be non-empty")
+-    length = edge.control.parameter_length
+-    reference = edge.model.pairwise_reference_distances()
++
+     vehicle_ids = edge.model.vehicle_ids
++    for name, value in (
++            ("limits.wheelbase", edge.limits.wheelbase),
++            ("limits.track", edge.limits.track),
++            ("limits.steer_angle_max", edge.limits.steer_angle_max),
++            ("limits.r_min_ack", edge.limits.r_min_ack)):
++        value = _finite(value, name)
++        if value <= 0.0:
++            raise UniformMotionError(
++                "INVALID_LIMITS",
++                "{} must be finite and positive, got {!r}".format(
++                    name, value))
++    steer_limit = float(edge.limits.steer_angle_max)
++    r_min_ack = float(edge.limits.r_min_ack)
++
++    length = _finite(
++        edge.control.parameter_length, "control.parameter_length")
++    if length <= 0.0:
++        raise UniformMotionError(
++            "INVALID_CONTROL_FOR_PRIMITIVE",
++            "control.parameter_length must be positive, got {:.17g}".format(
++                length))
++    for qf_name, qf in (("start_qf", edge.start_qf),
++                        ("end_qf", edge.end_qf)):
++        for component in ("x", "y", "psi"):
++            _finite(getattr(qf, component),
++                    "{}.{}".format(qf_name, component))
++    pivot_x = _finite(edge.control.pivot_x, "control.pivot_x")
++    pivot_y = _finite(edge.control.pivot_y, "control.pivot_y")
++    delta_psi = _finite(edge.control.delta_psi, "control.delta_psi")
++
++    start_pairs = _validate_sorted_pair_field(
++        edge.start_headings, vehicle_ids, "start_headings")
++    end_pairs = _validate_sorted_pair_field(
++        edge.end_headings, vehicle_ids, "end_headings")
++    direction_pairs = _validate_direction_field(
++        edge.directions, vehicle_ids, "directions")
++    curvature_pairs = _validate_sorted_pair_field(
++        edge.curvatures, vehicle_ids, "curvatures", allow_empty=True)
++    oblique_pairs = _validate_sorted_pair_field(
++        edge.oblique_angles, vehicle_ids, "oblique_angles", allow_empty=True)
++    speed_pairs = _validate_sorted_pair_field(
++        edge.signed_progress_speeds, vehicle_ids,
++        "signed_progress_speeds")
++    wheel_angles_start = _validate_wheel_field(
++        edge.wheel_angles_start, vehicle_ids, "wheel_angles_start")
++    wheel_factors_start = _validate_wheel_field(
++        edge.wheel_factors_start, vehicle_ids, "wheel_factors_start")
++    wheel_angles_end = _validate_wheel_field(
++        edge.wheel_angles_end, vehicle_ids, "wheel_angles_end")
++    wheel_factors_end = _validate_wheel_field(
++        edge.wheel_factors_end, vehicle_ids, "wheel_factors_end")
++
++    if edge.primitive in (PRIMITIVE_A_STRAIGHT, PRIMITIVE_A_ARC):
++        if not curvature_pairs:
++            raise UniformMotionError(
++                "INTERNAL_EDGE_FIELD_MISMATCH",
++                "{} requires per-vehicle curvatures".format(edge.primitive))
++        if oblique_pairs:
++            raise UniformMotionError(
++                "INTERNAL_EDGE_FIELD_MISMATCH",
++                "{} must not carry oblique angles".format(edge.primitive))
++    elif edge.primitive == PRIMITIVE_O_TRANSLATION:
++        if curvature_pairs:
++            raise UniformMotionError(
++                "INTERNAL_EDGE_FIELD_MISMATCH",
++                "O translation must not carry curvatures")
++        if not oblique_pairs:
++            raise UniformMotionError(
++                "INTERNAL_EDGE_FIELD_MISMATCH",
++                "O translation requires per-vehicle oblique angles")
++    else:
++        if curvature_pairs or oblique_pairs:
++            raise UniformMotionError(
++                "INTERNAL_EDGE_FIELD_MISMATCH",
++                "S spin carries neither curvatures nor oblique angles")
++
++    if edge.primitive in (PRIMITIVE_A_STRAIGHT, PRIMITIVE_O_TRANSLATION):
++        if abs(delta_psi) > EDGE_FIELD_TOL:
++            raise UniformMotionError(
++                "INVALID_CONTROL_FOR_PRIMITIVE",
++                "fixed-heading {} requires delta_psi=0, got {:.17g}".format(
++                    edge.primitive, delta_psi))
++        displacement = math.hypot(
++            edge.end_qf.x - edge.start_qf.x,
++            edge.end_qf.y - edge.start_qf.y)
++        if abs(displacement - length) > (
++                EDGE_FIELD_TOL * max(1.0, length)):
++            raise UniformMotionError(
++                "INVALID_CONTROL_FOR_PRIMITIVE",
++                "{} parameter_length={:.17g} does not match displacement "
++                "{:.17g}".format(edge.primitive, length, displacement))
++    elif edge.primitive == PRIMITIVE_A_ARC:
++        if abs(abs(delta_psi) - length) > EDGE_FIELD_TOL:
++            raise UniformMotionError(
++                "INVALID_CONTROL_FOR_PRIMITIVE",
++                "A arc parameter_length={:.17g} must equal |delta_psi|="
++                "{:.17g}".format(length, abs(delta_psi)))
++        endpoint = _independent_qf(edge, length)
++        if math.hypot(
++                endpoint.x - edge.end_qf.x,
++                endpoint.y - edge.end_qf.y) > EDGE_FIELD_TOL:
++            raise UniformMotionError(
++                "INVALID_CONTROL_FOR_PRIMITIVE",
++                "A arc end_qf does not equal the independently integrated "
++                "pivot endpoint")
++    else:
++        if math.hypot(
++                edge.end_qf.x - edge.start_qf.x,
++                edge.end_qf.y - edge.start_qf.y) > EDGE_FIELD_TOL:
++            raise UniformMotionError(
++                "INVALID_CONTROL_FOR_PRIMITIVE",
++                "S spin must keep q_F fixed")
++        if _angle_error(edge.start_qf.psi, edge.end_qf.psi) > (
++                EDGE_FIELD_TOL):
++            raise UniformMotionError(
++                "INVALID_CONTROL_FOR_PRIMITIVE",
++                "S spin must keep psi_F fixed")
++
++    start_map = _pairs_dict(start_pairs)
++    end_map = _pairs_dict(end_pairs)
++    direction_map = _pairs_dict(direction_pairs)
++    curvature_map = _pairs_dict(curvature_pairs)
++    oblique_map = _pairs_dict(oblique_pairs)
++    speed_map = _pairs_dict(speed_pairs)
++    wheel_angles_start_map = _pairs_dict(wheel_angles_start)
++    wheel_factors_start_map = _pairs_dict(wheel_factors_start)
++    wheel_angles_end_map = _pairs_dict(wheel_angles_end)
++    wheel_factors_end_map = _pairs_dict(wheel_factors_end)
++    reference = edge.model.pairwise_reference_distances()
++    offset_map = {
++        offset.vehicle_id: (offset.x, offset.y)
++        for offset in edge.model.offsets}
++
+     max_qf_error = 0.0
+     max_heading_error = 0.0
+     max_rigidity = 0.0
+     max_mode_residual = 0.0
+-    max_wheel_angle = 0.0
++    max_a_tangent_residual = 0.0
++    max_a_curvature_relation_residual = 0.0
++    max_wheel_angle_start = 0.0
++    max_wheel_angle_end = 0.0
+     problems = []
+ 
++    # ---- structural carriers -----------------------------------------
++    expected_legacy_mode = _LEGACY_MODE[edge.mode]
++    expected_order = tuple(sorted(vehicle_ids))
++    try:
++        segments = tuple(edge.segments)
++    except TypeError as exc:
++        raise UniformMotionError(
++            "INVALID_SEGMENT_STRUCTURE",
++            "segments must be an iterable of VehicleModeSegment") from exc
++    if len(segments) != len(expected_order):
++        problems.append(
++            "segments count {} != vehicle count {}".format(
++                len(segments), len(expected_order)))
++    for index, segment in enumerate(segments):
++        if not isinstance(segment, VehicleModeSegment):
++            raise UniformMotionError(
++                "INVALID_SEGMENT_STRUCTURE",
++                "segments[{}] is not a VehicleModeSegment".format(index))
++        vehicle_id = _integer(
++            segment.vehicle_id,
++            "segments[{}].vehicle_id".format(index))
++        if (index >= len(expected_order)
++                or vehicle_id != expected_order[index]):
++            problems.append(
++                "segments[{}].vehicle_id={} does not match sorted edge ids"
++                .format(index, vehicle_id))
++        segment_mode = _integer(
++            segment.mode, "segments[{0}].mode".format(index),
++            allowed=(ACKERMANN, OBLIQUE, SPIN))
++        if segment_mode != expected_legacy_mode:
++            problems.append(
++                "segment.mode vehicle_id={} actual={} expected={} for "
++                "global mode={}".format(
++                    vehicle_id, segment_mode, expected_legacy_mode,
++                    edge.mode))
++        segment_direction = _integer(
++            segment.direction, "segments[{0}].direction".format(index),
++            allowed=(-1, 1))
++        if (vehicle_id in direction_map
++                and segment_direction != direction_map[vehicle_id]):
++            problems.append(
++                "segment.direction vehicle_id={} actual={} expected={}"
++                .format(
++                    vehicle_id, segment_direction,
++                    direction_map[vehicle_id]))
++        start_station = _finite(
++            segment.start_station,
++            "segments[{0}].start_station".format(index))
++        end_station = _finite(
++            segment.end_station,
++            "segments[{0}].end_station".format(index))
++        if abs(start_station) > EDGE_FIELD_TOL:
++            problems.append(
++                "segment.start_station vehicle_id={} actual={:.17g} "
++                "expected=0".format(vehicle_id, start_station))
++        if abs(end_station - length) > EDGE_FIELD_TOL:
++            problems.append(
++                "segment.end_station vehicle_id={} actual={:.17g} "
++                "expected={:.17g}".format(
++                    vehicle_id, end_station, length))
++        theta_start = _finite(
++            segment.theta_start,
++            "segments[{0}].theta_start".format(index))
++        theta_end = _finite(
++            segment.theta_end,
++            "segments[{0}].theta_end".format(index))
++        if vehicle_id in start_map and _angle_error(
++                theta_start, start_map[vehicle_id]) > EDGE_FIELD_TOL:
++            problems.append(
++                "segment.theta_start vehicle_id={} actual={:.17g} "
++                "expected={:.17g}".format(
++                    vehicle_id, theta_start, start_map[vehicle_id]))
++        if vehicle_id in end_map and _angle_error(
++                theta_end, end_map[vehicle_id]) > EDGE_FIELD_TOL:
++            problems.append(
++                "segment.theta_end vehicle_id={} actual={:.17g} "
++                "expected={:.17g}".format(
++                    vehicle_id, theta_end, end_map[vehicle_id]))
++
++    # ---- sampled geometry and actual-heading mode equations ----------
+     for fraction in sample_fractions:
+         fraction = _finite(fraction, "sample fraction")
+         if fraction < 0.0 or fraction > 1.0:
+@@ -1842,180 +2106,280 @@
+                 "sample fraction {} is outside [0, 1]".format(fraction))
+         progress = length * fraction
+         state = edge.state_at(progress)
++        state_qf_x = _finite(state.qf.x, "state_at qf.x")
++        state_qf_y = _finite(state.qf.y, "state_at qf.y")
++        state_qf_psi = _finite(state.qf.psi, "state_at qf.psi")
+         expected_qf = _independent_qf(edge, progress)
+         qf_error = max(
+-            abs(state.qf.x - expected_qf.x),
+-            abs(state.qf.y - expected_qf.y),
+-            abs(_wrap(state.qf.psi - expected_qf.psi)))
++            abs(state_qf_x - expected_qf.x),
++            abs(state_qf_y - expected_qf.y),
++            abs(_wrap(state_qf_psi - expected_qf.psi)))
+         max_qf_error = max(max_qf_error, qf_error)
+         expected_headings = _independent_headings(edge, progress)
+         actual_headings = _pairs_dict(state.headings)
+         for vehicle_id in vehicle_ids:
++            actual_headings[vehicle_id] = _finite(
++                actual_headings[vehicle_id],
++                "state_at heading vehicle_id={}".format(vehicle_id))
+             max_heading_error = max(
+                 max_heading_error,
+                 _angle_error(actual_headings[vehicle_id],
+                              expected_headings[vehicle_id]))
+-        centre_map = {
+-            vehicle_id: (x, y) for vehicle_id, x, y in state.centers}
++        centre_map = {}
++        for vehicle_id, x, y in state.centers:
++            centre_map[vehicle_id] = (
++                _finite(x, "state_at centre.x vehicle_id={}".format(
++                    vehicle_id)),
++                _finite(y, "state_at centre.y vehicle_id={}".format(
++                    vehicle_id)))
+         for (first, second), distance in reference.items():
+             actual = math.hypot(
+                 centre_map[second][0] - centre_map[first][0],
+                 centre_map[second][1] - centre_map[first][1])
+             max_rigidity = max(max_rigidity, abs(actual - distance))
+         derivative = edge.derivative_at(progress)
+-        dp_map = {
+-            vehicle_id: (x, y) for vehicle_id, x, y in derivative.dp}
++        dp_map = {}
++        for vehicle_id, x, y in derivative.dp:
++            dp_map[vehicle_id] = (
++                _finite(x, "derivative dp.x vehicle_id={}".format(
++                    vehicle_id)),
++                _finite(y, "derivative dp.y vehicle_id={}".format(
++                    vehicle_id)))
+         dtheta_map = _pairs_dict(derivative.dtheta)
+-        direction_map = _pairs_dict(edge.directions)
+-        oblique_map = _pairs_dict(edge.oblique_angles)
+-        start_map = _pairs_dict(edge.start_headings)
+-        if edge.primitive == PRIMITIVE_A_STRAIGHT:
++        for vehicle_id in vehicle_ids:
++            dtheta_map[vehicle_id] = _finite(
++                dtheta_map[vehicle_id],
++                "derivative dtheta vehicle_id={}".format(vehicle_id))
++        for component in range(3):
++            _finite(derivative.dqf[component],
++                    "derivative dqf[{}]".format(component))
++
++        if edge.primitive in (PRIMITIVE_A_STRAIGHT, PRIMITIVE_A_ARC):
+             for vehicle_id in vehicle_ids:
+                 sigma = direction_map[vehicle_id]
+-                theta = start_map[vehicle_id]
+-                residual = max(
+-                    abs(dp_map[vehicle_id][0] - sigma * math.cos(theta)),
+-                    abs(dp_map[vehicle_id][1] - sigma * math.sin(theta)))
+-                max_mode_residual = max(max_mode_residual, residual)
+-        elif edge.primitive == PRIMITIVE_A_ARC:
+-            sign = 1 if edge.control.delta_psi > 0.0 else -1
+-            psi = edge.start_qf.psi + sign * progress
+-            cosine, sine = math.cos(psi), math.sin(psi)
+-            pivot_x = edge.control.pivot_x
+-            pivot_y = edge.control.pivot_y
+-            for offset in edge.model.offsets:
+-                vehicle_id = offset.vehicle_id
+-                vx = offset.x - pivot_x
+-                vy = offset.y - pivot_y
+-                expected = (
+-                    sign * (cosine * (-vy) - sine * vx),
+-                    sign * (sine * (-vy) + cosine * vx))
+-                residual = max(
+-                    abs(dp_map[vehicle_id][0] - expected[0]),
+-                    abs(dp_map[vehicle_id][1] - expected[1]))
+-                max_mode_residual = max(max_mode_residual, residual)
++                dp_x, dp_y = dp_map[vehicle_id]
++                speed = math.hypot(dp_x, dp_y)
++                v_lambda = sigma * speed
++                scale = max(speed, abs(v_lambda), 1e-12)
++                speed_residual = abs(
++                    speed_map[vehicle_id] - v_lambda) / scale
++                theta = actual_headings[vehicle_id]
++                tangent_residual = math.hypot(
++                    dp_x - v_lambda * math.cos(theta),
++                    dp_y - v_lambda * math.sin(theta)) / scale
++                max_a_tangent_residual = max(
++                    max_a_tangent_residual, tangent_residual)
++                kappa = curvature_map[vehicle_id]
++                dtheta_value = dtheta_map[vehicle_id]
++                curvature_scale = max(
++                    abs(dtheta_value), abs(kappa * v_lambda), 1e-12)
++                curvature_residual = abs(
++                    dtheta_value - kappa * v_lambda) / curvature_scale
++                max_a_curvature_relation_residual = max(
++                    max_a_curvature_relation_residual,
++                    curvature_residual)
++                max_mode_residual = max(
++                    max_mode_residual, speed_residual, tangent_residual,
++                    curvature_residual)
++            if edge.primitive == PRIMITIVE_A_ARC:
++                sign = 1 if delta_psi > 0.0 else -1
++                psi = edge.start_qf.psi + sign * progress
++                cosine, sine = math.cos(psi), math.sin(psi)
++                for vehicle_id in vehicle_ids:
++                    vx = offset_map[vehicle_id][0] - pivot_x
++                    vy = offset_map[vehicle_id][1] - pivot_y
++                    expected = (
++                        sign * (cosine * (-vy) - sine * vx),
++                        sign * (sine * (-vy) + cosine * vx))
++                    dp_x, dp_y = dp_map[vehicle_id]
++                    speed = math.hypot(dp_x, dp_y)
++                    scale = max(speed, 1e-12)
++                    residual = math.hypot(
++                        dp_x - expected[0], dp_y - expected[1]) / scale
++                    max_mode_residual = max(max_mode_residual, residual)
+         elif edge.primitive == PRIMITIVE_O_TRANSLATION:
+-            length_unit = edge.control.parameter_length
+-            ux = (edge.end_qf.x - edge.start_qf.x) / length_unit
+-            uy = (edge.end_qf.y - edge.start_qf.y) / length_unit
+             for vehicle_id in vehicle_ids:
+                 sigma = direction_map[vehicle_id]
+                 phi = oblique_map[vehicle_id]
+-                residual = max(
+-                    abs(ux - sigma * math.cos(
+-                        start_map[vehicle_id] + phi)),
+-                    abs(uy - sigma * math.sin(
+-                        start_map[vehicle_id] + phi)))
+-                max_mode_residual = max(max_mode_residual, residual)
++                dp_x, dp_y = dp_map[vehicle_id]
++                speed = math.hypot(dp_x, dp_y)
++                v_lambda = sigma * speed
++                scale = max(speed, abs(v_lambda), 1e-12)
++                speed_residual = abs(
++                    speed_map[vehicle_id] - v_lambda) / scale
++                theta = actual_headings[vehicle_id]
++                tangent_residual = math.hypot(
++                    dp_x - sigma * math.cos(theta + phi),
++                    dp_y - sigma * math.sin(theta + phi)) / scale
++                dtheta_residual = abs(dtheta_map[vehicle_id])
++                max_mode_residual = max(
++                    max_mode_residual, speed_residual, tangent_residual,
++                    dtheta_residual)
+         else:
+             for vehicle_id in vehicle_ids:
++                dp_x, dp_y = dp_map[vehicle_id]
+                 residual = max(
+-                    abs(dp_map[vehicle_id][0]),
+-                    abs(dp_map[vehicle_id][1]))
++                    abs(dp_x), abs(dp_y),
++                    abs(speed_map[vehicle_id]))
+                 max_mode_residual = max(max_mode_residual, residual)
+-        for configuration in edge.wheel_configurations():
+-            max_wheel_angle = max(
+-                max_wheel_angle,
+-                max(abs(value) for value in configuration.angles))
+ 
++    # Independent numerical derivative check at non-endpoint progress.
+     max_derivative_error = 0.0
+     for fraction in (0.23, 0.57, 0.83):
+         progress = length * fraction
+         derivative = edge.derivative_at(progress)
+         dqf, dp, dtheta = _independent_derivative(edge, progress)
+-        max_derivative_error = max(
+-            max_derivative_error,
+-            abs(derivative.dqf[0] - dqf[0]),
+-            abs(derivative.dqf[1] - dqf[1]),
+-            abs(derivative.dqf[2] - dqf[2]))
+-        actual_dp = {
+-            vehicle_id: (x, y) for vehicle_id, x, y in derivative.dp}
++        actual_dp = {}
++        for vehicle_id, x, y in derivative.dp:
++            actual_dp[vehicle_id] = (
++                _finite(x, "derivative dp.x vehicle_id={}".format(
++                    vehicle_id)),
++                _finite(y, "derivative dp.y vehicle_id={}".format(
++                    vehicle_id)))
+         actual_dtheta = _pairs_dict(derivative.dtheta)
++        for component in range(3):
++            actual_dqf = _finite(
++                derivative.dqf[component],
++                "derivative dqf[{}]".format(component))
++            max_derivative_error = max(
++                max_derivative_error,
++                abs(actual_dqf - dqf[component]))
+         for vehicle_id in vehicle_ids:
++            actual_dtheta[vehicle_id] = _finite(
++                actual_dtheta[vehicle_id],
++                "derivative dtheta vehicle_id={}".format(vehicle_id))
+             max_derivative_error = max(
+                 max_derivative_error,
+                 abs(actual_dp[vehicle_id][0] - dp[vehicle_id][0]),
+                 abs(actual_dp[vehicle_id][1] - dp[vehicle_id][1]),
+                 abs(actual_dtheta[vehicle_id] - dtheta[vehicle_id]))
+ 
+-    curvature_map = _pairs_dict(edge.curvatures)
+-    direction_map = _pairs_dict(edge.directions)
+-    offset_map = {
+-        offset.vehicle_id: (offset.x, offset.y)
+-        for offset in edge.model.offsets}
++    # ---- both canonical wheel boundaries and edge limits -------------
+     if edge.primitive == PRIMITIVE_A_ARC:
+-        arc_sign = 1 if edge.control.delta_psi > 0.0 else -1
+-        arc_pivot = (edge.control.pivot_x, edge.control.pivot_y)
+-    else:
+-        arc_sign = 0
+-        arc_pivot = (0.0, 0.0)
+-    for configuration in edge.wheel_configurations():
+-        vehicle_id = configuration.vehicle_id
+-        if edge.primitive in (PRIMITIVE_A_STRAIGHT, PRIMITIVE_A_ARC):
+-            if edge.primitive == PRIMITIVE_A_STRAIGHT:
+-                expected_curvature = 0.0
+-            else:
+-                radius = math.hypot(
+-                    offset_map[vehicle_id][0] - arc_pivot[0],
+-                    offset_map[vehicle_id][1] - arc_pivot[1])
+-                if radius <= PIVOT_CENTER_TOL_M:
+-                    problems.append(
+-                        "pivot coincides with vehicle_id={} centre".format(
+-                            vehicle_id))
+-                    continue
+-                expected_curvature = (
+-                    arc_sign / (direction_map[vehicle_id] * radius))
++        arc_sign = 1 if delta_psi > 0.0 else -1
++        expected_controls = {}
++        for vehicle_id in vehicle_ids:
++            radius = math.hypot(
++                offset_map[vehicle_id][0] - pivot_x,
++                offset_map[vehicle_id][1] - pivot_y)
++            if radius <= PIVOT_CENTER_TOL_M:
++                problems.append(
++                    "pivot coincides with vehicle_id={} centre".format(
++                        vehicle_id))
++                expected_controls[vehicle_id] = 0.0
++                continue
++            expected_curvature = (
++                arc_sign / (direction_map[vehicle_id] * radius))
++            expected_controls[vehicle_id] = expected_curvature
+             if abs(curvature_map[vehicle_id]
+-                   - expected_curvature) > 1e-9:
++                   - expected_curvature) > EDGE_FIELD_TOL:
+                 problems.append(
+                     "curvature vehicle_id={} actual={:.17g} "
+                     "expected={:.17g}".format(
+                         vehicle_id, curvature_map[vehicle_id],
+                         expected_curvature))
+-            control_value = expected_curvature
+-            legacy_mode = ACKERMANN
+-        elif edge.primitive == PRIMITIVE_O_TRANSLATION:
+-            control_value = _pairs_dict(edge.oblique_angles)[vehicle_id]
+-            legacy_mode = OBLIQUE
+-        else:
+-            control_value = 0.0
+-            legacy_mode = SPIN
+-        expected_angles, expected_factors = _independent_wheel_values(
+-            legacy_mode, control_value, edge.limits)
+-        for actual, expected in zip(
+-                configuration.angles, expected_angles):
+-            if abs(actual - expected) > 1e-9:
++            if radius < r_min_ack - EDGE_FIELD_TOL:
++                problems.append(
++                    "turn radius vehicle_id={} rho={:.17g} below "
++                    "r_min_ack={:.17g}".format(
++                        vehicle_id, radius, r_min_ack))
++            if abs(expected_curvature) > (
++                    1.0 / r_min_ack + EDGE_FIELD_TOL):
+                 problems.append(
+-                    "wheel_angles vehicle_id={} actual={:.17g} "
+-                    "expected={:.17g}".format(vehicle_id, actual, expected))
+-        for actual, expected in zip(
+-                configuration.factors, expected_factors):
+-            if abs(actual - expected) > 1e-9:
++                    "curvature vehicle_id={} |kappa|={:.17g} exceeds "
++                    "1/r_min_ack={:.17g}".format(
++                        vehicle_id, abs(expected_curvature),
++                        1.0 / r_min_ack))
++    elif edge.primitive == PRIMITIVE_A_STRAIGHT:
++        expected_controls = {vehicle_id: 0.0 for vehicle_id in vehicle_ids}
++        for vehicle_id in vehicle_ids:
++            if abs(curvature_map[vehicle_id]) > EDGE_FIELD_TOL:
++                problems.append(
++                    "curvature vehicle_id={} actual={:.17g} expected=0"
++                    .format(vehicle_id, curvature_map[vehicle_id]))
++    elif edge.primitive == PRIMITIVE_O_TRANSLATION:
++        expected_controls = dict(oblique_map)
++        for vehicle_id in vehicle_ids:
++            if abs(oblique_map[vehicle_id]) > (
++                    math.pi / 2.0 + EDGE_FIELD_TOL):
++                problems.append(
++                    "oblique angle vehicle_id={} phi={:.17g} outside "
++                    "[-pi/2, pi/2]".format(
++                        vehicle_id, oblique_map[vehicle_id]))
++    else:
++        expected_controls = {vehicle_id: 0.0 for vehicle_id in vehicle_ids}
++
++    for at_end, angle_map, factor_map in (
++            (False, wheel_angles_start_map, wheel_factors_start_map),
++            (True, wheel_angles_end_map, wheel_factors_end_map)):
++        label = "end" if at_end else "start"
++        for vehicle_id in vehicle_ids:
++            if edge.primitive in (PRIMITIVE_A_STRAIGHT, PRIMITIVE_A_ARC):
++                legacy_mode = ACKERMANN
++            elif edge.primitive == PRIMITIVE_O_TRANSLATION:
++                legacy_mode = OBLIQUE
++            else:
++                legacy_mode = SPIN
++            expected_angles, expected_factors = _independent_wheel_values(
++                legacy_mode, expected_controls[vehicle_id], edge.limits)
++            actual_angles = angle_map[vehicle_id]
++            actual_factors = factor_map[vehicle_id]
++            for index, (actual, expected) in enumerate(
++                    zip(actual_angles, expected_angles)):
++                if abs(actual - expected) > EDGE_FIELD_TOL:
++                    problems.append(
++                        "{} wheel_angles vehicle_id={} index={} "
++                        "actual={:.17g} expected={:.17g}".format(
++                            label, vehicle_id, index, actual, expected))
++            for index, (actual, expected) in enumerate(
++                    zip(actual_factors, expected_factors)):
++                if abs(actual - expected) > EDGE_FIELD_TOL:
++                    problems.append(
++                        "{} wheel_factors vehicle_id={} index={} "
++                        "actual={:.17g} expected={:.17g}".format(
++                            label, vehicle_id, index, actual, expected))
++            max_angle = max(abs(value) for value in actual_angles)
++            if at_end:
++                max_wheel_angle_end = max(max_wheel_angle_end, max_angle)
++            else:
++                max_wheel_angle_start = max(
++                    max_wheel_angle_start, max_angle)
++            if max_angle > steer_limit + EDGE_FIELD_TOL:
+                 problems.append(
+-                    "wheel_factors vehicle_id={} actual={:.17g} "
+-                    "expected={:.17g}".format(vehicle_id, actual, expected))
++                    "{} wheel angle vehicle_id={} max={:.17g} exceeds "
++                    "steer_angle_max={:.17g}".format(
++                        label, vehicle_id, max_angle, steer_limit))
+ 
+     if edge.primitive in (PRIMITIVE_A_STRAIGHT, PRIMITIVE_A_ARC,
+                           PRIMITIVE_O_TRANSLATION):
+-        actual_end = _pairs_dict(edge.end_headings)
++        actual_end = _pairs_dict(end_pairs)
+         expected_end = _independent_headings(edge, length)
+         for vehicle_id in vehicle_ids:
+             if _angle_error(actual_end[vehicle_id],
+-                            expected_end[vehicle_id]) > 1e-9:
++                            expected_end[vehicle_id]) > EDGE_FIELD_TOL:
+                 problems.append(
+                     "end_heading vehicle_id={} actual={:.17g} "
+                     "expected={:.17g}".format(
+                         vehicle_id, actual_end[vehicle_id],
+                         expected_end[vehicle_id]))
+-    elif edge.primitive == PRIMITIVE_S_SPIN:
++    else:
+         deltas = edge._delta_by_vehicle()
+-        if abs(max(abs(value) for value in deltas.values()) - length) > 1e-9:
++        if abs(max(abs(value) for value in deltas.values()) - length) > (
++                EDGE_FIELD_TOL):
+             problems.append("spin length does not equal max|delta_theta|")
+         for vehicle_id, delta in deltas.items():
+-            if abs(delta) > math.pi + 1e-12:
++            if abs(delta) > math.pi + EDGE_FIELD_TOL:
+                 problems.append(
+                     "spin delta vehicle_id={} outside [-pi, pi]: {:.17g}"
+                     .format(vehicle_id, delta))
++            expected_direction = (
++                -1 if delta < -SPIN_ZERO_TOL_RAD else 1)
++            if direction_map[vehicle_id] != expected_direction:
++                problems.append(
++                    "spin direction vehicle_id={} actual={} expected={} "
++                    "for delta_theta={:.17g}".format(
++                        vehicle_id, direction_map[vehicle_id],
++                        expected_direction, delta))
+ 
+     if max_qf_error > 1e-7:
+         problems.append(
+@@ -2049,5 +2413,11 @@
+         max_endpoint_heading_error_rad=max_heading_error,
+         max_rigidity_residual_m=max_rigidity,
+         max_mode_equation_residual=max_mode_residual,
++        max_a_tangent_residual=max_a_tangent_residual,
++        max_a_curvature_relation_residual=(
++            max_a_curvature_relation_residual),
+         max_derivative_error=max_derivative_error,
+-        max_wheel_angle_rad=max_wheel_angle)
+\ 文件尾没有换行符
++        max_wheel_angle_start_rad=max_wheel_angle_start,
++        max_wheel_angle_end_rad=max_wheel_angle_end,
++        max_wheel_angle_rad=max(
++            max_wheel_angle_start, max_wheel_angle_end))
+\ 文件尾没有换行符

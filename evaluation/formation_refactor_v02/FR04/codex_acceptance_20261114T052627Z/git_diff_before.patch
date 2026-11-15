@@ -1,0 +1,467 @@
+diff --git a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_collision.py b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_collision.py
+index 8dd7812..cd5a13f 100644
+--- a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_collision.py
++++ b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_collision.py
+@@ -6,11 +6,11 @@ It does not search for a path, assign vehicle modes, retime a trajectory, or
+ publish a feasibility result.
+ """
+ from collections.abc import Mapping as MappingABC
+-from dataclasses import dataclass
++from dataclasses import dataclass, replace
+ import math
+ from numbers import Real
+ from types import MappingProxyType
+-from typing import Mapping, Optional
++from typing import Callable, Mapping, Optional
+ 
+ from .core import Grid, Pose
+ from .formation import (FormationModel, FormationPose,
+@@ -79,6 +79,69 @@ class CollisionReport:
+     sample_index: int = 0
+     detail: Optional[str] = None
+     qf: Optional[FormationPose] = None
++    # Analytic sweeps report the exact model time/station that produced the
++    # failing state.  Legacy swept_check leaves both fields unset.
++    time_s: Optional[float] = None
++    station: Optional[float] = None
++
++
++@dataclass(frozen=True)
++class AnalyticSweepSegment:
++    """One exactly-evaluated V0.2 segment for conservative swept coverage.
++
++    ``fraction`` runs from 0 to 1 over the segment and must be mapped by the
++    caller to the authoritative analytic model, never to a chord interpolation.
++    The three bounds are suprema per unit fraction over the closed segment:
++
++        sup ||d q_F / d lambda||
++        sup |d psi_F / d lambda|
++        sup |d theta_i / d lambda| for every vehicle i
++
++    The checker turns them into the task bound
++    ``sup ||p_i'(lambda)|| + body_half_diagonal_i * sup |theta_i'(lambda)|``
++    using ``||p_i'|| <= ||q_F'|| + |r_i| |psi_F'|`` and the margin-inflated
++    body diagonal.  A caller that cannot justify a finite nonnegative bound
++    must not use this API.
++    """
++
++    station_start: float
++    station_end: float
++    state_at: Callable[[float], "FormationState"]
++    time_at: Callable[[float], float]
++    center_speed_bound_m_per_lambda: float
++    formation_rate_bound_rad_per_lambda: float
++    body_rate_bounds_rad_per_lambda: Mapping[int, float]
++    label: str = ""
++
++    def __post_init__(self):
++        object.__setattr__(self, "station_start", _finite_number(
++            self.station_start, "AnalyticSweepSegment.station_start"))
++        object.__setattr__(self, "station_end", _finite_number(
++            self.station_end, "AnalyticSweepSegment.station_end"))
++        if not self.station_end > self.station_start:
++            raise FormationValidationError(
++                "NONMONOTONIC_ANALYTIC_SEGMENT station_end={} must exceed "
++                "station_start={}".format(self.station_end, self.station_start))
++        if not callable(self.state_at) or not callable(self.time_at):
++            raise FormationValidationError(
++                "INVALID_ANALYTIC_SEGMENT state_at/time_at must be callable")
++        for name in ("center_speed_bound_m_per_lambda",
++                     "formation_rate_bound_rad_per_lambda"):
++            object.__setattr__(self, name, _finite_number(
++                getattr(self, name),
++                "AnalyticSweepSegment." + name, nonnegative=True))
++        if not isinstance(self.body_rate_bounds_rad_per_lambda, MappingABC):
++            raise FormationValidationError(
++                "INVALID_ANALYTIC_SEGMENT expected body-rate bound mapping")
++        checked = {}
++        for vehicle_id, value in self.body_rate_bounds_rad_per_lambda.items():
++            checked_id = _checked_vehicle_id(
++                vehicle_id, "AnalyticSweepSegment.body_rate_bounds")
++            checked[checked_id] = _finite_number(
++                value, "body_rate_bounds[{}]".format(checked_id),
++                nonnegative=True)
++        object.__setattr__(self, "body_rate_bounds_rad_per_lambda",
++                           MappingProxyType(checked))
+ 
+ 
+ @dataclass(frozen=True)
+@@ -287,10 +350,12 @@ class FormationCollisionChecker:
+ 
+     @staticmethod
+     def _failure(reason, segment_index, sample_index, qf=None,
+-                 vehicle_id=None, other_vehicle_id=None, detail=None):
++                 vehicle_id=None, other_vehicle_id=None, detail=None,
++                 time_s=None, station=None):
+         return CollisionReport(
+             False, reason, vehicle_id, other_vehicle_id,
+-            segment_index, sample_index, detail, qf)
++            segment_index, sample_index, detail, qf,
++            time_s=time_s, station=station)
+ 
+     @staticmethod
+     def _error_code(exc):
+@@ -457,6 +522,195 @@ class FormationCollisionChecker:
+         headings = self._checked_headings(headings)
+         return qf, headings
+ 
++    def inflated_body_half_diagonals(self):
++        """Read-only copy of margin-inflated body half-diagonals."""
++        return dict(self._corner_radii)
++
++    def _normalise_analytic_segments(self, segments):
++        try:
++            supplied = list(segments)
++        except TypeError as exc:
++            raise FormationValidationError(
++                "INVALID_ANALYTIC_SEGMENTS expected an ordered iterable") from exc
++        if not supplied:
++            raise FormationValidationError("EMPTY_ANALYTIC_SEGMENTS")
++        result = []
++        expected_ids = set(self._vehicle_ids)
++        for index, segment in enumerate(supplied):
++            if not isinstance(segment, AnalyticSweepSegment):
++                raise FormationValidationError(
++                    "INVALID_ANALYTIC_SEGMENTS segment {} is not "
++                    "AnalyticSweepSegment".format(index))
++            if set(segment.body_rate_bounds_rad_per_lambda) != expected_ids:
++                raise FormationValidationError(
++                    "INVALID_ANALYTIC_SEGMENTS segment {} body-rate ids "
++                    "differ".format(index))
++            result.append(segment)
++        return tuple(result)
++
++    def _analytic_state(self, segment, fraction, segment_index):
++        try:
++            state = segment.state_at(float(fraction))
++        except (ArithmeticError, TypeError, ValueError) as exc:
++            raise FormationValidationError(
++                "INVALID_ANALYTIC_SWEEP_STATE segment {} fraction {}: {}"
++                .format(segment_index, fraction, exc)) from exc
++        if not isinstance(state, FormationState):
++            raise FormationValidationError(
++                "INVALID_ANALYTIC_SWEEP_STATE segment {} did not return "
++                "FormationState".format(segment_index))
++        expected_station = (segment.station_start +
++                            float(fraction) * (segment.station_end -
++                                               segment.station_start))
++        if abs(state.station - expected_station) > 1e-12:
++            raise FormationValidationError(
++                "INVALID_ANALYTIC_SWEEP_STATE segment {} station {} does not "
++                "match lambda-derived {}".format(
++                    segment_index, state.station, expected_station))
++        headings = self._checked_headings(state.body_headings)
++        return expected_station, state.qf, headings
++
++    def _analytic_time(self, segment, fraction, segment_index):
++        try:
++            value = segment.time_at(float(fraction))
++        except (ArithmeticError, TypeError, ValueError) as exc:
++            raise FormationValidationError(
++                "INVALID_ANALYTIC_SWEEP_TIME segment {} fraction {}: {}"
++                .format(segment_index, fraction, exc)) from exc
++        return _finite_number(
++            value, "analytic_segments[{}].time_at".format(segment_index))
++
++    def analytic_segment_bound(self, segment):
++        """Conservative per-vehicle displacement bound over this segment."""
++        if not isinstance(segment, AnalyticSweepSegment):
++            raise FormationValidationError(
++                "INVALID_ANALYTIC_SEGMENT expected AnalyticSweepSegment")
++        maximum = 0.0
++        for offset in self.model.offsets:
++            vehicle_id = offset.vehicle_id
++            centre_bound = (
++                segment.center_speed_bound_m_per_lambda
++                + math.hypot(offset.x, offset.y)
++                * segment.formation_rate_bound_rad_per_lambda)
++            body_bound = (
++                self._corner_radii[vehicle_id]
++                * segment.body_rate_bounds_rad_per_lambda[vehicle_id])
++            maximum = max(maximum, centre_bound + body_bound)
++        return maximum
++
++    def swept_check_analytic(self, segments, policy, trace=None):
++        """Sample exact V0.2 states with conservative per-segment bounds.
++
++        Unlike :meth:`swept_check`, no chord interpolation is used.  Every
++        checked pose is produced by the caller's analytic callback at the
++        exact fraction.  The per-segment sample budget is enforced before any
++        state is evaluated and is never increased to force a pass.
++        """
++        self._stats["swept_checks"] += 1
++        try:
++            checked_segments = self._normalise_analytic_segments(segments)
++        except FormationValidationError as exc:
++            return self._failure(
++                self._error_code(exc), 0, 0, detail=str(exc))
++        try:
++            checked_policy = self._normalise_policy(policy)
++        except FormationValidationError as exc:
++            return self._failure(
++                self._error_code(exc), 0, 0, detail=str(exc))
++        if trace is not None and not hasattr(trace, "append"):
++            raise FormationValidationError(
++                "INVALID_SWEEP_TRACE expected a list-like trace")
++        padding = checked_policy.motion_padding_m
++        for segment_index, segment in enumerate(checked_segments):
++            try:
++                station, qf, headings = self._analytic_state(
++                    segment, 0.0, segment_index)
++                time_s = self._analytic_time(segment, 0.0, segment_index)
++            except FormationValidationError as exc:
++                return self._failure(
++                    getattr(exc, "reason", self._error_code(exc)),
++                    segment_index, 0, detail=str(exc))
++            if trace is not None:
++                trace.append({
++                    "segment_index": segment_index,
++                    "label": segment.label,
++                    "fraction": 0.0,
++                    "time_s": time_s,
++                    "station": station,
++                    "qf": [qf.x, qf.y, qf.psi],
++                    "kind": "segment_start",
++                })
++            self._stats["swept_samples_checked"] += 1
++            report = self._check_state(
++                qf, headings, padding, segment_index, 0)
++            if not report.success:
++                return replace(report, time_s=time_s, station=station)
++            try:
++                bound = self.analytic_segment_bound(segment)
++            except (ArithmeticError, OverflowError) as exc:
++                return self._failure(
++                    "INVALID_SWEEP_DISPLACEMENT", segment_index, 0,
++                    qf, detail=str(exc), time_s=time_s, station=station)
++            if not math.isfinite(bound):
++                return self._failure(
++                    "NONFINITE_SWEEP_DISPLACEMENT", segment_index, 0,
++                    qf, detail="analytic displacement bound is not finite",
++                    time_s=time_s, station=station)
++            sample_count = max(
++                1, int(math.ceil(bound / checked_policy.max_corner_step_m)))
++            if sample_count > checked_policy.max_samples_per_segment:
++                return self._failure(
++                    "SWEEP_SAMPLE_BUDGET_EXCEEDED", segment_index, 0,
++                    qf,
++                    detail="analytic segment needs {} samples > {}".format(
++                        sample_count,
++                        checked_policy.max_samples_per_segment),
++                    time_s=time_s, station=station)
++            if trace is not None:
++                trace.append({
++                    "segment_index": segment_index,
++                    "label": segment.label,
++                    "kind": "budget",
++                    "bound_m": bound,
++                    "sample_count": sample_count,
++                    "max_corner_step_m": checked_policy.max_corner_step_m,
++                    "max_samples_per_segment":
++                        checked_policy.max_samples_per_segment,
++                    "station_start": segment.station_start,
++                    "station_end": segment.station_end,
++                })
++            self._stats["segments_checked"] += 1
++            for sample_index in range(1, sample_count + 1):
++                fraction = sample_index / float(sample_count)
++                try:
++                    station, qf, headings = self._analytic_state(
++                        segment, fraction, segment_index)
++                    time_s = self._analytic_time(
++                        segment, fraction, segment_index)
++                except FormationValidationError as exc:
++                    return self._failure(
++                        getattr(exc, "reason", self._error_code(exc)),
++                        segment_index, sample_index, detail=str(exc))
++                self._stats["swept_samples_checked"] += 1
++                if trace is not None:
++                    trace.append({
++                        "segment_index": segment_index,
++                        "label": segment.label,
++                        "fraction": fraction,
++                        "time_s": time_s,
++                        "station": station,
++                        "qf": [qf.x, qf.y, qf.psi],
++                        "kind": "sample",
++                    })
++                report = self._check_state(
++                    qf, headings, padding, segment_index, sample_index)
++                if not report.success:
++                    if trace is not None:
++                        trace[-1]["collision"] = True
++                        trace[-1]["reason"] = report.reason
++                    return replace(report, time_s=time_s, station=station)
++        return CollisionReport(True)
++
+     def swept_check(self, states, policy):
+         """Check ordered joint states and conservative samples between them."""
+         self._stats["swept_checks"] += 1
+diff --git a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_geometry.py b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_geometry.py
+index 7faecc6..e146b0e 100644
+--- a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_geometry.py
++++ b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_geometry.py
+@@ -417,7 +417,11 @@ class FormationBlock:
+                 delta = _wrap(
+                     segment.theta_end - segment.theta_start)
+                 if abs(delta) <= _GEOMETRY_TOL:
+-                    if segment.mode != ACKERMANN:
++                    # Keep legacy mixed A/S plans valid, and additionally
++                    # accept an all-S edge whose individual vehicle has zero
++                    # yaw.  Fixed centre/control/travel were checked above;
++                    # canonical S wheels are checked by the timing context.
++                    if segment.mode not in (ACKERMANN, SPIN):
+                         raise FormationValidationError(
+                             "BODY_SPIN_HOLD_MODE vehicle_id={} mode={}".format(
+                                 segment.vehicle_id, segment.mode))
+diff --git a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_kinematics.py b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_kinematics.py
+index 6e3fb10..5010242 100644
+--- a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_kinematics.py
++++ b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_kinematics.py
+@@ -1285,18 +1285,18 @@ def audit_mode_assignment(
+                             "vehicle_id={} body-spin travel={:.12g}".format(
+                                 vehicle_id, segment.travel_distance),
+                             checks, goal_checked)
+-                    if abs(delta_theta) <= limits.heading_tolerance_rad:
+-                        return _audit_failure(
+-                            "ZERO_BODY_SPIN",
+-                            "vehicle_id={} S segment has no heading change"
+-                            .format(vehicle_id), checks, goal_checked)
+-                    expected_direction = 1 if delta_theta > 0.0 else -1
+-                    if segment.direction != expected_direction:
+-                        return _audit_failure(
+-                            "SPIN_DIRECTION_MISMATCH",
+-                            "vehicle_id={} direction={} sign(dtheta)={}"
+-                            .format(vehicle_id, segment.direction,
+-                                    expected_direction), checks, goal_checked)
++                    # A canonical all-S V0.2 edge may contain an individual
++                    # zero-yaw vehicle.  Keep accepting the legacy A hold too;
++                    # only a nonzero S rotation has a direction-sign contract.
++                    if abs(delta_theta) > limits.heading_tolerance_rad:
++                        expected_direction = 1 if delta_theta > 0.0 else -1
++                        if segment.direction != expected_direction:
++                            return _audit_failure(
++                                "SPIN_DIRECTION_MISMATCH",
++                                "vehicle_id={} direction={} sign(dtheta)={}"
++                                .format(vehicle_id, segment.direction,
++                                        expected_direction), checks,
++                                goal_checked)
+                 elif segment.mode == ACKERMANN:
+                     # A non-rotating vehicle holds its centre and heading
+                     # during the joint event; it is not a fake translation.
+diff --git a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_quality.py b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_quality.py
+index bf29b27..cea22a2 100644
+--- a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_quality.py
++++ b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_quality.py
+@@ -1109,7 +1109,8 @@ class _IndependentEvaluator:
+                        "plan geometry does not reach the request goal",
+                        field="goal")
+ 
+-    def _check_block_kinematics(self, block, motion_limits, current_headings):
++    def _check_block_kinematics(self, block, motion_limits, current_headings,
++                                uniform_v02=False):
+         length = block.parameter_length
+         start_centers = self.model.centers(block.control.start_qf)
+         end_centers = self.model.centers(block.control.end_qf)
+@@ -1325,21 +1326,55 @@ class _IndependentEvaluator:
+                 if segment.mode == SPIN:
+                     if abs(theta_rate) <= (
+                             self.config.heading_tolerance_rad + _GEOMETRY_TOL):
+-                        self._fail(
+-                            KINEMATIC_INFEASIBLE,
+-                            "S body-spin has no heading change",
+-                            field="theta", vehicle_id=vehicle_id,
+-                            block_index=block.block_index,
+-                            max_error=abs(theta_rate))
+-                    expected_direction = 1 if theta_rate > 0.0 else -1
+-                    if segment.direction != expected_direction:
+-                        self._fail(
+-                            KINEMATIC_INFEASIBLE,
+-                            "Spin direction sign contradicts its heading "
+-                            "change",
+-                            field="direction", vehicle_id=vehicle_id,
+-                            block_index=block.block_index,
+-                            max_error=abs(theta_rate))
++                        if not uniform_v02:
++                            self._fail(
++                                KINEMATIC_INFEASIBLE,
++                                "S body-spin has no heading change",
++                                field="theta", vehicle_id=vehicle_id,
++                                block_index=block.block_index,
++                                max_error=abs(theta_rate))
++                        # V0.2 allows one vehicle to hold its heading inside a
++                        # multi-vehicle S edge.  It remains a legal S hold only
++                        # with the canonical S wheel set, a fixed centre and
++                        # the +1 zero-angle placeholder direction.  The fixed
++                        # centre/travel/control checks above are unchanged.
++                        expected_angles, expected_factors = wheel_configuration(
++                            Action(SPIN, 0.0, 0.0), motion_limits)
++                        angle_error = max(
++                            abs(first - float(second))
++                            for first, second in zip(
++                                angles, expected_angles))
++                        factor_error = max(
++                            abs(first - float(second))
++                            for first, second in zip(
++                                factors, expected_factors))
++                        if angle_error > _WHEEL_ANGLE_TOL or (
++                                factor_error > _WHEEL_ANGLE_TOL):
++                            self._fail(
++                                KINEMATIC_INFEASIBLE,
++                                "zero-angle S vehicle has non-canonical S "
++                                "wheels",
++                                field="wheel_angles", vehicle_id=vehicle_id,
++                                block_index=block.block_index,
++                                max_error=max(angle_error, factor_error))
++                        if segment.direction != 1:
++                            self._fail(
++                                KINEMATIC_INFEASIBLE,
++                                "zero-angle S placeholder direction must be +1",
++                                field="direction", vehicle_id=vehicle_id,
++                                block_index=block.block_index,
++                                max_error=abs(segment.direction - 1))
++                        self._count(2)
++                    else:
++                        expected_direction = 1 if theta_rate > 0.0 else -1
++                        if segment.direction != expected_direction:
++                            self._fail(
++                                KINEMATIC_INFEASIBLE,
++                                "Spin direction sign contradicts its heading "
++                                "change",
++                                field="direction", vehicle_id=vehicle_id,
++                                block_index=block.block_index,
++                                max_error=abs(theta_rate))
+                 elif segment.mode == ACKERMANN:
+                     if abs(theta_rate) > (
+                             self.config.heading_tolerance_rad + _GEOMETRY_TOL):
+diff --git a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_retiming.py b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_retiming.py
+index 9782acc..e1e8a84 100644
+--- a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_retiming.py
++++ b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_retiming.py
+@@ -587,16 +587,16 @@ def _context_for(segment, offset, block, limits, motion_limits):
+                 "body_spin_travel", segment.vehicle_id, block.block_index,
+                 "body-spin travel must be zero")
+         if segment.mode == SPIN:
+-            if abs(theta_rate) <= 1e-6:
+-                raise _TimingInfeasible(
+-                    "body_spin_zero_yaw", segment.vehicle_id,
+-                    block.block_index, "S body-spin has no heading change")
+-            expected_direction = 1 if theta_rate > 0.0 else -1
+-            if segment.direction != expected_direction:
+-                raise _TimingInfeasible(
+-                    "body_spin_direction", segment.vehicle_id,
+-                    block.block_index,
+-                    "S direction sign contradicts its heading change")
++            # Zero-yaw S is a stationary member of a uniform all-S edge, not
++            # an A hold.  Its canonical S wheels are still derived below;
++            # nonzero rotations retain the direction-sign check.
++            if abs(theta_rate) > 1e-6:
++                expected_direction = 1 if theta_rate > 0.0 else -1
++                if segment.direction != expected_direction:
++                    raise _TimingInfeasible(
++                        "body_spin_direction", segment.vehicle_id,
++                        block.block_index,
++                        "S direction sign contradicts its heading change")
+         elif segment.mode == ACKERMANN:
+             if abs(theta_rate) > 1e-6:
+                 raise _TimingInfeasible(

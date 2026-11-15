@@ -1,0 +1,77 @@
+{
+  "positive_arc": {
+    "feasible": true,
+    "continuous_confirmation": true,
+    "independent_radius": 3.0,
+    "independent_candidate_a": 0.5796584150289499,
+    "independent_J": 1.9332470672747744,
+    "independent_h": 0.005299804687500357,
+    "independent_upper_a": 0.5847813309635694,
+    "a_limit": 0.6,
+    "reported_confirmation": {
+      "candidate_peak": 0.5796584150289499,
+      "candidate_peak_tau": 0.21375,
+      "limit": 0.6,
+      "analytic_bound": 0.7893281464676393,
+      "analytic_bound_exceeds_limit": true,
+      "derivative_constraint": "jerk",
+      "derivative_bound": 1.9332470672747744,
+      "lipschitz_error": 0.005122915934619554,
+      "refined_bound": 0.5847813309635694,
+      "adopted_bound": 0.5847813309635694,
+      "adopted_bound_ratio": 0.9746355516059491,
+      "confirmed": true,
+      "method": "candidate_plus_derivative_lipschitz"
+    }
+  },
+  "unconfirmed_negative": {
+    "jerk_limit": 1.5,
+    "feasible": false,
+    "executable": false,
+    "reason": "UNIFORM_DYNAMIC_UNCONFIRMED",
+    "gate_publish": false,
+    "failure": {
+      "code": "UNIFORM_DYNAMIC_UNCONFIRMED",
+      "field": "dynamic_confirmation",
+      "vehicle_id": 3,
+      "other_vehicle_id": null,
+      "pair_id": null,
+      "block_index": 0,
+      "segment_index": null,
+      "sample_index": null,
+      "time_s": null,
+      "station": null,
+      "constraint": "jerk",
+      "max_error": 1.9332470672747744,
+      "detail": "dynamic jerk remains unconfirmed: candidate peak 1.41701419128 is below limit 1.5, but the adopted full-interval bound 1.93324706727 exceeds it (analytic 1.93324706727, refined None, max adjacent time gap 0.0052998046875 s); this is not a demonstrated physical exceedance"
+    },
+    "confirmation": {
+      "all_constraints_confirmed": false,
+      "endpoint_coverage": {
+        "tau_start_present": true,
+        "tau_end_present": true
+      },
+      "max_tau_gap": 0.0012500000000000844,
+      "unconfirmed": [
+        {
+          "block_index": 0,
+          "vehicle_id": 3,
+          "constraint": "jerk",
+          "candidate_peak": 1.4170141912785232,
+          "candidate_peak_ratio": 0.9446761275190155,
+          "analytic_bound": 1.9332470672747744,
+          "refined_bound": null,
+          "adopted_bound": 1.9332470672747744,
+          "limit": 1.5,
+          "adopted_bound_ratio": 1.2888313781831828,
+          "max_adjacent_time_gap_s": 0.005299804687500357,
+          "endpoint_coverage": {
+            "tau_start_present": true,
+            "tau_end_present": true
+          },
+          "unconfirmed": true
+        }
+      ]
+    }
+  }
+}

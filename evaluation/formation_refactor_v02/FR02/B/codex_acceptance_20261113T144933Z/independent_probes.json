@@ -1,0 +1,150 @@
+{
+  "certificate_semantics": [
+    {
+      "name": "straight",
+      "status": "FEASIBLE",
+      "feasible": true,
+      "executable": true,
+      "dynamic_continuous_certificate": true,
+      "limitations": [],
+      "pure_python_publication_gate_publish": true,
+      "unexpected_unverified_feasible": false
+    },
+    {
+      "name": "nonzero_pivot_arc",
+      "status": "FEASIBLE",
+      "feasible": true,
+      "executable": true,
+      "dynamic_continuous_certificate": false,
+      "limitations": [
+        {
+          "block_index": 0,
+          "vehicle_id": 3,
+          "constraint": "acceleration",
+          "conservative_bound": 0.7893281464676393,
+          "limit": 0.6,
+          "bound_ratio": 1.315546910779399,
+          "candidate_peak_ratio": 0.9660973583815832
+        }
+      ],
+      "pure_python_publication_gate_publish": true,
+      "unexpected_unverified_feasible": true
+    },
+    {
+      "name": "complex",
+      "status": "FEASIBLE",
+      "feasible": true,
+      "executable": true,
+      "dynamic_continuous_certificate": false,
+      "limitations": [
+        {
+          "block_index": 1,
+          "vehicle_id": 3,
+          "constraint": "acceleration",
+          "conservative_bound": 0.7893281464676393,
+          "limit": 0.6,
+          "bound_ratio": 1.315546910779399,
+          "candidate_peak_ratio": 0.9660973583815832
+        }
+      ],
+      "pure_python_publication_gate_publish": true,
+      "unexpected_unverified_feasible": true
+    }
+  ],
+  "spin_endpoint_clear_mid_sweep_collision": {
+    "map": {
+      "shape": [
+        400,
+        400
+      ],
+      "resolution": 0.05,
+      "origin": [
+        -10.0,
+        -10.0
+      ],
+      "occupied_cells": [
+        [
+          209,
+          221
+        ]
+      ]
+    },
+    "endpoints": [
+      {
+        "label": "start",
+        "success": true,
+        "reason": null
+      },
+      {
+        "label": "goal",
+        "success": true,
+        "reason": null
+      }
+    ],
+    "audit_status": "REJECTED",
+    "reason": "FORMATION_SWEEP_COLLISION",
+    "first_collision": {
+      "edge_index": 0,
+      "reason": "MAP_OBB_COLLISION",
+      "vehicle_id": 1,
+      "other_vehicle_id": null,
+      "time_s": 4.088966537921189,
+      "station": 0.47183098591549294,
+      "qf": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "segment_index": 0,
+      "sample_index": 67,
+      "label": "motion_0000"
+    }
+  },
+  "moving_projection_checks": [
+    {
+      "t": 3.247646120824238,
+      "phase": "motion_0000",
+      "kind": "motion",
+      "mode": "S",
+      "same_exact_state": true
+    },
+    {
+      "t": 9.384540677201464,
+      "phase": "motion_0001",
+      "kind": "motion",
+      "mode": "A",
+      "same_exact_state": true
+    },
+    {
+      "t": 15.642577846647042,
+      "phase": "motion_0002",
+      "kind": "motion",
+      "mode": "S",
+      "same_exact_state": true
+    },
+    {
+      "t": 21.301508521078738,
+      "phase": "motion_0003",
+      "kind": "motion",
+      "mode": "O",
+      "same_exact_state": true
+    }
+  ],
+  "submitted_B07_common_times": [
+    {
+      "t": 0.137,
+      "phase": "initial_setup_0000",
+      "kind": "initial_setup"
+    },
+    {
+      "t": 0.419,
+      "phase": "initial_setup_0000",
+      "kind": "initial_setup"
+    },
+    {
+      "t": 0.777,
+      "phase": "initial_setup_0000",
+      "kind": "initial_setup"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+[ERROR] [1794651004.267048]: [fr05 smoke] envelope_certification: 
+WROTE evaluation/formation_refactor_v02/FR05/rework_20261114T095659Z/ros_near_goal/near_goal_report.json ok= False
+Traceback (most recent call last):
+  File "tests/ros_uniform_playback_smoke.py", line 1803, in <module>
+    main()
+  File "tests/ros_uniform_playback_smoke.py", line 1767, in main
+    scenario_near_goal(session, evidence, envelope_dir, checks,
+  File "tests/ros_uniform_playback_smoke.py", line 1107, in scenario_near_goal
+    plan, fields, summary, path = analyze_envelope(
+  File "tests/ros_uniform_playback_smoke.py", line 443, in analyze_envelope
+    note(checks, "envelope_certification", message.certification ==
+  File "tests/ros_uniform_playback_smoke.py", line 159, in note
+    raise SmokeError("{}: {}".format(name, detail))
+__main__.SmokeError: envelope_certification: 

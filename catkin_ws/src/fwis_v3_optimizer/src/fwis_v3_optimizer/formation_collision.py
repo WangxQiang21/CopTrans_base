@@ -6,11 +6,11 @@ It does not search for a path, assign vehicle modes, retime a trajectory, or
 publish a feasibility result.
 """
 from collections.abc import Mapping as MappingABC
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import math
 from numbers import Real
 from types import MappingProxyType
-from typing import Mapping, Optional
+from typing import Callable, Mapping, Optional
 
 from .core import Grid, Pose
 from .formation import (FormationModel, FormationPose,
@@ -79,6 +79,69 @@ class CollisionReport:
     sample_index: int = 0
     detail: Optional[str] = None
     qf: Optional[FormationPose] = None
+    # Analytic sweeps report the exact model time/station that produced the
+    # failing state.  Legacy swept_check leaves both fields unset.
+    time_s: Optional[float] = None
+    station: Optional[float] = None
+
+
+@dataclass(frozen=True)
+class AnalyticSweepSegment:
+    """One exactly-evaluated V0.2 segment for conservative swept coverage.
+
+    ``fraction`` runs from 0 to 1 over the segment and must be mapped by the
+    caller to the authoritative analytic model, never to a chord interpolation.
+    The three bounds are suprema per unit fraction over the closed segment:
+
+        sup ||d q_F / d lambda||
+        sup |d psi_F / d lambda|
+        sup |d theta_i / d lambda| for every vehicle i
+
+    The checker turns them into the task bound
+    ``sup ||p_i'(lambda)|| + body_half_diagonal_i * sup |theta_i'(lambda)|``
+    using ``||p_i'|| <= ||q_F'|| + |r_i| |psi_F'|`` and the margin-inflated
+    body diagonal.  A caller that cannot justify a finite nonnegative bound
+    must not use this API.
+    """
+
+    station_start: float
+    station_end: float
+    state_at: Callable[[float], "FormationState"]
+    time_at: Callable[[float], float]
+    center_speed_bound_m_per_lambda: float
+    formation_rate_bound_rad_per_lambda: float
+    body_rate_bounds_rad_per_lambda: Mapping[int, float]
+    label: str = ""
+
+    def __post_init__(self):
+        object.__setattr__(self, "station_start", _finite_number(
+            self.station_start, "AnalyticSweepSegment.station_start"))
+        object.__setattr__(self, "station_end", _finite_number(
+            self.station_end, "AnalyticSweepSegment.station_end"))
+        if not self.station_end > self.station_start:
+            raise FormationValidationError(
+                "NONMONOTONIC_ANALYTIC_SEGMENT station_end={} must exceed "
+                "station_start={}".format(self.station_end, self.station_start))
+        if not callable(self.state_at) or not callable(self.time_at):
+            raise FormationValidationError(
+                "INVALID_ANALYTIC_SEGMENT state_at/time_at must be callable")
+        for name in ("center_speed_bound_m_per_lambda",
+                     "formation_rate_bound_rad_per_lambda"):
+            object.__setattr__(self, name, _finite_number(
+                getattr(self, name),
+                "AnalyticSweepSegment." + name, nonnegative=True))
+        if not isinstance(self.body_rate_bounds_rad_per_lambda, MappingABC):
+            raise FormationValidationError(
+                "INVALID_ANALYTIC_SEGMENT expected body-rate bound mapping")
+        checked = {}
+        for vehicle_id, value in self.body_rate_bounds_rad_per_lambda.items():
+            checked_id = _checked_vehicle_id(
+                vehicle_id, "AnalyticSweepSegment.body_rate_bounds")
+            checked[checked_id] = _finite_number(
+                value, "body_rate_bounds[{}]".format(checked_id),
+                nonnegative=True)
+        object.__setattr__(self, "body_rate_bounds_rad_per_lambda",
+                           MappingProxyType(checked))
 
 
 @dataclass(frozen=True)
@@ -287,10 +350,12 @@ class FormationCollisionChecker:
 
     @staticmethod
     def _failure(reason, segment_index, sample_index, qf=None,
-                 vehicle_id=None, other_vehicle_id=None, detail=None):
+                 vehicle_id=None, other_vehicle_id=None, detail=None,
+                 time_s=None, station=None):
         return CollisionReport(
             False, reason, vehicle_id, other_vehicle_id,
-            segment_index, sample_index, detail, qf)
+            segment_index, sample_index, detail, qf,
+            time_s=time_s, station=station)
 
     @staticmethod
     def _error_code(exc):
@@ -456,6 +521,195 @@ class FormationCollisionChecker:
                             first_headings[vehicle_id]))
         headings = self._checked_headings(headings)
         return qf, headings
+
+    def inflated_body_half_diagonals(self):
+        """Read-only copy of margin-inflated body half-diagonals."""
+        return dict(self._corner_radii)
+
+    def _normalise_analytic_segments(self, segments):
+        try:
+            supplied = list(segments)
+        except TypeError as exc:
+            raise FormationValidationError(
+                "INVALID_ANALYTIC_SEGMENTS expected an ordered iterable") from exc
+        if not supplied:
+            raise FormationValidationError("EMPTY_ANALYTIC_SEGMENTS")
+        result = []
+        expected_ids = set(self._vehicle_ids)
+        for index, segment in enumerate(supplied):
+            if not isinstance(segment, AnalyticSweepSegment):
+                raise FormationValidationError(
+                    "INVALID_ANALYTIC_SEGMENTS segment {} is not "
+                    "AnalyticSweepSegment".format(index))
+            if set(segment.body_rate_bounds_rad_per_lambda) != expected_ids:
+                raise FormationValidationError(
+                    "INVALID_ANALYTIC_SEGMENTS segment {} body-rate ids "
+                    "differ".format(index))
+            result.append(segment)
+        return tuple(result)
+
+    def _analytic_state(self, segment, fraction, segment_index):
+        try:
+            state = segment.state_at(float(fraction))
+        except (ArithmeticError, TypeError, ValueError) as exc:
+            raise FormationValidationError(
+                "INVALID_ANALYTIC_SWEEP_STATE segment {} fraction {}: {}"
+                .format(segment_index, fraction, exc)) from exc
+        if not isinstance(state, FormationState):
+            raise FormationValidationError(
+                "INVALID_ANALYTIC_SWEEP_STATE segment {} did not return "
+                "FormationState".format(segment_index))
+        expected_station = (segment.station_start +
+                            float(fraction) * (segment.station_end -
+                                               segment.station_start))
+        if abs(state.station - expected_station) > 1e-12:
+            raise FormationValidationError(
+                "INVALID_ANALYTIC_SWEEP_STATE segment {} station {} does not "
+                "match lambda-derived {}".format(
+                    segment_index, state.station, expected_station))
+        headings = self._checked_headings(state.body_headings)
+        return expected_station, state.qf, headings
+
+    def _analytic_time(self, segment, fraction, segment_index):
+        try:
+            value = segment.time_at(float(fraction))
+        except (ArithmeticError, TypeError, ValueError) as exc:
+            raise FormationValidationError(
+                "INVALID_ANALYTIC_SWEEP_TIME segment {} fraction {}: {}"
+                .format(segment_index, fraction, exc)) from exc
+        return _finite_number(
+            value, "analytic_segments[{}].time_at".format(segment_index))
+
+    def analytic_segment_bound(self, segment):
+        """Conservative per-vehicle displacement bound over this segment."""
+        if not isinstance(segment, AnalyticSweepSegment):
+            raise FormationValidationError(
+                "INVALID_ANALYTIC_SEGMENT expected AnalyticSweepSegment")
+        maximum = 0.0
+        for offset in self.model.offsets:
+            vehicle_id = offset.vehicle_id
+            centre_bound = (
+                segment.center_speed_bound_m_per_lambda
+                + math.hypot(offset.x, offset.y)
+                * segment.formation_rate_bound_rad_per_lambda)
+            body_bound = (
+                self._corner_radii[vehicle_id]
+                * segment.body_rate_bounds_rad_per_lambda[vehicle_id])
+            maximum = max(maximum, centre_bound + body_bound)
+        return maximum
+
+    def swept_check_analytic(self, segments, policy, trace=None):
+        """Sample exact V0.2 states with conservative per-segment bounds.
+
+        Unlike :meth:`swept_check`, no chord interpolation is used.  Every
+        checked pose is produced by the caller's analytic callback at the
+        exact fraction.  The per-segment sample budget is enforced before any
+        state is evaluated and is never increased to force a pass.
+        """
+        self._stats["swept_checks"] += 1
+        try:
+            checked_segments = self._normalise_analytic_segments(segments)
+        except FormationValidationError as exc:
+            return self._failure(
+                self._error_code(exc), 0, 0, detail=str(exc))
+        try:
+            checked_policy = self._normalise_policy(policy)
+        except FormationValidationError as exc:
+            return self._failure(
+                self._error_code(exc), 0, 0, detail=str(exc))
+        if trace is not None and not hasattr(trace, "append"):
+            raise FormationValidationError(
+                "INVALID_SWEEP_TRACE expected a list-like trace")
+        padding = checked_policy.motion_padding_m
+        for segment_index, segment in enumerate(checked_segments):
+            try:
+                station, qf, headings = self._analytic_state(
+                    segment, 0.0, segment_index)
+                time_s = self._analytic_time(segment, 0.0, segment_index)
+            except FormationValidationError as exc:
+                return self._failure(
+                    getattr(exc, "reason", self._error_code(exc)),
+                    segment_index, 0, detail=str(exc))
+            if trace is not None:
+                trace.append({
+                    "segment_index": segment_index,
+                    "label": segment.label,
+                    "fraction": 0.0,
+                    "time_s": time_s,
+                    "station": station,
+                    "qf": [qf.x, qf.y, qf.psi],
+                    "kind": "segment_start",
+                })
+            self._stats["swept_samples_checked"] += 1
+            report = self._check_state(
+                qf, headings, padding, segment_index, 0)
+            if not report.success:
+                return replace(report, time_s=time_s, station=station)
+            try:
+                bound = self.analytic_segment_bound(segment)
+            except (ArithmeticError, OverflowError) as exc:
+                return self._failure(
+                    "INVALID_SWEEP_DISPLACEMENT", segment_index, 0,
+                    qf, detail=str(exc), time_s=time_s, station=station)
+            if not math.isfinite(bound):
+                return self._failure(
+                    "NONFINITE_SWEEP_DISPLACEMENT", segment_index, 0,
+                    qf, detail="analytic displacement bound is not finite",
+                    time_s=time_s, station=station)
+            sample_count = max(
+                1, int(math.ceil(bound / checked_policy.max_corner_step_m)))
+            if sample_count > checked_policy.max_samples_per_segment:
+                return self._failure(
+                    "SWEEP_SAMPLE_BUDGET_EXCEEDED", segment_index, 0,
+                    qf,
+                    detail="analytic segment needs {} samples > {}".format(
+                        sample_count,
+                        checked_policy.max_samples_per_segment),
+                    time_s=time_s, station=station)
+            if trace is not None:
+                trace.append({
+                    "segment_index": segment_index,
+                    "label": segment.label,
+                    "kind": "budget",
+                    "bound_m": bound,
+                    "sample_count": sample_count,
+                    "max_corner_step_m": checked_policy.max_corner_step_m,
+                    "max_samples_per_segment":
+                        checked_policy.max_samples_per_segment,
+                    "station_start": segment.station_start,
+                    "station_end": segment.station_end,
+                })
+            self._stats["segments_checked"] += 1
+            for sample_index in range(1, sample_count + 1):
+                fraction = sample_index / float(sample_count)
+                try:
+                    station, qf, headings = self._analytic_state(
+                        segment, fraction, segment_index)
+                    time_s = self._analytic_time(
+                        segment, fraction, segment_index)
+                except FormationValidationError as exc:
+                    return self._failure(
+                        getattr(exc, "reason", self._error_code(exc)),
+                        segment_index, sample_index, detail=str(exc))
+                self._stats["swept_samples_checked"] += 1
+                if trace is not None:
+                    trace.append({
+                        "segment_index": segment_index,
+                        "label": segment.label,
+                        "fraction": fraction,
+                        "time_s": time_s,
+                        "station": station,
+                        "qf": [qf.x, qf.y, qf.psi],
+                        "kind": "sample",
+                    })
+                report = self._check_state(
+                    qf, headings, padding, segment_index, sample_index)
+                if not report.success:
+                    if trace is not None:
+                        trace[-1]["collision"] = True
+                        trace[-1]["reason"] = report.reason
+                    return replace(report, time_s=time_s, station=station)
+        return CollisionReport(True)
 
     def swept_check(self, states, policy):
         """Check ordered joint states and conservative samples between them."""

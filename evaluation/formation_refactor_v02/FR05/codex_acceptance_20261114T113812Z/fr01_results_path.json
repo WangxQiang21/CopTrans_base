@@ -1,0 +1,4593 @@
+{
+  "cases": [
+    {
+      "case": "N01-N07",
+      "inputs": {
+        "note": "targeted post-construction faults from the FR01 acceptance review; every negative keeps its legal positive"
+      },
+      "legal_positives": [
+        {
+          "name": "L01_A_arc_forward",
+          "note": "direction +1 on a positive A arc",
+          "validation": {
+            "max_a_curvature_relation_residual": 1.1102230246251565e-16,
+            "max_a_tangent_residual": 2.9893669801409088e-16,
+            "max_derivative_error": 0.0,
+            "max_endpoint_heading_error_rad": 0.0,
+            "max_endpoint_qf_error_m": 0.0,
+            "max_mode_equation_residual": 2.9893669801409088e-16,
+            "max_rigidity_residual_m": 2.220446049250313e-16,
+            "max_wheel_angle_end_rad": 0.2932503134605156,
+            "max_wheel_angle_rad": 0.2932503134605156,
+            "max_wheel_angle_start_rad": 0.2932503134605156,
+            "primitive": "A_ARC",
+            "sample_count": 8
+          }
+        },
+        {
+          "name": "L02_A_arc_reverse",
+          "note": "direction -1 on a clockwise A arc with allow_reverse",
+          "validation": {
+            "max_a_curvature_relation_residual": 1.1102230246251565e-16,
+            "max_a_tangent_residual": 2.4825341532472736e-16,
+            "max_derivative_error": 0.0,
+            "max_endpoint_heading_error_rad": 0.0,
+            "max_endpoint_qf_error_m": 0.0,
+            "max_mode_equation_residual": 2.4825341532472736e-16,
+            "max_rigidity_residual_m": 2.220446049250313e-16,
+            "max_wheel_angle_end_rad": 0.2932503134605156,
+            "max_wheel_angle_rad": 0.2932503134605156,
+            "max_wheel_angle_start_rad": 0.2932503134605156,
+            "primitive": "A_ARC",
+            "sample_count": 8
+          }
+        },
+        {
+          "name": "L03_A_straight_legal_reverse",
+          "note": "car2 direction -1 on an A straight with allow_reverse",
+          "validation": {
+            "max_a_curvature_relation_residual": 0.0,
+            "max_a_tangent_residual": 1.2246467991473532e-16,
+            "max_derivative_error": 0.0,
+            "max_endpoint_heading_error_rad": 0.0,
+            "max_endpoint_qf_error_m": 0.0,
+            "max_mode_equation_residual": 1.2246467991473532e-16,
+            "max_rigidity_residual_m": 0.0,
+            "max_wheel_angle_end_rad": 0.0,
+            "max_wheel_angle_rad": 0.0,
+            "max_wheel_angle_start_rad": 0.0,
+            "primitive": "A_STRAIGHT",
+            "sample_count": 8
+          }
+        },
+        {
+          "car2_end": {
+            "angles": [
+              -0.9357695914045827,
+              0.9357695914045828,
+              0.9357695914045827,
+              -0.9357695914045828
+            ],
+            "factors": [
+              0.3068110167513546,
+              0.3068110167513546,
+              0.3068110167513546,
+              0.3068110167513546
+            ]
+          },
+          "car2_start": {
+            "angles": [
+              -0.9357695914045827,
+              0.9357695914045828,
+              0.9357695914045827,
+              -0.9357695914045828
+            ],
+            "factors": [
+              0.3068110167513546,
+              0.3068110167513546,
+              0.3068110167513546,
+              0.3068110167513546
+            ]
+          },
+          "name": "L04_S_zero_angle_start_end",
+          "note": "zero-angle car2 keeps canonical S at both boundaries",
+          "validation": {
+            "max_a_curvature_relation_residual": 0.0,
+            "max_a_tangent_residual": 0.0,
+            "max_derivative_error": 0.0,
+            "max_endpoint_heading_error_rad": 0.0,
+            "max_endpoint_qf_error_m": 0.0,
+            "max_mode_equation_residual": 0.0,
+            "max_rigidity_residual_m": 2.220446049250313e-16,
+            "max_wheel_angle_end_rad": 0.9357695914045828,
+            "max_wheel_angle_rad": 0.9357695914045828,
+            "max_wheel_angle_start_rad": 0.9357695914045828,
+            "primitive": "S_SPIN",
+            "sample_count": 8
+          }
+        }
+      ],
+      "status": "PASSED",
+      "subcases": [
+        {
+          "detail": "normalized mode equation residual 0.2 exceeds 1e-6",
+          "name": "N01_A_arc_body_not_tangent",
+          "reason": "EDGE_VALIDATION_FAILED",
+          "status": "REJECTED"
+        },
+        {
+          "detail": "end wheel_angles vehicle_id=2 index=0 actual=0 expected=-0.93576959140458271; end wheel_angles vehicle_id=2 index=1 actual=0 expected=0.93576959140458282; end wheel_angles vehicle_id=2 index=2 actual=0 expected=0.93576959140458271; end wheel_angles vehicle_id=2 index=3 actual=0 expected=-0.93576959140458282; end wheel_factors vehicle_id=2 index=0 actual=1 expected=0.30681101675135458; end wheel_factors vehicle_id=2 index=1 actual=1 expected=0.30681101675135458; end wheel_factors vehicle_id=2 index=2 actual=1 expected=0.30681101675135458; end wheel_factors vehicle_id=2 index=3 actual=1 expected=0.30681101675135458",
+          "name": "N02_S_zero_angle_end_wheels_A",
+          "reason": "EDGE_VALIDATION_FAILED",
+          "status": "REJECTED"
+        },
+        {
+          "detail": "start wheel angle vehicle_id=1 max=0.29325031346051561 exceeds steer_angle_max=0.10000000000000001; start wheel angle vehicle_id=2 max=0.29325031346051561 exceeds steer_angle_max=0.10000000000000001; start wheel angle vehicle_id=3 max=0.29325031346051561 exceeds steer_angle_max=0.10000000000000001; end wheel angle vehicle_id=1 max=0.29325031346051561 exceeds steer_angle_max=0.10000000000000001; end wheel angle vehicle_id=2 max=0.29325031346051561 exceeds steer_angle_max=0.10000000000000001; end wheel angle vehicle_id=3 max=0.29325031346051561 exceeds steer_angle_max=0.10000000000000001",
+          "name": "N03_wheel_limit_exceeded",
+          "reason": "EDGE_VALIDATION_FAILED",
+          "status": "REJECTED"
+        },
+        {
+          "detail": "turn radius vehicle_id=1 rho=1 below r_min_ack=2; curvature vehicle_id=1 |kappa|=1 exceeds 1/r_min_ack=0.5; turn radius vehicle_id=2 rho=1 below r_min_ack=2; curvature vehicle_id=2 |kappa|=1 exceeds 1/r_min_ack=0.5; turn radius vehicle_id=3 rho=1 below r_min_ack=2; curvature vehicle_id=3 |kappa|=1 exceeds 1/r_min_ack=0.5",
+          "name": "N04_turn_radius_below_limit",
+          "reason": "EDGE_VALIDATION_FAILED",
+          "status": "REJECTED"
+        },
+        {
+          "detail": "mode=S is inconsistent with primitive=A_ARC",
+          "name": "N05_mode_primitive_mismatch",
+          "reason": "MODE_PRIMITIVE_MISMATCH",
+          "status": "REJECTED"
+        },
+        {
+          "detail": "segment.mode vehicle_id=2 actual=0 expected=2 for global mode=S",
+          "name": "N06_S_zero_angle_segment_A",
+          "reason": "EDGE_VALIDATION_FAILED",
+          "status": "REJECTED"
+        },
+        {
+          "detail": "wheel_angles_start vehicle_id=1 value=nan is not finite",
+          "name": "N07_NaN_wheel",
+          "reason": "NONFINITE_VALUE",
+          "status": "REJECTED"
+        }
+      ],
+      "subcases_note": {
+        "N01_independent_lateral_residual": "max |dp dot e_lateral(theta)| = 0.19866933079506133 (sin(0.2) = 0.19866933079506122)",
+        "N03_actual_max_wheel_angle_rad": 0.2932503134605156,
+        "N04_actual_radii_m": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "title": "Independent-validator rework negatives"
+    },
+    {
+      "case": "P01",
+      "edge": {
+        "allow_reverse": true,
+        "angle_derivative_unit": "rad/m",
+        "end_qf": [
+          3.5,
+          -0.25,
+          0.1
+        ],
+        "limits": {
+          "r_min_ack": 0.81,
+          "steer_angle_max": 1.5707963267948966,
+          "track": 0.364,
+          "wheelbase": 0.494
+        },
+        "mode": "A",
+        "pivot_in_cargo_frame": null,
+        "position_derivative_unit": "m/m",
+        "primitive": "A_STRAIGHT",
+        "progress_interval": [
+          0.0,
+          3.0
+        ],
+        "progress_unit": "m",
+        "real_time_domain": false,
+        "segments": [
+          {
+            "control": 0.0,
+            "direction": 1,
+            "end_center": [
+              4.495004165278026,
+              -0.15016658335317185
+            ],
+            "end_station": 3.0,
+            "legacy_mode": 0,
+            "pivot": [
+              0.0,
+              0.0
+            ],
+            "start_center": [
+              1.4950041652780257,
+              -0.15016658335317185
+            ],
+            "start_station": 0.0,
+            "theta_end": 0.0,
+            "theta_start": 0.0,
+            "travel_distance": 3.0,
+            "vehicle_id": 1
+          },
+          {
+            "control": 0.0,
+            "direction": -1,
+            "end_center": [
+              3.400166583353172,
+              0.7450041652780258
+            ],
+            "end_station": 3.0,
+            "legacy_mode": 0,
+            "pivot": [
+              0.0,
+              0.0
+            ],
+            "start_center": [
+              0.40016658335317185,
+              0.7450041652780258
+            ],
+            "start_station": 0.0,
+            "theta_end": 3.141592653589793,
+            "theta_start": 3.141592653589793,
+            "travel_distance": 3.0,
+            "vehicle_id": 2
+          },
+          {
+            "control": 0.0,
+            "direction": 1,
+            "end_center": [
+              3.599833416646828,
+              -1.2450041652780257
+            ],
+            "end_station": 3.0,
+            "legacy_mode": 0,
+            "pivot": [
+              0.0,
+              0.0
+            ],
+            "start_center": [
+              0.5998334166468282,
+              -1.2450041652780257
+            ],
+            "start_station": 0.0,
+            "theta_end": 0.0,
+            "theta_start": 0.0,
+            "travel_distance": 3.0,
+            "vehicle_id": 3
+          }
+        ],
+        "start_qf": [
+          0.5,
+          -0.25,
+          0.1
+        ],
+        "time_seconds": null,
+        "vehicles": [
+          {
+            "body_lateral_projection": 0.0,
+            "body_longitudinal_projection": 1.0,
+            "curvature": 0.0,
+            "direction": 1,
+            "oblique_angle": null,
+            "radius_from_cargo_pivot": null,
+            "signed_progress_speed": 1.0,
+            "theta_end": 0.0,
+            "theta_start": 0.0,
+            "travel_distance": 3.0,
+            "vehicle_id": 1,
+            "wheel_angles_end": [
+              0.0,
+              0.0,
+              -0.0,
+              -0.0
+            ],
+            "wheel_angles_start": [
+              0.0,
+              0.0,
+              -0.0,
+              -0.0
+            ],
+            "wheel_factors_end": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "wheel_factors_start": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "world_unit_displacement": [
+              1.0,
+              0.0
+            ]
+          },
+          {
+            "body_lateral_projection": 0.0,
+            "body_longitudinal_projection": -1.0,
+            "curvature": 0.0,
+            "direction": -1,
+            "oblique_angle": null,
+            "radius_from_cargo_pivot": null,
+            "signed_progress_speed": -1.0,
+            "theta_end": 3.141592653589793,
+            "theta_start": 3.141592653589793,
+            "travel_distance": 3.0,
+            "vehicle_id": 2,
+            "wheel_angles_end": [
+              0.0,
+              0.0,
+              -0.0,
+              -0.0
+            ],
+            "wheel_angles_start": [
+              0.0,
+              0.0,
+              -0.0,
+              -0.0
+            ],
+            "wheel_factors_end": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "wheel_factors_start": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "world_unit_displacement": [
+              1.0,
+              0.0
+            ]
+          },
+          {
+            "body_lateral_projection": 0.0,
+            "body_longitudinal_projection": 1.0,
+            "curvature": 0.0,
+            "direction": 1,
+            "oblique_angle": null,
+            "radius_from_cargo_pivot": null,
+            "signed_progress_speed": 1.0,
+            "theta_end": 0.0,
+            "theta_start": 0.0,
+            "travel_distance": 3.0,
+            "vehicle_id": 3,
+            "wheel_angles_end": [
+              0.0,
+              0.0,
+              -0.0,
+              -0.0
+            ],
+            "wheel_angles_start": [
+              0.0,
+              0.0,
+              -0.0,
+              -0.0
+            ],
+            "wheel_factors_end": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "wheel_factors_start": [
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ],
+            "world_unit_displacement": [
+              1.0,
+              0.0
+            ]
+          }
+        ],
+        "wheel_delta_from_zero_curvature_a": [
+          {
+            "angles_from_a_zero_curvature_rad": [
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "max_abs_angle_rad": 0.0,
+            "vehicle_id": 1
+          },
+          {
+            "angles_from_a_zero_curvature_rad": [
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "max_abs_angle_rad": 0.0,
+            "vehicle_id": 2
+          },
+          {
+            "angles_from_a_zero_curvature_rad": [
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "max_abs_angle_rad": 0.0,
+            "vehicle_id": 3
+          }
+        ]
+      },
+      "inputs": {
+        "allow_reverse": true,
+        "directions": {
+          "1": 1,
+          "2": -1,
+          "3": 1
+        },
+        "displacement": [
+          3.0,
+          0.0
+        ],
+        "headings": {
+          "1": 0.0,
+          "2": 3.141592653589793,
+          "3": 0.0
+        },
+        "start_qf": [
+          0.5,
+          -0.25,
+          0.1
+        ]
+      },
+      "status": "PASSED",
+      "subcases": [],
+      "title": "A straight with mixed gear branches",
+      "validation": {
+        "max_a_curvature_relation_residual": 0.0,
+        "max_a_tangent_residual": 1.2246467991473532e-16,
+        "max_derivative_error": 0.0,
+        "max_endpoint_heading_error_rad": 0.0,
+        "max_endpoint_qf_error_m": 0.0,
+        "max_mode_equation_residual": 1.2246467991473532e-16,
+        "max_rigidity_residual_m": 2.220446049250313e-16,
+        "max_wheel_angle_end_rad": 0.0,
+        "max_wheel_angle_rad": 0.0,
+        "max_wheel_angle_start_rad": 0.0,
+        "primitive": "A_STRAIGHT",
+        "sample_count": 8
+      }
+    },
+    {
+      "case": "P02",
+      "edge": {
+        "allow_reverse": false,
+        "angle_derivative_unit": "rad/rad",
+        "end_qf": [
+          0.2,
+          -0.1,
+          1.5707963267948966
+        ],
+        "limits": {
+          "r_min_ack": 0.81,
+          "steer_angle_max": 1.5707963267948966,
+          "track": 0.364,
+          "wheelbase": 0.494
+        },
+        "mode": "A",
+        "pivot_in_cargo_frame": [
+          0.0,
+          0.0
+        ],
+        "position_derivative_unit": "m/rad",
+        "primitive": "A_ARC",
+        "progress_interval": [
+          0.0,
+          1.5707963267948966
+        ],
+        "progress_unit": "rad",
+        "real_time_domain": false,
+        "segments": [
+          {
+            "control": 1.0,
+            "direction": 1,
+            "end_center": [
+              0.20000000000000007,
+              0.9
+            ],
+            "end_station": 1.5707963267948966,
+            "legacy_mode": 0,
+            "pivot": [
+              0.0,
+              0.0
+            ],
+            "start_center": [
+              1.2,
+              -0.1
+            ],
+            "start_station": 0.0,
+            "theta_end": 3.141592653589793,
+            "theta_start": 1.5707963267948966,
+            "travel_distance": 1.5707963267948966,
+            "vehicle_id": 1
+          },
+          {
+            "control": 1.0,
+            "direction": 1,
+            "end_center": [
+              -0.8,
+              -0.09999999999999995
+            ],
+            "end_station": 1.5707963267948966,
+            "legacy_mode": 0,
+            "pivot": [
+              0.0,
+              0.0
+            ],
+            "start_center": [
+              0.2,
+              0.9
+            ],
+            "start_station": 0.0,
+            "theta_end": 4.71238898038469,
+            "theta_start": 3.141592653589793,
+            "travel_distance": 1.5707963267948966,
+            "vehicle_id": 2
+          },
+          {
+            "control": 1.0,
+            "direction": 1,
+            "end_center": [
+              1.2,
+              -0.10000000000000006
+            ],
+            "end_station": 1.5707963267948966,
+            "legacy_mode": 0,
+            "pivot": [
+              0.0,
+              0.0
+            ],
+            "start_center": [
+              0.2,
+              -1.1
+            ],
+            "start_station": 0.0,
+            "theta_end": 1.5707963267948966,
+            "theta_start": 0.0,
+            "travel_distance": 1.5707963267948966,
+            "vehicle_id": 3
+          }
+        ],
+        "start_qf": [
+          0.2,
+          -0.1,
+          0.0
+        ],
+        "time_seconds": null,
+        "vehicles": [
+          {
+            "body_lateral_projection": 0.0,
+            "body_longitudinal_projection": 1.0,
+            "curvature": 1.0,
+            "direction": 1,
+            "oblique_angle": null,
+            "radius_from_cargo_pivot": 1.0,
+            "signed_progress_speed": 1.0,
+            "theta_end": 3.141592653589793,
+            "theta_start": 1.5707963267948966,
+            "travel_distance": 1.5707963267948966,
+            "vehicle_id": 1,
+            "wheel_angles_end": [
+              0.2932503134605156,
+              0.20600343559660717,
+              -0.2932503134605156,
+              -0.20600343559660717
+            ],
+            "wheel_angles_start": [
+              0.2932503134605156,
+              0.20600343559660717,
+              -0.2932503134605156,
+              -0.20600343559660717
+            ],
+            "wheel_factors_end": [
+              0.8544782033498572,
+              1.2075317801200927,
+              0.8544782033498572,
+              1.2075317801200927
+            ],
+            "wheel_factors_start": [
+              0.8544782033498572,
+              1.2075317801200927,
+              0.8544782033498572,
+              1.2075317801200927
+            ],
+            "world_unit_displacement": null
+          },
+          {
+            "body_lateral_projection": 0.0,
+            "body_longitudinal_projection": 1.0,
+            "curvature": 1.0,
+            "direction": 1,
+            "oblique_angle": null,
+            "radius_from_cargo_pivot": 1.0,
+            "signed_progress_speed": 1.0,
+            "theta_end": 4.71238898038469,
+            "theta_start": 3.141592653589793,
+            "travel_distance": 1.5707963267948966,
+            "vehicle_id": 2,
+            "wheel_angles_end": [
+              0.2932503134605156,
+              0.20600343559660717,
+              -0.2932503134605156,
+              -0.20600343559660717
+            ],
+            "wheel_angles_start": [
+              0.2932503134605156,
+              0.20600343559660717,
+              -0.2932503134605156,
+              -0.20600343559660717
+            ],
+            "wheel_factors_end": [
+              0.8544782033498572,
+              1.2075317801200927,
+              0.8544782033498572,
+              1.2075317801200927
+            ],
+            "wheel_factors_start": [
+              0.8544782033498572,
+              1.2075317801200927,
+              0.8544782033498572,
+              1.2075317801200927
+            ],
+            "world_unit_displacement": null
+          },
+          {
+            "body_lateral_projection": 0.0,
+            "body_longitudinal_projection": 1.0,
+            "curvature": 1.0,
+            "direction": 1,
+            "oblique_angle": null,
+            "radius_from_cargo_pivot": 1.0,
+            "signed_progress_speed": 1.0,
+            "theta_end": 1.5707963267948966,
+            "theta_start": 0.0,
+            "travel_distance": 1.5707963267948966,
+            "vehicle_id": 3,
+            "wheel_angles_end": [
+              0.2932503134605156,
+              0.20600343559660717,
+              -0.2932503134605156,
+              -0.20600343559660717
+            ],
+            "wheel_angles_start": [
+              0.2932503134605156,
+              0.20600343559660717,
+              -0.2932503134605156,
+              -0.20600343559660717
+            ],
+            "wheel_factors_end": [
+              0.8544782033498572,
+              1.2075317801200927,
+              0.8544782033498572,
+              1.2075317801200927
+            ],
+            "wheel_factors_start": [
+              0.8544782033498572,
+              1.2075317801200927,
+              0.8544782033498572,
+              1.2075317801200927
+            ],
+            "world_unit_displacement": null
+          }
+        ],
+        "wheel_delta_from_zero_curvature_a": [
+          {
+            "angles_from_a_zero_curvature_rad": [
+              0.29325031346051555,
+              0.20600343559660717,
+              -0.29325031346051555,
+              -0.20600343559660717
+            ],
+            "max_abs_angle_rad": 0.29325031346051555,
+            "vehicle_id": 1
+          },
+          {
+            "angles_from_a_zero_curvature_rad": [
+              0.29325031346051555,
+              0.20600343559660717,
+              -0.29325031346051555,
+              -0.20600343559660717
+            ],
+            "max_abs_angle_rad": 0.29325031346051555,
+            "vehicle_id": 2
+          },
+          {
+            "angles_from_a_zero_curvature_rad": [
+              0.29325031346051555,
+              0.20600343559660717,
+              -0.29325031346051555,
+              -0.20600343559660717
+            ],
+            "max_abs_angle_rad": 0.29325031346051555,
+            "vehicle_id": 3
+          }
+        ]
+      },
+      "inputs": {
+        "delta_psi": 1.5707963267948966,
+        "directions": {
+          "1": 1,
+          "2": 1,
+          "3": 1
+        },
+        "headings": {
+          "1": 1.5707963267948966,
+          "2": 3.141592653589793,
+          "3": 0.0
+        },
+        "pivot": [
+          0.0,
+          0.0
+        ],
+        "start_qf": [
+          0.2,
+          -0.1,
+          0.0
+        ]
+      },
+      "status": "PASSED",
+      "subcases": [],
+      "title": "A arc, c=0, positive rotation",
+      "validation": {
+        "max_a_curvature_relation_residual": 1.1102230246251565e-16,
+        "max_a_tangent_residual": 2.9893669801409088e-16,
+        "max_derivative_error": 0.0,
+        "max_endpoint_heading_error_rad": 0.0,
+        "max_endpoint_qf_error_m": 0.0,
+        "max_mode_equation_residual": 2.9893669801409088e-16,
+        "max_rigidity_residual_m": 2.220446049250313e-16,
+        "max_wheel_angle_end_rad": 0.2932503134605156,
+        "max_wheel_angle_rad": 0.2932503134605156,
+        "max_wheel_angle_start_rad": 0.2932503134605156,
+        "primitive": "A_ARC",
+        "sample_count": 8
+      }
+    },
+    {
+      "case": "P03",
+      "edge": {
+        "allow_reverse": true,
+        "angle_derivative_unit": "rad/rad",
+        "end_qf": [
+          0.2,
+          -0.1,
+          -1.5707963267948966
+        ],
+        "limits": {
+          "r_min_ack": 0.81,
+          "steer_angle_max": 1.5707963267948966,
+          "track": 0.364,
+          "wheelbase": 0.494
+        },
+        "mode": "A",
+        "pivot_in_cargo_frame": [
+          0.0,
+          0.0
+        ],
+        "position_derivative_unit": "m/rad",
+        "primitive": "A_ARC",
+        "progress_interval": [
+          0.0,
+          1.5707963267948966
+        ],
+        "progress_unit": "rad",
+        "real_time_domain": false,
+        "segments": [
+          {
+            "control": 1.0,
+            "direction": -1,
+            "end_center": [
+              0.20000000000000007,
+              -1.1
+            ],
+            "end_station": 1.5707963267948966,
+            "legacy_mode": 0,
+            "pivot": [
+              0.0,
+              0.0
+            ],
+            "start_center": [
+              1.2,
+              -0.1
+            ],
+            "start_station": 0.0,
+            "theta_end": 0.0,
+            "theta_start": 1.5707963267948966,
+            "travel_distance": 1.5707963267948966,
+            "vehicle_id": 1
+          },
+          {
+            "control": 1.0,
+            "direction": -1,
+            "end_center": [
+              1.2,
+              -0.09999999999999995
+            ],
+            "end_station": 1.5707963267948966,
+            "legacy_mode": 0,
+            "pivot": [
+              0.0,
+              0.0
+            ],
+            "start_center": [
+              0.2,
+              0.9
+            ],
+            "start_station": 0.0,
+            "theta_end": 1.5707963267948966,
+            "theta_start": 3.141592653589793,
+            "travel_distance": 1.5707963267948966,
+            "vehicle_id": 2
+          },
+          {
+            "control": 1.0,
+            "direction": -1,
+            "end_center": [
+              -0.8,
+              -0.10000000000000006
+            ],
+            "end_station": 1.5707963267948966,
+            "legacy_mode": 0,
+            "pivot": [
+              0.0,
+              0.0
+            ],
+            "start_center": [
+              0.2,
+              -1.1
+            ],
+            "start_station": 0.0,
+            "theta_end": -1.5707963267948966,
+            "theta_start": 0.0,
+            "travel_distance": 1.5707963267948966,
+            "vehicle_id": 3
+          }
+        ],
+        "start_qf": [
+          0.2,
+          -0.1,
+          0.0
+        ],
+        "time_seconds": null,
+        "vehicles": [
+          {
+            "body_lateral_projection": 0.0,
+            "body_longitudinal_projection": -1.0,
+            "curvature": 1.0,
+            "direction": -1,
+            "oblique_angle": null,
+            "radius_from_cargo_pivot": 1.0,
+            "signed_progress_speed": -1.0,
+            "theta_end": 0.0,
+            "theta_start": 1.5707963267948966,
+            "travel_distance": 1.5707963267948966,
+            "vehicle_id": 1,
+            "wheel_angles_end": [
+              0.2932503134605156,
+              0.20600343559660717,
+              -0.2932503134605156,
+              -0.20600343559660717
+            ],
+            "wheel_angles_start": [
+              0.2932503134605156,
+              0.20600343559660717,
+              -0.2932503134605156,
+              -0.20600343559660717
+            ],
+            "wheel_factors_end": [
+              0.8544782033498572,
+              1.2075317801200927,
+              0.8544782033498572,
+              1.2075317801200927
+            ],
+            "wheel_factors_start": [
+              0.8544782033498572,
+              1.2075317801200927,
+              0.8544782033498572,
+              1.2075317801200927
+            ],
+            "world_unit_displacement": null
+          },
+          {
+            "body_lateral_projection": 0.0,
+            "body_longitudinal_projection": -1.0,
+            "curvature": 1.0,
+            "direction": -1,
+            "oblique_angle": null,
+            "radius_from_cargo_pivot": 1.0,
+            "signed_progress_speed": -1.0,
+            "theta_end": 1.5707963267948966,
+            "theta_start": 3.141592653589793,
+            "travel_distance": 1.5707963267948966,
+            "vehicle_id": 2,
+            "wheel_angles_end": [
+              0.2932503134605156,
+              0.20600343559660717,
+              -0.2932503134605156,
+              -0.20600343559660717
+            ],
+            "wheel_angles_start": [
+              0.2932503134605156,
+              0.20600343559660717,
+              -0.2932503134605156,
+              -0.20600343559660717
+            ],
+            "wheel_factors_end": [
+              0.8544782033498572,
+              1.2075317801200927,
+              0.8544782033498572,
+              1.2075317801200927
+            ],
+            "wheel_factors_start": [
+              0.8544782033498572,
+              1.2075317801200927,
+              0.8544782033498572,
+              1.2075317801200927
+            ],
+            "world_unit_displacement": null
+          },
+          {
+            "body_lateral_projection": 0.0,
+            "body_longitudinal_projection": -1.0,
+            "curvature": 1.0,
+            "direction": -1,
+            "oblique_angle": null,
+            "radius_from_cargo_pivot": 1.0,
+            "signed_progress_speed": -1.0,
+            "theta_end": -1.5707963267948966,
+            "theta_start": 0.0,
+            "travel_distance": 1.5707963267948966,
+            "vehicle_id": 3,
+            "wheel_angles_end": [
+              0.2932503134605156,
+              0.20600343559660717,
+              -0.2932503134605156,
+              -0.20600343559660717
+            ],
+            "wheel_angles_start": [
+              0.2932503134605156,
+              0.20600343559660717,
+              -0.2932503134605156,
+              -0.20600343559660717
+            ],
+            "wheel_factors_end": [
+              0.8544782033498572,
+              1.2075317801200927,
+              0.8544782033498572,
+              1.2075317801200927
+            ],
+            "wheel_factors_start": [
+              0.8544782033498572,
+              1.2075317801200927,
+              0.8544782033498572,
+              1.2075317801200927
+            ],
+            "world_unit_displacement": null
+          }
+        ],
+        "wheel_delta_from_zero_curvature_a": [
+          {
+            "angles_from_a_zero_curvature_rad": [
+              0.29325031346051555,
+              0.20600343559660717,
+              -0.29325031346051555,
+              -0.20600343559660717
+            ],
+            "max_abs_angle_rad": 0.29325031346051555,
+            "vehicle_id": 1
+          },
+          {
+            "angles_from_a_zero_curvature_rad": [
+              0.29325031346051555,
+              0.20600343559660717,
+              -0.29325031346051555,
+              -0.20600343559660717
+            ],
+            "max_abs_angle_rad": 0.29325031346051555,
+            "vehicle_id": 2
+          },
+          {
+            "angles_from_a_zero_curvature_rad": [
+              0.29325031346051555,
+              0.20600343559660717,
+              -0.29325031346051555,
+              -0.20600343559660717
+            ],
+            "max_abs_angle_rad": 0.29325031346051555,
+            "vehicle_id": 3
+          }
+        ]
+      },
+      "inputs": {
+        "allow_reverse": true,
+        "delta_psi": -1.5707963267948966,
+        "directions": {
+          "1": -1,
+          "2": -1,
+          "3": -1
+        },
+        "headings": {
+          "1": 1.5707963267948966,
+          "2": 3.141592653589793,
+          "3": 0.0
+        },
+        "pivot": [
+          0.0,
+          0.0
+        ],
+        "start_qf": [
+          0.2,
+          -0.1,
+          0.0
+        ]
+      },
+      "status": "PASSED",
+      "subcases": [],
+      "title": "A arc clockwise with all reverse branches",
+      "validation": {
+        "max_a_curvature_relation_residual": 1.1102230246251565e-16,
+        "max_a_tangent_residual": 2.4825341532472736e-16,
+        "max_derivative_error": 0.0,
+        "max_endpoint_heading_error_rad": 0.0,
+        "max_endpoint_qf_error_m": 0.0,
+        "max_mode_equation_residual": 2.4825341532472736e-16,
+        "max_rigidity_residual_m": 2.220446049250313e-16,
+        "max_wheel_angle_end_rad": 0.2932503134605156,
+        "max_wheel_angle_rad": 0.2932503134605156,
+        "max_wheel_angle_start_rad": 0.2932503134605156,
+        "primitive": "A_ARC",
+        "sample_count": 8
+      }
+    },
+    {
+      "case": "P04",
+      "edge": {
+        "allow_reverse": false,
+        "angle_derivative_unit": "rad/rad",
+        "end_qf": [
+          2.3,
+          1.7999999999999998,
+          1.5707963267948966
+        ],
+        "limits": {
+          "r_min_ack": 0.81,
+          "steer_angle_max": 1.5707963267948966,
+          "track": 0.364,
+          "wheelbase": 0.494
+        },
+        "mode": "A",
+        "pivot_in_cargo_frame": [
+          0.0,
+          2.0
+        ],
+        "position_derivative_unit": "m/rad",
+        "primitive": "A_ARC",
+        "progress_interval": [
+          0.0,
+          1.5707963267948966
+        ],
+        "progress_unit": "rad",
+        "real_time_domain": false,
+        "segments": [
+          {
+            "control": 0.4472135954999579,
+            "direction": 1,
+            "end_center": [
+              2.3,
+              2.8
+            ],
+            "end_station": 1.5707963267948966,
+            "legacy_mode": 0,
+            "pivot": [
+              0.0,
+              2.0
+            ],
+            "start_center": [
+              1.3,
+              -0.2
+            ],
+            "start_station": 0.0,
+            "theta_end": 2.0344439357957027,
+            "theta_start": 0.4636476090008061,
+            "travel_distance": 3.5124073655203634,
+            "vehicle_id": 1
+          },
+          {
+            "control": 1.0,
+            "direction": 1,
+            "end_center": [
+              1.2999999999999998,
+              1.7999999999999998
+            ],
+            "end_station": 1.5707963267948966,
+            "legacy_mode": 0,
+            "pivot": [
+              0.0,
+              2.0
+            ],
+            "start_center": [
+              0.3,
+              0.8
+            ],
+            "start_station": 0.0,
+            "theta_end": 1.5707963267948966,
+            "theta_start": 0.0,
+            "travel_distance": 1.5707963267948966,
+            "vehicle_id": 2
+          },
+          {
+            "control": 0.3333333333333333,
+            "direction": 1,
+            "end_center": [
+              3.3,
+              1.7999999999999998
+            ],
+            "end_station": 1.5707963267948966,
+            "legacy_mode": 0,
+            "pivot": [
+              0.0,
+              2.0
+            ],
+            "start_center": [
+              0.3,
+              -1.2
+            ],
+            "start_station": 0.0,
+            "theta_end": 1.5707963267948966,
+            "theta_start": 0.0,
+            "travel_distance": 4.71238898038469,
+            "vehicle_id": 3
+          }
+        ],
+        "start_qf": [
+          0.3,
+          -0.2,
+          0.0
+        ],
+        "time_seconds": null,
+        "vehicles": [
+          {
+            "body_lateral_projection": 0.0,
+            "body_longitudinal_projection": 1.0,
+            "curvature": 0.4472135954999579,
+            "direction": 1,
+            "oblique_angle": null,
+            "radius_from_cargo_pivot": 2.23606797749979,
+            "signed_progress_speed": 2.23606797749979,
+            "theta_end": 2.0344439357957027,
+            "theta_start": 0.4636476090008061,
+            "travel_distance": 3.5124073655203634,
+            "vehicle_id": 1,
+            "wheel_angles_end": [
+              0.11967456633610729,
+              0.101794599152505,
+              -0.11967456633610729,
+              -0.101794599152505
+            ],
+            "wheel_angles_start": [
+              0.11967456633610729,
+              0.101794599152505,
+              -0.11967456633610729,
+              -0.101794599152505
+            ],
+            "wheel_factors_end": [
+              0.9252247571471569,
+              1.0870199394500475,
+              0.9252247571471569,
+              1.0870199394500475
+            ],
+            "wheel_factors_start": [
+              0.9252247571471569,
+              1.0870199394500475,
+              0.9252247571471569,
+              1.0870199394500475
+            ],
+            "world_unit_displacement": null
+          },
+          {
+            "body_lateral_projection": 0.0,
+            "body_longitudinal_projection": 1.0,
+            "curvature": 1.0,
+            "direction": 1,
+            "oblique_angle": null,
+            "radius_from_cargo_pivot": 1.0,
+            "signed_progress_speed": 1.0,
+            "theta_end": 1.5707963267948966,
+            "theta_start": 0.0,
+            "travel_distance": 1.5707963267948966,
+            "vehicle_id": 2,
+            "wheel_angles_end": [
+              0.2932503134605156,
+              0.20600343559660717,
+              -0.2932503134605156,
+              -0.20600343559660717
+            ],
+            "wheel_angles_start": [
+              0.2932503134605156,
+              0.20600343559660717,
+              -0.2932503134605156,
+              -0.20600343559660717
+            ],
+            "wheel_factors_end": [
+              0.8544782033498572,
+              1.2075317801200927,
+              0.8544782033498572,
+              1.2075317801200927
+            ],
+            "wheel_factors_start": [
+              0.8544782033498572,
+              1.2075317801200927,
+              0.8544782033498572,
+              1.2075317801200927
+            ],
+            "world_unit_displacement": null
+          },
+          {
+            "body_lateral_projection": 0.0,
+            "body_longitudinal_projection": 1.0,
+            "curvature": 0.3333333333333333,
+            "direction": 1,
+            "oblique_angle": null,
+            "radius_from_cargo_pivot": 3.0,
+            "signed_progress_speed": 3.0,
+            "theta_end": 1.5707963267948966,
+            "theta_start": 0.0,
+            "travel_distance": 4.71238898038469,
+            "vehicle_id": 3,
+            "wheel_angles_end": [
+              0.08742738125695994,
+              0.07746878876107229,
+              -0.08742738125695994,
+              -0.07746878876107229
+            ],
+            "wheel_angles_start": [
+              0.08742738125695994,
+              0.07746878876107229,
+              -0.08742738125695994,
+              -0.07746878876107229
+            ],
+            "wheel_factors_end": [
+              0.9429347214356298,
+              1.0638573943699199,
+              0.9429347214356298,
+              1.0638573943699199
+            ],
+            "wheel_factors_start": [
+              0.9429347214356298,
+              1.0638573943699199,
+              0.9429347214356298,
+              1.0638573943699199
+            ],
+            "world_unit_displacement": null
+          }
+        ],
+        "wheel_delta_from_zero_curvature_a": [
+          {
+            "angles_from_a_zero_curvature_rad": [
+              0.11967456633610729,
+              0.101794599152505,
+              -0.11967456633610729,
+              -0.101794599152505
+            ],
+            "max_abs_angle_rad": 0.11967456633610729,
+            "vehicle_id": 1
+          },
+          {
+            "angles_from_a_zero_curvature_rad": [
+              0.29325031346051555,
+              0.20600343559660717,
+              -0.29325031346051555,
+              -0.20600343559660717
+            ],
+            "max_abs_angle_rad": 0.29325031346051555,
+            "vehicle_id": 2
+          },
+          {
+            "angles_from_a_zero_curvature_rad": [
+              0.08742738125695994,
+              0.07746878876107229,
+              -0.08742738125695994,
+              -0.07746878876107229
+            ],
+            "max_abs_angle_rad": 0.08742738125695994,
+            "vehicle_id": 3
+          }
+        ]
+      },
+      "inputs": {
+        "delta_psi": 1.5707963267948966,
+        "directions": {
+          "1": 1,
+          "2": 1,
+          "3": 1
+        },
+        "headings": {
+          "1": 0.4636476090008061,
+          "2": 0.0,
+          "3": 0.0
+        },
+        "pivot": [
+          0.0,
+          2.0
+        ],
+        "start_qf": [
+          0.3,
+          -0.2,
+          0.0
+        ]
+      },
+      "status": "PASSED",
+      "subcases": [],
+      "title": "A arc with c=(0,2)",
+      "validation": {
+        "max_a_curvature_relation_residual": 2.220446049250313e-16,
+        "max_a_tangent_residual": 2.2204460492503136e-16,
+        "max_derivative_error": 0.0,
+        "max_endpoint_heading_error_rad": 0.0,
+        "max_endpoint_qf_error_m": 0.0,
+        "max_mode_equation_residual": 2.2204460492503136e-16,
+        "max_rigidity_residual_m": 4.440892098500626e-16,
+        "max_wheel_angle_end_rad": 0.2932503134605156,
+        "max_wheel_angle_rad": 0.2932503134605156,
+        "max_wheel_angle_start_rad": 0.2932503134605156,
+        "primitive": "A_ARC",
+        "sample_count": 8
+      }
+    },
+    {
+      "case": "P05",
+      "edge": {
+        "allow_reverse": false,
+        "angle_derivative_unit": "rad/rad",
+        "end_qf": [
+          2.441423827282145,
+          2.187885555141993,
+          1.9407963267948967
+        ],
+        "limits": {
+          "r_min_ack": 0.81,
+          "steer_angle_max": 1.5707963267948966,
+          "track": 0.364,
+          "wheelbase": 0.494
+        },
+        "mode": "A",
+        "pivot_in_cargo_frame": [
+          0.0,
+          2.0
+        ],
+        "position_derivative_unit": "m/rad",
+        "primitive": "A_ARC",
+        "progress_interval": [
+          0.0,
+          1.5707963267948966
+        ],
+        "progress_unit": "rad",
+        "real_time_domain": false,
+        "segments": [
+          {
+            "control": 0.4472135954999579,
+            "direction": 1,
+            "end_center": [
+              2.079808395317183,
+              3.1202129007480273
+            ],
+            "end_station": 1.5707963267948966,
+            "legacy_mode": 0,
+            "pivot": [
+              0.0,
+              2.0
+            ],
+            "start_center": [
+              2.2323273456060346,
+              -0.038384568035038036
+            ],
+            "start_station": 0.0,
+            "theta_end": 2.404443935795703,
+            "theta_start": 0.833647609000806,
+            "travel_distance": 3.5124073655203634,
+            "vehicle_id": 1
+          },
+          {
+            "control": 1.0,
+            "direction": 1,
+            "end_center": [
+              1.5090964816761105,
+              1.8262701231770309
+            ],
+            "end_station": 1.5707963267948966,
+            "legacy_mode": 0,
+            "pivot": [
+              0.0,
+              2.0
+            ],
+            "start_center": [
+              0.938384568035038,
+              0.5323273456060345
+            ],
+            "start_station": 0.0,
+            "theta_end": 1.9407963267948967,
+            "theta_start": 0.37,
+            "travel_distance": 1.5707963267948966,
+            "vehicle_id": 2
+          },
+          {
+            "control": 0.3333333333333333,
+            "direction": 1,
+            "end_center": [
+              3.3737511728881793,
+              2.549500987106955
+            ],
+            "end_station": 1.5707963267948966,
+            "legacy_mode": 0,
+            "pivot": [
+              0.0,
+              2.0
+            ],
+            "start_center": [
+              1.661615431964962,
+              -1.3323273456060345
+            ],
+            "start_station": 0.0,
+            "theta_end": 1.9407963267948967,
+            "theta_start": 0.37,
+            "travel_distance": 4.71238898038469,
+            "vehicle_id": 3
+          }
+        ],
+        "start_qf": [
+          1.3,
+          -0.4,
+          0.37
+        ],
+        "time_seconds": null,
+        "vehicles": [
+          {
+            "body_lateral_projection": 0.0,
+            "body_longitudinal_projection": 1.0,
+            "curvature": 0.4472135954999579,
+            "direction": 1,
+            "oblique_angle": null,
+            "radius_from_cargo_pivot": 2.23606797749979,
+            "signed_progress_speed": 2.23606797749979,
+            "theta_end": 2.404443935795703,
+            "theta_start": 0.833647609000806,
+            "travel_distance": 3.5124073655203634,
+            "vehicle_id": 1,
+            "wheel_angles_end": [
+              0.11967456633610729,
+              0.101794599152505,
+              -0.11967456633610729,
+              -0.101794599152505
+            ],
+            "wheel_angles_start": [
+              0.11967456633610729,
+              0.101794599152505,
+              -0.11967456633610729,
+              -0.101794599152505
+            ],
+            "wheel_factors_end": [
+              0.9252247571471569,
+              1.0870199394500475,
+              0.9252247571471569,
+              1.0870199394500475
+            ],
+            "wheel_factors_start": [
+              0.9252247571471569,
+              1.0870199394500475,
+              0.9252247571471569,
+              1.0870199394500475
+            ],
+            "world_unit_displacement": null
+          },
+          {
+            "body_lateral_projection": 0.0,
+            "body_longitudinal_projection": 1.0,
+            "curvature": 1.0,
+            "direction": 1,
+            "oblique_angle": null,
+            "radius_from_cargo_pivot": 1.0,
+            "signed_progress_speed": 1.0,
+            "theta_end": 1.9407963267948967,
+            "theta_start": 0.37,
+            "travel_distance": 1.5707963267948966,
+            "vehicle_id": 2,
+            "wheel_angles_end": [
+              0.2932503134605156,
+              0.20600343559660717,
+              -0.2932503134605156,
+              -0.20600343559660717
+            ],
+            "wheel_angles_start": [
+              0.2932503134605156,
+              0.20600343559660717,
+              -0.2932503134605156,
+              -0.20600343559660717
+            ],
+            "wheel_factors_end": [
+              0.8544782033498572,
+              1.2075317801200927,
+              0.8544782033498572,
+              1.2075317801200927
+            ],
+            "wheel_factors_start": [
+              0.8544782033498572,
+              1.2075317801200927,
+              0.8544782033498572,
+              1.2075317801200927
+            ],
+            "world_unit_displacement": null
+          },
+          {
+            "body_lateral_projection": 0.0,
+            "body_longitudinal_projection": 1.0,
+            "curvature": 0.3333333333333333,
+            "direction": 1,
+            "oblique_angle": null,
+            "radius_from_cargo_pivot": 3.0,
+            "signed_progress_speed": 3.0,
+            "theta_end": 1.9407963267948967,
+            "theta_start": 0.37,
+            "travel_distance": 4.71238898038469,
+            "vehicle_id": 3,
+            "wheel_angles_end": [
+              0.08742738125695994,
+              0.07746878876107229,
+              -0.08742738125695994,
+              -0.07746878876107229
+            ],
+            "wheel_angles_start": [
+              0.08742738125695994,
+              0.07746878876107229,
+              -0.08742738125695994,
+              -0.07746878876107229
+            ],
+            "wheel_factors_end": [
+              0.9429347214356298,
+              1.0638573943699199,
+              0.9429347214356298,
+              1.0638573943699199
+            ],
+            "wheel_factors_start": [
+              0.9429347214356298,
+              1.0638573943699199,
+              0.9429347214356298,
+              1.0638573943699199
+            ],
+            "world_unit_displacement": null
+          }
+        ],
+        "wheel_delta_from_zero_curvature_a": [
+          {
+            "angles_from_a_zero_curvature_rad": [
+              0.11967456633610729,
+              0.101794599152505,
+              -0.11967456633610729,
+              -0.101794599152505
+            ],
+            "max_abs_angle_rad": 0.11967456633610729,
+            "vehicle_id": 1
+          },
+          {
+            "angles_from_a_zero_curvature_rad": [
+              0.29325031346051555,
+              0.20600343559660717,
+              -0.29325031346051555,
+              -0.20600343559660717
+            ],
+            "max_abs_angle_rad": 0.29325031346051555,
+            "vehicle_id": 2
+          },
+          {
+            "angles_from_a_zero_curvature_rad": [
+              0.08742738125695994,
+              0.07746878876107229,
+              -0.08742738125695994,
+              -0.07746878876107229
+            ],
+            "max_abs_angle_rad": 0.08742738125695994,
+            "vehicle_id": 3
+          }
+        ]
+      },
+      "inputs": {
+        "delta_psi": 1.5707963267948966,
+        "directions": {
+          "1": 1,
+          "2": 1,
+          "3": 1
+        },
+        "headings": {
+          "1": 0.833647609000806,
+          "2": 0.37,
+          "3": 0.37
+        },
+        "pivot": [
+          0.0,
+          2.0
+        ],
+        "start_qf": [
+          1.3,
+          -0.4,
+          0.37
+        ]
+      },
+      "status": "PASSED",
+      "subcases": [],
+      "title": "A arc with non-zero cargo heading",
+      "validation": {
+        "max_a_curvature_relation_residual": 2.220446049250313e-16,
+        "max_a_tangent_residual": 4.965068306494546e-16,
+        "max_derivative_error": 0.0,
+        "max_endpoint_heading_error_rad": 0.0,
+        "max_endpoint_qf_error_m": 0.0,
+        "max_mode_equation_residual": 4.965068306494546e-16,
+        "max_rigidity_residual_m": 6.661338147750939e-16,
+        "max_wheel_angle_end_rad": 0.2932503134605156,
+        "max_wheel_angle_rad": 0.2932503134605156,
+        "max_wheel_angle_start_rad": 0.2932503134605156,
+        "primitive": "A_ARC",
+        "sample_count": 8
+      }
+    },
+    {
+      "cargo_radius_m": 1.5,
+      "case": "P06",
+      "helper_rejection": {
+        "detail": "vehicle_id=2 pivot radius 0.5 m is below the Ackermann minimum 0.81 m",
+        "reason": "INSUFFICIENT_TURN_RADIUS",
+        "vehicle_id": 2
+      },
+      "inputs": {
+        "delta_psi": 1.5707963267948966,
+        "directions": {
+          "1": 1,
+          "2": 1,
+          "3": 1
+        },
+        "headings": {
+          "1": 0.5880026035475675,
+          "2": 0.0,
+          "3": 0.0
+        },
+        "pivot": [
+          0.0,
+          1.5
+        ],
+        "start_qf": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "rejection": {
+        "detail": "vehicle_id=2 pivot radius 0.5 m is below the Ackermann minimum 0.81 m; the cargo radius alone does not certify this primitive",
+        "reason": "INSUFFICIENT_TURN_RADIUS",
+        "vehicle_id": 2
+      },
+      "status": "PASSED",
+      "subcases": [],
+      "title": "c=(0,1.5) vehicle radius 0.5 is rejected",
+      "vehicle_radii_m": {
+        "1": 1.8027756377319948,
+        "2": 0.5,
+        "3": 1.8027756377319948
+      }
+    },
+    {
+      "case": "P07",
+      "helper_rejection": {
+        "detail": "vehicle_id=1 pivot coincides with the vehicle centre; FR01 does not implement the degenerate parked-pivot A branch (no general physical impossibility is claimed)",
+        "reason": "PIVOT_AT_VEHICLE_CENTER_UNSUPPORTED",
+        "vehicle_id": 1
+      },
+      "inputs": {
+        "delta_psi": 1.5707963267948966,
+        "directions": {
+          "1": 1,
+          "2": 1,
+          "3": 1
+        },
+        "headings": {
+          "1": 0.0,
+          "2": 0.0,
+          "3": 0.0
+        },
+        "pivot": [
+          1.0,
+          0.0
+        ],
+        "start_qf": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "rejection": {
+        "detail": "vehicle_id=1 pivot coincides with the vehicle centre; FR01 does not implement the degenerate parked-pivot A branch (no general physical impossibility is claimed)",
+        "reason": "PIVOT_AT_VEHICLE_CENTER_UNSUPPORTED",
+        "vehicle_id": 1
+      },
+      "status": "PASSED",
+      "subcases": [],
+      "title": "pivot exactly on car1 centre"
+    },
+    {
+      "case": "P08",
+      "inputs": {
+        "delta_psi": 1.5707963267948966,
+        "directions": {
+          "1": 1,
+          "2": 1,
+          "3": 1
+        },
+        "headings": {
+          "1": 0.0,
+          "2": 0.0,
+          "3": 0.0
+        },
+        "pivot": [
+          0.0,
+          0.0
+        ],
+        "start_qf": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "rejection": {
+        "detail": "vehicle_id=1 body heading 0 is not the required tangent 1.57079632679 (mod 2*pi); insert an explicit S alignment edge; the factory will not rotate the body without time",
+        "reason": "A_HEADING_REQUIRES_S_ALIGNMENT",
+        "required_headings": {
+          "1": 1.5707963267948966,
+          "2": 3.141592653589793,
+          "3": 0.0
+        },
+        "vehicle_id": 1
+      },
+      "status": "PASSED",
+      "subcases": [],
+      "title": "A arc with non-tangent headings is rejected"
+    },
+    {
+      "case": "P09",
+      "edges": [
+        {
+          "edge": {
+            "allow_reverse": true,
+            "angle_derivative_unit": "rad/m",
+            "end_qf": [
+              2.6,
+              -0.3,
+              0.2
+            ],
+            "limits": {
+              "r_min_ack": 0.81,
+              "steer_angle_max": 1.5707963267948966,
+              "track": 0.364,
+              "wheelbase": 0.494
+            },
+            "mode": "O",
+            "pivot_in_cargo_frame": null,
+            "position_derivative_unit": "m/m",
+            "primitive": "O_TRANSLATION",
+            "progress_interval": [
+              0.0,
+              2.0
+            ],
+            "progress_unit": "m",
+            "real_time_domain": false,
+            "segments": [
+              {
+                "control": 0.0,
+                "direction": 1,
+                "end_center": [
+                  3.580066577841242,
+                  -0.10133066920493877
+                ],
+                "end_station": 2.0,
+                "legacy_mode": 1,
+                "pivot": [
+                  0.0,
+                  0.0
+                ],
+                "start_center": [
+                  1.5800665778412415,
+                  -0.10133066920493877
+                ],
+                "start_station": 0.0,
+                "theta_end": 0.0,
+                "theta_start": 0.0,
+                "travel_distance": 2.0,
+                "vehicle_id": 1
+              },
+              {
+                "control": 0.0,
+                "direction": -1,
+                "end_center": [
+                  2.4013306692049388,
+                  0.6800665778412416
+                ],
+                "end_station": 2.0,
+                "legacy_mode": 1,
+                "pivot": [
+                  0.0,
+                  0.0
+                ],
+                "start_center": [
+                  0.40133066920493876,
+                  0.6800665778412416
+                ],
+                "start_station": 0.0,
+                "theta_end": 3.141592653589793,
+                "theta_start": 3.141592653589793,
+                "travel_distance": 2.0,
+                "vehicle_id": 2
+              },
+              {
+                "control": -1.5707963267948966,
+                "direction": 1,
+                "end_center": [
+                  2.7986693307950614,
+                  -1.2800665778412417
+                ],
+                "end_station": 2.0,
+                "legacy_mode": 1,
+                "pivot": [
+                  0.0,
+                  0.0
+                ],
+                "start_center": [
+                  0.7986693307950612,
+                  -1.2800665778412417
+                ],
+                "start_station": 0.0,
+                "theta_end": 1.5707963267948966,
+                "theta_start": 1.5707963267948966,
+                "travel_distance": 2.0,
+                "vehicle_id": 3
+              }
+            ],
+            "start_qf": [
+              0.6,
+              -0.3,
+              0.2
+            ],
+            "time_seconds": null,
+            "vehicles": [
+              {
+                "body_lateral_projection": 0.0,
+                "body_longitudinal_projection": 1.0,
+                "curvature": null,
+                "direction": 1,
+                "oblique_angle": 0.0,
+                "radius_from_cargo_pivot": null,
+                "signed_progress_speed": 1.0,
+                "theta_end": 0.0,
+                "theta_start": 0.0,
+                "travel_distance": 2.0,
+                "vehicle_id": 1,
+                "wheel_angles_end": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "wheel_angles_start": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "wheel_factors_end": [
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
+                ],
+                "wheel_factors_start": [
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
+                ],
+                "world_unit_displacement": [
+                  1.0,
+                  0.0
+                ]
+              },
+              {
+                "body_lateral_projection": -0.0,
+                "body_longitudinal_projection": -1.0,
+                "curvature": null,
+                "direction": -1,
+                "oblique_angle": 0.0,
+                "radius_from_cargo_pivot": null,
+                "signed_progress_speed": -1.0,
+                "theta_end": 3.141592653589793,
+                "theta_start": 3.141592653589793,
+                "travel_distance": 2.0,
+                "vehicle_id": 2,
+                "wheel_angles_end": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "wheel_angles_start": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "wheel_factors_end": [
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
+                ],
+                "wheel_factors_start": [
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
+                ],
+                "world_unit_displacement": [
+                  1.0,
+                  0.0
+                ]
+              },
+              {
+                "body_lateral_projection": -1.0,
+                "body_longitudinal_projection": 6.123233995736766e-17,
+                "curvature": null,
+                "direction": 1,
+                "oblique_angle": -1.5707963267948966,
+                "radius_from_cargo_pivot": null,
+                "signed_progress_speed": 1.0,
+                "theta_end": 1.5707963267948966,
+                "theta_start": 1.5707963267948966,
+                "travel_distance": 2.0,
+                "vehicle_id": 3,
+                "wheel_angles_end": [
+                  -1.5707963267948966,
+                  -1.5707963267948966,
+                  -1.5707963267948966,
+                  -1.5707963267948966
+                ],
+                "wheel_angles_start": [
+                  -1.5707963267948966,
+                  -1.5707963267948966,
+                  -1.5707963267948966,
+                  -1.5707963267948966
+                ],
+                "wheel_factors_end": [
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
+                ],
+                "wheel_factors_start": [
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
+                ],
+                "world_unit_displacement": [
+                  1.0,
+                  0.0
+                ]
+              }
+            ],
+            "wheel_delta_from_zero_curvature_a": [
+              {
+                "angles_from_a_zero_curvature_rad": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "max_abs_angle_rad": 0.0,
+                "vehicle_id": 1
+              },
+              {
+                "angles_from_a_zero_curvature_rad": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "max_abs_angle_rad": 0.0,
+                "vehicle_id": 2
+              },
+              {
+                "angles_from_a_zero_curvature_rad": [
+                  -1.5707963267948966,
+                  -1.5707963267948966,
+                  -1.5707963267948966,
+                  -1.5707963267948966
+                ],
+                "max_abs_angle_rad": 1.5707963267948966,
+                "vehicle_id": 3
+              }
+            ]
+          },
+          "name": "horizontal_minus_90",
+          "validation": {
+            "max_a_curvature_relation_residual": 0.0,
+            "max_a_tangent_residual": 0.0,
+            "max_derivative_error": 0.0,
+            "max_endpoint_heading_error_rad": 0.0,
+            "max_endpoint_qf_error_m": 0.0,
+            "max_mode_equation_residual": 1.2246467991473532e-16,
+            "max_rigidity_residual_m": 2.220446049250313e-16,
+            "max_wheel_angle_end_rad": 1.5707963267948966,
+            "max_wheel_angle_rad": 1.5707963267948966,
+            "max_wheel_angle_start_rad": 1.5707963267948966,
+            "primitive": "O_TRANSLATION",
+            "sample_count": 8
+          }
+        },
+        {
+          "edge": {
+            "allow_reverse": true,
+            "angle_derivative_unit": "rad/m",
+            "end_qf": [
+              2.6,
+              -0.3,
+              0.2
+            ],
+            "limits": {
+              "r_min_ack": 0.81,
+              "steer_angle_max": 1.5707963267948966,
+              "track": 0.364,
+              "wheelbase": 0.494
+            },
+            "mode": "O",
+            "pivot_in_cargo_frame": null,
+            "position_derivative_unit": "m/m",
+            "primitive": "O_TRANSLATION",
+            "progress_interval": [
+              0.0,
+              2.0
+            ],
+            "progress_unit": "m",
+            "real_time_domain": false,
+            "segments": [
+              {
+                "control": 0.0,
+                "direction": 1,
+                "end_center": [
+                  3.580066577841242,
+                  -0.10133066920493877
+                ],
+                "end_station": 2.0,
+                "legacy_mode": 1,
+                "pivot": [
+                  0.0,
+                  0.0
+                ],
+                "start_center": [
+                  1.5800665778412415,
+                  -0.10133066920493877
+                ],
+                "start_station": 0.0,
+                "theta_end": 0.0,
+                "theta_start": 0.0,
+                "travel_distance": 2.0,
+                "vehicle_id": 1
+              },
+              {
+                "control": 0.0,
+                "direction": -1,
+                "end_center": [
+                  2.4013306692049388,
+                  0.6800665778412416
+                ],
+                "end_station": 2.0,
+                "legacy_mode": 1,
+                "pivot": [
+                  0.0,
+                  0.0
+                ],
+                "start_center": [
+                  0.40133066920493876,
+                  0.6800665778412416
+                ],
+                "start_station": 0.0,
+                "theta_end": 3.141592653589793,
+                "theta_start": 3.141592653589793,
+                "travel_distance": 2.0,
+                "vehicle_id": 2
+              },
+              {
+                "control": 1.5707963267948966,
+                "direction": -1,
+                "end_center": [
+                  2.7986693307950614,
+                  -1.2800665778412417
+                ],
+                "end_station": 2.0,
+                "legacy_mode": 1,
+                "pivot": [
+                  0.0,
+                  0.0
+                ],
+                "start_center": [
+                  0.7986693307950612,
+                  -1.2800665778412417
+                ],
+                "start_station": 0.0,
+                "theta_end": 1.5707963267948966,
+                "theta_start": 1.5707963267948966,
+                "travel_distance": 2.0,
+                "vehicle_id": 3
+              }
+            ],
+            "start_qf": [
+              0.6,
+              -0.3,
+              0.2
+            ],
+            "time_seconds": null,
+            "vehicles": [
+              {
+                "body_lateral_projection": 0.0,
+                "body_longitudinal_projection": 1.0,
+                "curvature": null,
+                "direction": 1,
+                "oblique_angle": 0.0,
+                "radius_from_cargo_pivot": null,
+                "signed_progress_speed": 1.0,
+                "theta_end": 0.0,
+                "theta_start": 0.0,
+                "travel_distance": 2.0,
+                "vehicle_id": 1,
+                "wheel_angles_end": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "wheel_angles_start": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "wheel_factors_end": [
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
+                ],
+                "wheel_factors_start": [
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
+                ],
+                "world_unit_displacement": [
+                  1.0,
+                  0.0
+                ]
+              },
+              {
+                "body_lateral_projection": -0.0,
+                "body_longitudinal_projection": -1.0,
+                "curvature": null,
+                "direction": -1,
+                "oblique_angle": 0.0,
+                "radius_from_cargo_pivot": null,
+                "signed_progress_speed": -1.0,
+                "theta_end": 3.141592653589793,
+                "theta_start": 3.141592653589793,
+                "travel_distance": 2.0,
+                "vehicle_id": 2,
+                "wheel_angles_end": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "wheel_angles_start": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "wheel_factors_end": [
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
+                ],
+                "wheel_factors_start": [
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
+                ],
+                "world_unit_displacement": [
+                  1.0,
+                  0.0
+                ]
+              },
+              {
+                "body_lateral_projection": -1.0,
+                "body_longitudinal_projection": -6.123233995736766e-17,
+                "curvature": null,
+                "direction": -1,
+                "oblique_angle": 1.5707963267948966,
+                "radius_from_cargo_pivot": null,
+                "signed_progress_speed": -1.0,
+                "theta_end": 1.5707963267948966,
+                "theta_start": 1.5707963267948966,
+                "travel_distance": 2.0,
+                "vehicle_id": 3,
+                "wheel_angles_end": [
+                  1.5707963267948966,
+                  1.5707963267948966,
+                  1.5707963267948966,
+                  1.5707963267948966
+                ],
+                "wheel_angles_start": [
+                  1.5707963267948966,
+                  1.5707963267948966,
+                  1.5707963267948966,
+                  1.5707963267948966
+                ],
+                "wheel_factors_end": [
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
+                ],
+                "wheel_factors_start": [
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
+                ],
+                "world_unit_displacement": [
+                  1.0,
+                  0.0
+                ]
+              }
+            ],
+            "wheel_delta_from_zero_curvature_a": [
+              {
+                "angles_from_a_zero_curvature_rad": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "max_abs_angle_rad": 0.0,
+                "vehicle_id": 1
+              },
+              {
+                "angles_from_a_zero_curvature_rad": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ],
+                "max_abs_angle_rad": 0.0,
+                "vehicle_id": 2
+              },
+              {
+                "angles_from_a_zero_curvature_rad": [
+                  1.5707963267948966,
+                  1.5707963267948966,
+                  1.5707963267948966,
+                  1.5707963267948966
+                ],
+                "max_abs_angle_rad": 1.5707963267948966,
+                "vehicle_id": 3
+              }
+            ]
+          },
+          "name": "horizontal_plus_90",
+          "validation": {
+            "max_a_curvature_relation_residual": 0.0,
+            "max_a_tangent_residual": 0.0,
+            "max_derivative_error": 0.0,
+            "max_endpoint_heading_error_rad": 0.0,
+            "max_endpoint_qf_error_m": 0.0,
+            "max_mode_equation_residual": 1.2246467991473532e-16,
+            "max_rigidity_residual_m": 2.220446049250313e-16,
+            "max_wheel_angle_end_rad": 1.5707963267948966,
+            "max_wheel_angle_rad": 1.5707963267948966,
+            "max_wheel_angle_start_rad": 1.5707963267948966,
+            "primitive": "O_TRANSLATION",
+            "sample_count": 8
+          }
+        },
+        {
+          "edge": {
+            "allow_reverse": true,
+            "angle_derivative_unit": "rad/m",
+            "end_qf": [
+              1.5,
+              1.5,
+              0.4
+            ],
+            "limits": {
+              "r_min_ack": 0.81,
+              "steer_angle_max": 1.5707963267948966,
+              "track": 0.364,
+              "wheelbase": 0.494
+            },
+            "mode": "O",
+            "pivot_in_cargo_frame": null,
+            "position_derivative_unit": "m/m",
+            "primitive": "O_TRANSLATION",
+            "progress_interval": [
+              0.0,
+              2.121320343559643
+            ],
+            "progress_unit": "m",
+            "real_time_domain": false,
+            "segments": [
+              {
+                "control": 0.7853981633974483,
+                "direction": 1,
+                "end_center": [
+                  2.421060994002885,
+                  1.8894183423086506
+                ],
+                "end_station": 2.121320343559643,
+                "legacy_mode": 1,
+                "pivot": [
+                  0.0,
+                  0.0
+                ],
+                "start_center": [
+                  0.9210609940028851,
+                  0.3894183423086505
+                ],
+                "start_station": 0.0,
+                "theta_end": 0.0,
+                "theta_start": 0.0,
+                "travel_distance": 2.121320343559643,
+                "vehicle_id": 1
+              },
+              {
+                "control": 0.7853981633974483,
+                "direction": -1,
+                "end_center": [
+                  1.1105816576913494,
+                  2.421060994002885
+                ],
+                "end_station": 2.121320343559643,
+                "legacy_mode": 1,
+                "pivot": [
+                  0.0,
+                  0.0
+                ],
+                "start_center": [
+                  -0.3894183423086505,
+                  0.9210609940028851
+                ],
+                "start_station": 0.0,
+                "theta_end": 3.141592653589793,
+                "theta_start": 3.141592653589793,
+                "travel_distance": 2.121320343559643,
+                "vehicle_id": 2
+              },
+              {
+                "control": 0.7853981633974483,
+                "direction": 1,
+                "end_center": [
+                  1.8894183423086506,
+                  0.5789390059971149
+                ],
+                "end_station": 2.121320343559643,
+                "legacy_mode": 1,
+                "pivot": [
+                  0.0,
+                  0.0
+                ],
+                "start_center": [
+                  0.3894183423086505,
+                  -0.9210609940028851
+                ],
+                "start_station": 0.0,
+                "theta_end": 0.0,
+                "theta_start": 0.0,
+                "travel_distance": 2.121320343559643,
+                "vehicle_id": 3
+              }
+            ],
+            "start_qf": [
+              0.0,
+              0.0,
+              0.4
+            ],
+            "time_seconds": null,
+            "vehicles": [
+              {
+                "body_lateral_projection": 0.7071067811865475,
+                "body_longitudinal_projection": 0.7071067811865476,
+                "curvature": null,
+                "direction": 1,
+                "oblique_angle": 0.7853981633974483,
+                "radius_from_cargo_pivot": null,
+                "signed_progress_speed": 1.0,
+                "theta_end": 0.0,
+                "theta_start": 0.0,
+                "travel_distance": 2.121320343559643,
+                "vehicle_id": 1,
+                "wheel_angles_end": [
+                  0.7853981633974483,
+                  0.7853981633974483,
+                  0.7853981633974483,
+                  0.7853981633974483
+                ],
+                "wheel_angles_start": [
+                  0.7853981633974483,
+                  0.7853981633974483,
+                  0.7853981633974483,
+                  0.7853981633974483
+                ],
+                "wheel_factors_end": [
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
+                ],
+                "wheel_factors_start": [
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
+                ],
+                "world_unit_displacement": [
+                  0.7071067811865475,
+                  0.7071067811865475
+                ]
+              },
+              {
+                "body_lateral_projection": -0.7071067811865475,
+                "body_longitudinal_projection": -0.7071067811865476,
+                "curvature": null,
+                "direction": -1,
+                "oblique_angle": 0.7853981633974483,
+                "radius_from_cargo_pivot": null,
+                "signed_progress_speed": -1.0,
+                "theta_end": 3.141592653589793,
+                "theta_start": 3.141592653589793,
+                "travel_distance": 2.121320343559643,
+                "vehicle_id": 2,
+                "wheel_angles_end": [
+                  0.7853981633974483,
+                  0.7853981633974483,
+                  0.7853981633974483,
+                  0.7853981633974483
+                ],
+                "wheel_angles_start": [
+                  0.7853981633974483,
+                  0.7853981633974483,
+                  0.7853981633974483,
+                  0.7853981633974483
+                ],
+                "wheel_factors_end": [
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
+                ],
+                "wheel_factors_start": [
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
+                ],
+                "world_unit_displacement": [
+                  0.7071067811865475,
+                  0.7071067811865475
+                ]
+              },
+              {
+                "body_lateral_projection": 0.7071067811865475,
+                "body_longitudinal_projection": 0.7071067811865476,
+                "curvature": null,
+                "direction": 1,
+                "oblique_angle": 0.7853981633974483,
+                "radius_from_cargo_pivot": null,
+                "signed_progress_speed": 1.0,
+                "theta_end": 0.0,
+                "theta_start": 0.0,
+                "travel_distance": 2.121320343559643,
+                "vehicle_id": 3,
+                "wheel_angles_end": [
+                  0.7853981633974483,
+                  0.7853981633974483,
+                  0.7853981633974483,
+                  0.7853981633974483
+                ],
+                "wheel_angles_start": [
+                  0.7853981633974483,
+                  0.7853981633974483,
+                  0.7853981633974483,
+                  0.7853981633974483
+                ],
+                "wheel_factors_end": [
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
+                ],
+                "wheel_factors_start": [
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
+                ],
+                "world_unit_displacement": [
+                  0.7071067811865475,
+                  0.7071067811865475
+                ]
+              }
+            ],
+            "wheel_delta_from_zero_curvature_a": [
+              {
+                "angles_from_a_zero_curvature_rad": [
+                  0.7853981633974483,
+                  0.7853981633974483,
+                  0.7853981633974483,
+                  0.7853981633974483
+                ],
+                "max_abs_angle_rad": 0.7853981633974483,
+                "vehicle_id": 1
+              },
+              {
+                "angles_from_a_zero_curvature_rad": [
+                  0.7853981633974483,
+                  0.7853981633974483,
+                  0.7853981633974483,
+                  0.7853981633974483
+                ],
+                "max_abs_angle_rad": 0.7853981633974483,
+                "vehicle_id": 2
+              },
+              {
+                "angles_from_a_zero_curvature_rad": [
+                  0.7853981633974483,
+                  0.7853981633974483,
+                  0.7853981633974483,
+                  0.7853981633974483
+                ],
+                "max_abs_angle_rad": 0.7853981633974483,
+                "vehicle_id": 3
+              }
+            ]
+          },
+          "name": "diagonal",
+          "validation": {
+            "max_a_curvature_relation_residual": 0.0,
+            "max_a_tangent_residual": 0.0,
+            "max_derivative_error": 0.0,
+            "max_endpoint_heading_error_rad": 0.0,
+            "max_endpoint_qf_error_m": 2.220446049250313e-16,
+            "max_mode_equation_residual": 2.220446049250313e-16,
+            "max_rigidity_residual_m": 4.440892098500626e-16,
+            "max_wheel_angle_end_rad": 0.7853981633974483,
+            "max_wheel_angle_rad": 0.7853981633974483,
+            "max_wheel_angle_start_rad": 0.7853981633974483,
+            "primitive": "O_TRANSLATION",
+            "sample_count": 8
+          }
+        }
+      ],
+      "inputs": {
+        "diagonal": {
+          "allow_reverse": true,
+          "directions": {
+            "1": 1,
+            "2": -1,
+            "3": 1
+          },
+          "displacement": [
+            1.5,
+            1.5
+          ],
+          "headings": {
+            "1": 0.0,
+            "2": 3.141592653589793,
+            "3": 0.0
+          },
+          "oblique_angles": {
+            "1": 0.7853981633974483,
+            "2": 0.7853981633974483,
+            "3": 0.7853981633974483
+          },
+          "start_qf": [
+            0.0,
+            0.0,
+            0.4
+          ]
+        },
+        "horizontal_minus_90": {
+          "allow_reverse": true,
+          "directions": {
+            "1": 1,
+            "2": -1,
+            "3": 1
+          },
+          "displacement": [
+            2.0,
+            0.0
+          ],
+          "headings": {
+            "1": 0.0,
+            "2": 3.141592653589793,
+            "3": 1.5707963267948966
+          },
+          "oblique_angles": {
+            "1": 0.0,
+            "2": 0.0,
+            "3": -1.5707963267948966
+          },
+          "start_qf": [
+            0.6,
+            -0.3,
+            0.2
+          ]
+        },
+        "horizontal_plus_90": {
+          "allow_reverse": true,
+          "directions": {
+            "1": 1,
+            "2": -1,
+            "3": -1
+          },
+          "displacement": [
+            2.0,
+            0.0
+          ],
+          "headings": {
+            "1": 0.0,
+            "2": 3.141592653589793,
+            "3": 1.5707963267948966
+          },
+          "oblique_angles": {
+            "1": 0.0,
+            "2": 0.0,
+            "3": 1.5707963267948966
+          },
+          "start_qf": [
+            0.6,
+            -0.3,
+            0.2
+          ]
+        }
+      },
+      "status": "PASSED",
+      "subcases": [],
+      "title": "O translation including +/-90 degree branches",
+      "validation_diagonal": {
+        "max_a_curvature_relation_residual": 0.0,
+        "max_a_tangent_residual": 0.0,
+        "max_derivative_error": 0.0,
+        "max_endpoint_heading_error_rad": 0.0,
+        "max_endpoint_qf_error_m": 2.220446049250313e-16,
+        "max_mode_equation_residual": 2.220446049250313e-16,
+        "max_rigidity_residual_m": 4.440892098500626e-16,
+        "max_wheel_angle_end_rad": 0.7853981633974483,
+        "max_wheel_angle_rad": 0.7853981633974483,
+        "max_wheel_angle_start_rad": 0.7853981633974483,
+        "primitive": "O_TRANSLATION",
+        "sample_count": 8
+      },
+      "validation_horizontal_minus_90": {
+        "max_a_curvature_relation_residual": 0.0,
+        "max_a_tangent_residual": 0.0,
+        "max_derivative_error": 0.0,
+        "max_endpoint_heading_error_rad": 0.0,
+        "max_endpoint_qf_error_m": 0.0,
+        "max_mode_equation_residual": 1.2246467991473532e-16,
+        "max_rigidity_residual_m": 2.220446049250313e-16,
+        "max_wheel_angle_end_rad": 1.5707963267948966,
+        "max_wheel_angle_rad": 1.5707963267948966,
+        "max_wheel_angle_start_rad": 1.5707963267948966,
+        "primitive": "O_TRANSLATION",
+        "sample_count": 8
+      },
+      "validation_horizontal_plus_90": {
+        "max_a_curvature_relation_residual": 0.0,
+        "max_a_tangent_residual": 0.0,
+        "max_derivative_error": 0.0,
+        "max_endpoint_heading_error_rad": 0.0,
+        "max_endpoint_qf_error_m": 0.0,
+        "max_mode_equation_residual": 1.2246467991473532e-16,
+        "max_rigidity_residual_m": 2.220446049250313e-16,
+        "max_wheel_angle_end_rad": 1.5707963267948966,
+        "max_wheel_angle_rad": 1.5707963267948966,
+        "max_wheel_angle_start_rad": 1.5707963267948966,
+        "primitive": "O_TRANSLATION",
+        "sample_count": 8
+      }
+    },
+    {
+      "canonical_s_wheel_angles": [
+        -0.9357695914045827,
+        0.9357695914045828,
+        0.9357695914045827,
+        -0.9357695914045828
+      ],
+      "canonical_s_wheel_factors": [
+        0.3068110167513546,
+        0.3068110167513546,
+        0.3068110167513546,
+        0.3068110167513546
+      ],
+      "case": "P10",
+      "edge": {
+        "allow_reverse": false,
+        "angle_derivative_unit": "rad/rad",
+        "end_qf": [
+          0.4,
+          -0.2,
+          0.3
+        ],
+        "limits": {
+          "r_min_ack": 0.81,
+          "steer_angle_max": 1.5707963267948966,
+          "track": 0.364,
+          "wheelbase": 0.494
+        },
+        "mode": "S",
+        "pivot_in_cargo_frame": null,
+        "position_derivative_unit": "m/rad",
+        "primitive": "S_SPIN",
+        "progress_interval": [
+          0.0,
+          1.5707963267948966
+        ],
+        "progress_unit": "rad",
+        "real_time_domain": false,
+        "segments": [
+          {
+            "control": 0.0,
+            "direction": 1,
+            "end_center": [
+              1.3553364891256061,
+              0.09552020666133954
+            ],
+            "end_station": 1.5707963267948966,
+            "legacy_mode": 2,
+            "pivot": [
+              0.0,
+              0.0
+            ],
+            "start_center": [
+              1.3553364891256061,
+              0.09552020666133954
+            ],
+            "start_station": 0.0,
+            "theta_end": 1.6707963267948966,
+            "theta_start": 0.1,
+            "travel_distance": 0.0,
+            "vehicle_id": 1
+          },
+          {
+            "control": 0.0,
+            "direction": 1,
+            "end_center": [
+              0.10447979333866048,
+              0.755336489125606
+            ],
+            "end_station": 1.5707963267948966,
+            "legacy_mode": 2,
+            "pivot": [
+              0.0,
+              0.0
+            ],
+            "start_center": [
+              0.10447979333866048,
+              0.755336489125606
+            ],
+            "start_station": 0.0,
+            "theta_end": -0.4,
+            "theta_start": -0.4,
+            "travel_distance": 0.0,
+            "vehicle_id": 2
+          },
+          {
+            "control": 0.0,
+            "direction": -1,
+            "end_center": [
+              0.6955202066613395,
+              -1.155336489125606
+            ],
+            "end_station": 1.5707963267948966,
+            "legacy_mode": 2,
+            "pivot": [
+              0.0,
+              0.0
+            ],
+            "start_center": [
+              0.6955202066613395,
+              -1.155336489125606
+            ],
+            "start_station": 0.0,
+            "theta_end": 0.4146018366025517,
+            "theta_start": 1.2,
+            "travel_distance": 0.0,
+            "vehicle_id": 3
+          }
+        ],
+        "start_qf": [
+          0.4,
+          -0.2,
+          0.3
+        ],
+        "time_seconds": null,
+        "vehicles": [
+          {
+            "body_lateral_projection": null,
+            "body_longitudinal_projection": null,
+            "curvature": null,
+            "direction": 1,
+            "oblique_angle": null,
+            "radius_from_cargo_pivot": null,
+            "signed_progress_speed": 0.0,
+            "theta_end": 1.6707963267948966,
+            "theta_start": 0.1,
+            "travel_distance": 0.0,
+            "vehicle_id": 1,
+            "wheel_angles_end": [
+              -0.9357695914045827,
+              0.9357695914045828,
+              0.9357695914045827,
+              -0.9357695914045828
+            ],
+            "wheel_angles_start": [
+              -0.9357695914045827,
+              0.9357695914045828,
+              0.9357695914045827,
+              -0.9357695914045828
+            ],
+            "wheel_factors_end": [
+              0.3068110167513546,
+              0.3068110167513546,
+              0.3068110167513546,
+              0.3068110167513546
+            ],
+            "wheel_factors_start": [
+              0.3068110167513546,
+              0.3068110167513546,
+              0.3068110167513546,
+              0.3068110167513546
+            ],
+            "world_unit_displacement": null
+          },
+          {
+            "body_lateral_projection": null,
+            "body_longitudinal_projection": null,
+            "curvature": null,
+            "direction": 1,
+            "oblique_angle": null,
+            "radius_from_cargo_pivot": null,
+            "signed_progress_speed": 0.0,
+            "theta_end": -0.4,
+            "theta_start": -0.4,
+            "travel_distance": 0.0,
+            "vehicle_id": 2,
+            "wheel_angles_end": [
+              -0.9357695914045827,
+              0.9357695914045828,
+              0.9357695914045827,
+              -0.9357695914045828
+            ],
+            "wheel_angles_start": [
+              -0.9357695914045827,
+              0.9357695914045828,
+              0.9357695914045827,
+              -0.9357695914045828
+            ],
+            "wheel_factors_end": [
+              0.3068110167513546,
+              0.3068110167513546,
+              0.3068110167513546,
+              0.3068110167513546
+            ],
+            "wheel_factors_start": [
+              0.3068110167513546,
+              0.3068110167513546,
+              0.3068110167513546,
+              0.3068110167513546
+            ],
+            "world_unit_displacement": null
+          },
+          {
+            "body_lateral_projection": null,
+            "body_longitudinal_projection": null,
+            "curvature": null,
+            "direction": -1,
+            "oblique_angle": null,
+            "radius_from_cargo_pivot": null,
+            "signed_progress_speed": 0.0,
+            "theta_end": 0.4146018366025517,
+            "theta_start": 1.2,
+            "travel_distance": 0.0,
+            "vehicle_id": 3,
+            "wheel_angles_end": [
+              -0.9357695914045827,
+              0.9357695914045828,
+              0.9357695914045827,
+              -0.9357695914045828
+            ],
+            "wheel_angles_start": [
+              -0.9357695914045827,
+              0.9357695914045828,
+              0.9357695914045827,
+              -0.9357695914045828
+            ],
+            "wheel_factors_end": [
+              0.3068110167513546,
+              0.3068110167513546,
+              0.3068110167513546,
+              0.3068110167513546
+            ],
+            "wheel_factors_start": [
+              0.3068110167513546,
+              0.3068110167513546,
+              0.3068110167513546,
+              0.3068110167513546
+            ],
+            "world_unit_displacement": null
+          }
+        ],
+        "wheel_delta_from_zero_curvature_a": [
+          {
+            "angles_from_a_zero_curvature_rad": [
+              -0.9357695914045827,
+              0.9357695914045828,
+              0.9357695914045827,
+              -0.9357695914045828
+            ],
+            "max_abs_angle_rad": 0.9357695914045828,
+            "vehicle_id": 1
+          },
+          {
+            "angles_from_a_zero_curvature_rad": [
+              -0.9357695914045827,
+              0.9357695914045828,
+              0.9357695914045827,
+              -0.9357695914045828
+            ],
+            "max_abs_angle_rad": 0.9357695914045828,
+            "vehicle_id": 2
+          },
+          {
+            "angles_from_a_zero_curvature_rad": [
+              -0.9357695914045827,
+              0.9357695914045828,
+              0.9357695914045827,
+              -0.9357695914045828
+            ],
+            "max_abs_angle_rad": 0.9357695914045828,
+            "vehicle_id": 3
+          }
+        ]
+      },
+      "inputs": {
+        "delta_thetas": {
+          "1": 1.5707963267948966,
+          "2": 0.0,
+          "3": -0.7853981633974483
+        },
+        "headings": {
+          "1": 0.1,
+          "2": -0.4,
+          "3": 1.2
+        },
+        "start_qf": [
+          0.4,
+          -0.2,
+          0.3
+        ]
+      },
+      "status": "PASSED",
+      "subcases": [
+        {
+          "name": "constructor_rejects_A_wheels_on_S",
+          "reason": "INTERNAL_EDGE_FIELD_MISMATCH",
+          "status": "REJECTED"
+        },
+        {
+          "name": "constructor_rejects_A_factors_on_S",
+          "reason": "INTERNAL_EDGE_FIELD_MISMATCH",
+          "status": "REJECTED"
+        },
+        {
+          "name": "auditor_rejects_A_wheels_on_S",
+          "reason": "EDGE_VALIDATION_FAILED",
+          "status": "REJECTED"
+        }
+      ],
+      "title": "S spin with zero-angle hold and canonical S wheels",
+      "validation": {
+        "max_a_curvature_relation_residual": 0.0,
+        "max_a_tangent_residual": 0.0,
+        "max_derivative_error": 0.0,
+        "max_endpoint_heading_error_rad": 0.0,
+        "max_endpoint_qf_error_m": 0.0,
+        "max_mode_equation_residual": 0.0,
+        "max_rigidity_residual_m": 2.220446049250313e-16,
+        "max_wheel_angle_end_rad": 0.9357695914045828,
+        "max_wheel_angle_rad": 0.9357695914045828,
+        "max_wheel_angle_start_rad": 0.9357695914045828,
+        "primitive": "S_SPIN",
+        "sample_count": 8
+      },
+      "zero_angle_delta_from_a_zero_curvature_rad": [
+        -0.9357695914045827,
+        0.9357695914045828,
+        0.9357695914045827,
+        -0.9357695914045828
+      ]
+    },
+    {
+      "case": "P11",
+      "edge": {
+        "allow_reverse": false,
+        "angle_derivative_unit": "rad/rad",
+        "end_qf": [
+          0.1,
+          0.2,
+          -0.3
+        ],
+        "limits": {
+          "r_min_ack": 0.81,
+          "steer_angle_max": 1.5707963267948966,
+          "track": 0.364,
+          "wheelbase": 0.494
+        },
+        "mode": "S",
+        "pivot_in_cargo_frame": null,
+        "position_derivative_unit": "m/rad",
+        "primitive": "S_SPIN",
+        "progress_interval": [
+          0.0,
+          3.141592653589793
+        ],
+        "progress_unit": "rad",
+        "real_time_domain": false,
+        "segments": [
+          {
+            "control": 0.0,
+            "direction": 1,
+            "end_center": [
+              1.055336489125606,
+              -0.09552020666133954
+            ],
+            "end_station": 3.141592653589793,
+            "legacy_mode": 2,
+            "pivot": [
+              0.0,
+              0.0
+            ],
+            "start_center": [
+              1.055336489125606,
+              -0.09552020666133954
+            ],
+            "start_station": 0.0,
+            "theta_end": 3.3415926535897933,
+            "theta_start": 0.2,
+            "travel_distance": 0.0,
+            "vehicle_id": 1
+          },
+          {
+            "control": 0.0,
+            "direction": -1,
+            "end_center": [
+              0.3955202066613396,
+              1.155336489125606
+            ],
+            "end_station": 3.141592653589793,
+            "legacy_mode": 2,
+            "pivot": [
+              0.0,
+              0.0
+            ],
+            "start_center": [
+              0.3955202066613396,
+              1.155336489125606
+            ],
+            "start_station": 0.0,
+            "theta_end": -3.241592653589793,
+            "theta_start": -0.1,
+            "travel_distance": 0.0,
+            "vehicle_id": 2
+          },
+          {
+            "control": 0.0,
+            "direction": 1,
+            "end_center": [
+              -0.19552020666133954,
+              -0.755336489125606
+            ],
+            "end_station": 3.141592653589793,
+            "legacy_mode": 2,
+            "pivot": [
+              0.0,
+              0.0
+            ],
+            "start_center": [
+              -0.19552020666133954,
+              -0.755336489125606
+            ],
+            "start_station": 0.0,
+            "theta_end": 0.4,
+            "theta_start": 0.4,
+            "travel_distance": 0.0,
+            "vehicle_id": 3
+          }
+        ],
+        "start_qf": [
+          0.1,
+          0.2,
+          -0.3
+        ],
+        "time_seconds": null,
+        "vehicles": [
+          {
+            "body_lateral_projection": null,
+            "body_longitudinal_projection": null,
+            "curvature": null,
+            "direction": 1,
+            "oblique_angle": null,
+            "radius_from_cargo_pivot": null,
+            "signed_progress_speed": 0.0,
+            "theta_end": 3.3415926535897933,
+            "theta_start": 0.2,
+            "travel_distance": 0.0,
+            "vehicle_id": 1,
+            "wheel_angles_end": [
+              -0.9357695914045827,
+              0.9357695914045828,
+              0.9357695914045827,
+              -0.9357695914045828
+            ],
+            "wheel_angles_start": [
+              -0.9357695914045827,
+              0.9357695914045828,
+              0.9357695914045827,
+              -0.9357695914045828
+            ],
+            "wheel_factors_end": [
+              0.3068110167513546,
+              0.3068110167513546,
+              0.3068110167513546,
+              0.3068110167513546
+            ],
+            "wheel_factors_start": [
+              0.3068110167513546,
+              0.3068110167513546,
+              0.3068110167513546,
+              0.3068110167513546
+            ],
+            "world_unit_displacement": null
+          },
+          {
+            "body_lateral_projection": null,
+            "body_longitudinal_projection": null,
+            "curvature": null,
+            "direction": -1,
+            "oblique_angle": null,
+            "radius_from_cargo_pivot": null,
+            "signed_progress_speed": 0.0,
+            "theta_end": -3.241592653589793,
+            "theta_start": -0.1,
+            "travel_distance": 0.0,
+            "vehicle_id": 2,
+            "wheel_angles_end": [
+              -0.9357695914045827,
+              0.9357695914045828,
+              0.9357695914045827,
+              -0.9357695914045828
+            ],
+            "wheel_angles_start": [
+              -0.9357695914045827,
+              0.9357695914045828,
+              0.9357695914045827,
+              -0.9357695914045828
+            ],
+            "wheel_factors_end": [
+              0.3068110167513546,
+              0.3068110167513546,
+              0.3068110167513546,
+              0.3068110167513546
+            ],
+            "wheel_factors_start": [
+              0.3068110167513546,
+              0.3068110167513546,
+              0.3068110167513546,
+              0.3068110167513546
+            ],
+            "world_unit_displacement": null
+          },
+          {
+            "body_lateral_projection": null,
+            "body_longitudinal_projection": null,
+            "curvature": null,
+            "direction": 1,
+            "oblique_angle": null,
+            "radius_from_cargo_pivot": null,
+            "signed_progress_speed": 0.0,
+            "theta_end": 0.4,
+            "theta_start": 0.4,
+            "travel_distance": 0.0,
+            "vehicle_id": 3,
+            "wheel_angles_end": [
+              -0.9357695914045827,
+              0.9357695914045828,
+              0.9357695914045827,
+              -0.9357695914045828
+            ],
+            "wheel_angles_start": [
+              -0.9357695914045827,
+              0.9357695914045828,
+              0.9357695914045827,
+              -0.9357695914045828
+            ],
+            "wheel_factors_end": [
+              0.3068110167513546,
+              0.3068110167513546,
+              0.3068110167513546,
+              0.3068110167513546
+            ],
+            "wheel_factors_start": [
+              0.3068110167513546,
+              0.3068110167513546,
+              0.3068110167513546,
+              0.3068110167513546
+            ],
+            "world_unit_displacement": null
+          }
+        ],
+        "wheel_delta_from_zero_curvature_a": [
+          {
+            "angles_from_a_zero_curvature_rad": [
+              -0.9357695914045827,
+              0.9357695914045828,
+              0.9357695914045827,
+              -0.9357695914045828
+            ],
+            "max_abs_angle_rad": 0.9357695914045828,
+            "vehicle_id": 1
+          },
+          {
+            "angles_from_a_zero_curvature_rad": [
+              -0.9357695914045827,
+              0.9357695914045828,
+              0.9357695914045827,
+              -0.9357695914045828
+            ],
+            "max_abs_angle_rad": 0.9357695914045828,
+            "vehicle_id": 2
+          },
+          {
+            "angles_from_a_zero_curvature_rad": [
+              -0.9357695914045827,
+              0.9357695914045828,
+              0.9357695914045827,
+              -0.9357695914045828
+            ],
+            "max_abs_angle_rad": 0.9357695914045828,
+            "vehicle_id": 3
+          }
+        ]
+      },
+      "end_theta_deltas": {
+        "1": 3.141592653589793,
+        "2": -3.141592653589793,
+        "3": 0.0
+      },
+      "inputs": {
+        "headings": {
+          "1": 0.2,
+          "2": -0.1,
+          "3": 0.4
+        },
+        "pi_deltas": {
+          "1": 3.141592653589793,
+          "2": -3.141592653589793,
+          "3": 0.0
+        },
+        "start_qf": [
+          0.1,
+          0.2,
+          -0.3
+        ],
+        "zero_deltas": {
+          "1": 0.0,
+          "2": 0.0,
+          "3": 0.0
+        }
+      },
+      "rejection": {
+        "detail": "every delta_theta is zero; no S edge is generated and no positive L is fabricated",
+        "reason": "ZERO_SPIN_NO_EDGE",
+        "vehicle_id": null
+      },
+      "status": "PASSED",
+      "subcases": [
+        {
+          "name": "reject_delta_outside_pi",
+          "reason": "SPIN_INCREMENT_OUT_OF_RANGE",
+          "status": "REJECTED"
+        }
+      ],
+      "title": "S all-zero and exact +/-pi",
+      "validation": {
+        "max_a_curvature_relation_residual": 0.0,
+        "max_a_tangent_residual": 0.0,
+        "max_derivative_error": 0.0,
+        "max_endpoint_heading_error_rad": 0.0,
+        "max_endpoint_qf_error_m": 0.0,
+        "max_mode_equation_residual": 0.0,
+        "max_rigidity_residual_m": 2.220446049250313e-16,
+        "max_wheel_angle_end_rad": 0.9357695914045828,
+        "max_wheel_angle_rad": 0.9357695914045828,
+        "max_wheel_angle_start_rad": 0.9357695914045828,
+        "primitive": "S_SPIN",
+        "sample_count": 8
+      }
+    },
+    {
+      "baseline_edges": {
+        "arc": {
+          "allow_reverse": false,
+          "angle_derivative_unit": "rad/rad",
+          "end_qf": [
+            0.0,
+            0.0,
+            1.5707963267948966
+          ],
+          "limits": {
+            "r_min_ack": 0.81,
+            "steer_angle_max": 1.5707963267948966,
+            "track": 0.364,
+            "wheelbase": 0.494
+          },
+          "mode": "A",
+          "pivot_in_cargo_frame": [
+            0.0,
+            0.0
+          ],
+          "position_derivative_unit": "m/rad",
+          "primitive": "A_ARC",
+          "progress_interval": [
+            0.0,
+            1.5707963267948966
+          ],
+          "progress_unit": "rad",
+          "real_time_domain": false,
+          "segments": [
+            {
+              "control": 1.0,
+              "direction": 1,
+              "end_center": [
+                6.123233995736766e-17,
+                1.0
+              ],
+              "end_station": 1.5707963267948966,
+              "legacy_mode": 0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "start_center": [
+                1.0,
+                0.0
+              ],
+              "start_station": 0.0,
+              "theta_end": 3.141592653589793,
+              "theta_start": 1.5707963267948966,
+              "travel_distance": 1.5707963267948966,
+              "vehicle_id": 1
+            },
+            {
+              "control": 1.0,
+              "direction": 1,
+              "end_center": [
+                -1.0,
+                6.123233995736766e-17
+              ],
+              "end_station": 1.5707963267948966,
+              "legacy_mode": 0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "start_center": [
+                0.0,
+                1.0
+              ],
+              "start_station": 0.0,
+              "theta_end": 4.71238898038469,
+              "theta_start": 3.141592653589793,
+              "travel_distance": 1.5707963267948966,
+              "vehicle_id": 2
+            },
+            {
+              "control": 1.0,
+              "direction": 1,
+              "end_center": [
+                1.0,
+                -6.123233995736766e-17
+              ],
+              "end_station": 1.5707963267948966,
+              "legacy_mode": 0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "start_center": [
+                0.0,
+                -1.0
+              ],
+              "start_station": 0.0,
+              "theta_end": 1.5707963267948966,
+              "theta_start": 0.0,
+              "travel_distance": 1.5707963267948966,
+              "vehicle_id": 3
+            }
+          ],
+          "start_qf": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "time_seconds": null,
+          "vehicles": [
+            {
+              "body_lateral_projection": 0.0,
+              "body_longitudinal_projection": 1.0,
+              "curvature": 1.0,
+              "direction": 1,
+              "oblique_angle": null,
+              "radius_from_cargo_pivot": 1.0,
+              "signed_progress_speed": 1.0,
+              "theta_end": 3.141592653589793,
+              "theta_start": 1.5707963267948966,
+              "travel_distance": 1.5707963267948966,
+              "vehicle_id": 1,
+              "wheel_angles_end": [
+                0.2932503134605156,
+                0.20600343559660717,
+                -0.2932503134605156,
+                -0.20600343559660717
+              ],
+              "wheel_angles_start": [
+                0.2932503134605156,
+                0.20600343559660717,
+                -0.2932503134605156,
+                -0.20600343559660717
+              ],
+              "wheel_factors_end": [
+                0.8544782033498572,
+                1.2075317801200927,
+                0.8544782033498572,
+                1.2075317801200927
+              ],
+              "wheel_factors_start": [
+                0.8544782033498572,
+                1.2075317801200927,
+                0.8544782033498572,
+                1.2075317801200927
+              ],
+              "world_unit_displacement": null
+            },
+            {
+              "body_lateral_projection": 0.0,
+              "body_longitudinal_projection": 1.0,
+              "curvature": 1.0,
+              "direction": 1,
+              "oblique_angle": null,
+              "radius_from_cargo_pivot": 1.0,
+              "signed_progress_speed": 1.0,
+              "theta_end": 4.71238898038469,
+              "theta_start": 3.141592653589793,
+              "travel_distance": 1.5707963267948966,
+              "vehicle_id": 2,
+              "wheel_angles_end": [
+                0.2932503134605156,
+                0.20600343559660717,
+                -0.2932503134605156,
+                -0.20600343559660717
+              ],
+              "wheel_angles_start": [
+                0.2932503134605156,
+                0.20600343559660717,
+                -0.2932503134605156,
+                -0.20600343559660717
+              ],
+              "wheel_factors_end": [
+                0.8544782033498572,
+                1.2075317801200927,
+                0.8544782033498572,
+                1.2075317801200927
+              ],
+              "wheel_factors_start": [
+                0.8544782033498572,
+                1.2075317801200927,
+                0.8544782033498572,
+                1.2075317801200927
+              ],
+              "world_unit_displacement": null
+            },
+            {
+              "body_lateral_projection": 0.0,
+              "body_longitudinal_projection": 1.0,
+              "curvature": 1.0,
+              "direction": 1,
+              "oblique_angle": null,
+              "radius_from_cargo_pivot": 1.0,
+              "signed_progress_speed": 1.0,
+              "theta_end": 1.5707963267948966,
+              "theta_start": 0.0,
+              "travel_distance": 1.5707963267948966,
+              "vehicle_id": 3,
+              "wheel_angles_end": [
+                0.2932503134605156,
+                0.20600343559660717,
+                -0.2932503134605156,
+                -0.20600343559660717
+              ],
+              "wheel_angles_start": [
+                0.2932503134605156,
+                0.20600343559660717,
+                -0.2932503134605156,
+                -0.20600343559660717
+              ],
+              "wheel_factors_end": [
+                0.8544782033498572,
+                1.2075317801200927,
+                0.8544782033498572,
+                1.2075317801200927
+              ],
+              "wheel_factors_start": [
+                0.8544782033498572,
+                1.2075317801200927,
+                0.8544782033498572,
+                1.2075317801200927
+              ],
+              "world_unit_displacement": null
+            }
+          ],
+          "wheel_delta_from_zero_curvature_a": [
+            {
+              "angles_from_a_zero_curvature_rad": [
+                0.29325031346051555,
+                0.20600343559660717,
+                -0.29325031346051555,
+                -0.20600343559660717
+              ],
+              "max_abs_angle_rad": 0.29325031346051555,
+              "vehicle_id": 1
+            },
+            {
+              "angles_from_a_zero_curvature_rad": [
+                0.29325031346051555,
+                0.20600343559660717,
+                -0.29325031346051555,
+                -0.20600343559660717
+              ],
+              "max_abs_angle_rad": 0.29325031346051555,
+              "vehicle_id": 2
+            },
+            {
+              "angles_from_a_zero_curvature_rad": [
+                0.29325031346051555,
+                0.20600343559660717,
+                -0.29325031346051555,
+                -0.20600343559660717
+              ],
+              "max_abs_angle_rad": 0.29325031346051555,
+              "vehicle_id": 3
+            }
+          ]
+        },
+        "o": {
+          "allow_reverse": true,
+          "angle_derivative_unit": "rad/m",
+          "end_qf": [
+            2.0,
+            0.0,
+            0.0
+          ],
+          "limits": {
+            "r_min_ack": 0.81,
+            "steer_angle_max": 1.5707963267948966,
+            "track": 0.364,
+            "wheelbase": 0.494
+          },
+          "mode": "O",
+          "pivot_in_cargo_frame": null,
+          "position_derivative_unit": "m/m",
+          "primitive": "O_TRANSLATION",
+          "progress_interval": [
+            0.0,
+            2.0
+          ],
+          "progress_unit": "m",
+          "real_time_domain": false,
+          "segments": [
+            {
+              "control": 0.0,
+              "direction": 1,
+              "end_center": [
+                3.0,
+                0.0
+              ],
+              "end_station": 2.0,
+              "legacy_mode": 1,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "start_center": [
+                1.0,
+                0.0
+              ],
+              "start_station": 0.0,
+              "theta_end": 0.0,
+              "theta_start": 0.0,
+              "travel_distance": 2.0,
+              "vehicle_id": 1
+            },
+            {
+              "control": 0.0,
+              "direction": -1,
+              "end_center": [
+                2.0,
+                1.0
+              ],
+              "end_station": 2.0,
+              "legacy_mode": 1,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "start_center": [
+                0.0,
+                1.0
+              ],
+              "start_station": 0.0,
+              "theta_end": 3.141592653589793,
+              "theta_start": 3.141592653589793,
+              "travel_distance": 2.0,
+              "vehicle_id": 2
+            },
+            {
+              "control": 0.0,
+              "direction": 1,
+              "end_center": [
+                2.0,
+                -1.0
+              ],
+              "end_station": 2.0,
+              "legacy_mode": 1,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "start_center": [
+                0.0,
+                -1.0
+              ],
+              "start_station": 0.0,
+              "theta_end": 0.0,
+              "theta_start": 0.0,
+              "travel_distance": 2.0,
+              "vehicle_id": 3
+            }
+          ],
+          "start_qf": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "time_seconds": null,
+          "vehicles": [
+            {
+              "body_lateral_projection": 0.0,
+              "body_longitudinal_projection": 1.0,
+              "curvature": null,
+              "direction": 1,
+              "oblique_angle": 0.0,
+              "radius_from_cargo_pivot": null,
+              "signed_progress_speed": 1.0,
+              "theta_end": 0.0,
+              "theta_start": 0.0,
+              "travel_distance": 2.0,
+              "vehicle_id": 1,
+              "wheel_angles_end": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "wheel_angles_start": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "wheel_factors_end": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "wheel_factors_start": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "world_unit_displacement": [
+                1.0,
+                0.0
+              ]
+            },
+            {
+              "body_lateral_projection": -0.0,
+              "body_longitudinal_projection": -1.0,
+              "curvature": null,
+              "direction": -1,
+              "oblique_angle": 0.0,
+              "radius_from_cargo_pivot": null,
+              "signed_progress_speed": -1.0,
+              "theta_end": 3.141592653589793,
+              "theta_start": 3.141592653589793,
+              "travel_distance": 2.0,
+              "vehicle_id": 2,
+              "wheel_angles_end": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "wheel_angles_start": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "wheel_factors_end": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "wheel_factors_start": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "world_unit_displacement": [
+                1.0,
+                0.0
+              ]
+            },
+            {
+              "body_lateral_projection": 0.0,
+              "body_longitudinal_projection": 1.0,
+              "curvature": null,
+              "direction": 1,
+              "oblique_angle": 0.0,
+              "radius_from_cargo_pivot": null,
+              "signed_progress_speed": 1.0,
+              "theta_end": 0.0,
+              "theta_start": 0.0,
+              "travel_distance": 2.0,
+              "vehicle_id": 3,
+              "wheel_angles_end": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "wheel_angles_start": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "wheel_factors_end": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "wheel_factors_start": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "world_unit_displacement": [
+                1.0,
+                0.0
+              ]
+            }
+          ],
+          "wheel_delta_from_zero_curvature_a": [
+            {
+              "angles_from_a_zero_curvature_rad": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "max_abs_angle_rad": 0.0,
+              "vehicle_id": 1
+            },
+            {
+              "angles_from_a_zero_curvature_rad": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "max_abs_angle_rad": 0.0,
+              "vehicle_id": 2
+            },
+            {
+              "angles_from_a_zero_curvature_rad": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "max_abs_angle_rad": 0.0,
+              "vehicle_id": 3
+            }
+          ]
+        },
+        "s": {
+          "allow_reverse": false,
+          "angle_derivative_unit": "rad/rad",
+          "end_qf": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "limits": {
+            "r_min_ack": 0.81,
+            "steer_angle_max": 1.5707963267948966,
+            "track": 0.364,
+            "wheelbase": 0.494
+          },
+          "mode": "S",
+          "pivot_in_cargo_frame": null,
+          "position_derivative_unit": "m/rad",
+          "primitive": "S_SPIN",
+          "progress_interval": [
+            0.0,
+            1.5707963267948966
+          ],
+          "progress_unit": "rad",
+          "real_time_domain": false,
+          "segments": [
+            {
+              "control": 0.0,
+              "direction": 1,
+              "end_center": [
+                1.0,
+                0.0
+              ],
+              "end_station": 1.5707963267948966,
+              "legacy_mode": 2,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "start_center": [
+                1.0,
+                0.0
+              ],
+              "start_station": 0.0,
+              "theta_end": 1.5707963267948966,
+              "theta_start": 0.0,
+              "travel_distance": 0.0,
+              "vehicle_id": 1
+            },
+            {
+              "control": 0.0,
+              "direction": 1,
+              "end_center": [
+                0.0,
+                1.0
+              ],
+              "end_station": 1.5707963267948966,
+              "legacy_mode": 2,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "start_center": [
+                0.0,
+                1.0
+              ],
+              "start_station": 0.0,
+              "theta_end": 0.0,
+              "theta_start": 0.0,
+              "travel_distance": 0.0,
+              "vehicle_id": 2
+            },
+            {
+              "control": 0.0,
+              "direction": -1,
+              "end_center": [
+                0.0,
+                -1.0
+              ],
+              "end_station": 1.5707963267948966,
+              "legacy_mode": 2,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "start_center": [
+                0.0,
+                -1.0
+              ],
+              "start_station": 0.0,
+              "theta_end": -0.7853981633974483,
+              "theta_start": 0.0,
+              "travel_distance": 0.0,
+              "vehicle_id": 3
+            }
+          ],
+          "start_qf": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "time_seconds": null,
+          "vehicles": [
+            {
+              "body_lateral_projection": null,
+              "body_longitudinal_projection": null,
+              "curvature": null,
+              "direction": 1,
+              "oblique_angle": null,
+              "radius_from_cargo_pivot": null,
+              "signed_progress_speed": 0.0,
+              "theta_end": 1.5707963267948966,
+              "theta_start": 0.0,
+              "travel_distance": 0.0,
+              "vehicle_id": 1,
+              "wheel_angles_end": [
+                -0.9357695914045827,
+                0.9357695914045828,
+                0.9357695914045827,
+                -0.9357695914045828
+              ],
+              "wheel_angles_start": [
+                -0.9357695914045827,
+                0.9357695914045828,
+                0.9357695914045827,
+                -0.9357695914045828
+              ],
+              "wheel_factors_end": [
+                0.3068110167513546,
+                0.3068110167513546,
+                0.3068110167513546,
+                0.3068110167513546
+              ],
+              "wheel_factors_start": [
+                0.3068110167513546,
+                0.3068110167513546,
+                0.3068110167513546,
+                0.3068110167513546
+              ],
+              "world_unit_displacement": null
+            },
+            {
+              "body_lateral_projection": null,
+              "body_longitudinal_projection": null,
+              "curvature": null,
+              "direction": 1,
+              "oblique_angle": null,
+              "radius_from_cargo_pivot": null,
+              "signed_progress_speed": 0.0,
+              "theta_end": 0.0,
+              "theta_start": 0.0,
+              "travel_distance": 0.0,
+              "vehicle_id": 2,
+              "wheel_angles_end": [
+                -0.9357695914045827,
+                0.9357695914045828,
+                0.9357695914045827,
+                -0.9357695914045828
+              ],
+              "wheel_angles_start": [
+                -0.9357695914045827,
+                0.9357695914045828,
+                0.9357695914045827,
+                -0.9357695914045828
+              ],
+              "wheel_factors_end": [
+                0.3068110167513546,
+                0.3068110167513546,
+                0.3068110167513546,
+                0.3068110167513546
+              ],
+              "wheel_factors_start": [
+                0.3068110167513546,
+                0.3068110167513546,
+                0.3068110167513546,
+                0.3068110167513546
+              ],
+              "world_unit_displacement": null
+            },
+            {
+              "body_lateral_projection": null,
+              "body_longitudinal_projection": null,
+              "curvature": null,
+              "direction": -1,
+              "oblique_angle": null,
+              "radius_from_cargo_pivot": null,
+              "signed_progress_speed": 0.0,
+              "theta_end": -0.7853981633974483,
+              "theta_start": 0.0,
+              "travel_distance": 0.0,
+              "vehicle_id": 3,
+              "wheel_angles_end": [
+                -0.9357695914045827,
+                0.9357695914045828,
+                0.9357695914045827,
+                -0.9357695914045828
+              ],
+              "wheel_angles_start": [
+                -0.9357695914045827,
+                0.9357695914045828,
+                0.9357695914045827,
+                -0.9357695914045828
+              ],
+              "wheel_factors_end": [
+                0.3068110167513546,
+                0.3068110167513546,
+                0.3068110167513546,
+                0.3068110167513546
+              ],
+              "wheel_factors_start": [
+                0.3068110167513546,
+                0.3068110167513546,
+                0.3068110167513546,
+                0.3068110167513546
+              ],
+              "world_unit_displacement": null
+            }
+          ],
+          "wheel_delta_from_zero_curvature_a": [
+            {
+              "angles_from_a_zero_curvature_rad": [
+                -0.9357695914045827,
+                0.9357695914045828,
+                0.9357695914045827,
+                -0.9357695914045828
+              ],
+              "max_abs_angle_rad": 0.9357695914045828,
+              "vehicle_id": 1
+            },
+            {
+              "angles_from_a_zero_curvature_rad": [
+                -0.9357695914045827,
+                0.9357695914045828,
+                0.9357695914045827,
+                -0.9357695914045828
+              ],
+              "max_abs_angle_rad": 0.9357695914045828,
+              "vehicle_id": 2
+            },
+            {
+              "angles_from_a_zero_curvature_rad": [
+                -0.9357695914045827,
+                0.9357695914045828,
+                0.9357695914045827,
+                -0.9357695914045828
+              ],
+              "max_abs_angle_rad": 0.9357695914045828,
+              "vehicle_id": 3
+            }
+          ]
+        },
+        "straight": {
+          "allow_reverse": true,
+          "angle_derivative_unit": "rad/m",
+          "end_qf": [
+            2.0,
+            0.0,
+            0.0
+          ],
+          "limits": {
+            "r_min_ack": 0.81,
+            "steer_angle_max": 1.5707963267948966,
+            "track": 0.364,
+            "wheelbase": 0.494
+          },
+          "mode": "A",
+          "pivot_in_cargo_frame": null,
+          "position_derivative_unit": "m/m",
+          "primitive": "A_STRAIGHT",
+          "progress_interval": [
+            0.0,
+            2.0
+          ],
+          "progress_unit": "m",
+          "real_time_domain": false,
+          "segments": [
+            {
+              "control": 0.0,
+              "direction": 1,
+              "end_center": [
+                3.0,
+                0.0
+              ],
+              "end_station": 2.0,
+              "legacy_mode": 0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "start_center": [
+                1.0,
+                0.0
+              ],
+              "start_station": 0.0,
+              "theta_end": 0.0,
+              "theta_start": 0.0,
+              "travel_distance": 2.0,
+              "vehicle_id": 1
+            },
+            {
+              "control": 0.0,
+              "direction": -1,
+              "end_center": [
+                2.0,
+                1.0
+              ],
+              "end_station": 2.0,
+              "legacy_mode": 0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "start_center": [
+                0.0,
+                1.0
+              ],
+              "start_station": 0.0,
+              "theta_end": 3.141592653589793,
+              "theta_start": 3.141592653589793,
+              "travel_distance": 2.0,
+              "vehicle_id": 2
+            },
+            {
+              "control": 0.0,
+              "direction": 1,
+              "end_center": [
+                2.0,
+                -1.0
+              ],
+              "end_station": 2.0,
+              "legacy_mode": 0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "start_center": [
+                0.0,
+                -1.0
+              ],
+              "start_station": 0.0,
+              "theta_end": 0.0,
+              "theta_start": 0.0,
+              "travel_distance": 2.0,
+              "vehicle_id": 3
+            }
+          ],
+          "start_qf": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "time_seconds": null,
+          "vehicles": [
+            {
+              "body_lateral_projection": 0.0,
+              "body_longitudinal_projection": 1.0,
+              "curvature": 0.0,
+              "direction": 1,
+              "oblique_angle": null,
+              "radius_from_cargo_pivot": null,
+              "signed_progress_speed": 1.0,
+              "theta_end": 0.0,
+              "theta_start": 0.0,
+              "travel_distance": 2.0,
+              "vehicle_id": 1,
+              "wheel_angles_end": [
+                0.0,
+                0.0,
+                -0.0,
+                -0.0
+              ],
+              "wheel_angles_start": [
+                0.0,
+                0.0,
+                -0.0,
+                -0.0
+              ],
+              "wheel_factors_end": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "wheel_factors_start": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "world_unit_displacement": [
+                1.0,
+                0.0
+              ]
+            },
+            {
+              "body_lateral_projection": 0.0,
+              "body_longitudinal_projection": -1.0,
+              "curvature": 0.0,
+              "direction": -1,
+              "oblique_angle": null,
+              "radius_from_cargo_pivot": null,
+              "signed_progress_speed": -1.0,
+              "theta_end": 3.141592653589793,
+              "theta_start": 3.141592653589793,
+              "travel_distance": 2.0,
+              "vehicle_id": 2,
+              "wheel_angles_end": [
+                0.0,
+                0.0,
+                -0.0,
+                -0.0
+              ],
+              "wheel_angles_start": [
+                0.0,
+                0.0,
+                -0.0,
+                -0.0
+              ],
+              "wheel_factors_end": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "wheel_factors_start": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "world_unit_displacement": [
+                1.0,
+                0.0
+              ]
+            },
+            {
+              "body_lateral_projection": 0.0,
+              "body_longitudinal_projection": 1.0,
+              "curvature": 0.0,
+              "direction": 1,
+              "oblique_angle": null,
+              "radius_from_cargo_pivot": null,
+              "signed_progress_speed": 1.0,
+              "theta_end": 0.0,
+              "theta_start": 0.0,
+              "travel_distance": 2.0,
+              "vehicle_id": 3,
+              "wheel_angles_end": [
+                0.0,
+                0.0,
+                -0.0,
+                -0.0
+              ],
+              "wheel_angles_start": [
+                0.0,
+                0.0,
+                -0.0,
+                -0.0
+              ],
+              "wheel_factors_end": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "wheel_factors_start": [
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "world_unit_displacement": [
+                1.0,
+                0.0
+              ]
+            }
+          ],
+          "wheel_delta_from_zero_curvature_a": [
+            {
+              "angles_from_a_zero_curvature_rad": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "max_abs_angle_rad": 0.0,
+              "vehicle_id": 1
+            },
+            {
+              "angles_from_a_zero_curvature_rad": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "max_abs_angle_rad": 0.0,
+              "vehicle_id": 2
+            },
+            {
+              "angles_from_a_zero_curvature_rad": [
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              "max_abs_angle_rad": 0.0,
+              "vehicle_id": 3
+            }
+          ]
+        }
+      },
+      "case": "P12",
+      "inputs": {
+        "note": "direction/curvature/segment tampering, illegal mode and ids, non-finite values, invalid phi and independent auditor"
+      },
+      "status": "PASSED",
+      "subcases": [
+        {
+          "detail": "vehicle_id=1 direction=-1 does not match sign(delta_theta)=1; a zero-angle vehicle uses the +1 placeholder",
+          "name": "tamper_s_direction",
+          "reason": "DIRECTION_MISMATCH",
+          "status": "REJECTED",
+          "vehicle_id": 1
+        },
+        {
+          "detail": "vehicle_id=2 body heading 3.14159265359 is not the required tangent 0 (mod 2*pi); insert an explicit S alignment edge; the factory will not rotate the body without time",
+          "name": "tamper_a_direction",
+          "reason": "A_HEADING_REQUIRES_S_ALIGNMENT",
+          "status": "REJECTED",
+          "vehicle_id": 2
+        },
+        {
+          "detail": "curvatures vehicle_id=2 value=0.5 != recomputed 0",
+          "name": "tamper_a_curvature",
+          "reason": "INTERNAL_EDGE_FIELD_MISMATCH",
+          "status": "REJECTED",
+          "vehicle_id": null
+        },
+        {
+          "detail": "curvatures vehicle_id=1 value=-1 != recomputed 1",
+          "name": "tamper_arc_curvature",
+          "reason": "INTERNAL_EDGE_FIELD_MISMATCH",
+          "status": "REJECTED",
+          "vehicle_id": null
+        },
+        {
+          "detail": "segments vehicle_id=1 start_center_x=1.01 != recomputed 1.0",
+          "name": "tamper_segment_center",
+          "reason": "INTERNAL_EDGE_FIELD_MISMATCH",
+          "status": "REJECTED",
+          "vehicle_id": 1
+        },
+        {
+          "detail": "mode='X' is not one of ('A', 'O', 'S')",
+          "name": "illegal_mode",
+          "reason": "INVALID_MODE",
+          "status": "REJECTED",
+          "vehicle_id": null
+        },
+        {
+          "detail": "mode=S is inconsistent with primitive=A_STRAIGHT",
+          "name": "mode_primitive_mismatch",
+          "reason": "MODE_PRIMITIVE_MISMATCH",
+          "status": "REJECTED",
+          "vehicle_id": null
+        },
+        {
+          "detail": "mode=A is inconsistent with primitive=S_SPIN",
+          "name": "primitive_mode_mismatch",
+          "reason": "MODE_PRIMITIVE_MISMATCH",
+          "status": "REJECTED",
+          "vehicle_id": null
+        },
+        {
+          "detail": "start_headings missing=[3] extra=[]",
+          "name": "missing_vehicle_id",
+          "reason": "INVALID_VEHICLE_ID_SET",
+          "status": "REJECTED",
+          "vehicle_id": null
+        },
+        {
+          "detail": "start_headings missing=[] extra=[4]",
+          "name": "extra_vehicle_id",
+          "reason": "INVALID_VEHICLE_ID_SET",
+          "status": "REJECTED",
+          "vehicle_id": null
+        },
+        {
+          "detail": "start_headings vehicle_id=1.0 must be an int",
+          "name": "non_integer_vehicle_id",
+          "reason": "INVALID_VEHICLE_ID_SET",
+          "status": "REJECTED",
+          "vehicle_id": null
+        },
+        {
+          "detail": "start_headings ids (1, 2, 4) must be sorted exactly as (1, 2, 3)",
+          "name": "bad_pair_id_in_constructor",
+          "reason": "UNSORTED_PAIR_FIELD",
+          "status": "REJECTED",
+          "vehicle_id": null
+        },
+        {
+          "detail": "a_straight displacement.x value=nan is not finite",
+          "name": "nonfinite_displacement",
+          "reason": "NONFINITE_VALUE",
+          "status": "REJECTED",
+          "vehicle_id": null
+        },
+        {
+          "detail": "start_headings vehicle_id=1 value=inf is not finite",
+          "name": "nonfinite_heading",
+          "reason": "NONFINITE_VALUE",
+          "status": "REJECTED",
+          "vehicle_id": null
+        },
+        {
+          "detail": "s_spin delta_thetas vehicle_id=1 value=nan is not finite",
+          "name": "nonfinite_spin_delta",
+          "reason": "NONFINITE_VALUE",
+          "status": "REJECTED",
+          "vehicle_id": null
+        },
+        {
+          "detail": "start_headings vehicle_id=2 value=nan is not finite",
+          "name": "nonfinite_stored_heading",
+          "reason": "NONFINITE_VALUE",
+          "status": "REJECTED",
+          "vehicle_id": null
+        },
+        {
+          "detail": "vehicle_id=3 |phi|=1.62079632679 exceeds pi/2",
+          "name": "oblique_angle_outside_limit",
+          "reason": "OBLIQUE_ANGLE_LIMIT",
+          "status": "REJECTED",
+          "vehicle_id": 3
+        },
+        {
+          "detail": "vehicle_id=1 sigma*e(theta+phi)=(0.98006657784124163, 0.19866933079506122) does not equal the full displacement direction (1, 0); residual=0.199",
+          "name": "oblique_vector_mismatch",
+          "reason": "OBLIQUE_VECTOR_MISMATCH",
+          "status": "REJECTED",
+          "vehicle_id": 1
+        },
+        {
+          "detail": "vehicle_id=2 A straight would travel backward but allow_reverse is false",
+          "name": "reverse_not_allowed",
+          "reason": "REVERSE_NOT_ALLOWED",
+          "status": "REJECTED",
+          "vehicle_id": 2
+        },
+        {
+          "detail": "wheel_configuration vehicle_id value=1.0 must be an integer",
+          "name": "invalid_wheel_vehicle_id",
+          "reason": "INVALID_INTEGER",
+          "status": "REJECTED",
+          "vehicle_id": null
+        },
+        {
+          "detail": "vehicle_id=99 is not part of this edge",
+          "name": "unknown_wheel_vehicle_id",
+          "reason": "INVALID_VEHICLE_ID_SET",
+          "status": "REJECTED",
+          "vehicle_id": null
+        },
+        {
+          "detail": "state_at progress=-1.0000000000000001e-09 is outside the closed interval [0, 2]; no clamping or path change is performed",
+          "name": "progress_below_zero",
+          "reason": "PROGRESS_OUT_OF_RANGE",
+          "status": "REJECTED",
+          "vehicle_id": null
+        },
+        {
+          "detail": "state_at progress=2.0000000010000001 is outside the closed interval [0, 2]; no clamping or path change is performed",
+          "name": "progress_above_length",
+          "reason": "PROGRESS_OUT_OF_RANGE",
+          "status": "REJECTED",
+          "vehicle_id": null
+        },
+        {
+          "detail": "state_at value=nan is not finite",
+          "name": "nonfinite_progress",
+          "reason": "NONFINITE_VALUE",
+          "status": "REJECTED",
+          "vehicle_id": null
+        },
+        {
+          "detail": "curvature vehicle_id=1 actual=0.5 expected=0; normalized mode equation residual 1 exceeds 1e-6",
+          "name": "auditor_rejects_curvature_tamper",
+          "reason": "EDGE_VALIDATION_FAILED",
+          "status": "REJECTED",
+          "vehicle_id": null
+        },
+        {
+          "detail": "segment.direction vehicle_id=2 actual=-1 expected=1; normalized mode equation residual 2 exceeds 1e-6",
+          "name": "auditor_rejects_direction_tamper",
+          "reason": "EDGE_VALIDATION_FAILED",
+          "status": "REJECTED",
+          "vehicle_id": null
+        },
+        {
+          "detail": "segment.theta_start vehicle_id=2 actual=3.1415926535897931 expected=0; end_heading vehicle_id=2 actual=3.1415926535897931 expected=0; normalized mode equation residual 2 exceeds 1e-6",
+          "name": "auditor_rejects_start_heading_tamper",
+          "reason": "EDGE_VALIDATION_FAILED",
+          "status": "REJECTED",
+          "vehicle_id": null
+        }
+      ],
+      "title": "Explicit rejections and tamper negatives"
+    }
+  ],
+  "generated_at_utc": "2026-11-14T11:38:35.351524+00:00",
+  "package_source": "/home/wq/whut_thesis/expv3_multi_v02/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_motion.py",
+  "python_executable": "/usr/bin/python3",
+  "python_version": "3.8.10 (default, Mar 18 2025, 20:04:55) \n[GCC 9.4.0]",
+  "task": "FR01",
+  "test_source": "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_motion.py",
+  "thresholds": {
+    "analytic_geometry_m": 1e-07,
+    "finite_difference": 0.0001,
+    "normalized_mode_equation": 1e-06,
+    "rigidity_m": 1e-06
+  }
+}

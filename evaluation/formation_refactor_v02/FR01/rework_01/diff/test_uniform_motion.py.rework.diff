@@ -1,0 +1,258 @@
+--- a/tests/test_uniform_motion.py
++++ b/tests/test_uniform_motion.py
+@@ -1450,6 +1450,255 @@
+                     edge, "start_headings",
+                     ((1, 0.0), (2, 0.0), (3, 0.0))))
+ 
++    # ---- N01-N07 ----------------------------------------------------
++    def test_n01_n07_independent_validator_negatives(self):
++        inputs = {
++            "note": (
++                "targeted post-construction faults from the FR01 acceptance "
++                "review; every negative keeps its legal positive")
++        }
++        with record_case(
++                "N01-N07",
++                "Independent-validator rework negatives", inputs) as case:
++            case["legal_positives"] = []
++            case["subcases_note"] = {}
++            model = _model()
++            arc_qf = FormationPose(0.0, 0.0, 0.0)
++            arc_headings = {1: math.pi / 2.0, 2: math.pi, 3: 0.0}
++            spin_qf = FormationPose(0.4, -0.2, 0.3)
++            spin_headings = {1: 0.1, 2: -0.4, 3: 1.2}
++            spin_deltas = {
++                1: math.pi / 2.0, 2: 0.0, 3: -math.pi / 4.0}
++
++            def forward_arc():
++                return a_arc_edge(
++                    model, arc_qf, arc_headings, math.pi / 2.0,
++                    (0.0, 0.0), {1: 1, 2: 1, 3: 1})
++
++            def reverse_arc():
++                return a_arc_edge(
++                    model, arc_qf, arc_headings, -math.pi / 2.0,
++                    (0.0, 0.0), {1: -1, 2: -1, 3: -1},
++                    allow_reverse=True)
++
++            def legal_reverse_straight():
++                return a_straight_edge(
++                    model, FormationPose(0.0, 0.0, 0.0),
++                    {1: 0.0, 2: math.pi, 3: 0.0}, (2.0, 0.0),
++                    {1: 1, 2: -1, 3: 1}, allow_reverse=True)
++
++            def zero_angle_spin():
++                return s_spin_edge(
++                    model, spin_qf, spin_headings, spin_deltas)
++
++            def accept(name, edge, note):
++                metrics = self._assert_metrics(edge)
++                record = {
++                    "name": name,
++                    "note": note,
++                    "validation": metrics.as_dict(),
++                }
++                case["legal_positives"].append(record)
++                return metrics
++
++            def reject(name, reason, edge, detail_contains=()):
++                error = self._expect_reason(
++                    reason,
++                    lambda: validate_uniform_edge(edge),
++                    detail_contains=detail_contains)
++                case["subcases"].append({
++                    "name": name,
++                    "status": "REJECTED",
++                    "reason": error.reason,
++                    "detail": error.detail,
++                })
++                return error
++
++            # Legal positives: forward, clockwise/reverse and reversing A,
++            # plus the all-S zero-angle start/end boundary used by N02/N06.
++            accept(
++                "L01_A_arc_forward", forward_arc(),
++                "direction +1 on a positive A arc")
++            accept(
++                "L02_A_arc_reverse", reverse_arc(),
++                "direction -1 on a clockwise A arc with allow_reverse")
++            accept(
++                "L03_A_straight_legal_reverse",
++                legal_reverse_straight(),
++                "car2 direction -1 on an A straight with allow_reverse")
++            spin_positive = zero_angle_spin()
++            spin_metrics = accept(
++                "L04_S_zero_angle_start_end", spin_positive,
++                "zero-angle car2 keeps canonical S at both boundaries")
++            car2_start = spin_positive.wheel_configuration(
++                2, at_end=False)
++            car2_end = spin_positive.wheel_configuration(2, at_end=True)
++            expected_spin_angles, expected_spin_factors = (
++                _independent_wheel(
++                    SPIN, 0.0, spin_positive.limits))
++            for at_end, configuration in (
++                    (False, car2_start), (True, car2_end)):
++                for actual, expected in zip(
++                        configuration.angles, expected_spin_angles):
++                    self.assertAlmostEqual(actual, expected, delta=1e-9)
++                for actual, expected in zip(
++                        configuration.factors, expected_spin_factors):
++                    self.assertAlmostEqual(actual, expected, delta=1e-9)
++            case["legal_positives"][-1]["car2_start"] = {
++                "angles": list(car2_start.angles),
++                "factors": list(car2_start.factors),
++            }
++            case["legal_positives"][-1]["car2_end"] = {
++                "angles": list(car2_end.angles),
++                "factors": list(car2_end.factors),
++            }
++            self.assertLessEqual(
++                spin_metrics.max_a_tangent_residual, 1e-6)
++            self.assertLessEqual(
++                spin_metrics.max_a_curvature_relation_residual, 1e-6)
++
++            # N01: all body headings shifted by 0.2 rad while the centre
++            # path, curvature and direction stay unchanged.  Compute the true
++            # lateral residual independently before asking the auditor.
++            n01 = forward_arc()
++            shift = 0.2
++            object.__setattr__(
++                n01, "start_headings",
++                tuple((vehicle_id, heading + shift)
++                      for vehicle_id, heading in n01.start_headings))
++            object.__setattr__(
++                n01, "end_headings",
++                tuple((vehicle_id, heading + shift)
++                      for vehicle_id, heading in n01.end_headings))
++            object.__setattr__(
++                n01, "segments",
++                tuple(
++                    replace(
++                        segment,
++                        theta_start=segment.theta_start + shift,
++                        theta_end=segment.theta_end + shift)
++                    for segment in n01.segments))
++            max_lateral = 0.0
++            for fraction in (0.0, 0.31, 0.73, 1.0):
++                progress = n01.progress_interval[1] * fraction
++                state = n01.state_at(progress)
++                derivative = n01.derivative_at(progress)
++                heading_map = _pair_map(state.headings)
++                dp_map = {
++                    vehicle_id: (x, y)
++                    for vehicle_id, x, y in derivative.dp}
++                for vehicle_id in (1, 2, 3):
++                    dp_x, dp_y = dp_map[vehicle_id]
++                    theta = heading_map[vehicle_id]
++                    lateral = abs(
++                        -dp_x * math.sin(theta)
++                        + dp_y * math.cos(theta))
++                    max_lateral = max(max_lateral, lateral)
++            self.assertAlmostEqual(
++                max_lateral, math.sin(shift), delta=1e-12)
++            case["subcases_note"] = {
++                "N01_independent_lateral_residual": (
++                    "max |dp dot e_lateral(theta)| = {:.17g} "
++                    "(sin(0.2) = {:.17g})".format(
++                        max_lateral, math.sin(shift)))
++            }
++            reject(
++                "N01_A_arc_body_not_tangent",
++                "EDGE_VALIDATION_FAILED", n01,
++                detail_contains=("mode equation residual",))
++
++            # N02: only the zero-angle car2 end wheel values are replaced by
++            # the A zero-curvature configuration; start boundary stays S.
++            n02 = zero_angle_spin()
++            object.__setattr__(
++                n02, "wheel_angles_end",
++                tuple(
++                    (vehicle_id, (0.0, 0.0, 0.0, 0.0))
++                    if vehicle_id == 2 else (vehicle_id, values)
++                    for vehicle_id, values in n02.wheel_angles_end))
++            object.__setattr__(
++                n02, "wheel_factors_end",
++                tuple(
++                    (vehicle_id, (1.0, 1.0, 1.0, 1.0))
++                    if vehicle_id == 2 else (vehicle_id, values)
++                    for vehicle_id, values in n02.wheel_factors_end))
++            reject(
++                "N02_S_zero_angle_end_wheels_A",
++                "EDGE_VALIDATION_FAILED", n02,
++                detail_contains=("end wheel_angles",))
++
++            # N03: legal radius-1 A arc audited against steer_angle_max=0.1.
++            n03 = forward_arc()
++            n03_expected_angles, _ = _independent_wheel(
++                ACKERMANN, 1.0, n03.limits)
++            n03_max_wheel = max(
++                abs(value)
++                for configuration in n03.wheel_configurations()
++                for value in configuration.angles)
++            self.assertAlmostEqual(
++                n03_max_wheel, max(abs(value) for value in
++                                   n03_expected_angles), delta=1e-9)
++            self.assertGreater(n03_max_wheel, 0.1)
++            object.__setattr__(
++                n03, "limits",
++                replace(n03.limits, steer_angle_max=0.1))
++            case["subcases_note"][
++                "N03_actual_max_wheel_angle_rad"] = n03_max_wheel
++            reject(
++                "N03_wheel_limit_exceeded",
++                "EDGE_VALIDATION_FAILED", n03,
++                detail_contains=("steer_angle_max",))
++
++            # N04: same radius-1 arc audited against r_min_ack=2 m.
++            n04 = forward_arc()
++            n04_radii = tuple(
++                math.hypot(offset.x, offset.y)
++                for offset in model.offsets)
++            self.assertEqual(n04_radii, (1.0, 1.0, 1.0))
++            object.__setattr__(
++                n04, "limits",
++                replace(n04.limits, r_min_ack=2.0))
++            case["subcases_note"]["N04_actual_radii_m"] = list(n04_radii)
++            reject(
++                "N04_turn_radius_below_limit",
++                "EDGE_VALIDATION_FAILED", n04,
++                detail_contains=("r_min_ack",))
++
++            # N05: global mode disagrees with the A_ARC primitive.
++            n05 = forward_arc()
++            object.__setattr__(n05, "mode", MODE_S)
++            reject(
++                "N05_mode_primitive_mismatch",
++                "MODE_PRIMITIVE_MISMATCH", n05,
++                detail_contains=("inconsistent with primitive",))
++
++            # N06: a global S edge with only zero-angle car2 marked A.
++            n06 = zero_angle_spin()
++            object.__setattr__(
++                n06, "segments",
++                tuple(
++                    replace(segment, mode=ACKERMANN)
++                    if segment.vehicle_id == 2 else segment
++                    for segment in n06.segments))
++            reject(
++                "N06_S_zero_angle_segment_A",
++                "EDGE_VALIDATION_FAILED", n06,
++                detail_contains=("segment.mode",))
++
++            # N07: a single NaN start wheel value must be rejected before
++            # any abs(actual - expected) comparison can silently pass.
++            n07 = forward_arc()
++            object.__setattr__(
++                n07, "wheel_angles_start",
++                tuple(
++                    (vehicle_id, (float("nan"),) + tuple(values[1:]))
++                    if vehicle_id == 1 else (vehicle_id, values)
++                    for vehicle_id, values in n07.wheel_angles_start))
++            reject(
++                "N07_NaN_wheel",
++                "NONFINITE_VALUE", n07,
++                detail_contains=("not finite",))
++
+     # ---- result file ------------------------------------------------
+     @classmethod
+     def tearDownClass(cls):

@@ -1,0 +1,2507 @@
+{
+  "assertions_completed": false,
+  "budget": {
+    "heuristic_weight": 3.0,
+    "max_expansions": 10000,
+    "max_seconds": 30.0,
+    "rotation_weight": 3.0
+  },
+  "case_id": "F07_in_place_negative_90",
+  "description": "cargo in-place rotation",
+  "independent_reaudit": null,
+  "map_metadata": {
+    "kind": "empty"
+  },
+  "model": null,
+  "request": {
+    "formation_id": "fr04_three_vehicle",
+    "goal_headings": null,
+    "goal_qf": [
+      10.0,
+      10.0,
+      -1.5707963267948966
+    ],
+    "grid": {
+      "occupied_sha256": "e1038a405281e3a4ba6a65048621871508e751e77f2289c359b50edd90be6914",
+      "origin": [
+        -15.0,
+        -15.0
+      ],
+      "resolution": 0.05,
+      "shape": [
+        600,
+        600
+      ]
+    },
+    "model": [
+      {
+        "vehicle_id": 1,
+        "x": 1.0,
+        "y": 0.0
+      },
+      {
+        "vehicle_id": 2,
+        "x": 0.0,
+        "y": 1.0
+      },
+      {
+        "vehicle_id": 3,
+        "x": 0.0,
+        "y": -1.0
+      }
+    ],
+    "plan_id": 7,
+    "search_config": {
+      "heuristic_weight": 3.0,
+      "max_expansions": 10000,
+      "max_seconds": 30.0,
+      "rotation_weight": 3.0
+    },
+    "start_headings": [
+      {
+        "theta": 0.0,
+        "vehicle_id": 1
+      },
+      {
+        "theta": 0.0,
+        "vehicle_id": 2
+      },
+      {
+        "theta": 0.0,
+        "vehicle_id": 3
+      }
+    ],
+    "start_qf": [
+      10.0,
+      10.0,
+      0.0
+    ],
+    "successor_config": {
+      "allow_reverse": true,
+      "arc_pivots": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          2.0
+        ],
+        [
+          0.0,
+          -2.0
+        ],
+        [
+          2.0,
+          0.0
+        ],
+        [
+          -2.0,
+          0.0
+        ]
+      ],
+      "arc_step_rad": 0.17453292519943295,
+      "collision_margin_m": 0.05,
+      "control_bin": 0.01,
+      "goal_heading_free": true,
+      "goal_heading_tol_rad": 0.017453292519943295,
+      "goal_psi_tol_rad": 0.017453292519943295,
+      "goal_xy_tol_m": 0.02,
+      "heading_bin_rad": 0.17453292519943295,
+      "max_samples_per_segment": 200000,
+      "psi_bin_rad": 0.17453292519943295,
+      "sweep_spacing_m": 0.01,
+      "timing_limits": {
+        "a_max": 0.6,
+        "jerk_max": 2.0,
+        "lateral_accel_max": 0.6,
+        "max_block_duration_s": 120.0,
+        "min_mode_dwell_s": 0.3,
+        "mode_setup_time": 0.15,
+        "mode_switch_duration": 0.3,
+        "r_min_ackermann": 0.81,
+        "steer_accel_max": 1.5,
+        "steer_angle_max": 1.5707963267948966,
+        "steer_rate_max": 0.8,
+        "track": 0.364,
+        "v_max": 0.8,
+        "wheel_speed_max": 1.0,
+        "wheelbase": 0.494,
+        "yaw_accel_max": 0.8,
+        "yaw_jerk_max": 3.0,
+        "yaw_rate_max": 0.8
+      },
+      "translation_step_m": 1.0,
+      "xy_bin_m": 0.2
+    },
+    "vehicle_shapes": [
+      {
+        "length_m": 0.738,
+        "vehicle_id": 1,
+        "width_m": 0.5
+      },
+      {
+        "length_m": 0.738,
+        "vehicle_id": 2,
+        "width_m": 0.5
+      },
+      {
+        "length_m": 0.738,
+        "vehicle_id": 3,
+        "width_m": 0.5
+      }
+    ]
+  },
+  "request_sha256": "accf40c96266b75c9ba73fad63659eeca34f86232b378118701d3e7b10375ea9",
+  "result": {
+    "detail": "wall time 30.1262328 s >= 30 s",
+    "duration_s": null,
+    "evaluation": null,
+    "executable": false,
+    "feasible": false,
+    "first_failure_layer": "budget",
+    "plan_model": null,
+    "projection_summary": null,
+    "reason": "TIME_BUDGET_EXHAUSTED",
+    "request_sha256": "accf40c96266b75c9ba73fad63659eeca34f86232b378118701d3e7b10375ea9",
+    "schema": "fr04.uniform_planning_result.v1",
+    "search": {
+      "accepted_successors": 3079,
+      "candidate_count": 16253,
+      "collision_s": 23.651890253648162,
+      "detail": "wall time 30.1262328 s >= 30 s",
+      "duplicate_key_rejections": 670,
+      "expansions": 109,
+      "first_failure_layer": "budget",
+      "generation_s": 6.416702352114953,
+      "goal_qf": [
+        10.0,
+        10.0,
+        -1.5707963267948966
+      ],
+      "goal_state": null,
+      "open_size": 2960,
+      "path": [],
+      "reason": "TIME_BUDGET_EXHAUSTED",
+      "redundant_s_pruned": 2106,
+      "rejection_histogram": {
+        "A_HEADING_REQUIRES_S_ALIGNMENT": 10398
+      },
+      "stale_heap_entries": 0,
+      "status": "BUDGET_EXHAUSTED",
+      "terminal_audits": [
+        {
+          "accepted": false,
+          "audit_wall_time_s": 3.799400292336941e-05,
+          "detail": "authoritative edge 0 allow_reverse=False differs from the request True",
+          "duration_s": null,
+          "edge_count": 2,
+          "failure_code": "REQUEST_ALLOW_REVERSE_MISMATCH",
+          "failure_constraint": "",
+          "failure_detail": "authoritative edge 0 allow_reverse=False differs from the request True",
+          "failure_vehicle_id": null,
+          "feasible": false,
+          "path": [
+            {
+              "a_labels": [
+                "A_arc_crop_p0_0_neg_gear++-",
+                "A_arc_p0_0_neg_gear++-",
+                "A_arc_p0_0_pos_gear--+"
+              ],
+              "cumulative_proxy_g_s": 4.306705388348112,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": -1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": -1.5707963267948968,
+                "2": -2.4492935982947064e-16,
+                "3": 0.0
+              },
+              "end_qf": [
+                10.0,
+                10.0,
+                0.0
+              ],
+              "index": 1,
+              "mode": "S",
+              "parameter_length": 1.5707963267948968,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "S_SPIN",
+              "start_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "start_qf": [
+                10.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p0_0_neg_gear++-",
+                "A_arc_p0_0_pos_gear--+"
+              ],
+              "cumulative_proxy_g_s": 9.300716198869308,
+              "delta_psi": -1.5707963267948966,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": -1
+              },
+              "end_headings": {
+                "1": -3.141592653589793,
+                "2": -1.5707963267948968,
+                "3": -1.5707963267948966
+              },
+              "end_qf": [
+                10.0,
+                10.0,
+                -1.5707963267948966
+              ],
+              "index": 2,
+              "mode": "A",
+              "parameter_length": 1.5707963267948966,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "A_ARC",
+              "start_headings": {
+                "1": -1.5707963267948968,
+                "2": -2.4492935982947064e-16,
+                "3": 0.0
+              },
+              "start_qf": [
+                10.0,
+                10.0,
+                0.0
+              ]
+            }
+          ],
+          "path_proxy_g_s": 9.300716198869308,
+          "reason": "REQUEST_ALLOW_REVERSE_MISMATCH",
+          "search_elapsed_at_audit_s": 1.367608487023972,
+          "status": "REJECTED"
+        },
+        {
+          "accepted": false,
+          "audit_wall_time_s": 3.9180973544716835e-05,
+          "detail": "authoritative edge 0 allow_reverse=False differs from the request True",
+          "duration_s": null,
+          "edge_count": 2,
+          "failure_code": "REQUEST_ALLOW_REVERSE_MISMATCH",
+          "failure_constraint": "",
+          "failure_detail": "authoritative edge 0 allow_reverse=False differs from the request True",
+          "failure_vehicle_id": null,
+          "feasible": false,
+          "path": [
+            {
+              "a_labels": [
+                "A_arc_crop_p0_0_neg_gear-+-",
+                "A_arc_p0_0_neg_gear-+-",
+                "A_arc_p0_0_pos_gear+-+"
+              ],
+              "cumulative_proxy_g_s": 4.306705388348112,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": 1.5707963267948966,
+                "2": -2.4492935982947064e-16,
+                "3": 0.0
+              },
+              "end_qf": [
+                10.0,
+                10.0,
+                0.0
+              ],
+              "index": 1,
+              "mode": "S",
+              "parameter_length": 1.5707963267948966,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "S_SPIN",
+              "start_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "start_qf": [
+                10.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p0_0_neg_gear-+-",
+                "A_arc_p0_0_pos_gear+-+"
+              ],
+              "cumulative_proxy_g_s": 9.300716198869308,
+              "delta_psi": -1.5707963267948966,
+              "directions": {
+                "1": -1,
+                "2": 1,
+                "3": -1
+              },
+              "end_headings": {
+                "1": 0.0,
+                "2": -1.5707963267948968,
+                "3": -1.5707963267948966
+              },
+              "end_qf": [
+                10.0,
+                10.0,
+                -1.5707963267948966
+              ],
+              "index": 2,
+              "mode": "A",
+              "parameter_length": 1.5707963267948966,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "A_ARC",
+              "start_headings": {
+                "1": 1.5707963267948966,
+                "2": -2.4492935982947064e-16,
+                "3": 0.0
+              },
+              "start_qf": [
+                10.0,
+                10.0,
+                0.0
+              ]
+            }
+          ],
+          "path_proxy_g_s": 9.300716198869308,
+          "reason": "REQUEST_ALLOW_REVERSE_MISMATCH",
+          "search_elapsed_at_audit_s": 2.1917210129322484,
+          "status": "REJECTED"
+        },
+        {
+          "accepted": false,
+          "audit_wall_time_s": 3.324402496218681e-05,
+          "detail": "authoritative edge 0 allow_reverse=False differs from the request True",
+          "duration_s": null,
+          "edge_count": 5,
+          "failure_code": "REQUEST_ALLOW_REVERSE_MISMATCH",
+          "failure_constraint": "",
+          "failure_detail": "authoritative edge 0 allow_reverse=False differs from the request True",
+          "failure_vehicle_id": null,
+          "feasible": false,
+          "path": [
+            {
+              "a_labels": [
+                "A_arc_crop_p0_2_neg_gear---",
+                "A_arc_p0_2_neg_gear---",
+                "A_arc_p0_2_pos_gear+++"
+              ],
+              "cumulative_proxy_g_s": 2.922769491105498,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": 0.4636476090008061,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "end_qf": [
+                10.0,
+                10.0,
+                0.0
+              ],
+              "index": 1,
+              "mode": "S",
+              "parameter_length": 0.4636476090008061,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "S_SPIN",
+              "start_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "start_qf": [
+                10.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p0_2_neg_gear---",
+                "A_arc_p0_2_pos_gear+++"
+              ],
+              "cumulative_proxy_g_s": 11.843771118613933,
+              "delta_psi": -1.5707963267948966,
+              "directions": {
+                "1": -1,
+                "2": -1,
+                "3": -1
+              },
+              "end_headings": {
+                "1": -1.1071487177940904,
+                "2": -1.5707963267948966,
+                "3": -1.5707963267948966
+              },
+              "end_qf": [
+                8.0,
+                12.0,
+                -1.5707963267948966
+              ],
+              "index": 2,
+              "mode": "A",
+              "parameter_length": 1.5707963267948966,
+              "pivot": [
+                0.0,
+                2.0
+              ],
+              "primitive": "A_ARC",
+              "start_headings": {
+                "1": 0.4636476090008061,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "start_qf": [
+                10.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p0_2_neg_gear---",
+                "A_arc_p0_2_pos_gear+++"
+              ],
+              "cumulative_proxy_g_s": 15.771853486249785,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": -1.1071487177940904,
+                "2": -1.5707963267948966,
+                "3": -1.5707963267948966
+              },
+              "end_qf": [
+                8.707106781186548,
+                11.292893218813452,
+                -1.5707963267948966
+              ],
+              "index": 3,
+              "mode": "O",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "O_TRANSLATION",
+              "start_headings": {
+                "1": -1.1071487177940904,
+                "2": -1.5707963267948966,
+                "3": -1.5707963267948966
+              },
+              "start_qf": [
+                8.0,
+                12.0,
+                -1.5707963267948966
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p0_2_neg_gear---",
+                "A_arc_p0_2_pos_gear+++"
+              ],
+              "cumulative_proxy_g_s": 17.021853486249785,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": -1.1071487177940904,
+                "2": -1.5707963267948966,
+                "3": -1.5707963267948966
+              },
+              "end_qf": [
+                9.414213562373096,
+                10.585786437626904,
+                -1.5707963267948966
+              ],
+              "index": 4,
+              "mode": "O",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "O_TRANSLATION",
+              "start_headings": {
+                "1": -1.1071487177940904,
+                "2": -1.5707963267948966,
+                "3": -1.5707963267948966
+              },
+              "start_qf": [
+                8.707106781186548,
+                11.292893218813452,
+                -1.5707963267948966
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p0_2_neg_gear---",
+                "A_arc_p0_2_pos_gear+++"
+              ],
+              "cumulative_proxy_g_s": 18.057387392182523,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": -1.1071487177940904,
+                "2": -1.5707963267948966,
+                "3": -1.5707963267948966
+              },
+              "end_qf": [
+                10.0,
+                10.0,
+                -1.5707963267948966
+              ],
+              "index": 5,
+              "mode": "O",
+              "parameter_length": 0.8284271247461891,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "O_TRANSLATION",
+              "start_headings": {
+                "1": -1.1071487177940904,
+                "2": -1.5707963267948966,
+                "3": -1.5707963267948966
+              },
+              "start_qf": [
+                9.414213562373096,
+                10.585786437626904,
+                -1.5707963267948966
+              ]
+            }
+          ],
+          "path_proxy_g_s": 18.057387392182523,
+          "reason": "REQUEST_ALLOW_REVERSE_MISMATCH",
+          "search_elapsed_at_audit_s": 7.549617127981037,
+          "status": "REJECTED"
+        },
+        {
+          "accepted": false,
+          "audit_wall_time_s": 3.324402496218681e-05,
+          "detail": "authoritative edge 0 allow_reverse=False differs from the request True",
+          "duration_s": null,
+          "edge_count": 6,
+          "failure_code": "REQUEST_ALLOW_REVERSE_MISMATCH",
+          "failure_constraint": "",
+          "failure_detail": "authoritative edge 0 allow_reverse=False differs from the request True",
+          "failure_vehicle_id": null,
+          "feasible": false,
+          "path": [
+            {
+              "a_labels": [
+                "A_arc_crop_p0_2_neg_gear---",
+                "A_arc_p0_2_neg_gear---",
+                "A_arc_p0_2_pos_gear+++"
+              ],
+              "cumulative_proxy_g_s": 2.922769491105498,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": 0.4636476090008061,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "end_qf": [
+                10.0,
+                10.0,
+                0.0
+              ],
+              "index": 1,
+              "mode": "S",
+              "parameter_length": 0.4636476090008061,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "S_SPIN",
+              "start_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "start_qf": [
+                10.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p0_2_neg_gear---",
+                "A_arc_p0_2_pos_gear+++"
+              ],
+              "cumulative_proxy_g_s": 11.843771118613933,
+              "delta_psi": -1.5707963267948966,
+              "directions": {
+                "1": -1,
+                "2": -1,
+                "3": -1
+              },
+              "end_headings": {
+                "1": -1.1071487177940904,
+                "2": -1.5707963267948966,
+                "3": -1.5707963267948966
+              },
+              "end_qf": [
+                8.0,
+                12.0,
+                -1.5707963267948966
+              ],
+              "index": 2,
+              "mode": "A",
+              "parameter_length": 1.5707963267948966,
+              "pivot": [
+                0.0,
+                2.0
+              ],
+              "primitive": "A_ARC",
+              "start_headings": {
+                "1": 0.4636476090008061,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "start_qf": [
+                10.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p0_2_neg_gear---",
+                "A_arc_p0_2_pos_gear+++"
+              ],
+              "cumulative_proxy_g_s": 15.771853486249785,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": -1.1071487177940904,
+                "2": -1.5707963267948966,
+                "3": -1.5707963267948966
+              },
+              "end_qf": [
+                8.707106781186548,
+                11.292893218813452,
+                -1.5707963267948966
+              ],
+              "index": 3,
+              "mode": "O",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "O_TRANSLATION",
+              "start_headings": {
+                "1": -1.1071487177940904,
+                "2": -1.5707963267948966,
+                "3": -1.5707963267948966
+              },
+              "start_qf": [
+                8.0,
+                12.0,
+                -1.5707963267948966
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p0_2_neg_gear---",
+                "A_arc_p0_2_pos_gear+++"
+              ],
+              "cumulative_proxy_g_s": 17.021853486249785,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": -1.1071487177940904,
+                "2": -1.5707963267948966,
+                "3": -1.5707963267948966
+              },
+              "end_qf": [
+                9.414213562373096,
+                10.585786437626904,
+                -1.5707963267948966
+              ],
+              "index": 4,
+              "mode": "O",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "O_TRANSLATION",
+              "start_headings": {
+                "1": -1.1071487177940904,
+                "2": -1.5707963267948966,
+                "3": -1.5707963267948966
+              },
+              "start_qf": [
+                8.707106781186548,
+                11.292893218813452,
+                -1.5707963267948966
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p0_2_neg_gear---",
+                "A_arc_p0_2_pos_gear+++"
+              ],
+              "cumulative_proxy_g_s": 18.271853486249785,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": -1.1071487177940904,
+                "2": -1.5707963267948966,
+                "3": -1.5707963267948966
+              },
+              "end_qf": [
+                10.121320343559644,
+                9.878679656440356,
+                -1.5707963267948966
+              ],
+              "index": 5,
+              "mode": "O",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "O_TRANSLATION",
+              "start_headings": {
+                "1": -1.1071487177940904,
+                "2": -1.5707963267948966,
+                "3": -1.5707963267948966
+              },
+              "start_qf": [
+                9.414213562373096,
+                10.585786437626904,
+                -1.5707963267948966
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p0_2_neg_gear---",
+                "A_arc_p0_2_pos_gear+++"
+              ],
+              "cumulative_proxy_g_s": 18.48631958031705,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": -1,
+                "2": -1,
+                "3": -1
+              },
+              "end_headings": {
+                "1": -1.1071487177940904,
+                "2": -1.5707963267948966,
+                "3": -1.5707963267948966
+              },
+              "end_qf": [
+                10.0,
+                10.0,
+                -1.5707963267948966
+              ],
+              "index": 6,
+              "mode": "O",
+              "parameter_length": 0.17157287525381154,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "O_TRANSLATION",
+              "start_headings": {
+                "1": -1.1071487177940904,
+                "2": -1.5707963267948966,
+                "3": -1.5707963267948966
+              },
+              "start_qf": [
+                10.121320343559644,
+                9.878679656440356,
+                -1.5707963267948966
+              ]
+            }
+          ],
+          "path_proxy_g_s": 18.48631958031705,
+          "reason": "REQUEST_ALLOW_REVERSE_MISMATCH",
+          "search_elapsed_at_audit_s": 7.859810711001046,
+          "status": "REJECTED"
+        },
+        {
+          "accepted": false,
+          "audit_wall_time_s": 3.9180973544716835e-05,
+          "detail": "authoritative edge 0 allow_reverse=False differs from the request True",
+          "duration_s": null,
+          "edge_count": 6,
+          "failure_code": "REQUEST_ALLOW_REVERSE_MISMATCH",
+          "failure_constraint": "",
+          "failure_detail": "authoritative edge 0 allow_reverse=False differs from the request True",
+          "failure_vehicle_id": null,
+          "feasible": false,
+          "path": [
+            {
+              "a_labels": [
+                "A_arc_crop_p0_2_neg_gear---",
+                "A_arc_p0_2_neg_gear---",
+                "A_arc_p0_2_pos_gear+++"
+              ],
+              "cumulative_proxy_g_s": 2.922769491105498,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": 0.4636476090008061,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "end_qf": [
+                10.0,
+                10.0,
+                0.0
+              ],
+              "index": 1,
+              "mode": "S",
+              "parameter_length": 0.4636476090008061,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "S_SPIN",
+              "start_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "start_qf": [
+                10.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p0_2_neg_gear---",
+                "A_arc_p0_2_pos_gear+++"
+              ],
+              "cumulative_proxy_g_s": 11.843771118613933,
+              "delta_psi": -1.5707963267948966,
+              "directions": {
+                "1": -1,
+                "2": -1,
+                "3": -1
+              },
+              "end_headings": {
+                "1": -1.1071487177940904,
+                "2": -1.5707963267948966,
+                "3": -1.5707963267948966
+              },
+              "end_qf": [
+                8.0,
+                12.0,
+                -1.5707963267948966
+              ],
+              "index": 2,
+              "mode": "A",
+              "parameter_length": 1.5707963267948966,
+              "pivot": [
+                0.0,
+                2.0
+              ],
+              "primitive": "A_ARC",
+              "start_headings": {
+                "1": 0.4636476090008061,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "start_qf": [
+                10.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p0_2_neg_gear---",
+                "A_arc_p0_2_pos_gear+++"
+              ],
+              "cumulative_proxy_g_s": 14.742172967151333,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": -1.1071487177940904,
+                "2": -1.5707963267948966,
+                "3": -1.5707963267948966
+              },
+              "end_qf": [
+                8.0,
+                11.0,
+                -1.5707963267948966
+              ],
+              "index": 3,
+              "mode": "O",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "O_TRANSLATION",
+              "start_headings": {
+                "1": -1.1071487177940904,
+                "2": -1.5707963267948966,
+                "3": -1.5707963267948966
+              },
+              "start_qf": [
+                8.0,
+                12.0,
+                -1.5707963267948966
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p0_2_neg_gear---",
+                "A_arc_p0_2_pos_gear+++"
+              ],
+              "cumulative_proxy_g_s": 17.982949912614103,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": -1.1071487177940904,
+                "2": -1.5707963267948966,
+                "3": -1.5707963267948966
+              },
+              "end_qf": [
+                8.707106781186548,
+                10.292893218813452,
+                -1.5707963267948966
+              ],
+              "index": 4,
+              "mode": "O",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "O_TRANSLATION",
+              "start_headings": {
+                "1": -1.1071487177940904,
+                "2": -1.5707963267948966,
+                "3": -1.5707963267948966
+              },
+              "start_qf": [
+                8.0,
+                11.0,
+                -1.5707963267948966
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p0_2_neg_gear---",
+                "A_arc_p0_2_pos_gear+++"
+              ],
+              "cumulative_proxy_g_s": 20.854519111590108,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": -1.1071487177940904,
+                "2": -1.5707963267948966,
+                "3": -1.5707963267948966
+              },
+              "end_qf": [
+                9.682393643361515,
+                10.071950836123058,
+                -1.5707963267948966
+              ],
+              "index": 5,
+              "mode": "O",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "O_TRANSLATION",
+              "start_headings": {
+                "1": -1.1071487177940904,
+                "2": -1.5707963267948966,
+                "3": -1.5707963267948966
+              },
+              "start_qf": [
+                8.707106781186548,
+                10.292893218813452,
+                -1.5707963267948966
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p0_2_neg_gear---",
+                "A_arc_p0_2_pos_gear+++"
+              ],
+              "cumulative_proxy_g_s": 21.261586981768065,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": -1.1071487177940904,
+                "2": -1.5707963267948966,
+                "3": -1.5707963267948966
+              },
+              "end_qf": [
+                10.0,
+                10.0,
+                -1.5707963267948966
+              ],
+              "index": 6,
+              "mode": "O",
+              "parameter_length": 0.32565429614236624,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "O_TRANSLATION",
+              "start_headings": {
+                "1": -1.1071487177940904,
+                "2": -1.5707963267948966,
+                "3": -1.5707963267948966
+              },
+              "start_qf": [
+                9.682393643361515,
+                10.071950836123058,
+                -1.5707963267948966
+              ]
+            }
+          ],
+          "path_proxy_g_s": 21.261586981768065,
+          "reason": "REQUEST_ALLOW_REVERSE_MISMATCH",
+          "search_elapsed_at_audit_s": 15.034174371976405,
+          "status": "REJECTED"
+        },
+        {
+          "accepted": false,
+          "audit_wall_time_s": 3.799400292336941e-05,
+          "detail": "authoritative edge 0 allow_reverse=False differs from the request True",
+          "duration_s": null,
+          "edge_count": 5,
+          "failure_code": "REQUEST_ALLOW_REVERSE_MISMATCH",
+          "failure_constraint": "",
+          "failure_detail": "authoritative edge 0 allow_reverse=False differs from the request True",
+          "failure_vehicle_id": null,
+          "feasible": false,
+          "path": [
+            {
+              "a_labels": [
+                "A_arc_crop_p2_0_neg_gear-+-",
+                "A_arc_p2_0_neg_gear-+-",
+                "A_arc_p2_0_pos_gear+-+"
+              ],
+              "cumulative_proxy_g_s": 4.306705388348112,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": -1,
+                "2": 1,
+                "3": -1
+              },
+              "end_headings": {
+                "1": -1.5707963267948966,
+                "2": 1.1071487177940904,
+                "3": -1.1071487177940904
+              },
+              "end_qf": [
+                10.0,
+                10.0,
+                0.0
+              ],
+              "index": 1,
+              "mode": "S",
+              "parameter_length": 1.5707963267948966,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "S_SPIN",
+              "start_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "start_qf": [
+                10.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p2_0_neg_gear-+-",
+                "A_arc_p2_0_pos_gear+-+"
+              ],
+              "cumulative_proxy_g_s": 11.727729997276139,
+              "delta_psi": -1.5707963267948966,
+              "directions": {
+                "1": -1,
+                "2": 1,
+                "3": -1
+              },
+              "end_headings": {
+                "1": -3.141592653589793,
+                "2": -0.46364760900080615,
+                "3": -2.677945044588987
+              },
+              "end_qf": [
+                12.0,
+                12.0,
+                -1.5707963267948966
+              ],
+              "index": 2,
+              "mode": "A",
+              "parameter_length": 1.5707963267948966,
+              "pivot": [
+                2.0,
+                0.0
+              ],
+              "primitive": "A_ARC",
+              "start_headings": {
+                "1": -1.5707963267948966,
+                "2": 1.1071487177940904,
+                "3": -1.1071487177940904
+              },
+              "start_qf": [
+                10.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p2_0_neg_gear-+-",
+                "A_arc_p2_0_pos_gear+-+"
+              ],
+              "cumulative_proxy_g_s": 16.335668291184795,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": -1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": -3.141592653589793,
+                "2": -0.46364760900080615,
+                "3": -2.677945044588987
+              },
+              "end_qf": [
+                11.292893218813452,
+                11.292893218813452,
+                -1.5707963267948966
+              ],
+              "index": 3,
+              "mode": "O",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "O_TRANSLATION",
+              "start_headings": {
+                "1": -3.141592653589793,
+                "2": -0.46364760900080615,
+                "3": -2.677945044588987
+              },
+              "start_qf": [
+                12.0,
+                12.0,
+                -1.5707963267948966
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p2_0_neg_gear-+-",
+                "A_arc_p2_0_pos_gear+-+"
+              ],
+              "cumulative_proxy_g_s": 17.585668291184795,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": -1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": -3.141592653589793,
+                "2": -0.46364760900080615,
+                "3": -2.677945044588987
+              },
+              "end_qf": [
+                10.585786437626904,
+                10.585786437626904,
+                -1.5707963267948966
+              ],
+              "index": 4,
+              "mode": "O",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "O_TRANSLATION",
+              "start_headings": {
+                "1": -3.141592653589793,
+                "2": -0.46364760900080615,
+                "3": -2.677945044588987
+              },
+              "start_qf": [
+                11.292893218813452,
+                11.292893218813452,
+                -1.5707963267948966
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p2_0_neg_gear-+-",
+                "A_arc_p2_0_pos_gear+-+"
+              ],
+              "cumulative_proxy_g_s": 18.621202197117533,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": -1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": -3.141592653589793,
+                "2": -0.46364760900080615,
+                "3": -2.677945044588987
+              },
+              "end_qf": [
+                10.0,
+                10.0,
+                -1.5707963267948966
+              ],
+              "index": 5,
+              "mode": "O",
+              "parameter_length": 0.8284271247461891,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "O_TRANSLATION",
+              "start_headings": {
+                "1": -3.141592653589793,
+                "2": -0.46364760900080615,
+                "3": -2.677945044588987
+              },
+              "start_qf": [
+                10.585786437626904,
+                10.585786437626904,
+                -1.5707963267948966
+              ]
+            }
+          ],
+          "path_proxy_g_s": 18.621202197117533,
+          "reason": "REQUEST_ALLOW_REVERSE_MISMATCH",
+          "search_elapsed_at_audit_s": 16.863911352935247,
+          "status": "REJECTED"
+        },
+        {
+          "accepted": false,
+          "audit_wall_time_s": 3.9180973544716835e-05,
+          "detail": "authoritative edge 0 allow_reverse=False differs from the request True",
+          "duration_s": null,
+          "edge_count": 6,
+          "failure_code": "REQUEST_ALLOW_REVERSE_MISMATCH",
+          "failure_constraint": "",
+          "failure_detail": "authoritative edge 0 allow_reverse=False differs from the request True",
+          "failure_vehicle_id": null,
+          "feasible": false,
+          "path": [
+            {
+              "a_labels": [
+                "A_arc_crop_p2_0_neg_gear-+-",
+                "A_arc_p2_0_neg_gear-+-",
+                "A_arc_p2_0_pos_gear+-+"
+              ],
+              "cumulative_proxy_g_s": 4.306705388348112,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": -1,
+                "2": 1,
+                "3": -1
+              },
+              "end_headings": {
+                "1": -1.5707963267948966,
+                "2": 1.1071487177940904,
+                "3": -1.1071487177940904
+              },
+              "end_qf": [
+                10.0,
+                10.0,
+                0.0
+              ],
+              "index": 1,
+              "mode": "S",
+              "parameter_length": 1.5707963267948966,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "S_SPIN",
+              "start_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "start_qf": [
+                10.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p2_0_neg_gear-+-",
+                "A_arc_p2_0_pos_gear+-+"
+              ],
+              "cumulative_proxy_g_s": 11.727729997276139,
+              "delta_psi": -1.5707963267948966,
+              "directions": {
+                "1": -1,
+                "2": 1,
+                "3": -1
+              },
+              "end_headings": {
+                "1": -3.141592653589793,
+                "2": -0.46364760900080615,
+                "3": -2.677945044588987
+              },
+              "end_qf": [
+                12.0,
+                12.0,
+                -1.5707963267948966
+              ],
+              "index": 2,
+              "mode": "A",
+              "parameter_length": 1.5707963267948966,
+              "pivot": [
+                2.0,
+                0.0
+              ],
+              "primitive": "A_ARC",
+              "start_headings": {
+                "1": -1.5707963267948966,
+                "2": 1.1071487177940904,
+                "3": -1.1071487177940904
+              },
+              "start_qf": [
+                10.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p2_0_neg_gear-+-",
+                "A_arc_p2_0_pos_gear+-+"
+              ],
+              "cumulative_proxy_g_s": 16.335668291184795,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": -1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": -3.141592653589793,
+                "2": -0.46364760900080615,
+                "3": -2.677945044588987
+              },
+              "end_qf": [
+                11.292893218813452,
+                11.292893218813452,
+                -1.5707963267948966
+              ],
+              "index": 3,
+              "mode": "O",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "O_TRANSLATION",
+              "start_headings": {
+                "1": -3.141592653589793,
+                "2": -0.46364760900080615,
+                "3": -2.677945044588987
+              },
+              "start_qf": [
+                12.0,
+                12.0,
+                -1.5707963267948966
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p2_0_neg_gear-+-",
+                "A_arc_p2_0_pos_gear+-+"
+              ],
+              "cumulative_proxy_g_s": 17.585668291184795,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": -1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": -3.141592653589793,
+                "2": -0.46364760900080615,
+                "3": -2.677945044588987
+              },
+              "end_qf": [
+                10.585786437626904,
+                10.585786437626904,
+                -1.5707963267948966
+              ],
+              "index": 4,
+              "mode": "O",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "O_TRANSLATION",
+              "start_headings": {
+                "1": -3.141592653589793,
+                "2": -0.46364760900080615,
+                "3": -2.677945044588987
+              },
+              "start_qf": [
+                11.292893218813452,
+                11.292893218813452,
+                -1.5707963267948966
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p2_0_neg_gear-+-",
+                "A_arc_p2_0_pos_gear+-+"
+              ],
+              "cumulative_proxy_g_s": 18.835668291184795,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": -1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": -3.141592653589793,
+                "2": -0.46364760900080615,
+                "3": -2.677945044588987
+              },
+              "end_qf": [
+                9.878679656440356,
+                9.878679656440356,
+                -1.5707963267948966
+              ],
+              "index": 5,
+              "mode": "O",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "O_TRANSLATION",
+              "start_headings": {
+                "1": -3.141592653589793,
+                "2": -0.46364760900080615,
+                "3": -2.677945044588987
+              },
+              "start_qf": [
+                10.585786437626904,
+                10.585786437626904,
+                -1.5707963267948966
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p2_0_neg_gear-+-",
+                "A_arc_p2_0_pos_gear+-+"
+              ],
+              "cumulative_proxy_g_s": 19.05013438525206,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": -1,
+                "2": 1,
+                "3": -1
+              },
+              "end_headings": {
+                "1": -3.141592653589793,
+                "2": -0.46364760900080615,
+                "3": -2.677945044588987
+              },
+              "end_qf": [
+                10.0,
+                10.0,
+                -1.5707963267948966
+              ],
+              "index": 6,
+              "mode": "O",
+              "parameter_length": 0.17157287525381154,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "O_TRANSLATION",
+              "start_headings": {
+                "1": -3.141592653589793,
+                "2": -0.46364760900080615,
+                "3": -2.677945044588987
+              },
+              "start_qf": [
+                9.878679656440356,
+                9.878679656440356,
+                -1.5707963267948966
+              ]
+            }
+          ],
+          "path_proxy_g_s": 19.05013438525206,
+          "reason": "REQUEST_ALLOW_REVERSE_MISMATCH",
+          "search_elapsed_at_audit_s": 17.163362168939784,
+          "status": "REJECTED"
+        },
+        {
+          "accepted": false,
+          "audit_wall_time_s": 3.9180973544716835e-05,
+          "detail": "authoritative edge 0 allow_reverse=False differs from the request True",
+          "duration_s": null,
+          "edge_count": 5,
+          "failure_code": "REQUEST_ALLOW_REVERSE_MISMATCH",
+          "failure_constraint": "",
+          "failure_detail": "authoritative edge 0 allow_reverse=False differs from the request True",
+          "failure_vehicle_id": null,
+          "feasible": false,
+          "path": [
+            {
+              "a_labels": [
+                "A_arc_crop_p2_0_neg_gear++-",
+                "A_arc_p2_0_neg_gear++-",
+                "A_arc_p2_0_pos_gear--+"
+              ],
+              "cumulative_proxy_g_s": 4.306705388348112,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": -1
+              },
+              "end_headings": {
+                "1": 1.5707963267948966,
+                "2": 1.1071487177940904,
+                "3": -1.1071487177940904
+              },
+              "end_qf": [
+                10.0,
+                10.0,
+                0.0
+              ],
+              "index": 1,
+              "mode": "S",
+              "parameter_length": 1.5707963267948966,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "S_SPIN",
+              "start_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "start_qf": [
+                10.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p2_0_neg_gear++-",
+                "A_arc_p2_0_pos_gear--+"
+              ],
+              "cumulative_proxy_g_s": 11.72772999727614,
+              "delta_psi": -1.5707963267948966,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": -1
+              },
+              "end_headings": {
+                "1": 0.0,
+                "2": -0.46364760900080615,
+                "3": -2.677945044588987
+              },
+              "end_qf": [
+                12.0,
+                12.0,
+                -1.5707963267948966
+              ],
+              "index": 2,
+              "mode": "A",
+              "parameter_length": 1.5707963267948966,
+              "pivot": [
+                2.0,
+                0.0
+              ],
+              "primitive": "A_ARC",
+              "start_headings": {
+                "1": 1.5707963267948966,
+                "2": 1.1071487177940904,
+                "3": -1.1071487177940904
+              },
+              "start_qf": [
+                10.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p2_0_neg_gear++-",
+                "A_arc_p2_0_pos_gear--+"
+              ],
+              "cumulative_proxy_g_s": 16.3356682911848,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": -1,
+                "2": -1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": 0.0,
+                "2": -0.46364760900080615,
+                "3": -2.677945044588987
+              },
+              "end_qf": [
+                11.292893218813452,
+                11.292893218813452,
+                -1.5707963267948966
+              ],
+              "index": 3,
+              "mode": "O",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "O_TRANSLATION",
+              "start_headings": {
+                "1": 0.0,
+                "2": -0.46364760900080615,
+                "3": -2.677945044588987
+              },
+              "start_qf": [
+                12.0,
+                12.0,
+                -1.5707963267948966
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p2_0_neg_gear++-",
+                "A_arc_p2_0_pos_gear--+"
+              ],
+              "cumulative_proxy_g_s": 17.5856682911848,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": -1,
+                "2": -1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": 0.0,
+                "2": -0.46364760900080615,
+                "3": -2.677945044588987
+              },
+              "end_qf": [
+                10.585786437626904,
+                10.585786437626904,
+                -1.5707963267948966
+              ],
+              "index": 4,
+              "mode": "O",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "O_TRANSLATION",
+              "start_headings": {
+                "1": 0.0,
+                "2": -0.46364760900080615,
+                "3": -2.677945044588987
+              },
+              "start_qf": [
+                11.292893218813452,
+                11.292893218813452,
+                -1.5707963267948966
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p2_0_neg_gear++-",
+                "A_arc_p2_0_pos_gear--+"
+              ],
+              "cumulative_proxy_g_s": 18.621202197117537,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": -1,
+                "2": -1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": 0.0,
+                "2": -0.46364760900080615,
+                "3": -2.677945044588987
+              },
+              "end_qf": [
+                10.0,
+                10.0,
+                -1.5707963267948966
+              ],
+              "index": 5,
+              "mode": "O",
+              "parameter_length": 0.8284271247461891,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "O_TRANSLATION",
+              "start_headings": {
+                "1": 0.0,
+                "2": -0.46364760900080615,
+                "3": -2.677945044588987
+              },
+              "start_qf": [
+                10.585786437626904,
+                10.585786437626904,
+                -1.5707963267948966
+              ]
+            }
+          ],
+          "path_proxy_g_s": 18.621202197117537,
+          "reason": "REQUEST_ALLOW_REVERSE_MISMATCH",
+          "search_elapsed_at_audit_s": 18.079542035935447,
+          "status": "REJECTED"
+        },
+        {
+          "accepted": false,
+          "audit_wall_time_s": 3.324495628476143e-05,
+          "detail": "authoritative edge 0 allow_reverse=False differs from the request True",
+          "duration_s": null,
+          "edge_count": 6,
+          "failure_code": "REQUEST_ALLOW_REVERSE_MISMATCH",
+          "failure_constraint": "",
+          "failure_detail": "authoritative edge 0 allow_reverse=False differs from the request True",
+          "failure_vehicle_id": null,
+          "feasible": false,
+          "path": [
+            {
+              "a_labels": [
+                "A_arc_crop_p2_0_neg_gear++-",
+                "A_arc_p2_0_neg_gear++-",
+                "A_arc_p2_0_pos_gear--+"
+              ],
+              "cumulative_proxy_g_s": 4.306705388348112,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": -1
+              },
+              "end_headings": {
+                "1": 1.5707963267948966,
+                "2": 1.1071487177940904,
+                "3": -1.1071487177940904
+              },
+              "end_qf": [
+                10.0,
+                10.0,
+                0.0
+              ],
+              "index": 1,
+              "mode": "S",
+              "parameter_length": 1.5707963267948966,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "S_SPIN",
+              "start_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "start_qf": [
+                10.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p2_0_neg_gear++-",
+                "A_arc_p2_0_pos_gear--+"
+              ],
+              "cumulative_proxy_g_s": 11.72772999727614,
+              "delta_psi": -1.5707963267948966,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": -1
+              },
+              "end_headings": {
+                "1": 0.0,
+                "2": -0.46364760900080615,
+                "3": -2.677945044588987
+              },
+              "end_qf": [
+                12.0,
+                12.0,
+                -1.5707963267948966
+              ],
+              "index": 2,
+              "mode": "A",
+              "parameter_length": 1.5707963267948966,
+              "pivot": [
+                2.0,
+                0.0
+              ],
+              "primitive": "A_ARC",
+              "start_headings": {
+                "1": 1.5707963267948966,
+                "2": 1.1071487177940904,
+                "3": -1.1071487177940904
+              },
+              "start_qf": [
+                10.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p2_0_neg_gear++-",
+                "A_arc_p2_0_pos_gear--+"
+              ],
+              "cumulative_proxy_g_s": 16.3356682911848,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": -1,
+                "2": -1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": 0.0,
+                "2": -0.46364760900080615,
+                "3": -2.677945044588987
+              },
+              "end_qf": [
+                11.292893218813452,
+                11.292893218813452,
+                -1.5707963267948966
+              ],
+              "index": 3,
+              "mode": "O",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "O_TRANSLATION",
+              "start_headings": {
+                "1": 0.0,
+                "2": -0.46364760900080615,
+                "3": -2.677945044588987
+              },
+              "start_qf": [
+                12.0,
+                12.0,
+                -1.5707963267948966
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p2_0_neg_gear++-",
+                "A_arc_p2_0_pos_gear--+"
+              ],
+              "cumulative_proxy_g_s": 17.5856682911848,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": -1,
+                "2": -1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": 0.0,
+                "2": -0.46364760900080615,
+                "3": -2.677945044588987
+              },
+              "end_qf": [
+                10.585786437626904,
+                10.585786437626904,
+                -1.5707963267948966
+              ],
+              "index": 4,
+              "mode": "O",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "O_TRANSLATION",
+              "start_headings": {
+                "1": 0.0,
+                "2": -0.46364760900080615,
+                "3": -2.677945044588987
+              },
+              "start_qf": [
+                11.292893218813452,
+                11.292893218813452,
+                -1.5707963267948966
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p2_0_neg_gear++-",
+                "A_arc_p2_0_pos_gear--+"
+              ],
+              "cumulative_proxy_g_s": 18.8356682911848,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": -1,
+                "2": -1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": 0.0,
+                "2": -0.46364760900080615,
+                "3": -2.677945044588987
+              },
+              "end_qf": [
+                9.878679656440356,
+                9.878679656440356,
+                -1.5707963267948966
+              ],
+              "index": 5,
+              "mode": "O",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "O_TRANSLATION",
+              "start_headings": {
+                "1": 0.0,
+                "2": -0.46364760900080615,
+                "3": -2.677945044588987
+              },
+              "start_qf": [
+                10.585786437626904,
+                10.585786437626904,
+                -1.5707963267948966
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p2_0_neg_gear++-",
+                "A_arc_p2_0_pos_gear--+"
+              ],
+              "cumulative_proxy_g_s": 19.050134385252065,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": -1
+              },
+              "end_headings": {
+                "1": 0.0,
+                "2": -0.46364760900080615,
+                "3": -2.677945044588987
+              },
+              "end_qf": [
+                10.0,
+                10.0,
+                -1.5707963267948966
+              ],
+              "index": 6,
+              "mode": "O",
+              "parameter_length": 0.17157287525381154,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "O_TRANSLATION",
+              "start_headings": {
+                "1": 0.0,
+                "2": -0.46364760900080615,
+                "3": -2.677945044588987
+              },
+              "start_qf": [
+                9.878679656440356,
+                9.878679656440356,
+                -1.5707963267948966
+              ]
+            }
+          ],
+          "path_proxy_g_s": 19.050134385252065,
+          "reason": "REQUEST_ALLOW_REVERSE_MISMATCH",
+          "search_elapsed_at_audit_s": 18.384110145969316,
+          "status": "REJECTED"
+        },
+        {
+          "accepted": false,
+          "audit_wall_time_s": 3.3243908546864986e-05,
+          "detail": "authoritative edge 0 allow_reverse=False differs from the request True",
+          "duration_s": null,
+          "edge_count": 3,
+          "failure_code": "REQUEST_ALLOW_REVERSE_MISMATCH",
+          "failure_constraint": "",
+          "failure_detail": "authoritative edge 0 allow_reverse=False differs from the request True",
+          "failure_vehicle_id": null,
+          "feasible": false,
+          "path": [
+            {
+              "a_labels": [
+                "A_arc_crop_p0_0_neg_gear++-",
+                "A_arc_p0_0_neg_gear++-",
+                "A_arc_p0_0_pos_gear--+"
+              ],
+              "cumulative_proxy_g_s": 4.306705388348112,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": -1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": -1.5707963267948968,
+                "2": -2.4492935982947064e-16,
+                "3": 0.0
+              },
+              "end_qf": [
+                10.0,
+                10.0,
+                0.0
+              ],
+              "index": 1,
+              "mode": "S",
+              "parameter_length": 1.5707963267948968,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "S_SPIN",
+              "start_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "start_qf": [
+                10.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_crop_p0_0_neg_gear++-",
+                "A_arc_p0_0_neg_gear++-",
+                "A_arc_p0_0_pos_gear--+"
+              ],
+              "cumulative_proxy_g_s": 7.555386946874978,
+              "delta_psi": -0.17453292519943295,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": -1
+              },
+              "end_headings": {
+                "1": -1.7453292519943298,
+                "2": -0.1745329251994332,
+                "3": -0.17453292519943295
+              },
+              "end_qf": [
+                10.0,
+                10.0,
+                -0.17453292519943295
+              ],
+              "index": 2,
+              "mode": "A",
+              "parameter_length": 0.17453292519943295,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "A_ARC",
+              "start_headings": {
+                "1": -1.5707963267948968,
+                "2": -2.4492935982947064e-16,
+                "3": 0.0
+              },
+              "start_qf": [
+                10.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p0_0_neg_gear++-",
+                "A_arc_p0_0_pos_gear--+"
+              ],
+              "cumulative_proxy_g_s": 9.300716198869306,
+              "delta_psi": -1.3962634015954636,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": -1
+              },
+              "end_headings": {
+                "1": -3.141592653589793,
+                "2": -1.5707963267948968,
+                "3": -1.5707963267948966
+              },
+              "end_qf": [
+                10.0,
+                10.0,
+                -1.5707963267948966
+              ],
+              "index": 3,
+              "mode": "A",
+              "parameter_length": 1.3962634015954636,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "A_ARC",
+              "start_headings": {
+                "1": -1.7453292519943298,
+                "2": -0.1745329251994332,
+                "3": -0.17453292519943295
+              },
+              "start_qf": [
+                10.0,
+                10.0,
+                -0.17453292519943295
+              ]
+            }
+          ],
+          "path_proxy_g_s": 9.300716198869306,
+          "reason": "REQUEST_ALLOW_REVERSE_MISMATCH",
+          "search_elapsed_at_audit_s": 18.97424350795336,
+          "status": "REJECTED"
+        },
+        {
+          "accepted": false,
+          "audit_wall_time_s": 3.324495628476143e-05,
+          "detail": "authoritative edge 0 allow_reverse=False differs from the request True",
+          "duration_s": null,
+          "edge_count": 5,
+          "failure_code": "REQUEST_ALLOW_REVERSE_MISMATCH",
+          "failure_constraint": "",
+          "failure_detail": "authoritative edge 0 allow_reverse=False differs from the request True",
+          "failure_vehicle_id": null,
+          "feasible": false,
+          "path": [
+            {
+              "a_labels": [
+                "A_arc_crop_p0_0_neg_gear++-",
+                "A_arc_p0_0_neg_gear++-",
+                "A_arc_p0_0_pos_gear--+"
+              ],
+              "cumulative_proxy_g_s": 4.306705388348112,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": -1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": -1.5707963267948968,
+                "2": -2.4492935982947064e-16,
+                "3": 0.0
+              },
+              "end_qf": [
+                10.0,
+                10.0,
+                0.0
+              ],
+              "index": 1,
+              "mode": "S",
+              "parameter_length": 1.5707963267948968,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "S_SPIN",
+              "start_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "start_qf": [
+                10.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_crop_p0_0_neg_gear++-",
+                "A_arc_p0_0_neg_gear++-",
+                "A_arc_p0_0_pos_gear--+"
+              ],
+              "cumulative_proxy_g_s": 7.555386946874978,
+              "delta_psi": -0.17453292519943295,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": -1
+              },
+              "end_headings": {
+                "1": -1.7453292519943298,
+                "2": -0.1745329251994332,
+                "3": -0.17453292519943295
+              },
+              "end_qf": [
+                10.0,
+                10.0,
+                -0.17453292519943295
+              ],
+              "index": 2,
+              "mode": "A",
+              "parameter_length": 0.17453292519943295,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "A_ARC",
+              "start_headings": {
+                "1": -1.5707963267948968,
+                "2": -2.4492935982947064e-16,
+                "3": 0.0
+              },
+              "start_qf": [
+                10.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_crop_p0_0_neg_gear++-",
+                "A_arc_p0_0_neg_gear++-",
+                "A_arc_p0_0_pos_gear--+"
+              ],
+              "cumulative_proxy_g_s": 7.773553103374269,
+              "delta_psi": -0.17453292519943295,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": -1
+              },
+              "end_headings": {
+                "1": -1.9198621771937627,
+                "2": -0.3490658503988662,
+                "3": -0.3490658503988659
+              },
+              "end_qf": [
+                10.0,
+                10.0,
+                -0.3490658503988659
+              ],
+              "index": 3,
+              "mode": "A",
+              "parameter_length": 0.17453292519943295,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "A_ARC",
+              "start_headings": {
+                "1": -1.7453292519943298,
+                "2": -0.1745329251994332,
+                "3": -0.17453292519943295
+              },
+              "start_qf": [
+                10.0,
+                10.0,
+                -0.17453292519943295
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_crop_p0_0_neg_gear++-",
+                "A_arc_p0_0_neg_gear++-",
+                "A_arc_p0_0_pos_gear--+"
+              ],
+              "cumulative_proxy_g_s": 7.99171925987356,
+              "delta_psi": -0.17453292519943292,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": -1
+              },
+              "end_headings": {
+                "1": -2.0943951023931957,
+                "2": -0.5235987755982991,
+                "3": -0.5235987755982988
+              },
+              "end_qf": [
+                10.0,
+                10.0,
+                -0.5235987755982988
+              ],
+              "index": 4,
+              "mode": "A",
+              "parameter_length": 0.17453292519943295,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "A_ARC",
+              "start_headings": {
+                "1": -1.9198621771937627,
+                "2": -0.3490658503988662,
+                "3": -0.3490658503988659
+              },
+              "start_qf": [
+                10.0,
+                10.0,
+                -0.3490658503988659
+              ]
+            },
+            {
+              "a_labels": [
+                "A_arc_p0_0_neg_gear++-",
+                "A_arc_p0_0_pos_gear--+"
+              ],
+              "cumulative_proxy_g_s": 9.300716198869306,
+              "delta_psi": -1.0471975511965979,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": -1
+              },
+              "end_headings": {
+                "1": -3.1415926535897936,
+                "2": -1.570796326794897,
+                "3": -1.5707963267948966
+              },
+              "end_qf": [
+                10.0,
+                10.0,
+                -1.5707963267948966
+              ],
+              "index": 5,
+              "mode": "A",
+              "parameter_length": 1.0471975511965979,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "A_ARC",
+              "start_headings": {
+                "1": -2.0943951023931957,
+                "2": -0.5235987755982991,
+                "3": -0.5235987755982988
+              },
+              "start_qf": [
+                10.0,
+                10.0,
+                -0.5235987755982988
+              ]
+            }
+          ],
+          "path_proxy_g_s": 9.300716198869306,
+          "reason": "REQUEST_ALLOW_REVERSE_MISMATCH",
+          "search_elapsed_at_audit_s": 19.53115838195663,
+          "status": "REJECTED"
+        }
+      ],
+      "terminal_rejection_histogram": {
+        "REQUEST_ALLOW_REVERSE_MISMATCH": 11
+      },
+      "wall_time_s": 30.126238759956323
+    },
+    "status": "BUDGET_EXHAUSTED",
+    "wall_time_s": 30.14868955593556
+  },
+  "samples": null
+}

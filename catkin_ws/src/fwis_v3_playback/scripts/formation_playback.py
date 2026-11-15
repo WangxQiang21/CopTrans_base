@@ -19,20 +19,25 @@ from geometry_msgs.msg import Point, Quaternion, TransformStamped, Vector3, Pose
 from std_msgs.msg import ColorRGBA
 from tf.transformations import quaternion_from_euler
 from tf2_ros import TransformBroadcaster
-from fwis_v3_msgs.msg import FormationTimedTrajectory, FormationPlanRequest
+from fwis_v3_msgs.msg import (
+    FormationPlaybackPlan, FormationTimedTrajectory, FormationPlanRequest)
 
 from fwis_v3_optimizer.formation_playback import (
     CLEARED,
     INVALID,
+    PLAYBACK_PLAN_BACKEND,
+    PLAYBACK_PLAN_SCHEMA,
     PlaybackMarkerOptions,
     PlaybackValidationError,
     build_markers,
     clear_marker_specs,
+    fields_from_timed_message,
     frame_at,
     status_document,
     terminal_errors,
     tf_frame_prefix,
     trajectory_from_fields,
+    verify_uniform_playback_plan,
     PlaybackVehicleSpec,
     build_hold_markers,
 )
@@ -41,6 +46,8 @@ from fwis_v3_optimizer.transport_contract import load_contract
 MARKER_TOPIC = "/formation/markers"
 STATUS_TOPIC = "/formation/playback_status"
 TRAJECTORY_TOPIC = "/formation/timed_trajectory"
+PLAYBACK_PLAN_TOPIC = "/formation/playback_plan"
+JOB_STATE_TOPIC = "/formation/job_state"
 OPTIMIZER_STATUS_TOPIC = "/formation/optimizer_status"
 QUALITY_TOPIC = "/formation/quality_report"
 
@@ -61,46 +68,7 @@ def _seconds(value):
 
 def fields_from_message(message):
     """Convert the ROS message into plain display fields, failing closed."""
-    if not hasattr(message, "header"):
-        raise PlaybackValidationError("message has no header")
-    vehicles = []
-    for vehicle in message.vehicles:
-        offset = vehicle.offset_in_formation
-        vehicles.append({
-            "vehicle_id": int(vehicle.vehicle_id),
-            "offset": (float(offset.x), float(offset.y)),
-            "body_length_m": float(vehicle.body_length_m),
-            "body_width_m": float(vehicle.body_width_m),
-        })
-    trajectories = []
-    for trajectory in message.trajectories:
-        points = []
-        for point in trajectory.points:
-            pose = point.center_pose
-            points.append((
-                _seconds(point.time_from_start),
-                float(pose.x), float(pose.y), float(pose.theta),
-                float(point.center_speed_mps),
-                float(point.center_yaw_rate_radps),
-                int(point.mode), float(point.mode_control)))
-        trajectories.append({
-            "vehicle_id": int(trajectory.vehicle_id),
-            "points": tuple(points),
-        })
-    return {
-        "frame_id": message.header.frame_id,
-        "stamp": (int(message.header.stamp.secs),
-                  int(message.header.stamp.nsecs)),
-        "plan_id": int(message.plan_id),
-        "formation_id": message.formation_id,
-        "vehicles": tuple(vehicles),
-        "formation_poses": tuple(
-            (float(pose.x), float(pose.y), float(pose.theta))
-            for pose in message.formation_poses),
-        "times_from_start": tuple(
-            _seconds(value) for value in message.times_from_start),
-        "trajectories": tuple(trajectories),
-    }
+    return fields_from_timed_message(message)
 
 
 class FormationPlaybackNode:
@@ -144,6 +112,15 @@ class FormationPlaybackNode:
             text_height_m=float(rospy.get_param("~text_height", 0.35)),
             arrow_head_length_m=float(
                 rospy.get_param("~arrow_head_length", 0.08)))
+        self.backend = str(rospy.get_param("~backend", "legacy"))
+        if self.backend not in ("legacy", PLAYBACK_PLAN_BACKEND):
+            raise ValueError(
+                "~backend must be 'legacy' or {!r}, got {!r}".format(
+                    PLAYBACK_PLAN_BACKEND, self.backend))
+        self._job_state = "IDLE"
+        self._job_state_plan = None
+        self._playback_model_sha256 = None
+        self._playback_semantic_version = None
         self.trajectory = None
         self.optimizer_status = None
         self.quality_report = None
@@ -155,9 +132,16 @@ class FormationPlaybackNode:
             STATUS_TOPIC, String, queue_size=1, latch=True)
         self.tf_broadcaster = (TransformBroadcaster()
                                if self.publish_tf else None)
-        rospy.Subscriber(
-            TRAJECTORY_TOPIC, FormationTimedTrajectory,
-            self.on_trajectory, queue_size=1)
+        if self.backend == PLAYBACK_PLAN_BACKEND:
+            rospy.Subscriber(
+                PLAYBACK_PLAN_TOPIC, FormationPlaybackPlan,
+                self.on_playback_plan, queue_size=1)
+            rospy.Subscriber(
+                JOB_STATE_TOPIC, String, self.on_job_state, queue_size=1)
+        else:
+            rospy.Subscriber(
+                TRAJECTORY_TOPIC, FormationTimedTrajectory,
+                self.on_trajectory, queue_size=1)
         rospy.Subscriber(
             OPTIMIZER_STATUS_TOPIC, String, self.on_optimizer_status,
             queue_size=1)
@@ -216,6 +200,90 @@ class FormationPlaybackNode:
         self._publish_tick()
 
     @synchronized
+    def on_job_state(self, message):
+        report = self._parse_json(message, "job_state")
+        if report is None:
+            return
+        state = report.get("state")
+        if state not in ("IDLE", "PLANNING", "PLAYING", "HOLD_END", "FAILED"):
+            return
+        plan_id = report.get("plan_id")
+        self._job_state = state
+        self._job_state_plan = plan_id
+        if (state == "PLANNING" and plan_id is not None and
+                self.trajectory is not None and
+                self.trajectory.plan_id != plan_id):
+            # A new experiment was admitted.  Clear the previous animation
+            # even when this node is not subscribed to /formation/plan_request.
+            self._clear(
+                "new experiment {} admitted".format(plan_id),
+                freeze=True, hold_reason="PLANNING")
+            return
+        if (state == "FAILED" and plan_id == self._active_plan and
+                self.trajectory is not None):
+            self._clear(
+                "job failed: {}".format(
+                    report.get("reason") or report.get("detail") or state),
+                freeze=True, hold_reason="FAILED: {}".format(
+                    report.get("reason") or report.get("detail") or state))
+            return
+        if state == "FAILED" and self.trajectory is None:
+            self._hold_reason = "FAILED: {}".format(
+                report.get("reason") or report.get("detail") or "planning")
+
+    @synchronized
+    def on_playback_plan(self, message):
+        """Accept only an atomic, model-bound V0.2 playback envelope."""
+        if self._previewing:
+            return
+        if (self._active_plan is not None and
+                message.plan_id < self._active_plan):
+            return
+        try:
+            if message.header.frame_id != self.frame_id:
+                raise PlaybackValidationError(
+                    "playback plan frame_id {!r} differs from ~frame_id {!r}"
+                    .format(message.header.frame_id, self.frame_id))
+            envelope_stamp = (int(message.header.stamp.secs),
+                              int(message.header.stamp.nsecs))
+            fields = fields_from_timed_message(message.trajectory)
+            if fields["stamp"] != envelope_stamp:
+                raise PlaybackValidationError(
+                    "envelope header stamp differs from the embedded "
+                    "trajectory stamp")
+            trajectory, plan, digest = verify_uniform_playback_plan(
+                plan_id=int(message.plan_id),
+                formation_id=message.formation_id,
+                backend=message.backend,
+                semantic_version=message.semantic_version,
+                model_version=message.model_version,
+                model_sha256=message.model_sha256,
+                model_json=message.model_json,
+                certification=message.certification,
+                trajectory_fields=fields)
+        except (PlaybackValidationError, AttributeError, TypeError,
+                ValueError, KeyError, IndexError) as exc:
+            rospy.logerr(
+                "[formation playback] rejecting playback plan %s: %s",
+                getattr(message, "plan_id", None), exc)
+            self._clear("invalid playback plan: {}".format(exc), freeze=False)
+            return
+        self.trajectory = trajectory
+        self.hold = None
+        self._active_plan = trajectory.plan_id
+        self._tf_prefix = tf_frame_prefix(trajectory.formation_id)
+        self._playback_model_sha256 = digest
+        self._playback_semantic_version = message.semantic_version
+        self._last_state = None
+        rospy.loginfo(
+            "[formation playback] accepted uniform_v02 plan %s formation %s "
+            "model_sha256=%s: %d vehicles, %d shared samples, T_end=%.6f s",
+            trajectory.plan_id, trajectory.formation_id, digest,
+            len(trajectory.vehicles), trajectory.sample_count,
+            trajectory.duration)
+        self._publish_tick()
+
+    @synchronized
     def on_optimizer_status(self, message):
         report = self._parse_json(message, "optimizer_status")
         if report is None:
@@ -238,6 +306,29 @@ class FormationPlaybackNode:
 
     @synchronized
     def on_request(self, message):
+        if (self.backend == PLAYBACK_PLAN_BACKEND and
+                self._job_state in ("PLANNING", "PLAYING") and
+                message.plan_id != self._job_state_plan):
+            # A busy-admission rejection must not clear or restart the active
+            # replay.  The planner never admits this request; a direct
+            # injection reaches playback only as an ignored request.
+            rospy.logwarn(
+                "[formation playback] ignoring busy plan_request %s while "
+                "job %s is %s", message.plan_id, self._job_state_plan,
+                self._job_state)
+            return
+        if (self.backend == PLAYBACK_PLAN_BACKEND and
+                self.trajectory is not None and
+                self.trajectory.plan_id == message.plan_id):
+            # The atomic envelope for this admitted request may arrive before
+            # the request itself.  Never clear a trajectory that is already
+            # playing the same plan.
+            return
+        if (self.backend == PLAYBACK_PLAN_BACKEND and
+                self._active_plan is not None and
+                message.plan_id < self._active_plan):
+            # A stale latched request must not replace a newer experiment.
+            return
         self._previewing = False
         self._active_plan = message.plan_id
         self._hold_reason = "PLANNING"
@@ -341,6 +432,23 @@ class FormationPlaybackNode:
         if not (isinstance(report, dict) and report.get(
                 "plan_id") == self.trajectory.plan_id):
             return None
+        # A verified uniform_v02 envelope carries its authoritative model
+        # digest.  The audit status must belong to exactly that model; a
+        # status for another digest/formation (or one missing the identity)
+        # must never certify this replay.  Legacy trajectories keep the
+        # historical plan_id-only rule.
+        digest = self.trajectory.model_sha256
+        if digest is not None and (
+                report.get("model_sha256") != digest or
+                report.get("formation_id") != self.trajectory.formation_id or
+                report.get("backend") != PLAYBACK_PLAN_BACKEND):
+            rospy.logwarn_throttle(
+                5.0,
+                "[formation playback] ignoring audit status for plan %s: "
+                "identity differs from the verified envelope "
+                "(model_sha256/formation_id/backend)",
+                self.trajectory.plan_id)
+            return None
         # The optimizer status is deliberately compact; the independent
         # evaluation metrics live in the latched quality report.  Merge that
         # report's pipeline block (without changing any certification field)
@@ -378,7 +486,10 @@ class FormationPlaybackNode:
             trajectory, frame, status, marker_count=len(markers),
             namespaces=namespaces,
             terminal_center_error_m=center_error,
-            terminal_heading_error_rad=heading_error)
+            terminal_heading_error_rad=heading_error,
+            model_sha256=self._playback_model_sha256,
+            backend=self.backend,
+            semantic_version=self._playback_semantic_version)
         try:
             payload = json.dumps(
                 document, sort_keys=True, allow_nan=False)
@@ -452,8 +563,9 @@ class FormationPlaybackNode:
             array.markers.append(marker)
         return array
 
-    def _clear(self, reason):
-        if self.transport_ui and self.trajectory is not None and self.hold is None:
+    def _clear(self, reason, freeze=True, hold_reason=None):
+        if (freeze and self.transport_ui and self.trajectory is not None and
+                self.hold is None):
             trajectory = self.trajectory
             elapsed = (rospy.Time.now() - rospy.Time(*trajectory.stamp)).to_sec()
             frame = frame_at(trajectory, elapsed)
@@ -462,18 +574,21 @@ class FormationPlaybackNode:
                          (frame.formation_x, frame.formation_y, frame.formation_psi),
                          tuple((specs[v.vehicle_id], v.center_x, v.center_y, v.theta)
                                for v in frame.vehicles))
-            self._hold_reason = "CLEARED"
+            self._hold_reason = hold_reason or "CLEARED"
         self.trajectory = None
         self._last_state = CLEARED
         specs = clear_marker_specs(self.frame_id)
         now = rospy.Time.now()
         self.marker_pub.publish(self._marker_array(specs, now))
         document = status_document(
-            cleared=True, invalid_reason=reason, frame_id=self.frame_id)
+            cleared=True, invalid_reason=reason, frame_id=self.frame_id,
+            model_sha256=self._playback_model_sha256,
+            backend=self.backend,
+            semantic_version=self._playback_semantic_version)
         self.status_pub.publish(String(data=json.dumps(
             document, sort_keys=True, allow_nan=False)))
         rospy.loginfo("[formation playback] cleared: %s", reason)
-        if self.transport_ui:
+        if self.transport_ui and freeze:
             self._publish_hold()
 
 

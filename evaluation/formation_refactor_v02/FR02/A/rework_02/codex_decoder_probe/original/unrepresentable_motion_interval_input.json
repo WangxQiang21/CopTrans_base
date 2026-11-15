@@ -1,0 +1,728 @@
+{
+  "model_version": "uniform_timed_plan.v1",
+  "semantics": "formation_uniform_v02",
+  "plan_id": 0,
+  "formation_id": "uniform_v02",
+  "offsets": [
+    {
+      "vehicle_id": 1,
+      "x": 1.0,
+      "y": 0.0
+    },
+    {
+      "vehicle_id": 2,
+      "x": 0.0,
+      "y": 1.0
+    },
+    {
+      "vehicle_id": 3,
+      "x": 0.0,
+      "y": -1.0
+    }
+  ],
+  "vehicle_shapes": [
+    {
+      "vehicle_id": 1,
+      "length_m": 0.738,
+      "width_m": 0.5
+    },
+    {
+      "vehicle_id": 2,
+      "length_m": 0.738,
+      "width_m": 0.5
+    },
+    {
+      "vehicle_id": 3,
+      "length_m": 0.738,
+      "width_m": 0.5
+    }
+  ],
+  "timing_limits": {
+    "v_max": 0.8,
+    "a_max": 0.6,
+    "jerk_max": 2.0,
+    "yaw_rate_max": 0.8,
+    "yaw_accel_max": 0.8,
+    "yaw_jerk_max": 3.0,
+    "lateral_accel_max": 0.6,
+    "wheel_speed_max": 1.0,
+    "steer_angle_max": 1.5707963267948966,
+    "steer_rate_max": 0.8,
+    "steer_accel_max": 1.5,
+    "mode_setup_time": 0.15,
+    "mode_switch_duration": 0.3,
+    "min_mode_dwell_s": 0.3,
+    "wheelbase": 0.494,
+    "track": 0.364,
+    "r_min_ackermann": 0.81,
+    "max_block_duration_s": 120.0
+  },
+  "s8_motion_limits": {
+    "profile": "kinematic_sim_v1",
+    "v_max": 0.8,
+    "a_max": 0.6,
+    "jerk_max": 2.0,
+    "lateral_a_max": 0.6,
+    "omega_max": 0.8,
+    "alpha_max": 0.8,
+    "angular_jerk_max": 3.0,
+    "steer_rate_max": 0.8,
+    "steer_accel_max": 1.5,
+    "steer_angle_max": 1.5707963267948966,
+    "wheel_speed_max": 1.0,
+    "mode_setup_time": 0.15,
+    "wheelbase": 0.494,
+    "track": 0.364,
+    "r_min_ack": 0.81,
+    "target_v": 0.8,
+    "translation_omega_max": 0.8,
+    "translation_alpha_max": 0.8,
+    "translation_angular_jerk_max": 3.0,
+    "translation_speed_policy": "restricted",
+    "mode_switch_duration": 0.3
+  },
+  "initial_state": {
+    "qf": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "headings": [
+      {
+        "vehicle_id": 1,
+        "theta": 0.0
+      },
+      {
+        "vehicle_id": 2,
+        "theta": 0.0
+      },
+      {
+        "vehicle_id": 3,
+        "theta": 0.0
+      }
+    ],
+    "mode": "A",
+    "wheel_configurations": [
+      {
+        "vehicle_id": 1,
+        "wheel_angles_rad": [
+          0.0,
+          0.0,
+          -0.0,
+          -0.0
+        ],
+        "wheel_factors": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      {
+        "vehicle_id": 2,
+        "wheel_angles_rad": [
+          0.0,
+          0.0,
+          -0.0,
+          -0.0
+        ],
+        "wheel_factors": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      {
+        "vehicle_id": 3,
+        "wheel_angles_rad": [
+          0.0,
+          0.0,
+          -0.0,
+          -0.0
+        ],
+        "wheel_factors": [
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      }
+    ]
+  },
+  "requested_goal": {
+    "qf": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "headings": [
+      {
+        "vehicle_id": 1,
+        "theta": 1.5707963267948966
+      },
+      {
+        "vehicle_id": 2,
+        "theta": 0.0
+      },
+      {
+        "vehicle_id": 3,
+        "theta": -0.7853981633974483
+      }
+    ]
+  },
+  "edges": [
+    {
+      "factory": {
+        "primitive": "S_SPIN",
+        "start_qf": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "start_headings": [
+          {
+            "vehicle_id": 1,
+            "theta": 0.0
+          },
+          {
+            "vehicle_id": 2,
+            "theta": 0.0
+          },
+          {
+            "vehicle_id": 3,
+            "theta": 0.0
+          }
+        ],
+        "directions": [
+          {
+            "vehicle_id": 1,
+            "direction": 1
+          },
+          {
+            "vehicle_id": 2,
+            "direction": 1
+          },
+          {
+            "vehicle_id": 3,
+            "direction": -1
+          }
+        ],
+        "limits": {
+          "profile": "kinematic_sim_v1",
+          "v_max": 0.8,
+          "a_max": 0.6,
+          "jerk_max": 2.0,
+          "lateral_a_max": 0.6,
+          "omega_max": 0.8,
+          "alpha_max": 0.8,
+          "angular_jerk_max": 3.0,
+          "steer_rate_max": 0.8,
+          "steer_accel_max": 1.5,
+          "steer_angle_max": 1.5707963267948966,
+          "wheel_speed_max": 1.0,
+          "mode_setup_time": 0.15,
+          "wheelbase": 0.494,
+          "track": 0.364,
+          "r_min_ack": 0.81,
+          "target_v": 0.8,
+          "translation_omega_max": 0.8,
+          "translation_alpha_max": 0.8,
+          "translation_angular_jerk_max": 3.0,
+          "translation_speed_policy": "restricted",
+          "mode_switch_duration": 0.3
+        },
+        "allow_reverse": false,
+        "delta_thetas": [
+          {
+            "vehicle_id": 1,
+            "delta_theta": 1.5707963267948966
+          },
+          {
+            "vehicle_id": 2,
+            "delta_theta": 0.0
+          },
+          {
+            "vehicle_id": 3,
+            "delta_theta": -0.7853981633974483
+          }
+        ]
+      },
+      "redundant": {
+        "mode": "S",
+        "primitive": "S_SPIN",
+        "progress_interval": [
+          0.0,
+          1.5707963267948966
+        ],
+        "progress_unit": "rad",
+        "position_derivative_unit": "m/rad",
+        "angle_derivative_unit": "rad/rad",
+        "real_time_domain": false,
+        "time_seconds": null,
+        "start_qf": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "end_qf": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "pivot_in_cargo_frame": null,
+        "allow_reverse": false,
+        "limits": {
+          "wheelbase": 0.494,
+          "track": 0.364,
+          "r_min_ack": 0.81,
+          "steer_angle_max": 1.5707963267948966
+        },
+        "vehicles": [
+          {
+            "vehicle_id": 1,
+            "direction": 1,
+            "curvature": null,
+            "oblique_angle": null,
+            "signed_progress_speed": 0.0,
+            "radius_from_cargo_pivot": null,
+            "body_longitudinal_projection": null,
+            "body_lateral_projection": null,
+            "world_unit_displacement": null,
+            "theta_start": 0.0,
+            "theta_end": 1.5707963267948966,
+            "travel_distance": 0.0,
+            "wheel_angles_start": [
+              -0.9357695914045827,
+              0.9357695914045828,
+              0.9357695914045827,
+              -0.9357695914045828
+            ],
+            "wheel_factors_start": [
+              0.3068110167513546,
+              0.3068110167513546,
+              0.3068110167513546,
+              0.3068110167513546
+            ],
+            "wheel_angles_end": [
+              -0.9357695914045827,
+              0.9357695914045828,
+              0.9357695914045827,
+              -0.9357695914045828
+            ],
+            "wheel_factors_end": [
+              0.3068110167513546,
+              0.3068110167513546,
+              0.3068110167513546,
+              0.3068110167513546
+            ]
+          },
+          {
+            "vehicle_id": 2,
+            "direction": 1,
+            "curvature": null,
+            "oblique_angle": null,
+            "signed_progress_speed": 0.0,
+            "radius_from_cargo_pivot": null,
+            "body_longitudinal_projection": null,
+            "body_lateral_projection": null,
+            "world_unit_displacement": null,
+            "theta_start": 0.0,
+            "theta_end": 0.0,
+            "travel_distance": 0.0,
+            "wheel_angles_start": [
+              -0.9357695914045827,
+              0.9357695914045828,
+              0.9357695914045827,
+              -0.9357695914045828
+            ],
+            "wheel_factors_start": [
+              0.3068110167513546,
+              0.3068110167513546,
+              0.3068110167513546,
+              0.3068110167513546
+            ],
+            "wheel_angles_end": [
+              -0.9357695914045827,
+              0.9357695914045828,
+              0.9357695914045827,
+              -0.9357695914045828
+            ],
+            "wheel_factors_end": [
+              0.3068110167513546,
+              0.3068110167513546,
+              0.3068110167513546,
+              0.3068110167513546
+            ]
+          },
+          {
+            "vehicle_id": 3,
+            "direction": -1,
+            "curvature": null,
+            "oblique_angle": null,
+            "signed_progress_speed": 0.0,
+            "radius_from_cargo_pivot": null,
+            "body_longitudinal_projection": null,
+            "body_lateral_projection": null,
+            "world_unit_displacement": null,
+            "theta_start": 0.0,
+            "theta_end": -0.7853981633974483,
+            "travel_distance": 0.0,
+            "wheel_angles_start": [
+              -0.9357695914045827,
+              0.9357695914045828,
+              0.9357695914045827,
+              -0.9357695914045828
+            ],
+            "wheel_factors_start": [
+              0.3068110167513546,
+              0.3068110167513546,
+              0.3068110167513546,
+              0.3068110167513546
+            ],
+            "wheel_angles_end": [
+              -0.9357695914045827,
+              0.9357695914045828,
+              0.9357695914045827,
+              -0.9357695914045828
+            ],
+            "wheel_factors_end": [
+              0.3068110167513546,
+              0.3068110167513546,
+              0.3068110167513546,
+              0.3068110167513546
+            ]
+          }
+        ],
+        "wheel_delta_from_zero_curvature_a": [
+          {
+            "vehicle_id": 1,
+            "angles_from_a_zero_curvature_rad": [
+              -0.9357695914045827,
+              0.9357695914045828,
+              0.9357695914045827,
+              -0.9357695914045828
+            ],
+            "max_abs_angle_rad": 0.9357695914045828
+          },
+          {
+            "vehicle_id": 2,
+            "angles_from_a_zero_curvature_rad": [
+              -0.9357695914045827,
+              0.9357695914045828,
+              0.9357695914045827,
+              -0.9357695914045828
+            ],
+            "max_abs_angle_rad": 0.9357695914045828
+          },
+          {
+            "vehicle_id": 3,
+            "angles_from_a_zero_curvature_rad": [
+              -0.9357695914045827,
+              0.9357695914045828,
+              0.9357695914045827,
+              -0.9357695914045828
+            ],
+            "max_abs_angle_rad": 0.9357695914045828
+          }
+        ],
+        "segments": [
+          {
+            "vehicle_id": 1,
+            "start_station": 0.0,
+            "end_station": 1.5707963267948966,
+            "legacy_mode": 2,
+            "direction": 1,
+            "theta_start": 0.0,
+            "theta_end": 1.5707963267948966,
+            "control": 0.0,
+            "travel_distance": 0.0,
+            "start_center": [
+              1.0,
+              0.0
+            ],
+            "end_center": [
+              1.0,
+              0.0
+            ],
+            "pivot": [
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "vehicle_id": 2,
+            "start_station": 0.0,
+            "end_station": 1.5707963267948966,
+            "legacy_mode": 2,
+            "direction": 1,
+            "theta_start": 0.0,
+            "theta_end": 0.0,
+            "control": 0.0,
+            "travel_distance": 0.0,
+            "start_center": [
+              0.0,
+              1.0
+            ],
+            "end_center": [
+              0.0,
+              1.0
+            ],
+            "pivot": [
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "vehicle_id": 3,
+            "start_station": 0.0,
+            "end_station": 1.5707963267948966,
+            "legacy_mode": 2,
+            "direction": -1,
+            "theta_start": 0.0,
+            "theta_end": -0.7853981633974483,
+            "control": 0.0,
+            "travel_distance": 0.0,
+            "start_center": [
+              0.0,
+              -1.0
+            ],
+            "end_center": [
+              0.0,
+              -1.0
+            ],
+            "pivot": [
+              0.0,
+              0.0
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "phases": [
+    {
+      "kind": "initial_setup",
+      "phase_id": "initial_setup_0000",
+      "edge_index": 0,
+      "t0_s": 0.0,
+      "duration_s": 2.3432099798544908,
+      "end_time_s": 2.3432099798544908,
+      "setup_overhead_s": 0.15,
+      "steering_duration_s": 2.193209979854491,
+      "initial": true,
+      "from_mode": "A",
+      "to_mode": "S",
+      "mode_during_phase": "A",
+      "qf": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "headings": [
+        {
+          "vehicle_id": 1,
+          "theta": 0.0
+        },
+        {
+          "vehicle_id": 2,
+          "theta": 0.0
+        },
+        {
+          "vehicle_id": 3,
+          "theta": 0.0
+        }
+      ],
+      "common_steer_rate_peak_radps": 0.8,
+      "common_steer_accel_peak_radps2": 1.1231761532955618,
+      "demands": [
+        {
+          "vehicle_id": 1,
+          "from_mode": "A",
+          "to_mode": "S",
+          "from_direction": 1,
+          "to_direction": 1,
+          "from_control": 0.0,
+          "to_control": 0.0,
+          "wheel_angles_start_rad": [
+            0.0,
+            0.0,
+            -0.0,
+            -0.0
+          ],
+          "wheel_angles_end_rad": [
+            -0.9357695914045827,
+            0.9357695914045828,
+            0.9357695914045827,
+            -0.9357695914045828
+          ],
+          "wheel_angle_deltas_rad": [
+            -0.9357695914045827,
+            0.9357695914045828,
+            0.9357695914045827,
+            -0.9357695914045828
+          ],
+          "max_wheel_angle_delta_rad": 0.9357695914045828,
+          "event_duration_s": 2.3432099798544908,
+          "setup_s": 0.15,
+          "steering_s": 2.193209979854491,
+          "steering_profile": "shared_rate_accel_bound",
+          "event_steer_rate_peak_radps": 0.8,
+          "event_steer_accel_peak_radps2": 1.1231761532955618
+        },
+        {
+          "vehicle_id": 2,
+          "from_mode": "A",
+          "to_mode": "S",
+          "from_direction": 1,
+          "to_direction": 1,
+          "from_control": 0.0,
+          "to_control": 0.0,
+          "wheel_angles_start_rad": [
+            0.0,
+            0.0,
+            -0.0,
+            -0.0
+          ],
+          "wheel_angles_end_rad": [
+            -0.9357695914045827,
+            0.9357695914045828,
+            0.9357695914045827,
+            -0.9357695914045828
+          ],
+          "wheel_angle_deltas_rad": [
+            -0.9357695914045827,
+            0.9357695914045828,
+            0.9357695914045827,
+            -0.9357695914045828
+          ],
+          "max_wheel_angle_delta_rad": 0.9357695914045828,
+          "event_duration_s": 2.3432099798544908,
+          "setup_s": 0.15,
+          "steering_s": 2.193209979854491,
+          "steering_profile": "shared_rate_accel_bound",
+          "event_steer_rate_peak_radps": 0.8,
+          "event_steer_accel_peak_radps2": 1.1231761532955618
+        },
+        {
+          "vehicle_id": 3,
+          "from_mode": "A",
+          "to_mode": "S",
+          "from_direction": 1,
+          "to_direction": -1,
+          "from_control": 0.0,
+          "to_control": 0.0,
+          "wheel_angles_start_rad": [
+            0.0,
+            0.0,
+            -0.0,
+            -0.0
+          ],
+          "wheel_angles_end_rad": [
+            -0.9357695914045827,
+            0.9357695914045828,
+            0.9357695914045827,
+            -0.9357695914045828
+          ],
+          "wheel_angle_deltas_rad": [
+            -0.9357695914045827,
+            0.9357695914045828,
+            0.9357695914045827,
+            -0.9357695914045828
+          ],
+          "max_wheel_angle_delta_rad": 0.9357695914045828,
+          "event_duration_s": 2.3432099798544908,
+          "setup_s": 0.15,
+          "steering_s": 2.193209979854491,
+          "steering_profile": "shared_rate_accel_bound",
+          "event_steer_rate_peak_radps": 0.8,
+          "event_steer_accel_peak_radps2": 1.1231761532955618
+        }
+      ]
+    },
+    {
+      "kind": "motion",
+      "phase_id": "motion_0000",
+      "edge_index": 0,
+      "t0_s": 2.3432099798544908,
+      "duration_s": 1e-20,
+      "end_time_s": 2.3432099798544908,
+      "mode": "S",
+      "progress_unit": "rad",
+      "required_duration_s": 3.6815538909255383,
+      "dynamic_duration_s": 3.6999616603801657,
+      "duration_driver": {
+        "constraint": "yaw_rate",
+        "vehicle_id": 1,
+        "block_index": 0,
+        "peak": 0.7960199004975126,
+        "limit": 0.8,
+        "utilization": 0.9950248756218907,
+        "tau": 0.5
+      },
+      "limiting_constraints": [
+        {
+          "constraint": "yaw_rate",
+          "vehicle_id": 1,
+          "block_index": 0,
+          "peak": 0.7960199004975126,
+          "limit": 0.8,
+          "utilization": 0.9950248756218907,
+          "tau": 0.5
+        }
+      ],
+      "vehicle_peaks": [
+        {
+          "vehicle_id": 1,
+          "peaks": {
+            "speed": 0.0,
+            "acceleration": 0.0,
+            "jerk": 0.0,
+            "yaw_rate": 0.7960199004975126,
+            "yaw_acceleration": 0.662467843028502,
+            "yaw_jerk": 1.860713274074357,
+            "wheel_speed": 0.2442276750259539,
+            "lateral_acceleration": 0.0,
+            "steer_rate": 0.0,
+            "steer_acceleration": 0.0,
+            "wheel_angle": 0.9357695914045828
+          }
+        },
+        {
+          "vehicle_id": 2,
+          "peaks": {
+            "speed": 0.0,
+            "acceleration": 0.0,
+            "jerk": 0.0,
+            "yaw_rate": 0.0,
+            "yaw_acceleration": 0.0,
+            "yaw_jerk": 0.0,
+            "wheel_speed": 0.0,
+            "lateral_acceleration": 0.0,
+            "steer_rate": 0.0,
+            "steer_acceleration": 0.0,
+            "wheel_angle": 0.9357695914045828
+          }
+        },
+        {
+          "vehicle_id": 3,
+          "peaks": {
+            "speed": 0.0,
+            "acceleration": 0.0,
+            "jerk": 0.0,
+            "yaw_rate": 0.3980099502487563,
+            "yaw_acceleration": 0.331233921514251,
+            "yaw_jerk": 0.9303566370371785,
+            "wheel_speed": 0.12211383751297696,
+            "lateral_acceleration": 0.0,
+            "steer_rate": 0.0,
+            "steer_acceleration": 0.0,
+            "wheel_angle": 0.9357695914045828
+          }
+        }
+      ]
+    }
+  ],
+  "duration_s": 2.3432099798544908,
+  "certification": "GEOMETRY_ONLY_NO_S9_NO_COLLISION"
+}

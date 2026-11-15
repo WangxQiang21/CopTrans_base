@@ -1,0 +1,58 @@
+{
+  "schema": "fr03.command_manifest.v1",
+  "run_date": "2026-11-14",
+  "worktree": "/home/wq/whut_thesis/expv3_multi_v02",
+  "python": "system python3 (not -I; scipy is required from the user site-packages)",
+  "environment": {
+    "OPENBLAS_NUM_THREADS": "1"
+  },
+  "constraints": {
+    "original_repository_used": false,
+    "worktree_created": false,
+    "git_commit": false,
+    "git_reset_or_stash_or_clean": false,
+    "ros_started": false,
+    "fr04_started": false
+  },
+  "commands": [
+    {
+      "id": "compile",
+      "command": "python3 -m py_compile tests/test_uniform_search.py catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_search.py",
+      "exit_code": 0
+    },
+    {
+      "id": "fr03_suite",
+      "command": "OPENBLAS_NUM_THREADS=1 python3 -m unittest tests.test_uniform_search -v",
+      "exit_code": 0,
+      "result": "Ran 10 tests in 128.841s - OK",
+      "log": "logs/test_uniform_search.log",
+      "artifacts": [
+        "successors.json",
+        "state_key_samples.json",
+        "arc_step_audit.json",
+        "successor_fr02_audit.json",
+        "measure_200_states.json"
+      ]
+    },
+    {
+      "id": "regression_suites",
+      "command": "OPENBLAS_NUM_THREADS=1 python3 -m unittest -v tests.test_uniform_motion tests.test_uniform_timing tests.test_uniform_trajectory tests.test_uniform_quality tests.test_formation_collision tests.test_formation_quality tests.test_formation_retiming tests.test_formation_geometry tests.test_formation_hold tests.test_formation_kinematics",
+      "exit_code": 0,
+      "result": "Ran 145 tests in 9.704s - OK",
+      "log": "logs/regression_suites.log"
+    },
+    {
+      "id": "baseline_verification",
+      "command": "python3 evaluation/formation_refactor_v02/FR03/verify_baseline.py",
+      "exit_code": 0,
+      "result": "all_accepted_match=true, all_frozen_match=true, unexpected_changes=[]",
+      "artifacts": ["baseline_verification.json"]
+    },
+    {
+      "id": "evidence_manifest",
+      "command": "python3 evaluation/formation_refactor_v02/FR03/make_manifest.py",
+      "exit_code": 0,
+      "artifacts": ["evidence_manifest.json"]
+    }
+  ]
+}

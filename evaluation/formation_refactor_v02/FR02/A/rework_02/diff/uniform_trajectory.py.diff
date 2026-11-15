@@ -1,0 +1,86 @@
+--- a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_trajectory.py
++++ b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_trajectory.py
+@@ -73,6 +73,12 @@
+ MODEL_SEMANTICS = "formation_uniform_v02"
+ CERTIFICATION = "GEOMETRY_ONLY_NO_S9_NO_COLLISION"
+ TIME_CONTINUITY_TOL_S = 1e-9
++# Numerical support domain for stored phase clocks, not a physical-duration
++# policy.  FR02-B owns dynamic feasibility.  The A evaluator forms
++# progress_rate**3 and length / duration**3, so clocks outside this interval
++# cannot be stably evaluated with the current float arithmetic.
++MIN_STABLE_PHASE_DURATION_S = 1e-100
++MAX_STABLE_PHASE_DURATION_S = 1e100
+ FIELD_TOL = 1e-9
+ UINT32_MAX = 2 ** 32 - 1
+ 
+@@ -104,6 +110,19 @@
+     return result
+ 
+ 
++def _stable_phase_duration(value, context, phase_id=None):
++    """Require a stored phase clock inside the A numerical support domain."""
++    result = _finite(value, context)
++    if not MIN_STABLE_PHASE_DURATION_S <= result <= MAX_STABLE_PHASE_DURATION_S:
++        raise UniformTrajectoryError(
++            "PHASE_DURATION_UNSUPPORTED",
++            "{}={:.17g} s is outside numeric support [{:.0e}, {:.0e}] s".format(
++                context, result, MIN_STABLE_PHASE_DURATION_S,
++                MAX_STABLE_PHASE_DURATION_S),
++            phase_id=phase_id)
++    return result
++
++
+ def _integer(value, context, minimum=None, maximum=None):
+     if isinstance(value, bool) or not isinstance(value, int):
+         raise UniformTrajectoryError(
+@@ -1531,6 +1550,8 @@
+             "NONPOSITIVE_SETUP_COMPONENT",
+             "setup overhead must be nonnegative and steering positive",
+             phase_id=phase.phase_id)
++    _stable_phase_duration(
++        phase.steering_duration_s, "phase.steering_duration_s", phase.phase_id)
+     if phase.qf != edge.start_qf:
+         _check_pose_continuity(phase.qf, edge.start_qf, "setup.qf")
+     _check_heading_continuity(phase.headings, edge.start_headings, "setup")
+@@ -1660,6 +1681,15 @@
+                 phase_id=phase.phase_id)
+         _finite(phase.t0_s, "phase.t0_s")
+         _finite(phase.duration_s, "phase.duration_s")
++        _stable_phase_duration(
++            phase.duration_s, "phase.duration_s", phase.phase_id)
++        end_time = phase.end_time
++        if not math.isfinite(end_time) or end_time <= phase.t0_s:
++            raise UniformTrajectoryError(
++                "PHASE_TIME_UNREPRESENTABLE",
++                "phase {} t0={:.17g} duration={:.17g} end={!r}".format(
++                    phase.phase_id, phase.t0_s, phase.duration_s, end_time),
++                phase_id=phase.phase_id)
+         if isinstance(phase, MotionTiming):
+             if phase.required_duration_s < 0.0 or phase.dynamic_duration_s <= 0.0:
+                 raise UniformTrajectoryError(
+@@ -1671,8 +1701,10 @@
+                 raise UniformTrajectoryError(
+                     "INVALID_VEHICLE_ID_SET", "motion peak IDs differ",
+                     phase_id=phase.phase_id)
++        # A persisted phases axis must cover [0, T_end] exactly.  The old
++        # tolerance accepted real gaps/overlaps that _phase_at cannot evaluate.
+         difference = phase.t0_s - cursor
+-        if abs(difference) > TIME_CONTINUITY_TOL_S:
++        if difference != 0.0:
+             raise UniformTrajectoryError(
+                 "PHASE_TIME_DISCONTINUITY",
+                 "phase {} has {} {:.12g} s".format(
+@@ -1706,11 +1738,11 @@
+         else:
+             raise UniformTrajectoryError(
+                 "INVALID_PHASE_TYPE", "unsupported phase type")
+-        cursor = phase.end_time
++        cursor = end_time
+     if expected_edge != len(plan.edges):
+         raise UniformTrajectoryError(
+             "MISSING_MOTION_PHASE", "decoded phases do not cover every edge")
+-    if abs(cursor - plan.duration_s) > TIME_CONTINUITY_TOL_S:
++    if cursor != plan.duration_s:
+         raise UniformTrajectoryError(
+             "PLAN_DURATION_MISMATCH",
+             "phase sum {:.17g} != duration {:.17g}".format(

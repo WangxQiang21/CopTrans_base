@@ -1,0 +1,50 @@
+{
+  "commands": [
+    {
+      "command": "OPENBLAS_NUM_THREADS=1 FR02_TIMING_RESULTS_PATH=/home/wq/whut_thesis/expv3_multi_v02/evaluation/formation_refactor_v02/FR02/A/timing_results.json python3 /home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_timing.py -v",
+      "exit_code": 0,
+      "log": "logs/new_uniform_timing.log",
+      "name": "new_uniform_timing",
+      "result": "timing_results.json"
+    },
+    {
+      "artifacts": "artifacts",
+      "command": "OPENBLAS_NUM_THREADS=1 FR02_TRAJECTORY_RESULTS_PATH=/home/wq/whut_thesis/expv3_multi_v02/evaluation/formation_refactor_v02/FR02/A/trajectory_results.json FR02_ARTIFACT_DIR=/home/wq/whut_thesis/expv3_multi_v02/evaluation/formation_refactor_v02/FR02/A/artifacts python3 /home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_trajectory.py -v",
+      "exit_code": 0,
+      "log": "logs/new_uniform_trajectory.log",
+      "name": "new_uniform_trajectory",
+      "result": "trajectory_results.json"
+    },
+    {
+      "command": "OPENBLAS_NUM_THREADS=1 FR01_RESULTS_PATH=/home/wq/whut_thesis/expv3_multi_v02/evaluation/formation_refactor_v02/FR02/A/fr01_primitive_results.json python3 /home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_motion.py -v",
+      "exit_code": 0,
+      "log": "logs/fr01_uniform_motion.log",
+      "name": "fr01_uniform_motion",
+      "result": "fr01_primitive_results.json"
+    },
+    {
+      "command": "OPENBLAS_NUM_THREADS=1 python3 /home/wq/whut_thesis/expv3_multi_v02/tests/formation_geometry.py -v",
+      "exit_code": 0,
+      "log": "logs/legacy_test_formation_geometry.log",
+      "name": "legacy_test_formation_geometry"
+    },
+    {
+      "command": "OPENBLAS_NUM_THREADS=1 python3 /home/wq/whut_thesis/expv3_multi_v02/tests/formation_kinematics.py -v",
+      "exit_code": 0,
+      "log": "logs/legacy_test_formation_kinematics.log",
+      "name": "legacy_test_formation_kinematics"
+    },
+    {
+      "command": "OPENBLAS_NUM_THREADS=1 python3 /home/wq/whut_thesis/expv3_multi_v02/tests/formation_retiming.py -v",
+      "exit_code": 0,
+      "log": "logs/legacy_test_formation_retiming.log",
+      "name": "legacy_test_formation_retiming"
+    },
+    {
+      "command": "OPENBLAS_NUM_THREADS=1 python3 /home/wq/whut_thesis/expv3_multi_v02/tests/formation_hold.py -v",
+      "exit_code": 0,
+      "log": "logs/legacy_test_formation_hold.log",
+      "name": "legacy_test_formation_hold"
+    }
+  ]
+}

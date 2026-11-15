@@ -1,0 +1,25 @@
+test_S01_state_alias_keys_and_exact_representative (test_uniform_search.UniformSearchAcceptance)
+Same q_F with different headings/mode/wheel must not share a key. ... ok
+test_S02_tangent_blocks_A_and_S_unlocks_it (test_uniform_search.UniformSearchAcceptance)
+A straight without tangent headings is rejected; after S it passes. ... ok
+test_S03_same_goal_forward_and_reverse (test_uniform_search.UniformSearchAcceptance)
+The same goal can be reached with forward and reverse A gears. ... ok
+test_S04_nonzero_pivot_two_directions_and_step_limit (test_uniform_search.UniformSearchAcceptance)
+Both rotation directions at a nonzero pivot, and the 10 deg limit. ... ok
+test_S05_mid_sweep_and_spin_obstacles_rejected (test_uniform_search.UniformSearchAcceptance)
+Obstacles hit only inside a sweep reject the successor. ... ok
+test_S06_wall_edge_angle_availability (test_uniform_search.UniformSearchAcceptance)
+A wall admits one pivot direction and rejects the other. ... ok
+test_S07_free_terminal_heading (test_uniform_search.UniformSearchAcceptance)
+A placeholder goal theta must not exclude a reachable state. ... ok
+test_S08_every_legal_successor_class_passes_fr02 (test_uniform_search.UniformSearchAcceptance)
+Each legal successor class is audited by FR02, with real setup cost. ... ok
+test_S09_fixed_seed_200_state_measurement (test_uniform_search.UniformSearchAcceptance)
+Fixed-seed local measurement over 200 exact states. ... ok
+test_S10_expansion_does_not_run_full_timing_or_audit (test_uniform_search.UniformSearchAcceptance)
+Successor expansion calls neither S8 scheduling nor the S9 audit. ... ok
+
+----------------------------------------------------------------------
+Ran 10 tests in 177.911s
+
+OK

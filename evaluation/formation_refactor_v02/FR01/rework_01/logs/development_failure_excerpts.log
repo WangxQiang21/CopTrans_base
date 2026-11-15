@@ -1,0 +1,42 @@
+Development intermediate failure excerpts (pre-final evidence)
+================================================================
+
+These two runs happened while the N01-N07 test method was being written.
+They are preserved here as terminal-output excerpts, not as original shell
+redirect files.  Both were test-harness mistakes and were fixed before the
+formal final run recorded in logs/test_uniform_motion.log.
+
+Run 1: uninitialized evidence key
+---------------------------------
+test_n01_n07_independent_validator_negatives (test_uniform_motion.UniformMotionAcceptanceTest) ... ERROR
+
+Traceback (most recent call last):
+  File "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_motion.py", line 1517, in test_n01_n07_independent_validator_negatives
+    accept(
+  File "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_motion.py", line 1499, in accept
+    case["legal_positives"].append(record)
+KeyError: 'legal_positives'
+
+Ran 13 tests in 0.022s
+
+FAILED (errors=1)
+
+Run 2: malformed injected wheel pair tuples
+-------------------------------------------
+test_n01_n07_independent_validator_negatives (test_uniform_motion.UniformMotionAcceptanceTest) ... FAIL
+
+Traceback (most recent call last):
+  File "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_motion.py", line 1625, in test_n01_n07_independent_validator_negatives
+    reject(
+  File "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_motion.py", line 1505, in reject
+    error = self._expect_reason(
+  File "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_motion.py", line 198, in _expect_reason
+    self.assertEqual(error.reason, reason, str(error))
+AssertionError: 'INVALID_PAIR_FIELD' != 'EDGE_VALIDATION_FAILED'
+- INVALID_PAIR_FIELD
++ EDGE_VALIDATION_FAILED
+ : INVALID_PAIR_FIELD: wheel_angles_end must be an iterable of (vehicle_id, four values) pairs
+
+Ran 13 tests in 0.025s
+
+FAILED (failures=1)

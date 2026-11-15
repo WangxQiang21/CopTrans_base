@@ -1,0 +1,32 @@
+test_f01_exact_hold (tests.test_uniform_pipeline.UniformPipelineTest) ... FR04 F01_hold status=NO_MOTION reason=OK search_wall=0.000009s pipeline_wall=0.008386s T_end=0.0 expansions=0 candidates=0 terminal_audits=0
+ok
+test_f12_terminal_screen_and_final_rebuilt_path_audit (tests.test_uniform_pipeline.UniformPipelineTest) ... FR04 F12_final_reaudit status=SUCCESS reason=OK search_wall=1.027102s pipeline_wall=1.176746s T_end=9.368306005450883 expansions=3 candidates=429 terminal_audits=1
+ok
+test_f13_in_tolerance_goal_and_free_terminal_headings (tests.test_uniform_pipeline.UniformPipelineTest) ... FR04 F13_tolerant_goal_free_headings status=SUCCESS reason=OK search_wall=1.103674s pipeline_wall=1.259348s T_end=9.668306005450882 expansions=3 candidates=555 terminal_audits=1
+ok
+test_f14_in_tolerance_hold_and_free_terminal_headings (tests.test_uniform_pipeline.UniformPipelineTest) ... FR04 F14_tolerant_hold status=NO_MOTION reason=OK search_wall=0.000011s pipeline_wall=0.008349s T_end=0.0 expansions=0 candidates=0 terminal_audits=0
+ok
+test_f15_wrong_start_and_goal_rebuild_rejected (tests.test_uniform_pipeline.UniformPipelineTest) ... FR04 F15_wrong_rebuild status=AUDIT_REJECTED reason=PLAN_START_MISMATCH search_wall=1.012960s pipeline_wall=1.016859s T_end=None expansions=3 candidates=429 terminal_audits=1
+ok
+test_f16_request_id_contract_mismatch_rejected (tests.test_uniform_pipeline.UniformPipelineTest) ... FR04 F16_plan_id_mismatch status=AUDIT_REJECTED reason=PLAN_IDENTITY_MISMATCH search_wall=1.050104s pipeline_wall=1.074030s T_end=None expansions=3 candidates=429 terminal_audits=1
+ok
+test_f17_same_endpoints_but_different_path_rejected (tests.test_uniform_pipeline.UniformPipelineTest) ... FR04 F17_same_endpoints_other_path status=AUDIT_REJECTED reason=PLAN_EDGE_SEQUENCE_MISMATCH search_wall=1.050933s pipeline_wall=1.054915s T_end=None expansions=3 candidates=429 terminal_audits=1
+ok
+test_f18_timing_limit_contract_mismatch_rejected (tests.test_uniform_pipeline.UniformPipelineTest) ... FR04 F18_timing_limit_mismatch status=AUDIT_REJECTED reason=PLAN_IDENTITY_MISMATCH search_wall=1.073050s pipeline_wall=1.096195s T_end=None expansions=3 candidates=429 terminal_audits=1
+FAIL
+
+======================================================================
+FAIL: test_f18_timing_limit_contract_mismatch_rejected (tests.test_uniform_pipeline.UniformPipelineTest)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/wq/whut_thesis/expv3_multi_v02/tests/test_uniform_pipeline.py", line 514, in test_f18_timing_limit_contract_mismatch_rejected
+    self.assertEqual(FEASIBLE, self_audit(captured[0], request).status)
+AssertionError: 'FEASIBLE' != 'REJECTED'
+- FEASIBLE
++ REJECTED
+
+
+----------------------------------------------------------------------
+Ran 8 tests in 7.285s
+
+FAILED (failures=1)

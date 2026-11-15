@@ -1,0 +1,69 @@
+[
+  {
+    "case": "final_plan_request_binding_fault_injection",
+    "build_calls": 2,
+    "status": "AUDIT_REJECTED",
+    "executable": false,
+    "requested_start": [
+      10,
+      10,
+      0
+    ],
+    "requested_goal": [
+      13,
+      10,
+      0
+    ],
+    "plan_present": false,
+    "reason": "PLAN_START_MISMATCH",
+    "actual_start": null,
+    "actual_goal": null,
+    "audit": "REJECTED",
+    "bound_request_audit": {
+      "schema": "formation_evaluation/v1",
+      "plan_id": 401,
+      "formation_id": "fr04_three_vehicle",
+      "status": "REJECTED",
+      "feasible": false,
+      "reason": "UNIFORM_MODEL_MISMATCH",
+      "detail": "plan.start_qf.x actual=0 expected=10 error=10 > 1e-07",
+      "certification": "NONE",
+      "executable": false,
+      "trajectory_published": false,
+      "independent_audit": true,
+      "collision_certificate": false,
+      "failure": {
+        "code": "UNIFORM_MODEL_MISMATCH",
+        "field": "plan.start_qf.x",
+        "vehicle_id": null,
+        "other_vehicle_id": null,
+        "pair_id": null,
+        "block_index": null,
+        "segment_index": null,
+        "sample_index": null,
+        "time_s": null,
+        "station": null,
+        "constraint": "",
+        "max_error": 10.0,
+        "detail": "plan.start_qf.x actual=0 expected=10 error=10 > 1e-07"
+      },
+      "metrics": {
+        "map_signature": "a00f63234b9b6bcf48d1b19b9478191bb9f6fdf93424d36fb175cee74a9a4b7d"
+      },
+      "checks": 17
+    }
+  },
+  {
+    "case": "final_audit_refusal",
+    "status": "AUDIT_REJECTED",
+    "executable": false,
+    "audit_calls": 2
+  },
+  {
+    "case": "new_request_after_failure",
+    "status": "SUCCESS",
+    "executable": true,
+    "plan_id": 402,
+    "goal_x": 11.0
+  }
+]

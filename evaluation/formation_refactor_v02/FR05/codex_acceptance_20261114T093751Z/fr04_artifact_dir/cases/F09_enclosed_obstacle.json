@@ -1,0 +1,299 @@
+{
+  "assertions_completed": false,
+  "budget": {
+    "heuristic_weight": 3.0,
+    "max_expansions": 10000,
+    "max_seconds": 30.0,
+    "rotation_weight": 3.0
+  },
+  "case_id": "F09_enclosed_obstacle",
+  "description": "enclosed start has no accepted successor",
+  "independent_reaudit": null,
+  "map_metadata": {
+    "kind": "three_surrounding_obstacle_clusters",
+    "occupied_points_m": [
+      [
+        11.45,
+        10.0
+      ],
+      [
+        10.55,
+        10.0
+      ],
+      [
+        11.0,
+        10.35
+      ],
+      [
+        11.0,
+        9.65
+      ],
+      [
+        11.45,
+        10.35
+      ],
+      [
+        11.45,
+        9.65
+      ],
+      [
+        10.55,
+        10.35
+      ],
+      [
+        10.55,
+        9.65
+      ],
+      [
+        10.45,
+        11.0
+      ],
+      [
+        9.55,
+        11.0
+      ],
+      [
+        10.0,
+        11.35
+      ],
+      [
+        10.0,
+        10.65
+      ],
+      [
+        10.45,
+        11.35
+      ],
+      [
+        10.45,
+        10.65
+      ],
+      [
+        9.55,
+        11.35
+      ],
+      [
+        9.55,
+        10.65
+      ],
+      [
+        10.45,
+        9.0
+      ],
+      [
+        9.55,
+        9.0
+      ],
+      [
+        10.0,
+        9.35
+      ],
+      [
+        10.0,
+        8.65
+      ],
+      [
+        10.45,
+        9.35
+      ],
+      [
+        10.45,
+        8.65
+      ],
+      [
+        9.55,
+        9.35
+      ],
+      [
+        9.55,
+        8.65
+      ]
+    ]
+  },
+  "model": null,
+  "request": {
+    "formation_id": "fr04_three_vehicle",
+    "goal_headings": null,
+    "goal_qf": [
+      13.0,
+      10.0,
+      0.0
+    ],
+    "grid": {
+      "occupied_sha256": "b36152e27fbef0cf2c13c4e5c4d992db885dd49f785d37400c1d680e0e78badc",
+      "origin": [
+        -15.0,
+        -15.0
+      ],
+      "resolution": 0.05,
+      "shape": [
+        600,
+        600
+      ]
+    },
+    "model": [
+      {
+        "vehicle_id": 1,
+        "x": 1.0,
+        "y": 0.0
+      },
+      {
+        "vehicle_id": 2,
+        "x": 0.0,
+        "y": 1.0
+      },
+      {
+        "vehicle_id": 3,
+        "x": 0.0,
+        "y": -1.0
+      }
+    ],
+    "plan_id": 9,
+    "search_config": {
+      "heuristic_weight": 3.0,
+      "max_expansions": 10000,
+      "max_seconds": 30.0,
+      "rotation_weight": 3.0
+    },
+    "start_headings": [
+      {
+        "theta": 0.0,
+        "vehicle_id": 1
+      },
+      {
+        "theta": 0.0,
+        "vehicle_id": 2
+      },
+      {
+        "theta": 0.0,
+        "vehicle_id": 3
+      }
+    ],
+    "start_qf": [
+      10.0,
+      10.0,
+      0.0
+    ],
+    "successor_config": {
+      "allow_reverse": true,
+      "arc_pivots": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          2.0
+        ],
+        [
+          0.0,
+          -2.0
+        ],
+        [
+          2.0,
+          0.0
+        ],
+        [
+          -2.0,
+          0.0
+        ]
+      ],
+      "arc_step_rad": 0.17453292519943295,
+      "collision_margin_m": 0.05,
+      "control_bin": 0.01,
+      "goal_heading_free": true,
+      "goal_heading_tol_rad": 0.017453292519943295,
+      "goal_psi_tol_rad": 0.017453292519943295,
+      "goal_xy_tol_m": 0.02,
+      "heading_bin_rad": 0.17453292519943295,
+      "max_samples_per_segment": 200000,
+      "psi_bin_rad": 0.17453292519943295,
+      "sweep_spacing_m": 0.01,
+      "timing_limits": {
+        "a_max": 0.6,
+        "jerk_max": 2.0,
+        "lateral_accel_max": 0.6,
+        "max_block_duration_s": 120.0,
+        "min_mode_dwell_s": 0.3,
+        "mode_setup_time": 0.15,
+        "mode_switch_duration": 0.3,
+        "r_min_ackermann": 0.81,
+        "steer_accel_max": 1.5,
+        "steer_angle_max": 1.5707963267948966,
+        "steer_rate_max": 0.8,
+        "track": 0.364,
+        "v_max": 0.8,
+        "wheel_speed_max": 1.0,
+        "wheelbase": 0.494,
+        "yaw_accel_max": 0.8,
+        "yaw_jerk_max": 3.0,
+        "yaw_rate_max": 0.8
+      },
+      "translation_step_m": 1.0,
+      "xy_bin_m": 0.2
+    },
+    "vehicle_shapes": [
+      {
+        "length_m": 0.738,
+        "vehicle_id": 1,
+        "width_m": 0.5
+      },
+      {
+        "length_m": 0.738,
+        "vehicle_id": 2,
+        "width_m": 0.5
+      },
+      {
+        "length_m": 0.738,
+        "vehicle_id": 3,
+        "width_m": 0.5
+      }
+    ]
+  },
+  "request_sha256": "98b63005df9e8a518ef366efe4e8e47127ff2116fa0628bbd18d3774769d8e73",
+  "result": {
+    "detail": "open set exhausted without reaching the goal",
+    "duration_s": null,
+    "evaluation": null,
+    "executable": false,
+    "feasible": false,
+    "first_failure_layer": "search",
+    "plan_model": null,
+    "projection_summary": null,
+    "reason": "NO_SOLUTION",
+    "request_sha256": "98b63005df9e8a518ef366efe4e8e47127ff2116fa0628bbd18d3774769d8e73",
+    "schema": "fr04.uniform_planning_result.v1",
+    "search": {
+      "accepted_successors": 0,
+      "candidate_count": 143,
+      "collision_s": 0.019674560404382646,
+      "detail": "open set exhausted without reaching the goal",
+      "duplicate_key_rejections": 0,
+      "expansions": 1,
+      "first_failure_layer": "search",
+      "generation_s": 0.03056199150159955,
+      "goal_qf": [
+        13.0,
+        10.0,
+        0.0
+      ],
+      "goal_state": null,
+      "open_size": 0,
+      "path": [],
+      "reason": "NO_SOLUTION",
+      "redundant_s_pruned": 0,
+      "rejection_histogram": {
+        "A_HEADING_REQUIRES_S_ALIGNMENT": 87,
+        "MAP_OBB_COLLISION": 56
+      },
+      "stale_heap_entries": 0,
+      "status": "NO_SOLUTION",
+      "terminal_audits": [],
+      "terminal_rejection_histogram": {},
+      "wall_time_s": 0.05035765503998846
+    },
+    "status": "NO_SOLUTION",
+    "wall_time_s": 0.05628578690811992
+  },
+  "samples": null
+}

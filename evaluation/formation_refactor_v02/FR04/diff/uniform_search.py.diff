@@ -1,0 +1,334 @@
+--- evaluation/formation_refactor_v02/FR04/pre_fr04/uniform_search.py	2026-11-14 11:16:18.319080248 +0800
++++ catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_search.py	2026-11-14 11:10:44.000100598 +0800
+@@ -38,8 +38,10 @@
+ selection rule required here; open/closed/priority-queue handling is FR04.
+ """
+ from dataclasses import dataclass, field
++import heapq
+ import itertools
+ import math
++import time
+ from typing import Dict, List, Mapping, Optional, Tuple
+ 
+ from .core import Action
+@@ -1012,3 +1014,320 @@
+         (abs(_wrap(start[vehicle_id] - current[vehicle_id]))
+          for vehicle_id in current), default=0.0)
+     return {"position_m": position, "psi_rad": psi, "heading_rad": heading}
++
++
++# ---------------------------------------------------------------------------
++# FR04: budgeted autonomous graph search (no ROS, no NLP, no legacy seed)
++# ---------------------------------------------------------------------------
++
++SEARCH_SUCCESS = "SUCCESS"
++SEARCH_NO_MOTION = "NO_MOTION"
++SEARCH_NO_SOLUTION = "NO_SOLUTION"
++SEARCH_BUDGET_EXHAUSTED = "BUDGET_EXHAUSTED"
++SEARCH_AUDIT_REJECTED = "AUDIT_REJECTED"
++SEARCH_STATUSES = (
++    SEARCH_SUCCESS, SEARCH_NO_MOTION, SEARCH_NO_SOLUTION,
++    SEARCH_BUDGET_EXHAUSTED, SEARCH_AUDIT_REJECTED)
++
++
++@dataclass(frozen=True)
++class GraphSearchConfig:
++    """Central FR04 budget and heuristic configuration.
++
++    The first-round fixed budget is 10000 expansions / 30 seconds.  The
++    heuristic is deliberately only a search guide: the FR03 proxy cost is not
++    admissible, so neither weighted A* nor the rotation weight is an
++    optimality claim.  ``rotation_weight`` prevents a necessary nonzero-pivot
++    goal rotation from being postponed behind unlimited zero-translation
++    heading/translation alternatives merely because its arc temporarily
++    increases cargo XY distance.
++    """
++
++    max_expansions: int = 10000
++    max_seconds: float = 30.0
++    heuristic_weight: float = 3.0
++    rotation_weight: float = 3.0
++
++    def __post_init__(self):
++        if isinstance(self.max_expansions, bool) or not isinstance(
++                self.max_expansions, int) or self.max_expansions < 0:
++            raise FormationValidationError(
++                "INVALID_SEARCH_BUDGET max_expansions must be a nonnegative int")
++        for name in ("max_seconds", "heuristic_weight", "rotation_weight"):
++            value = _finite(getattr(self, name), "GraphSearchConfig." + name)
++            if value <= 0.0:
++                raise FormationValidationError(
++                    "INVALID_SEARCH_CONFIG {} must be positive".format(name))
++
++
++@dataclass
++class UniformGraphSearchResult:
++    """Search outcome; ``SUCCESS`` requires the terminal validator to accept."""
++
++    status: str
++    reason: str
++    start_state: UniformSearchState
++    goal_qf: FormationPose
++    goal_state: Optional[UniformSearchState] = None
++    expansions: int = 0
++    candidate_count: int = 0
++    accepted_successors: int = 0
++    duplicate_key_rejections: int = 0
++    redundant_s_pruned: int = 0
++    stale_heap_entries: int = 0
++    open_size: int = 0
++    wall_time_s: float = 0.0
++    generation_s: float = 0.0
++    collision_s: float = 0.0
++    rejection_histogram: Dict[str, int] = field(default_factory=dict)
++    terminal_rejection_histogram: Dict[str, int] = field(default_factory=dict)
++    terminal_audits: List[dict] = field(default_factory=list)
++    first_failure_layer: str = "none"
++    detail: str = ""
++
++    @property
++    def edges(self):
++        return () if self.goal_state is None else reconstruct_path(
++            self.goal_state)
++
++    def as_dict(self, include_path=True):
++        result = {
++            "status": self.status,
++            "reason": self.reason,
++            "detail": self.detail,
++            "first_failure_layer": self.first_failure_layer,
++            "goal_qf": [self.goal_qf.x, self.goal_qf.y, self.goal_qf.psi],
++            "expansions": self.expansions,
++            "candidate_count": self.candidate_count,
++            "accepted_successors": self.accepted_successors,
++            "duplicate_key_rejections": self.duplicate_key_rejections,
++            "redundant_s_pruned": self.redundant_s_pruned,
++            "stale_heap_entries": self.stale_heap_entries,
++            "open_size": self.open_size,
++            "wall_time_s": self.wall_time_s,
++            "generation_s": self.generation_s,
++            "collision_s": self.collision_s,
++            "rejection_histogram": dict(self.rejection_histogram),
++            "terminal_rejection_histogram": dict(
++                self.terminal_rejection_histogram),
++            "terminal_audits": list(self.terminal_audits),
++            "goal_state": (None if self.goal_state is None
++                           else self.goal_state.as_dict()),
++        }
++        if include_path:
++            result["path"] = path_records(self.goal_state)
++        return result
++
++
++def reconstruct_path(state):
++    """Return the exact authoritative edges from the root to ``state``."""
++    if state is None:
++        return ()
++    edges = []
++    current = state
++    while current is not None and current.edge is not None:
++        edges.append(current.edge)
++        current = current.parent
++    return tuple(reversed(edges))
++
++
++def path_records(state):
++    """Primitive signatures and cumulative proxy cost along a parent chain."""
++    if state is None:
++        return []
++    states = []
++    current = state
++    while current is not None:
++        states.append(current)
++        current = current.parent
++    states.reverse()
++    records = []
++    for index, node in enumerate(states[1:], 1):
++        edge = node.edge
++        records.append({
++            "index": index,
++            "primitive": edge.primitive,
++            "mode": edge.mode,
++            "delta_psi": edge.control.delta_psi,
++            "pivot": [edge.control.pivot_x, edge.control.pivot_y],
++            "parameter_length": edge.control.parameter_length,
++            "directions": {str(vehicle_id): int(value)
++                           for vehicle_id, value in edge.directions},
++            "start_qf": [edge.start_qf.x, edge.start_qf.y, edge.start_qf.psi],
++            "end_qf": [edge.end_qf.x, edge.end_qf.y, edge.end_qf.psi],
++            "start_headings": {str(vehicle_id): theta
++                               for vehicle_id, theta in edge.start_headings},
++            "end_headings": {str(vehicle_id): theta
++                             for vehicle_id, theta in edge.end_headings},
++            "cumulative_proxy_g_s": node.g,
++            "a_labels": list(node.a_labels),
++        })
++    return records
++
++
++def goal_heuristic_s(state, goal_qf, successor_config, search_config):
++    """Weighted first-order goal distance in seconds (not a lower bound)."""
++    limits = successor_config.timing_limits
++    distance_s = math.hypot(
++        goal_qf.x - state.qf.x, goal_qf.y - state.qf.y) / limits.v_max
++    rotation_s = abs(_wrap(goal_qf.psi - state.qf.psi)) / limits.yaw_rate_max
++    return distance_s + search_config.rotation_weight * rotation_s
++
++
++class UniformGraphSearch:
++    """FR04 open/representative/parent search over FR03 exact successors.
++
++    Consecutive S alignment edges are skipped.  This is a redundancy
++    elimination, not a new primitive restriction: every S target depends only
++    on ``q_F`` and the goal, and FR01 can construct one S edge from the first
++    edge's headings directly to the second edge's target (including zero-angle
++    vehicles).  Thus an S->S chain never unlocks an A scheme that the first
++    state could not unlock with one S edge.
++
++    ``terminal_validator(edges)`` returns ``(accepted, serialisable_detail)``.
++    The FR04 pipeline supplies the real FR02 timing+audit there.  A rejected
++    terminal path is recorded and search continues finitely; an unvalidated
++    path is never returned as SUCCESS.
++    """
++
++    def __init__(self, model, checker, successor_config=None,
++                 search_config=None):
++        self.model = model
++        self.checker = checker
++        self.successor_config = successor_config or SuccessorConfig()
++        self.search_config = search_config or GraphSearchConfig()
++        self.generator = SuccessorGenerator(
++            model, checker, self.successor_config)
++
++    def search(self, start_state, goal_qf, terminal_validator=None,
++               goal_headings=None):
++        started = time.perf_counter()
++        config = self.search_config
++        result = UniformGraphSearchResult(
++            status=SEARCH_NO_SOLUTION, reason=SEARCH_NO_SOLUTION,
++            start_state=start_state, goal_qf=goal_qf)
++        open_heap = []
++
++        def finish(status, reason, layer, detail="", goal_state=None):
++            result.status = status
++            result.reason = reason
++            result.first_failure_layer = layer
++            result.detail = detail
++            result.goal_state = goal_state
++            result.open_size = len(open_heap)
++            result.wall_time_s = time.perf_counter() - started
++            return result
++
++        if self.generator.is_goal(start_state, goal_qf, goal_headings):
++            return finish(SEARCH_NO_MOTION, SEARCH_NO_MOTION, "none",
++                          "the exact start already satisfies the goal test",
++                          start_state)
++
++        table = RepresentativeTable(self.successor_config)
++        table.offer(start_state)
++        serial = 0
++        initial_h = goal_heuristic_s(
++            start_state, goal_qf, self.successor_config, config)
++        heapq.heappush(open_heap, (
++            config.heuristic_weight * initial_h, start_state.g,
++            serial, start_state))
++
++        while True:
++            elapsed = time.perf_counter() - started
++            if result.expansions >= config.max_expansions:
++                return finish(
++                    SEARCH_BUDGET_EXHAUSTED, "EXPANSION_BUDGET_EXHAUSTED",
++                    "budget", "expansions {} >= {}".format(
++                        result.expansions, config.max_expansions))
++            if elapsed >= config.max_seconds:
++                return finish(
++                    SEARCH_BUDGET_EXHAUSTED, "TIME_BUDGET_EXHAUSTED",
++                    "budget", "wall time {:.9g} s >= {:.9g} s".format(
++                        elapsed, config.max_seconds))
++            if not open_heap:
++                if result.terminal_audits:
++                    last = result.terminal_audits[-1]
++                    return finish(
++                        SEARCH_AUDIT_REJECTED,
++                        last.get("failure_code") or last.get(
++                            "reason", SEARCH_AUDIT_REJECTED),
++                        "audit", "open set exhausted after {} rejected "
++                        "terminal audit(s)".format(len(result.terminal_audits)))
++                return finish(
++                    SEARCH_NO_SOLUTION, SEARCH_NO_SOLUTION, "search",
++                    "open set exhausted without reaching the goal")
++
++            _, _, _, state = heapq.heappop(open_heap)
++            key = make_key(state, self.successor_config)
++            if table.representative(key) is not state:
++                # A lower-g exact state for this complete key superseded the
++                # heap entry before it was popped.
++                result.stale_heap_entries += 1
++                continue
++
++            if self.generator.is_goal(state, goal_qf, goal_headings):
++                edges = reconstruct_path(state)
++                if terminal_validator is None:
++                    return finish(
++                        SEARCH_AUDIT_REJECTED, "TERMINAL_VALIDATOR_REQUIRED",
++                        "audit", "no terminal validator was supplied; an "
++                        "unaudited geometric goal is not an FR04 success",
++                        state)
++                audit_started = time.perf_counter()
++                accepted, audit_detail = terminal_validator(edges)
++                audit_finished = time.perf_counter()
++                record = dict(audit_detail or {})
++                record.update({
++                    "accepted": bool(accepted),
++                    "edge_count": len(edges),
++                    "path_proxy_g_s": state.g,
++                    "path": path_records(state),
++                    "audit_wall_time_s": audit_finished - audit_started,
++                    "search_elapsed_at_audit_s": audit_finished - started,
++                })
++                result.terminal_audits.append(record)
++                if accepted:
++                    if audit_finished - started >= config.max_seconds:
++                        return finish(
++                            SEARCH_BUDGET_EXHAUSTED, "TIME_BUDGET_EXHAUSTED",
++                            "budget", "terminal audit completed at {:.9g} s, "
++                            "at or beyond the {:.9g} s budget; an accepted "
++                            "path cannot bypass the time budget".format(
++                                audit_finished - started, config.max_seconds),
++                            state)
++                    return finish(
++                        SEARCH_SUCCESS, "TERMINAL_AUDIT_ACCEPTED", "none",
++                        "goal path accepted by the terminal validator", state)
++                rejection = record.get("failure_code") or record.get(
++                    "reason", SEARCH_AUDIT_REJECTED)
++                result.terminal_rejection_histogram[rejection] = (
++                    result.terminal_rejection_histogram.get(rejection, 0) + 1)
++                continue
++
++            result.expansions += 1
++            generated = self.generator.generate(state, goal_qf)
++            result.candidate_count += generated.candidate_count
++            result.generation_s += generated.generation_s
++            result.collision_s += generated.collision_s
++            for reason, count in generated.rejection_histogram().items():
++                result.rejection_histogram[reason] = (
++                    result.rejection_histogram.get(reason, 0) + count)
++
++            for successor in generated.successors:
++                if (state.edge is not None
++                        and state.edge.primitive == PRIMITIVE_S_SPIN
++                        and successor.edge.primitive == PRIMITIVE_S_SPIN):
++                    result.redundant_s_pruned += 1
++                    continue
++                child = successor.next_state
++                accepted, _, _ = table.offer(child)
++                if not accepted:
++                    result.duplicate_key_rejections += 1
++                    continue
++                result.accepted_successors += 1
++                serial += 1
++                heuristic = goal_heuristic_s(
++                    child, goal_qf, self.successor_config, config)
++                heapq.heappush(open_heap, (
++                    child.g + config.heuristic_weight * heuristic,
++                    child.g, serial, child))

@@ -1,0 +1,200 @@
+{
+  "assertions_completed": false,
+  "budget": {
+    "heuristic_weight": 3.0,
+    "max_expansions": 1,
+    "max_seconds": 30.0,
+    "rotation_weight": 3.0
+  },
+  "case_id": "F11_budget_exhausted",
+  "description": "one-expansion deliberate budget stop",
+  "independent_reaudit": null,
+  "map_metadata": {
+    "kind": "empty"
+  },
+  "model": null,
+  "request": {
+    "formation_id": "fr04_three_vehicle",
+    "goal_headings": null,
+    "goal_qf": [
+      13.0,
+      10.0,
+      0.0
+    ],
+    "grid": {
+      "occupied_sha256": "e1038a405281e3a4ba6a65048621871508e751e77f2289c359b50edd90be6914",
+      "origin": [
+        -15.0,
+        -15.0
+      ],
+      "resolution": 0.05,
+      "shape": [
+        600,
+        600
+      ]
+    },
+    "model": [
+      {
+        "vehicle_id": 1,
+        "x": 1.0,
+        "y": 0.0
+      },
+      {
+        "vehicle_id": 2,
+        "x": 0.0,
+        "y": 1.0
+      },
+      {
+        "vehicle_id": 3,
+        "x": 0.0,
+        "y": -1.0
+      }
+    ],
+    "plan_id": 11,
+    "search_config": {
+      "heuristic_weight": 3.0,
+      "max_expansions": 1,
+      "max_seconds": 30.0,
+      "rotation_weight": 3.0
+    },
+    "start_headings": [
+      {
+        "theta": 0.0,
+        "vehicle_id": 1
+      },
+      {
+        "theta": 0.0,
+        "vehicle_id": 2
+      },
+      {
+        "theta": 0.0,
+        "vehicle_id": 3
+      }
+    ],
+    "start_qf": [
+      10.0,
+      10.0,
+      0.0
+    ],
+    "successor_config": {
+      "allow_reverse": true,
+      "arc_pivots": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          2.0
+        ],
+        [
+          0.0,
+          -2.0
+        ],
+        [
+          2.0,
+          0.0
+        ],
+        [
+          -2.0,
+          0.0
+        ]
+      ],
+      "arc_step_rad": 0.17453292519943295,
+      "collision_margin_m": 0.05,
+      "control_bin": 0.01,
+      "goal_heading_free": true,
+      "goal_heading_tol_rad": 0.017453292519943295,
+      "goal_psi_tol_rad": 0.017453292519943295,
+      "goal_xy_tol_m": 0.02,
+      "heading_bin_rad": 0.17453292519943295,
+      "max_samples_per_segment": 200000,
+      "psi_bin_rad": 0.17453292519943295,
+      "sweep_spacing_m": 0.01,
+      "timing_limits": {
+        "a_max": 0.6,
+        "jerk_max": 2.0,
+        "lateral_accel_max": 0.6,
+        "max_block_duration_s": 120.0,
+        "min_mode_dwell_s": 0.3,
+        "mode_setup_time": 0.15,
+        "mode_switch_duration": 0.3,
+        "r_min_ackermann": 0.81,
+        "steer_accel_max": 1.5,
+        "steer_angle_max": 1.5707963267948966,
+        "steer_rate_max": 0.8,
+        "track": 0.364,
+        "v_max": 0.8,
+        "wheel_speed_max": 1.0,
+        "wheelbase": 0.494,
+        "yaw_accel_max": 0.8,
+        "yaw_jerk_max": 3.0,
+        "yaw_rate_max": 0.8
+      },
+      "translation_step_m": 1.0,
+      "xy_bin_m": 0.2
+    },
+    "vehicle_shapes": [
+      {
+        "length_m": 0.738,
+        "vehicle_id": 1,
+        "width_m": 0.5
+      },
+      {
+        "length_m": 0.738,
+        "vehicle_id": 2,
+        "width_m": 0.5
+      },
+      {
+        "length_m": 0.738,
+        "vehicle_id": 3,
+        "width_m": 0.5
+      }
+    ]
+  },
+  "request_sha256": "860affa24b8bd60e018c2219b0077ad4074c1a9f1069ab04dcf6bd7a14db3a1d",
+  "result": {
+    "detail": "expansions 1 >= 1",
+    "duration_s": null,
+    "evaluation": null,
+    "executable": false,
+    "feasible": false,
+    "first_failure_layer": "budget",
+    "plan_model": null,
+    "projection_summary": null,
+    "reason": "EXPANSION_BUDGET_EXHAUSTED",
+    "request_sha256": "860affa24b8bd60e018c2219b0077ad4074c1a9f1069ab04dcf6bd7a14db3a1d",
+    "schema": "fr04.uniform_planning_result.v1",
+    "search": {
+      "accepted_successors": 56,
+      "candidate_count": 143,
+      "collision_s": 0.4067785516381264,
+      "detail": "expansions 1 >= 1",
+      "duplicate_key_rejections": 0,
+      "expansions": 1,
+      "first_failure_layer": "budget",
+      "generation_s": 0.09312734939157963,
+      "goal_qf": [
+        13.0,
+        10.0,
+        0.0
+      ],
+      "goal_state": null,
+      "open_size": 56,
+      "path": [],
+      "reason": "EXPANSION_BUDGET_EXHAUSTED",
+      "redundant_s_pruned": 0,
+      "rejection_histogram": {
+        "A_HEADING_REQUIRES_S_ALIGNMENT": 87
+      },
+      "stale_heap_entries": 0,
+      "status": "BUDGET_EXHAUSTED",
+      "terminal_audits": [],
+      "terminal_rejection_histogram": {},
+      "wall_time_s": 0.5007370139937848
+    },
+    "status": "BUDGET_EXHAUSTED",
+    "wall_time_s": 0.5057842409005389
+  },
+  "samples": null
+}

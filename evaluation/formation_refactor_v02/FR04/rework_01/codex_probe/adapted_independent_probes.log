@@ -1,0 +1,95 @@
+[
+  {
+    "case": "final_plan_request_binding_fault_injection",
+    "build_calls": 2,
+    "requested_start": [
+      10.0,
+      10.0,
+      0.0
+    ],
+    "requested_goal": [
+      13.0,
+      10.0,
+      0.0
+    ],
+    "injected_self_audit": "FEASIBLE",
+    "status": "AUDIT_REJECTED",
+    "feasible": false,
+    "executable": false,
+    "reason": "PLAN_START_MISMATCH",
+    "failure_layer": "audit",
+    "search_edge_count": 3,
+    "evaluation_status": "REJECTED",
+    "plan_present": false,
+    "start": null,
+    "goal": null,
+    "plan_id": null,
+    "bound_request_audit": {
+      "status": "REJECTED",
+      "reason": "UNIFORM_MODEL_MISMATCH",
+      "detail": "plan.start_qf.x actual=0 expected=10 error=10 > 1e-07"
+    },
+    "injected_plan_is_self_feasible": true
+  },
+  {
+    "case": "same_endpoints_different_path",
+    "build_calls": 2,
+    "replacement_self_audit": "FEASIBLE",
+    "status": "AUDIT_REJECTED",
+    "feasible": false,
+    "executable": false,
+    "reason": "PLAN_EDGE_SEQUENCE_MISMATCH",
+    "failure_layer": "audit",
+    "search_edge_count": 3,
+    "evaluation_status": "REJECTED",
+    "plan_present": false,
+    "start": null,
+    "goal": null,
+    "plan_id": null
+  },
+  {
+    "case": "final_audit_refusal",
+    "audit_calls": 2,
+    "status": "AUDIT_REJECTED",
+    "feasible": false,
+    "executable": false,
+    "reason": "UNIFORM_MODEL_MISMATCH",
+    "failure_layer": "audit",
+    "search_edge_count": 3,
+    "evaluation_status": "REJECTED",
+    "plan_present": true,
+    "plan_id": 401,
+    "start": [
+      10.0,
+      10.0,
+      0.0
+    ],
+    "goal": [
+      13.0,
+      10.0,
+      0.0
+    ]
+  },
+  {
+    "case": "new_request_after_failure",
+    "status": "SUCCESS",
+    "feasible": true,
+    "executable": true,
+    "reason": "OK",
+    "failure_layer": "none",
+    "search_edge_count": 1,
+    "evaluation_status": "FEASIBLE",
+    "plan_present": true,
+    "plan_id": 402,
+    "start": [
+      10.0,
+      10.0,
+      0.0
+    ],
+    "goal": [
+      11.0,
+      10.0,
+      0.0
+    ]
+  }
+]

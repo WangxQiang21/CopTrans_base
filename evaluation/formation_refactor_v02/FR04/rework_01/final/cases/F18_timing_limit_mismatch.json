@@ -1,0 +1,549 @@
+{
+  "assertions_completed": false,
+  "budget": {
+    "heuristic_weight": 3.0,
+    "max_expansions": 10000,
+    "max_seconds": 30.0,
+    "rotation_weight": 3.0
+  },
+  "case_id": "F18_timing_limit_mismatch",
+  "description": "final rebuild is timed with v_max=0.7 while the request uses the default 0.8",
+  "independent_reaudit": null,
+  "map_metadata": {
+    "kind": "empty"
+  },
+  "model": null,
+  "request": {
+    "formation_id": "fr04_three_vehicle",
+    "goal_headings": null,
+    "goal_qf": [
+      13.0,
+      10.0,
+      0.0
+    ],
+    "grid": {
+      "occupied_sha256": "e1038a405281e3a4ba6a65048621871508e751e77f2289c359b50edd90be6914",
+      "origin": [
+        -15.0,
+        -15.0
+      ],
+      "resolution": 0.05,
+      "shape": [
+        600,
+        600
+      ]
+    },
+    "model": [
+      {
+        "vehicle_id": 1,
+        "x": 1.0,
+        "y": 0.0
+      },
+      {
+        "vehicle_id": 2,
+        "x": 0.0,
+        "y": 1.0
+      },
+      {
+        "vehicle_id": 3,
+        "x": 0.0,
+        "y": -1.0
+      }
+    ],
+    "plan_id": 18,
+    "search_config": {
+      "heuristic_weight": 3.0,
+      "max_expansions": 10000,
+      "max_seconds": 30.0,
+      "rotation_weight": 3.0
+    },
+    "start_headings": [
+      {
+        "theta": 0.0,
+        "vehicle_id": 1
+      },
+      {
+        "theta": 0.0,
+        "vehicle_id": 2
+      },
+      {
+        "theta": 0.0,
+        "vehicle_id": 3
+      }
+    ],
+    "start_qf": [
+      10.0,
+      10.0,
+      0.0
+    ],
+    "successor_config": {
+      "allow_reverse": true,
+      "arc_pivots": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          2.0
+        ],
+        [
+          0.0,
+          -2.0
+        ],
+        [
+          2.0,
+          0.0
+        ],
+        [
+          -2.0,
+          0.0
+        ]
+      ],
+      "arc_step_rad": 0.17453292519943295,
+      "collision_margin_m": 0.05,
+      "control_bin": 0.01,
+      "goal_heading_free": true,
+      "goal_heading_tol_rad": 0.017453292519943295,
+      "goal_psi_tol_rad": 0.017453292519943295,
+      "goal_xy_tol_m": 0.02,
+      "heading_bin_rad": 0.17453292519943295,
+      "max_samples_per_segment": 200000,
+      "psi_bin_rad": 0.17453292519943295,
+      "sweep_spacing_m": 0.01,
+      "timing_limits": {
+        "a_max": 0.6,
+        "jerk_max": 2.0,
+        "lateral_accel_max": 0.6,
+        "max_block_duration_s": 120.0,
+        "min_mode_dwell_s": 0.3,
+        "mode_setup_time": 0.15,
+        "mode_switch_duration": 0.3,
+        "r_min_ackermann": 0.81,
+        "steer_accel_max": 1.5,
+        "steer_angle_max": 1.5707963267948966,
+        "steer_rate_max": 0.8,
+        "track": 0.364,
+        "v_max": 0.8,
+        "wheel_speed_max": 1.0,
+        "wheelbase": 0.494,
+        "yaw_accel_max": 0.8,
+        "yaw_jerk_max": 3.0,
+        "yaw_rate_max": 0.8
+      },
+      "translation_step_m": 1.0,
+      "xy_bin_m": 0.2
+    },
+    "vehicle_shapes": [
+      {
+        "length_m": 0.738,
+        "vehicle_id": 1,
+        "width_m": 0.5
+      },
+      {
+        "length_m": 0.738,
+        "vehicle_id": 2,
+        "width_m": 0.5
+      },
+      {
+        "length_m": 0.738,
+        "vehicle_id": 3,
+        "width_m": 0.5
+      }
+    ]
+  },
+  "request_sha256": "0017c00452ee3f99fbb3c6074c939f4d5e4d973ad65079d2866da006ce0dacf7",
+  "result": {
+    "detail": "final rebuilt-path audit rejected a path that the terminal screen had accepted",
+    "duration_s": null,
+    "evaluation": {
+      "certification": "NONE",
+      "checks": 0,
+      "collision_certificate": false,
+      "detail": "plan timing limits differ from the request",
+      "executable": false,
+      "failure": {
+        "block_index": null,
+        "code": "PLAN_IDENTITY_MISMATCH",
+        "constraint": "",
+        "detail": "plan timing limits differ from the request",
+        "field": "timing_limits",
+        "max_error": null,
+        "other_vehicle_id": null,
+        "pair_id": null,
+        "sample_index": null,
+        "segment_index": null,
+        "station": null,
+        "time_s": null,
+        "vehicle_id": null
+      },
+      "feasible": false,
+      "formation_id": "fr04_three_vehicle",
+      "independent_audit": true,
+      "metrics": {},
+      "plan_id": 18,
+      "reason": "PLAN_IDENTITY_MISMATCH",
+      "schema": "formation_evaluation/v1",
+      "status": "REJECTED",
+      "trajectory_published": false
+    },
+    "executable": false,
+    "feasible": false,
+    "first_failure_layer": "audit",
+    "plan_model": null,
+    "projection_summary": null,
+    "reason": "PLAN_IDENTITY_MISMATCH",
+    "request_sha256": "0017c00452ee3f99fbb3c6074c939f4d5e4d973ad65079d2866da006ce0dacf7",
+    "schema": "fr04.uniform_planning_result.v1",
+    "search": {
+      "accepted_successors": 168,
+      "candidate_count": 429,
+      "collision_s": 0.7045926384162158,
+      "detail": "goal path accepted by the terminal validator",
+      "duplicate_key_rejections": 0,
+      "expansions": 3,
+      "first_failure_layer": "none",
+      "generation_s": 0.16966369561851025,
+      "goal_qf": [
+        13.0,
+        10.0,
+        0.0
+      ],
+      "goal_state": {
+        "a_labels": [],
+        "edge_primitive": "A_STRAIGHT",
+        "g": 3.75,
+        "has_parent": true,
+        "headings": [
+          {
+            "theta": 0.0,
+            "vehicle_id": 1
+          },
+          {
+            "theta": 0.0,
+            "vehicle_id": 2
+          },
+          {
+            "theta": 0.0,
+            "vehicle_id": 3
+          }
+        ],
+        "mode": "A",
+        "qf": [
+          13.0,
+          10.0,
+          0.0
+        ],
+        "wheel": [
+          {
+            "control": 0.0,
+            "direction": 1,
+            "mode": "A",
+            "vehicle_id": 1,
+            "wheel_angles_rad": [
+              0.0,
+              0.0,
+              -0.0,
+              -0.0
+            ]
+          },
+          {
+            "control": 0.0,
+            "direction": 1,
+            "mode": "A",
+            "vehicle_id": 2,
+            "wheel_angles_rad": [
+              0.0,
+              0.0,
+              -0.0,
+              -0.0
+            ]
+          },
+          {
+            "control": 0.0,
+            "direction": 1,
+            "mode": "A",
+            "vehicle_id": 3,
+            "wheel_angles_rad": [
+              0.0,
+              0.0,
+              -0.0,
+              -0.0
+            ]
+          }
+        ]
+      },
+      "open_size": 165,
+      "path": [
+        {
+          "a_labels": [
+            "A_straight_goal_gear+++"
+          ],
+          "cumulative_proxy_g_s": 1.25,
+          "delta_psi": 0.0,
+          "directions": {
+            "1": 1,
+            "2": 1,
+            "3": 1
+          },
+          "end_headings": {
+            "1": 0.0,
+            "2": 0.0,
+            "3": 0.0
+          },
+          "end_qf": [
+            11.0,
+            10.0,
+            0.0
+          ],
+          "index": 1,
+          "mode": "A",
+          "parameter_length": 1.0,
+          "pivot": [
+            0.0,
+            0.0
+          ],
+          "primitive": "A_STRAIGHT",
+          "start_headings": {
+            "1": 0.0,
+            "2": 0.0,
+            "3": 0.0
+          },
+          "start_qf": [
+            10.0,
+            10.0,
+            0.0
+          ]
+        },
+        {
+          "a_labels": [
+            "A_straight_goal_gear+++"
+          ],
+          "cumulative_proxy_g_s": 2.5,
+          "delta_psi": 0.0,
+          "directions": {
+            "1": 1,
+            "2": 1,
+            "3": 1
+          },
+          "end_headings": {
+            "1": 0.0,
+            "2": 0.0,
+            "3": 0.0
+          },
+          "end_qf": [
+            12.0,
+            10.0,
+            0.0
+          ],
+          "index": 2,
+          "mode": "A",
+          "parameter_length": 1.0,
+          "pivot": [
+            0.0,
+            0.0
+          ],
+          "primitive": "A_STRAIGHT",
+          "start_headings": {
+            "1": 0.0,
+            "2": 0.0,
+            "3": 0.0
+          },
+          "start_qf": [
+            11.0,
+            10.0,
+            0.0
+          ]
+        },
+        {
+          "a_labels": [],
+          "cumulative_proxy_g_s": 3.75,
+          "delta_psi": 0.0,
+          "directions": {
+            "1": 1,
+            "2": 1,
+            "3": 1
+          },
+          "end_headings": {
+            "1": 0.0,
+            "2": 0.0,
+            "3": 0.0
+          },
+          "end_qf": [
+            13.0,
+            10.0,
+            0.0
+          ],
+          "index": 3,
+          "mode": "A",
+          "parameter_length": 1.0,
+          "pivot": [
+            0.0,
+            0.0
+          ],
+          "primitive": "A_STRAIGHT",
+          "start_headings": {
+            "1": 0.0,
+            "2": 0.0,
+            "3": 0.0
+          },
+          "start_qf": [
+            12.0,
+            10.0,
+            0.0
+          ]
+        }
+      ],
+      "reason": "TERMINAL_AUDIT_ACCEPTED",
+      "redundant_s_pruned": 0,
+      "rejection_histogram": {
+        "A_HEADING_REQUIRES_S_ALIGNMENT": 261
+      },
+      "stale_heap_entries": 0,
+      "status": "SUCCESS",
+      "terminal_audits": [
+        {
+          "accepted": true,
+          "audit_wall_time_s": 0.14565635495819151,
+          "detail": "independent V0.2 uniform audit passed: edge re-derivation, common-time schedule, analytic states, dynamics candidates and conservative bounds, projection contract, static and analytic swept collision",
+          "duration_s": 9.368306005450883,
+          "edge_count": 3,
+          "failure_code": null,
+          "failure_constraint": null,
+          "failure_detail": null,
+          "failure_vehicle_id": null,
+          "feasible": true,
+          "path": [
+            {
+              "a_labels": [
+                "A_straight_goal_gear+++"
+              ],
+              "cumulative_proxy_g_s": 1.25,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "end_qf": [
+                11.0,
+                10.0,
+                0.0
+              ],
+              "index": 1,
+              "mode": "A",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "A_STRAIGHT",
+              "start_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "start_qf": [
+                10.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [
+                "A_straight_goal_gear+++"
+              ],
+              "cumulative_proxy_g_s": 2.5,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "end_qf": [
+                12.0,
+                10.0,
+                0.0
+              ],
+              "index": 2,
+              "mode": "A",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "A_STRAIGHT",
+              "start_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "start_qf": [
+                11.0,
+                10.0,
+                0.0
+              ]
+            },
+            {
+              "a_labels": [],
+              "cumulative_proxy_g_s": 3.75,
+              "delta_psi": 0.0,
+              "directions": {
+                "1": 1,
+                "2": 1,
+                "3": 1
+              },
+              "end_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "end_qf": [
+                13.0,
+                10.0,
+                0.0
+              ],
+              "index": 3,
+              "mode": "A",
+              "parameter_length": 1.0,
+              "pivot": [
+                0.0,
+                0.0
+              ],
+              "primitive": "A_STRAIGHT",
+              "start_headings": {
+                "1": 0.0,
+                "2": 0.0,
+                "3": 0.0
+              },
+              "start_qf": [
+                12.0,
+                10.0,
+                0.0
+              ]
+            }
+          ],
+          "path_proxy_g_s": 3.75,
+          "reason": "OK",
+          "search_elapsed_at_audit_s": 1.0219180489657447,
+          "status": "FEASIBLE"
+        }
+      ],
+      "terminal_rejection_histogram": {},
+      "wall_time_s": 1.0219441700028256
+    },
+    "status": "AUDIT_REJECTED",
+    "wall_time_s": 1.0260391890769824
+  },
+  "samples": null
+}

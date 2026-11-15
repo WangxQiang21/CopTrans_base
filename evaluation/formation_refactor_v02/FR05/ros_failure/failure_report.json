@@ -1,0 +1,1323 @@
+{
+ "checks": {
+  "envelope_backend": {
+   "detail": "uniform_v02",
+   "ok": true
+  },
+  "envelope_certification": {
+   "detail": "GEOMETRY_ONLY_NO_S9_NO_COLLISION",
+   "ok": true
+  },
+  "envelope_digest_shape": {
+   "detail": "b294f153cd8fa10d039edf329cb722d5eacd302ac0bbb9c7b104070134e01201",
+   "ok": true
+  },
+  "envelope_model_version": {
+   "detail": "uniform_timed_plan.v1",
+   "ok": true
+  },
+  "envelope_semantic_version": {
+   "detail": "uniform_playback_plan/v1",
+   "ok": true
+  },
+  "envelope_stamp_equals_embedded_trajectory": {
+   "detail": "envelope (1794640791, 589760303) trajectory (1794640791, 589760303)",
+   "ok": true
+  },
+  "failure_admits_new_experiment": {
+   "detail": "{'retry_plan_id': 600012, 'start': [11.0, 10.0], 'hold': [11.0, 10.0]}",
+   "ok": true
+  },
+  "failure_baseline_busy_released_by_real_terminal": {
+   "detail": "job HOLD_END after playback HOLD_END by 0.099 s",
+   "ok": true
+  },
+  "failure_baseline_interior_ticks_per_phase": {
+   "detail": "{'counts': {'tf': {'motion_0000': 304}, 'marker': {'motion_0000': 304}, 'status': {'motion_0000': 304}}, 'short': {}, 'required_per_source': 11, 'samples': {'tf': 305, 'marker': 305, 'status': 305}}",
+   "ok": true
+  },
+  "failure_baseline_job_state_order": {
+   "detail": "['PLANNING', 'PLANNING', 'PLANNING', 'PLANNING', 'PLAYING', 'PLAYING', 'PLAYING', 'HOLD_END']",
+   "ok": true
+  },
+  "failure_baseline_marker_angle": {
+   "detail": "0.0",
+   "ok": true
+  },
+  "failure_baseline_marker_position": {
+   "detail": "5.017302129317613e-10",
+   "ok": true
+  },
+  "failure_baseline_planner_published": {
+   "detail": "['PLANNING', 'FEASIBLE']",
+   "ok": true
+  },
+  "failure_baseline_planner_wall_matches_T_end": {
+   "detail": "3.1227686684836273 vs 3.1227686684836273",
+   "ok": true
+  },
+  "failure_baseline_playback_identity": {
+   "detail": "600010",
+   "ok": true
+  },
+  "failure_baseline_playback_terminal_state": {
+   "detail": "HOLD_END",
+   "ok": true
+  },
+  "failure_baseline_stamp_not_after_receipt": {
+   "detail": "stamp 1794640762.253518 receipt 1794640762.260080",
+   "ok": true
+  },
+  "failure_baseline_status_angle": {
+   "detail": "0.0",
+   "ok": true
+  },
+  "failure_baseline_status_position": {
+   "detail": "0.0",
+   "ok": true
+  },
+  "failure_baseline_terminal_heading_error": {
+   "detail": "0.0",
+   "ok": true
+  },
+  "failure_baseline_terminal_position_error": {
+   "detail": "0.0",
+   "ok": true
+  },
+  "failure_baseline_tf_angle": {
+   "detail": "0.0",
+   "ok": true
+  },
+  "failure_baseline_tf_position": {
+   "detail": "5.017302129317613e-10",
+   "ok": true
+  },
+  "failure_clears_old_markers": {
+   "detail": "0",
+   "ok": true
+  },
+  "failure_hold_is_at_stopped_frame": {
+   "detail": "{'hold_reference_error_m': 0.0, 'goal_qf': [11.0, 10.0, 0.0], 'reference': (11.0, 10.0)}",
+   "ok": true
+  },
+  "failure_job_failed": {
+   "detail": "TIME_BUDGET_EXHAUSTED",
+   "ok": true
+  },
+  "failure_latched_envelope_is_invalid": {
+   "detail": "{'plan_id': 600011, 'model_sha256': '', 'model_json_length': 0, 'certification': '', 'samples': 0}",
+   "ok": true
+  },
+  "failure_no_executable_status": {
+   "detail": "False",
+   "ok": true
+  },
+  "failure_playback_cleared": {
+   "detail": "CLEARED",
+   "ok": true
+  },
+  "failure_playback_not_executable": {
+   "detail": "False",
+   "ok": true
+  },
+  "failure_reason_is_admitted_planning_failure": {
+   "detail": "{'reason': 'TIME_BUDGET_EXHAUSTED', 'pipeline_status': 'BUDGET_EXHAUSTED', 'admitted': True}",
+   "ok": true
+  },
+  "failure_retry_completed": {
+   "detail": "600012",
+   "ok": true
+  },
+  "failure_stops_old_animation": {
+   "detail": "{'tf_messages': 24, 'children': ['formation_cargo_wedge_reference', 'formation_cargo_wedge_vehicle_1_base_link', 'formation_cargo_wedge_vehicle_2_base_link', 'formation_cargo_wedge_vehicle_3_base_link'], 'tf_motion_m': 0.0, 'marker_motion_m': 0.0}",
+   "ok": true
+  },
+  "identity_formation_id": {
+   "detail": "cargo_wedge",
+   "ok": true
+  },
+  "identity_plan_id": {
+   "detail": "600012 vs 600012",
+   "ok": true
+  },
+  "interior_samples_per_phase": {
+   "detail": "{'counts': {'motion_0000': 158}, 'short': {}, 'required': 11}",
+   "ok": true
+  },
+  "job_model_digest_matches_envelope": {
+   "detail": "['26b943b30536fafa025567ee81edf7646e957161ba693d5e1bce60e059f30a24', '26b943b30536fafa025567ee81edf7646e957161ba693d5e1bce60e059f30a24', '26b943b30536fafa025567ee81edf7646e957161ba693d5e1bce60e059f30a24']",
+   "ok": true
+  },
+  "job_plan_id_matches_envelope": {
+   "detail": "[600010]",
+   "ok": true
+  },
+  "job_state_exists": {
+   "detail": "8 job documents",
+   "ok": true
+  },
+  "model_digest_verified": {
+   "detail": "b294f153cd8fa10d039edf329cb722d5eacd302ac0bbb9c7b104070134e01201",
+   "ok": true
+  },
+  "model_rebuild_identity": {
+   "detail": "600012 cargo_wedge",
+   "ok": true
+  },
+  "optimizer_status_exists": {
+   "detail": "3 status documents",
+   "ok": true
+  },
+  "sample_centers_derived_from_qf": {
+   "detail": "0.0",
+   "ok": true
+  },
+  "sample_vs_model_angle": {
+   "detail": "0.0",
+   "ok": true
+  },
+  "sample_vs_model_position": {
+   "detail": "5.596767493898369e-11",
+   "ok": true
+  },
+  "shared_time_axis_lengths": {
+   "detail": "{1: 159, 2: 159, 3: 159}",
+   "ok": true
+  },
+  "status_model_digest_matches_envelope": {
+   "detail": "['26b943b30536fafa025567ee81edf7646e957161ba693d5e1bce60e059f30a24']",
+   "ok": true
+  },
+  "status_plan_id_matches_envelope": {
+   "detail": "[600010]",
+   "ok": true
+  },
+  "trajectory_plan_id": {
+   "detail": "600012",
+   "ok": true
+  }
+ },
+ "experiments": [
+  {
+   "display": {
+    "interior_per_phase": {
+     "marker": {
+      "motion_0000": 304
+     },
+     "status": {
+      "motion_0000": 304
+     },
+     "tf": {
+      "motion_0000": 304
+     }
+    },
+    "samples": {
+     "marker": 305,
+     "status": 305,
+     "tf": 305
+    },
+    "worst": {
+     "marker_angle_rad": 0.0,
+     "marker_position_m": 5.017302129317613e-10,
+     "status_angle_rad": 0.0,
+     "status_position_m": 0.0,
+     "tf_angle_rad": 0.0,
+     "tf_position_m": 5.017302129317613e-10
+    }
+   },
+   "envelope": {
+    "T_end_s": 3.1227686684836273,
+    "certification": "GEOMETRY_ONLY_NO_S9_NO_COLLISION",
+    "document_path": "evaluation/formation_refactor_v02/FR05/ros_failure/envelopes/envelope_00600010.json",
+    "edges": [
+     {
+      "delta_psi": 0.0,
+      "mode": "A",
+      "pivot_x": 0.0,
+      "pivot_y": 0.0,
+      "primitive": "A_STRAIGHT"
+     }
+    ],
+    "formation_id": "cargo_wedge",
+    "goal_headings": {
+     "1": 0.0,
+     "2": 0.0,
+     "3": 0.0
+    },
+    "goal_qf": [
+     11.0,
+     10.0,
+     0.0
+    ],
+    "interior_samples_per_phase": {
+     "motion_0000": 158
+    },
+    "model_sha256": "26b943b30536fafa025567ee81edf7646e957161ba693d5e1bce60e059f30a24",
+    "model_version": "uniform_timed_plan.v1",
+    "phases": [
+     {
+      "end_s": 3.1227686684836273,
+      "kind": "motion",
+      "mode": "A",
+      "phase_id": "motion_0000",
+      "t0_s": 0.0
+     }
+    ],
+    "plan_id": 600010,
+    "sample_count": 159,
+    "semantic_version": "uniform_playback_plan/v1",
+    "stamp": {
+     "nsecs": 253517866,
+     "secs": 1794640762
+    },
+    "start_headings": {
+     "1": 0.0,
+     "2": 0.0,
+     "3": 0.0
+    },
+    "start_qf": [
+     10.0,
+     10.0,
+     0.0
+    ],
+    "worst_qf_center_m": 0.0,
+    "worst_sample_angle_rad": 0.0,
+    "worst_sample_position_m": 5.596767493898369e-11
+   },
+   "envelope_path": "evaluation/formation_refactor_v02/FR05/ros_failure/envelopes/envelope_00600010.json",
+   "goal": [
+    11.0,
+    10.0,
+    0.0
+   ],
+   "initial_pose": [
+    10.0,
+    10.0,
+    0.0
+   ],
+   "job_hold_end_minus_playback_hold_end_s": 0.09917044639587402,
+   "job_states": [
+    {
+     "received_s": 1794640758.2585907,
+     "state": "PLANNING"
+    },
+    {
+     "received_s": 1794640759.5661998,
+     "state": "PLANNING"
+    },
+    {
+     "received_s": 1794640761.066102,
+     "state": "PLANNING"
+    },
+    {
+     "received_s": 1794640762.0731359,
+     "state": "PLANNING"
+    },
+    {
+     "received_s": 1794640762.304083,
+     "state": "PLAYING"
+    },
+    {
+     "received_s": 1794640763.5657763,
+     "state": "PLAYING"
+    },
+    {
+     "received_s": 1794640765.0658872,
+     "state": "PLAYING"
+    },
+    {
+     "received_s": 1794640765.390146,
+     "state": "HOLD_END"
+    }
+   ],
+   "name": "failure_baseline",
+   "plan_id": 600010,
+   "planner_wall_time_s": 3.959530601045117,
+   "planning_wall_s": 4.405526161193848,
+   "playing_receipt_s": 1794640762.3238165,
+   "request_count_before": 1,
+   "request_start": [
+    10.0,
+    10.0,
+    0.0
+   ],
+   "stamp_to_receipt_s": 0.006562232971191406,
+   "terminal_minus_stamp_s": 3.138032913208008,
+   "terminal_receipt_s": 1794640765.3915508
+  }
+ ],
+ "failure": {
+  "baseline_plan_id": 600010,
+  "hold_reference_error_m": 0.0,
+  "job": {
+   "backend": "uniform_v02",
+   "detail": "wall time 20.6473461 s >= 20 s",
+   "formation_id": "cargo_wedge",
+   "map_error": null,
+   "map_frame_id": "map",
+   "map_ready": true,
+   "map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+   "model_sha256": null,
+   "plan_id": 600011,
+   "reason": "TIME_BUDGET_EXHAUSTED",
+   "request_map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+   "request_sha256": null,
+   "schema": "formation_job_state/v1",
+   "state": "FAILED"
+  },
+  "optimizer_status": {
+   "admitted": true,
+   "backend": "uniform_v02",
+   "busy_rejections": 0,
+   "detail": "wall time 20.6473461 s >= 20 s",
+   "evaluation": null,
+   "executable": false,
+   "feasible": false,
+   "first_failure_layer": "budget",
+   "formation_id": "cargo_wedge",
+   "job_state": "FAILED",
+   "map_error": null,
+   "map_frame_id": "map",
+   "map_ready": true,
+   "map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+   "model_sha256": null,
+   "model_version": "uniform_timed_plan.v1",
+   "node_state": "REJECTED",
+   "pipeline_status": "BUDGET_EXHAUSTED",
+   "plan_id": 600011,
+   "planning_started": true,
+   "playback_confirmed": false,
+   "projection": null,
+   "reason": "TIME_BUDGET_EXHAUSTED",
+   "request_map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+   "request_sha256": null,
+   "requests_seen": 12,
+   "schema": "formation_optimizer_status/v1",
+   "search": {
+    "accepted_successors": 85,
+    "candidate_count": 858,
+    "collision_s": 20.263872337760404,
+    "detail": "wall time 20.6473461 s >= 20 s",
+    "duplicate_key_rejections": 0,
+    "expansions": 6,
+    "first_failure_layer": "budget",
+    "generation_s": 0.381057535414584,
+    "goal_qf": [
+     13.5,
+     10.0,
+     0.0
+    ],
+    "goal_state": null,
+    "open_size": 80,
+    "reason": "TIME_BUDGET_EXHAUSTED",
+    "redundant_s_pruned": 235,
+    "rejection_histogram": {
+     "A_HEADING_REQUIRES_S_ALIGNMENT": 517,
+     "MAP_OBB_COLLISION": 21
+    },
+    "stale_heap_entries": 0,
+    "status": "BUDGET_EXHAUSTED",
+    "terminal_rejection_histogram": {},
+    "wall_time_s": 20.647351999999955
+   },
+   "semantic_version": "uniform_playback_plan/v1",
+   "status": "REJECTED",
+   "trajectory_published": false,
+   "wall_time_s": 20.654820225085132
+  },
+  "plan_id": 600011,
+  "playback_after_failure": {
+   "backend": "uniform_v02",
+   "cleared": true,
+   "executable": false,
+   "formation_id": null,
+   "frame_id": "map",
+   "geometry_only": true,
+   "marker_count": 0,
+   "marker_namespaces": [],
+   "model_sha256": "26b943b30536fafa025567ee81edf7646e957161ba693d5e1bce60e059f30a24",
+   "plan_id": null,
+   "reason": "invalid playback plan: model_sha256 must be 64 hex digits",
+   "schema": "formation_playback/v1",
+   "semantic_version": "uniform_playback_plan/v1",
+   "state": "CLEARED",
+   "time_source": "header_stamp_common_clock"
+  },
+  "post_failure_marker_motion_m": 0.0,
+  "post_failure_tf_messages": 24,
+  "post_failure_tf_motion_m": 0.0,
+  "retry": {
+   "T_end_s": 3.1227686684836273,
+   "certification": "GEOMETRY_ONLY_NO_S9_NO_COLLISION",
+   "document_path": "evaluation/formation_refactor_v02/FR05/ros_failure/envelopes/envelope_00600012.json",
+   "edges": [
+    {
+     "delta_psi": 0.0,
+     "mode": "A",
+     "pivot_x": 0.0,
+     "pivot_y": 0.0,
+     "primitive": "A_STRAIGHT"
+    }
+   ],
+   "formation_id": "cargo_wedge",
+   "goal_headings": {
+    "1": 0.0,
+    "2": 0.0,
+    "3": 0.0
+   },
+   "goal_qf": [
+    10.0,
+    10.0,
+    0.0
+   ],
+   "interior_samples_per_phase": {
+    "motion_0000": 158
+   },
+   "model_sha256": "b294f153cd8fa10d039edf329cb722d5eacd302ac0bbb9c7b104070134e01201",
+   "model_version": "uniform_timed_plan.v1",
+   "phases": [
+    {
+     "end_s": 3.1227686684836273,
+     "kind": "motion",
+     "mode": "A",
+     "phase_id": "motion_0000",
+     "t0_s": 0.0
+    }
+   ],
+   "plan_id": 600012,
+   "sample_count": 159,
+   "semantic_version": "uniform_playback_plan/v1",
+   "stamp": {
+    "nsecs": 589760303,
+    "secs": 1794640791
+   },
+   "start_headings": {
+    "1": 0.0,
+    "2": 0.0,
+    "3": 0.0
+   },
+   "start_qf": [
+    11.0,
+    10.0,
+    0.0
+   ],
+   "worst_qf_center_m": 0.0,
+   "worst_sample_angle_rad": 0.0,
+   "worst_sample_position_m": 5.596767493898369e-11
+  },
+  "wall_s": 21.08148980140686
+ },
+ "generated_at_utc": "2026-11-14T07:19:16Z",
+ "job_state_history": [
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "model_sha256": "ff5748de7d65173cbab926f9bb55d8535853e8f3991e89c3b1216e3f88211a40",
+    "plan_id": 600009,
+    "reason": "",
+    "request_map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "request_sha256": "b3532cff80a7a65603dfbb3bc3098217c80fbffe59e04ac67f5bb867bea05181",
+    "schema": "formation_job_state/v1",
+    "state": "HOLD_END"
+   },
+   "received_s": 1794640755.8419254
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "model_sha256": "ff5748de7d65173cbab926f9bb55d8535853e8f3991e89c3b1216e3f88211a40",
+    "plan_id": 600009,
+    "reason": "",
+    "request_map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "request_sha256": "b3532cff80a7a65603dfbb3bc3098217c80fbffe59e04ac67f5bb867bea05181",
+    "schema": "formation_job_state/v1",
+    "state": "HOLD_END"
+   },
+   "received_s": 1794640756.0657122
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "model_sha256": "ff5748de7d65173cbab926f9bb55d8535853e8f3991e89c3b1216e3f88211a40",
+    "plan_id": 600009,
+    "reason": "",
+    "request_map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "request_sha256": "b3532cff80a7a65603dfbb3bc3098217c80fbffe59e04ac67f5bb867bea05181",
+    "schema": "formation_job_state/v1",
+    "state": "HOLD_END"
+   },
+   "received_s": 1794640757.5657997
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "model_sha256": null,
+    "plan_id": 600010,
+    "reason": "planning",
+    "request_map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794640758.2585907
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "model_sha256": null,
+    "plan_id": 600010,
+    "reason": "",
+    "request_map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794640759.5661998
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "model_sha256": null,
+    "plan_id": 600010,
+    "reason": "",
+    "request_map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794640761.066102
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "model_sha256": null,
+    "plan_id": 600010,
+    "reason": "",
+    "request_map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794640762.0731359
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "model_sha256": "26b943b30536fafa025567ee81edf7646e957161ba693d5e1bce60e059f30a24",
+    "plan_id": 600010,
+    "reason": "playback accepted the atomic envelope",
+    "request_map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "request_sha256": "c259509717b1c0d0edd28aaf45e19840ccfd4c3ead51260b3f6132c1d95533a8",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794640762.304083
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "model_sha256": "26b943b30536fafa025567ee81edf7646e957161ba693d5e1bce60e059f30a24",
+    "plan_id": 600010,
+    "reason": "",
+    "request_map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "request_sha256": "c259509717b1c0d0edd28aaf45e19840ccfd4c3ead51260b3f6132c1d95533a8",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794640763.5657763
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "model_sha256": "26b943b30536fafa025567ee81edf7646e957161ba693d5e1bce60e059f30a24",
+    "plan_id": 600010,
+    "reason": "",
+    "request_map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "request_sha256": "c259509717b1c0d0edd28aaf45e19840ccfd4c3ead51260b3f6132c1d95533a8",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794640765.0658872
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "model_sha256": "26b943b30536fafa025567ee81edf7646e957161ba693d5e1bce60e059f30a24",
+    "plan_id": 600010,
+    "reason": "playback reached its terminal hold",
+    "request_map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "request_sha256": "c259509717b1c0d0edd28aaf45e19840ccfd4c3ead51260b3f6132c1d95533a8",
+    "schema": "formation_job_state/v1",
+    "state": "HOLD_END"
+   },
+   "received_s": 1794640765.390146
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "model_sha256": null,
+    "plan_id": 600011,
+    "reason": "planning",
+    "request_map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794640765.89543
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "model_sha256": null,
+    "plan_id": 600011,
+    "reason": "",
+    "request_map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794640767.0673952
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "model_sha256": null,
+    "plan_id": 600011,
+    "reason": "",
+    "request_map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794640768.566662
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "model_sha256": null,
+    "plan_id": 600011,
+    "reason": "",
+    "request_map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794640769.5699406
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "model_sha256": null,
+    "plan_id": 600011,
+    "reason": "",
+    "request_map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794640771.0681553
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "model_sha256": null,
+    "plan_id": 600011,
+    "reason": "",
+    "request_map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794640772.5665967
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "model_sha256": null,
+    "plan_id": 600011,
+    "reason": "",
+    "request_map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794640774.0680163
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "model_sha256": null,
+    "plan_id": 600011,
+    "reason": "",
+    "request_map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794640775.5705698
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "model_sha256": null,
+    "plan_id": 600011,
+    "reason": "",
+    "request_map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794640777.069061
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "model_sha256": null,
+    "plan_id": 600011,
+    "reason": "",
+    "request_map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794640778.5702002
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "model_sha256": null,
+    "plan_id": 600011,
+    "reason": "",
+    "request_map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794640780.0664012
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "model_sha256": null,
+    "plan_id": 600011,
+    "reason": "",
+    "request_map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794640781.0673037
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "model_sha256": null,
+    "plan_id": 600011,
+    "reason": "",
+    "request_map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794640782.0720813
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "model_sha256": null,
+    "plan_id": 600011,
+    "reason": "",
+    "request_map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794640783.5661821
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "model_sha256": null,
+    "plan_id": 600011,
+    "reason": "",
+    "request_map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794640785.073936
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "wall time 20.6473461 s >= 20 s",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "model_sha256": null,
+    "plan_id": 600011,
+    "reason": "TIME_BUDGET_EXHAUSTED",
+    "request_map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "FAILED"
+   },
+   "received_s": 1794640786.5529563
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "model_sha256": null,
+    "plan_id": 600011,
+    "reason": "",
+    "request_map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "FAILED"
+   },
+   "received_s": 1794640787.5656667
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "model_sha256": null,
+    "plan_id": 600012,
+    "reason": "planning",
+    "request_map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794640787.7787104
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "model_sha256": null,
+    "plan_id": 600012,
+    "reason": "",
+    "request_map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794640789.0687954
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "model_sha256": null,
+    "plan_id": 600012,
+    "reason": "",
+    "request_map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794640790.568498
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "model_sha256": "b294f153cd8fa10d039edf329cb722d5eacd302ac0bbb9c7b104070134e01201",
+    "plan_id": 600012,
+    "reason": "",
+    "request_map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "request_sha256": "43c114690f2b2877e974a476ee1d2b0823ca793b6f5bc8213aaae4242028324d",
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794640791.595673
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "model_sha256": "b294f153cd8fa10d039edf329cb722d5eacd302ac0bbb9c7b104070134e01201",
+    "plan_id": 600012,
+    "reason": "playback accepted the atomic envelope",
+    "request_map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "request_sha256": "43c114690f2b2877e974a476ee1d2b0823ca793b6f5bc8213aaae4242028324d",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794640791.6238873
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "model_sha256": "b294f153cd8fa10d039edf329cb722d5eacd302ac0bbb9c7b104070134e01201",
+    "plan_id": 600012,
+    "reason": "",
+    "request_map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "request_sha256": "43c114690f2b2877e974a476ee1d2b0823ca793b6f5bc8213aaae4242028324d",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794640793.065765
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "model_sha256": "b294f153cd8fa10d039edf329cb722d5eacd302ac0bbb9c7b104070134e01201",
+    "plan_id": 600012,
+    "reason": "",
+    "request_map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "request_sha256": "43c114690f2b2877e974a476ee1d2b0823ca793b6f5bc8213aaae4242028324d",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794640794.5657558
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "model_sha256": "b294f153cd8fa10d039edf329cb722d5eacd302ac0bbb9c7b104070134e01201",
+    "plan_id": 600012,
+    "reason": "playback reached its terminal hold",
+    "request_map_signature": "9830a2bd7444fe3037ada3b8232e9a158e6f7f920223504c8b59e7fab513620e",
+    "request_sha256": "43c114690f2b2877e974a476ee1d2b0823ca793b6f5bc8213aaae4242028324d",
+    "schema": "formation_job_state/v1",
+    "state": "HOLD_END"
+   },
+   "received_s": 1794640794.7274399
+  }
+ ],
+ "ok": true,
+ "params": {
+  "playback": {
+   "allow_reverse": true,
+   "backend": "uniform_v02",
+   "body_length_m": 0.738,
+   "body_width_m": 0.5,
+   "formation_id": "cargo_wedge",
+   "frame_id": "map",
+   "goal_heading_free": true,
+   "initial_heading_policy": "cargo_heading",
+   "offsets": [
+    [
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0
+    ],
+    [
+     0.0,
+     -1.0
+    ]
+   ],
+   "publish_tf": true,
+   "rate": 100,
+   "transport_ui": true,
+   "vehicle_ids": [
+    1,
+    2,
+    3
+   ]
+  },
+  "uniform_planner": {
+   "collision_margin": 0.05,
+   "frame_id": "map",
+   "goal_heading_tol": 0.16,
+   "goal_psi_tol": 0.16,
+   "goal_xy_tol": 0.16,
+   "max_expansions": 50000,
+   "max_seconds": 20.0,
+   "playback_finish_grace_s": 3.0,
+   "playback_start_timeout_s": 5.0,
+   "publication_dt": 0.02,
+   "sweep_spacing": 0.01,
+   "translation_step": 1.0
+  }
+ },
+ "request_history": [
+  {
+   "formation_goal": [
+    11.0,
+    10.0,
+    0.0
+   ],
+   "formation_start": [
+    11.0,
+    10.0,
+    0.0
+   ],
+   "plan_id": 600009,
+   "received_s": 1794640755.8479831
+  },
+  {
+   "formation_goal": [
+    11.0,
+    10.0,
+    0.0
+   ],
+   "formation_start": [
+    10.0,
+    10.0,
+    0.0
+   ],
+   "plan_id": 600010,
+   "received_s": 1794640758.2565796
+  },
+  {
+   "formation_goal": [
+    13.5,
+    10.0,
+    0.0
+   ],
+   "formation_start": [
+    11.0,
+    10.0,
+    0.0
+   ],
+   "plan_id": 600011,
+   "received_s": 1794640765.8928146
+  },
+  {
+   "formation_goal": [
+    10.0,
+    10.0,
+    0.0
+   ],
+   "formation_start": [
+    11.0,
+    10.0,
+    0.0
+   ],
+   "plan_id": 600012,
+   "received_s": 1794640787.7762964
+  }
+ ],
+ "ros_master_uri": "http://127.0.0.1:11411",
+ "scenario": "failure",
+ "schema": "fr05.ros_uniform_playback_smoke.v1",
+ "topic_types": {
+  "/formation/display_pose": "geometry_msgs/PoseStamped",
+  "/formation/job_state": "std_msgs/String",
+  "/formation/markers": "visualization_msgs/MarkerArray",
+  "/formation/optimizer_status": "std_msgs/String",
+  "/formation/plan_request": "fwis_v3_msgs/FormationPlanRequest",
+  "/formation/playback_plan": "fwis_v3_msgs/FormationPlaybackPlan",
+  "/formation/playback_status": "std_msgs/String",
+  "/formation/quality_report": "std_msgs/String",
+  "/map": "nav_msgs/OccupancyGrid",
+  "/rosout": "rosgraph_msgs/Log",
+  "/rosout_agg": "rosgraph_msgs/Log",
+  "/start_pose": "geometry_msgs/PoseStamped",
+  "/tf": "tf2_msgs/TFMessage",
+  "/tf_static": "tf2_msgs/TFMessage"
+ }
+}

@@ -1,5 +1,7 @@
 """S10 demo launch, RViz and playback-install asset tests (no ROS)."""
 from pathlib import Path
+import math
+import subprocess
 import unittest
 import xml.etree.ElementTree as ElementTree
 
@@ -13,6 +15,9 @@ TRANSPORT_CONFIG = (ROOT / "catkin_ws/src/fwis_v3_demo/config/"
                     "transport_formation.yaml")
 PLAYBACK_CMAKE = ROOT / "catkin_ws/src/fwis_v3_playback/CMakeLists.txt"
 DEMO_CMAKE = ROOT / "catkin_ws/src/fwis_v3_demo/CMakeLists.txt"
+OPTIMIZER_CMAKE = ROOT / "catkin_ws/src/fwis_v3_optimizer/CMakeLists.txt"
+UNIFORM_PLANNER = (ROOT / "catkin_ws/src/fwis_v3_optimizer/scripts/"
+                   "formation_uniform_planner_node.py")
 
 
 class FormationLaunchTest(unittest.TestCase):
@@ -26,32 +31,105 @@ class FormationLaunchTest(unittest.TestCase):
         names = [node.get("name") for node in nodes]
         self.assertEqual(len(names), len(set(names)))
         self.assertEqual(names.count("fwis_map_publisher"), 1)
-        self.assertEqual(names.count("formation_planner"), 1)
-        self.assertEqual(names.count("formation_optimizer"), 1)
         self.assertEqual(names.count("formation_playback"), 1)
         types = {node.get("name"): node.get("type") for node in nodes}
         self.assertEqual(
-            types["formation_planner"], "formation_planner_node")
-        self.assertEqual(
-            types["formation_optimizer"], "formation_optimizer_node.py")
-        self.assertEqual(
             types["formation_playback"], "formation_playback.py")
+
+    def test_launch_starts_one_backend_at_a_time(self):
+        """Exactly two planner nodes exist and they can never co-start."""
+        root = ElementTree.parse(LAUNCH).getroot()
+        args = {arg.get("name"): arg.get("default")
+                for arg in root.findall("arg")}
+        self.assertEqual(args["backend"], "uniform_v02")
+        nodes = {node.get("name"): node for node in root.findall("node")}
+        legacy = ("formation_planner", "formation_optimizer")
+        uniform = "formation_uniform_planner"
+        self.assertEqual(nodes[uniform].get("type"),
+                         "formation_uniform_planner_node.py")
+        for name in legacy:
+            condition = nodes[name].get("if") or ""
+            self.assertIn("arg('backend') == 'legacy'", condition)
+        uniform_condition = nodes[uniform].get("if") or ""
+        self.assertIn("arg('backend') == 'uniform_v02'", uniform_condition)
+        # Reviewers: no node may publish trajectories in both backends.
+        publishers = {name for name in nodes
+                      if name in legacy or name == uniform}
+        self.assertEqual(publishers, set(legacy) | {uniform})
+
+    def test_launch_wires_backend_into_playback_and_bridge(self):
+        root = ElementTree.parse(LAUNCH).getroot()
+        nodes = {node.get("name"): node for node in root.findall("node")}
+        playback = nodes["formation_playback"]
+        params = {param.get("name"): param.get("value")
+                  for param in playback.findall("param")}
+        self.assertEqual(params["backend"], "$(arg backend)")
+        bridge = nodes["formation_goal_bridge"]
+        params = {param.get("name"): param.get("value")
+                  for param in bridge.findall("param")}
+        self.assertEqual(params["admission_backend"], "$(arg backend)")
+        self.assertIn("job_state_timeout_s", params)
 
     def test_launch_never_starts_single_vehicle_nodes_or_extra_planners(self):
         nodes = self._nodes()
         forbidden_types = {
             "optimizer_node.py", "playback.py", "collect_node.py",
-            "formation_planner_node.py",
         }
         for node in nodes:
             self.assertNotIn(node.get("type"), forbidden_types)
-        planner_types = [
-            node for node in nodes
-            if "planner" in (node.get("type") or "")
-        ]
-        self.assertEqual(len(planner_types), 1)
-        self.assertEqual(planner_types[0].get("type"),
-                         "formation_planner_node")
+        planner_types = sorted(
+            node.get("type") for node in nodes
+            if "planner" in (node.get("type") or ""))
+        self.assertEqual(planner_types,
+                         ["formation_planner_node",
+                          "formation_uniform_planner_node.py"])
+
+    def test_uniform_planner_script_is_installed_by_catkin(self):
+        cmake = OPTIMIZER_CMAKE.read_text(encoding="utf-8")
+        self.assertIn("catkin_install_python", cmake)
+        self.assertIn("scripts/formation_uniform_planner_node.py", cmake)
+        self.assertTrue(UNIFORM_PLANNER.is_file())
+
+    def test_launch_defaults_match_the_frozen_uniform_contract(self):
+        """FR05-R1: the demo must not ship wider tolerances or budgets."""
+        root = ElementTree.parse(LAUNCH).getroot()
+        args = {arg.get("name"): arg.get("default")
+                for arg in root.findall("arg")}
+        self.assertEqual(args["max_expansions"], "10000")
+        self.assertAlmostEqual(float(args["uniform_max_seconds"]), 30.0,
+                               places=12)
+        self.assertAlmostEqual(float(args["uniform_goal_xy_tol"]), 0.02,
+                               places=15)
+        self.assertAlmostEqual(float(args["uniform_goal_psi_tol"]),
+                               math.radians(1.0), places=15)
+        node = next(node for node in root.findall("node")
+                    if node.get("name") == "formation_uniform_planner")
+        params = {param.get("name"): param.get("value")
+                  for param in node.findall("param")}
+        self.assertEqual(params["goal_xy_tol"], "$(arg uniform_goal_xy_tol)")
+        self.assertEqual(params["goal_psi_tol"], "$(arg uniform_goal_psi_tol)")
+        self.assertEqual(params["goal_heading_tol"],
+                         "$(arg uniform_goal_psi_tol)")
+        self.assertEqual(params["max_expansions"], "$(arg max_expansions)")
+        self.assertEqual(params["max_seconds"], "$(arg uniform_max_seconds)")
+
+    def test_uniform_planner_defaults_reference_frozen_config(self):
+        """FR05-R1: node fallbacks are the FR03/FR04 defaults, not copies."""
+        source = UNIFORM_PLANNER.read_text(encoding="utf-8")
+        self.assertIn('"~goal_xy_tol", SuccessorConfig.goal_xy_tol_m',
+                      source)
+        self.assertIn('"~goal_psi_tol", SuccessorConfig.goal_psi_tol_rad',
+                      source)
+        self.assertIn(
+            '"~goal_heading_tol", SuccessorConfig.goal_heading_tol_rad',
+            source)
+        self.assertIn(
+            '"~max_expansions", GraphSearchConfig.max_expansions', source)
+        self.assertIn('"~max_seconds", GraphSearchConfig.max_seconds', source)
+        for stale in ('"~goal_xy_tol", 0.16', '"~goal_psi_tol", 0.16',
+                      '"~goal_heading_tol", 0.16',
+                      '"~max_expansions", 50000', '"~max_seconds", 20.0'):
+            self.assertNotIn(stale, source)
 
     def test_launch_uses_the_formation_params_and_rviz_files(self):
         root = ElementTree.parse(LAUNCH).getroot()
@@ -97,6 +175,40 @@ class FormationLaunchTest(unittest.TestCase):
         cmake = DEMO_CMAKE.read_text(encoding="utf-8")
         self.assertIn("catkin_install_python", cmake)
         self.assertIn("scripts/formation_goal_bridge.py", cmake)
+
+
+class RunDemoBackendTest(unittest.TestCase):
+
+    def _run(self, *args):
+        return subprocess.run(
+            ["bash", str(ROOT / "run_demo.sh"), "--dry-run", *args],
+            cwd=ROOT, capture_output=True, text=True)
+
+    def test_default_backend_is_uniform_v02(self):
+        result = self._run("--map", "map04")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("backend:=uniform_v02", result.stdout)
+        self.assertNotIn("backend:=legacy", result.stdout)
+
+    def test_cli_and_launch_arg_forms_select_the_same_backend(self):
+        for args in (("--backend", "legacy"), ("backend:=legacy",)):
+            result = self._run("--map", "map04", *args)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn("backend:=legacy", result.stdout)
+            self.assertEqual(result.stdout.count("backend:="), 1)
+
+    def test_conflicting_or_unknown_backends_are_rejected(self):
+        for args in (("--backend", "legacy", "backend:=uniform_v02"),
+                     ("--backend", "nope"),
+                     ("backend:=nope",)):
+            result = self._run("--map", "map04", *args)
+            self.assertEqual(result.returncode, 2, result.stdout)
+            self.assertNotIn("formation_demo.launch", result.stdout)
+
+    def test_backend_is_formation_only(self):
+        result = self._run("--single", "--backend", "legacy")
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("--backend 仅用于编队", result.stderr)
 
 
 class FormationRvizTest(unittest.TestCase):

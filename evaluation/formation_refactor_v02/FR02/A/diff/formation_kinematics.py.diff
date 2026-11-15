@@ -1,0 +1,35 @@
+diff --git a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_kinematics.py b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_kinematics.py
+index 6e3fb10..5010242 100644
+--- a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_kinematics.py
++++ b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_kinematics.py
+@@ -1285,18 +1285,18 @@ def audit_mode_assignment(
+                             "vehicle_id={} body-spin travel={:.12g}".format(
+                                 vehicle_id, segment.travel_distance),
+                             checks, goal_checked)
+-                    if abs(delta_theta) <= limits.heading_tolerance_rad:
+-                        return _audit_failure(
+-                            "ZERO_BODY_SPIN",
+-                            "vehicle_id={} S segment has no heading change"
+-                            .format(vehicle_id), checks, goal_checked)
+-                    expected_direction = 1 if delta_theta > 0.0 else -1
+-                    if segment.direction != expected_direction:
+-                        return _audit_failure(
+-                            "SPIN_DIRECTION_MISMATCH",
+-                            "vehicle_id={} direction={} sign(dtheta)={}"
+-                            .format(vehicle_id, segment.direction,
+-                                    expected_direction), checks, goal_checked)
++                    # A canonical all-S V0.2 edge may contain an individual
++                    # zero-yaw vehicle.  Keep accepting the legacy A hold too;
++                    # only a nonzero S rotation has a direction-sign contract.
++                    if abs(delta_theta) > limits.heading_tolerance_rad:
++                        expected_direction = 1 if delta_theta > 0.0 else -1
++                        if segment.direction != expected_direction:
++                            return _audit_failure(
++                                "SPIN_DIRECTION_MISMATCH",
++                                "vehicle_id={} direction={} sign(dtheta)={}"
++                                .format(vehicle_id, segment.direction,
++                                        expected_direction), checks,
++                                goal_checked)
+                 elif segment.mode == ACKERMANN:
+                     # A non-rotating vehicle holds its centre and heading
+                     # during the joint event; it is not a fake translation.
