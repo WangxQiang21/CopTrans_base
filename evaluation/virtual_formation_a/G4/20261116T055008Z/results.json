@@ -1,0 +1,2085 @@
+{
+  "attempt_summary": {
+    "all_attempts_retained": true,
+    "status_counts": {
+      "SOLVER_SUCCESS_AUDITED": 46,
+      "SOLVER_SUCCESS_AUDIT_REJECTED": 2
+    },
+    "total_attempts": 48
+  },
+  "autonomous_benchmark": {
+    "checks": 72,
+    "failed": [],
+    "path": "benchmark",
+    "stage": "G4",
+    "status": "PASS",
+    "summary_sha256": "d08f28ab82620e2a13f2325b766e776c2e3759f946a2304bde2d11ddd664f86f"
+  },
+  "base_commit": "567bdecba9676313da3bc9a97b82f57b5b569a2b",
+  "codex_acceptance": "NOT_RUN_NOT_CLAIMED",
+  "command_logs": {
+    "exit_codes": {
+      "path": "logs/exit_codes.log",
+      "sha256": "42806fc163096b128fa62c7b6c689987caaa1649b22911bf53e44170b10070b4",
+      "size_bytes": 64
+    },
+    "regression_exit_codes": {
+      "path": "logs/regression_exit_codes.log",
+      "sha256": "ec045223f5b4a4e8e1cec6b38363248b6427500570d0d642b45f2eb5479dd815",
+      "size_bytes": 138
+    }
+  },
+  "environment": {
+    "casadi": "3.7.2",
+    "git": {
+      "branch": "feature/virtual-rigid-formation-a",
+      "head": "567bdecba9676313da3bc9a97b82f57b5b569a2b",
+      "status_short": [
+        " M catkin_ws/src/fwis_v3_optimizer/setup.py",
+        "?? catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/",
+        "?? docs/VIRTUAL_FORMATION_A_FR06_TECHNICAL_REVIEW_20261115.md",
+        "?? docs/virtual_formation_a/",
+        "?? evaluation/virtual_formation_a/",
+        "?? tests/fixtures/",
+        "?? tests/test_virtual_a_audit.py",
+        "?? tests/test_virtual_a_collision.py",
+        "?? tests/test_virtual_a_geometry.py",
+        "?? tests/test_virtual_a_optimizer.py",
+        "?? tests/test_virtual_a_pipeline.py",
+        "?? tests/test_virtual_a_profile.py",
+        "?? tests/test_virtual_a_timing.py",
+        "?? tests/test_virtual_a_trajectory.py",
+        "?? tests/virtual_a_g4_support.py",
+        "?? tools/virtual_a_baseline.py",
+        "?? tools/virtual_a_benchmark.py",
+        "?? tools/virtual_a_scenes.py"
+      ]
+    },
+    "ipopt_available": true,
+    "path": "environment.json",
+    "platform": "Linux-5.15.0-139-generic-x86_64-with-glibc2.29",
+    "python": "3.8.10",
+    "selected_solver": "ipopt",
+    "sha256": "be82de46e7fa991fa93b3b6e5bd4dde828e793ab17a5954c2fecbccabcb306b8"
+  },
+  "generated_at_utc": "2026-11-16T06:01:55.882494+00:00",
+  "git_commit_created": false,
+  "historical_runs_read_only": true,
+  "independent_numerics": {
+    "method": [
+      "PGM P5 and simple YAML reparsed from raw bytes with the standard library; occupancy follows the conservative ROS convention free only when probability < free_thresh",
+      "canonical G4 grid summary and SHA-256 recomputed without the project module",
+      "collision error envelope recomputed with the same binary64 outward-rounding operation order as the audit record",
+      "per-lambda declared bounds checked against the independent lower bounds recorded by the adapter; no segment self-report is trusted alone",
+      "dynamic max-utilization, whole-domain certificate and all three pointwise interval ratios checked below one"
+    ],
+    "path": "analysis/g4_numerics.json",
+    "scene_checks": {
+      "S1": {
+        "dynamic_certificate_checked": true,
+        "envelope_recomputed": true,
+        "grid_signature_matches_manifest": true,
+        "map_reparsed": true,
+        "sweep_bounds_checked": true
+      },
+      "S1_mirror": {
+        "dynamic_certificate_checked": true,
+        "envelope_recomputed": true,
+        "grid_signature_matches_manifest": true,
+        "map_reparsed": true,
+        "sweep_bounds_checked": true
+      },
+      "S2": {
+        "dynamic_certificate_checked": true,
+        "envelope_recomputed": true,
+        "grid_signature_matches_manifest": true,
+        "map_reparsed": true,
+        "sweep_bounds_checked": true
+      },
+      "S2_mirror": {
+        "dynamic_certificate_checked": true,
+        "envelope_recomputed": true,
+        "grid_signature_matches_manifest": true,
+        "map_reparsed": true,
+        "sweep_bounds_checked": true
+      },
+      "S3": {
+        "dynamic_certificate_checked": true,
+        "envelope_recomputed": true,
+        "grid_signature_matches_manifest": true,
+        "map_reparsed": true,
+        "sweep_bounds_checked": true
+      },
+      "S3_mirror": {
+        "dynamic_certificate_checked": true,
+        "envelope_recomputed": true,
+        "grid_signature_matches_manifest": true,
+        "map_reparsed": true,
+        "sweep_bounds_checked": true
+      }
+    },
+    "sha256": "faf7826c1da9cf047dd1ebbcd034b8e8930d6a6dd5b9240c925b9d0e2b97fdd4",
+    "status": "PASS",
+    "thresholds": {
+      "baseline_margin_m": 0.05,
+      "endpoint_m": 0.005,
+      "heading_rad": 0.003490658503988659,
+      "max_corner_step_m": 0.01,
+      "max_samples_per_segment": 200000,
+      "rigidity_m": 1e-06
+    }
+  },
+  "nonclaims": [
+    "six frozen known-feasible A-only scenes; no general success rate, completeness or optimality is claimed",
+    "no real-time, hard-deadline or production acceptance claim",
+    "no ROS, Gazebo, hardware or mixed-mode FR06 validation",
+    "numerical checks and this report are not Codex acceptance",
+    "sampled maxima are not a whole-domain proof; continuous claims rest on the recorded interval operators, bounds and error envelope"
+  ],
+  "numbered_negative_coverage": [
+    {
+      "case": 1,
+      "observed_passing": true,
+      "requirement": "thin obstacle between two coarse samples must reject the true swept volume",
+      "tests": [
+        "test_thin_obstacle_between_coarse_samples_is_rejected"
+      ]
+    },
+    {
+      "case": 2,
+      "observed_passing": true,
+      "requirement": "corner collision with a body heading different from the formation heading must use the real OBB front",
+      "tests": [
+        "test_corner_collision_uses_actual_front_heading"
+      ]
+    },
+    {
+      "case": 3,
+      "observed_passing": true,
+      "requirement": "the same model with a changed map, limits, goal or stale context/old audit digest must fail binding or be re-audited",
+      "tests": [
+        "test_same_model_changed_map_limits_and_goal_are_rejected",
+        "test_missing_or_stale_planning_context_digest_is_rejected"
+      ]
+    },
+    {
+      "case": 4,
+      "observed_passing": true,
+      "requirement": "an adapter defect that omits the Delta factor must be caught by independent bounds, never trusted from a segment self-report",
+      "tests": [
+        "test_missing_delta_factor_is_caught_by_independent_bounds"
+      ]
+    },
+    {
+      "case": 5,
+      "observed_passing": true,
+      "requirement": "a construction blocked for the whole-formation circumcircle but passable by the true OBBs must not be rejected for the large circle alone",
+      "tests": [
+        "test_whole_formation_circumcircle_blocked_but_obb_passes",
+        "test_circumcircle_blocked_door_is_solved_by_real_obb_audit"
+      ]
+    },
+    {
+      "case": 6,
+      "observed_passing": true,
+      "requirement": "a deliberately tiny sweep sample budget must fail the audit and remain non-executable",
+      "tests": [
+        "test_sample_budget_is_a_failure_not_a_pass"
+      ]
+    },
+    {
+      "case": 7,
+      "observed_passing": true,
+      "requirement": "map boundary, unknown occupancy, start/goal collision, NO_MOTION collision, fake solver success, no accepted candidate and budget exhaustion are all non-executable failures",
+      "tests": [
+        "test_map_boundary_goal_is_rejected",
+        "test_unknown_cells_are_occupied_and_rejected",
+        "test_static_start_collision_is_rejected",
+        "test_no_motion_hold_collision_is_rejected",
+        "test_no_motion_free_hold_passes_and_blocked_hold_fails",
+        "test_no_motion_hold_checks_map_when_start_cell_is_occupied",
+        "test_fake_solver_success_never_becomes_an_executable_candidate",
+        "test_rejected_geometry_candidate_retains_evidence_but_no_plan",
+        "test_total_budget_exhaustion_is_not_executable"
+      ]
+    }
+  ],
+  "pre_final_corrections": [
+    {
+      "action": "note text corrected to the implemented fixed-point envelope before the official run; the arithmetic was independently reproduced",
+      "final_run_reflects_fix": true,
+      "item": "collision.py radius_upper_note text said baseline plus 1e-6 m while the implementation used the outward-rounded fixed-point margin"
+    },
+    {
+      "action": "route generation is skipped for exact start==goal and the hold collision audit always runs; regression test added",
+      "final_run_reflects_fix": true,
+      "item": "an exact NO_MOTION request with a blocked start cell returned NO_ROUTE_GUIDE before the mandatory hold static map/vehicle check"
+    }
+  ],
+  "protection": {
+    "added_paths": [
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/collision.py",
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/pipeline.py",
+      "tests/fixtures/virtual_a/maps/scenes/S1.pgm",
+      "tests/fixtures/virtual_a/maps/scenes/S1.yaml",
+      "tests/fixtures/virtual_a/maps/scenes/S1_mirror.pgm",
+      "tests/fixtures/virtual_a/maps/scenes/S1_mirror.yaml",
+      "tests/fixtures/virtual_a/maps/scenes/S2.pgm",
+      "tests/fixtures/virtual_a/maps/scenes/S2.yaml",
+      "tests/fixtures/virtual_a/maps/scenes/S2_mirror.pgm",
+      "tests/fixtures/virtual_a/maps/scenes/S2_mirror.yaml",
+      "tests/fixtures/virtual_a/maps/scenes/S3.pgm",
+      "tests/fixtures/virtual_a/maps/scenes/S3.yaml",
+      "tests/fixtures/virtual_a/maps/scenes/S3_mirror.pgm",
+      "tests/fixtures/virtual_a/maps/scenes/S3_mirror.yaml",
+      "tests/fixtures/virtual_a/maps/synthetic/arc_corner/map.pgm",
+      "tests/fixtures/virtual_a/maps/synthetic/arc_corner/map.yaml",
+      "tests/fixtures/virtual_a/maps/synthetic/blocked_start/map.pgm",
+      "tests/fixtures/virtual_a/maps/synthetic/blocked_start/map.yaml",
+      "tests/fixtures/virtual_a/maps/synthetic/boundary_goal/map.pgm",
+      "tests/fixtures/virtual_a/maps/synthetic/boundary_goal/map.yaml",
+      "tests/fixtures/virtual_a/maps/synthetic/corridor/map.pgm",
+      "tests/fixtures/virtual_a/maps/synthetic/corridor/map.yaml",
+      "tests/fixtures/virtual_a/maps/synthetic/door_circumcircle/map.pgm",
+      "tests/fixtures/virtual_a/maps/synthetic/door_circumcircle/map.yaml",
+      "tests/fixtures/virtual_a/maps/synthetic/thin_barrier/map.pgm",
+      "tests/fixtures/virtual_a/maps/synthetic/thin_barrier/map.yaml",
+      "tests/fixtures/virtual_a/maps/synthetic/unknown_gray/map.pgm",
+      "tests/fixtures/virtual_a/maps/synthetic/unknown_gray/map.yaml",
+      "tests/fixtures/virtual_a/scenes/S1.request.json",
+      "tests/fixtures/virtual_a/scenes/S1_mirror.request.json",
+      "tests/fixtures/virtual_a/scenes/S2.request.json",
+      "tests/fixtures/virtual_a/scenes/S2_mirror.request.json",
+      "tests/fixtures/virtual_a/scenes/S3.request.json",
+      "tests/fixtures/virtual_a/scenes/S3_mirror.request.json",
+      "tests/test_virtual_a_collision.py",
+      "tests/test_virtual_a_pipeline.py",
+      "tests/virtual_a_g4_support.py",
+      "tools/virtual_a_scenes.py"
+    ],
+    "additions_count": 38,
+    "changed_count": 5,
+    "changed_paths": [
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/audit.py",
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/contracts.py",
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/optimizer.py",
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/trajectory.py",
+      "tools/virtual_a_benchmark.py"
+    ],
+    "current_file_count": 3175,
+    "full_protected_tree_sha256": "157686a3832cb0fd94241407866e33443a3b9188483a257fd16510916e78143d",
+    "g3_reconstructed_tree_sha256": "9bee7d7a483418877277fe63c83986363f7ffc114f03db6ff265927092d89fba",
+    "note": "G1/G2/G3 source and tests outside the G4 whitelist, old FR06 source, old maps and the old collision engine are unchanged. Path authorization is not Codex acceptance.",
+    "old_fr06_old_maps_old_collision_unchanged": true,
+    "only_authorized_changes": true,
+    "path": "analysis/protection_diff_vs_g3_accepted.json",
+    "removed_count": 0,
+    "sha256": "fdb771a7c3f629aa19ccb0a44dde78986b3b9fbbaa272453f08694fcd6a23d00"
+  },
+  "regression_benchmarks": [
+    {
+      "checks": 26,
+      "failed": [],
+      "path": "regression/g1_benchmark",
+      "stage": "G1",
+      "status": "PASS",
+      "summary_sha256": "443755cf0019a064c8d6d98e8d64a22066e75ad844769a944c10325b22259a60"
+    },
+    {
+      "checks": 124,
+      "failed": [],
+      "path": "regression/g2_benchmark",
+      "stage": "G2",
+      "status": "PASS",
+      "summary_sha256": "3bda4d15b145969f08936ea273f8a4cdd0c99099e18c8acf581733ac5fa871ca"
+    },
+    {
+      "checks": 151,
+      "failed": [],
+      "path": "regression/g3_benchmark",
+      "stage": "G3",
+      "status": "PASS",
+      "summary_sha256": "f864c9600a9abe954f4f09fd400713a0e839f4ce114811413e23fbdf0709e126"
+    }
+  ],
+  "run_id": "20261116T055008Z",
+  "scene_freeze": {
+    "collision_config": {
+      "baseline_margin_floor_m": 0.05,
+      "baseline_margin_m": 0.05,
+      "max_corner_step_ceiling_m": 0.01,
+      "max_corner_step_m": 0.01,
+      "max_samples_per_segment": 200000,
+      "sample_budget_ceiling": 200000
+    },
+    "dynamic_audit_config": {
+      "acceleration_tolerance": 0.0001,
+      "angular_accel_tolerance": 0.0001,
+      "angular_jerk_tolerance": 0.01,
+      "angular_rate_tolerance": 1e-05,
+      "continuity_tolerance": 1e-06,
+      "differential_dt_s": [
+        0.01,
+        0.005
+      ],
+      "differential_samples_per_segment": 3,
+      "endpoint_tolerance": 1e-09,
+      "geometry_audit_config": {
+        "angle_budget_rad": 1e-09,
+        "audit_max_subintervals_per_segment": 4096,
+        "audit_max_total_subintervals": 20000,
+        "audit_panel_width_m": 0.02,
+        "audit_position_budget_m": 1e-07,
+        "c2_second_tol": 1e-08,
+        "c2_slope_tol": 1e-09,
+        "c2_third_abs_limit": 1000000.0,
+        "c2_value_tol": 1e-09,
+        "heading_tolerance_rad": 0.003490658503988659,
+        "integration_budget_m": 1e-07,
+        "interval_curvature_tolerance": 1e-09,
+        "max_depth": 20,
+        "max_leaves": 200000,
+        "position_tolerance_m": 0.005,
+        "rigidity_tolerance_m": 1e-06,
+        "sample_points_per_segment": 9
+      },
+      "interval_subdivisions_per_segment": 8,
+      "jerk_tolerance": 0.01,
+      "max_depth": 20,
+      "max_leaves": 200000,
+      "oracle_step_m": 0.002,
+      "samples_per_segment": 5,
+      "state_tolerance": 1e-07,
+      "time_inverse_tolerance_s": 1e-09,
+      "velocity_tolerance": 1e-05
+    },
+    "frozen": true,
+    "inputs_have_no_reference": true,
+    "manifest": {
+      "path": "scenes/scene_manifest.json",
+      "sha256": "3cd821dfe78bf398c2fa84f855f3fb1a628f7c2e1014fc141c9adeb2cfd54516",
+      "size_bytes": 12887
+    },
+    "manifest_self_digest": "e747868a01e505e82e6c4c0758b7ceb6951bd5f2ef2c6db1b2c26f474ec75c74",
+    "map_resolution_m": 0.05,
+    "note": "Maps and requests are frozen; modifications require a new scene version.  Reference files are not copied into inputs/.",
+    "planner_config": {
+      "allow_scipy_fallback": true,
+      "collocation_points": 9,
+      "curvature_margin": 0.02,
+      "eta_limit": 2.0,
+      "heading_tolerance_rad": 0.003490658503988659,
+      "intervals": 8,
+      "ipopt_tolerance": 1e-08,
+      "kappa_limit": 0.5524861878453039,
+      "max_initials": 6,
+      "max_iterations": 120,
+      "max_seconds": 30.0,
+      "position_tolerance_m": 0.005,
+      "rigidity_tolerance_m": 1e-06,
+      "scipy_maxiter": 120,
+      "scipy_tolerance": 1e-08,
+      "solver": "ipopt"
+    },
+    "reference_verification": [
+      {
+        "checks": {
+          "authoritative_map_sha256": true,
+          "base_matches": true,
+          "collision_passed": true,
+          "dynamic_passed": true,
+          "geometry_passed": true,
+          "independent_accepted": true,
+          "input_map_sha256": true,
+          "planning_context_sha256": true,
+          "reference_status": true,
+          "request_sha256": true,
+          "timed_model_sha256": true,
+          "timing_status": true
+        },
+        "passed": true,
+        "scene_id": "S1"
+      },
+      {
+        "checks": {
+          "authoritative_map_sha256": true,
+          "base_matches": true,
+          "collision_passed": true,
+          "dynamic_passed": true,
+          "geometry_passed": true,
+          "independent_accepted": true,
+          "input_map_sha256": true,
+          "planning_context_sha256": true,
+          "reference_status": true,
+          "request_sha256": true,
+          "timed_model_sha256": true,
+          "timing_status": true
+        },
+        "passed": true,
+        "scene_id": "S1_mirror"
+      },
+      {
+        "checks": {
+          "authoritative_map_sha256": true,
+          "base_matches": true,
+          "collision_passed": true,
+          "dynamic_passed": true,
+          "geometry_passed": true,
+          "independent_accepted": true,
+          "input_map_sha256": true,
+          "planning_context_sha256": true,
+          "reference_status": true,
+          "request_sha256": true,
+          "timed_model_sha256": true,
+          "timing_status": true
+        },
+        "passed": true,
+        "scene_id": "S2"
+      },
+      {
+        "checks": {
+          "authoritative_map_sha256": true,
+          "base_matches": true,
+          "collision_passed": true,
+          "dynamic_passed": true,
+          "geometry_passed": true,
+          "independent_accepted": true,
+          "input_map_sha256": true,
+          "planning_context_sha256": true,
+          "reference_status": true,
+          "request_sha256": true,
+          "timed_model_sha256": true,
+          "timing_status": true
+        },
+        "passed": true,
+        "scene_id": "S2_mirror"
+      },
+      {
+        "checks": {
+          "authoritative_map_sha256": true,
+          "base_matches": true,
+          "collision_passed": true,
+          "dynamic_passed": true,
+          "geometry_passed": true,
+          "independent_accepted": true,
+          "input_map_sha256": true,
+          "planning_context_sha256": true,
+          "reference_status": true,
+          "request_sha256": true,
+          "timed_model_sha256": true,
+          "timing_status": true
+        },
+        "passed": true,
+        "scene_id": "S3"
+      },
+      {
+        "checks": {
+          "authoritative_map_sha256": true,
+          "base_matches": true,
+          "collision_passed": true,
+          "dynamic_passed": true,
+          "geometry_passed": true,
+          "independent_accepted": true,
+          "input_map_sha256": true,
+          "planning_context_sha256": true,
+          "reference_status": true,
+          "request_sha256": true,
+          "timed_model_sha256": true,
+          "timing_status": true
+        },
+        "passed": true,
+        "scene_id": "S3_mirror"
+      }
+    ],
+    "reference_verified": true,
+    "scene_count": 6,
+    "timing_config": {
+      "geometry_audit_config": {
+        "angle_budget_rad": 1e-09,
+        "audit_max_subintervals_per_segment": 4096,
+        "audit_max_total_subintervals": 20000,
+        "audit_panel_width_m": 0.02,
+        "audit_position_budget_m": 1e-07,
+        "c2_second_tol": 1e-08,
+        "c2_slope_tol": 1e-09,
+        "c2_third_abs_limit": 1000000.0,
+        "c2_value_tol": 1e-09,
+        "heading_tolerance_rad": 0.003490658503988659,
+        "integration_budget_m": 1e-07,
+        "interval_curvature_tolerance": 1e-09,
+        "max_depth": 20,
+        "max_leaves": 200000,
+        "position_tolerance_m": 0.005,
+        "rigidity_tolerance_m": 1e-06,
+        "sample_points_per_segment": 9
+      },
+      "interval_subdivisions_per_segment": 8,
+      "max_rescalings": 8,
+      "max_subdivisions_per_segment": 4096,
+      "max_total_duration_s": 600.0,
+      "max_total_subdivisions": 200000,
+      "rescale_factor": 1.05,
+      "safety_factor": 1.01,
+      "timing_law": "virtual_rigid_a.timing.quintic_smoothstep.v1"
+    }
+  },
+  "scenes": {
+    "S1": {
+      "attempt_count": 6,
+      "attempt_statuses": [
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED"
+      ],
+      "attempts": [
+        {
+          "attempt_index": 0,
+          "initial_label": "route_guide=0;source=astar_primary",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.2658744010841474
+        },
+        {
+          "attempt_index": 1,
+          "initial_label": "route_guide=1;source=astar_alternative_1",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.523583882022649
+        },
+        {
+          "attempt_index": 2,
+          "initial_label": "route_guide=2;source=astar_alternative_2",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.3069911800557747
+        },
+        {
+          "attempt_index": 3,
+          "initial_label": "length_multiplier=1.2;shape=left",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.287621294031851
+        },
+        {
+          "attempt_index": 4,
+          "initial_label": "length_multiplier=1.2;shape=right",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.2655609480571002
+        },
+        {
+          "attempt_index": 5,
+          "initial_label": "length_multiplier=1.8;shape=left",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.3668141339439899
+        }
+      ],
+      "audits": {
+        "collision": {
+          "check_count": 9584,
+          "passed": true,
+          "reason": null
+        },
+        "dynamics": {
+          "check_count": 917,
+          "passed": true,
+          "reason": null
+        },
+        "geometry": {
+          "check_count": 163,
+          "passed": true,
+          "reason": null
+        }
+      },
+      "checks": 10664,
+      "collision_checks": 9584,
+      "collision_margin_m": 0.05000004149413735,
+      "duration_s": 30.305438027214436,
+      "dynamics": {
+        "check_count": 917,
+        "leaves": 64,
+        "max_utilization": 0.9900990099009894,
+        "pointwise_component_ratio": 0.9648162152945062,
+        "pointwise_jerk_ratio": 0.8822041261747272,
+        "pointwise_p_sss_ratio": 0.9613263709302828,
+        "whole_domain_certificate": true
+      },
+      "endpoint_error_m": 1.601861401748266e-10,
+      "envelope": {
+        "baseline_margin_m": 0.05,
+        "margin_minus_floor_m": 4.1494137348330185e-08,
+        "margin_used_m": 0.05000004149413735,
+        "maximum_envelope_m": 4.1494137344255645e-08,
+        "radius_upper_m": 0.4804799972523089,
+        "radius_upper_note": "body radius evaluated at the outward-rounded fixed-point solution of the margin equation; the recorded margin is then rounded outward from baseline plus this envelope, never from the baseline margin alone",
+        "vehicles": 3
+      },
+      "executable": true,
+      "grid_sha256": "054cf5c77079536f9a098e33232732d6c181f0f624f07e3a446ebfab0266a10e",
+      "heading_error_rad": 0.0,
+      "input_digests": {
+        "map_pgm_sha256": "0e975d9a49a2e1f2d6fc64f68f0536def44880587e0df4ff33f5fe4eac5175b8",
+        "map_signature": "054cf5c77079536f9a098e33232732d6c181f0f624f07e3a446ebfab0266a10e",
+        "map_yaml_sha256": "a2d302d74b44f9902fbf25e41ea83d3655a60b1326d668468f39832b29f4a0e0",
+        "request_file_sha256": "28951ed48453ad4906f581cf09e49a2fd6e124b76e365231b62ee2532dd61ec5"
+      },
+      "input_files": [
+        "map.pgm",
+        "map.yaml",
+        "request.json"
+      ],
+      "model_sha256": "5ac5843ebe5872a213ceed4dc580b50401ab6bbecda738a80a7f4a1b3cadef81",
+      "numerics": {
+        "attempt_count": 6,
+        "checks": 10664,
+        "collision": {
+          "bounds_verified": true,
+          "check_count": 9584,
+          "max_corner_step_m": 0.01,
+          "max_samples_per_segment": 200000,
+          "sample_count": 1590,
+          "segment_count": 8,
+          "static_stages": [
+            "goal",
+            "start"
+          ]
+        },
+        "dynamics": {
+          "check_count": 917,
+          "leaves": 64,
+          "max_utilization": 0.9900990099009894,
+          "pointwise_component_ratio": 0.9648162152945062,
+          "pointwise_jerk_ratio": 0.8822041261747272,
+          "pointwise_p_sss_ratio": 0.9613263709302828,
+          "whole_domain_certificate": true
+        },
+        "endpoint_error_m": 1.601861401748266e-10,
+        "envelope": {
+          "baseline_margin_m": 0.05,
+          "margin_minus_floor_m": 4.1494137348330185e-08,
+          "margin_used_m": 0.05000004149413735,
+          "maximum_envelope_m": 4.1494137344255645e-08,
+          "radius_upper_m": 0.4804799972523089,
+          "radius_upper_note": "body radius evaluated at the outward-rounded fixed-point solution of the margin equation; the recorded margin is then rounded outward from baseline plus this envelope, never from the baseline margin alone",
+          "vehicles": 3
+        },
+        "executable": true,
+        "geometry": {
+          "check_count": 163,
+          "max_heading_error_rad": 5.551115123125783e-17,
+          "max_pairwise_rigidity_error_m": 1.5543122344752192e-15,
+          "max_position_error_m": 5.402578411571407e-15,
+          "position_tolerance_m": 4.5585470883375134e-07,
+          "sample_count": 73
+        },
+        "heading_error_rad": 0.0,
+        "model_sha256": "5ac5843ebe5872a213ceed4dc580b50401ab6bbecda738a80a7f4a1b3cadef81",
+        "rigidity_error_m": 1.5543122344752192e-15,
+        "route_count": 3,
+        "search_rounds": 1,
+        "status": "SUCCESS",
+        "timings": {
+          "collision_audit_s": 1.129552623955533,
+          "dynamics_audit_s": 0.9424303130945191,
+          "geometry_solve_s": 9.19146438606549,
+          "result_assembly_s": 0.0,
+          "retime_s": 0.38621989893727005,
+          "route_generation_s": 0.4141942700371146
+        },
+        "wall_time_s": 12.084842565003783
+      },
+      "path_length_m": 10.472910641286598,
+      "planning_context_sha256": "e24160391a5e8792135ca2668474d541266ce30b347dcb9e0f5f023470f3d936",
+      "reference": {
+        "collision_checks": 8204,
+        "dynamic_checks": 909,
+        "endpoint_difference_m": 1.2839311938972403e-10,
+        "geometry_checks": 155,
+        "independent_accepted": true,
+        "reference_file": "reference/S1.json",
+        "reference_sha256": "fce065b1546c2ff79472b27e00310e17555b3c39b7522a9a774bbd59357cbee2",
+        "status": "REFERENCE_PASSED",
+        "timed_model_sha256": "7466b8600de4a3c1d6c27bc1a90c832d8d43018eaada2305dcb5a5077f36e7c8"
+      },
+      "request_sha256": "d44f9efeb70f636a1e0f24dbc367e7869366ce344d0d88bba020d4ad355c8a1a",
+      "rigidity_error_m": 1.5543122344752192e-15,
+      "routes": [
+        {
+          "grid_sha256": "054cf5c77079536f9a098e33232732d6c181f0f624f07e3a446ebfab0266a10e",
+          "length_m": 10.833036915600722,
+          "point_count": 198,
+          "source": "astar_primary"
+        },
+        {
+          "grid_sha256": "054cf5c77079536f9a098e33232732d6c181f0f624f07e3a446ebfab0266a10e",
+          "length_m": 10.71587962807534,
+          "point_count": 194,
+          "source": "astar_alternative_1"
+        },
+        {
+          "grid_sha256": "054cf5c77079536f9a098e33232732d6c181f0f624f07e3a446ebfab0266a10e",
+          "length_m": 11.22801166243131,
+          "point_count": 203,
+          "source": "astar_alternative_2"
+        }
+      ],
+      "status": "SUCCESS",
+      "timings": {
+        "collision_audit_s": 1.129552623955533,
+        "dynamics_audit_s": 0.9424303130945191,
+        "geometry_solve_s": 9.19146438606549,
+        "result_assembly_s": 0.0,
+        "retime_s": 0.38621989893727005,
+        "route_generation_s": 0.4141942700371146
+      },
+      "wall_time_s": 12.084842565003783
+    },
+    "S1_mirror": {
+      "attempt_count": 6,
+      "attempt_statuses": [
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED"
+      ],
+      "attempts": [
+        {
+          "attempt_index": 0,
+          "initial_label": "route_guide=0;source=astar_primary",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.3033568019745871
+        },
+        {
+          "attempt_index": 1,
+          "initial_label": "route_guide=1;source=astar_alternative_1",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.4837624609936029
+        },
+        {
+          "attempt_index": 2,
+          "initial_label": "route_guide=2;source=astar_alternative_2",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.395510392030701
+        },
+        {
+          "attempt_index": 3,
+          "initial_label": "length_multiplier=1.2;shape=left",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.299341295962222
+        },
+        {
+          "attempt_index": 4,
+          "initial_label": "length_multiplier=1.2;shape=right",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.3176390340086073
+        },
+        {
+          "attempt_index": 5,
+          "initial_label": "length_multiplier=1.8;shape=left",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.2844725269824266
+        }
+      ],
+      "audits": {
+        "collision": {
+          "check_count": 8810,
+          "passed": true,
+          "reason": null
+        },
+        "dynamics": {
+          "check_count": 915,
+          "passed": true,
+          "reason": null
+        },
+        "geometry": {
+          "check_count": 161,
+          "passed": true,
+          "reason": null
+        }
+      },
+      "checks": 9886,
+      "collision_checks": 8810,
+      "collision_margin_m": 0.05000003273683426,
+      "duration_s": 29.91922601718084,
+      "dynamics": {
+        "check_count": 915,
+        "leaves": 64,
+        "max_utilization": 0.9900990099009893,
+        "pointwise_component_ratio": 0.9715518001894737,
+        "pointwise_jerk_ratio": 0.8982561556689109,
+        "pointwise_p_sss_ratio": 0.9653891036950468,
+        "whole_domain_certificate": true
+      },
+      "endpoint_error_m": 1.5408566196837104e-10,
+      "envelope": {
+        "baseline_margin_m": 0.05,
+        "margin_minus_floor_m": 3.2736834257307557e-08,
+        "margin_used_m": 0.05000003273683426,
+        "maximum_envelope_m": 3.2736834251768424e-08,
+        "radius_upper_m": 0.48047999115565954,
+        "radius_upper_note": "body radius evaluated at the outward-rounded fixed-point solution of the margin equation; the recorded margin is then rounded outward from baseline plus this envelope, never from the baseline margin alone",
+        "vehicles": 3
+      },
+      "executable": true,
+      "grid_sha256": "fb485abf73dd1e1953c43762dbee0f9f7ac26a94968766e817c6951135e7c595",
+      "heading_error_rad": 2.886579864025407e-15,
+      "input_digests": {
+        "map_pgm_sha256": "cd199e172acf6a33a005ab82b86877d40a3eced81ace497cb9abd2ca2239708b",
+        "map_signature": "fb485abf73dd1e1953c43762dbee0f9f7ac26a94968766e817c6951135e7c595",
+        "map_yaml_sha256": "bdefc6eb21ebb17148ca95173c2e76ae3996c33c404e95a3c97429b642116441",
+        "request_file_sha256": "1dd2ac74dd28c5745d772be757a49b55c80e3be24d92abeecd907a0fd904e0c4"
+      },
+      "input_files": [
+        "map.pgm",
+        "map.yaml",
+        "request.json"
+      ],
+      "model_sha256": "112cd7b52c3a31dc696ada7420aa733a5d516e2006dab9092b694f2574c0f244",
+      "numerics": {
+        "attempt_count": 6,
+        "checks": 9886,
+        "collision": {
+          "bounds_verified": true,
+          "check_count": 8810,
+          "max_corner_step_m": 0.01,
+          "max_samples_per_segment": 200000,
+          "sample_count": 1461,
+          "segment_count": 8,
+          "static_stages": [
+            "goal",
+            "start"
+          ]
+        },
+        "dynamics": {
+          "check_count": 915,
+          "leaves": 64,
+          "max_utilization": 0.9900990099009893,
+          "pointwise_component_ratio": 0.9715518001894737,
+          "pointwise_jerk_ratio": 0.8982561556689109,
+          "pointwise_p_sss_ratio": 0.9653891036950468,
+          "whole_domain_certificate": true
+        },
+        "endpoint_error_m": 1.5408566196837104e-10,
+        "envelope": {
+          "baseline_margin_m": 0.05,
+          "margin_minus_floor_m": 3.2736834257307557e-08,
+          "margin_used_m": 0.05000003273683426,
+          "maximum_envelope_m": 3.2736834251768424e-08,
+          "radius_upper_m": 0.48047999115565954,
+          "radius_upper_note": "body radius evaluated at the outward-rounded fixed-point solution of the margin equation; the recorded margin is then rounded outward from baseline plus this envelope, never from the baseline margin alone",
+          "vehicles": 3
+        },
+        "executable": true,
+        "geometry": {
+          "check_count": 161,
+          "max_heading_error_rad": 2.220446049250313e-16,
+          "max_pairwise_rigidity_error_m": 1.1102230246251565e-15,
+          "max_position_error_m": 1.897149936107019e-15,
+          "position_tolerance_m": 3.620110432322728e-07,
+          "sample_count": 73
+        },
+        "heading_error_rad": 2.886579864025407e-15,
+        "model_sha256": "112cd7b52c3a31dc696ada7420aa733a5d516e2006dab9092b694f2574c0f244",
+        "rigidity_error_m": 1.1102230246251565e-15,
+        "route_count": 3,
+        "search_rounds": 1,
+        "status": "SUCCESS",
+        "timings": {
+          "collision_audit_s": 1.038696766947396,
+          "dynamics_audit_s": 0.9473802350694314,
+          "geometry_solve_s": 9.20228319906164,
+          "result_assembly_s": 0.0,
+          "retime_s": 0.3892463679658249,
+          "route_generation_s": 0.40417687699664384
+        },
+        "wall_time_s": 12.002563865040429
+      },
+      "path_length_m": 10.467139660262553,
+      "planning_context_sha256": "d4a9089ebdcfc6e53b830f4e155618c2b74222f2f50872a8c662887029e616c4",
+      "reference": {
+        "collision_checks": 8204,
+        "dynamic_checks": 909,
+        "endpoint_difference_m": 1.2839311938972403e-10,
+        "geometry_checks": 155,
+        "independent_accepted": true,
+        "reference_file": "reference/S1_mirror.json",
+        "reference_sha256": "3c1dc4ee4bb3192fa4139ff348a0dddd6686ecdc9ea790b87f0ff61296c8d327",
+        "status": "REFERENCE_PASSED",
+        "timed_model_sha256": "949d5de197910f5ec361c8feaa1d103d30e9e064cfff2850538e06f7de8d1a44"
+      },
+      "request_sha256": "5c945f973aa02c47d42cd11707c55c392df533c8688ce027d11a4415b05c5ee0",
+      "rigidity_error_m": 1.1102230246251565e-15,
+      "routes": [
+        {
+          "grid_sha256": "fb485abf73dd1e1953c43762dbee0f9f7ac26a94968766e817c6951135e7c595",
+          "length_m": 10.85374759371938,
+          "point_count": 198,
+          "source": "astar_primary"
+        },
+        {
+          "grid_sha256": "fb485abf73dd1e1953c43762dbee0f9f7ac26a94968766e817c6951135e7c595",
+          "length_m": 10.73659030619399,
+          "point_count": 194,
+          "source": "astar_alternative_1"
+        },
+        {
+          "grid_sha256": "fb485abf73dd1e1953c43762dbee0f9f7ac26a94968766e817c6951135e7c595",
+          "length_m": 11.248722340549962,
+          "point_count": 203,
+          "source": "astar_alternative_2"
+        }
+      ],
+      "status": "SUCCESS",
+      "timings": {
+        "collision_audit_s": 1.038696766947396,
+        "dynamics_audit_s": 0.9473802350694314,
+        "geometry_solve_s": 9.20228319906164,
+        "result_assembly_s": 0.0,
+        "retime_s": 0.3892463679658249,
+        "route_generation_s": 0.40417687699664384
+      },
+      "wall_time_s": 12.002563865040429
+    },
+    "S2": {
+      "attempt_count": 6,
+      "attempt_statuses": [
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED"
+      ],
+      "attempts": [
+        {
+          "attempt_index": 0,
+          "initial_label": "route_guide=0;source=astar_primary",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.2638797040563077
+        },
+        {
+          "attempt_index": 1,
+          "initial_label": "route_guide=1;source=astar_alternative_1",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.3361979809124023
+        },
+        {
+          "attempt_index": 2,
+          "initial_label": "route_guide=2;source=astar_alternative_2",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.4036399479955435
+        },
+        {
+          "attempt_index": 3,
+          "initial_label": "length_multiplier=1.2;shape=left",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.3105614370433614
+        },
+        {
+          "attempt_index": 4,
+          "initial_label": "length_multiplier=1.2;shape=right",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.2834241240052506
+        },
+        {
+          "attempt_index": 5,
+          "initial_label": "length_multiplier=1.8;shape=left",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.306461630971171
+        }
+      ],
+      "audits": {
+        "collision": {
+          "check_count": 15206,
+          "passed": true,
+          "reason": null
+        },
+        "dynamics": {
+          "check_count": 935,
+          "passed": true,
+          "reason": null
+        },
+        "geometry": {
+          "check_count": 181,
+          "passed": true,
+          "reason": null
+        }
+      },
+      "checks": 16322,
+      "collision_checks": 15206,
+      "collision_margin_m": 0.05000007545410288,
+      "duration_s": 37.54640846040029,
+      "dynamics": {
+        "check_count": 935,
+        "leaves": 64,
+        "max_utilization": 0.990099009900991,
+        "pointwise_component_ratio": 0.9540282129492504,
+        "pointwise_jerk_ratio": 0.880248792848926,
+        "pointwise_p_sss_ratio": 0.9689480841606803,
+        "whole_domain_certificate": true
+      },
+      "endpoint_error_m": 4.275796780732511e-10,
+      "envelope": {
+        "baseline_margin_m": 0.05,
+        "margin_minus_floor_m": 7.545410287551624e-08,
+        "margin_used_m": 0.05000007545410288,
+        "maximum_envelope_m": 7.545410287150146e-08,
+        "radius_upper_m": 0.48048002089451924,
+        "radius_upper_note": "body radius evaluated at the outward-rounded fixed-point solution of the margin equation; the recorded margin is then rounded outward from baseline plus this envelope, never from the baseline margin alone",
+        "vehicles": 3
+      },
+      "executable": true,
+      "grid_sha256": "55e3c5b82a99c74b96a550720fd7a467e76b40f48082c0212ca21574d3af8782",
+      "heading_error_rad": 4.718447854656915e-16,
+      "input_digests": {
+        "map_pgm_sha256": "7249d848f3447a53aac908fd2b6a10c46dca3c5fa8880131372a142427f57343",
+        "map_signature": "55e3c5b82a99c74b96a550720fd7a467e76b40f48082c0212ca21574d3af8782",
+        "map_yaml_sha256": "407eaf102e19337a58cad2dd775007cd7969b91fc97b3f525991bb847f2f1add",
+        "request_file_sha256": "a55aff7db4694b7e6a21919b20996ce04f8ced2a5487a54aa662713fee25fed0"
+      },
+      "input_files": [
+        "map.pgm",
+        "map.yaml",
+        "request.json"
+      ],
+      "model_sha256": "13f34db886e20ac652f9a698b2a033161e7ecf89096b74f14d9f0a8323221cfb",
+      "numerics": {
+        "attempt_count": 6,
+        "checks": 16322,
+        "collision": {
+          "bounds_verified": true,
+          "check_count": 15206,
+          "max_corner_step_m": 0.01,
+          "max_samples_per_segment": 200000,
+          "sample_count": 2527,
+          "segment_count": 8,
+          "static_stages": [
+            "goal",
+            "start"
+          ]
+        },
+        "dynamics": {
+          "check_count": 935,
+          "leaves": 64,
+          "max_utilization": 0.990099009900991,
+          "pointwise_component_ratio": 0.9540282129492504,
+          "pointwise_jerk_ratio": 0.880248792848926,
+          "pointwise_p_sss_ratio": 0.9689480841606803,
+          "whole_domain_certificate": true
+        },
+        "endpoint_error_m": 4.275796780732511e-10,
+        "envelope": {
+          "baseline_margin_m": 0.05,
+          "margin_minus_floor_m": 7.545410287551624e-08,
+          "margin_used_m": 0.05000007545410288,
+          "maximum_envelope_m": 7.545410287150146e-08,
+          "radius_upper_m": 0.48048002089451924,
+          "radius_upper_note": "body radius evaluated at the outward-rounded fixed-point solution of the margin equation; the recorded margin is then rounded outward from baseline plus this envelope, never from the baseline margin alone",
+          "vehicles": 3
+        },
+        "executable": true,
+        "geometry": {
+          "check_count": 181,
+          "max_heading_error_rad": 1.6653345369377348e-16,
+          "max_pairwise_rigidity_error_m": 1.3322676295501878e-15,
+          "max_position_error_m": 1.027757718101043e-09,
+          "position_tolerance_m": 8.489618847404936e-07,
+          "sample_count": 73
+        },
+        "heading_error_rad": 4.718447854656915e-16,
+        "model_sha256": "13f34db886e20ac652f9a698b2a033161e7ecf89096b74f14d9f0a8323221cfb",
+        "rigidity_error_m": 1.3322676295501878e-15,
+        "route_count": 3,
+        "search_rounds": 1,
+        "status": "SUCCESS",
+        "timings": {
+          "collision_audit_s": 1.7783737399149686,
+          "dynamics_audit_s": 1.0532936389790848,
+          "geometry_solve_s": 9.000857266015373,
+          "result_assembly_s": 0.0,
+          "retime_s": 0.39451805292628706,
+          "route_generation_s": 0.3713926851050928
+        },
+        "wall_time_s": 12.61620358005166
+      },
+      "path_length_m": 11.98531134280284,
+      "planning_context_sha256": "a84be59f52bf5e598be8424de0ebe7c808197b674f5d93fc6de39d6371af9d7c",
+      "reference": {
+        "collision_checks": 15620,
+        "dynamic_checks": 937,
+        "endpoint_difference_m": 2.806646496170421e-13,
+        "geometry_checks": 183,
+        "independent_accepted": true,
+        "reference_file": "reference/S2.json",
+        "reference_sha256": "6412aa4866bc7e7c43ac5dbd4ca291beafdbcfb45276dce98060a3b47bc46477",
+        "status": "REFERENCE_PASSED",
+        "timed_model_sha256": "b8cbf90acb495a7396ebf37a811c79f4646504b29564f442255698d49924580f"
+      },
+      "request_sha256": "9feb7332db51d4f347a21b347416b6e7ffa1619ad28bda41ef88ad57c3bb2ba2",
+      "rigidity_error_m": 1.3322676295501878e-15,
+      "routes": [
+        {
+          "grid_sha256": "55e3c5b82a99c74b96a550720fd7a467e76b40f48082c0212ca21574d3af8782",
+          "length_m": 12.608030227999718,
+          "point_count": 232,
+          "source": "astar_primary"
+        },
+        {
+          "grid_sha256": "55e3c5b82a99c74b96a550720fd7a467e76b40f48082c0212ca21574d3af8782",
+          "length_m": 12.690872940474332,
+          "point_count": 232,
+          "source": "astar_alternative_1"
+        },
+        {
+          "grid_sha256": "55e3c5b82a99c74b96a550720fd7a467e76b40f48082c0212ca21574d3af8782",
+          "length_m": 12.73229429671164,
+          "point_count": 232,
+          "source": "astar_alternative_2"
+        }
+      ],
+      "status": "SUCCESS",
+      "timings": {
+        "collision_audit_s": 1.7783737399149686,
+        "dynamics_audit_s": 1.0532936389790848,
+        "geometry_solve_s": 9.000857266015373,
+        "result_assembly_s": 0.0,
+        "retime_s": 0.39451805292628706,
+        "route_generation_s": 0.3713926851050928
+      },
+      "wall_time_s": 12.61620358005166
+    },
+    "S2_mirror": {
+      "attempt_count": 6,
+      "attempt_statuses": [
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED"
+      ],
+      "attempts": [
+        {
+          "attempt_index": 0,
+          "initial_label": "route_guide=0;source=astar_primary",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.2532639019191265
+        },
+        {
+          "attempt_index": 1,
+          "initial_label": "route_guide=1;source=astar_alternative_1",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.3551143090007827
+        },
+        {
+          "attempt_index": 2,
+          "initial_label": "route_guide=2;source=astar_alternative_2",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.425729974056594
+        },
+        {
+          "attempt_index": 3,
+          "initial_label": "length_multiplier=1.2;shape=left",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.3205313329817727
+        },
+        {
+          "attempt_index": 4,
+          "initial_label": "length_multiplier=1.2;shape=right",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.3524060390191153
+        },
+        {
+          "attempt_index": 5,
+          "initial_label": "length_multiplier=1.8;shape=left",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.3027845090255141
+        }
+      ],
+      "audits": {
+        "collision": {
+          "check_count": 15182,
+          "passed": true,
+          "reason": null
+        },
+        "dynamics": {
+          "check_count": 935,
+          "passed": true,
+          "reason": null
+        },
+        "geometry": {
+          "check_count": 181,
+          "passed": true,
+          "reason": null
+        }
+      },
+      "checks": 16298,
+      "collision_checks": 15182,
+      "collision_margin_m": 0.05000007368835353,
+      "duration_s": 37.69549959251513,
+      "dynamics": {
+        "check_count": 935,
+        "leaves": 64,
+        "max_utilization": 0.990099009900991,
+        "pointwise_component_ratio": 0.9478962452508187,
+        "pointwise_jerk_ratio": 0.8808129995565638,
+        "pointwise_p_sss_ratio": 0.9692240240722989,
+        "whole_domain_certificate": true
+      },
+      "endpoint_error_m": 4.1284876399562624e-10,
+      "envelope": {
+        "baseline_margin_m": 0.05,
+        "margin_minus_floor_m": 7.368835353016578e-08,
+        "margin_used_m": 0.05000007368835353,
+        "maximum_envelope_m": 7.368835352363654e-08,
+        "radius_upper_m": 0.4804800196652419,
+        "radius_upper_note": "body radius evaluated at the outward-rounded fixed-point solution of the margin equation; the recorded margin is then rounded outward from baseline plus this envelope, never from the baseline margin alone",
+        "vehicles": 3
+      },
+      "executable": true,
+      "grid_sha256": "e50be3838ff411edc4a8cfeda5d28b0cf0188db89a1a4dababf72bb514b4d57c",
+      "heading_error_rad": 2.220446049250313e-16,
+      "input_digests": {
+        "map_pgm_sha256": "94fab242e95d66e22060f95a303fba2bb6ff91a4fa6e3cef3669f47f4fd26141",
+        "map_signature": "e50be3838ff411edc4a8cfeda5d28b0cf0188db89a1a4dababf72bb514b4d57c",
+        "map_yaml_sha256": "f8e5f664772f28d4b6522a8b7c9876353beb2a19fe550efd59a415bf88082ee8",
+        "request_file_sha256": "ebd26543d1c83d1a49f77f193765ceec7b790ecfbfc8c7320a613ea6245ee1b8"
+      },
+      "input_files": [
+        "map.pgm",
+        "map.yaml",
+        "request.json"
+      ],
+      "model_sha256": "4c7e2c87be9501f083a78f454442096714651b4cf2b43945e5270413477c2356",
+      "numerics": {
+        "attempt_count": 6,
+        "checks": 16298,
+        "collision": {
+          "bounds_verified": true,
+          "check_count": 15182,
+          "max_corner_step_m": 0.01,
+          "max_samples_per_segment": 200000,
+          "sample_count": 2523,
+          "segment_count": 8,
+          "static_stages": [
+            "goal",
+            "start"
+          ]
+        },
+        "dynamics": {
+          "check_count": 935,
+          "leaves": 64,
+          "max_utilization": 0.990099009900991,
+          "pointwise_component_ratio": 0.9478962452508187,
+          "pointwise_jerk_ratio": 0.8808129995565638,
+          "pointwise_p_sss_ratio": 0.9692240240722989,
+          "whole_domain_certificate": true
+        },
+        "endpoint_error_m": 4.1284876399562624e-10,
+        "envelope": {
+          "baseline_margin_m": 0.05,
+          "margin_minus_floor_m": 7.368835353016578e-08,
+          "margin_used_m": 0.05000007368835353,
+          "maximum_envelope_m": 7.368835352363654e-08,
+          "radius_upper_m": 0.4804800196652419,
+          "radius_upper_note": "body radius evaluated at the outward-rounded fixed-point solution of the margin equation; the recorded margin is then rounded outward from baseline plus this envelope, never from the baseline margin alone",
+          "vehicles": 3
+        },
+        "executable": true,
+        "geometry": {
+          "check_count": 181,
+          "max_heading_error_rad": 1.1102230246251565e-16,
+          "max_pairwise_rigidity_error_m": 1.3322676295501878e-15,
+          "max_position_error_m": 1.039678987348122e-09,
+          "position_tolerance_m": 8.307483933897074e-07,
+          "sample_count": 73
+        },
+        "heading_error_rad": 2.220446049250313e-16,
+        "model_sha256": "4c7e2c87be9501f083a78f454442096714651b4cf2b43945e5270413477c2356",
+        "rigidity_error_m": 1.3322676295501878e-15,
+        "route_count": 3,
+        "search_rounds": 1,
+        "status": "SUCCESS",
+        "timings": {
+          "collision_audit_s": 1.7736660259542987,
+          "dynamics_audit_s": 1.071693483972922,
+          "geometry_solve_s": 9.124610087950714,
+          "result_assembly_s": 0.0,
+          "retime_s": 0.39785559999290854,
+          "route_generation_s": 0.36811568995472044
+        },
+        "wall_time_s": 12.753685337956995
+      },
+      "path_length_m": 11.98231841326067,
+      "planning_context_sha256": "a6a42bf1edda8dd769157bca5d3d8424c1b71028c186568fa48f31c00b85758c",
+      "reference": {
+        "collision_checks": 15620,
+        "dynamic_checks": 937,
+        "endpoint_difference_m": 2.806646496170421e-13,
+        "geometry_checks": 183,
+        "independent_accepted": true,
+        "reference_file": "reference/S2_mirror.json",
+        "reference_sha256": "317dd67ff07a7416660428d3a2cec6714bd1fee9ae42b9f12ae2b86c71374347",
+        "status": "REFERENCE_PASSED",
+        "timed_model_sha256": "bf034bc02d02279eba3c0f05323510bfd735334e38ddf10c85c7bbc6a565b3d0"
+      },
+      "request_sha256": "244db57aa644b6a202477d22b1f45f53a462b52ae9ecb64b5fe36b5c58a3e6d0",
+      "rigidity_error_m": 1.3322676295501878e-15,
+      "routes": [
+        {
+          "grid_sha256": "e50be3838ff411edc4a8cfeda5d28b0cf0188db89a1a4dababf72bb514b4d57c",
+          "length_m": 12.628740906118374,
+          "point_count": 232,
+          "source": "astar_primary"
+        },
+        {
+          "grid_sha256": "e50be3838ff411edc4a8cfeda5d28b0cf0188db89a1a4dababf72bb514b4d57c",
+          "length_m": 12.711583618592984,
+          "point_count": 232,
+          "source": "astar_alternative_1"
+        },
+        {
+          "grid_sha256": "e50be3838ff411edc4a8cfeda5d28b0cf0188db89a1a4dababf72bb514b4d57c",
+          "length_m": 12.753004974830294,
+          "point_count": 232,
+          "source": "astar_alternative_2"
+        }
+      ],
+      "status": "SUCCESS",
+      "timings": {
+        "collision_audit_s": 1.7736660259542987,
+        "dynamics_audit_s": 1.071693483972922,
+        "geometry_solve_s": 9.124610087950714,
+        "result_assembly_s": 0.0,
+        "retime_s": 0.39785559999290854,
+        "route_generation_s": 0.36811568995472044
+      },
+      "wall_time_s": 12.753685337956995
+    },
+    "S3": {
+      "attempt_count": 12,
+      "attempt_statuses": [
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDIT_REJECTED"
+      ],
+      "attempts": [
+        {
+          "attempt_index": 0,
+          "initial_label": "route_guide=0;source=astar_primary",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.3214799970155582
+        },
+        {
+          "attempt_index": 1,
+          "initial_label": "route_guide=1;source=astar_alternative_1",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.5539174379082397
+        },
+        {
+          "attempt_index": 2,
+          "initial_label": "route_guide=2;source=astar_alternative_2",
+          "rejection_reason": "CURVATURE_LIMIT",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDIT_REJECTED",
+          "wall_time_s": 1.341178769012913
+        },
+        {
+          "attempt_index": 3,
+          "initial_label": "length_multiplier=1.2;shape=left",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.3023024559952319
+        },
+        {
+          "attempt_index": 4,
+          "initial_label": "length_multiplier=1.2;shape=right",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.3106730389408767
+        },
+        {
+          "attempt_index": 5,
+          "initial_label": "length_multiplier=1.8;shape=left",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.4710356029681861
+        },
+        {
+          "attempt_index": 0,
+          "initial_label": "route_guide=0;source=astar_primary",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.1895334830041975
+        },
+        {
+          "attempt_index": 1,
+          "initial_label": "route_guide=1;source=astar_alternative_1",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.2376340590417385
+        },
+        {
+          "attempt_index": 2,
+          "initial_label": "route_guide=2;source=astar_alternative_2",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.326859727036208
+        },
+        {
+          "attempt_index": 3,
+          "initial_label": "length_multiplier=1.2;shape=left",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.3152952620293945
+        },
+        {
+          "attempt_index": 4,
+          "initial_label": "length_multiplier=1.2;shape=right",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.278483691974543
+        },
+        {
+          "attempt_index": 5,
+          "initial_label": "length_multiplier=1.8;shape=left",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.3595833629369736
+        }
+      ],
+      "audits": {
+        "collision": {
+          "check_count": 11864,
+          "passed": true,
+          "reason": null
+        },
+        "dynamics": {
+          "check_count": 923,
+          "passed": true,
+          "reason": null
+        },
+        "geometry": {
+          "check_count": 169,
+          "passed": true,
+          "reason": null
+        }
+      },
+      "checks": 12956,
+      "collision_checks": 11864,
+      "collision_margin_m": 0.05000004721646884,
+      "duration_s": 37.27956201763165,
+      "dynamics": {
+        "check_count": 923,
+        "leaves": 64,
+        "max_utilization": 0.9900990099009901,
+        "pointwise_component_ratio": 0.9498666074074866,
+        "pointwise_jerk_ratio": 0.8634026311032174,
+        "pointwise_p_sss_ratio": 0.9743329798031719,
+        "whole_domain_certificate": true
+      },
+      "endpoint_error_m": 4.367370357659129e-10,
+      "envelope": {
+        "baseline_margin_m": 0.05,
+        "margin_minus_floor_m": 4.7216468838928716e-08,
+        "margin_used_m": 0.05000004721646884,
+        "maximum_envelope_m": 4.721646883309045e-08,
+        "radius_upper_m": 0.48048000123607515,
+        "radius_upper_note": "body radius evaluated at the outward-rounded fixed-point solution of the margin equation; the recorded margin is then rounded outward from baseline plus this envelope, never from the baseline margin alone",
+        "vehicles": 3
+      },
+      "executable": true,
+      "grid_sha256": "d4ca88971203636b4dcc0285b99d092823069d210d8ac3e13f67be49609ba1c3",
+      "heading_error_rad": 2.7755575615628914e-17,
+      "input_digests": {
+        "map_pgm_sha256": "42499b71080fe3a21498b84c8d0f28a66c4d66c4985d068e6d61ad4a115379f6",
+        "map_signature": "d4ca88971203636b4dcc0285b99d092823069d210d8ac3e13f67be49609ba1c3",
+        "map_yaml_sha256": "59e801f5cdd99ec991ea0702e44069abb059f35463603189bcf12497c730d5d8",
+        "request_file_sha256": "4bbeb598df544cc9ce13882d695fa5e8d74092d95654cc041e3004d2b9678ecc"
+      },
+      "input_files": [
+        "map.pgm",
+        "map.yaml",
+        "request.json"
+      ],
+      "model_sha256": "9147accd44a5b803b42c9f38e3d3623af38fcd484e12cb9f4e0d03587f3ea03d",
+      "numerics": {
+        "attempt_count": 12,
+        "checks": 12956,
+        "collision": {
+          "bounds_verified": true,
+          "check_count": 11864,
+          "max_corner_step_m": 0.01,
+          "max_samples_per_segment": 200000,
+          "sample_count": 1970,
+          "segment_count": 8,
+          "static_stages": [
+            "goal",
+            "start"
+          ]
+        },
+        "dynamics": {
+          "check_count": 923,
+          "leaves": 64,
+          "max_utilization": 0.9900990099009901,
+          "pointwise_component_ratio": 0.9498666074074866,
+          "pointwise_jerk_ratio": 0.8634026311032174,
+          "pointwise_p_sss_ratio": 0.9743329798031719,
+          "whole_domain_certificate": true
+        },
+        "endpoint_error_m": 4.367370357659129e-10,
+        "envelope": {
+          "baseline_margin_m": 0.05,
+          "margin_minus_floor_m": 4.7216468838928716e-08,
+          "margin_used_m": 0.05000004721646884,
+          "maximum_envelope_m": 4.721646883309045e-08,
+          "radius_upper_m": 0.48048000123607515,
+          "radius_upper_note": "body radius evaluated at the outward-rounded fixed-point solution of the margin equation; the recorded margin is then rounded outward from baseline plus this envelope, never from the baseline margin alone",
+          "vehicles": 3
+        },
+        "executable": true,
+        "geometry": {
+          "check_count": 169,
+          "max_heading_error_rad": 1.1102230246251565e-16,
+          "max_pairwise_rigidity_error_m": 1.3322676295501878e-15,
+          "max_position_error_m": 3.5566146649215975e-15,
+          "position_tolerance_m": 5.25271381293181e-07,
+          "sample_count": 73
+        },
+        "heading_error_rad": 2.7755575615628914e-17,
+        "model_sha256": "9147accd44a5b803b42c9f38e3d3623af38fcd484e12cb9f4e0d03587f3ea03d",
+        "rigidity_error_m": 1.3322676295501878e-15,
+        "route_count": 3,
+        "search_rounds": 2,
+        "status": "SUCCESS",
+        "timings": {
+          "collision_audit_s": 1.188426902052015,
+          "dynamics_audit_s": 2.1716011710232124,
+          "geometry_solve_s": 18.65454632102046,
+          "result_assembly_s": 0.0,
+          "retime_s": 0.8750239571090788,
+          "route_generation_s": 1.4416257669217885
+        },
+        "wall_time_s": 24.342815893003717
+      },
+      "path_length_m": 11.865036452041057,
+      "planning_context_sha256": "29bd3557518099003a0f3431a3bb24364b7857cbf5b1554103ed9abb38afacc9",
+      "reference": {
+        "collision_checks": 15620,
+        "dynamic_checks": 937,
+        "endpoint_difference_m": 2.806646496170421e-13,
+        "geometry_checks": 183,
+        "independent_accepted": true,
+        "reference_file": "reference/S3.json",
+        "reference_sha256": "f9bda0eecfec4e6d800d3176a0a86e83305832ec1d4f20b06c14da718e0d8f3b",
+        "status": "REFERENCE_PASSED",
+        "timed_model_sha256": "eede881f03fbdf3d7e478d83b21c68011b7f625d1dcacf64529664824c272860"
+      },
+      "request_sha256": "18dc626d71fa5b6e5e023215c04b01ceae45f94c8846790d6352b9d6c0e9f075",
+      "rigidity_error_m": 1.3322676295501878e-15,
+      "routes": [
+        {
+          "grid_sha256": "d4ca88971203636b4dcc0285b99d092823069d210d8ac3e13f67be49609ba1c3",
+          "length_m": 12.649451584237026,
+          "point_count": 232,
+          "source": "astar_primary"
+        },
+        {
+          "grid_sha256": "d4ca88971203636b4dcc0285b99d092823069d210d8ac3e13f67be49609ba1c3",
+          "length_m": 12.749451584237027,
+          "point_count": 234,
+          "source": "astar_alternative_1"
+        },
+        {
+          "grid_sha256": "d4ca88971203636b4dcc0285b99d092823069d210d8ac3e13f67be49609ba1c3",
+          "length_m": 13.020162262355685,
+          "point_count": 239,
+          "source": "astar_alternative_2"
+        }
+      ],
+      "status": "SUCCESS",
+      "timings": {
+        "collision_audit_s": 1.188426902052015,
+        "dynamics_audit_s": 2.1716011710232124,
+        "geometry_solve_s": 18.65454632102046,
+        "result_assembly_s": 0.0,
+        "retime_s": 0.8750239571090788,
+        "route_generation_s": 1.4416257669217885
+      },
+      "wall_time_s": 24.342815893003717
+    },
+    "S3_mirror": {
+      "attempt_count": 12,
+      "attempt_statuses": [
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDIT_REJECTED"
+      ],
+      "attempts": [
+        {
+          "attempt_index": 0,
+          "initial_label": "route_guide=0;source=astar_primary",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.2974107069894671
+        },
+        {
+          "attempt_index": 1,
+          "initial_label": "route_guide=1;source=astar_alternative_1",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.3517838779371232
+        },
+        {
+          "attempt_index": 2,
+          "initial_label": "route_guide=2;source=astar_alternative_2",
+          "rejection_reason": "CURVATURE_LIMIT",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDIT_REJECTED",
+          "wall_time_s": 1.3236029139952734
+        },
+        {
+          "attempt_index": 3,
+          "initial_label": "length_multiplier=1.2;shape=left",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.3149224410299212
+        },
+        {
+          "attempt_index": 4,
+          "initial_label": "length_multiplier=1.2;shape=right",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.309783734031953
+        },
+        {
+          "attempt_index": 5,
+          "initial_label": "length_multiplier=1.8;shape=left",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.3933092870283872
+        },
+        {
+          "attempt_index": 0,
+          "initial_label": "route_guide=0;source=astar_primary",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.1603100390639156
+        },
+        {
+          "attempt_index": 1,
+          "initial_label": "route_guide=1;source=astar_alternative_1",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.205213999026455
+        },
+        {
+          "attempt_index": 2,
+          "initial_label": "route_guide=2;source=astar_alternative_2",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.310119983041659
+        },
+        {
+          "attempt_index": 3,
+          "initial_label": "length_multiplier=1.2;shape=left",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.2318078180542216
+        },
+        {
+          "attempt_index": 4,
+          "initial_label": "length_multiplier=1.2;shape=right",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.2161162110278383
+        },
+        {
+          "attempt_index": 5,
+          "initial_label": "length_multiplier=1.8;shape=left",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.2914552780566737
+        }
+      ],
+      "audits": {
+        "collision": {
+          "check_count": 12530,
+          "passed": true,
+          "reason": null
+        },
+        "dynamics": {
+          "check_count": 929,
+          "passed": true,
+          "reason": null
+        },
+        "geometry": {
+          "check_count": 175,
+          "passed": true,
+          "reason": null
+        }
+      },
+      "checks": 13634,
+      "collision_checks": 12530,
+      "collision_margin_m": 0.05000004452737075,
+      "duration_s": 37.27619633464934,
+      "dynamics": {
+        "check_count": 929,
+        "leaves": 64,
+        "max_utilization": 0.9900990099009899,
+        "pointwise_component_ratio": 0.9456009008808421,
+        "pointwise_jerk_ratio": 0.8858335275572602,
+        "pointwise_p_sss_ratio": 0.9689026440259322,
+        "whole_domain_certificate": true
+      },
+      "endpoint_error_m": 7.199038644416448e-10,
+      "envelope": {
+        "baseline_margin_m": 0.05,
+        "margin_minus_floor_m": 4.452737074889246e-08,
+        "margin_used_m": 0.05000004452737075,
+        "maximum_envelope_m": 4.452737074138935e-08,
+        "radius_upper_m": 0.48047999936398184,
+        "radius_upper_note": "body radius evaluated at the outward-rounded fixed-point solution of the margin equation; the recorded margin is then rounded outward from baseline plus this envelope, never from the baseline margin alone",
+        "vehicles": 3
+      },
+      "executable": true,
+      "grid_sha256": "84639455ed5a5b83b242fabd309875dcfd2676993ec8592674f323e022e3b741",
+      "heading_error_rad": 8.326672684688674e-17,
+      "input_digests": {
+        "map_pgm_sha256": "cc3646b102a46c14ba6174919aaf0ab6f8b9f4d25a9d3a31248430260ff87fd1",
+        "map_signature": "84639455ed5a5b83b242fabd309875dcfd2676993ec8592674f323e022e3b741",
+        "map_yaml_sha256": "c81e81a665a1f0004a2baa65d4633573031a04bed2bd2be12788cdbc36cb0713",
+        "request_file_sha256": "262d6e32504fa101b4b866c0af5078176756eb53e62fd6c05259b3c14a20db68"
+      },
+      "input_files": [
+        "map.pgm",
+        "map.yaml",
+        "request.json"
+      ],
+      "model_sha256": "b2e343dfea30dda136377e56da895fcc35a8993beb015a7b19cf3726a341f947",
+      "numerics": {
+        "attempt_count": 12,
+        "checks": 13634,
+        "collision": {
+          "bounds_verified": true,
+          "check_count": 12530,
+          "max_corner_step_m": 0.01,
+          "max_samples_per_segment": 200000,
+          "sample_count": 2081,
+          "segment_count": 8,
+          "static_stages": [
+            "goal",
+            "start"
+          ]
+        },
+        "dynamics": {
+          "check_count": 929,
+          "leaves": 64,
+          "max_utilization": 0.9900990099009899,
+          "pointwise_component_ratio": 0.9456009008808421,
+          "pointwise_jerk_ratio": 0.8858335275572602,
+          "pointwise_p_sss_ratio": 0.9689026440259322,
+          "whole_domain_certificate": true
+        },
+        "endpoint_error_m": 7.199038644416448e-10,
+        "envelope": {
+          "baseline_margin_m": 0.05,
+          "margin_minus_floor_m": 4.452737074889246e-08,
+          "margin_used_m": 0.05000004452737075,
+          "maximum_envelope_m": 4.452737074138935e-08,
+          "radius_upper_m": 0.48047999936398184,
+          "radius_upper_note": "body radius evaluated at the outward-rounded fixed-point solution of the margin equation; the recorded margin is then rounded outward from baseline plus this envelope, never from the baseline margin alone",
+          "vehicles": 3
+        },
+        "executable": true,
+        "geometry": {
+          "check_count": 175,
+          "max_heading_error_rad": 1.1102230246251565e-16,
+          "max_pairwise_rigidity_error_m": 1.1102230246251565e-15,
+          "max_position_error_m": 3.568292035180542e-15,
+          "position_tolerance_m": 5.133033704558606e-07,
+          "sample_count": 73
+        },
+        "heading_error_rad": 8.326672684688674e-17,
+        "model_sha256": "b2e343dfea30dda136377e56da895fcc35a8993beb015a7b19cf3726a341f947",
+        "rigidity_error_m": 1.1102230246251565e-15,
+        "route_count": 3,
+        "search_rounds": 2,
+        "status": "SUCCESS",
+        "timings": {
+          "collision_audit_s": 1.174321161932312,
+          "dynamics_audit_s": 2.1660961349261925,
+          "geometry_solve_s": 18.053904747008346,
+          "result_assembly_s": 0.0,
+          "retime_s": 0.8552772899856791,
+          "route_generation_s": 1.445302675012499
+        },
+        "wall_time_s": 23.70212381298188
+      },
+      "path_length_m": 11.963771845349948,
+      "planning_context_sha256": "15bb39c1298fd315e6d553defa6b4f94cb5df754c28858ff451ff4c2dfcc1c36",
+      "reference": {
+        "collision_checks": 15620,
+        "dynamic_checks": 937,
+        "endpoint_difference_m": 2.806646496170421e-13,
+        "geometry_checks": 183,
+        "independent_accepted": true,
+        "reference_file": "reference/S3_mirror.json",
+        "reference_sha256": "0a7e484fd86679a1964b4c0830807b6e8b3f1f6b720b3b70a5883eae0c8c3b84",
+        "status": "REFERENCE_PASSED",
+        "timed_model_sha256": "943fbd495ab38d6676196b6f363c3c1a59af96c3dd9fb19f1a2ea85cbffbdda0"
+      },
+      "request_sha256": "fc364d2558e9ec35950838bcb924496f6f56e45ccefbd585dc49dc4db4caf7bb",
+      "rigidity_error_m": 1.1102230246251565e-15,
+      "routes": [
+        {
+          "grid_sha256": "84639455ed5a5b83b242fabd309875dcfd2676993ec8592674f323e022e3b741",
+          "length_m": 12.67016226235568,
+          "point_count": 232,
+          "source": "astar_primary"
+        },
+        {
+          "grid_sha256": "84639455ed5a5b83b242fabd309875dcfd2676993ec8592674f323e022e3b741",
+          "length_m": 12.770162262355681,
+          "point_count": 234,
+          "source": "astar_alternative_1"
+        },
+        {
+          "grid_sha256": "84639455ed5a5b83b242fabd309875dcfd2676993ec8592674f323e022e3b741",
+          "length_m": 13.040872940474335,
+          "point_count": 239,
+          "source": "astar_alternative_2"
+        }
+      ],
+      "status": "SUCCESS",
+      "timings": {
+        "collision_audit_s": 1.174321161932312,
+        "dynamics_audit_s": 2.1660961349261925,
+        "geometry_solve_s": 18.053904747008346,
+        "result_assembly_s": 0.0,
+        "retime_s": 0.8552772899856791,
+        "route_generation_s": 1.445302675012499
+      },
+      "wall_time_s": 23.70212381298188
+    }
+  },
+  "schema": "virtual_rigid_a.g4.results.v1",
+  "stage": "G4",
+  "status": "PASS_PENDING_CODEX_RECHECK",
+  "tests": {
+    "logs": [
+      {
+        "log": "logs/collision.log",
+        "reported_test_counts": [
+          11
+        ]
+      },
+      {
+        "log": "logs/g1_g2_g3_regression.log",
+        "reported_test_counts": [
+          18,
+          20,
+          22,
+          23,
+          26,
+          51
+        ]
+      },
+      {
+        "log": "logs/pipeline.log",
+        "reported_test_counts": [
+          8
+        ]
+      }
+    ],
+    "suites": [
+      {
+        "log": "logs/collision.log",
+        "log_sha256": "37cb92f8dc54e3abe5f1ee603352bd77ac1ca955f2f91e2acad8e99bf9dc6a5b",
+        "suite": "tests/test_virtual_a_collision.py",
+        "tests": 11
+      },
+      {
+        "log": "logs/pipeline.log",
+        "log_sha256": "d49111caed60d5abb2322509e34d3d17213416e4f514aff4f43845cc1acedb20",
+        "suite": "tests/test_virtual_a_pipeline.py",
+        "tests": 8
+      },
+      {
+        "log": "logs/g1_g2_g3_regression.log",
+        "log_sha256": "45a495137a51f81e92796ef1188e86f70e8121e6e410625d09e7a768554e4647",
+        "suite": "tests/test_virtual_a_geometry.py",
+        "tests": 20
+      },
+      {
+        "log": "logs/g1_g2_g3_regression.log",
+        "log_sha256": "45a495137a51f81e92796ef1188e86f70e8121e6e410625d09e7a768554e4647",
+        "suite": "tests/test_virtual_a_optimizer.py",
+        "tests": 26
+      },
+      {
+        "log": "logs/g1_g2_g3_regression.log",
+        "log_sha256": "45a495137a51f81e92796ef1188e86f70e8121e6e410625d09e7a768554e4647",
+        "suite": "tests/test_virtual_a_profile.py",
+        "tests": 22
+      },
+      {
+        "log": "logs/g1_g2_g3_regression.log",
+        "log_sha256": "45a495137a51f81e92796ef1188e86f70e8121e6e410625d09e7a768554e4647",
+        "suite": "tests/test_virtual_a_audit.py",
+        "tests": 51
+      },
+      {
+        "log": "logs/g1_g2_g3_regression.log",
+        "log_sha256": "45a495137a51f81e92796ef1188e86f70e8121e6e410625d09e7a768554e4647",
+        "suite": "tests/test_virtual_a_timing.py",
+        "tests": 18
+      },
+      {
+        "log": "logs/g1_g2_g3_regression.log",
+        "log_sha256": "45a495137a51f81e92796ef1188e86f70e8121e6e410625d09e7a768554e4647",
+        "suite": "tests/test_virtual_a_trajectory.py",
+        "tests": 23
+      }
+    ],
+    "total_tests": 179
+  }
+}

@@ -1,0 +1,2824 @@
+{
+ "checks": {
+  "busy_bridge_refuses_goal_and_initial_pose": {
+   "detail": "0 new plan requests",
+   "ok": true
+  },
+  "busy_job_state_is_busy": {
+   "detail": "PLAYING",
+   "ok": true
+  },
+  "busy_job_state_unchanged": {
+   "detail": "{'backend': 'uniform_v02', 'detail': '', 'formation_id': 'cargo_wedge', 'map_error': None, 'map_frame_id': 'map', 'map_ready': True, 'map_signature': '25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819', 'model_sha256': 'c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186', 'plan_id': 600000, 'reason': '', 'request_map_signature': '25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819', 'request_sha256': 'ea3996592d6c8a23a8b4ab10c726a85843a87a4acac971485614bab987f4aa10', 'schema': 'formation_job_state/v1', 'state': 'PLAYING'}",
+   "ok": true
+  },
+  "busy_planner_keeps_job": {
+   "detail": "{'backend': 'uniform_v02', 'detail': '', 'formation_id': 'cargo_wedge', 'map_error': None, 'map_frame_id': 'map', 'map_ready': True, 'map_signature': '25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819', 'model_sha256': 'c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186', 'plan_id': 600000, 'reason': '', 'request_map_signature': '25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819', 'request_sha256': 'ea3996592d6c8a23a8b4ab10c726a85843a87a4acac971485614bab987f4aa10', 'schema': 'formation_job_state/v1', 'state': 'PLAYING'}",
+   "ok": true
+  },
+  "busy_planner_no_envelope": {
+   "detail": "1100000",
+   "ok": true
+  },
+  "envelope_backend": {
+   "detail": "uniform_v02",
+   "ok": true
+  },
+  "envelope_certification": {
+   "detail": "GEOMETRY_ONLY_NO_S9_NO_COLLISION",
+   "ok": true
+  },
+  "envelope_digest_shape": {
+   "detail": "fdfd0e5c560b39ea3fa368af4bdefe99c1b85b871596322d568714d6a368d6c6",
+   "ok": true
+  },
+  "envelope_model_version": {
+   "detail": "uniform_timed_plan.v1",
+   "ok": true
+  },
+  "envelope_semantic_version": {
+   "detail": "uniform_playback_plan/v1",
+   "ok": true
+  },
+  "envelope_stamp_equals_embedded_trajectory": {
+   "detail": "envelope (1794836315, 643733978) trajectory (1794836315, 643733978)",
+   "ok": true
+  },
+  "final_job_hold_end": {
+   "detail": "{'backend': 'uniform_v02', 'detail': '', 'formation_id': 'cargo_wedge', 'map_error': None, 'map_frame_id': 'map', 'map_ready': True, 'map_signature': '25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819', 'model_sha256': 'fdfd0e5c560b39ea3fa368af4bdefe99c1b85b871596322d568714d6a368d6c6', 'plan_id': 600003, 'reason': 'playback reached its terminal hold', 'request_map_signature': '25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819', 'request_sha256': '816b49cb593f872d3f910e29e93f89944269bdb753e98b78f1631b47d4fc7a19', 'schema': 'formation_job_state/v1', 'state': 'HOLD_END'}",
+   "ok": true
+  },
+  "forward_achieved_goal_within_frozen_request_tolerance": {
+   "detail": "{'requested': [12.0, 10.0, 0.0], 'achieved': [12.0, 10.0, 0.0], 'xy_error_m': 0.0, 'psi_error_rad': 0.0, 'frozen_xy_tolerance_m': 0.02, 'frozen_psi_tolerance_rad': 0.017453292519943295}",
+   "ok": true
+  },
+  "forward_busy_released_by_real_terminal": {
+   "detail": "job HOLD_END after playback HOLD_END by 0.243 s",
+   "ok": true
+  },
+  "forward_interior_ticks_per_phase": {
+   "detail": "{'counts': {'tf': {'motion_0000': 303, 'motion_0001': 303}, 'marker': {'motion_0000': 300, 'motion_0001': 296}, 'status': {'motion_0000': 301, 'motion_0001': 296}}, 'short': {}, 'required_per_source': 11, 'samples': {'tf': 609, 'marker': 599, 'status': 600}}",
+   "ok": true
+  },
+  "forward_job_state_order": {
+   "detail": "['PLANNING', 'PLAYING', 'PLAYING', 'PLAYING', 'PLAYING', 'PLAYING', 'HOLD_END']",
+   "ok": true
+  },
+  "forward_marker_angle": {
+   "detail": "0.0",
+   "ok": true
+  },
+  "forward_marker_position": {
+   "detail": "3.9334402401891566e-10",
+   "ok": true
+  },
+  "forward_planner_published": {
+   "detail": "['PLANNING', 'FEASIBLE']",
+   "ok": true
+  },
+  "forward_planner_wall_matches_T_end": {
+   "detail": "6.245537336967255 vs 6.245537336967255",
+   "ok": true
+  },
+  "forward_playback_identity": {
+   "detail": "600000",
+   "ok": true
+  },
+  "forward_playback_terminal_state": {
+   "detail": "HOLD_END",
+   "ok": true
+  },
+  "forward_stamp_not_after_receipt": {
+   "detail": "stamp 1794836263.060215 receipt 1794836263.079414",
+   "ok": true
+  },
+  "forward_status_angle": {
+   "detail": "0.0",
+   "ok": true
+  },
+  "forward_status_position": {
+   "detail": "0.0",
+   "ok": true
+  },
+  "forward_terminal_heading_error": {
+   "detail": "0.0",
+   "ok": true
+  },
+  "forward_terminal_position_error": {
+   "detail": "0.0",
+   "ok": true
+  },
+  "forward_tf_angle": {
+   "detail": "0.0",
+   "ok": true
+  },
+  "forward_tf_position": {
+   "detail": "3.9334402401891566e-10",
+   "ok": true
+  },
+  "forward_uses_A": {
+   "detail": "['A', 'A']",
+   "ok": true
+  },
+  "frozen_goal_psi_tolerance": {
+   "detail": "{'configured': 0.017453292519943295, 'frozen': 0.017453292519943295}",
+   "ok": true
+  },
+  "frozen_goal_xy_tolerance": {
+   "detail": "{'configured': 0.02, 'frozen': 0.02}",
+   "ok": true
+  },
+  "frozen_search_expansion_budget": {
+   "detail": "{'configured': 10000.0, 'frozen': 10000}",
+   "ok": true
+  },
+  "frozen_search_time_budget": {
+   "detail": "{'configured': 30.0, 'frozen': 30.0}",
+   "ok": true
+  },
+  "frozen_terminal_heading_tolerance": {
+   "detail": "{'configured': 0.017453292519943295, 'frozen': 0.017453292519943295}",
+   "ok": true
+  },
+  "identity_formation_id": {
+   "detail": "cargo_wedge",
+   "ok": true
+  },
+  "identity_plan_id": {
+   "detail": "600003 vs 600003",
+   "ok": true
+  },
+  "interior_samples_per_phase": {
+   "detail": "{'counts': {'initial_setup_0000': 15, 'motion_0000': 157, 'setup_0001': 118, 'motion_0001': 106, 'setup_0002': 152, 'motion_0002': 212, 'setup_0003': 179, 'motion_0003': 138}, 'short': {}, 'required': 11}",
+   "ok": true
+  },
+  "job_model_digest_matches_envelope": {
+   "detail": "['fdfd0e5c560b39ea3fa368af4bdefe99c1b85b871596322d568714d6a368d6c6', 'fdfd0e5c560b39ea3fa368af4bdefe99c1b85b871596322d568714d6a368d6c6', 'fdfd0e5c560b39ea3fa368af4bdefe99c1b85b871596322d568714d6a368d6c6']",
+   "ok": true
+  },
+  "job_plan_id_matches_envelope": {
+   "detail": "[600003]",
+   "ok": true
+  },
+  "job_state_exists": {
+   "detail": "29 job documents",
+   "ok": true
+  },
+  "lateral_achieved_goal_within_frozen_request_tolerance": {
+   "detail": "{'requested': [10.0, 12.0, 0.0], 'achieved': [10.0, 12.0, 0.0], 'xy_error_m': 0.0, 'psi_error_rad': 0.0, 'frozen_xy_tolerance_m': 0.02, 'frozen_psi_tolerance_rad': 0.017453292519943295}",
+   "ok": true
+  },
+  "lateral_busy_released_by_real_terminal": {
+   "detail": "job HOLD_END after playback HOLD_END by 0.652 s",
+   "ok": true
+  },
+  "lateral_interior_ticks_per_phase": {
+   "detail": "{'counts': {'tf': {'initial_setup_0000': 15, 'motion_0000': 252, 'setup_0001': 149, 'motion_0001': 235, 'setup_0002': 111, 'motion_0002': 176, 'motion_0003': 107}, 'marker': {'initial_setup_0000': 14, 'motion_0000': 221, 'setup_0001': 127, 'motion_0001': 209, 'setup_0002': 94, 'motion_0002': 168, 'motion_0003': 125}, 'status': {'initial_setup_0000': 15, 'motion_0000': 252, 'setup_0001': 149, 'motion_0001': 235, 'setup_0002': 111, 'motion_0002': 206, 'motion_0003': 147}}, 'short': {}, 'required_per_source': 11, 'samples': {'tf': 1045, 'marker': 958, 'status': 1115}}",
+   "ok": true
+  },
+  "lateral_job_state_order": {
+   "detail": "['PLANNING', 'PLANNING', 'PLAYING', 'PLAYING', 'PLAYING', 'PLAYING', 'PLAYING', 'PLAYING', 'PLAYING', 'PLAYING', 'PLAYING', 'PLAYING', 'PLAYING', 'HOLD_END']",
+   "ok": true
+  },
+  "lateral_marker_angle": {
+   "detail": "0.0",
+   "ok": true
+  },
+  "lateral_marker_position": {
+   "detail": "4.6380952116989897e-10",
+   "ok": true
+  },
+  "lateral_planner_published": {
+   "detail": "['PLANNING', 'FEASIBLE']",
+   "ok": true
+  },
+  "lateral_planner_wall_matches_T_end": {
+   "detail": "15.429102972672789 vs 15.429102972672789",
+   "ok": true
+  },
+  "lateral_playback_identity": {
+   "detail": "600001",
+   "ok": true
+  },
+  "lateral_playback_terminal_state": {
+   "detail": "HOLD_END",
+   "ok": true
+  },
+  "lateral_stamp_not_after_receipt": {
+   "detail": "stamp 1794836272.095698 receipt 1794836272.119073",
+   "ok": true
+  },
+  "lateral_status_angle": {
+   "detail": "0.0",
+   "ok": true
+  },
+  "lateral_status_position": {
+   "detail": "0.0",
+   "ok": true
+  },
+  "lateral_terminal_heading_error": {
+   "detail": "0.0",
+   "ok": true
+  },
+  "lateral_terminal_position_error": {
+   "detail": "0.0",
+   "ok": true
+  },
+  "lateral_tf_angle": {
+   "detail": "0.0",
+   "ok": true
+  },
+  "lateral_tf_position": {
+   "detail": "4.6380952116989897e-10",
+   "ok": true
+  },
+  "lateral_uses_O": {
+   "detail": "['A', 'O', 'O', 'O', 'O', 'O', 'O']",
+   "ok": true
+  },
+  "model_digest_verified": {
+   "detail": "fdfd0e5c560b39ea3fa368af4bdefe99c1b85b871596322d568714d6a368d6c6",
+   "ok": true
+  },
+  "model_rebuild_identity": {
+   "detail": "600003 cargo_wedge",
+   "ok": true
+  },
+  "non_zero_pivot_arc": {
+   "detail": "[(0.0, 2.0)]",
+   "ok": true
+  },
+  "optimizer_status_exists": {
+   "detail": "3 status documents",
+   "ok": true
+  },
+  "planner_busy_rejection": {
+   "detail": "{'active_job_state': 'PLAYING', 'active_plan_id': 600000, 'admitted': False, 'backend': 'uniform_v02', 'busy_rejected': True, 'busy_rejections': 1, 'detail': 'a job is already planning or playing; this request was not admitted and no start override was consumed', 'executable': False, 'feasible': False, 'formation_id': 'cargo_wedge', 'job_state': 'PLAYING', 'map_error': None, 'map_frame_id': 'map', 'map_ready': True, 'map_signature': '25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819', 'model_sha256': 'c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186', 'model_version': 'uniform_timed_plan.v1', 'node_state': 'BUSY_REJECTED', 'plan_id': 1100000, 'playback_confirmed': True, 'reason': 'BUSY', 'rejected_plan_id': 1100000, 'request_map_signature': '25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819', 'request_sha256': 'ea3996592d6c8a23a8b4ab10c726a85843a87a4acac971485614bab987f4aa10', 'requests_seen': 2, 'schema': 'formation_optimizer_status/v1', 'semantic_version': 'uniform_playback_plan/v1', 'status': 'REJECTED', 'trajectory_published': False}",
+   "ok": true
+  },
+  "playback_status_carries_envelope_identity": {
+   "detail": "[(600003, 'fdfd0e5c560b39ea3fa368af4bdefe99c1b85b871596322d568714d6a368d6c6', 'cargo_wedge'), (600003, 'fdfd0e5c560b39ea3fa368af4bdefe99c1b85b871596322d568714d6a368d6c6', 'cargo_wedge'), (600003, 'fdfd0e5c560b39ea3fa368af4bdefe99c1b85b871596322d568714d6a368d6c6', 'cargo_wedge')]",
+   "ok": true
+  },
+  "playback_terminal_is_certified_for_that_digest": {
+   "detail": "{'terminal_documents': 37, 'executable_flags': [True, True, True, True, True, True], 'certified_digest': 'fdfd0e5c560b39ea3fa368af4bdefe99c1b85b871596322d568714d6a368d6c6'}",
+   "ok": true
+  },
+  "rviz_style_achieved_goal_inside_frozen_tolerance": {
+   "detail": "{'requested': [12.0, 12.0, 0.018], 'achieved': [11.999831030931821, 12.000002196350428, 0.013000000000000001], 'delta_m': 0.00016898334224554415, 'heading_error_rad': 0.0049999999999999975, 'frozen_xy_tolerance_m': 0.02, 'frozen_heading_tolerance_rad': 0.017453292519943295}",
+   "ok": true
+  },
+  "rviz_style_achieved_goal_within_frozen_request_tolerance": {
+   "detail": "{'requested': [12.0, 12.0, 0.018], 'achieved': [11.999831030931821, 12.000002196350428, 0.013000000000000001], 'xy_error_m': 0.00016898334224554415, 'psi_error_rad': 0.0049999999999999975, 'frozen_xy_tolerance_m': 0.02, 'frozen_psi_tolerance_rad': 0.017453292519943295}",
+   "ok": true
+  },
+  "rviz_style_busy_released_by_real_terminal": {
+   "detail": "job HOLD_END after playback HOLD_END by 0.246 s",
+   "ok": true
+  },
+  "rviz_style_interior_ticks_per_phase": {
+   "detail": "{'counts': {'tf': {'initial_setup_0000': 27, 'motion_0000': 303, 'setup_0001': 46, 'motion_0001': 297}, 'marker': {'initial_setup_0000': 25, 'motion_0000': 295, 'setup_0001': 46, 'motion_0001': 291}, 'status': {'initial_setup_0000': 26, 'motion_0000': 296, 'setup_0001': 46, 'motion_0001': 295}}, 'short': {}, 'required_per_source': 11, 'samples': {'tf': 674, 'marker': 658, 'status': 664}}",
+   "ok": true
+  },
+  "rviz_style_job_state_order": {
+   "detail": "['PLANNING', 'PLANNING', 'PLAYING', 'PLAYING', 'PLAYING', 'PLAYING', 'PLAYING', 'HOLD_END']",
+   "ok": true
+  },
+  "rviz_style_marker_angle": {
+   "detail": "1.5907414274707321e-15",
+   "ok": true
+  },
+  "rviz_style_marker_position": {
+   "detail": "4.786833726648132e-10",
+   "ok": true
+  },
+  "rviz_style_planner_published": {
+   "detail": "['PLANNING', 'FEASIBLE']",
+   "ok": true
+  },
+  "rviz_style_planner_wall_matches_T_end": {
+   "detail": "7.011868796339427 vs 7.011868796339427",
+   "ok": true
+  },
+  "rviz_style_playback_identity": {
+   "detail": "600002",
+   "ok": true
+  },
+  "rviz_style_playback_terminal_state": {
+   "detail": "HOLD_END",
+   "ok": true
+  },
+  "rviz_style_stamp_not_after_receipt": {
+   "detail": "stamp 1794836291.000937 receipt 1794836291.011581",
+   "ok": true
+  },
+  "rviz_style_status_angle": {
+   "detail": "0.0",
+   "ok": true
+  },
+  "rviz_style_status_position": {
+   "detail": "0.0",
+   "ok": true
+  },
+  "rviz_style_terminal_heading_error": {
+   "detail": "0.0",
+   "ok": true
+  },
+  "rviz_style_terminal_position_error": {
+   "detail": "0.0",
+   "ok": true
+  },
+  "rviz_style_tf_angle": {
+   "detail": "1.734723475976807e-18",
+   "ok": true
+  },
+  "rviz_style_tf_position": {
+   "detail": "4.786833726648132e-10",
+   "ok": true
+  },
+  "rviz_style_uses_nonzero_decimal_heading": {
+   "detail": "[12.0, 12.0, 0.018]",
+   "ok": true
+  },
+  "s_to_a_achieved_goal_within_frozen_request_tolerance": {
+   "detail": "{'requested': [12.0, 11.0, 0.6], 'achieved': [12.0, 11.0, 0.5999999999999999], 'xy_error_m': 0.0, 'psi_error_rad': 1.1102230246251565e-16, 'frozen_xy_tolerance_m': 0.02, 'frozen_psi_tolerance_rad': 0.017453292519943295}",
+   "ok": true
+  },
+  "s_to_a_busy_released_by_real_terminal": {
+   "detail": "job HOLD_END after playback HOLD_END by 0.718 s",
+   "ok": true
+  },
+  "s_to_a_interior_ticks_per_phase": {
+   "detail": "{'counts': {'tf': {'initial_setup_0000': 12, 'motion_0000': 206, 'setup_0001': 145, 'motion_0001': 130, 'setup_0002': 174, 'motion_0002': 235, 'setup_0003': 178, 'motion_0003': 137}, 'marker': {'initial_setup_0000': 11, 'motion_0000': 184, 'setup_0001': 136, 'motion_0001': 117, 'setup_0002': 152, 'motion_0002': 189, 'setup_0003': 140, 'motion_0003': 71}, 'status': {'initial_setup_0000': 12, 'motion_0000': 206, 'setup_0001': 145, 'motion_0001': 130, 'setup_0002': 174, 'motion_0002': 235, 'setup_0003': 178, 'motion_0003': 137}}, 'short': {}, 'required_per_source': 11, 'samples': {'tf': 1218, 'marker': 1000, 'status': 1218}}",
+   "ok": true
+  },
+  "s_to_a_job_state_order": {
+   "detail": "['PLANNING', 'PLANNING', 'PLANNING', 'PLANNING', 'PLANNING', 'PLANNING', 'PLANNING', 'PLANNING', 'PLANNING', 'PLANNING', 'PLANNING', 'PLANNING', 'PLAYING', 'PLAYING', 'PLAYING', 'PLAYING', 'PLAYING', 'PLAYING', 'PLAYING', 'PLAYING', 'PLAYING', 'PLAYING', 'PLAYING', 'PLAYING', 'PLAYING', 'PLAYING', 'PLAYING', 'PLAYING', 'HOLD_END']",
+   "ok": true
+  },
+  "s_to_a_marker_angle": {
+   "detail": "2.600117898765575e-10",
+   "ok": true
+  },
+  "s_to_a_marker_position": {
+   "detail": "5.46123664130143e-10",
+   "ok": true
+  },
+  "s_to_a_planner_published": {
+   "detail": "['PLANNING', 'FEASIBLE']",
+   "ok": true
+  },
+  "s_to_a_planner_wall_matches_T_end": {
+   "detail": "21.44357260922775 vs 21.44357260922775",
+   "ok": true
+  },
+  "s_to_a_playback_identity": {
+   "detail": "600003",
+   "ok": true
+  },
+  "s_to_a_playback_terminal_state": {
+   "detail": "HOLD_END",
+   "ok": true
+  },
+  "s_to_a_stamp_not_after_receipt": {
+   "detail": "stamp 1794836315.643734 receipt 1794836315.666294",
+   "ok": true
+  },
+  "s_to_a_status_angle": {
+   "detail": "0.0",
+   "ok": true
+  },
+  "s_to_a_status_position": {
+   "detail": "0.0",
+   "ok": true
+  },
+  "s_to_a_terminal_heading_error": {
+   "detail": "0.0",
+   "ok": true
+  },
+  "s_to_a_terminal_position_error": {
+   "detail": "0.0",
+   "ok": true
+  },
+  "s_to_a_tf_angle": {
+   "detail": "1.820412987019182e-10",
+   "ok": true
+  },
+  "s_to_a_tf_position": {
+   "detail": "4.331823788561451e-10",
+   "ok": true
+  },
+  "sample_centers_derived_from_qf": {
+   "detail": "0.0",
+   "ok": true
+  },
+  "sample_vs_model_angle": {
+   "detail": "1.392011506062829e-10",
+   "ok": true
+  },
+  "sample_vs_model_position": {
+   "detail": "7.745941909566078e-11",
+   "ok": true
+  },
+  "second_request_started_from_playback_terminal": {
+   "detail": "[12.0, 10.0, 0.0]",
+   "ok": true
+  },
+  "shared_time_axis_lengths": {
+   "detail": "{1: 1078, 2: 1078, 3: 1078}",
+   "ok": true
+  },
+  "status_model_digest_matches_envelope": {
+   "detail": "['fdfd0e5c560b39ea3fa368af4bdefe99c1b85b871596322d568714d6a368d6c6']",
+   "ok": true
+  },
+  "status_plan_id_matches_envelope": {
+   "detail": "[600003]",
+   "ok": true
+  },
+  "trajectory_plan_id": {
+   "detail": "600003",
+   "ok": true
+  },
+  "unified_S_phase_has_zero_angle_vehicle": {
+   "detail": "{'S_phase_heading_deltas': {'motion_0001': {1: 0.4636476090008061, 2: 0.0, 3: 0.0}}, 'zero_angle': {'motion_0001': {1: 0.4636476090008061, 2: 0.0, 3: 0.0}}}",
+   "ok": true
+  },
+  "unified_has_S_and_A": {
+   "detail": "['A', 'O', 'O', 'S', 'S', 'A', 'A', 'O']",
+   "ok": true
+  }
+ },
+ "experiments": [
+  {
+   "busy": {
+    "active_plan_id": 600000,
+    "busy_status": {
+     "active_job_state": "PLAYING",
+     "active_plan_id": 600000,
+     "admitted": false,
+     "backend": "uniform_v02",
+     "busy_rejected": true,
+     "busy_rejections": 1,
+     "detail": "a job is already planning or playing; this request was not admitted and no start override was consumed",
+     "executable": false,
+     "feasible": false,
+     "formation_id": "cargo_wedge",
+     "job_state": "PLAYING",
+     "map_error": null,
+     "map_frame_id": "map",
+     "map_ready": true,
+     "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+     "model_sha256": "c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186",
+     "model_version": "uniform_timed_plan.v1",
+     "node_state": "BUSY_REJECTED",
+     "plan_id": 1100000,
+     "playback_confirmed": true,
+     "reason": "BUSY",
+     "rejected_plan_id": 1100000,
+     "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+     "request_sha256": "ea3996592d6c8a23a8b4ab10c726a85843a87a4acac971485614bab987f4aa10",
+     "requests_seen": 2,
+     "schema": "formation_optimizer_status/v1",
+     "semantic_version": "uniform_playback_plan/v1",
+     "status": "REJECTED",
+     "trajectory_published": false
+    },
+    "fake_plan_id": 1100000,
+    "job_after": {
+     "backend": "uniform_v02",
+     "detail": "",
+     "formation_id": "cargo_wedge",
+     "map_error": null,
+     "map_frame_id": "map",
+     "map_ready": true,
+     "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+     "model_sha256": "c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186",
+     "plan_id": 600000,
+     "reason": "",
+     "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+     "request_sha256": "ea3996592d6c8a23a8b4ab10c726a85843a87a4acac971485614bab987f4aa10",
+     "schema": "formation_job_state/v1",
+     "state": "PLAYING"
+    },
+    "job_before": {
+     "backend": "uniform_v02",
+     "detail": "",
+     "formation_id": "cargo_wedge",
+     "map_error": null,
+     "map_frame_id": "map",
+     "map_ready": true,
+     "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+     "model_sha256": "c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186",
+     "plan_id": 600000,
+     "reason": "playback accepted the atomic envelope",
+     "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+     "request_sha256": "ea3996592d6c8a23a8b4ab10c726a85843a87a4acac971485614bab987f4aa10",
+     "schema": "formation_job_state/v1",
+     "state": "PLAYING"
+    },
+    "new_requests": 0
+   },
+   "display": {
+    "interior_per_phase": {
+     "marker": {
+      "motion_0000": 300,
+      "motion_0001": 296
+     },
+     "status": {
+      "motion_0000": 301,
+      "motion_0001": 296
+     },
+     "tf": {
+      "motion_0000": 303,
+      "motion_0001": 303
+     }
+    },
+    "samples": {
+     "marker": 599,
+     "status": 600,
+     "tf": 609
+    },
+    "worst": {
+     "marker_angle_rad": 0.0,
+     "marker_position_m": 3.9334402401891566e-10,
+     "status_angle_rad": 0.0,
+     "status_position_m": 0.0,
+     "tf_angle_rad": 0.0,
+     "tf_position_m": 3.9334402401891566e-10
+    }
+   },
+   "envelope": {
+    "T_end_s": 6.245537336967255,
+    "certification": "GEOMETRY_ONLY_NO_S9_NO_COLLISION",
+    "document_path": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G5/20261116T112522Z/legacy_ros/main/envelopes/envelope_00600000.json",
+    "edges": [
+     {
+      "delta_psi": 0.0,
+      "mode": "A",
+      "pivot_x": 0.0,
+      "pivot_y": 0.0,
+      "primitive": "A_STRAIGHT"
+     },
+     {
+      "delta_psi": 0.0,
+      "mode": "A",
+      "pivot_x": 0.0,
+      "pivot_y": 0.0,
+      "primitive": "A_STRAIGHT"
+     }
+    ],
+    "formation_id": "cargo_wedge",
+    "goal_headings": {
+     "1": 0.0,
+     "2": 0.0,
+     "3": 0.0
+    },
+    "goal_qf": [
+     12.0,
+     10.0,
+     0.0
+    ],
+    "interior_samples_per_phase": {
+     "motion_0000": 157,
+     "motion_0001": 158
+    },
+    "model_sha256": "c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186",
+    "model_version": "uniform_timed_plan.v1",
+    "phases": [
+     {
+      "end_s": 3.1227686684836273,
+      "kind": "motion",
+      "mode": "A",
+      "phase_id": "motion_0000",
+      "t0_s": 0.0
+     },
+     {
+      "end_s": 6.245537336967255,
+      "kind": "motion",
+      "mode": "A",
+      "phase_id": "motion_0001",
+      "t0_s": 3.1227686684836273
+     }
+    ],
+    "plan_id": 600000,
+    "sample_count": 316,
+    "semantic_version": "uniform_playback_plan/v1",
+    "stamp": {
+     "nsecs": 60214996,
+     "secs": 1794836263
+    },
+    "start_headings": {
+     "1": 0.0,
+     "2": 0.0,
+     "3": 0.0
+    },
+    "start_qf": [
+     10.0,
+     10.0,
+     0.0
+    ],
+    "worst_qf_center_m": 0.0,
+    "worst_sample_angle_rad": 0.0,
+    "worst_sample_position_m": 2.9037572346624074e-10
+   },
+   "envelope_path": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G5/20261116T112522Z/legacy_ros/main/envelopes/envelope_00600000.json",
+   "goal": [
+    12.0,
+    10.0,
+    0.0
+   ],
+   "initial_pose": [
+    10.0,
+    10.0,
+    0.0
+   ],
+   "job_hold_end_minus_playback_hold_end_s": 0.24326300621032715,
+   "job_states": [
+    {
+     "received_s": 1794836262.1764712,
+     "state": "PLANNING"
+    },
+    {
+     "received_s": 1794836263.1210194,
+     "state": "PLAYING"
+    },
+    {
+     "received_s": 1794836264.4423983,
+     "state": "PLAYING"
+    },
+    {
+     "received_s": 1794836265.9428291,
+     "state": "PLAYING"
+    },
+    {
+     "received_s": 1794836267.4448783,
+     "state": "PLAYING"
+    },
+    {
+     "received_s": 1794836268.443956,
+     "state": "PLAYING"
+    },
+    {
+     "received_s": 1794836269.357398,
+     "state": "HOLD_END"
+    }
+   ],
+   "name": "forward",
+   "plan_id": 600000,
+   "planner_wall_time_s": 0.8123318840516731,
+   "planning_wall_s": 1.3075013160705566,
+   "playing_receipt_s": 1794836263.164653,
+   "request_count_before": 0,
+   "request_goal_error": {
+    "psi_rad": 0.0,
+    "xy_m": 0.0
+   },
+   "request_start": [
+    10.0,
+    10.0,
+    0.0
+   ],
+   "stamp_to_receipt_s": 0.01919865608215332,
+   "terminal_minus_stamp_s": 6.309211730957031,
+   "terminal_receipt_s": 1794836269.3694267
+  },
+  {
+   "display": {
+    "interior_per_phase": {
+     "marker": {
+      "initial_setup_0000": 14,
+      "motion_0000": 221,
+      "motion_0001": 209,
+      "motion_0002": 168,
+      "motion_0003": 125,
+      "setup_0001": 127,
+      "setup_0002": 94
+     },
+     "status": {
+      "initial_setup_0000": 15,
+      "motion_0000": 252,
+      "motion_0001": 235,
+      "motion_0002": 206,
+      "motion_0003": 147,
+      "setup_0001": 149,
+      "setup_0002": 111
+     },
+     "tf": {
+      "initial_setup_0000": 15,
+      "motion_0000": 252,
+      "motion_0001": 235,
+      "motion_0002": 176,
+      "motion_0003": 107,
+      "setup_0001": 149,
+      "setup_0002": 111
+     }
+    },
+    "samples": {
+     "marker": 958,
+     "status": 1115,
+     "tf": 1045
+    },
+    "worst": {
+     "marker_angle_rad": 0.0,
+     "marker_position_m": 4.6380952116989897e-10,
+     "status_angle_rad": 0.0,
+     "status_position_m": 0.0,
+     "tf_angle_rad": 0.0,
+     "tf_position_m": 4.6380952116989897e-10
+    }
+   },
+   "envelope": {
+    "T_end_s": 15.429102972672789,
+    "certification": "GEOMETRY_ONLY_NO_S9_NO_COLLISION",
+    "document_path": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G5/20261116T112522Z/legacy_ros/main/envelopes/envelope_00600001.json",
+    "edges": [
+     {
+      "delta_psi": 0.0,
+      "mode": "O",
+      "pivot_x": 0.0,
+      "pivot_y": 0.0,
+      "primitive": "O_TRANSLATION"
+     },
+     {
+      "delta_psi": 0.0,
+      "mode": "O",
+      "pivot_x": 0.0,
+      "pivot_y": 0.0,
+      "primitive": "O_TRANSLATION"
+     },
+     {
+      "delta_psi": 0.0,
+      "mode": "O",
+      "pivot_x": 0.0,
+      "pivot_y": 0.0,
+      "primitive": "O_TRANSLATION"
+     },
+     {
+      "delta_psi": 0.0,
+      "mode": "O",
+      "pivot_x": 0.0,
+      "pivot_y": 0.0,
+      "primitive": "O_TRANSLATION"
+     }
+    ],
+    "formation_id": "cargo_wedge",
+    "goal_headings": {
+     "1": 0.0,
+     "2": 0.0,
+     "3": 0.0
+    },
+    "goal_qf": [
+     10.0,
+     12.0,
+     0.0
+    ],
+    "interior_samples_per_phase": {
+     "initial_setup_0000": 15,
+     "motion_0000": 157,
+     "motion_0001": 157,
+     "motion_0002": 157,
+     "motion_0003": 109,
+     "setup_0001": 100,
+     "setup_0002": 82
+    },
+    "model_sha256": "54ff432b6ddeb642105a8451366b7112ebec7236c28642e3edb7a7cf1a031588",
+    "model_version": "uniform_timed_plan.v1",
+    "phases": [
+     {
+      "end_s": 0.3,
+      "kind": "initial_setup",
+      "mode": "A",
+      "phase_id": "initial_setup_0000",
+      "t0_s": 0.0
+     },
+     {
+      "end_s": 3.422768668483627,
+      "kind": "motion",
+      "mode": "O",
+      "phase_id": "motion_0000",
+      "t0_s": 0.3
+     },
+     {
+      "end_s": 5.413545613946396,
+      "kind": "setup",
+      "mode": "O",
+      "phase_id": "setup_0001",
+      "t0_s": 3.422768668483627
+     },
+     {
+      "end_s": 8.536314282430023,
+      "kind": "motion",
+      "mode": "O",
+      "phase_id": "motion_0001",
+      "t0_s": 5.413545613946396
+     },
+     {
+      "end_s": 10.157883481406026,
+      "kind": "setup",
+      "mode": "O",
+      "phase_id": "setup_0002",
+      "t0_s": 8.536314282430023
+     },
+     {
+      "end_s": 13.280652149889654,
+      "kind": "motion",
+      "mode": "O",
+      "phase_id": "motion_0002",
+      "t0_s": 10.157883481406026
+     },
+     {
+      "end_s": 15.429102972672789,
+      "kind": "motion",
+      "mode": "O",
+      "phase_id": "motion_0003",
+      "t0_s": 13.280652149889654
+     }
+    ],
+    "plan_id": 600001,
+    "sample_count": 778,
+    "semantic_version": "uniform_playback_plan/v1",
+    "stamp": {
+     "nsecs": 95698118,
+     "secs": 1794836272
+    },
+    "start_headings": {
+     "1": 0.0,
+     "2": 0.0,
+     "3": 0.0
+    },
+    "start_qf": [
+     12.0,
+     10.0,
+     0.0
+    ],
+    "worst_qf_center_m": 0.0,
+    "worst_sample_angle_rad": 0.0,
+    "worst_sample_position_m": 5.68222741167493e-10
+   },
+   "envelope_path": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G5/20261116T112522Z/legacy_ros/main/envelopes/envelope_00600001.json",
+   "goal": [
+    10.0,
+    12.0,
+    0.0
+   ],
+   "job_hold_end_minus_playback_hold_end_s": 0.6516520977020264,
+   "job_states": [
+    {
+     "received_s": 1794836270.0384765,
+     "state": "PLANNING"
+    },
+    {
+     "received_s": 1794836271.4572263,
+     "state": "PLANNING"
+    },
+    {
+     "received_s": 1794836272.2068481,
+     "state": "PLAYING"
+    },
+    {
+     "received_s": 1794836273.4420223,
+     "state": "PLAYING"
+    },
+    {
+     "received_s": 1794836274.9490724,
+     "state": "PLAYING"
+    },
+    {
+     "received_s": 1794836276.440887,
+     "state": "PLAYING"
+    },
+    {
+     "received_s": 1794836277.4550576,
+     "state": "PLAYING"
+    },
+    {
+     "received_s": 1794836278.9454415,
+     "state": "PLAYING"
+    },
+    {
+     "received_s": 1794836280.4434967,
+     "state": "PLAYING"
+    },
+    {
+     "received_s": 1794836281.9915717,
+     "state": "PLAYING"
+    },
+    {
+     "received_s": 1794836283.4432993,
+     "state": "PLAYING"
+    },
+    {
+     "received_s": 1794836284.9448032,
+     "state": "PLAYING"
+    },
+    {
+     "received_s": 1794836286.4448304,
+     "state": "PLAYING"
+    },
+    {
+     "received_s": 1794836287.5754325,
+     "state": "HOLD_END"
+    }
+   ],
+   "name": "lateral",
+   "plan_id": 600001,
+   "planner_wall_time_s": 1.8800812200643122,
+   "planning_wall_s": 2.5052433013916016,
+   "playing_receipt_s": 1794836272.3049414,
+   "request_count_before": 2,
+   "request_goal_error": {
+    "psi_rad": 0.0,
+    "xy_m": 0.0
+   },
+   "request_start": [
+    12.0,
+    10.0,
+    0.0
+   ],
+   "stamp_to_receipt_s": 0.023374557495117188,
+   "terminal_minus_stamp_s": 15.495851993560791,
+   "terminal_receipt_s": 1794836287.59155
+  },
+  {
+   "achieved_goal_delta_m": 0.00016898334224554415,
+   "achieved_heading_error_rad": 0.0049999999999999975,
+   "display": {
+    "interior_per_phase": {
+     "marker": {
+      "initial_setup_0000": 25,
+      "motion_0000": 295,
+      "motion_0001": 291,
+      "setup_0001": 46
+     },
+     "status": {
+      "initial_setup_0000": 26,
+      "motion_0000": 296,
+      "motion_0001": 295,
+      "setup_0001": 46
+     },
+     "tf": {
+      "initial_setup_0000": 27,
+      "motion_0000": 303,
+      "motion_0001": 297,
+      "setup_0001": 46
+     }
+    },
+    "samples": {
+     "marker": 658,
+     "status": 664,
+     "tf": 674
+    },
+    "worst": {
+     "marker_angle_rad": 1.5907414274707321e-15,
+     "marker_position_m": 4.786833726648132e-10,
+     "status_angle_rad": 0.0,
+     "status_position_m": 0.0,
+     "tf_angle_rad": 1.734723475976807e-18,
+     "tf_position_m": 4.786833726648132e-10
+    }
+   },
+   "envelope": {
+    "T_end_s": 7.011868796339427,
+    "certification": "GEOMETRY_ONLY_NO_S9_NO_COLLISION",
+    "document_path": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G5/20261116T112522Z/legacy_ros/main/envelopes/envelope_00600002.json",
+    "edges": [
+     {
+      "delta_psi": 0.0,
+      "mode": "O",
+      "pivot_x": 0.0,
+      "pivot_y": 0.0,
+      "primitive": "O_TRANSLATION"
+     },
+     {
+      "delta_psi": 0.0,
+      "mode": "O",
+      "pivot_x": 0.0,
+      "pivot_y": 0.0,
+      "primitive": "O_TRANSLATION"
+     }
+    ],
+    "formation_id": "cargo_wedge",
+    "goal_headings": {
+     "1": 0.013000000000000001,
+     "2": 0.013000000000000001,
+     "3": 0.013000000000000001
+    },
+    "goal_qf": [
+     11.999831030931821,
+     12.000002196350428,
+     0.013000000000000001
+    ],
+    "interior_samples_per_phase": {
+     "initial_setup_0000": 15,
+     "motion_0000": 157,
+     "motion_0001": 158,
+     "setup_0001": 24
+    },
+    "model_sha256": "2335bb92ebc4293f707a174f78b5833012a49ea1f199e1655d2b185fa627011f",
+    "model_version": "uniform_timed_plan.v1",
+    "phases": [
+     {
+      "end_s": 0.3,
+      "kind": "initial_setup",
+      "mode": "A",
+      "phase_id": "initial_setup_0000",
+      "t0_s": 0.0
+     },
+     {
+      "end_s": 3.422768668483627,
+      "kind": "motion",
+      "mode": "O",
+      "phase_id": "motion_0000",
+      "t0_s": 0.3
+     },
+     {
+      "end_s": 3.8891001278557997,
+      "kind": "setup",
+      "mode": "O",
+      "phase_id": "setup_0001",
+      "t0_s": 3.422768668483627
+     },
+     {
+      "end_s": 7.011868796339427,
+      "kind": "motion",
+      "mode": "O",
+      "phase_id": "motion_0001",
+      "t0_s": 3.8891001278557997
+     }
+    ],
+    "plan_id": 600002,
+    "sample_count": 355,
+    "semantic_version": "uniform_playback_plan/v1",
+    "stamp": {
+     "nsecs": 936508,
+     "secs": 1794836291
+    },
+    "start_headings": {
+     "1": 0.013000000000000001,
+     "2": 0.013000000000000001,
+     "3": 0.013000000000000001
+    },
+    "start_qf": [
+     10.0,
+     12.0,
+     0.013000000000000001
+    ],
+    "worst_qf_center_m": 0.0,
+    "worst_sample_angle_rad": 0.0,
+    "worst_sample_position_m": 5.138279821360353e-10
+   },
+   "envelope_path": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G5/20261116T112522Z/legacy_ros/main/envelopes/envelope_00600002.json",
+   "goal": [
+    12.0,
+    12.0,
+    0.018
+   ],
+   "initial_pose": [
+    10.0,
+    12.0,
+    0.013
+   ],
+   "job_hold_end_minus_playback_hold_end_s": 0.2455120086669922,
+   "job_states": [
+    {
+     "received_s": 1794836289.7273195,
+     "state": "PLANNING"
+    },
+    {
+     "received_s": 1794836291.0100787,
+     "state": "PLANNING"
+    },
+    {
+     "received_s": 1794836291.0607743,
+     "state": "PLAYING"
+    },
+    {
+     "received_s": 1794836292.4413404,
+     "state": "PLAYING"
+    },
+    {
+     "received_s": 1794836293.9413354,
+     "state": "PLAYING"
+    },
+    {
+     "received_s": 1794836295.4412997,
+     "state": "PLAYING"
+    },
+    {
+     "received_s": 1794836296.94458,
+     "state": "PLAYING"
+    },
+    {
+     "received_s": 1794836298.0577488,
+     "state": "HOLD_END"
+    }
+   ],
+   "name": "rviz_style",
+   "plan_id": 600002,
+   "planner_wall_time_s": 1.1906452950788662,
+   "planning_wall_s": 1.6891396045684814,
+   "playing_receipt_s": 1794836291.0987825,
+   "request_count_before": 3,
+   "request_goal_error": {
+    "psi_rad": 0.0049999999999999975,
+    "xy_m": 0.00016898334224554415
+   },
+   "request_start": [
+    10.0,
+    12.0,
+    0.013000000000000001
+   ],
+   "requested_goal": [
+    12.0,
+    12.0,
+    0.018
+   ],
+   "stamp_to_receipt_s": 0.010644197463989258,
+   "terminal_minus_stamp_s": 7.07154655456543,
+   "terminal_receipt_s": 1794836298.072483
+  },
+  {
+   "display": {
+    "interior_per_phase": {
+     "marker": {
+      "initial_setup_0000": 11,
+      "motion_0000": 184,
+      "motion_0001": 117,
+      "motion_0002": 189,
+      "motion_0003": 71,
+      "setup_0001": 136,
+      "setup_0002": 152,
+      "setup_0003": 140
+     },
+     "status": {
+      "initial_setup_0000": 12,
+      "motion_0000": 206,
+      "motion_0001": 130,
+      "motion_0002": 235,
+      "motion_0003": 137,
+      "setup_0001": 145,
+      "setup_0002": 174,
+      "setup_0003": 178
+     },
+     "tf": {
+      "initial_setup_0000": 12,
+      "motion_0000": 206,
+      "motion_0001": 130,
+      "motion_0002": 235,
+      "motion_0003": 137,
+      "setup_0001": 145,
+      "setup_0002": 174,
+      "setup_0003": 178
+     }
+    },
+    "samples": {
+     "marker": 1000,
+     "status": 1218,
+     "tf": 1218
+    },
+    "worst": {
+     "marker_angle_rad": 2.600117898765575e-10,
+     "marker_position_m": 5.46123664130143e-10,
+     "status_angle_rad": 0.0,
+     "status_position_m": 0.0,
+     "tf_angle_rad": 1.820412987019182e-10,
+     "tf_position_m": 4.331823788561451e-10
+    }
+   },
+   "envelope": {
+    "T_end_s": 21.44357260922775,
+    "certification": "GEOMETRY_ONLY_NO_S9_NO_COLLISION",
+    "document_path": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G5/20261116T112522Z/legacy_ros/main/envelopes/envelope_00600003.json",
+    "edges": [
+     {
+      "delta_psi": 0.0,
+      "mode": "O",
+      "pivot_x": 0.0,
+      "pivot_y": 0.0,
+      "primitive": "O_TRANSLATION"
+     },
+     {
+      "delta_psi": 0.0,
+      "mode": "S",
+      "pivot_x": 0.0,
+      "pivot_y": 0.0,
+      "primitive": "S_SPIN"
+     },
+     {
+      "delta_psi": 0.5999999999999999,
+      "mode": "A",
+      "pivot_x": 0.0,
+      "pivot_y": 2.0,
+      "primitive": "A_ARC"
+     },
+     {
+      "delta_psi": 0.0,
+      "mode": "O",
+      "pivot_x": 0.0,
+      "pivot_y": 0.0,
+      "primitive": "O_TRANSLATION"
+     }
+    ],
+    "formation_id": "cargo_wedge",
+    "goal_headings": {
+     "1": 1.063647609000806,
+     "2": 0.5999999999999999,
+     "3": 0.5999999999999999
+    },
+    "goal_qf": [
+     12.0,
+     11.0,
+     0.5999999999999999
+    ],
+    "interior_samples_per_phase": {
+     "initial_setup_0000": 15,
+     "motion_0000": 157,
+     "motion_0001": 106,
+     "motion_0002": 212,
+     "motion_0003": 138,
+     "setup_0001": 118,
+     "setup_0002": 152,
+     "setup_0003": 179
+    },
+    "model_sha256": "fdfd0e5c560b39ea3fa368af4bdefe99c1b85b871596322d568714d6a368d6c6",
+    "model_version": "uniform_timed_plan.v1",
+    "phases": [
+     {
+      "end_s": 0.3,
+      "kind": "initial_setup",
+      "mode": "A",
+      "phase_id": "initial_setup_0000",
+      "t0_s": 0.0
+     },
+     {
+      "end_s": 3.422768668483627,
+      "kind": "motion",
+      "mode": "O",
+      "phase_id": "motion_0000",
+      "t0_s": 0.3
+     },
+     {
+      "end_s": 5.765978648338118,
+      "kind": "setup",
+      "mode": "O",
+      "phase_id": "setup_0001",
+      "t0_s": 3.422768668483627
+     },
+     {
+      "end_s": 7.877386190069781,
+      "kind": "motion",
+      "mode": "S",
+      "phase_id": "motion_0001",
+      "t0_s": 5.765978648338118
+     },
+     {
+      "end_s": 10.907901592097355,
+      "kind": "setup",
+      "mode": "S",
+      "phase_id": "setup_0002",
+      "t0_s": 7.877386190069781
+     },
+     {
+      "end_s": 15.147745342097352,
+      "kind": "motion",
+      "mode": "A",
+      "phase_id": "motion_0002",
+      "t0_s": 10.907901592097355
+     },
+     {
+      "end_s": 18.720058206112476,
+      "kind": "setup",
+      "mode": "A",
+      "phase_id": "setup_0003",
+      "t0_s": 15.147745342097352
+     },
+     {
+      "end_s": 21.44357260922775,
+      "kind": "motion",
+      "mode": "O",
+      "phase_id": "motion_0003",
+      "t0_s": 18.720058206112476
+     }
+    ],
+    "plan_id": 600003,
+    "sample_count": 1078,
+    "semantic_version": "uniform_playback_plan/v1",
+    "stamp": {
+     "nsecs": 643733978,
+     "secs": 1794836315
+    },
+    "start_headings": {
+     "1": 0.0,
+     "2": 0.0,
+     "3": 0.0
+    },
+    "start_qf": [
+     10.0,
+     10.0,
+     0.0
+    ],
+    "worst_qf_center_m": 0.0,
+    "worst_sample_angle_rad": 1.392011506062829e-10,
+    "worst_sample_position_m": 7.745941909566078e-11
+   },
+   "envelope_path": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G5/20261116T112522Z/legacy_ros/main/envelopes/envelope_00600003.json",
+   "goal": [
+    12.0,
+    11.0,
+    0.6
+   ],
+   "initial_pose": [
+    10.0,
+    10.0,
+    0.0
+   ],
+   "job_hold_end_minus_playback_hold_end_s": 0.7175216674804688,
+   "job_states": [
+    {
+     "received_s": 1794836299.731168,
+     "state": "PLANNING"
+    },
+    {
+     "received_s": 1794836300.9515684,
+     "state": "PLANNING"
+    },
+    {
+     "received_s": 1794836302.456295,
+     "state": "PLANNING"
+    },
+    {
+     "received_s": 1794836303.9465208,
+     "state": "PLANNING"
+    },
+    {
+     "received_s": 1794836305.4461632,
+     "state": "PLANNING"
+    },
+    {
+     "received_s": 1794836306.961788,
+     "state": "PLANNING"
+    },
+    {
+     "received_s": 1794836308.4614792,
+     "state": "PLANNING"
+    },
+    {
+     "received_s": 1794836309.456786,
+     "state": "PLANNING"
+    },
+    {
+     "received_s": 1794836310.956851,
+     "state": "PLANNING"
+    },
+    {
+     "received_s": 1794836312.4463692,
+     "state": "PLANNING"
+    },
+    {
+     "received_s": 1794836313.4704041,
+     "state": "PLANNING"
+    },
+    {
+     "received_s": 1794836314.9461815,
+     "state": "PLANNING"
+    },
+    {
+     "received_s": 1794836315.7832048,
+     "state": "PLAYING"
+    },
+    {
+     "received_s": 1794836316.9462545,
+     "state": "PLAYING"
+    },
+    {
+     "received_s": 1794836318.4853003,
+     "state": "PLAYING"
+    },
+    {
+     "received_s": 1794836319.9436042,
+     "state": "PLAYING"
+    },
+    {
+     "received_s": 1794836321.5083942,
+     "state": "PLAYING"
+    },
+    {
+     "received_s": 1794836322.9438066,
+     "state": "PLAYING"
+    },
+    {
+     "received_s": 1794836324.440938,
+     "state": "PLAYING"
+    },
+    {
+     "received_s": 1794836325.4646108,
+     "state": "PLAYING"
+    },
+    {
+     "received_s": 1794836326.9443657,
+     "state": "PLAYING"
+    },
+    {
+     "received_s": 1794836327.9863849,
+     "state": "PLAYING"
+    },
+    {
+     "received_s": 1794836329.4858408,
+     "state": "PLAYING"
+    },
+    {
+     "received_s": 1794836331.0179656,
+     "state": "PLAYING"
+    },
+    {
+     "received_s": 1794836332.4505298,
+     "state": "PLAYING"
+    },
+    {
+     "received_s": 1794836333.946235,
+     "state": "PLAYING"
+    },
+    {
+     "received_s": 1794836335.5205579,
+     "state": "PLAYING"
+    },
+    {
+     "received_s": 1794836336.9456599,
+     "state": "PLAYING"
+    },
+    {
+     "received_s": 1794836337.1505668,
+     "state": "HOLD_END"
+    }
+   ],
+   "name": "s_to_a",
+   "plan_id": 600003,
+   "planner_wall_time_s": 15.682047609006986,
+   "planning_wall_s": 16.339388132095337,
+   "playing_receipt_s": 1794836315.8796523,
+   "request_count_before": 4,
+   "request_goal_error": {
+    "psi_rad": 1.1102230246251565e-16,
+    "xy_m": 0.0
+   },
+   "request_start": [
+    10.0,
+    10.0,
+    0.0
+   ],
+   "s_phase_heading_deltas": {
+    "motion_0001": {
+     "1": 0.4636476090008061,
+     "2": 0.0,
+     "3": 0.0
+    }
+   },
+   "stamp_to_receipt_s": 0.02256011962890625,
+   "terminal_minus_stamp_s": 21.52861523628235,
+   "terminal_receipt_s": 1794836337.1723492
+  }
+ ],
+ "generated_at_utc": "2026-11-16T13:37:40Z",
+ "job_state_history": [
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": null,
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": null,
+    "reason": "",
+    "request_map_signature": null,
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "IDLE"
+   },
+   "received_s": 1794836259.7618957
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": null,
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": null,
+    "reason": "",
+    "request_map_signature": null,
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "IDLE"
+   },
+   "received_s": 1794836260.4413428
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": null,
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": null,
+    "reason": "",
+    "request_map_signature": null,
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "IDLE"
+   },
+   "received_s": 1794836261.9412725
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600000,
+    "reason": "planning",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794836262.1764712
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186",
+    "plan_id": 600000,
+    "reason": "playback accepted the atomic envelope",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "ea3996592d6c8a23a8b4ab10c726a85843a87a4acac971485614bab987f4aa10",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794836263.1210194
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186",
+    "plan_id": 600000,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "ea3996592d6c8a23a8b4ab10c726a85843a87a4acac971485614bab987f4aa10",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794836264.4423983
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186",
+    "plan_id": 600000,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "ea3996592d6c8a23a8b4ab10c726a85843a87a4acac971485614bab987f4aa10",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794836265.9428291
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186",
+    "plan_id": 600000,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "ea3996592d6c8a23a8b4ab10c726a85843a87a4acac971485614bab987f4aa10",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794836267.4448783
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186",
+    "plan_id": 600000,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "ea3996592d6c8a23a8b4ab10c726a85843a87a4acac971485614bab987f4aa10",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794836268.443956
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "c8d061174722ef1b0609be9b1981c4afd7eeec9d0dbc8dd3d954ab1ac6b24186",
+    "plan_id": 600000,
+    "reason": "playback reached its terminal hold",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "ea3996592d6c8a23a8b4ab10c726a85843a87a4acac971485614bab987f4aa10",
+    "schema": "formation_job_state/v1",
+    "state": "HOLD_END"
+   },
+   "received_s": 1794836269.357398
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600001,
+    "reason": "planning",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794836270.0384765
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600001,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794836271.4572263
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "54ff432b6ddeb642105a8451366b7112ebec7236c28642e3edb7a7cf1a031588",
+    "plan_id": 600001,
+    "reason": "playback accepted the atomic envelope",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "e014303deda83a82e8831de617e169fa0dd5d57fdfcaca869d8b68dd2e126f70",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794836272.2068481
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "54ff432b6ddeb642105a8451366b7112ebec7236c28642e3edb7a7cf1a031588",
+    "plan_id": 600001,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "e014303deda83a82e8831de617e169fa0dd5d57fdfcaca869d8b68dd2e126f70",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794836273.4420223
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "54ff432b6ddeb642105a8451366b7112ebec7236c28642e3edb7a7cf1a031588",
+    "plan_id": 600001,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "e014303deda83a82e8831de617e169fa0dd5d57fdfcaca869d8b68dd2e126f70",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794836274.9490724
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "54ff432b6ddeb642105a8451366b7112ebec7236c28642e3edb7a7cf1a031588",
+    "plan_id": 600001,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "e014303deda83a82e8831de617e169fa0dd5d57fdfcaca869d8b68dd2e126f70",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794836276.440887
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "54ff432b6ddeb642105a8451366b7112ebec7236c28642e3edb7a7cf1a031588",
+    "plan_id": 600001,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "e014303deda83a82e8831de617e169fa0dd5d57fdfcaca869d8b68dd2e126f70",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794836277.4550576
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "54ff432b6ddeb642105a8451366b7112ebec7236c28642e3edb7a7cf1a031588",
+    "plan_id": 600001,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "e014303deda83a82e8831de617e169fa0dd5d57fdfcaca869d8b68dd2e126f70",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794836278.9454415
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "54ff432b6ddeb642105a8451366b7112ebec7236c28642e3edb7a7cf1a031588",
+    "plan_id": 600001,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "e014303deda83a82e8831de617e169fa0dd5d57fdfcaca869d8b68dd2e126f70",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794836280.4434967
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "54ff432b6ddeb642105a8451366b7112ebec7236c28642e3edb7a7cf1a031588",
+    "plan_id": 600001,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "e014303deda83a82e8831de617e169fa0dd5d57fdfcaca869d8b68dd2e126f70",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794836281.9915717
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "54ff432b6ddeb642105a8451366b7112ebec7236c28642e3edb7a7cf1a031588",
+    "plan_id": 600001,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "e014303deda83a82e8831de617e169fa0dd5d57fdfcaca869d8b68dd2e126f70",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794836283.4432993
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "54ff432b6ddeb642105a8451366b7112ebec7236c28642e3edb7a7cf1a031588",
+    "plan_id": 600001,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "e014303deda83a82e8831de617e169fa0dd5d57fdfcaca869d8b68dd2e126f70",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794836284.9448032
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "54ff432b6ddeb642105a8451366b7112ebec7236c28642e3edb7a7cf1a031588",
+    "plan_id": 600001,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "e014303deda83a82e8831de617e169fa0dd5d57fdfcaca869d8b68dd2e126f70",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794836286.4448304
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "54ff432b6ddeb642105a8451366b7112ebec7236c28642e3edb7a7cf1a031588",
+    "plan_id": 600001,
+    "reason": "playback reached its terminal hold",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "e014303deda83a82e8831de617e169fa0dd5d57fdfcaca869d8b68dd2e126f70",
+    "schema": "formation_job_state/v1",
+    "state": "HOLD_END"
+   },
+   "received_s": 1794836287.5754325
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "54ff432b6ddeb642105a8451366b7112ebec7236c28642e3edb7a7cf1a031588",
+    "plan_id": 600001,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "e014303deda83a82e8831de617e169fa0dd5d57fdfcaca869d8b68dd2e126f70",
+    "schema": "formation_job_state/v1",
+    "state": "HOLD_END"
+   },
+   "received_s": 1794836288.9414065
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600002,
+    "reason": "planning",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794836289.7273195
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "2335bb92ebc4293f707a174f78b5833012a49ea1f199e1655d2b185fa627011f",
+    "plan_id": 600002,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "4e7fbebee1a8ab456d4102752157d75375f2be2e16e2f9cfc7588088f43c6e2c",
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794836291.0100787
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "2335bb92ebc4293f707a174f78b5833012a49ea1f199e1655d2b185fa627011f",
+    "plan_id": 600002,
+    "reason": "playback accepted the atomic envelope",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "4e7fbebee1a8ab456d4102752157d75375f2be2e16e2f9cfc7588088f43c6e2c",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794836291.0607743
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "2335bb92ebc4293f707a174f78b5833012a49ea1f199e1655d2b185fa627011f",
+    "plan_id": 600002,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "4e7fbebee1a8ab456d4102752157d75375f2be2e16e2f9cfc7588088f43c6e2c",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794836292.4413404
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "2335bb92ebc4293f707a174f78b5833012a49ea1f199e1655d2b185fa627011f",
+    "plan_id": 600002,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "4e7fbebee1a8ab456d4102752157d75375f2be2e16e2f9cfc7588088f43c6e2c",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794836293.9413354
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "2335bb92ebc4293f707a174f78b5833012a49ea1f199e1655d2b185fa627011f",
+    "plan_id": 600002,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "4e7fbebee1a8ab456d4102752157d75375f2be2e16e2f9cfc7588088f43c6e2c",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794836295.4412997
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "2335bb92ebc4293f707a174f78b5833012a49ea1f199e1655d2b185fa627011f",
+    "plan_id": 600002,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "4e7fbebee1a8ab456d4102752157d75375f2be2e16e2f9cfc7588088f43c6e2c",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794836296.94458
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "2335bb92ebc4293f707a174f78b5833012a49ea1f199e1655d2b185fa627011f",
+    "plan_id": 600002,
+    "reason": "playback reached its terminal hold",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "4e7fbebee1a8ab456d4102752157d75375f2be2e16e2f9cfc7588088f43c6e2c",
+    "schema": "formation_job_state/v1",
+    "state": "HOLD_END"
+   },
+   "received_s": 1794836298.0577488
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "2335bb92ebc4293f707a174f78b5833012a49ea1f199e1655d2b185fa627011f",
+    "plan_id": 600002,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "4e7fbebee1a8ab456d4102752157d75375f2be2e16e2f9cfc7588088f43c6e2c",
+    "schema": "formation_job_state/v1",
+    "state": "HOLD_END"
+   },
+   "received_s": 1794836299.441081
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600003,
+    "reason": "planning",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794836299.731168
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600003,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794836300.9515684
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600003,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794836302.456295
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600003,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794836303.9465208
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600003,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794836305.4461632
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600003,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794836306.961788
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600003,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794836308.4614792
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600003,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794836309.456786
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600003,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794836310.956851
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600003,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794836312.4463692
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600003,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794836313.4704041
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": null,
+    "plan_id": 600003,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": null,
+    "schema": "formation_job_state/v1",
+    "state": "PLANNING"
+   },
+   "received_s": 1794836314.9461815
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "fdfd0e5c560b39ea3fa368af4bdefe99c1b85b871596322d568714d6a368d6c6",
+    "plan_id": 600003,
+    "reason": "playback accepted the atomic envelope",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "816b49cb593f872d3f910e29e93f89944269bdb753e98b78f1631b47d4fc7a19",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794836315.7832048
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "fdfd0e5c560b39ea3fa368af4bdefe99c1b85b871596322d568714d6a368d6c6",
+    "plan_id": 600003,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "816b49cb593f872d3f910e29e93f89944269bdb753e98b78f1631b47d4fc7a19",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794836316.9462545
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "fdfd0e5c560b39ea3fa368af4bdefe99c1b85b871596322d568714d6a368d6c6",
+    "plan_id": 600003,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "816b49cb593f872d3f910e29e93f89944269bdb753e98b78f1631b47d4fc7a19",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794836318.4853003
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "fdfd0e5c560b39ea3fa368af4bdefe99c1b85b871596322d568714d6a368d6c6",
+    "plan_id": 600003,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "816b49cb593f872d3f910e29e93f89944269bdb753e98b78f1631b47d4fc7a19",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794836319.9436042
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "fdfd0e5c560b39ea3fa368af4bdefe99c1b85b871596322d568714d6a368d6c6",
+    "plan_id": 600003,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "816b49cb593f872d3f910e29e93f89944269bdb753e98b78f1631b47d4fc7a19",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794836321.5083942
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "fdfd0e5c560b39ea3fa368af4bdefe99c1b85b871596322d568714d6a368d6c6",
+    "plan_id": 600003,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "816b49cb593f872d3f910e29e93f89944269bdb753e98b78f1631b47d4fc7a19",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794836322.9438066
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "fdfd0e5c560b39ea3fa368af4bdefe99c1b85b871596322d568714d6a368d6c6",
+    "plan_id": 600003,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "816b49cb593f872d3f910e29e93f89944269bdb753e98b78f1631b47d4fc7a19",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794836324.440938
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "fdfd0e5c560b39ea3fa368af4bdefe99c1b85b871596322d568714d6a368d6c6",
+    "plan_id": 600003,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "816b49cb593f872d3f910e29e93f89944269bdb753e98b78f1631b47d4fc7a19",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794836325.4646108
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "fdfd0e5c560b39ea3fa368af4bdefe99c1b85b871596322d568714d6a368d6c6",
+    "plan_id": 600003,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "816b49cb593f872d3f910e29e93f89944269bdb753e98b78f1631b47d4fc7a19",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794836326.9443657
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "fdfd0e5c560b39ea3fa368af4bdefe99c1b85b871596322d568714d6a368d6c6",
+    "plan_id": 600003,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "816b49cb593f872d3f910e29e93f89944269bdb753e98b78f1631b47d4fc7a19",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794836327.9863849
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "fdfd0e5c560b39ea3fa368af4bdefe99c1b85b871596322d568714d6a368d6c6",
+    "plan_id": 600003,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "816b49cb593f872d3f910e29e93f89944269bdb753e98b78f1631b47d4fc7a19",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794836329.4858408
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "fdfd0e5c560b39ea3fa368af4bdefe99c1b85b871596322d568714d6a368d6c6",
+    "plan_id": 600003,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "816b49cb593f872d3f910e29e93f89944269bdb753e98b78f1631b47d4fc7a19",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794836331.0179656
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "fdfd0e5c560b39ea3fa368af4bdefe99c1b85b871596322d568714d6a368d6c6",
+    "plan_id": 600003,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "816b49cb593f872d3f910e29e93f89944269bdb753e98b78f1631b47d4fc7a19",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794836332.4505298
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "fdfd0e5c560b39ea3fa368af4bdefe99c1b85b871596322d568714d6a368d6c6",
+    "plan_id": 600003,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "816b49cb593f872d3f910e29e93f89944269bdb753e98b78f1631b47d4fc7a19",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794836333.946235
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "fdfd0e5c560b39ea3fa368af4bdefe99c1b85b871596322d568714d6a368d6c6",
+    "plan_id": 600003,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "816b49cb593f872d3f910e29e93f89944269bdb753e98b78f1631b47d4fc7a19",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794836335.5205579
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "fdfd0e5c560b39ea3fa368af4bdefe99c1b85b871596322d568714d6a368d6c6",
+    "plan_id": 600003,
+    "reason": "",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "816b49cb593f872d3f910e29e93f89944269bdb753e98b78f1631b47d4fc7a19",
+    "schema": "formation_job_state/v1",
+    "state": "PLAYING"
+   },
+   "received_s": 1794836336.9456599
+  },
+  {
+   "document": {
+    "backend": "uniform_v02",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "model_sha256": "fdfd0e5c560b39ea3fa368af4bdefe99c1b85b871596322d568714d6a368d6c6",
+    "plan_id": 600003,
+    "reason": "playback reached its terminal hold",
+    "request_map_signature": "25facb0cd0e35d7ac0efbf1ce132a56f3b364eb70a28706dcea4c5ec4398d819",
+    "request_sha256": "816b49cb593f872d3f910e29e93f89944269bdb753e98b78f1631b47d4fc7a19",
+    "schema": "formation_job_state/v1",
+    "state": "HOLD_END"
+   },
+   "received_s": 1794836337.1505668
+  }
+ ],
+ "ok": true,
+ "params": {
+  "playback": {
+   "allow_reverse": true,
+   "backend": "uniform_v02",
+   "body_length_m": 0.738,
+   "body_width_m": 0.5,
+   "formation_id": "cargo_wedge",
+   "frame_id": "map",
+   "goal_heading_free": true,
+   "initial_heading_policy": "cargo_heading",
+   "offsets": [
+    [
+     1.0,
+     0.0
+    ],
+    [
+     0.0,
+     1.0
+    ],
+    [
+     0.0,
+     -1.0
+    ]
+   ],
+   "publish_tf": true,
+   "rate": 100,
+   "transport_ui": true,
+   "vehicle_ids": [
+    1,
+    2,
+    3
+   ]
+  },
+  "uniform_planner": {
+   "backend": "uniform_v02",
+   "collision_margin": 0.05,
+   "frame_id": "map",
+   "goal_heading_tol": 0.017453292519943295,
+   "goal_psi_tol": 0.017453292519943295,
+   "goal_xy_tol": 0.02,
+   "max_expansions": 10000,
+   "max_publication_samples": 200001,
+   "max_seconds": 30.0,
+   "playback_finish_grace_s": 3.0,
+   "playback_start_timeout_s": 5.0,
+   "publication_dt": 0.02,
+   "sweep_spacing": 0.01,
+   "translation_step": 1.0
+  }
+ },
+ "request_history": [
+  {
+   "formation_goal": [
+    12.0,
+    10.0,
+    0.0
+   ],
+   "formation_start": [
+    10.0,
+    10.0,
+    0.0
+   ],
+   "plan_id": 600000,
+   "received_s": 1794836262.1740966
+  },
+  {
+   "formation_goal": [
+    12.0,
+    10.0,
+    0.0
+   ],
+   "formation_start": [
+    10.0,
+    10.0,
+    0.0
+   ],
+   "plan_id": 1100000,
+   "received_s": 1794836266.0767968
+  },
+  {
+   "formation_goal": [
+    10.0,
+    12.0,
+    0.0
+   ],
+   "formation_start": [
+    12.0,
+    10.0,
+    0.0
+   ],
+   "plan_id": 600001,
+   "received_s": 1794836270.035387
+  },
+  {
+   "formation_goal": [
+    12.0,
+    12.0,
+    0.018000000000000002
+   ],
+   "formation_start": [
+    10.0,
+    12.0,
+    0.013000000000000001
+   ],
+   "plan_id": 600002,
+   "received_s": 1794836289.7244854
+  },
+  {
+   "formation_goal": [
+    12.0,
+    11.0,
+    0.5999999999999999
+   ],
+   "formation_start": [
+    10.0,
+    10.0,
+    0.0
+   ],
+   "plan_id": 600003,
+   "received_s": 1794836299.7290225
+  }
+ ],
+ "ros_master_uri": "http://127.0.0.1:11586",
+ "scenario": "main",
+ "schema": "fr05.ros_uniform_playback_smoke.v1",
+ "topic_types": {
+  "/formation/display_pose": "geometry_msgs/PoseStamped",
+  "/formation/job_state": "std_msgs/String",
+  "/formation/markers": "visualization_msgs/MarkerArray",
+  "/formation/optimizer_status": "std_msgs/String",
+  "/formation/plan_request": "fwis_v3_msgs/FormationPlanRequest",
+  "/formation/playback_plan": "fwis_v3_msgs/FormationPlaybackPlan",
+  "/formation/playback_status": "std_msgs/String",
+  "/formation/quality_report": "std_msgs/String",
+  "/map": "nav_msgs/OccupancyGrid",
+  "/rosout": "rosgraph_msgs/Log",
+  "/rosout_agg": "rosgraph_msgs/Log",
+  "/start_pose": "geometry_msgs/PoseStamped",
+  "/tf": "tf2_msgs/TFMessage",
+  "/tf_static": "tf2_msgs/TFMessage"
+ }
+}

@@ -1,0 +1,255 @@
+{
+  "baseline": {
+    "cases": [],
+    "reference_reaudit": true,
+    "status": "NOT_RUN_OLD_TESTS_IN_G0",
+    "workspace_authorization": {
+      "allowed_new_files": [],
+      "allowed_new_prefixes": [],
+      "allowed_tracked_changes": [],
+      "path_authorization_only": "each actual diff still requires review for minimality and scope",
+      "stage": "G0"
+    }
+  },
+  "full": {
+    "cases": [
+      {
+        "case_id": "geometry_continuous",
+        "group": "G1-light",
+        "pattern": "test_continuous_geometry.py"
+      },
+      {
+        "case_id": "geometry_formation",
+        "group": "G1-light",
+        "pattern": "test_formation_geometry.py"
+      },
+      {
+        "case_id": "timing_continuous",
+        "group": "G3-light",
+        "pattern": "test_continuous_retiming.py"
+      },
+      {
+        "case_id": "timing_formation",
+        "group": "G3-light",
+        "pattern": "test_formation_retiming.py"
+      },
+      {
+        "case_id": "fr01_uniform_motion",
+        "group": "FR01",
+        "pattern": "test_uniform_motion.py"
+      },
+      {
+        "case_id": "fr02_a_timing",
+        "group": "FR02-A",
+        "pattern": "test_uniform_timing.py"
+      },
+      {
+        "case_id": "fr02_a_trajectory",
+        "group": "FR02-A",
+        "pattern": "test_uniform_trajectory.py"
+      },
+      {
+        "case_id": "fr02_b_quality",
+        "group": "FR02-B",
+        "pattern": "test_uniform_quality.py"
+      },
+      {
+        "case_id": "fr03_uniform_search",
+        "group": "FR03",
+        "pattern": "test_uniform_search.py"
+      },
+      {
+        "case_id": "fr04_uniform_pipeline",
+        "group": "FR04",
+        "pattern": "test_uniform_pipeline.py"
+      }
+    ],
+    "not_included_in_g0_runner": [
+      "fresh FR06 autonomous search (requires separately authorized G5 evidence)",
+      "ROS/Gazebo (requires separately authorized G5 evidence)"
+    ],
+    "per_case_artifact_root": "regression_artifacts/<case_id>/",
+    "redirect_variables": [
+      "FR01_RESULTS_PATH",
+      "FR02_TIMING_RESULTS_PATH",
+      "FR02_TRAJECTORY_RESULTS_PATH",
+      "FR02_QUALITY_RESULTS_PATH",
+      "FR02_ARTIFACT_DIR",
+      "FR03_RESULTS_PATH",
+      "FR03_ARTIFACT_DIR",
+      "FR04_RESULTS_PATH",
+      "FR04_ARTIFACT_DIR"
+    ],
+    "workspace_authorization": {
+      "allowed_new_files": [
+        ".catkin_workspace",
+        "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/__init__.py",
+        "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/audit.py",
+        "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/bounds.py",
+        "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/collision.py",
+        "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/contracts.py",
+        "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/geometry.py",
+        "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/integration_bounds.py",
+        "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/optimizer.py",
+        "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/pipeline.py",
+        "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/ros_adapter.py",
+        "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/timing.py",
+        "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/trajectory.py",
+        "tests/fixtures/virtual_a/existence_reference.json",
+        "tests/fixtures/virtual_a/open_requests.json",
+        "tests/fixtures/virtual_a/scenes/S1.request.json",
+        "tests/fixtures/virtual_a/scenes/S1_mirror.request.json",
+        "tests/fixtures/virtual_a/scenes/S2.request.json",
+        "tests/fixtures/virtual_a/scenes/S2_mirror.request.json",
+        "tests/fixtures/virtual_a/scenes/S3.request.json",
+        "tests/fixtures/virtual_a/scenes/S3_mirror.request.json",
+        "tests/ros_virtual_a_smoke.py",
+        "tests/test_virtual_a_audit.py",
+        "tests/test_virtual_a_collision.py",
+        "tests/test_virtual_a_geometry.py",
+        "tests/test_virtual_a_integration_bounds.py",
+        "tests/test_virtual_a_optimizer.py",
+        "tests/test_virtual_a_pipeline.py",
+        "tests/test_virtual_a_playback.py",
+        "tests/test_virtual_a_profile.py",
+        "tests/test_virtual_a_receiver.py",
+        "tests/test_virtual_a_ros_adapter.py",
+        "tests/test_virtual_a_timing.py",
+        "tests/test_virtual_a_trajectory.py",
+        "tests/virtual_a_g4_support.py",
+        "tests/virtual_a_g5_support.py",
+        "tools/virtual_a_benchmark.py",
+        "tools/virtual_a_scenes.py"
+      ],
+      "allowed_new_prefixes": [
+        "tests/fixtures/virtual_a/maps/",
+        "devel/"
+      ],
+      "allowed_tracked_changes": [
+        "catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch",
+        "catkin_ws/src/fwis_v3_demo/scripts/formation_goal_bridge.py",
+        "catkin_ws/src/fwis_v3_optimizer/CMakeLists.txt",
+        "catkin_ws/src/fwis_v3_optimizer/scripts/formation_uniform_planner_node.py",
+        "catkin_ws/src/fwis_v3_optimizer/setup.py",
+        "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_playback.py",
+        "catkin_ws/src/fwis_v3_playback/scripts/formation_playback.py",
+        "run_demo.sh"
+      ],
+      "path_authorization_only": "each actual diff still requires review for minimality and scope",
+      "stage": "G5"
+    }
+  },
+  "geometry": {
+    "cases": [
+      {
+        "case_id": "geometry_continuous",
+        "group": "G1-light",
+        "pattern": "test_continuous_geometry.py"
+      },
+      {
+        "case_id": "geometry_formation",
+        "group": "G1-light",
+        "pattern": "test_formation_geometry.py"
+      }
+    ],
+    "per_case_artifact_root": "regression_artifacts/<case_id>/",
+    "redirect_variables": [
+      "FR01_RESULTS_PATH",
+      "FR02_TIMING_RESULTS_PATH",
+      "FR02_TRAJECTORY_RESULTS_PATH",
+      "FR02_QUALITY_RESULTS_PATH",
+      "FR02_ARTIFACT_DIR",
+      "FR03_RESULTS_PATH",
+      "FR03_ARTIFACT_DIR",
+      "FR04_RESULTS_PATH",
+      "FR04_ARTIFACT_DIR"
+    ],
+    "workspace_authorization": {
+      "allowed_new_files": [
+        "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/__init__.py",
+        "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/bounds.py",
+        "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/contracts.py",
+        "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/geometry.py",
+        "tests/test_virtual_a_geometry.py",
+        "tests/test_virtual_a_profile.py",
+        "tools/virtual_a_benchmark.py"
+      ],
+      "allowed_new_prefixes": [],
+      "allowed_tracked_changes": [
+        "catkin_ws/src/fwis_v3_optimizer/setup.py"
+      ],
+      "path_authorization_only": "each actual diff still requires review for minimality and scope",
+      "stage": "G1"
+    }
+  },
+  "timing": {
+    "cases": [
+      {
+        "case_id": "timing_continuous",
+        "group": "G3-light",
+        "pattern": "test_continuous_retiming.py"
+      },
+      {
+        "case_id": "timing_formation",
+        "group": "G3-light",
+        "pattern": "test_formation_retiming.py"
+      },
+      {
+        "case_id": "fr02_a_timing",
+        "group": "FR02-A",
+        "pattern": "test_uniform_timing.py"
+      },
+      {
+        "case_id": "fr02_a_trajectory",
+        "group": "FR02-A",
+        "pattern": "test_uniform_trajectory.py"
+      },
+      {
+        "case_id": "fr02_b_quality",
+        "group": "FR02-B",
+        "pattern": "test_uniform_quality.py"
+      }
+    ],
+    "per_case_artifact_root": "regression_artifacts/<case_id>/",
+    "redirect_variables": [
+      "FR01_RESULTS_PATH",
+      "FR02_TIMING_RESULTS_PATH",
+      "FR02_TRAJECTORY_RESULTS_PATH",
+      "FR02_QUALITY_RESULTS_PATH",
+      "FR02_ARTIFACT_DIR",
+      "FR03_RESULTS_PATH",
+      "FR03_ARTIFACT_DIR",
+      "FR04_RESULTS_PATH",
+      "FR04_ARTIFACT_DIR"
+    ],
+    "workspace_authorization": {
+      "allowed_new_files": [
+        "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/__init__.py",
+        "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/audit.py",
+        "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/bounds.py",
+        "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/contracts.py",
+        "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/geometry.py",
+        "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/integration_bounds.py",
+        "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/optimizer.py",
+        "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/timing.py",
+        "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/trajectory.py",
+        "tests/fixtures/virtual_a/existence_reference.json",
+        "tests/fixtures/virtual_a/open_requests.json",
+        "tests/test_virtual_a_audit.py",
+        "tests/test_virtual_a_geometry.py",
+        "tests/test_virtual_a_integration_bounds.py",
+        "tests/test_virtual_a_optimizer.py",
+        "tests/test_virtual_a_profile.py",
+        "tests/test_virtual_a_timing.py",
+        "tests/test_virtual_a_trajectory.py",
+        "tools/virtual_a_benchmark.py"
+      ],
+      "allowed_new_prefixes": [],
+      "allowed_tracked_changes": [
+        "catkin_ws/src/fwis_v3_optimizer/setup.py"
+      ],
+      "path_authorization_only": "each actual diff still requires review for minimality and scope",
+      "stage": "G3"
+    }
+  }
+}

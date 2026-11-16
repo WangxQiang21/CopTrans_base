@@ -1,0 +1,1273 @@
+{
+  "checks": [
+    {
+      "actual": [
+        "map.pgm",
+        "map.yaml",
+        "request.json"
+      ],
+      "category": "input_bundle",
+      "detail": {},
+      "expected": "only map.pgm/map.yaml/request.json",
+      "name": "S1_reference_free_bundle",
+      "pass": true
+    },
+    {
+      "actual": "054cf5c77079536f9a098e33232732d6c181f0f624f07e3a446ebfab0266a10e",
+      "category": "scene_manifest",
+      "detail": {},
+      "expected": "054cf5c77079536f9a098e33232732d6c181f0f624f07e3a446ebfab0266a10e",
+      "name": "S1_manifest_map",
+      "pass": true
+    },
+    {
+      "actual": "d44f9efeb70f636a1e0f24dbc367e7869366ce344d0d88bba020d4ad355c8a1a",
+      "category": "scene_manifest",
+      "detail": {},
+      "expected": "d44f9efeb70f636a1e0f24dbc367e7869366ce344d0d88bba020d4ad355c8a1a",
+      "name": "S1_manifest_request",
+      "pass": true
+    },
+    {
+      "actual": "SUCCESS",
+      "category": "pipeline",
+      "detail": {},
+      "expected": "SUCCESS",
+      "name": "S1_status",
+      "pass": true
+    },
+    {
+      "actual": true,
+      "category": "pipeline",
+      "detail": {},
+      "expected": true,
+      "name": "S1_executable",
+      "pass": true
+    },
+    {
+      "actual": [
+        true,
+        true,
+        true
+      ],
+      "category": "pipeline",
+      "detail": {},
+      "expected": "three passed",
+      "name": "S1_audits",
+      "pass": true
+    },
+    {
+      "actual": 10664,
+      "category": "pipeline",
+      "detail": {},
+      "expected": "> 0",
+      "name": "S1_checks",
+      "pass": true
+    },
+    {
+      "actual": 1.601861401748266e-10,
+      "category": "geometry",
+      "detail": {},
+      "expected": "<= 0.005 m",
+      "name": "S1_endpoint",
+      "pass": true
+    },
+    {
+      "actual": 0.0,
+      "category": "geometry",
+      "detail": {},
+      "expected": "<= 0.2 deg",
+      "name": "S1_heading",
+      "pass": true
+    },
+    {
+      "actual": 1.5543122344752192e-15,
+      "category": "geometry",
+      "detail": {},
+      "expected": "<= 1e-6 m",
+      "name": "S1_rigidity",
+      "pass": true
+    },
+    {
+      "actual": 0.050000082988274804,
+      "category": "collision",
+      "detail": {},
+      "expected": ">= 0.05 m",
+      "name": "S1_collision_margin",
+      "pass": true
+    },
+    {
+      "actual": {
+        "baseline_margin_m": 0.05,
+        "closure_gap_m": 5.2074639302573624e-17,
+        "margin_growth_lower_m": 8.298827480074376e-08,
+        "margin_minimum_required_m": 0.05000008298827471,
+        "margin_used_m": 0.050000082988274804,
+        "maximum_envelope_m": 4.149413735176669e-08,
+        "pair_closure_gap_m": 9.721037146635022e-17,
+        "pair_envelope_required_m": 8.298827470353339e-08,
+        "per_side_margin_m": 4.149413740384133e-08
+      },
+      "category": "collision",
+      "detail": {},
+      "expected": "margin >= baseline + 2*max(envelope) and per-side growth covers max(envelope)",
+      "name": "S1_collision_envelope_closure",
+      "pass": true
+    },
+    {
+      "actual": {
+        "checker_half_length_m": 0.3940000414941374,
+        "checker_half_width_m": 0.2750000414941374,
+        "checker_radius_upper_m": 0.48048002613965074,
+        "contexts": {
+          "map_boundary": {
+            "actual_per_side_growth_lower_m": 4.149413740384133e-08,
+            "checker_padding_m": 0.0,
+            "covered": true,
+            "required_per_side_m": 4.149413735176669e-08
+          },
+          "motion_sweep": {
+            "actual_numerical_per_side_growth_lower_m": 4.149413740384133e-08,
+            "checker_padding_m": 0.01,
+            "covered": true,
+            "padding_role": "sampling-interval motion protection only; not counted in the numerical envelope and not subtracted from the margin",
+            "required_per_side_m": 4.149413735176669e-08
+          },
+          "no_motion_hold": {
+            "actual_per_side_growth_lower_m": 4.149413740384133e-08,
+            "checker_padding_m": 0.0,
+            "covered": true,
+            "required_per_side_m": 4.149413735176669e-08
+          },
+          "static_start_goal": {
+            "actual_per_side_growth_lower_m": 4.149413740384133e-08,
+            "checker_padding_m": 0.0,
+            "covered": true,
+            "required_per_side_m": 4.149413735176669e-08
+          },
+          "vehicle_vehicle": {
+            "actual_two_body_gap_reduction_lower_m": 8.298827480074376e-08,
+            "binding_pair": {
+              "first_vehicle_id": 1,
+              "pair_envelope_m": 8.298827470353339e-08,
+              "second_vehicle_id": 2
+            },
+            "checker_padding_m": 0.0,
+            "covered": true,
+            "required_pair_envelope_m": 8.298827470353339e-08
+          }
+        },
+        "radius_upper_m": 0.48048002613965074,
+        "sweep_motion_padding_m": 0.01
+      },
+      "category": "collision",
+      "detail": {},
+      "expected": "static/no-motion/sweep/map/pairs covered; 0.01 m sweep padding kept out of the numerical envelope",
+      "name": "S1_collision_envelope_contexts",
+      "pass": true
+    },
+    {
+      "actual": {
+        "plan_context": "80f625e28f50901991661a97f90e55364c8f4bd8f3fe0d8e7eb7ea7e79106282",
+        "plan_model": "1e8f1a3dcd16b728fcc0c68380096d8365a8479226ac8f2af7b9e830fde9c589",
+        "plan_request": "d44f9efeb70f636a1e0f24dbc367e7869366ce344d0d88bba020d4ad355c8a1a",
+        "result_context": "80f625e28f50901991661a97f90e55364c8f4bd8f3fe0d8e7eb7ea7e79106282",
+        "result_model": "1e8f1a3dcd16b728fcc0c68380096d8365a8479226ac8f2af7b9e830fde9c589",
+        "result_request": "d44f9efeb70f636a1e0f24dbc367e7869366ce344d0d88bba020d4ad355c8a1a"
+      },
+      "category": "binding",
+      "detail": {},
+      "expected": "plan/request/context/model equal",
+      "name": "S1_context",
+      "pass": true
+    },
+    {
+      "actual": [
+        "map.pgm",
+        "map.yaml",
+        "request.json"
+      ],
+      "category": "input_bundle",
+      "detail": {},
+      "expected": "only map.pgm/map.yaml/request.json",
+      "name": "S1_mirror_reference_free_bundle",
+      "pass": true
+    },
+    {
+      "actual": "fb485abf73dd1e1953c43762dbee0f9f7ac26a94968766e817c6951135e7c595",
+      "category": "scene_manifest",
+      "detail": {},
+      "expected": "fb485abf73dd1e1953c43762dbee0f9f7ac26a94968766e817c6951135e7c595",
+      "name": "S1_mirror_manifest_map",
+      "pass": true
+    },
+    {
+      "actual": "5c945f973aa02c47d42cd11707c55c392df533c8688ce027d11a4415b05c5ee0",
+      "category": "scene_manifest",
+      "detail": {},
+      "expected": "5c945f973aa02c47d42cd11707c55c392df533c8688ce027d11a4415b05c5ee0",
+      "name": "S1_mirror_manifest_request",
+      "pass": true
+    },
+    {
+      "actual": "SUCCESS",
+      "category": "pipeline",
+      "detail": {},
+      "expected": "SUCCESS",
+      "name": "S1_mirror_status",
+      "pass": true
+    },
+    {
+      "actual": true,
+      "category": "pipeline",
+      "detail": {},
+      "expected": true,
+      "name": "S1_mirror_executable",
+      "pass": true
+    },
+    {
+      "actual": [
+        true,
+        true,
+        true
+      ],
+      "category": "pipeline",
+      "detail": {},
+      "expected": "three passed",
+      "name": "S1_mirror_audits",
+      "pass": true
+    },
+    {
+      "actual": 9886,
+      "category": "pipeline",
+      "detail": {},
+      "expected": "> 0",
+      "name": "S1_mirror_checks",
+      "pass": true
+    },
+    {
+      "actual": 1.5408566196837104e-10,
+      "category": "geometry",
+      "detail": {},
+      "expected": "<= 0.005 m",
+      "name": "S1_mirror_endpoint",
+      "pass": true
+    },
+    {
+      "actual": 2.886579864025407e-15,
+      "category": "geometry",
+      "detail": {},
+      "expected": "<= 0.2 deg",
+      "name": "S1_mirror_heading",
+      "pass": true
+    },
+    {
+      "actual": 1.1102230246251565e-15,
+      "category": "geometry",
+      "detail": {},
+      "expected": "<= 1e-6 m",
+      "name": "S1_mirror_rigidity",
+      "pass": true
+    },
+    {
+      "actual": 0.050000065473668594,
+      "category": "collision",
+      "detail": {},
+      "expected": ">= 0.05 m",
+      "name": "S1_mirror_collision_margin",
+      "pass": true
+    },
+    {
+      "actual": {
+        "baseline_margin_m": 0.05,
+        "closure_gap_m": 4.1246871554034094e-17,
+        "margin_growth_lower_m": 6.547366859094293e-08,
+        "margin_minimum_required_m": 0.050000065473668524,
+        "margin_used_m": 0.050000065473668594,
+        "maximum_envelope_m": 3.273683425769404e-08,
+        "pair_closure_gap_m": 7.555483596927116e-17,
+        "pair_envelope_required_m": 6.54736685153881e-08,
+        "per_side_margin_m": 3.2736834298940913e-08
+      },
+      "category": "collision",
+      "detail": {},
+      "expected": "margin >= baseline + 2*max(envelope) and per-side growth covers max(envelope)",
+      "name": "S1_mirror_collision_envelope_closure",
+      "pass": true
+    },
+    {
+      "actual": {
+        "checker_half_length_m": 0.3940000327368343,
+        "checker_half_width_m": 0.2750000327368343,
+        "checker_radius_upper_m": 0.480480013946352,
+        "contexts": {
+          "map_boundary": {
+            "actual_per_side_growth_lower_m": 3.2736834298940913e-08,
+            "checker_padding_m": 0.0,
+            "covered": true,
+            "required_per_side_m": 3.273683425769404e-08
+          },
+          "motion_sweep": {
+            "actual_numerical_per_side_growth_lower_m": 3.2736834298940913e-08,
+            "checker_padding_m": 0.01,
+            "covered": true,
+            "padding_role": "sampling-interval motion protection only; not counted in the numerical envelope and not subtracted from the margin",
+            "required_per_side_m": 3.273683425769404e-08
+          },
+          "no_motion_hold": {
+            "actual_per_side_growth_lower_m": 3.2736834298940913e-08,
+            "checker_padding_m": 0.0,
+            "covered": true,
+            "required_per_side_m": 3.273683425769404e-08
+          },
+          "static_start_goal": {
+            "actual_per_side_growth_lower_m": 3.2736834298940913e-08,
+            "checker_padding_m": 0.0,
+            "covered": true,
+            "required_per_side_m": 3.273683425769404e-08
+          },
+          "vehicle_vehicle": {
+            "actual_two_body_gap_reduction_lower_m": 6.547366859094293e-08,
+            "binding_pair": {
+              "first_vehicle_id": 1,
+              "pair_envelope_m": 6.54736685153881e-08,
+              "second_vehicle_id": 2
+            },
+            "checker_padding_m": 0.0,
+            "covered": true,
+            "required_pair_envelope_m": 6.54736685153881e-08
+          }
+        },
+        "radius_upper_m": 0.480480013946352,
+        "sweep_motion_padding_m": 0.01
+      },
+      "category": "collision",
+      "detail": {},
+      "expected": "static/no-motion/sweep/map/pairs covered; 0.01 m sweep padding kept out of the numerical envelope",
+      "name": "S1_mirror_collision_envelope_contexts",
+      "pass": true
+    },
+    {
+      "actual": {
+        "plan_context": "ddf6bf0e7b2397826a7a3d1887612a2b5a01cb93e19dbbb32f715bedfffca7c9",
+        "plan_model": "f765edd7f96d795898a32bde082c9805941c84a7822f33df6574bbbcc8e9de58",
+        "plan_request": "5c945f973aa02c47d42cd11707c55c392df533c8688ce027d11a4415b05c5ee0",
+        "result_context": "ddf6bf0e7b2397826a7a3d1887612a2b5a01cb93e19dbbb32f715bedfffca7c9",
+        "result_model": "f765edd7f96d795898a32bde082c9805941c84a7822f33df6574bbbcc8e9de58",
+        "result_request": "5c945f973aa02c47d42cd11707c55c392df533c8688ce027d11a4415b05c5ee0"
+      },
+      "category": "binding",
+      "detail": {},
+      "expected": "plan/request/context/model equal",
+      "name": "S1_mirror_context",
+      "pass": true
+    },
+    {
+      "actual": [
+        "map.pgm",
+        "map.yaml",
+        "request.json"
+      ],
+      "category": "input_bundle",
+      "detail": {},
+      "expected": "only map.pgm/map.yaml/request.json",
+      "name": "S2_reference_free_bundle",
+      "pass": true
+    },
+    {
+      "actual": "55e3c5b82a99c74b96a550720fd7a467e76b40f48082c0212ca21574d3af8782",
+      "category": "scene_manifest",
+      "detail": {},
+      "expected": "55e3c5b82a99c74b96a550720fd7a467e76b40f48082c0212ca21574d3af8782",
+      "name": "S2_manifest_map",
+      "pass": true
+    },
+    {
+      "actual": "9feb7332db51d4f347a21b347416b6e7ffa1619ad28bda41ef88ad57c3bb2ba2",
+      "category": "scene_manifest",
+      "detail": {},
+      "expected": "9feb7332db51d4f347a21b347416b6e7ffa1619ad28bda41ef88ad57c3bb2ba2",
+      "name": "S2_manifest_request",
+      "pass": true
+    },
+    {
+      "actual": "SUCCESS",
+      "category": "pipeline",
+      "detail": {},
+      "expected": "SUCCESS",
+      "name": "S2_status",
+      "pass": true
+    },
+    {
+      "actual": true,
+      "category": "pipeline",
+      "detail": {},
+      "expected": true,
+      "name": "S2_executable",
+      "pass": true
+    },
+    {
+      "actual": [
+        true,
+        true,
+        true
+      ],
+      "category": "pipeline",
+      "detail": {},
+      "expected": "three passed",
+      "name": "S2_audits",
+      "pass": true
+    },
+    {
+      "actual": 16322,
+      "category": "pipeline",
+      "detail": {},
+      "expected": "> 0",
+      "name": "S2_checks",
+      "pass": true
+    },
+    {
+      "actual": 4.275796780732511e-10,
+      "category": "geometry",
+      "detail": {},
+      "expected": "<= 0.005 m",
+      "name": "S2_endpoint",
+      "pass": true
+    },
+    {
+      "actual": 4.718447854656915e-16,
+      "category": "geometry",
+      "detail": {},
+      "expected": "<= 0.2 deg",
+      "name": "S2_heading",
+      "pass": true
+    },
+    {
+      "actual": 1.3322676295501878e-15,
+      "category": "geometry",
+      "detail": {},
+      "expected": "<= 1e-6 m",
+      "name": "S2_rigidity",
+      "pass": true
+    },
+    {
+      "actual": 0.050000150908205816,
+      "category": "collision",
+      "detail": {},
+      "expected": ">= 0.05 m",
+      "name": "S2_collision_margin",
+      "pass": true
+    },
+    {
+      "actual": {
+        "baseline_margin_m": 0.05,
+        "closure_gap_m": 2.505064207302131e-17,
+        "margin_growth_lower_m": 1.509082058134825e-07,
+        "margin_minimum_required_m": 0.05000015090820578,
+        "margin_used_m": 0.050000150908205816,
+        "maximum_envelope_m": 7.545410288516005e-08,
+        "pair_closure_gap_m": 4.316236377235579e-17,
+        "pair_envelope_required_m": 1.5090820577032013e-07,
+        "per_side_margin_m": 7.54541029102107e-08
+      },
+      "category": "collision",
+      "detail": {},
+      "expected": "margin >= baseline + 2*max(envelope) and per-side growth covers max(envelope)",
+      "name": "S2_collision_envelope_closure",
+      "pass": true
+    },
+    {
+      "actual": {
+        "checker_half_length_m": 0.3940000754541029,
+        "checker_half_width_m": 0.27500007545410293,
+        "checker_radius_upper_m": 0.4804800734240716,
+        "contexts": {
+          "map_boundary": {
+            "actual_per_side_growth_lower_m": 7.54541029102107e-08,
+            "checker_padding_m": 0.0,
+            "covered": true,
+            "required_per_side_m": 7.545410288516005e-08
+          },
+          "motion_sweep": {
+            "actual_numerical_per_side_growth_lower_m": 7.54541029102107e-08,
+            "checker_padding_m": 0.01,
+            "covered": true,
+            "padding_role": "sampling-interval motion protection only; not counted in the numerical envelope and not subtracted from the margin",
+            "required_per_side_m": 7.545410288516005e-08
+          },
+          "no_motion_hold": {
+            "actual_per_side_growth_lower_m": 7.54541029102107e-08,
+            "checker_padding_m": 0.0,
+            "covered": true,
+            "required_per_side_m": 7.545410288516005e-08
+          },
+          "static_start_goal": {
+            "actual_per_side_growth_lower_m": 7.54541029102107e-08,
+            "checker_padding_m": 0.0,
+            "covered": true,
+            "required_per_side_m": 7.545410288516005e-08
+          },
+          "vehicle_vehicle": {
+            "actual_two_body_gap_reduction_lower_m": 1.509082058134825e-07,
+            "binding_pair": {
+              "first_vehicle_id": 1,
+              "pair_envelope_m": 1.5090820577032013e-07,
+              "second_vehicle_id": 2
+            },
+            "checker_padding_m": 0.0,
+            "covered": true,
+            "required_pair_envelope_m": 1.5090820577032013e-07
+          }
+        },
+        "radius_upper_m": 0.4804800734240716,
+        "sweep_motion_padding_m": 0.01
+      },
+      "category": "collision",
+      "detail": {},
+      "expected": "static/no-motion/sweep/map/pairs covered; 0.01 m sweep padding kept out of the numerical envelope",
+      "name": "S2_collision_envelope_contexts",
+      "pass": true
+    },
+    {
+      "actual": {
+        "plan_context": "69467fc5b42d2568c3d666da4de31343ee7b738fb13f2766dff6ac29d585cd5f",
+        "plan_model": "8b91407b27788769e255f072f1d55c950e7163baa3c65b3c57839013a5c3da45",
+        "plan_request": "9feb7332db51d4f347a21b347416b6e7ffa1619ad28bda41ef88ad57c3bb2ba2",
+        "result_context": "69467fc5b42d2568c3d666da4de31343ee7b738fb13f2766dff6ac29d585cd5f",
+        "result_model": "8b91407b27788769e255f072f1d55c950e7163baa3c65b3c57839013a5c3da45",
+        "result_request": "9feb7332db51d4f347a21b347416b6e7ffa1619ad28bda41ef88ad57c3bb2ba2"
+      },
+      "category": "binding",
+      "detail": {},
+      "expected": "plan/request/context/model equal",
+      "name": "S2_context",
+      "pass": true
+    },
+    {
+      "actual": [
+        "map.pgm",
+        "map.yaml",
+        "request.json"
+      ],
+      "category": "input_bundle",
+      "detail": {},
+      "expected": "only map.pgm/map.yaml/request.json",
+      "name": "S2_mirror_reference_free_bundle",
+      "pass": true
+    },
+    {
+      "actual": "e50be3838ff411edc4a8cfeda5d28b0cf0188db89a1a4dababf72bb514b4d57c",
+      "category": "scene_manifest",
+      "detail": {},
+      "expected": "e50be3838ff411edc4a8cfeda5d28b0cf0188db89a1a4dababf72bb514b4d57c",
+      "name": "S2_mirror_manifest_map",
+      "pass": true
+    },
+    {
+      "actual": "244db57aa644b6a202477d22b1f45f53a462b52ae9ecb64b5fe36b5c58a3e6d0",
+      "category": "scene_manifest",
+      "detail": {},
+      "expected": "244db57aa644b6a202477d22b1f45f53a462b52ae9ecb64b5fe36b5c58a3e6d0",
+      "name": "S2_mirror_manifest_request",
+      "pass": true
+    },
+    {
+      "actual": "SUCCESS",
+      "category": "pipeline",
+      "detail": {},
+      "expected": "SUCCESS",
+      "name": "S2_mirror_status",
+      "pass": true
+    },
+    {
+      "actual": true,
+      "category": "pipeline",
+      "detail": {},
+      "expected": true,
+      "name": "S2_mirror_executable",
+      "pass": true
+    },
+    {
+      "actual": [
+        true,
+        true,
+        true
+      ],
+      "category": "pipeline",
+      "detail": {},
+      "expected": "three passed",
+      "name": "S2_mirror_audits",
+      "pass": true
+    },
+    {
+      "actual": 16298,
+      "category": "pipeline",
+      "detail": {},
+      "expected": "> 0",
+      "name": "S2_mirror_checks",
+      "pass": true
+    },
+    {
+      "actual": 4.1284876399562624e-10,
+      "category": "geometry",
+      "detail": {},
+      "expected": "<= 0.005 m",
+      "name": "S2_mirror_endpoint",
+      "pass": true
+    },
+    {
+      "actual": 2.220446049250313e-16,
+      "category": "geometry",
+      "detail": {},
+      "expected": "<= 0.2 deg",
+      "name": "S2_mirror_heading",
+      "pass": true
+    },
+    {
+      "actual": 1.3322676295501878e-15,
+      "category": "geometry",
+      "detail": {},
+      "expected": "<= 1e-6 m",
+      "name": "S2_mirror_rigidity",
+      "pass": true
+    },
+    {
+      "actual": 0.05000014737670717,
+      "category": "collision",
+      "detail": {},
+      "expected": ">= 0.05 m",
+      "name": "S2_mirror_collision_margin",
+      "pass": true
+    },
+    {
+      "actual": {
+        "baseline_margin_m": 0.05,
+        "closure_gap_m": 4.8701390147137477e-17,
+        "margin_growth_lower_m": 1.4737670716441495e-07,
+        "margin_minimum_required_m": 0.050000147376707084,
+        "margin_used_m": 0.05000014737670717,
+        "maximum_envelope_m": 7.368835353697553e-08,
+        "pair_closure_gap_m": 9.046385992058812e-17,
+        "pair_envelope_required_m": 1.473767070739511e-07,
+        "per_side_margin_m": 7.368835358567692e-08
+      },
+      "category": "collision",
+      "detail": {},
+      "expected": "margin >= baseline + 2*max(envelope) and per-side growth covers max(envelope)",
+      "name": "S2_mirror_collision_envelope_closure",
+      "pass": true
+    },
+    {
+      "actual": {
+        "checker_half_length_m": 0.3940000736883536,
+        "checker_half_width_m": 0.2750000736883536,
+        "checker_radius_upper_m": 0.4804800709655168,
+        "contexts": {
+          "map_boundary": {
+            "actual_per_side_growth_lower_m": 7.368835358567692e-08,
+            "checker_padding_m": 0.0,
+            "covered": true,
+            "required_per_side_m": 7.368835353697553e-08
+          },
+          "motion_sweep": {
+            "actual_numerical_per_side_growth_lower_m": 7.368835358567692e-08,
+            "checker_padding_m": 0.01,
+            "covered": true,
+            "padding_role": "sampling-interval motion protection only; not counted in the numerical envelope and not subtracted from the margin",
+            "required_per_side_m": 7.368835353697553e-08
+          },
+          "no_motion_hold": {
+            "actual_per_side_growth_lower_m": 7.368835358567692e-08,
+            "checker_padding_m": 0.0,
+            "covered": true,
+            "required_per_side_m": 7.368835353697553e-08
+          },
+          "static_start_goal": {
+            "actual_per_side_growth_lower_m": 7.368835358567692e-08,
+            "checker_padding_m": 0.0,
+            "covered": true,
+            "required_per_side_m": 7.368835353697553e-08
+          },
+          "vehicle_vehicle": {
+            "actual_two_body_gap_reduction_lower_m": 1.4737670716441495e-07,
+            "binding_pair": {
+              "first_vehicle_id": 1,
+              "pair_envelope_m": 1.473767070739511e-07,
+              "second_vehicle_id": 2
+            },
+            "checker_padding_m": 0.0,
+            "covered": true,
+            "required_pair_envelope_m": 1.473767070739511e-07
+          }
+        },
+        "radius_upper_m": 0.4804800709655168,
+        "sweep_motion_padding_m": 0.01
+      },
+      "category": "collision",
+      "detail": {},
+      "expected": "static/no-motion/sweep/map/pairs covered; 0.01 m sweep padding kept out of the numerical envelope",
+      "name": "S2_mirror_collision_envelope_contexts",
+      "pass": true
+    },
+    {
+      "actual": {
+        "plan_context": "787df2c81cab95cd157eea89fda18e85e9070f5fdc81eb1b70c26b921667dc08",
+        "plan_model": "99b04bc31f9bc733368db2fedb8c232dd81430481ff1164cb3dd22e9999231d0",
+        "plan_request": "244db57aa644b6a202477d22b1f45f53a462b52ae9ecb64b5fe36b5c58a3e6d0",
+        "result_context": "787df2c81cab95cd157eea89fda18e85e9070f5fdc81eb1b70c26b921667dc08",
+        "result_model": "99b04bc31f9bc733368db2fedb8c232dd81430481ff1164cb3dd22e9999231d0",
+        "result_request": "244db57aa644b6a202477d22b1f45f53a462b52ae9ecb64b5fe36b5c58a3e6d0"
+      },
+      "category": "binding",
+      "detail": {},
+      "expected": "plan/request/context/model equal",
+      "name": "S2_mirror_context",
+      "pass": true
+    },
+    {
+      "actual": [
+        "map.pgm",
+        "map.yaml",
+        "request.json"
+      ],
+      "category": "input_bundle",
+      "detail": {},
+      "expected": "only map.pgm/map.yaml/request.json",
+      "name": "S3_reference_free_bundle",
+      "pass": true
+    },
+    {
+      "actual": "d4ca88971203636b4dcc0285b99d092823069d210d8ac3e13f67be49609ba1c3",
+      "category": "scene_manifest",
+      "detail": {},
+      "expected": "d4ca88971203636b4dcc0285b99d092823069d210d8ac3e13f67be49609ba1c3",
+      "name": "S3_manifest_map",
+      "pass": true
+    },
+    {
+      "actual": "18dc626d71fa5b6e5e023215c04b01ceae45f94c8846790d6352b9d6c0e9f075",
+      "category": "scene_manifest",
+      "detail": {},
+      "expected": "18dc626d71fa5b6e5e023215c04b01ceae45f94c8846790d6352b9d6c0e9f075",
+      "name": "S3_manifest_request",
+      "pass": true
+    },
+    {
+      "actual": "SUCCESS",
+      "category": "pipeline",
+      "detail": {},
+      "expected": "SUCCESS",
+      "name": "S3_status",
+      "pass": true
+    },
+    {
+      "actual": true,
+      "category": "pipeline",
+      "detail": {},
+      "expected": true,
+      "name": "S3_executable",
+      "pass": true
+    },
+    {
+      "actual": [
+        true,
+        true,
+        true
+      ],
+      "category": "pipeline",
+      "detail": {},
+      "expected": "three passed",
+      "name": "S3_audits",
+      "pass": true
+    },
+    {
+      "actual": 12956,
+      "category": "pipeline",
+      "detail": {},
+      "expected": "> 0",
+      "name": "S3_checks",
+      "pass": true
+    },
+    {
+      "actual": 4.367370357659129e-10,
+      "category": "geometry",
+      "detail": {},
+      "expected": "<= 0.005 m",
+      "name": "S3_endpoint",
+      "pass": true
+    },
+    {
+      "actual": 2.7755575615628914e-17,
+      "category": "geometry",
+      "detail": {},
+      "expected": "<= 0.2 deg",
+      "name": "S3_heading",
+      "pass": true
+    },
+    {
+      "actual": 1.3322676295501878e-15,
+      "category": "geometry",
+      "detail": {},
+      "expected": "<= 1e-6 m",
+      "name": "S3_rigidity",
+      "pass": true
+    },
+    {
+      "actual": 0.050000094432937695,
+      "category": "collision",
+      "detail": {},
+      "expected": ">= 0.05 m",
+      "name": "S3_collision_margin",
+      "pass": true
+    },
+    {
+      "actual": {
+        "baseline_margin_m": 0.05,
+        "closure_gap_m": 4.230254592155387e-18,
+        "margin_growth_lower_m": 9.44329376917352e-08,
+        "margin_minimum_required_m": 0.050000094432937695,
+        "margin_used_m": 0.050000094432937695,
+        "maximum_envelope_m": 4.721646884163735e-08,
+        "pair_closure_gap_m": 8.460495949420973e-18,
+        "pair_envelope_required_m": 9.443293768327471e-08,
+        "per_side_margin_m": 4.72164688458676e-08
+      },
+      "category": "collision",
+      "detail": {},
+      "expected": "margin >= baseline + 2*max(envelope) and per-side growth covers max(envelope)",
+      "name": "S3_collision_envelope_closure",
+      "pass": true
+    },
+    {
+      "actual": {
+        "checker_half_length_m": 0.39400004721646886,
+        "checker_half_width_m": 0.27500004721646887,
+        "checker_radius_upper_m": 0.4804800341071832,
+        "contexts": {
+          "map_boundary": {
+            "actual_per_side_growth_lower_m": 4.72164688458676e-08,
+            "checker_padding_m": 0.0,
+            "covered": true,
+            "required_per_side_m": 4.721646884163735e-08
+          },
+          "motion_sweep": {
+            "actual_numerical_per_side_growth_lower_m": 4.72164688458676e-08,
+            "checker_padding_m": 0.01,
+            "covered": true,
+            "padding_role": "sampling-interval motion protection only; not counted in the numerical envelope and not subtracted from the margin",
+            "required_per_side_m": 4.721646884163735e-08
+          },
+          "no_motion_hold": {
+            "actual_per_side_growth_lower_m": 4.72164688458676e-08,
+            "checker_padding_m": 0.0,
+            "covered": true,
+            "required_per_side_m": 4.721646884163735e-08
+          },
+          "static_start_goal": {
+            "actual_per_side_growth_lower_m": 4.72164688458676e-08,
+            "checker_padding_m": 0.0,
+            "covered": true,
+            "required_per_side_m": 4.721646884163735e-08
+          },
+          "vehicle_vehicle": {
+            "actual_two_body_gap_reduction_lower_m": 9.44329376917352e-08,
+            "binding_pair": {
+              "first_vehicle_id": 1,
+              "pair_envelope_m": 9.443293768327471e-08,
+              "second_vehicle_id": 2
+            },
+            "checker_padding_m": 0.0,
+            "covered": true,
+            "required_pair_envelope_m": 9.443293768327471e-08
+          }
+        },
+        "radius_upper_m": 0.4804800341071832,
+        "sweep_motion_padding_m": 0.01
+      },
+      "category": "collision",
+      "detail": {},
+      "expected": "static/no-motion/sweep/map/pairs covered; 0.01 m sweep padding kept out of the numerical envelope",
+      "name": "S3_collision_envelope_contexts",
+      "pass": true
+    },
+    {
+      "actual": {
+        "plan_context": "a4b806295148c1ade5f7fd62d3bf0df408b8ad36ce9716c8792735d98c1383a0",
+        "plan_model": "ca312f907c9c19972aea89ed75ec56ccdea1b99b33a052840fe49980117c6f13",
+        "plan_request": "18dc626d71fa5b6e5e023215c04b01ceae45f94c8846790d6352b9d6c0e9f075",
+        "result_context": "a4b806295148c1ade5f7fd62d3bf0df408b8ad36ce9716c8792735d98c1383a0",
+        "result_model": "ca312f907c9c19972aea89ed75ec56ccdea1b99b33a052840fe49980117c6f13",
+        "result_request": "18dc626d71fa5b6e5e023215c04b01ceae45f94c8846790d6352b9d6c0e9f075"
+      },
+      "category": "binding",
+      "detail": {},
+      "expected": "plan/request/context/model equal",
+      "name": "S3_context",
+      "pass": true
+    },
+    {
+      "actual": [
+        "map.pgm",
+        "map.yaml",
+        "request.json"
+      ],
+      "category": "input_bundle",
+      "detail": {},
+      "expected": "only map.pgm/map.yaml/request.json",
+      "name": "S3_mirror_reference_free_bundle",
+      "pass": true
+    },
+    {
+      "actual": "84639455ed5a5b83b242fabd309875dcfd2676993ec8592674f323e022e3b741",
+      "category": "scene_manifest",
+      "detail": {},
+      "expected": "84639455ed5a5b83b242fabd309875dcfd2676993ec8592674f323e022e3b741",
+      "name": "S3_mirror_manifest_map",
+      "pass": true
+    },
+    {
+      "actual": "fc364d2558e9ec35950838bcb924496f6f56e45ccefbd585dc49dc4db4caf7bb",
+      "category": "scene_manifest",
+      "detail": {},
+      "expected": "fc364d2558e9ec35950838bcb924496f6f56e45ccefbd585dc49dc4db4caf7bb",
+      "name": "S3_mirror_manifest_request",
+      "pass": true
+    },
+    {
+      "actual": "SUCCESS",
+      "category": "pipeline",
+      "detail": {},
+      "expected": "SUCCESS",
+      "name": "S3_mirror_status",
+      "pass": true
+    },
+    {
+      "actual": true,
+      "category": "pipeline",
+      "detail": {},
+      "expected": true,
+      "name": "S3_mirror_executable",
+      "pass": true
+    },
+    {
+      "actual": [
+        true,
+        true,
+        true
+      ],
+      "category": "pipeline",
+      "detail": {},
+      "expected": "three passed",
+      "name": "S3_mirror_audits",
+      "pass": true
+    },
+    {
+      "actual": 13634,
+      "category": "pipeline",
+      "detail": {},
+      "expected": "> 0",
+      "name": "S3_mirror_checks",
+      "pass": true
+    },
+    {
+      "actual": 7.199038644416448e-10,
+      "category": "geometry",
+      "detail": {},
+      "expected": "<= 0.005 m",
+      "name": "S3_mirror_endpoint",
+      "pass": true
+    },
+    {
+      "actual": 8.326672684688674e-17,
+      "category": "geometry",
+      "detail": {},
+      "expected": "<= 0.2 deg",
+      "name": "S3_mirror_heading",
+      "pass": true
+    },
+    {
+      "actual": 1.1102230246251565e-15,
+      "category": "geometry",
+      "detail": {},
+      "expected": "<= 1e-6 m",
+      "name": "S3_mirror_rigidity",
+      "pass": true
+    },
+    {
+      "actual": 0.05000008905474157,
+      "category": "collision",
+      "detail": {},
+      "expected": ">= 0.05 m",
+      "name": "S3_mirror_collision_margin",
+      "pass": true
+    },
+    {
+      "actual": {
+        "baseline_margin_m": 0.05,
+        "closure_gap_m": 4.1076373086174664e-17,
+        "margin_growth_lower_m": 8.905474156717384e-08,
+        "margin_minimum_required_m": 0.05000008905474151,
+        "margin_used_m": 0.05000008905474157,
+        "maximum_envelope_m": 4.452737074944944e-08,
+        "pair_closure_gap_m": 6.827494512964507e-17,
+        "pair_envelope_required_m": 8.90547414988989e-08,
+        "per_side_margin_m": 4.4527370790525815e-08
+      },
+      "category": "collision",
+      "detail": {},
+      "expected": "margin >= baseline + 2*max(envelope) and per-side growth covers max(envelope)",
+      "name": "S3_mirror_collision_envelope_closure",
+      "pass": true
+    },
+    {
+      "actual": {
+        "checker_half_length_m": 0.3940000445273708,
+        "checker_half_width_m": 0.2750000445273708,
+        "checker_radius_upper_m": 0.4804800303629967,
+        "contexts": {
+          "map_boundary": {
+            "actual_per_side_growth_lower_m": 4.4527370790525815e-08,
+            "checker_padding_m": 0.0,
+            "covered": true,
+            "required_per_side_m": 4.452737074944944e-08
+          },
+          "motion_sweep": {
+            "actual_numerical_per_side_growth_lower_m": 4.4527370790525815e-08,
+            "checker_padding_m": 0.01,
+            "covered": true,
+            "padding_role": "sampling-interval motion protection only; not counted in the numerical envelope and not subtracted from the margin",
+            "required_per_side_m": 4.452737074944944e-08
+          },
+          "no_motion_hold": {
+            "actual_per_side_growth_lower_m": 4.4527370790525815e-08,
+            "checker_padding_m": 0.0,
+            "covered": true,
+            "required_per_side_m": 4.452737074944944e-08
+          },
+          "static_start_goal": {
+            "actual_per_side_growth_lower_m": 4.4527370790525815e-08,
+            "checker_padding_m": 0.0,
+            "covered": true,
+            "required_per_side_m": 4.452737074944944e-08
+          },
+          "vehicle_vehicle": {
+            "actual_two_body_gap_reduction_lower_m": 8.905474156717384e-08,
+            "binding_pair": {
+              "first_vehicle_id": 1,
+              "pair_envelope_m": 8.90547414988989e-08,
+              "second_vehicle_id": 2
+            },
+            "checker_padding_m": 0.0,
+            "covered": true,
+            "required_pair_envelope_m": 8.90547414988989e-08
+          }
+        },
+        "radius_upper_m": 0.4804800303629967,
+        "sweep_motion_padding_m": 0.01
+      },
+      "category": "collision",
+      "detail": {},
+      "expected": "static/no-motion/sweep/map/pairs covered; 0.01 m sweep padding kept out of the numerical envelope",
+      "name": "S3_mirror_collision_envelope_contexts",
+      "pass": true
+    },
+    {
+      "actual": {
+        "plan_context": "46cb268388af3d713729bc574ec1ce4ea6142b01bf0ee922f3bffbb7f2da99d6",
+        "plan_model": "cfdb21905b4e2f99a4062299967c10b2fef3a226d05f5b902a0f4a0217a76089",
+        "plan_request": "fc364d2558e9ec35950838bcb924496f6f56e45ccefbd585dc49dc4db4caf7bb",
+        "result_context": "46cb268388af3d713729bc574ec1ce4ea6142b01bf0ee922f3bffbb7f2da99d6",
+        "result_model": "cfdb21905b4e2f99a4062299967c10b2fef3a226d05f5b902a0f4a0217a76089",
+        "result_request": "fc364d2558e9ec35950838bcb924496f6f56e45ccefbd585dc49dc4db4caf7bb"
+      },
+      "category": "binding",
+      "detail": {},
+      "expected": "plan/request/context/model equal",
+      "name": "S3_mirror_context",
+      "pass": true
+    }
+  ],
+  "codex_acceptance": "NOT_RUN_NOT_CLAIMED",
+  "manifest_path": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G4/20261116T081458Z/scenes/scene_manifest.json",
+  "manifest_sha256": "5bb3df2d829ef3b1051880fb916462cca60cd8c5a17e0c9174c8bb18370daa80",
+  "nonclaims": [
+    "autonomous success only for the finite frozen scene set",
+    "no general completeness, optimality, real-time or ROS claim",
+    "SUCCESS is not Codex ACCEPTED",
+    "reference files are absent from the benchmark inputs"
+  ],
+  "results": {
+    "S1": {
+      "attempt_count": 6,
+      "checks": 10664,
+      "collision_checks": 9584,
+      "collision_envelope": {
+        "closure_gap_m": 5.2074639302573624e-17,
+        "margin_used_m": 0.050000082988274804,
+        "maximum_envelope_m": 4.149413735176669e-08,
+        "per_side_margin_m": 4.149413740384133e-08
+      },
+      "collision_margin_m": 0.050000082988274804,
+      "duration_s": 30.305438027214436,
+      "executable": true,
+      "model_sha256": "1e8f1a3dcd16b728fcc0c68380096d8365a8479226ac8f2af7b9e830fde9c589",
+      "path_length_m": 10.472910641286598,
+      "planning_context_sha256": "80f625e28f50901991661a97f90e55364c8f4bd8f3fe0d8e7eb7ea7e79106282",
+      "route_count": 3,
+      "status": "SUCCESS",
+      "timings": {
+        "collision_audit_s": 1.183069680002518,
+        "dynamics_audit_s": 0.9816329679451883,
+        "geometry_solve_s": 9.513069947017357,
+        "result_assembly_s": 0.0,
+        "retime_s": 0.4051410900428891,
+        "route_generation_s": 0.39654384704772383
+      },
+      "wall_time_s": 12.49947403895203
+    },
+    "S1_mirror": {
+      "attempt_count": 6,
+      "checks": 9886,
+      "collision_checks": 8810,
+      "collision_envelope": {
+        "closure_gap_m": 4.1246871554034094e-17,
+        "margin_used_m": 0.050000065473668594,
+        "maximum_envelope_m": 3.273683425769404e-08,
+        "per_side_margin_m": 3.2736834298940913e-08
+      },
+      "collision_margin_m": 0.050000065473668594,
+      "duration_s": 29.91922601718084,
+      "executable": true,
+      "model_sha256": "f765edd7f96d795898a32bde082c9805941c84a7822f33df6574bbbcc8e9de58",
+      "path_length_m": 10.467139660262553,
+      "planning_context_sha256": "ddf6bf0e7b2397826a7a3d1887612a2b5a01cb93e19dbbb32f715bedfffca7c9",
+      "route_count": 3,
+      "status": "SUCCESS",
+      "timings": {
+        "collision_audit_s": 1.0808348490390927,
+        "dynamics_audit_s": 1.0212518849875778,
+        "geometry_solve_s": 9.50389346794691,
+        "result_assembly_s": 0.0,
+        "retime_s": 0.40677846607286483,
+        "route_generation_s": 0.4015946789877489
+      },
+      "wall_time_s": 12.434723671060055
+    },
+    "S2": {
+      "attempt_count": 6,
+      "checks": 16322,
+      "collision_checks": 15206,
+      "collision_envelope": {
+        "closure_gap_m": 2.505064207302131e-17,
+        "margin_used_m": 0.050000150908205816,
+        "maximum_envelope_m": 7.545410288516005e-08,
+        "per_side_margin_m": 7.54541029102107e-08
+      },
+      "collision_margin_m": 0.050000150908205816,
+      "duration_s": 37.54640846040029,
+      "executable": true,
+      "model_sha256": "8b91407b27788769e255f072f1d55c950e7163baa3c65b3c57839013a5c3da45",
+      "path_length_m": 11.98531134280284,
+      "planning_context_sha256": "69467fc5b42d2568c3d666da4de31343ee7b738fb13f2766dff6ac29d585cd5f",
+      "route_count": 3,
+      "status": "SUCCESS",
+      "timings": {
+        "collision_audit_s": 1.8476308769313619,
+        "dynamics_audit_s": 1.1036298699909821,
+        "geometry_solve_s": 9.417398213059641,
+        "result_assembly_s": 0.0,
+        "retime_s": 0.40393619495444,
+        "route_generation_s": 0.3660865090787411
+      },
+      "wall_time_s": 13.155662282020785
+    },
+    "S2_mirror": {
+      "attempt_count": 6,
+      "checks": 16298,
+      "collision_checks": 15182,
+      "collision_envelope": {
+        "closure_gap_m": 4.8701390147137477e-17,
+        "margin_used_m": 0.05000014737670717,
+        "maximum_envelope_m": 7.368835353697553e-08,
+        "per_side_margin_m": 7.368835358567692e-08
+      },
+      "collision_margin_m": 0.05000014737670717,
+      "duration_s": 37.69549959251513,
+      "executable": true,
+      "model_sha256": "99b04bc31f9bc733368db2fedb8c232dd81430481ff1164cb3dd22e9999231d0",
+      "path_length_m": 11.98231841326067,
+      "planning_context_sha256": "787df2c81cab95cd157eea89fda18e85e9070f5fdc81eb1b70c26b921667dc08",
+      "route_count": 3,
+      "status": "SUCCESS",
+      "timings": {
+        "collision_audit_s": 1.7910355989588425,
+        "dynamics_audit_s": 1.1048791820649058,
+        "geometry_solve_s": 9.438754062983207,
+        "result_assembly_s": 0.0,
+        "retime_s": 0.409127130988054,
+        "route_generation_s": 0.36693907796870917
+      },
+      "wall_time_s": 13.1288091680035
+    },
+    "S3": {
+      "attempt_count": 12,
+      "checks": 12956,
+      "collision_checks": 11864,
+      "collision_envelope": {
+        "closure_gap_m": 4.230254592155387e-18,
+        "margin_used_m": 0.050000094432937695,
+        "maximum_envelope_m": 4.721646884163735e-08,
+        "per_side_margin_m": 4.72164688458676e-08
+      },
+      "collision_margin_m": 0.050000094432937695,
+      "duration_s": 37.27956201763165,
+      "executable": true,
+      "model_sha256": "ca312f907c9c19972aea89ed75ec56ccdea1b99b33a052840fe49980117c6f13",
+      "path_length_m": 11.865036452041057,
+      "planning_context_sha256": "a4b806295148c1ade5f7fd62d3bf0df408b8ad36ce9716c8792735d98c1383a0",
+      "route_count": 3,
+      "status": "SUCCESS",
+      "timings": {
+        "collision_audit_s": 1.1688414609525353,
+        "dynamics_audit_s": 2.319671427947469,
+        "geometry_solve_s": 19.197721419041045,
+        "result_assembly_s": 0.0,
+        "retime_s": 0.9147575440583751,
+        "route_generation_s": 1.4665244609350339
+      },
+      "wall_time_s": 25.07480152999051
+    },
+    "S3_mirror": {
+      "attempt_count": 12,
+      "checks": 13634,
+      "collision_checks": 12530,
+      "collision_envelope": {
+        "closure_gap_m": 4.1076373086174664e-17,
+        "margin_used_m": 0.05000008905474157,
+        "maximum_envelope_m": 4.452737074944944e-08,
+        "per_side_margin_m": 4.4527370790525815e-08
+      },
+      "collision_margin_m": 0.05000008905474157,
+      "duration_s": 37.27619633464934,
+      "executable": true,
+      "model_sha256": "cfdb21905b4e2f99a4062299967c10b2fef3a226d05f5b902a0f4a0217a76089",
+      "path_length_m": 11.963771845349948,
+      "planning_context_sha256": "46cb268388af3d713729bc574ec1ce4ea6142b01bf0ee922f3bffbb7f2da99d6",
+      "route_count": 3,
+      "status": "SUCCESS",
+      "timings": {
+        "collision_audit_s": 1.1915026139467955,
+        "dynamics_audit_s": 2.315214179106988,
+        "geometry_solve_s": 18.669320282991976,
+        "result_assembly_s": 0.0,
+        "retime_s": 0.9192708370974287,
+        "route_generation_s": 1.4331741308560595
+      },
+      "wall_time_s": 24.5359916590387
+    }
+  },
+  "scene_count": 6,
+  "schema": "virtual_rigid_a.g4.benchmark.v1",
+  "stage": "G4",
+  "status": "PASS"
+}

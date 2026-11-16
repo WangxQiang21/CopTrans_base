@@ -1,0 +1,33 @@
+test_forward_plan_frame_uses_the_sampler (test_uniform_playback_plan.AnalyticFrameTest) ... ok
+test_frame_hold_states_and_clamping (test_uniform_playback_plan.AnalyticFrameTest) ... ok
+test_frame_matches_the_model_and_not_linear_interpolation (test_uniform_playback_plan.AnalyticFrameTest) ... ok
+test_status_document_carries_the_envelope_identity (test_uniform_playback_plan.AnalyticFrameTest) ... ok
+test_legacy_trajectory_keeps_the_plan_id_only_audit (test_uniform_playback_plan.AuditIdentityBindingTest) ... ok
+test_matching_identity_certifies_the_display (test_uniform_playback_plan.AuditIdentityBindingTest) ... ok
+test_missing_identity_fields_never_certify_the_display (test_uniform_playback_plan.AuditIdentityBindingTest) ... ok
+test_same_plan_id_other_digest_never_certifies_the_display (test_uniform_playback_plan.AuditIdentityBindingTest) ... ok
+test_status_document_rejects_a_digest_for_another_envelope (test_uniform_playback_plan.AuditIdentityBindingTest) ... ok
+test_verified_envelope_carries_the_authoritative_digest (test_uniform_playback_plan.AuditIdentityBindingTest) ... ok
+test_zero_motion_hold_still_certifies_with_matching_identity (test_uniform_playback_plan.AuditIdentityBindingTest) ... ok
+test_certification_mismatch_is_rejected (test_uniform_playback_plan.EnvelopeAcceptanceTest) ... ok
+test_digest_mismatch_is_rejected (test_uniform_playback_plan.EnvelopeAcceptanceTest) ... ok
+test_fields_round_trip_through_the_message_converter (test_uniform_playback_plan.EnvelopeAcceptanceTest) ... ok
+test_identity_mismatch_is_rejected (test_uniform_playback_plan.EnvelopeAcceptanceTest) ... ok
+test_metadata_mismatches_are_rejected (test_uniform_playback_plan.EnvelopeAcceptanceTest) ... ok
+test_rebuildable_but_different_model_is_rejected_by_digest (test_uniform_playback_plan.EnvelopeAcceptanceTest)
+A plausible model with the original digest still fails closed. ... ok
+test_tampered_model_json_is_rejected (test_uniform_playback_plan.EnvelopeAcceptanceTest)
+A model that no longer matches its own edges cannot be rebuilt. ... ok
+test_tampered_sample_is_rejected (test_uniform_playback_plan.EnvelopeAcceptanceTest) ... ok
+test_tampered_timing_is_rejected (test_uniform_playback_plan.EnvelopeAcceptanceTest) ... ok
+test_unknown_backend_is_rejected (test_uniform_playback_plan.EnvelopeAcceptanceTest) ... ok
+test_unknown_semantic_or_model_version_is_rejected (test_uniform_playback_plan.EnvelopeAcceptanceTest) ... ok
+test_valid_envelope_rebuilds_the_authoritative_model (test_uniform_playback_plan.EnvelopeAcceptanceTest) ... ok
+test_zero_motion_hold_envelope_is_accepted (test_uniform_playback_plan.EnvelopeAcceptanceTest) ... ok
+test_non_increasing_shared_clock_is_rejected (test_uniform_playback_plan.TrajectoryFieldValidationTest) ... ok
+test_short_point_tuple_is_rejected (test_uniform_playback_plan.TrajectoryFieldValidationTest) ... ok
+
+----------------------------------------------------------------------
+Ran 26 tests in 0.740s
+
+OK

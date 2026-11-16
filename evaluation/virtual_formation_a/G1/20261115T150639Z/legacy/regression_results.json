@@ -1,0 +1,89 @@
+{
+  "level": "geometry",
+  "records": [
+    {
+      "case_id": "geometry_continuous",
+      "command": [
+        "/usr/bin/python3",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "test_continuous_geometry.py",
+        "-v"
+      ],
+      "command_shell_quoted": "/usr/bin/python3 -B -m unittest discover -s tests -p test_continuous_geometry.py -v",
+      "cwd": "/home/wq/whut_thesis/expv3_multi_virtual_a",
+      "environment_delta": {
+        "FR01_RESULTS_PATH": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G1/20261115T150639Z/legacy/regression_artifacts/geometry_continuous/FR01/primitive_results.json",
+        "FR02_ARTIFACT_DIR": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G1/20261115T150639Z/legacy/regression_artifacts/geometry_continuous/FR02/artifacts",
+        "FR02_QUALITY_RESULTS_PATH": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G1/20261115T150639Z/legacy/regression_artifacts/geometry_continuous/FR02/B/uniform_quality_results.json",
+        "FR02_TIMING_RESULTS_PATH": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G1/20261115T150639Z/legacy/regression_artifacts/geometry_continuous/FR02/A/timing_results.json",
+        "FR02_TRAJECTORY_RESULTS_PATH": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G1/20261115T150639Z/legacy/regression_artifacts/geometry_continuous/FR02/A/trajectory_results.json",
+        "FR03_ARTIFACT_DIR": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G1/20261115T150639Z/legacy/regression_artifacts/geometry_continuous/FR03",
+        "FR03_RESULTS_PATH": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G1/20261115T150639Z/legacy/regression_artifacts/geometry_continuous/FR03/successors.json",
+        "FR04_ARTIFACT_DIR": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G1/20261115T150639Z/legacy/regression_artifacts/geometry_continuous/FR04",
+        "FR04_RESULTS_PATH": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G1/20261115T150639Z/legacy/regression_artifacts/geometry_continuous/FR04/pipeline_results.json",
+        "OPENBLAS_NUM_THREADS": "1",
+        "PYTHONDONTWRITEBYTECODE": "1"
+      },
+      "finished_at_utc": "2026-11-15T15:06:54.369666+00:00",
+      "group": "G1-light",
+      "interpreter": "/usr/bin/python3",
+      "returncode": 0,
+      "started_at_utc": "2026-11-15T15:06:53.940585+00:00",
+      "status": "PASS",
+      "stderr": "test_batched_integration_matches_independent_small_step_rk4 (test_continuous_geometry.ContinuousGeometry) ... ok\ntest_constant_ackermann_matches_legacy_exact_arc (test_continuous_geometry.ContinuousGeometry) ... ok\ntest_control_is_continuous_at_internal_knot (test_continuous_geometry.ContinuousGeometry) ... ok\ntest_direction_cusp_and_mode_switch_are_distinct_blocks (test_continuous_geometry.ContinuousGeometry) ... ok\ntest_endpoint_fitter_obeys_its_wall_clock_deadline (test_continuous_geometry.ContinuousGeometry) ... ok\ntest_endpoint_fitter_restores_goal_after_control_smoothing (test_continuous_geometry.ContinuousGeometry) ... ok\ntest_feasible_projection_stop_keeps_existing_strict_terminal_accuracy (test_continuous_geometry.ContinuousGeometry) ... ok\ntest_mode_boundary_projection_preserves_mode_events_and_true_goal (test_continuous_geometry.ContinuousGeometry) ... ok\ntest_oblique_body_heading_stays_fixed_for_both_directions (test_continuous_geometry.ContinuousGeometry) ... ok\ntest_oblique_endpoint_fit_omits_invariant_yaw_constraint (test_continuous_geometry.ContinuousGeometry) ... ok\ntest_oblique_endpoint_fit_rejects_unreachable_yaw (test_continuous_geometry.ContinuousGeometry) ... ok\ntest_refinement_spacing_converges (test_continuous_geometry.ContinuousGeometry) ... ok\ntest_smoothed_endpoint_fit_preserves_curvature_bounds_between_knots (test_continuous_geometry.ContinuousGeometry) ... ok\ntest_smoothing_weights_a_tiny_terminal_turn_by_its_physical_length (test_continuous_geometry.ContinuousGeometry) ... ok\ntest_spin_endpoint_fit_only_changes_yaw_at_fixed_position (test_continuous_geometry.ContinuousGeometry) ... ok\ntest_spin_keeps_unwrapped_yaw (test_continuous_geometry.ContinuousGeometry) ... ok\ntest_suffix_projection_preserves_prefix_pose_and_control_without_stop_blocks (test_continuous_geometry.ContinuousGeometry) ... ok\ntest_suffix_projection_validates_window_and_deadline (test_continuous_geometry.ContinuousGeometry) ... ok\n\n----------------------------------------------------------------------\nRan 18 tests in 0.237s\n\nOK\n",
+      "stderr_log": "logs/geometry_continuous.stderr.log",
+      "stdout": "",
+      "stdout_log": "logs/geometry_continuous.stdout.log",
+      "wall_s": 0.4291093550855294
+    },
+    {
+      "case_id": "geometry_formation",
+      "command": [
+        "/usr/bin/python3",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "test_formation_geometry.py",
+        "-v"
+      ],
+      "command_shell_quoted": "/usr/bin/python3 -B -m unittest discover -s tests -p test_formation_geometry.py -v",
+      "cwd": "/home/wq/whut_thesis/expv3_multi_virtual_a",
+      "environment_delta": {
+        "FR01_RESULTS_PATH": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G1/20261115T150639Z/legacy/regression_artifacts/geometry_formation/FR01/primitive_results.json",
+        "FR02_ARTIFACT_DIR": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G1/20261115T150639Z/legacy/regression_artifacts/geometry_formation/FR02/artifacts",
+        "FR02_QUALITY_RESULTS_PATH": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G1/20261115T150639Z/legacy/regression_artifacts/geometry_formation/FR02/B/uniform_quality_results.json",
+        "FR02_TIMING_RESULTS_PATH": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G1/20261115T150639Z/legacy/regression_artifacts/geometry_formation/FR02/A/timing_results.json",
+        "FR02_TRAJECTORY_RESULTS_PATH": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G1/20261115T150639Z/legacy/regression_artifacts/geometry_formation/FR02/A/trajectory_results.json",
+        "FR03_ARTIFACT_DIR": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G1/20261115T150639Z/legacy/regression_artifacts/geometry_formation/FR03",
+        "FR03_RESULTS_PATH": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G1/20261115T150639Z/legacy/regression_artifacts/geometry_formation/FR03/successors.json",
+        "FR04_ARTIFACT_DIR": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G1/20261115T150639Z/legacy/regression_artifacts/geometry_formation/FR04",
+        "FR04_RESULTS_PATH": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G1/20261115T150639Z/legacy/regression_artifacts/geometry_formation/FR04/pipeline_results.json",
+        "OPENBLAS_NUM_THREADS": "1",
+        "PYTHONDONTWRITEBYTECODE": "1"
+      },
+      "finished_at_utc": "2026-11-15T15:06:54.677406+00:00",
+      "group": "G1-light",
+      "interpreter": "/usr/bin/python3",
+      "returncode": 0,
+      "started_at_utc": "2026-11-15T15:06:54.370465+00:00",
+      "status": "PASS",
+      "stderr": "test_audit_rejects_tampered_center_heading_and_modes (test_formation_geometry.FormationGeometryTests) ... ok\ntest_composite_and_seed_identity_fail_closed (test_formation_geometry.FormationGeometryTests) ... ok\ntest_dense_collision_precheck_rejects_mid_path_obstacle (test_formation_geometry.FormationGeometryTests) ... ok\ntest_formation_control_derivative_matches_finite_difference (test_formation_geometry.FormationGeometryTests) ... ok\ntest_goal_heading_free_is_explicit_and_does_not_move_centers (test_formation_geometry.FormationGeometryTests) ... ok\ntest_map_version_is_explicitly_unchecked_when_seed_has_no_signature (test_formation_geometry.FormationGeometryTests) ... ok\ntest_master_never_admits_failed_audit_or_claims_feasible (test_formation_geometry.FormationGeometryTests) ... ok\ntest_master_retains_fixed_k_deduplicates_and_reports_rejections (test_formation_geometry.FormationGeometryTests) ... ok\ntest_pure_rotation_uses_spin_pivot_and_ackermann_ring (test_formation_geometry.FormationGeometryTests) ... ok\ntest_reverse_translation_is_signed_and_policy_checked (test_formation_geometry.FormationGeometryTests) ... ok\ntest_status_is_geometry_or_kinematic_only (test_formation_geometry.FormationGeometryTests) ... ok\ntest_straight_translation_reconstructs_rigid_centers_and_audits (test_formation_geometry.FormationGeometryTests) ... ok\ntest_terminal_rotation_fit_extends_dpsi_without_moving_centers (test_formation_geometry.FormationGeometryTests) ... ok\ntest_terminal_translation_fit_changes_only_last_endpoint (test_formation_geometry.FormationGeometryTests) ... ok\ntest_two_block_chain_propagates_body_headings (test_formation_geometry.FormationGeometryTests) ... ok\n\n----------------------------------------------------------------------\nRan 15 tests in 0.073s\n\nOK\n",
+      "stderr_log": "logs/geometry_formation.stderr.log",
+      "stdout": "",
+      "stdout_log": "logs/geometry_formation.stdout.log",
+      "wall_s": 0.30696447601076216
+    }
+  ],
+  "schema": "virtual_rigid_a.g0.regression_results.v1",
+  "status": "PASS"
+}

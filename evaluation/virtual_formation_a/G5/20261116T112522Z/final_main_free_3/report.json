@@ -1,0 +1,866 @@
+{
+ "check_count": 68,
+ "checks": {
+  "main_policy": {
+   "detail": "free",
+   "ok": true
+  },
+  "mainruntime_map_origin": {
+   "detail": [
+    -6.800000000000001,
+    -4.800000000000001
+   ],
+   "ok": true
+  },
+  "mainruntime_map_received": {
+   "detail": "no /map message",
+   "ok": true
+  },
+  "mainruntime_map_resolution": {
+   "detail": {
+    "error": 7.450580569168253e-10,
+    "expected_float64": 0.05,
+    "runtime_float32": 0.05000000074505806
+   },
+   "ok": true
+  },
+  "mainruntime_map_sha256": {
+   "detail": {
+    "computed": "054cf5c77079536f9a098e33232732d6c181f0f624f07e3a446ebfab0266a10e",
+    "manifest": "054cf5c77079536f9a098e33232732d6c181f0f624f07e3a446ebfab0266a10e"
+   },
+   "ok": true
+  },
+  "mainruntime_map_size": {
+   "detail": {
+    "expected": [
+     409,
+     302
+    ],
+    "runtime": [
+     409,
+     302
+    ]
+   },
+   "ok": true
+  },
+  "plan1context_sha256_matches_job": {
+   "detail": {
+    "computed": "91414666b060d4fe54c9df8bf1df6b87c1728015f46ee01b6b3207f4f24d8efa",
+    "job": "91414666b060d4fe54c9df8bf1df6b87c1728015f46ee01b6b3207f4f24d8efa"
+   },
+   "ok": true
+  },
+  "plan1display_marker_samples": {
+   "detail": 708,
+   "ok": true
+  },
+  "plan1display_status_samples": {
+   "detail": 706,
+   "ok": true
+  },
+  "plan1display_tf_position": {
+   "detail": 1.821726266111803e-07,
+   "ok": false
+  },
+  "plan1display_tf_samples": {
+   "detail": 2832,
+   "ok": true
+  },
+  "plan1envelope_backend": {
+   "detail": "virtual_rigid_a",
+   "ok": true
+  },
+  "plan1envelope_certification": {
+   "detail": "virtual_a_geometry_dynamics_collision/v1",
+   "ok": true
+  },
+  "plan1envelope_model_version": {
+   "detail": "virtual_rigid_a.timed.v1",
+   "ok": true
+  },
+  "plan1envelope_semantic_version": {
+   "detail": "virtual_rigid_a.playback.v1",
+   "ok": true
+  },
+  "plan1envelope_stamp_equals_trajectory": {
+   "detail": {
+    "envelope": [
+     1794832809,
+     772276639
+    ],
+    "trajectory": [
+     1794832809,
+     772276639
+    ]
+   },
+   "ok": true
+  },
+  "plan1hold_end_identity": {
+   "detail": {
+    "audit_detail": "independent audit and transactional publication",
+    "audit_status": "FEASIBLE",
+    "backend": "virtual_rigid_a",
+    "certification": "FEASIBLE",
+    "clamped_elapsed_s": 29.50339782,
+    "cleared": false,
+    "duration_s": 29.50339782,
+    "elapsed_s": 29.528112174,
+    "executable": true,
+    "formation_id": "cargo_wedge",
+    "fraction": 0.0,
+    "frame_id": "map",
+    "geometry_only": false,
+    "lower_index": 1476,
+    "marker_count": 20,
+    "marker_namespaces": [
+     "formation/cargo_wedge/links",
+     "formation/cargo_wedge/reference",
+     "formation/cargo_wedge/status",
+     "formation/cargo_wedge/vehicle_1",
+     "formation/cargo_wedge/vehicle_2",
+     "formation/cargo_wedge/vehicle_3"
+    ],
+    "model_sha256": "df146b9bb4710132adeacd4d718d5a840c0f0e3bce353d06331a84142c2eaaf8",
+    "plan_id": 600000,
+    "sample_count": 1477,
+    "schema": "formation_playback/v1",
+    "semantic_version": "virtual_rigid_a.playback.v1",
+    "state": "HOLD_END",
+    "terminal": true,
+    "terminal_center_error_m": 0.0,
+    "terminal_heading_error_rad": 0.0,
+    "time_source": "header_stamp_common_clock",
+    "trajectory_stamp": {
+     "nsecs": 772276639,
+     "secs": 1794832809
+    },
+    "upper_index": 1476,
+    "vehicle_ids": [
+     1,
+     2,
+     3
+    ],
+    "vehicles": [
+     {
+      "center": [
+       8.81958150429579,
+       4.485872249055232
+      ],
+      "center_speed_mps": 0.0,
+      "mode": 0,
+      "mode_control": 0.576652350602143,
+      "mode_name": "A",
+      "namespace": "formation/cargo_wedge/vehicle_1",
+      "theta": 2.0512078497031028,
+      "vehicle_id": 1
+     },
+     {
+      "center": [
+       7.819581504295792,
+       3.4858722490552294
+      ],
+      "center_speed_mps": 0.0,
+      "mode": 0,
+      "mode_control": 1.0882669361654789,
+      "mode_name": "A",
+      "namespace": "formation/cargo_wedge/vehicle_2",
+      "theta": 1.5707963267948988,
+      "vehicle_id": 2
+     },
+     {
+      "center": [
+       9.819581504295792,
+       3.485872249055234
+      ],
+      "center_speed_mps": 0.0,
+      "mode": 0,
+      "mode_control": 0.3425957285218252,
+      "mode_name": "A",
+      "namespace": "formation/cargo_wedge/vehicle_3",
+      "theta": 1.5707963267948988,
+      "vehicle_id": 3
+     }
+    ]
+   },
+   "ok": true
+  },
+  "plan1initial_job_source": {
+   "detail": "rviz_reset",
+   "ok": true
+  },
+  "plan1initial_reset_binding": {
+   "detail": {
+    "context_id": "virtual-a-reset-None-1",
+    "qf": {
+     "psi": 0.0,
+     "x": 0.0,
+     "y": 0.0
+    },
+    "source": "rviz_reset"
+   },
+   "ok": true
+  },
+  "plan1interior_sample_count": {
+   "detail": 1475,
+   "ok": true
+  },
+  "plan1job_backend": {
+   "detail": "virtual_rigid_a",
+   "ok": true
+  },
+  "plan1job_formation_id": {
+   "detail": "cargo_wedge",
+   "ok": true
+  },
+  "plan1job_goal_policy": {
+   "detail": {
+    "job": "free",
+    "request": "FREE"
+   },
+   "ok": true
+  },
+  "plan1job_grid_sha_shape": {
+   "detail": "6e94c751a40ec94431b495fcbff002945f09c975429c493c89060f0e7e2aa2a4",
+   "ok": true
+  },
+  "plan1job_hold_identity": {
+   "detail": {
+    "admission": {
+     "formation_id": "cargo_wedge",
+     "goal_policy": "FREE",
+     "grid_sha256": "6e94c751a40ec94431b495fcbff002945f09c975429c493c89060f0e7e2aa2a4",
+     "initial_context_id": "virtual-a-reset-None-1",
+     "initial_source": "rviz_reset",
+     "plan_id": 600000,
+     "planning_context_sha256": "91414666b060d4fe54c9df8bf1df6b87c1728015f46ee01b6b3207f4f24d8efa",
+     "request_sha256": "591b4100355ab991d3b7dd5afeb95e203343ec185bf7187d025e2662b4afdd3b"
+    },
+    "backend": "virtual_rigid_a",
+    "detail": "",
+    "formation_id": "cargo_wedge",
+    "grid_sha256": "6e94c751a40ec94431b495fcbff002945f09c975429c493c89060f0e7e2aa2a4",
+    "initial_compatible": false,
+    "initial_context": {
+     "compatible": false,
+     "context_id": "virtual-a-terminal-600000-2",
+     "detail": "the previous terminal is not a supported continuation: vehicle_id=1 failed ['formation_curvature', 'heading_parallel', 'ideal_wheel_angles']; vehicle_id=2 failed ['formation_curvature', 'ideal_wheel_angles']; vehicle_id=3 failed ['formation_curvature', 'ideal_wheel_angles']",
+     "headings": [
+      {
+       "heading_rad": 2.0512078497031028,
+       "vehicle_id": 1
+      },
+      {
+       "heading_rad": 1.5707963267948988,
+       "vehicle_id": 2
+      },
+      {
+       "heading_rad": 1.5707963267948988,
+       "vehicle_id": 3
+      }
+     ],
+     "qf": {
+      "psi": 1.5707963267948988,
+      "x": 8.819581504295792,
+      "y": 3.4858722490552316
+     },
+     "source": "verified_terminal",
+     "terminal": {
+      "all_parallel": false,
+      "all_stopped": true,
+      "all_wheels_straight": false,
+      "qf": {
+       "psi": 1.5707963267948988,
+       "x": 8.819581504295792,
+       "y": 3.4858722490552316
+      },
+      "region": "motion",
+      "s_m": 10.451172974350232,
+      "t_s": 29.50339781997971,
+      "vehicles": [
+       {
+        "C_i": 0.576652350602143,
+        "checks": {
+         "formation_curvature": false,
+         "heading_parallel": false,
+         "ideal_wheel_angles": false,
+         "steer_rates_zero": true,
+         "stopped_rate": true,
+         "stopped_speed": true,
+         "wheel_speeds_zero": true
+        },
+        "eligible": false,
+        "heading_error_rad": 0.480411522908204,
+        "omega_i": 0.0,
+        "steer_rates_radps": [
+         0.0,
+         0.0,
+         -0.0,
+         -0.0
+        ],
+        "theta": 2.0512078497031028,
+        "v_i": 0.0,
+        "vehicle_id": 1,
+        "wheel_angles_rad": [
+         0.15781115649020733,
+         0.12819756829734674,
+         -0.15781115649020733,
+         -0.12819756829734674
+        ],
+        "wheel_speeds_mps": [
+         0.0,
+         0.0,
+         0.0,
+         0.0
+        ],
+        "x": 8.81958150429579,
+        "y": 4.485872249055232
+       },
+       {
+        "C_i": 1.0882669361654789,
+        "checks": {
+         "formation_curvature": false,
+         "heading_parallel": true,
+         "ideal_wheel_angles": false,
+         "steer_rates_zero": true,
+         "stopped_rate": true,
+         "stopped_speed": true,
+         "wheel_speeds_zero": true
+        },
+        "eligible": false,
+        "heading_error_rad": 0.0,
+        "omega_i": 0.0,
+        "steer_rates_radps": [
+         0.0,
+         0.0,
+         -0.0,
+         -0.0
+        ],
+        "theta": 1.5707963267948988,
+        "v_i": 0.0,
+        "vehicle_id": 2,
+        "wheel_angles_rad": [
+         0.3234219685279284,
+         0.2207085063667553,
+         -0.3234219685279284,
+         -0.2207085063667553
+        ],
+        "wheel_speeds_mps": [
+         0.0,
+         0.0,
+         0.0,
+         0.0
+        ],
+        "x": 7.819581504295792,
+        "y": 3.4858722490552294
+       },
+       {
+        "C_i": 0.3425957285218252,
+        "checks": {
+         "formation_curvature": false,
+         "heading_parallel": true,
+         "ideal_wheel_angles": false,
+         "steer_rates_zero": true,
+         "stopped_rate": true,
+         "stopped_speed": true,
+         "wheel_speeds_zero": true
+        },
+        "eligible": false,
+        "heading_error_rad": 0.0,
+        "omega_i": 0.0,
+        "steer_rates_radps": [
+         0.0,
+         0.0,
+         -0.0,
+         -0.0
+        ],
+        "theta": 1.5707963267948988,
+        "v_i": 0.0,
+        "vehicle_id": 3,
+        "wheel_angles_rad": [
+         0.09000452134942809,
+         0.07948666772910382,
+         -0.09000452134942809,
+         -0.07948666772910382
+        ],
+        "wheel_speeds_mps": [
+         0.0,
+         0.0,
+         0.0,
+         0.0
+        ],
+        "x": 9.819581504295792,
+        "y": 3.485872249055234
+       }
+      ]
+     }
+    },
+    "initial_context_id": "virtual-a-terminal-600000-2",
+    "initial_context_source": "verified_terminal",
+    "initial_reset_ready": false,
+    "map_error": null,
+    "map_frame_id": "map",
+    "map_ready": true,
+    "map_signature": "74143528b109222a8cb691c96fe51ce0030fbba414d9b7bfb868aca60dc12f94",
+    "model_sha256": "df146b9bb4710132adeacd4d718d5a840c0f0e3bce353d06331a84142c2eaaf8",
+    "plan_id": 600000,
+    "planning_context": {
+     "collision_config": {
+      "baseline_margin_floor_m": 0.05,
+      "baseline_margin_m": 0.05,
+      "max_corner_step_ceiling_m": 0.01,
+      "max_corner_step_m": 0.01,
+      "max_samples_per_segment": 200000,
+      "sample_budget_ceiling": 200000
+     },
+     "grid": {
+      "cell_count": 123518,
+      "height": 302,
+      "occupancy_sha256": "896d9d75b36950c942951c75753547c95c656656cf242add593867254e1f4307",
+      "occupied_cells": 102358,
+      "origin_x": -6.800000000000001,
+      "origin_y": -4.800000000000001,
+      "resolution_m": 0.05000000074505806,
+      "width": 409
+     },
+     "planner_config": {
+      "allow_scipy_fallback": true,
+      "collocation_points": 9,
+      "curvature_margin": 0.02,
+      "eta_limit": 2.0,
+      "heading_tolerance_rad": 0.003490658503988659,
+      "intervals": 8,
+      "ipopt_tolerance": 1e-08,
+      "kappa_limit": 0.5524861878453039,
+      "max_initials": 6,
+      "max_iterations": 120,
+      "max_seconds": 30.0,
+      "position_tolerance_m": 0.005,
+      "rigidity_tolerance_m": 1e-06,
+      "scipy_maxiter": 120,
+      "scipy_tolerance": 1e-08,
+      "solver": "ipopt"
+     },
+     "request_sha256": "591b4100355ab991d3b7dd5afeb95e203343ec185bf7187d025e2662b4afdd3b",
+     "schema": "virtual_rigid_a.g4.planning_context.v1",
+     "stage": "G4",
+     "timing_config": {
+      "geometry_audit_config": {
+       "angle_budget_rad": 1e-09,
+       "audit_max_subintervals_per_segment": 4096,
+       "audit_max_total_subintervals": 20000,
+       "audit_panel_width_m": 0.02,
+       "audit_position_budget_m": 5e-08,
+       "c2_second_tol": 1e-08,
+       "c2_slope_tol": 1e-09,
+       "c2_third_abs_limit": 1000000.0,
+       "c2_value_tol": 1e-09,
+       "heading_tolerance_rad": 0.003490658503988659,
+       "integration_budget_m": 1e-07,
+       "interval_curvature_tolerance": 1e-09,
+       "max_depth": 20,
+       "max_leaves": 200000,
+       "position_tolerance_m": 0.005,
+       "rigidity_tolerance_m": 1e-06,
+       "sample_points_per_segment": 9
+      },
+      "interval_subdivisions_per_segment": 8,
+      "max_rescalings": 8,
+      "max_subdivisions_per_segment": 4096,
+      "max_total_duration_s": 600.0,
+      "max_total_subdivisions": 200000,
+      "rescale_factor": 1.05,
+      "safety_factor": 1.01,
+      "timing_law": "virtual_rigid_a.timing.quintic_smoothstep.v1"
+     }
+    },
+    "planning_context_sha256": "91414666b060d4fe54c9df8bf1df6b87c1728015f46ee01b6b3207f4f24d8efa",
+    "planning_window_s": 75.0,
+    "reason": "playback reached its terminal hold",
+    "request_map_signature": "74143528b109222a8cb691c96fe51ce0030fbba414d9b7bfb868aca60dc12f94",
+    "request_sha256": "591b4100355ab991d3b7dd5afeb95e203343ec185bf7187d025e2662b4afdd3b",
+    "schema": "formation_job_state/v1",
+    "state": "HOLD_END",
+    "virtual_a_goal_policy": "free",
+    "worker_active": false
+   },
+   "ok": true
+  },
+  "plan1job_initial_context": {
+   "detail": {
+    "compatible": true,
+    "context_id": "virtual-a-reset-None-1",
+    "detail": "",
+    "headings": [],
+    "qf": {
+     "psi": 0.0,
+     "x": 0.0,
+     "y": 0.0
+    },
+    "source": "rviz_reset",
+    "terminal": {}
+   },
+   "ok": true
+  },
+  "plan1job_initial_context_id": {
+   "detail": {
+    "job": "virtual-a-reset-None-1",
+    "request": "virtual-a-reset-None-1"
+   },
+   "ok": true
+  },
+  "plan1job_initial_source": {
+   "detail": {
+    "job": "rviz_reset",
+    "request": "rviz_reset"
+   },
+   "ok": true
+  },
+  "plan1job_plan_id": {
+   "detail": 600000,
+   "ok": true
+  },
+  "plan1job_planning_context": {
+   "detail": "dict",
+   "ok": true
+  },
+  "plan1job_request_sha256": {
+   "detail": {
+    "job": "591b4100355ab991d3b7dd5afeb95e203343ec185bf7187d025e2662b4afdd3b",
+    "rebuilt": "591b4100355ab991d3b7dd5afeb95e203343ec185bf7187d025e2662b4afdd3b"
+   },
+   "ok": true
+  },
+  "plan1job_request_sha256_context": {
+   "detail": "591b4100355ab991d3b7dd5afeb95e203343ec185bf7187d025e2662b4afdd3b",
+   "ok": true
+  },
+  "plan1job_state_planning": {
+   "detail": "PLANNING",
+   "ok": true
+  },
+  "plan1plan_context_sha256": {
+   "detail": "91414666b060d4fe54c9df8bf1df6b87c1728015f46ee01b6b3207f4f24d8efa",
+   "ok": true
+  },
+  "plan1plan_request_sha256": {
+   "detail": "591b4100355ab991d3b7dd5afeb95e203343ec185bf7187d025e2662b4afdd3b",
+   "ok": true
+  },
+  "plan1raw_request_plan_id": {
+   "detail": 600000,
+   "ok": true
+  },
+  "plan1request_goal": {
+   "detail": [
+    8.819581504169413,
+    3.4858722492682084,
+    1.5707963267948968
+   ],
+   "ok": true
+  },
+  "plan1request_plan_id": {
+   "detail": 600000,
+   "ok": true
+  },
+  "plan1reset_context_id": {
+   "detail": "virtual-a-reset-None-1",
+   "ok": true
+  },
+  "plan1reset_no_request": {
+   "detail": 0,
+   "ok": true
+  },
+  "plan1reset_source": {
+   "detail": "rviz_reset",
+   "ok": true
+  },
+  "plan1sample_angle_vs_model": {
+   "detail": 2.168404344971009e-19,
+   "ok": true
+  },
+  "plan1sample_control_vs_model": {
+   "detail": 7.589415207398531e-19,
+   "ok": true
+  },
+  "plan1sample_count": {
+   "detail": 1477,
+   "ok": true
+  },
+  "plan1sample_grid_dt": {
+   "detail": {
+    "last": 3397820,
+    "nominal_ns": 20000000,
+    "steps_unique": [
+     3397820,
+     20000000
+    ]
+   },
+   "ok": true
+  },
+  "plan1sample_mode": {
+   "detail": "non-A sample",
+   "ok": true
+  },
+  "plan1sample_omega_vs_model": {
+   "detail": 3.2526065174565133e-19,
+   "ok": true
+  },
+  "plan1sample_pose_count": {
+   "detail": [
+    1477,
+    1477
+   ],
+   "ok": true
+  },
+  "plan1sample_position_vs_model": {
+   "detail": 2.220446251909554e-16,
+   "ok": true
+  },
+  "plan1sample_qf_angle_vs_model": {
+   "detail": 8.131516293641283e-20,
+   "ok": true
+  },
+  "plan1sample_qf_position_vs_model": {
+   "detail": 1.6653345374762635e-16,
+   "ok": true
+  },
+  "plan1sample_rigidity": {
+   "detail": 0.0,
+   "ok": true
+  },
+  "plan1sample_speed_vs_model": {
+   "detail": 5.551115123125783e-17,
+   "ok": true
+  },
+  "plan1sample_time_endpoint": {
+   "detail": {
+    "last_ns": 29503397820,
+    "required_last_ns": 29503397820
+   },
+   "ok": true
+  },
+  "plan1sample_time_first_zero": {
+   "detail": 0,
+   "ok": true
+  },
+  "plan1sample_time_increasing": {
+   "detail": "not strictly increasing",
+   "ok": true
+  },
+  "plan1sample_time_integer_ns": {
+   "detail": [
+    0,
+    20000000,
+    40000000
+   ],
+   "ok": true
+  },
+  "plan1start_position": {
+   "detail": 0.0,
+   "ok": true
+  },
+  "plan1status_executable": {
+   "detail": {
+    "executable": true,
+    "geometry_only": false
+   },
+   "ok": true
+  },
+  "plan1terminal_errors": {
+   "detail": {
+    "audit_detail": "independent audit and transactional publication",
+    "audit_status": "FEASIBLE",
+    "backend": "virtual_rigid_a",
+    "certification": "FEASIBLE",
+    "clamped_elapsed_s": 29.50339782,
+    "cleared": false,
+    "duration_s": 29.50339782,
+    "elapsed_s": 29.528112174,
+    "executable": true,
+    "formation_id": "cargo_wedge",
+    "fraction": 0.0,
+    "frame_id": "map",
+    "geometry_only": false,
+    "lower_index": 1476,
+    "marker_count": 20,
+    "marker_namespaces": [
+     "formation/cargo_wedge/links",
+     "formation/cargo_wedge/reference",
+     "formation/cargo_wedge/status",
+     "formation/cargo_wedge/vehicle_1",
+     "formation/cargo_wedge/vehicle_2",
+     "formation/cargo_wedge/vehicle_3"
+    ],
+    "model_sha256": "df146b9bb4710132adeacd4d718d5a840c0f0e3bce353d06331a84142c2eaaf8",
+    "plan_id": 600000,
+    "sample_count": 1477,
+    "schema": "formation_playback/v1",
+    "semantic_version": "virtual_rigid_a.playback.v1",
+    "state": "HOLD_END",
+    "terminal": true,
+    "terminal_center_error_m": 0.0,
+    "terminal_heading_error_rad": 0.0,
+    "time_source": "header_stamp_common_clock",
+    "trajectory_stamp": {
+     "nsecs": 772276639,
+     "secs": 1794832809
+    },
+    "upper_index": 1476,
+    "vehicle_ids": [
+     1,
+     2,
+     3
+    ],
+    "vehicles": [
+     {
+      "center": [
+       8.81958150429579,
+       4.485872249055232
+      ],
+      "center_speed_mps": 0.0,
+      "mode": 0,
+      "mode_control": 0.576652350602143,
+      "mode_name": "A",
+      "namespace": "formation/cargo_wedge/vehicle_1",
+      "theta": 2.0512078497031028,
+      "vehicle_id": 1
+     },
+     {
+      "center": [
+       7.819581504295792,
+       3.4858722490552294
+      ],
+      "center_speed_mps": 0.0,
+      "mode": 0,
+      "mode_control": 1.0882669361654789,
+      "mode_name": "A",
+      "namespace": "formation/cargo_wedge/vehicle_2",
+      "theta": 1.5707963267948988,
+      "vehicle_id": 2
+     },
+     {
+      "center": [
+       9.819581504295792,
+       3.485872249055234
+      ],
+      "center_speed_mps": 0.0,
+      "mode": 0,
+      "mode_control": 0.3425957285218252,
+      "mode_name": "A",
+      "namespace": "formation/cargo_wedge/vehicle_3",
+      "theta": 1.5707963267948988,
+      "vehicle_id": 3
+     }
+    ]
+   },
+   "ok": true
+  },
+  "plan1terminal_position": {
+   "detail": 2.47650405070608e-10,
+   "ok": true
+  },
+  "plan1trajectory_backend": {
+   "detail": "virtual_rigid_a",
+   "ok": true
+  },
+  "plan1trajectory_plan_identity": {
+   "detail": [
+    600000,
+    "cargo_wedge"
+   ],
+   "ok": true
+  },
+  "plan1vehicle_point_count_for_1": {
+   "detail": [
+    1477,
+    1477
+   ],
+   "ok": true
+  },
+  "plan1vehicle_point_count_for_2": {
+   "detail": [
+    1477,
+    1477
+   ],
+   "ok": true
+  },
+  "plan1vehicle_point_count_for_3": {
+   "detail": [
+    1477,
+    1477
+   ],
+   "ok": true
+  },
+  "plan1vehicle_sample_rows": {
+   "detail": [
+    [
+     1,
+     2,
+     3
+    ],
+    [
+     1,
+     2,
+     3
+    ]
+   ],
+   "ok": true
+  },
+  "plan1verified_digest": {
+   "detail": "df146b9bb4710132adeacd4d718d5a840c0f0e3bce353d06331a84142c2eaaf8",
+   "ok": true
+  }
+ },
+ "elapsed_s": 50.304561138153076,
+ "error": "SmokeError: plan1display_tf_position: 1.821726266111803e-07",
+ "failed_checks": [
+  "plan1display_tf_position"
+ ],
+ "finished_epoch_s": 1794832843.5715,
+ "goal_policy": "free",
+ "passed": false,
+ "ros_master_uri": "http://127.0.0.1:11585",
+ "scenario": "main",
+ "scene_input_dir": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G4/20261116T081458Z/scenes/inputs/S1",
+ "scene_key": "S1",
+ "scene_manifest": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G4/20261116T081458Z/scenes/scene_manifest.json",
+ "scene_manifest_entry": {
+  "base": "S1",
+  "direct_straight_status": null,
+  "input_dir": "inputs/S1",
+  "map_sha256": "054cf5c77079536f9a098e33232732d6c181f0f624f07e3a446ebfab0266a10e",
+  "planning_context_sha256": "80f625e28f50901991661a97f90e55364c8f4bd8f3fe0d8e7eb7ea7e79106282",
+  "reference_file": "reference/S1.json",
+  "request_sha256": "d44f9efeb70f636a1e0f24dbc367e7869366ce344d0d88bba020d4ad355c8a1a",
+  "status": "REFERENCE_PASSED",
+  "timed_model_sha256": "022359fc5d1bf9c491141dec57ae319a9630045e75f4440e7573b0606426daaa",
+  "timed_model_summary": {
+   "S_m": 10.471975511965978,
+   "T_s": 28.347911694075965,
+   "authoritative_model": true,
+   "backend": "virtual_rigid_a",
+   "grid": {
+    "cell_count": 123518,
+    "height": 302,
+    "occupancy_sha256": "896d9d75b36950c942951c75753547c95c656656cf242add593867254e1f4307",
+    "occupied_cells": 102358,
+    "origin_x": -6.800000000000001,
+    "origin_y": -4.800000000000001,
+    "resolution_m": 0.05,
+    "width": 409
+   },
+   "kind": "motion",
+   "knot_count": 9,
+   "model_sha256": "022359fc5d1bf9c491141dec57ae319a9630045e75f4440e7573b0606426daaa",
+   "model_version": "virtual_rigid_a.timed.v1",
+   "path_model_version": "virtual_rigid_a.path.v1",
+   "planning_context_sha256": "80f625e28f50901991661a97f90e55364c8f4bd8f3fe0d8e7eb7ea7e79106282",
+   "request_sha256": "d44f9efeb70f636a1e0f24dbc367e7869366ce344d0d88bba020d4ad355c8a1a",
+   "segment_count": 8
+  }
+ },
+ "scene_manifest_sha256": "f956e8316ebf1e72102d89338b88bbcabe48bae5aa52977deef3670abe24240d",
+ "schema": "virtual_rigid_a.g5.real_smoke.v1",
+ "started_epoch_s": 1794832793.266939
+}

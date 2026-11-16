@@ -1,0 +1,31 @@
+test_cached_primitive_duration_matches_reference_across_modes_and_reverse (test_continuous_retiming.ContinuousRetiming) ... ok
+test_constant_corner_does_not_use_spin_angular_rate_cap (test_continuous_retiming.ContinuousRetiming) ... ok
+test_curvature_knots_do_not_create_stops_or_reconfiguration (test_continuous_retiming.ContinuousRetiming) ... ok
+test_direction_cusp_has_zero_speed_point_without_dwell (test_continuous_retiming.ContinuousRetiming) ... ok
+test_interactive_large_wheel_reconfigurations_take_exactly_point_three_seconds (test_continuous_retiming.ContinuousRetiming) ... ok
+test_interactive_short_curve_does_not_use_restricted_peak_stretch (test_continuous_retiming.ContinuousRetiming) ... ok
+test_interactive_timing_is_identical_for_straight_and_maximum_curvature (test_continuous_retiming.ContinuousRetiming) ... ok
+test_interactive_variable_control_has_no_interior_braking (test_continuous_retiming.ContinuousRetiming) ... ok
+test_nearly_coincident_metric_station_has_no_fake_steering_acceleration (test_continuous_retiming.ContinuousRetiming) ... ok
+test_oblique_control_respects_steering_and_normal_acceleration (test_continuous_retiming.ContinuousRetiming) ... ok
+test_only_mode_change_inserts_stationary_reconfiguration (test_continuous_retiming.ContinuousRetiming) ... ok
+test_report_keeps_interval_caps_and_classifies_endpoint_low_speed (test_continuous_retiming.ContinuousRetiming) ... ok
+test_rest_to_rest_steering_meets_rate_acceleration_and_shortens_quintic_hold (test_continuous_retiming.ContinuousRetiming) ... ok
+test_short_block_low_speed_nearer_goal_is_end_braking (test_continuous_retiming.ContinuousRetiming) ... ok
+test_short_translation_has_finite_acceleration_and_zero_end_speed (test_continuous_retiming.ContinuousRetiming) ... ERROR
+test_spin_centers_stay_fixed_and_has_finite_angular_profile (test_continuous_retiming.ContinuousRetiming) ... ok
+test_submillimetre_terminal_turn_does_not_slow_the_straight_route (test_continuous_retiming.ContinuousRetiming) ... ok
+test_target2_straight_cruises_with_shared_nonzero_acceleration (test_continuous_retiming.ContinuousRetiming) ... ok
+
+======================================================================
+ERROR: test_short_translation_has_finite_acceleration_and_zero_end_speed (test_continuous_retiming.ContinuousRetiming)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/wq/whut_thesis/expv3_multi_virtual_a/tests/test_continuous_retiming.py", line 271, in test_short_translation_has_finite_acceleration_and_zero_end_speed
+    self.assertLessEqual(timed.phases[0]["dynamic_peaks"]["acceleration"],
+KeyError: 'dynamic_peaks'
+
+----------------------------------------------------------------------
+Ran 18 tests in 0.421s
+
+FAILED (errors=1)

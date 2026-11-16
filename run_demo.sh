@@ -17,10 +17,12 @@ done
 usage() {
   if [[ "$demo_kind" == formation ]]; then
     cat <<'EOF'
-用法：./run_demo.sh [--map map01] [--scale 比例] [--backend uniform_v02|legacy] [auto_goal:=false] [rviz:=true]
+用法：./run_demo.sh [--map map01] [--scale 比例] [--backend uniform_v02|virtual_rigid_a|legacy] [auto_goal:=false] [rviz:=true]
 默认启动货物中心楔形编队：car1(1,0)、car2(0,1)、car3(0,-1)，单位米。
 2D Pose Estimate 设置货物起点与航向，2D Nav Goal 设置货物终点与航向。
 编队后端默认 uniform_v02（V0.2 自主统一规划，原子 /formation/playback_plan 信封）；
+backend:=virtual_rigid_a 使用 G5 虚拟刚性 A 后端（同一原子信封，需先做
+2D Pose Estimate 明确新实验，virtual_a_goal_policy:=free|straight 选择终点策略）；
 --backend legacy 或 backend:=legacy 仅启动旧 C++ 前端与旧优化器用于对照。
 同一时刻只会启动一个规划发布后端，不会同时发布两套轨迹。
 编队默认比例为原单车比例 × 3.75（旧策略，尚待按新构型重新验收）；--scale 指定绝对比例。
@@ -169,7 +171,7 @@ while (($#)); do
       ;;
     --backend)
       if (($# < 2)) || [[ -z "$2" ]]; then
-        echo "错误：--backend 需要 uniform_v02 或 legacy。" >&2
+        echo "错误：--backend 需要 uniform_v02、virtual_rigid_a 或 legacy。" >&2
         exit 2
       fi
       if [[ -n "${requested_backend}" && "${requested_backend}" != "$2" ]]; then
@@ -186,7 +188,7 @@ while (($#)); do
       fi
       requested_backend="${1#--backend=}"
       if [[ -z "${requested_backend}" ]]; then
-        echo "错误：--backend 后需要 uniform_v02 或 legacy。" >&2
+        echo "错误：--backend 后需要 uniform_v02、virtual_rigid_a 或 legacy。" >&2
         exit 2
       fi
       shift
@@ -366,7 +368,7 @@ fi
 # FR05: the formation demo runs exactly one trajectory-publishing backend.
 # --backend is the CLI convenience form; backend:= in the pass-through
 # arguments is the roslaunch form.  Both are accepted, but they may not
-# disagree, and only the two known backends are allowed.
+# disagree, and only the known backends are allowed.
 if [[ "$demo_kind" == formation ]]; then
   formation_backend=""
   backend_in_launch_args=false
@@ -391,8 +393,8 @@ if [[ "$demo_kind" == formation ]]; then
   if [[ -z "${formation_backend}" ]]; then
     formation_backend="uniform_v02"
   fi
-  if [[ "${formation_backend}" != "uniform_v02" && "${formation_backend}" != "legacy" ]]; then
-    echo "错误：formation backend 只能是 uniform_v02 或 legacy，收到 ${formation_backend}。" >&2
+  if [[ "${formation_backend}" != "uniform_v02" && "${formation_backend}" != "virtual_rigid_a" && "${formation_backend}" != "legacy" ]]; then
+    echo "错误：formation backend 只能是 uniform_v02、virtual_rigid_a 或 legacy，收到 ${formation_backend}。" >&2
     exit 2
   fi
   if [[ "${backend_in_launch_args}" == false ]]; then

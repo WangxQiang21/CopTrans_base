@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "tests/ros_virtual_a_smoke.py", line 1786, in <module>
+    sys.exit(main())
+  File "tests/ros_virtual_a_smoke.py", line 1758, in main
+    result = scenario_main(
+  File "tests/ros_virtual_a_smoke.py", line 1589, in scenario_main
+    first = run_verified_plan(
+  File "tests/ros_virtual_a_smoke.py", line 1325, in run_verified_plan
+    note(checks, prefix + "status_executable",
+  File "tests/ros_virtual_a_smoke.py", line 159, in note
+    raise SmokeError("{}: {}".format(name, detail))
+__main__.SmokeError: plan1status_executable: {'executable': False, 'geometry_only': True}

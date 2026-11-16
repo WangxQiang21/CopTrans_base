@@ -1,0 +1,100 @@
+[
+  {
+    "name": "fresh_cli_baseline",
+    "command": [
+      "/usr/bin/python3",
+      "-B",
+      "/home/wq/whut_thesis/expv3_multi_virtual_a/tools/virtual_a_baseline.py",
+      "--output",
+      "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G0/codex_review_20261115T141437Z/fresh_baseline",
+      "--regression",
+      "baseline"
+    ],
+    "cwd": "/home/wq/whut_thesis/expv3_multi_virtual_a",
+    "exit_code": 0,
+    "expected_exit_code": 0,
+    "stdout": "{\n  \"codex_acceptance\": \"NOT_RUN_NOT_CLAIMED\",\n  \"next_stage_entered\": false,\n  \"output\": \"/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G0/codex_review_20261115T141437Z/fresh_baseline\",\n  \"overall_status\": \"PASS\",\n  \"protected_unchanged\": true,\n  \"reference_audit_wall_s\": 1.8100149169331416,\n  \"reference_checks\": 13390,\n  \"reference_duration_s\": 29.95529475329162,\n  \"reference_status\": \"FEASIBLE\",\n  \"regression_subprocesses\": 0,\n  \"stage\": \"G0\"\n}\n",
+    "stderr": "",
+    "wall_s": 3.580761887016706
+  },
+  {
+    "name": "submitted_manifest",
+    "command": [
+      "/usr/bin/python3",
+      "-B",
+      "/home/wq/whut_thesis/expv3_multi_virtual_a/tools/virtual_a_baseline.py",
+      "--verify-manifest",
+      "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G0/20261115T140936Z/protected_after.json"
+    ],
+    "cwd": "/home/wq/whut_thesis/expv3_multi_virtual_a",
+    "exit_code": 0,
+    "expected_exit_code": 0,
+    "stdout": "{\n  \"current_tree_sha256\": \"ff58f2b5c6acfbc207327202f875e5e9a20734ef09ebb6070ee07edce6ebf091\",\n  \"manifest\": \"/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G0/20261115T140936Z/protected_after.json\",\n  \"mismatches\": [],\n  \"protected_file_count\": 3120,\n  \"recorded_tree_sha256\": \"ff58f2b5c6acfbc207327202f875e5e9a20734ef09ebb6070ee07edce6ebf091\",\n  \"repo_root\": \"/home/wq/whut_thesis/expv3_multi_virtual_a\",\n  \"schema\": \"virtual_rigid_a.g0.manifest_verification.v1\",\n  \"status\": \"PASS\"\n}\n",
+    "stderr": "",
+    "wall_s": 0.5982421389780939
+  },
+  {
+    "name": "nonempty_output",
+    "command": [
+      "/usr/bin/python3",
+      "-B",
+      "/home/wq/whut_thesis/expv3_multi_virtual_a/tools/virtual_a_baseline.py",
+      "--output",
+      "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G0/codex_review_20261115T141437Z/negative/nonempty"
+    ],
+    "cwd": "/home/wq/whut_thesis/expv3_multi_virtual_a",
+    "exit_code": 1,
+    "expected_exit_code": 1,
+    "stdout": "",
+    "stderr": "G0 FAILED: BaselineError: OUTPUT_EXISTS_NONEMPTY: /home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G0/codex_review_20261115T141437Z/negative/nonempty\n",
+    "wall_s": 0.5964361450169235
+  },
+  {
+    "name": "historical_cli_output",
+    "command": [
+      "/usr/bin/python3",
+      "-B",
+      "/home/wq/whut_thesis/expv3_multi_virtual_a/tools/virtual_a_baseline.py",
+      "--output",
+      "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/formation_refactor_v02/FR06"
+    ],
+    "cwd": "/home/wq/whut_thesis/expv3_multi_virtual_a",
+    "exit_code": 1,
+    "expected_exit_code": 1,
+    "stdout": "",
+    "stderr": "G0 FAILED: BaselineError: output must be below /home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a\n",
+    "wall_s": 0.5975534279132262
+  },
+  {
+    "name": "wrong_hash",
+    "command": [
+      "/usr/bin/python3",
+      "-B",
+      "/home/wq/whut_thesis/expv3_multi_virtual_a/tools/virtual_a_baseline.py",
+      "--verify-manifest",
+      "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G0/codex_review_20261115T141437Z/negative/bad_manifest.json"
+    ],
+    "cwd": "/home/wq/whut_thesis/expv3_multi_virtual_a",
+    "exit_code": 1,
+    "expected_exit_code": 1,
+    "stdout": "{\n  \"current_tree_sha256\": \"ff58f2b5c6acfbc207327202f875e5e9a20734ef09ebb6070ee07edce6ebf091\",\n  \"manifest\": \"/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G0/codex_review_20261115T141437Z/negative/bad_manifest.json\",\n  \"mismatches\": [\n    \"catkin_ws/src/CMakeLists.txt\"\n  ],\n  \"protected_file_count\": 3120,\n  \"recorded_tree_sha256\": \"ff58f2b5c6acfbc207327202f875e5e9a20734ef09ebb6070ee07edce6ebf091\",\n  \"repo_root\": \"/home/wq/whut_thesis/expv3_multi_virtual_a\",\n  \"schema\": \"virtual_rigid_a.g0.manifest_verification.v1\",\n  \"status\": \"FAIL\"\n}\n",
+    "stderr": "",
+    "wall_s": 0.6106629159767181
+  },
+  {
+    "name": "missing_file",
+    "command": [
+      "/usr/bin/python3",
+      "-B",
+      "/home/wq/whut_thesis/expv3_multi_virtual_a/tools/virtual_a_baseline.py",
+      "--verify-manifest",
+      "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G0/codex_review_20261115T141437Z/negative/missing_manifest.json"
+    ],
+    "cwd": "/home/wq/whut_thesis/expv3_multi_virtual_a",
+    "exit_code": 1,
+    "expected_exit_code": 1,
+    "stdout": "{\n  \"current_tree_sha256\": \"ff58f2b5c6acfbc207327202f875e5e9a20734ef09ebb6070ee07edce6ebf091\",\n  \"manifest\": \"/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G0/codex_review_20261115T141437Z/negative/missing_manifest.json\",\n  \"mismatches\": [\n    \"missing_protected_paths\"\n  ],\n  \"protected_file_count\": 3120,\n  \"recorded_tree_sha256\": \"ff58f2b5c6acfbc207327202f875e5e9a20734ef09ebb6070ee07edce6ebf091\",\n  \"repo_root\": \"/home/wq/whut_thesis/expv3_multi_virtual_a\",\n  \"schema\": \"virtual_rigid_a.g0.manifest_verification.v1\",\n  \"status\": \"FAIL\"\n}\n",
+    "stderr": "",
+    "wall_s": 0.6414092789636925
+  }
+]

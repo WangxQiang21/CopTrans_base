@@ -1,0 +1,121 @@
+{
+ "check_count": 11,
+ "checks": {
+  "main_policy": {
+   "detail": "free",
+   "ok": true
+  },
+  "mainruntime_map_origin": {
+   "detail": [
+    -6.800000000000001,
+    -4.800000000000001
+   ],
+   "ok": true
+  },
+  "mainruntime_map_received": {
+   "detail": "no /map message",
+   "ok": true
+  },
+  "mainruntime_map_resolution": {
+   "detail": {
+    "error": 7.450580569168253e-10,
+    "expected_float64": 0.05,
+    "runtime_float32": 0.05000000074505806
+   },
+   "ok": true
+  },
+  "mainruntime_map_sha256": {
+   "detail": {
+    "computed": "054cf5c77079536f9a098e33232732d6c181f0f624f07e3a446ebfab0266a10e",
+    "manifest": "054cf5c77079536f9a098e33232732d6c181f0f624f07e3a446ebfab0266a10e"
+   },
+   "ok": true
+  },
+  "mainruntime_map_size": {
+   "detail": {
+    "expected": [
+     409,
+     302
+    ],
+    "runtime": [
+     409,
+     302
+    ]
+   },
+   "ok": true
+  },
+  "plan1request_goal": {
+   "detail": [
+    8.819581504169413,
+    3.4858722492682084,
+    1.5707963267948968
+   ],
+   "ok": true
+  },
+  "plan1request_plan_id": {
+   "detail": 600000,
+   "ok": true
+  },
+  "plan1reset_context_id": {
+   "detail": "virtual-a-reset-None-1",
+   "ok": true
+  },
+  "plan1reset_no_request": {
+   "detail": 0,
+   "ok": true
+  },
+  "plan1reset_source": {
+   "detail": "rviz_reset",
+   "ok": true
+  }
+ },
+ "elapsed_s": 121.92818021774292,
+ "error": "SmokeError: timeout waiting for executable envelope plan 600000",
+ "failed_checks": [],
+ "finished_epoch_s": 1794828100.4022503,
+ "goal_policy": "free",
+ "passed": false,
+ "ros_master_uri": "http://127.0.0.1:11585",
+ "scenario": "main",
+ "scene_input_dir": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G4/20261116T081458Z/scenes/inputs/S1",
+ "scene_key": "S1",
+ "scene_manifest": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G4/20261116T081458Z/scenes/scene_manifest.json",
+ "scene_manifest_entry": {
+  "base": "S1",
+  "direct_straight_status": null,
+  "input_dir": "inputs/S1",
+  "map_sha256": "054cf5c77079536f9a098e33232732d6c181f0f624f07e3a446ebfab0266a10e",
+  "planning_context_sha256": "80f625e28f50901991661a97f90e55364c8f4bd8f3fe0d8e7eb7ea7e79106282",
+  "reference_file": "reference/S1.json",
+  "request_sha256": "d44f9efeb70f636a1e0f24dbc367e7869366ce344d0d88bba020d4ad355c8a1a",
+  "status": "REFERENCE_PASSED",
+  "timed_model_sha256": "022359fc5d1bf9c491141dec57ae319a9630045e75f4440e7573b0606426daaa",
+  "timed_model_summary": {
+   "S_m": 10.471975511965978,
+   "T_s": 28.347911694075965,
+   "authoritative_model": true,
+   "backend": "virtual_rigid_a",
+   "grid": {
+    "cell_count": 123518,
+    "height": 302,
+    "occupancy_sha256": "896d9d75b36950c942951c75753547c95c656656cf242add593867254e1f4307",
+    "occupied_cells": 102358,
+    "origin_x": -6.800000000000001,
+    "origin_y": -4.800000000000001,
+    "resolution_m": 0.05,
+    "width": 409
+   },
+   "kind": "motion",
+   "knot_count": 9,
+   "model_sha256": "022359fc5d1bf9c491141dec57ae319a9630045e75f4440e7573b0606426daaa",
+   "model_version": "virtual_rigid_a.timed.v1",
+   "path_model_version": "virtual_rigid_a.path.v1",
+   "planning_context_sha256": "80f625e28f50901991661a97f90e55364c8f4bd8f3fe0d8e7eb7ea7e79106282",
+   "request_sha256": "d44f9efeb70f636a1e0f24dbc367e7869366ce344d0d88bba020d4ad355c8a1a",
+   "segment_count": 8
+  }
+ },
+ "scene_manifest_sha256": "f956e8316ebf1e72102d89338b88bbcabe48bae5aa52977deef3670abe24240d",
+ "schema": "virtual_rigid_a.g5.real_smoke.v1",
+ "started_epoch_s": 1794827978.47407
+}

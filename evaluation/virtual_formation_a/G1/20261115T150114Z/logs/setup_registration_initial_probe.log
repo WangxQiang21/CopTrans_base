@@ -1,0 +1,19 @@
+cwd=/home/wq/whut_thesis/expv3_multi_virtual_a
+command=python3 -B setup.py --name (run in catkin_ws/src/fwis_v3_optimizer)
+fwis_v3_optimizer
+exit_code=0
+command=python3 -B -c <generate_distutils_setup package parse>
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+  File "/usr/lib/python3/dist-packages/catkin_pkg/python_setup.py", line 75, in generate_distutils_setup
+    package = parse_package(package_xml_path)
+  File "/usr/lib/python3/dist-packages/catkin_pkg/package.py", line 583, in parse_package
+    xml, filename = _get_package_xml(path)
+  File "/usr/lib/python3/dist-packages/catkin_pkg/package.py", line 516, in _get_package_xml
+    raise IOError('Path "%s" is neither a directory containing a "%s" file nor a file' % (path, PACKAGE_MANIFEST_FILENAME))
+OSError: Path "." is neither a directory containing a "package.xml" file nor a file
+exit_code=1
+command=python3 -B -c <import registered package>
+fwis_v3_optimizer.formation_continuous_a
+['C2CurvatureProfile', 'CurvatureJet', 'FormationSpatialState', 'GoalPolicy', 'InitialAssumption', 'ValidationResult', 'VehicleSpatialJet', 'VirtualAContractError', 'VirtualAPath', 'check_vehicle_curvatures', 'coerce_goal_policy', 'map_spatial_state', 'validate_formation_model', 'validate_initial_state']
+exit_code=0

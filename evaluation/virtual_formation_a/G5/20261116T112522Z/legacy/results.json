@@ -1,0 +1,52 @@
+{
+  "cases": [
+    {
+      "actual": "PASS",
+      "authorized_stage_tracked_changes": [
+        " M catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch",
+        " M catkin_ws/src/fwis_v3_demo/scripts/formation_goal_bridge.py",
+        " M catkin_ws/src/fwis_v3_optimizer/scripts/formation_uniform_planner_node.py",
+        " M catkin_ws/src/fwis_v3_optimizer/setup.py",
+        " M catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_playback.py",
+        " M catkin_ws/src/fwis_v3_playback/scripts/formation_playback.py",
+        " M run_demo.sh"
+      ],
+      "branch": "feature/virtual-rigid-formation-a",
+      "case": "workspace_and_baseline",
+      "expected": "feature branch, baseline ancestor, and no changes outside the declared workspace authorization stage",
+      "head": "567bdecba9676313da3bc9a97b82f57b5b569a2b",
+      "unknown_modifications": []
+    },
+    {
+      "actual": "PASS",
+      "case": "fr06_reference_reaudit_2_8m",
+      "checks": 13390,
+      "duration_absolute_error_s": 8.377298854611581e-12,
+      "duration_s": 29.95529475329162,
+      "expected": "FEASIBLE, matching identity/digests, duration within 1e-9 s",
+      "reason": "OK",
+      "status": "FEASIBLE"
+    },
+    {
+      "actual": "PASS",
+      "after_sha256": "de8e609c5cc348d996dbe3dd42a7eaede580b647fda190cf8af61adfa674b8a4",
+      "before_sha256": "de8e609c5cc348d996dbe3dd42a7eaede580b647fda190cf8af61adfa674b8a4",
+      "case": "protected_history_unchanged",
+      "expected": "identical before/after protected tree"
+    },
+    {
+      "actual": "FAIL",
+      "case": "old_regression_tests",
+      "expected": "G0 baseline does not execute old tests",
+      "subprocess_count": 10
+    }
+  ],
+  "codex_acceptance": "NOT_RUN_NOT_CLAIMED",
+  "generated_at_utc": "2026-11-16T13:34:02.269271+00:00",
+  "next_stage_entered": false,
+  "overall_status": "FAIL",
+  "regression_level": "full",
+  "schema": "virtual_rigid_a.g0.baseline.v1",
+  "stage": "G0",
+  "workspace_authorization_stage": "G5"
+}

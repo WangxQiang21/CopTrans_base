@@ -1,0 +1,603 @@
+{
+ "check_count": 27,
+ "checks": {
+  "tamper_baseline_backend": {
+   "detail": "virtual_rigid_a",
+   "ok": true
+  },
+  "tamper_baseline_envelope": {
+   "detail": 600001,
+   "ok": true
+  },
+  "tamper_baseline_file": {
+   "detail": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G5/20261116T112522Z/tamper_session/envelopes/envelope_00600001.json",
+   "ok": true
+  },
+  "tamper_baseline_plan": {
+   "detail": 600001,
+   "ok": true
+  },
+  "tamper_baseline_semantic_version": {
+   "detail": "virtual_rigid_a.playback.v1",
+   "ok": true
+  },
+  "tamper_genuine_replay_accepted": {
+   "detail": {
+    "audit_detail": "independent audit and transactional publication",
+    "audit_status": "FEASIBLE",
+    "backend": "virtual_rigid_a",
+    "certification": "FEASIBLE",
+    "clamped_elapsed_s": 14.55712358,
+    "cleared": false,
+    "duration_s": 14.55712358,
+    "elapsed_s": 36.578396559,
+    "executable": true,
+    "formation_id": "cargo_wedge",
+    "fraction": 0.0,
+    "frame_id": "map",
+    "geometry_only": false,
+    "lower_index": 728,
+    "marker_count": 20,
+    "marker_namespaces": [
+     "formation/cargo_wedge/links",
+     "formation/cargo_wedge/reference",
+     "formation/cargo_wedge/status",
+     "formation/cargo_wedge/vehicle_1",
+     "formation/cargo_wedge/vehicle_2",
+     "formation/cargo_wedge/vehicle_3"
+    ],
+    "model_sha256": "d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+    "plan_id": 600001,
+    "sample_count": 729,
+    "schema": "formation_playback/v1",
+    "semantic_version": "virtual_rigid_a.playback.v1",
+    "state": "HOLD_END",
+    "terminal": true,
+    "terminal_center_error_m": 0.0,
+    "terminal_heading_error_rad": 0.0,
+    "time_source": "header_stamp_common_clock",
+    "trajectory_stamp": {
+     "nsecs": 4951238,
+     "secs": 1794831722
+    },
+    "upper_index": 728,
+    "vehicle_ids": [
+     1,
+     2,
+     3
+    ],
+    "vehicles": [
+     {
+      "center": [
+       13.999999999762881,
+       1.0598893789861251e-08
+      ],
+      "center_speed_mps": 0.0,
+      "mode": 0,
+      "mode_control": 7.828682063426703e-16,
+      "mode_name": "A",
+      "namespace": "formation/cargo_wedge/vehicle_1",
+      "theta": 4.5102810375396984e-17,
+      "vehicle_id": 1
+     },
+     {
+      "center": [
+       12.999999999762881,
+       1.0000000105988938
+      ],
+      "center_speed_mps": 0.0,
+      "mode": 0,
+      "mode_control": 5.551115123125783e-17,
+      "mode_name": "A",
+      "namespace": "formation/cargo_wedge/vehicle_2",
+      "theta": -1.0408340855860843e-17,
+      "vehicle_id": 2
+     },
+     {
+      "center": [
+       12.999999999762881,
+       -0.9999999894011062
+      ],
+      "center_speed_mps": 0.0,
+      "mode": 0,
+      "mode_control": 5.551115123125783e-17,
+      "mode_name": "A",
+      "namespace": "formation/cargo_wedge/vehicle_3",
+      "theta": -1.0408340855860843e-17,
+      "vehicle_id": 3
+     }
+    ]
+   },
+   "ok": true
+  },
+  "tamper_tampered_heading_cleared": {
+   "detail": {
+    "backend": "virtual_rigid_a",
+    "cleared": true,
+    "executable": false,
+    "formation_id": null,
+    "frame_id": "map",
+    "geometry_only": true,
+    "marker_count": 0,
+    "marker_namespaces": [],
+    "model_sha256": "d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+    "plan_id": null,
+    "reason": "invalid playback plan: vehicle 1 sample 364 theta=0.0010000000000000009 differs from the model 0 by 0.001 > 1e-09",
+    "schema": "formation_playback/v1",
+    "semantic_version": "virtual_rigid_a.playback.v1",
+    "state": "CLEARED",
+    "time_source": "header_stamp_common_clock"
+   },
+   "ok": true
+  },
+  "tamper_tampered_heading_no_playing": {
+   "detail": 0,
+   "ok": true
+  },
+  "tamper_tampered_heading_reason_present": {
+   "detail": "invalid playback plan: vehicle 1 sample 364 theta=0.0010000000000000009 differs from the model 0 by 0.001 > 1e-09",
+   "ok": true
+  },
+  "tamper_tampered_position_cleared": {
+   "detail": {
+    "backend": "virtual_rigid_a",
+    "cleared": true,
+    "executable": false,
+    "formation_id": null,
+    "frame_id": "map",
+    "geometry_only": true,
+    "marker_count": 0,
+    "marker_namespaces": [],
+    "model_sha256": "d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+    "plan_id": null,
+    "reason": "invalid playback plan: vehicle 1 sample 364 x=13.23844886808603 differs from the model 13.23744886808603 by 0.001 > 1e-09",
+    "schema": "formation_playback/v1",
+    "semantic_version": "virtual_rigid_a.playback.v1",
+    "state": "CLEARED",
+    "time_source": "header_stamp_common_clock"
+   },
+   "ok": true
+  },
+  "tamper_tampered_position_no_playing": {
+   "detail": 0,
+   "ok": true
+  },
+  "tamper_tampered_position_reason_present": {
+   "detail": "invalid playback plan: vehicle 1 sample 364 x=13.23844886808603 differs from the model 13.23744886808603 by 0.001 > 1e-09",
+   "ok": true
+  },
+  "tamper_tampered_speed_cleared": {
+   "detail": {
+    "backend": "virtual_rigid_a",
+    "cleared": true,
+    "executable": false,
+    "formation_id": null,
+    "frame_id": "map",
+    "geometry_only": true,
+    "marker_count": 0,
+    "marker_namespaces": [],
+    "model_sha256": "d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+    "plan_id": null,
+    "reason": "invalid playback plan: vehicle 1 sample 364 center speed=0.2039635526928123 differs from the model 0.2029635526928123 by 0.001 > 1e-09",
+    "schema": "formation_playback/v1",
+    "semantic_version": "virtual_rigid_a.playback.v1",
+    "state": "CLEARED",
+    "time_source": "header_stamp_common_clock"
+   },
+   "ok": true
+  },
+  "tamper_tampered_speed_no_playing": {
+   "detail": 0,
+   "ok": true
+  },
+  "tamper_tampered_speed_reason_present": {
+   "detail": "invalid playback plan: vehicle 1 sample 364 center speed=0.2039635526928123 differs from the model 0.2029635526928123 by 0.001 > 1e-09",
+   "ok": true
+  },
+  "tamper_tampered_time_cleared": {
+   "detail": {
+    "backend": "virtual_rigid_a",
+    "cleared": true,
+    "executable": false,
+    "formation_id": null,
+    "frame_id": "map",
+    "geometry_only": true,
+    "marker_count": 0,
+    "marker_namespaces": [],
+    "model_sha256": "d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+    "plan_id": null,
+    "reason": "invalid playback plan: vehicle 1 sample 364 mode_control=0.30853235392800588 differs from the model 0.30853235210697827 by 1.82103e-09 > 1e-09",
+    "schema": "formation_playback/v1",
+    "semantic_version": "virtual_rigid_a.playback.v1",
+    "state": "CLEARED",
+    "time_source": "header_stamp_common_clock"
+   },
+   "ok": true
+  },
+  "tamper_tampered_time_no_playing": {
+   "detail": 0,
+   "ok": true
+  },
+  "tamper_tampered_time_reason_present": {
+   "detail": "invalid playback plan: vehicle 1 sample 364 mode_control=0.30853235392800588 differs from the model 0.30853235210697827 by 1.82103e-09 > 1e-09",
+   "ok": true
+  },
+  "tamper_unknown_model_version_cleared": {
+   "detail": {
+    "backend": "virtual_rigid_a",
+    "cleared": true,
+    "executable": false,
+    "formation_id": null,
+    "frame_id": "map",
+    "geometry_only": true,
+    "marker_count": 0,
+    "marker_namespaces": [],
+    "model_sha256": "d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+    "plan_id": null,
+    "reason": "invalid playback plan: unsupported model_version 'virtual_rigid_a.timed.v0'; expected 'virtual_rigid_a.timed.v1'",
+    "schema": "formation_playback/v1",
+    "semantic_version": "virtual_rigid_a.playback.v1",
+    "state": "CLEARED",
+    "time_source": "header_stamp_common_clock"
+   },
+   "ok": true
+  },
+  "tamper_unknown_model_version_no_playing": {
+   "detail": 0,
+   "ok": true
+  },
+  "tamper_unknown_model_version_reason_present": {
+   "detail": "invalid playback plan: unsupported model_version 'virtual_rigid_a.timed.v0'; expected 'virtual_rigid_a.timed.v1'",
+   "ok": true
+  },
+  "tamper_unknown_semantic_version_cleared": {
+   "detail": {
+    "backend": "virtual_rigid_a",
+    "cleared": true,
+    "executable": false,
+    "formation_id": null,
+    "frame_id": "map",
+    "geometry_only": true,
+    "marker_count": 0,
+    "marker_namespaces": [],
+    "model_sha256": "d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+    "plan_id": null,
+    "reason": "invalid playback plan: unsupported playback semantic_version 'virtual_rigid_a.playback.v0'; expected 'virtual_rigid_a.playback.v1'",
+    "schema": "formation_playback/v1",
+    "semantic_version": "virtual_rigid_a.playback.v1",
+    "state": "CLEARED",
+    "time_source": "header_stamp_common_clock"
+   },
+   "ok": true
+  },
+  "tamper_unknown_semantic_version_no_playing": {
+   "detail": 0,
+   "ok": true
+  },
+  "tamper_unknown_semantic_version_reason_present": {
+   "detail": "invalid playback plan: unsupported playback semantic_version 'virtual_rigid_a.playback.v0'; expected 'virtual_rigid_a.playback.v1'",
+   "ok": true
+  },
+  "tamper_wrong_digest_cleared": {
+   "detail": {
+    "backend": "virtual_rigid_a",
+    "cleared": true,
+    "executable": false,
+    "formation_id": null,
+    "frame_id": "map",
+    "geometry_only": true,
+    "marker_count": 0,
+    "marker_namespaces": [],
+    "model_sha256": "d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+    "plan_id": null,
+    "reason": "invalid playback plan: model_sha256 mismatch: message=05b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c transmitted-bytes=d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+    "schema": "formation_playback/v1",
+    "semantic_version": "virtual_rigid_a.playback.v1",
+    "state": "CLEARED",
+    "time_source": "header_stamp_common_clock"
+   },
+   "ok": true
+  },
+  "tamper_wrong_digest_no_playing": {
+   "detail": 0,
+   "ok": true
+  },
+  "tamper_wrong_digest_reason_present": {
+   "detail": "invalid playback plan: model_sha256 mismatch: message=05b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c transmitted-bytes=d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+   "ok": true
+  }
+ },
+ "elapsed_s": 7.32706356048584,
+ "failed_checks": [],
+ "finished_epoch_s": 1794831758.6045628,
+ "goal_policy": "straight",
+ "passed": true,
+ "result": {
+  "baseline_plan_id": 600001,
+  "cases": [
+   {
+    "case": "unknown_semantic_version",
+    "ok": true,
+    "publisher": "d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+    "status": {
+     "backend": "virtual_rigid_a",
+     "cleared": true,
+     "executable": false,
+     "formation_id": null,
+     "frame_id": "map",
+     "geometry_only": true,
+     "marker_count": 0,
+     "marker_namespaces": [],
+     "model_sha256": "d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+     "plan_id": null,
+     "reason": "invalid playback plan: unsupported playback semantic_version 'virtual_rigid_a.playback.v0'; expected 'virtual_rigid_a.playback.v1'",
+     "schema": "formation_playback/v1",
+     "semantic_version": "virtual_rigid_a.playback.v1",
+     "state": "CLEARED",
+     "time_source": "header_stamp_common_clock"
+    }
+   },
+   {
+    "case": "unknown_model_version",
+    "ok": true,
+    "publisher": "d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+    "status": {
+     "backend": "virtual_rigid_a",
+     "cleared": true,
+     "executable": false,
+     "formation_id": null,
+     "frame_id": "map",
+     "geometry_only": true,
+     "marker_count": 0,
+     "marker_namespaces": [],
+     "model_sha256": "d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+     "plan_id": null,
+     "reason": "invalid playback plan: unsupported model_version 'virtual_rigid_a.timed.v0'; expected 'virtual_rigid_a.timed.v1'",
+     "schema": "formation_playback/v1",
+     "semantic_version": "virtual_rigid_a.playback.v1",
+     "state": "CLEARED",
+     "time_source": "header_stamp_common_clock"
+    }
+   },
+   {
+    "case": "wrong_digest",
+    "ok": true,
+    "publisher": "05b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+    "status": {
+     "backend": "virtual_rigid_a",
+     "cleared": true,
+     "executable": false,
+     "formation_id": null,
+     "frame_id": "map",
+     "geometry_only": true,
+     "marker_count": 0,
+     "marker_namespaces": [],
+     "model_sha256": "d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+     "plan_id": null,
+     "reason": "invalid playback plan: model_sha256 mismatch: message=05b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c transmitted-bytes=d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+     "schema": "formation_playback/v1",
+     "semantic_version": "virtual_rigid_a.playback.v1",
+     "state": "CLEARED",
+     "time_source": "header_stamp_common_clock"
+    }
+   },
+   {
+    "case": "tampered_position",
+    "ok": true,
+    "publisher": "d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+    "status": {
+     "backend": "virtual_rigid_a",
+     "cleared": true,
+     "executable": false,
+     "formation_id": null,
+     "frame_id": "map",
+     "geometry_only": true,
+     "marker_count": 0,
+     "marker_namespaces": [],
+     "model_sha256": "d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+     "plan_id": null,
+     "reason": "invalid playback plan: vehicle 1 sample 364 x=13.23844886808603 differs from the model 13.23744886808603 by 0.001 > 1e-09",
+     "schema": "formation_playback/v1",
+     "semantic_version": "virtual_rigid_a.playback.v1",
+     "state": "CLEARED",
+     "time_source": "header_stamp_common_clock"
+    }
+   },
+   {
+    "case": "tampered_heading",
+    "ok": true,
+    "publisher": "d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+    "status": {
+     "backend": "virtual_rigid_a",
+     "cleared": true,
+     "executable": false,
+     "formation_id": null,
+     "frame_id": "map",
+     "geometry_only": true,
+     "marker_count": 0,
+     "marker_namespaces": [],
+     "model_sha256": "d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+     "plan_id": null,
+     "reason": "invalid playback plan: vehicle 1 sample 364 theta=0.0010000000000000009 differs from the model 0 by 0.001 > 1e-09",
+     "schema": "formation_playback/v1",
+     "semantic_version": "virtual_rigid_a.playback.v1",
+     "state": "CLEARED",
+     "time_source": "header_stamp_common_clock"
+    }
+   },
+   {
+    "case": "tampered_speed",
+    "ok": true,
+    "publisher": "d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+    "status": {
+     "backend": "virtual_rigid_a",
+     "cleared": true,
+     "executable": false,
+     "formation_id": null,
+     "frame_id": "map",
+     "geometry_only": true,
+     "marker_count": 0,
+     "marker_namespaces": [],
+     "model_sha256": "d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+     "plan_id": null,
+     "reason": "invalid playback plan: vehicle 1 sample 364 center speed=0.2039635526928123 differs from the model 0.2029635526928123 by 0.001 > 1e-09",
+     "schema": "formation_playback/v1",
+     "semantic_version": "virtual_rigid_a.playback.v1",
+     "state": "CLEARED",
+     "time_source": "header_stamp_common_clock"
+    }
+   },
+   {
+    "case": "tampered_time",
+    "ok": true,
+    "publisher": "d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+    "status": {
+     "backend": "virtual_rigid_a",
+     "cleared": true,
+     "executable": false,
+     "formation_id": null,
+     "frame_id": "map",
+     "geometry_only": true,
+     "marker_count": 0,
+     "marker_namespaces": [],
+     "model_sha256": "d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+     "plan_id": null,
+     "reason": "invalid playback plan: vehicle 1 sample 364 mode_control=0.30853235392800588 differs from the model 0.30853235210697827 by 1.82103e-09 > 1e-09",
+     "schema": "formation_playback/v1",
+     "semantic_version": "virtual_rigid_a.playback.v1",
+     "state": "CLEARED",
+     "time_source": "header_stamp_common_clock"
+    }
+   }
+  ],
+  "restored": {
+   "audit_detail": "independent audit and transactional publication",
+   "audit_status": "FEASIBLE",
+   "backend": "virtual_rigid_a",
+   "certification": "FEASIBLE",
+   "clamped_elapsed_s": 14.55712358,
+   "cleared": false,
+   "duration_s": 14.55712358,
+   "elapsed_s": 36.578396559,
+   "executable": true,
+   "formation_id": "cargo_wedge",
+   "fraction": 0.0,
+   "frame_id": "map",
+   "geometry_only": false,
+   "lower_index": 728,
+   "marker_count": 20,
+   "marker_namespaces": [
+    "formation/cargo_wedge/links",
+    "formation/cargo_wedge/reference",
+    "formation/cargo_wedge/status",
+    "formation/cargo_wedge/vehicle_1",
+    "formation/cargo_wedge/vehicle_2",
+    "formation/cargo_wedge/vehicle_3"
+   ],
+   "model_sha256": "d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+   "plan_id": 600001,
+   "sample_count": 729,
+   "schema": "formation_playback/v1",
+   "semantic_version": "virtual_rigid_a.playback.v1",
+   "state": "HOLD_END",
+   "terminal": true,
+   "terminal_center_error_m": 0.0,
+   "terminal_heading_error_rad": 0.0,
+   "time_source": "header_stamp_common_clock",
+   "trajectory_stamp": {
+    "nsecs": 4951238,
+    "secs": 1794831722
+   },
+   "upper_index": 728,
+   "vehicle_ids": [
+    1,
+    2,
+    3
+   ],
+   "vehicles": [
+    {
+     "center": [
+      13.999999999762881,
+      1.0598893789861251e-08
+     ],
+     "center_speed_mps": 0.0,
+     "mode": 0,
+     "mode_control": 7.828682063426703e-16,
+     "mode_name": "A",
+     "namespace": "formation/cargo_wedge/vehicle_1",
+     "theta": 4.5102810375396984e-17,
+     "vehicle_id": 1
+    },
+    {
+     "center": [
+      12.999999999762881,
+      1.0000000105988938
+     ],
+     "center_speed_mps": 0.0,
+     "mode": 0,
+     "mode_control": 5.551115123125783e-17,
+     "mode_name": "A",
+     "namespace": "formation/cargo_wedge/vehicle_2",
+     "theta": -1.0408340855860843e-17,
+     "vehicle_id": 2
+    },
+    {
+     "center": [
+      12.999999999762881,
+      -0.9999999894011062
+     ],
+     "center_speed_mps": 0.0,
+     "mode": 0,
+     "mode_control": 5.551115123125783e-17,
+     "mode_name": "A",
+     "namespace": "formation/cargo_wedge/vehicle_3",
+     "theta": -1.0408340855860843e-17,
+     "vehicle_id": 3
+    }
+   ]
+  }
+ },
+ "ros_master_uri": "http://127.0.0.1:11585",
+ "scenario": "tamper",
+ "scene_input_dir": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G4/20261116T081458Z/scenes/inputs/S2",
+ "scene_key": "S2",
+ "scene_manifest": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G4/20261116T081458Z/scenes/scene_manifest.json",
+ "scene_manifest_entry": {
+  "base": "S2",
+  "direct_straight_status": "REJECTED",
+  "input_dir": "inputs/S2",
+  "map_sha256": "55e3c5b82a99c74b96a550720fd7a467e76b40f48082c0212ca21574d3af8782",
+  "planning_context_sha256": "69467fc5b42d2568c3d666da4de31343ee7b738fb13f2766dff6ac29d585cd5f",
+  "reference_file": "reference/S2.json",
+  "request_sha256": "9feb7332db51d4f347a21b347416b6e7ffa1619ad28bda41ef88ad57c3bb2ba2",
+  "status": "REFERENCE_PASSED",
+  "timed_model_sha256": "a6b18991bb8a90eb475f14f003a6729d0eff70af33e47137fb5e46a852592642",
+  "timed_model_summary": {
+   "S_m": 12.0,
+   "T_s": 37.539035429278485,
+   "authoritative_model": true,
+   "backend": "virtual_rigid_a",
+   "grid": {
+    "cell_count": 105222,
+    "height": 213,
+    "occupancy_sha256": "1a293de6eba01c54b8799941c7b0f1502952532cb990797a984614dc9a2a46b9",
+    "occupied_cells": 85491,
+    "origin_x": -6.6000000000000005,
+    "origin_y": -4.65,
+    "resolution_m": 0.05,
+    "width": 494
+   },
+   "kind": "motion",
+   "knot_count": 9,
+   "model_sha256": "a6b18991bb8a90eb475f14f003a6729d0eff70af33e47137fb5e46a852592642",
+   "model_version": "virtual_rigid_a.timed.v1",
+   "path_model_version": "virtual_rigid_a.path.v1",
+   "planning_context_sha256": "69467fc5b42d2568c3d666da4de31343ee7b738fb13f2766dff6ac29d585cd5f",
+   "request_sha256": "9feb7332db51d4f347a21b347416b6e7ffa1619ad28bda41ef88ad57c3bb2ba2",
+   "segment_count": 8
+  }
+ },
+ "scene_manifest_sha256": "f956e8316ebf1e72102d89338b88bbcabe48bae5aa52977deef3670abe24240d",
+ "schema": "virtual_rigid_a.g5.real_smoke.v1",
+ "started_epoch_s": 1794831751.2774992
+}

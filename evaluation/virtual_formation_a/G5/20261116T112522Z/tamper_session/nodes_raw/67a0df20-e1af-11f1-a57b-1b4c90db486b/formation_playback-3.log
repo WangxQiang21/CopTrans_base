@@ -1,0 +1,95 @@
+[rospy.client][INFO] 2026-11-16 20:20:19,055: init_node, name[/formation_playback], pid[3963530]
+[xmlrpc][INFO] 2026-11-16 20:20:19,055: XML-RPC server binding to 0.0.0.0:0
+[xmlrpc][INFO] 2026-11-16 20:20:19,055: Started XML-RPC server [http://wq-ubuntu:45363/]
+[rospy.impl.masterslave][INFO] 2026-11-16 20:20:19,055: _ready: http://wq-ubuntu:45363/
+[rospy.init][INFO] 2026-11-16 20:20:19,055: ROS Slave URI: [http://wq-ubuntu:45363/]
+[rospy.registration][INFO] 2026-11-16 20:20:19,056: Registering with master node http://127.0.0.1:11585
+[xmlrpc][INFO] 2026-11-16 20:20:19,056: xml rpc node: starting XML-RPC server
+[rospy.init][INFO] 2026-11-16 20:20:19,156: registered with master
+[rospy.rosout][INFO] 2026-11-16 20:20:19,156: initializing /rosout core topic
+[rospy.rosout][INFO] 2026-11-16 20:20:19,158: connected to core topic /rosout
+[rospy.simtime][INFO] 2026-11-16 20:20:19,158: /use_sim_time is not set, will not subscribe to simulated time [/clock] topic
+[rospy.internal][INFO] 2026-11-16 20:20:19,173: topic[/formation/plan_request] adding connection to [http://wq-ubuntu:39097/], count 0
+[rospy.internal][INFO] 2026-11-16 20:20:19,176: topic[/formation/display_pose] adding connection to [http://wq-ubuntu:39097/], count 0
+[rosout][INFO] 2026-11-16 20:20:19,175: [formation playback] common-clock display ready; GEOMETRY_ONLY is shown until an independent FEASIBLE status is received
+[rospy.internal][INFO] 2026-11-16 20:20:19,184: topic[/formation/playback_status] adding connection to [/formation_uniform_planner], count 0
+[rospy.internal][INFO] 2026-11-16 20:20:19,203: topic[/formation/markers] adding connection to [/g5_marker_probe_3959583_1794830827068], count 0
+[rospy.internal][INFO] 2026-11-16 20:20:19,204: topic[/formation/optimizer_status] adding connection to [http://wq-ubuntu:34811/], count 0
+[rospy.internal][INFO] 2026-11-16 20:20:19,205: topic[/tf] adding connection to [/formation_goal_bridge], count 0
+[rospy.internal][INFO] 2026-11-16 20:20:19,206: topic[/formation/job_state] adding connection to [http://wq-ubuntu:34811/], count 0
+[rospy.internal][INFO] 2026-11-16 20:20:19,206: topic[/formation/quality_report] adding connection to [http://wq-ubuntu:34811/], count 0
+[rospy.internal][INFO] 2026-11-16 20:20:19,207: topic[/formation/playback_plan] adding connection to [http://wq-ubuntu:34811/], count 0
+[rospy.internal][INFO] 2026-11-16 20:20:19,402: topic[/rosout] adding connection to [/rosout], count 0
+[rospy.internal][INFO] 2026-11-16 20:20:20,009: topic[/tf] adding connection to [/rviz], count 1
+[rospy.internal][INFO] 2026-11-16 20:20:20,010: topic[/formation/markers] adding connection to [/rviz], count 1
+[rospy.internal][INFO] 2026-11-16 20:20:38,213: topic[/formation/markers] removing connection to /g5_marker_probe_3959583_1794830827068
+[rospy.internal][INFO] 2026-11-16 20:20:50,539: topic[/tf] adding connection to [/virtual_a_smoke_3963971_1794831650486], count 2
+[rospy.internal][INFO] 2026-11-16 20:20:50,544: topic[/formation/markers] adding connection to [/virtual_a_smoke_3963971_1794831650486], count 1
+[rospy.internal][INFO] 2026-11-16 20:20:50,544: topic[/formation/playback_status] adding connection to [/virtual_a_smoke_3963971_1794831650486], count 1
+[rosout][INFO] 2026-11-16 20:21:09,273: [formation playback] accepted virtual_rigid_a plan 600000 formation cargo_wedge model_sha256=32689bfd7c5a2f7abbb6c8c5b14b90d34ad10afae50342384bab9d519bfc812f: 3 vehicles, 1899 shared samples, T_end=37.953550 s
+[rosout][WARNING] 2026-11-16 20:21:09,275: [formation playback] ignoring audit status for plan 600000: identity differs from the verified envelope (model_sha256/formation_id/backend)
+[rosout][INFO] 2026-11-16 20:21:09,294: [formation playback] plan=600000 state=PLAYING elapsed=1.545942 clamped=1.545942 fraction=0.297080 executable=False
+[rospy.internal][INFO] 2026-11-16 20:21:09,507: topic[/formation/plan_request] adding connection to [http://wq-ubuntu:37329/], count 1
+[rosout][WARNING] 2026-11-16 20:21:09,678: [formation playback] ignoring busy plan_request 1100000 while job 600000 is PLAYING
+[rospy.internal][INFO] 2026-11-16 20:21:09,723: topic[/formation/plan_request] removing connection to http://wq-ubuntu:37329/
+[rosout][INFO] 2026-11-16 20:21:45,735: [formation playback] plan=600000 state=HOLD_END elapsed=37.961191 clamped=37.953550 fraction=0.000000 executable=True
+[rosout][INFO] 2026-11-16 20:22:02,615: [formation playback] accepted virtual_rigid_a plan 600001 formation cargo_wedge model_sha256=d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c: 3 vehicles, 729 shared samples, T_end=14.557124 s
+[rosout][WARNING] 2026-11-16 20:22:02,617: [formation playback] ignoring audit status for plan 600001: identity differs from the verified envelope (model_sha256/formation_id/backend)
+[rosout][INFO] 2026-11-16 20:22:02,630: [formation playback] plan=600001 state=PLAYING elapsed=0.612165 clamped=0.612165 fraction=0.608261 executable=False
+[rosout][INFO] 2026-11-16 20:22:16,629: [formation playback] plan=600001 state=HOLD_END elapsed=14.594816 clamped=14.557124 fraction=0.000000 executable=True
+[rospy.internal][INFO] 2026-11-16 20:22:18,696: topic[/tf] removing connection to /virtual_a_smoke_3963971_1794831650486
+[rospy.internal][INFO] 2026-11-16 20:22:18,747: topic[/formation/playback_status] removing connection to /virtual_a_smoke_3963971_1794831650486
+[rospy.internal][INFO] 2026-11-16 20:22:18,747: topic[/formation/markers] removing connection to /virtual_a_smoke_3963971_1794831650486
+[rospy.internal][INFO] 2026-11-16 20:22:31,275: topic[/formation/playback_status] adding connection to [/virtual_a_smoke_3964518_1794831751121], count 1
+[rospy.internal][INFO] 2026-11-16 20:22:31,291: topic[/formation/markers] adding connection to [/virtual_a_smoke_3964518_1794831751121], count 1
+[rospy.internal][INFO] 2026-11-16 20:22:31,291: topic[/tf] adding connection to [/virtual_a_smoke_3964518_1794831751121], count 2
+[rospy.internal][INFO] 2026-11-16 20:22:32,425: topic[/formation/playback_plan] adding connection to [http://wq-ubuntu:42371/], count 1
+[rosout][ERROR] 2026-11-16 20:22:32,559: [formation playback] rejecting playback plan 600001: unsupported playback semantic_version 'virtual_rigid_a.playback.v0'; expected 'virtual_rigid_a.playback.v1'
+[rosout][INFO] 2026-11-16 20:22:32,560: [formation playback] cleared: invalid playback plan: unsupported playback semantic_version 'virtual_rigid_a.playback.v0'; expected 'virtual_rigid_a.playback.v1'
+[rospy.internal][INFO] 2026-11-16 20:22:32,577: topic[/formation/playback_plan] removing connection to http://wq-ubuntu:42371/
+[rospy.internal][INFO] 2026-11-16 20:22:32,909: topic[/formation/playback_plan] adding connection to [http://wq-ubuntu:42371/], count 1
+[rosout][ERROR] 2026-11-16 20:22:33,040: [formation playback] rejecting playback plan 600001: unsupported model_version 'virtual_rigid_a.timed.v0'; expected 'virtual_rigid_a.timed.v1'
+[rosout][INFO] 2026-11-16 20:22:33,042: [formation playback] cleared: invalid playback plan: unsupported model_version 'virtual_rigid_a.timed.v0'; expected 'virtual_rigid_a.timed.v1'
+[rospy.internal][INFO] 2026-11-16 20:22:33,078: topic[/formation/playback_plan] removing connection to http://wq-ubuntu:42371/
+[rospy.internal][INFO] 2026-11-16 20:22:33,317: topic[/formation/playback_plan] adding connection to [http://wq-ubuntu:42371/], count 1
+[rosout][ERROR] 2026-11-16 20:22:33,534: [formation playback] rejecting playback plan 600001: model_sha256 mismatch: message=05b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c transmitted-bytes=d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c
+[rosout][INFO] 2026-11-16 20:22:33,536: [formation playback] cleared: invalid playback plan: model_sha256 mismatch: message=05b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c transmitted-bytes=d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c
+[rospy.internal][INFO] 2026-11-16 20:22:33,567: topic[/formation/playback_plan] removing connection to http://wq-ubuntu:42371/
+[rospy.internal][INFO] 2026-11-16 20:22:33,816: topic[/formation/playback_plan] adding connection to [http://wq-ubuntu:42371/], count 1
+[rosout][ERROR] 2026-11-16 20:22:34,555: [formation playback] rejecting playback plan 600001: vehicle 1 sample 364 x=13.23844886808603 differs from the model 13.23744886808603 by 0.001 > 1e-09
+[rosout][INFO] 2026-11-16 20:22:34,557: [formation playback] cleared: invalid playback plan: vehicle 1 sample 364 x=13.23844886808603 differs from the model 13.23744886808603 by 0.001 > 1e-09
+[rospy.internal][INFO] 2026-11-16 20:22:34,558: topic[/formation/playback_plan] removing connection to http://wq-ubuntu:42371/
+[rospy.internal][INFO] 2026-11-16 20:22:34,821: topic[/formation/playback_plan] adding connection to [http://wq-ubuntu:42371/], count 1
+[rosout][ERROR] 2026-11-16 20:22:35,552: [formation playback] rejecting playback plan 600001: vehicle 1 sample 364 theta=0.0010000000000000009 differs from the model 0 by 0.001 > 1e-09
+[rosout][INFO] 2026-11-16 20:22:35,554: [formation playback] cleared: invalid playback plan: vehicle 1 sample 364 theta=0.0010000000000000009 differs from the model 0 by 0.001 > 1e-09
+[rospy.internal][INFO] 2026-11-16 20:22:35,555: topic[/formation/playback_plan] removing connection to http://wq-ubuntu:42371/
+[rospy.internal][INFO] 2026-11-16 20:22:35,826: topic[/formation/playback_plan] adding connection to [http://wq-ubuntu:42371/], count 1
+[rosout][ERROR] 2026-11-16 20:22:36,548: [formation playback] rejecting playback plan 600001: vehicle 1 sample 364 center speed=0.2039635526928123 differs from the model 0.2029635526928123 by 0.001 > 1e-09
+[rosout][INFO] 2026-11-16 20:22:36,550: [formation playback] cleared: invalid playback plan: vehicle 1 sample 364 center speed=0.2039635526928123 differs from the model 0.2029635526928123 by 0.001 > 1e-09
+[rospy.internal][INFO] 2026-11-16 20:22:36,551: topic[/formation/playback_plan] removing connection to http://wq-ubuntu:42371/
+[rospy.internal][INFO] 2026-11-16 20:22:36,833: topic[/formation/playback_plan] adding connection to [http://wq-ubuntu:42371/], count 1
+[rosout][ERROR] 2026-11-16 20:22:37,524: [formation playback] rejecting playback plan 600001: vehicle 1 sample 364 mode_control=0.30853235392800588 differs from the model 0.30853235210697827 by 1.82103e-09 > 1e-09
+[rosout][INFO] 2026-11-16 20:22:37,525: [formation playback] cleared: invalid playback plan: vehicle 1 sample 364 mode_control=0.30853235392800588 differs from the model 0.30853235210697827 by 1.82103e-09 > 1e-09
+[rospy.internal][INFO] 2026-11-16 20:22:37,527: topic[/formation/playback_plan] removing connection to http://wq-ubuntu:42371/
+[rospy.internal][INFO] 2026-11-16 20:22:37,837: topic[/formation/playback_plan] adding connection to [http://wq-ubuntu:42371/], count 1
+[rosout][INFO] 2026-11-16 20:22:38,582: [formation playback] accepted virtual_rigid_a plan 600001 formation cargo_wedge model_sha256=d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c: 3 vehicles, 729 shared samples, T_end=14.557124 s
+[rosout][INFO] 2026-11-16 20:22:38,593: [formation playback] plan=600001 state=HOLD_END elapsed=36.578397 clamped=14.557124 fraction=0.000000 executable=True
+[rospy.internal][INFO] 2026-11-16 20:22:38,618: topic[/formation/playback_plan] removing connection to http://wq-ubuntu:42371/
+[rospy.internal][INFO] 2026-11-16 20:22:38,618: topic[/tf] removing connection to /virtual_a_smoke_3964518_1794831751121
+[rospy.internal][INFO] 2026-11-16 20:22:38,666: topic[/formation/markers] removing connection to /virtual_a_smoke_3964518_1794831751121
+[rospy.internal][INFO] 2026-11-16 20:22:38,666: topic[/formation/playback_status] removing connection to /virtual_a_smoke_3964518_1794831751121
+[rospy.core][INFO] 2026-11-16 20:23:09,791: signal_shutdown [signal-2]
+[rospy.internal][INFO] 2026-11-16 20:23:09,795: topic[/formation/display_pose] removing connection to http://wq-ubuntu:39097/
+[rospy.internal][INFO] 2026-11-16 20:23:09,795: topic[/formation/plan_request] removing connection to http://wq-ubuntu:39097/
+[rospy.internal][INFO] 2026-11-16 20:23:09,795: topic[/rosout] removing connection to /rosout
+[rospy.internal][INFO] 2026-11-16 20:23:09,796: topic[/formation/markers] removing connection to /rviz
+[rospy.internal][INFO] 2026-11-16 20:23:09,796: topic[/formation/playback_status] removing connection to /formation_uniform_planner
+[rospy.internal][INFO] 2026-11-16 20:23:09,796: topic[/tf] removing connection to /formation_goal_bridge
+[rospy.internal][INFO] 2026-11-16 20:23:09,796: topic[/tf] removing connection to /rviz
+[rospy.internal][INFO] 2026-11-16 20:23:09,796: topic[/formation/playback_plan] removing connection to http://wq-ubuntu:34811/
+[rospy.internal][INFO] 2026-11-16 20:23:09,797: topic[/formation/job_state] removing connection to http://wq-ubuntu:34811/
+[rospy.internal][INFO] 2026-11-16 20:23:09,797: topic[/formation/optimizer_status] removing connection to http://wq-ubuntu:34811/
+[rospy.internal][INFO] 2026-11-16 20:23:09,797: topic[/formation/quality_report] removing connection to http://wq-ubuntu:34811/
+[rospy.internal][INFO] 2026-11-16 20:23:09,798: topic[/formation/quality_report] removing connection to http://wq-ubuntu:34811/
+[rospy.impl.masterslave][INFO] 2026-11-16 20:23:09,798: signal-2
+[rospy.core][INFO] 2026-11-16 20:23:10,391: signal_shutdown [atexit]

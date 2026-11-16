@@ -1,0 +1,39 @@
+test_admission_initial_source_must_be_the_request_source (tests.test_virtual_a_playback.EnvelopeTest) ... ok
+test_admission_record_is_bound_to_the_request (tests.test_virtual_a_playback.EnvelopeTest) ... ok
+test_admitted_context_is_required_and_bound (tests.test_virtual_a_playback.EnvelopeTest) ... ok
+test_authoritative_envelope_is_accepted (tests.test_virtual_a_playback.EnvelopeTest) ... ok
+test_common_time_axis_is_integer_nanoseconds (tests.test_virtual_a_playback.EnvelopeTest) ... ok
+test_envelope_identity_and_versions_cannot_be_tampered (tests.test_virtual_a_playback.EnvelopeTest) ... ok
+test_envelope_key_set_is_exact (tests.test_virtual_a_playback.EnvelopeTest) ... ok
+test_every_published_sample_matches_the_model (tests.test_virtual_a_playback.EnvelopeTest) ... ok
+test_grid_digest_is_bound (tests.test_virtual_a_playback.EnvelopeTest) ... ok
+test_integer_nanosecond_arrays_are_checked (tests.test_virtual_a_playback.EnvelopeTest) ... ok
+test_non_authoritative_joint_arrays_are_rejected (tests.test_virtual_a_playback.EnvelopeTest) ... ok
+test_original_request_payload_is_accepted (tests.test_virtual_a_playback.EnvelopeTest) ... ok
+test_retained_request_is_required_and_must_match (tests.test_virtual_a_playback.EnvelopeTest) ... ok
+test_sample_values_cannot_be_tampered (tests.test_virtual_a_playback.EnvelopeTest) ... ok
+test_vehicle_metadata_cannot_be_tampered (tests.test_virtual_a_playback.EnvelopeTest) ... ok
+test_markers_follow_the_authoritative_frame (tests.test_virtual_a_playback.FrameAndMarkerTest) ... ok
+test_playback_frames_are_derived_from_the_model (tests.test_virtual_a_playback.FrameAndMarkerTest) ... ok
+test_rigidity_holds_at_every_interpolated_frame (tests.test_virtual_a_playback.FrameAndMarkerTest) ... ok
+test_status_document_matches_the_verified_envelope (tests.test_virtual_a_playback.FrameAndMarkerTest) ... ok
+test_status_for_another_identity_never_certifies_the_display (tests.test_virtual_a_playback.FrameAndMarkerTest) ... ok
+test_terminal_hold_matches_the_last_sample (tests.test_virtual_a_playback.FrameAndMarkerTest) ... ok
+test_backend_dispatch_rejects_unknown_backends (tests.test_virtual_a_playback.InvalidPlaybackTest) ... ok
+test_frame_requires_a_verified_trajectory (tests.test_virtual_a_playback.InvalidPlaybackTest) ... ok
+test_status_requires_a_trajectory_and_frame (tests.test_virtual_a_playback.InvalidPlaybackTest) ... ok
+test_no_motion_hold_has_one_frame_at_zero (tests.test_virtual_a_playback.NoMotionEnvelopeTest) ... ok
+test_no_motion_marker_frame_is_authoritative (tests.test_virtual_a_playback.NoMotionEnvelopeTest) ... ok
+test_no_motion_rejects_a_second_sample (tests.test_virtual_a_playback.NoMotionEnvelopeTest) ... ok
+test_free_raw_request_matches_the_admitted_fingerprint (tests.test_virtual_a_playback.RawRequestReconstructionTest) ... ok
+test_missing_raw_field_is_rejected (tests.test_virtual_a_playback.RawRequestReconstructionTest) ... ok
+test_mixed_goal_heading_flags_are_rejected (tests.test_virtual_a_playback.RawRequestReconstructionTest) ... ok
+test_non_rigid_start_centre_is_rejected (tests.test_virtual_a_playback.RawRequestReconstructionTest) ... ok
+test_straight_goal_heading_must_equal_the_goal_psi (tests.test_virtual_a_playback.RawRequestReconstructionTest) ... ok
+test_straight_raw_request_matches_the_admitted_fingerprint (tests.test_virtual_a_playback.RawRequestReconstructionTest) ... ok
+test_vehicle_message_order_does_not_change_the_request (tests.test_virtual_a_playback.RawRequestReconstructionTest) ... ok
+
+----------------------------------------------------------------------
+Ran 34 tests in 65.782s
+
+OK

@@ -1,0 +1,450 @@
+{
+  "all_checks_pass": true,
+  "checks": {
+    "audit_budget_confirmed": true,
+    "audit_threshold_strictly_below_g1": true,
+    "audit_total_within_threshold": true,
+    "c2_third_derivative_nonzero": true,
+    "coarse_grid_refined": true,
+    "default_audit_passes": true,
+    "four_segments": true,
+    "independent_vs_quad_within_audit_budget": true,
+    "resource_limit_unconfirmed": true,
+    "returned_vs_independent_within_combined_budget": true,
+    "unreachable_budget_unconfirmed": true
+  },
+  "coarse_refinement_audit": {
+    "c2_max_abs_g": 0.009000000000000279,
+    "integration": {
+      "angle_budget_rad": 1.200029424704451e-10,
+      "audit_angle_budget_rad": 1.2000247833265024e-10,
+      "audit_integration": {
+        "angle_bound_rad": 1.2000247833265024e-10,
+        "confirmed": true,
+        "euclidean_remainder_m": 4.3607799280624836e-08,
+        "fixed_threshold_m": 5e-08,
+        "floating_point_assumption": "G1 POSITION_ROUNDOFF_GUARD_M per accumulation panel and ANGLE_ROUNDOFF_GUARD_RAD plus 8*EPSILON*(1+|psi|); libm/trig values are assumed correctly rounded within these guards",
+        "formula": "H^5*M4/2880 per Simpson panel; M4=G+4KU+3E^2+6K^2E+K^4",
+        "full_simpson_panels": 32,
+        "local_simpson_panels": 4,
+        "method": "independent_composite_simpson_v1",
+        "per_coordinate_remainder_m": 3.083537058395166e-08,
+        "refinement_steps": 12,
+        "roundoff_and_angle_guard_m": 5.0240128873297826e-09,
+        "segments": [
+          {
+            "eta_upper": 0.02640000000000657,
+            "full_remainder_m": 1.7090480107588597e-09,
+            "g_upper": 0.00900000000000271,
+            "h": 1.1,
+            "k_upper": 0.014520000000010722,
+            "local_remainder_m": 2.1363100134485746e-10,
+            "m4_upper": 0.012518239984822587,
+            "panel_width_m": 0.1375,
+            "remainder_m": 1.9226790121037177e-09,
+            "s0": 0.0,
+            "s1": 1.1,
+            "segment_index": 0,
+            "subintervals": 16,
+            "u_upper": 0.02400000000000303
+          },
+          {
+            "eta_upper": 0.03928500000000567,
+            "full_remainder_m": 5.407802201457128e-09,
+            "g_upper": 0.009000000000001711,
+            "h": 1.2999999999999998,
+            "k_upper": 0.0516795000000109,
+            "local_remainder_m": 6.75975275182141e-10,
+            "m4_upper": 0.017181317857714765,
+            "panel_width_m": 0.16249999999999998,
+            "remainder_m": 6.083777476639269e-09,
+            "s0": 1.1,
+            "s1": 2.4,
+            "segment_index": 1,
+            "subintervals": 16,
+            "u_upper": 0.014100000000002187
+          },
+          {
+            "eta_upper": 0.035280000000004814,
+            "full_remainder_m": 1.2401265980617828e-08,
+            "g_upper": 0.009000000000001033,
+            "h": 1.5,
+            "k_upper": 0.098604000000011,
+            "local_remainder_m": 1.5501582475772285e-09,
+            "m4_upper": 0.019264696113914508,
+            "panel_width_m": 0.1875,
+            "remainder_m": 1.3951424228195058e-08,
+            "s0": 2.4,
+            "s1": 3.9,
+            "segment_index": 2,
+            "subintervals": 16,
+            "u_upper": 0.011100000000003184
+          },
+          {
+            "eta_upper": 0.025155000000002835,
+            "full_remainder_m": 7.891102104012083e-09,
+            "g_upper": 0.00900000000000193,
+            "h": 1.3000000000000003,
+            "k_upper": 0.1262430000000076,
+            "local_remainder_m": 9.863877630015104e-10,
+            "m4_upper": 0.025071096990230402,
+            "panel_width_m": 0.16250000000000003,
+            "remainder_m": 8.877489867013595e-09,
+            "s0": 3.9,
+            "s1": 5.2,
+            "segment_index": 3,
+            "subintervals": 16,
+            "u_upper": 0.022800000000004476
+          }
+        ],
+        "total_budget_m": 4.8631812167954624e-08,
+        "total_subintervals": 64
+      },
+      "audit_position_budget_m": 4.8631812167954624e-08,
+      "c2": {
+        "max_abs_g": 0.009000000000000279,
+        "max_second_error": 1.474514954580286e-16,
+        "max_slope_error": 6.938893903907228e-18,
+        "max_value_error": 6.938893903907228e-18,
+        "node_count": 3,
+        "nodes": [
+          {
+            "node": 1,
+            "s": 1.1,
+            "second_error": 3.8163916471489756e-17,
+            "slope_error": 3.469446951953614e-18,
+            "u_left": 0.014099999999999993,
+            "u_right": 0.014100000000000031,
+            "value_error": 3.469446951953614e-18
+          },
+          {
+            "node": 2,
+            "s": 2.4,
+            "second_error": 3.903127820947816e-18,
+            "slope_error": 6.938893903907228e-18,
+            "u_left": 0.002399999999999954,
+            "u_right": 0.0023999999999999577,
+            "value_error": 6.938893903907228e-18
+          },
+          {
+            "node": 3,
+            "s": 3.9,
+            "second_error": 1.474514954580286e-16,
+            "slope_error": 0.0,
+            "u_left": -0.011099999999999962,
+            "u_right": -0.011099999999999815,
+            "value_error": 0.0
+          }
+        ],
+        "second_tolerance": 1e-08,
+        "slope_tolerance": 1e-09,
+        "third_limit": 1000000.0,
+        "value_tolerance": 1e-09
+      },
+      "combined_angle_budget_rad": 2.400054208030954e-10,
+      "combined_position_budget_m": 6.369323580333861e-08,
+      "goal": {
+        "psi": 0.2882464,
+        "x": 5.161177790257357,
+        "y": 0.4433101616828835
+      },
+      "goal_heading_branch_rad": 0.2882464,
+      "heading_tolerance_rad": 0.003490658503988659,
+      "independent_endpoint": {
+        "psi": 0.2882464,
+        "x": 5.161177791680425,
+        "y": 0.4433101485813554
+      },
+      "independent_heading_error_rad": 0.0,
+      "independent_position_error_m": 1.3178587191359084e-08,
+      "method": "independent_composite_simpson_v1",
+      "position_budget_m": 1.5061423635383972e-08,
+      "position_tolerance_m": 0.005,
+      "reported_endpoint": {
+        "psi": 0.2882464,
+        "x": 5.161177790257357,
+        "y": 0.4433101616828835
+      },
+      "reported_heading_error_rad": 0.0,
+      "reported_independent_difference_m": 1.3178587191359084e-08,
+      "reported_independent_difference_rad": 0.0,
+      "reported_position_error_m": 0.0,
+      "start": {
+        "psi": 0.0,
+        "x": 0.0,
+        "y": 0.0
+      },
+      "total_checks": 79
+    },
+    "location": {},
+    "passed": true,
+    "reason": null,
+    "whole_segment_count": 4
+  },
+  "comparison": {
+    "audit_total_budget_m": 1.5142979248606515e-08,
+    "combined_position_budget_m": 3.0204402883990496e-08,
+    "independent_minus_quad": {
+      "euclidean": 4.008989594507019e-11,
+      "x": 4.919620266718994e-12,
+      "y": -3.978689600003804e-11
+    },
+    "quad_abserr_sum_m": 6.222231565517052e-14,
+    "returned_path_minus_independent": {
+      "euclidean": 8.95090418262362e-16,
+      "x": 8.881784197001252e-16,
+      "y": 1.1102230246251565e-16
+    }
+  },
+  "default_audit": {
+    "c2_max_abs_g": 0.009000000000000279,
+    "integration": {
+      "angle_budget_rad": 1.200029424704451e-10,
+      "audit_angle_budget_rad": 1.2000247833265024e-10,
+      "audit_integration": {
+        "angle_bound_rad": 1.2000247833265024e-10,
+        "confirmed": true,
+        "euclidean_remainder_m": 1.1896636127672755e-10,
+        "fixed_threshold_m": 5e-08,
+        "floating_point_assumption": "G1 POSITION_ROUNDOFF_GUARD_M per accumulation panel and ANGLE_ROUNDOFF_GUARD_RAD plus 8*EPSILON*(1+|psi|); libm/trig values are assumed correctly rounded within these guards",
+        "formula": "H^5*M4/2880 per Simpson panel; M4=G+4KU+3E^2+6K^2E+K^4",
+        "full_simpson_panels": 132,
+        "local_simpson_panels": 4,
+        "method": "independent_composite_simpson_v1",
+        "per_coordinate_remainder_m": 8.412192079186271e-11,
+        "refinement_steps": 0,
+        "roundoff_and_angle_guard_m": 1.5024012887329785e-08,
+        "segments": [
+          {
+            "eta_upper": 0.02640000000000657,
+            "full_remainder_m": 1.1388908026714603e-11,
+            "g_upper": 0.00900000000000271,
+            "h": 1.1,
+            "k_upper": 0.014520000000010722,
+            "local_remainder_m": 4.0674671523980725e-13,
+            "m4_upper": 0.012518239984822587,
+            "panel_width_m": 0.03928571428571429,
+            "remainder_m": 1.1795654741954411e-11,
+            "s0": 0.0,
+            "s1": 1.1,
+            "segment_index": 0,
+            "subintervals": 56,
+            "u_upper": 0.02400000000000303
+          },
+          {
+            "eta_upper": 0.03928500000000567,
+            "full_remainder_m": 1.867776843244061e-11,
+            "g_upper": 0.009000000000001711,
+            "h": 1.2999999999999998,
+            "k_upper": 0.0516795000000109,
+            "local_remainder_m": 5.659929828012306e-13,
+            "m4_upper": 0.017181317857714765,
+            "panel_width_m": 0.03939393939393939,
+            "remainder_m": 1.9243761415241843e-11,
+            "s0": 1.1,
+            "s1": 2.4,
+            "segment_index": 1,
+            "subintervals": 66,
+            "u_upper": 0.014100000000002187
+          },
+          {
+            "eta_upper": 0.035280000000004814,
+            "full_remainder_m": 2.4360802104328253e-11,
+            "g_upper": 0.009000000000001033,
+            "h": 1.5,
+            "k_upper": 0.098604000000011,
+            "local_remainder_m": 6.410737395875856e-13,
+            "m4_upper": 0.019264696113914508,
+            "panel_width_m": 0.039473684210526314,
+            "remainder_m": 2.500187584391584e-11,
+            "s0": 2.4,
+            "s1": 3.9,
+            "segment_index": 2,
+            "subintervals": 76,
+            "u_upper": 0.011100000000003184
+          },
+          {
+            "eta_upper": 0.025155000000002835,
+            "full_remainder_m": 2.72547279439638e-11,
+            "g_upper": 0.00900000000000193,
+            "h": 1.3000000000000003,
+            "k_upper": 0.1262430000000076,
+            "local_remainder_m": 8.259008467867819e-13,
+            "m4_upper": 0.025071096990230402,
+            "panel_width_m": 0.039393939393939405,
+            "remainder_m": 2.8080628790750585e-11,
+            "s0": 3.9,
+            "s1": 5.2,
+            "segment_index": 3,
+            "subintervals": 66,
+            "u_upper": 0.022800000000004476
+          }
+        ],
+        "total_budget_m": 1.5142979248606515e-08,
+        "total_subintervals": 264
+      },
+      "audit_position_budget_m": 1.5142979248606515e-08,
+      "c2": {
+        "max_abs_g": 0.009000000000000279,
+        "max_second_error": 1.474514954580286e-16,
+        "max_slope_error": 6.938893903907228e-18,
+        "max_value_error": 6.938893903907228e-18,
+        "node_count": 3,
+        "nodes": [
+          {
+            "node": 1,
+            "s": 1.1,
+            "second_error": 3.8163916471489756e-17,
+            "slope_error": 3.469446951953614e-18,
+            "u_left": 0.014099999999999993,
+            "u_right": 0.014100000000000031,
+            "value_error": 3.469446951953614e-18
+          },
+          {
+            "node": 2,
+            "s": 2.4,
+            "second_error": 3.903127820947816e-18,
+            "slope_error": 6.938893903907228e-18,
+            "u_left": 0.002399999999999954,
+            "u_right": 0.0023999999999999577,
+            "value_error": 6.938893903907228e-18
+          },
+          {
+            "node": 3,
+            "s": 3.9,
+            "second_error": 1.474514954580286e-16,
+            "slope_error": 0.0,
+            "u_left": -0.011099999999999962,
+            "u_right": -0.011099999999999815,
+            "value_error": 0.0
+          }
+        ],
+        "second_tolerance": 1e-08,
+        "slope_tolerance": 1e-09,
+        "third_limit": 1000000.0,
+        "value_tolerance": 1e-09
+      },
+      "combined_angle_budget_rad": 2.400054208030954e-10,
+      "combined_position_budget_m": 3.0204402883990496e-08,
+      "goal": {
+        "psi": 0.2882464,
+        "x": 5.161177790257357,
+        "y": 0.4433101616828835
+      },
+      "goal_heading_branch_rad": 0.2882464,
+      "heading_tolerance_rad": 0.003490658503988659,
+      "independent_endpoint": {
+        "psi": 0.2882464,
+        "x": 5.161177790257356,
+        "y": 0.4433101616828834
+      },
+      "independent_heading_error_rad": 0.0,
+      "independent_position_error_m": 8.95090418262362e-16,
+      "method": "independent_composite_simpson_v1",
+      "position_budget_m": 1.5061423635383972e-08,
+      "position_tolerance_m": 0.005,
+      "reported_endpoint": {
+        "psi": 0.2882464,
+        "x": 5.161177790257357,
+        "y": 0.4433101616828835
+      },
+      "reported_heading_error_rad": 0.0,
+      "reported_independent_difference_m": 8.95090418262362e-16,
+      "reported_independent_difference_rad": 0.0,
+      "reported_position_error_m": 0.0,
+      "start": {
+        "psi": 0.0,
+        "x": 0.0,
+        "y": 0.0
+      },
+      "total_checks": 79
+    },
+    "location": {},
+    "passed": true,
+    "reason": null,
+    "whole_segment_count": 4
+  },
+  "formula": {
+    "floating_point_assumption": "G1 POSITION_ROUNDOFF_GUARD_M per accumulation panel and ANGLE_ROUNDOFF_GUARD_RAD plus 8*EPSILON*(1+|psi|); libm/trig values are assumed correctly rounded within these guards",
+    "m4_definition": "G + 4*K*U + 3*E^2 + 6*K^2*E + K^4",
+    "method": "independent_composite_simpson_v1",
+    "panel_width": "2*h/subintervals",
+    "remainder": "H^5*M4/2880 per Simpson panel; M4=G+4KU+3E^2+6K^2E+K^4"
+  },
+  "generated_at_utc": "2026-11-15T17:04:29.220344+00:00",
+  "high_precision_quadrature": {
+    "psi": 0.2882464,
+    "quad_x_abserr": 5.730058416922242e-14,
+    "quad_x_message": "",
+    "quad_x_neval": 84,
+    "quad_y_abserr": 4.921731485948103e-15,
+    "quad_y_message": "",
+    "quad_y_neval": 84,
+    "x": 5.161177790252436,
+    "y": 0.4433101617226703
+  },
+  "nonclaims": [
+    "numerical comparison, not a proof of libm/trig rounding",
+    "the audit budget covers Simpson truncation plus a documented floating-point/angle guard",
+    "this profile is an audit fixture, never a solver seed"
+  ],
+  "profile": {
+    "definition": "k(s)=0.012*s^2-0.0015*s^3 on stations 0,1.1,2.4,3.9,5.2 m",
+    "fourth_derivative_note": "third curvature derivative is the nonzero constant 6*c; the position integrand has nonzero fourth derivative",
+    "knots": [
+      {
+        "eta": 0.0,
+        "kappa": 0.0,
+        "s": 0.0
+      },
+      {
+        "eta": 0.020955,
+        "kappa": 0.012523500000000003,
+        "s": 1.1
+      },
+      {
+        "eta": 0.03168,
+        "kappa": 0.048384,
+        "s": 2.4
+      },
+      {
+        "eta": 0.025154999999999997,
+        "kappa": 0.09354149999999999,
+        "s": 3.9
+      },
+      {
+        "eta": 0.003119999999999984,
+        "kappa": 0.11356800000000003,
+        "s": 5.2
+      }
+    ],
+    "length_m": 5.2
+  },
+  "resource_limited_audit": {
+    "c2_max_abs_g": null,
+    "integration": {},
+    "location": {
+      "constraint": "AUDIT_INTEGRATION_TOTAL_LIMIT",
+      "limit": 4,
+      "value": 264
+    },
+    "passed": false,
+    "reason": "BOUND_UNCONFIRMED",
+    "whole_segment_count": 0
+  },
+  "run_id": "20261115T165745Z",
+  "schema": "virtual_rigid_a.g2.audit_budget_crosscheck.v1",
+  "unreachable_budget_audit": {
+    "c2_max_abs_g": null,
+    "integration": {},
+    "location": {
+      "constraint": "AUDIT_INTEGRATION_PANEL_LIMIT",
+      "interval": 1,
+      "limit": 64,
+      "value": 66
+    },
+    "passed": false,
+    "reason": "BOUND_UNCONFIRMED",
+    "whole_segment_count": 0
+  }
+}

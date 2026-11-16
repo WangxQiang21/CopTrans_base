@@ -1,0 +1,1288 @@
+{
+  "all_audits_passed": true,
+  "all_requests_pass": true,
+  "all_requests_status": [
+    "GEOMETRY_FEASIBLE"
+  ],
+  "audit_budget_crosscheck": {
+    "all_checks_pass": true,
+    "audit_total_budget_m": 1.5142979248606515e-08,
+    "coarse_refinement_steps": 12,
+    "fixed_threshold_m": 5e-08,
+    "independent_minus_quad_m": 4.008989594507019e-11,
+    "log": "logs/audit_budget_crosscheck.log",
+    "path": "analysis/audit_budget_crosscheck.json",
+    "resource_constraint": "AUDIT_INTEGRATION_TOTAL_LIMIT",
+    "resource_reason": "BOUND_UNCONFIRMED",
+    "returned_minus_independent_m": 8.95090418262362e-16,
+    "sha256": "5938b0a0a9182235a7858310329c53b5610a9917fd619f33f521d8c19772f01b"
+  },
+  "benchmark": {
+    "checks": 124,
+    "checks_sha256": "a0cf1219a2fcaa8465100d7caa215f8ffa3ad5828ccfeb75f4ffdb571be64f5e",
+    "failed": [],
+    "status": "PASS"
+  },
+  "codex_acceptance": "NOT_RUN_NOT_CLAIMED",
+  "deadline": {
+    "any_deadline_exhausted": false,
+    "hard_real_time_guarantee": false,
+    "ipopt_control": "IPOPT option max_wall_time",
+    "max_observed_solve_wall_time_s": 3.528343321988359,
+    "semantics": "remaining budget is checked at initial and attempt boundaries; IPOPT receives max_wall_time and SLSQP checks the deadline in its iteration callback. A timed-out iterate is never audited or published. The solver library may return after its own shutdown overhead, so no hard real-time guarantee is claimed",
+    "slsqp_control": "Python iteration callback raising _SoftDeadline",
+    "soft_budget_s": 30.0,
+    "timeout_point": "NOT_TRIGGERED"
+  },
+  "frozen_config": {
+    "equals_PlannerConfig_default": true,
+    "intervals": 8,
+    "max_initials": 6,
+    "max_iterations": 120,
+    "max_seconds": 30.0,
+    "sha256_canonical": "cba9cd8cf53a4292f7adaa9725ba15c083426cc696d07a1d3aff4359e2e3d57b",
+    "solver": "ipopt",
+    "values": {
+      "allow_scipy_fallback": true,
+      "collocation_points": 9,
+      "curvature_margin": 0.02,
+      "eta_limit": 2.0,
+      "heading_tolerance_rad": 0.003490658503988659,
+      "intervals": 8,
+      "ipopt_tolerance": 1e-08,
+      "kappa_limit": 0.5524861878453039,
+      "max_initials": 6,
+      "max_iterations": 120,
+      "max_seconds": 30.0,
+      "position_tolerance_m": 0.005,
+      "rigidity_tolerance_m": 1e-06,
+      "scipy_maxiter": 120,
+      "scipy_tolerance": 1e-08,
+      "solver": "ipopt"
+    }
+  },
+  "generated_at_utc": "2026-11-15T17:05:05.825074+00:00",
+  "limits": {
+    "angle_budget_rad": 1e-09,
+    "audit_integration_method": "independent_composite_simpson_v1",
+    "audit_position_budget_m": 5e-08,
+    "endpoint_heading_deg": 0.2,
+    "endpoint_heading_rad": 0.003490658503988659,
+    "endpoint_position_m": 0.005,
+    "per_request_curvature_and_wheel": {
+      "E1": {
+        "curvature_limit_1_per_m": 1.2345679012345678,
+        "static_wheel_limit_rad": 1.5707963267948966
+      },
+      "E2": {
+        "curvature_limit_1_per_m": 1.2345679012345678,
+        "static_wheel_limit_rad": 1.5707963267948966
+      },
+      "E3": {
+        "curvature_limit_1_per_m": 1.2345679012345678,
+        "static_wheel_limit_rad": 1.5707963267948966
+      },
+      "E4": {
+        "curvature_limit_1_per_m": 1.2345679012345678,
+        "static_wheel_limit_rad": 1.5707963267948966
+      },
+      "E5": {
+        "curvature_limit_1_per_m": 1.2345679012345678,
+        "static_wheel_limit_rad": 1.5707963267948966
+      },
+      "E6": {
+        "curvature_limit_1_per_m": 1.2345679012345678,
+        "static_wheel_limit_rad": 1.5707963267948966
+      },
+      "STRAIGHT_LINE": {
+        "curvature_limit_1_per_m": 1.2345679012345678,
+        "static_wheel_limit_rad": 1.5707963267948966
+      },
+      "STRAIGHT_POLICY": {
+        "curvature_limit_1_per_m": 1.2345679012345678,
+        "static_wheel_limit_rad": 1.5707963267948966
+      }
+    },
+    "position_budget_m": 1e-07,
+    "rigidity_m": 1e-06
+  },
+  "maximums": {
+    "angle_budget_rad": 1.6000567697249237e-10,
+    "audit_angle_budget_rad": 1.6000347273261916e-10,
+    "audit_position_budget_m": 2.3869470916501363e-08,
+    "combined_position_budget_m": 4.772565267135602e-08,
+    "endpoint_heading_error_rad": 5.551115123125783e-17,
+    "endpoint_position_error_m": 8.316120027176057e-10,
+    "max_abs_C": 0.5131177222470878,
+    "max_static_wheel_angle_rad": 0.13889506324643935,
+    "position_budget_m": 2.385618175485476e-08,
+    "rigidity_error_m": 1.1102230246251565e-15
+  },
+  "negative_fixture_coverage": [
+    {
+      "expected": "NON_C2_PROFILE at C2_SECOND",
+      "log": "audit",
+      "log_path": "logs/audit.log",
+      "log_sha256": "2cf95e99e82cb271be676a15473379b94e814360bd6b8641268f79e8ad75b942",
+      "requirement": "non-C2 profile",
+      "test": "test_non_c2_profile_rejected",
+      "test_class": "test_virtual_a_audit.NegativeAuditTests",
+      "test_outcome": "ok"
+    },
+    {
+      "expected": "INITIAL_HEADING_MISMATCH vehicle_id=1",
+      "log": "audit",
+      "log_path": "logs/audit.log",
+      "log_sha256": "2cf95e99e82cb271be676a15473379b94e814360bd6b8641268f79e8ad75b942",
+      "requirement": "car 1 initial heading 0.1 rad",
+      "test": "test_car1_wrong_initial_heading_rejected",
+      "test_class": "test_virtual_a_audit.NegativeAuditTests",
+      "test_outcome": "ok"
+    },
+    {
+      "expected": "FORGED_REQUEST_DIGEST",
+      "log": "audit",
+      "log_path": "logs/audit.log",
+      "log_sha256": "2cf95e99e82cb271be676a15473379b94e814360bd6b8641268f79e8ad75b942",
+      "requirement": "forged request digest",
+      "test": "test_forged_request_digest_rejected",
+      "test_class": "test_virtual_a_audit.NegativeAuditTests",
+      "test_outcome": "ok"
+    },
+    {
+      "expected": "ENDPOINT_POSITION/ENDPOINT_HEADING",
+      "log": "audit",
+      "log_path": "logs/audit.log",
+      "log_sha256": "2cf95e99e82cb271be676a15473379b94e814360bd6b8641268f79e8ad75b942",
+      "requirement": "forged goal checked against original request",
+      "test": "test_forged_goal_is_checked_against_original_request",
+      "test_class": "test_virtual_a_audit.NegativeAuditTests",
+      "test_outcome": "ok"
+    },
+    {
+      "expected": "VEHICLE_SHAPE_MISMATCH",
+      "log": "audit",
+      "log_path": "logs/audit.log",
+      "log_sha256": "2cf95e99e82cb271be676a15473379b94e814360bd6b8641268f79e8ad75b942",
+      "requirement": "wrong vehicle shape",
+      "test": "test_wrong_vehicle_shape_rejected",
+      "test_class": "test_virtual_a_audit.NegativeAuditTests",
+      "test_outcome": "ok"
+    },
+    {
+      "expected": "INVALID_LIMITS",
+      "log": "audit",
+      "log_path": "logs/audit.log",
+      "log_sha256": "2cf95e99e82cb271be676a15473379b94e814360bd6b8641268f79e8ad75b942",
+      "requirement": "invalid limit",
+      "test": "test_invalid_limit_rejected",
+      "test_class": "test_virtual_a_audit.NegativeAuditTests",
+      "test_outcome": "ok"
+    },
+    {
+      "expected": "INVALID_REQUEST",
+      "log": "audit",
+      "log_path": "logs/audit.log",
+      "log_sha256": "2cf95e99e82cb271be676a15473379b94e814360bd6b8641268f79e8ad75b942",
+      "requirement": "NaN goal",
+      "test": "test_nan_goal_rejected_before_any_geometry_claim",
+      "test_class": "test_virtual_a_audit.NegativeAuditTests",
+      "test_outcome": "ok"
+    },
+    {
+      "expected": "STATIC_WHEEL_LIMIT",
+      "log": "audit",
+      "log_path": "logs/audit.log",
+      "log_sha256": "2cf95e99e82cb271be676a15473379b94e814360bd6b8641268f79e8ad75b942",
+      "requirement": "static-wheel whole-segment limit",
+      "test": "test_static_wheel_limit_uses_whole_segment_envelope",
+      "test_class": "test_virtual_a_audit.NegativeAuditTests",
+      "test_outcome": "ok"
+    },
+    {
+      "expected": "CURVATURE_LIMIT inside the segment",
+      "log": "audit",
+      "log_path": "logs/audit.log",
+      "log_sha256": "2cf95e99e82cb271be676a15473379b94e814360bd6b8641268f79e8ad75b942",
+      "requirement": "segment-interior curvature violation with legal nodes",
+      "test": "test_segment_interior_curvature_violation_with_legal_nodes",
+      "test_class": "test_virtual_a_audit.NegativeAuditTests",
+      "test_outcome": "ok"
+    },
+    {
+      "expected": "CURVATURE_LIMIT then AUDIT_BUDGET_EXHAUSTED",
+      "log": "audit",
+      "log_path": "logs/audit.log",
+      "log_sha256": "2cf95e99e82cb271be676a15473379b94e814360bd6b8641268f79e8ad75b942",
+      "requirement": "unconfirmed enclosure not published as feasible",
+      "test": "test_unconfirmed_enclosure_is_not_published_as_feasible",
+      "test_class": "test_virtual_a_audit.NegativeAuditTests",
+      "test_outcome": "ok"
+    },
+    {
+      "expected": "GOAL_POLICY_VIOLATION STRAIGHT_K",
+      "log": "audit",
+      "log_path": "logs/audit.log",
+      "log_sha256": "2cf95e99e82cb271be676a15473379b94e814360bd6b8641268f79e8ad75b942",
+      "requirement": "FREE terminal nonzero curvature, STRAIGHT rejects",
+      "test": "test_terminal_nonzero_curvature_free_passes_straight_rejected",
+      "test_class": "test_virtual_a_audit.PolicySemanticsTests",
+      "test_outcome": "ok"
+    },
+    {
+      "expected": "GOAL_POLICY_VIOLATION STRAIGHT_ETA",
+      "log": "audit",
+      "log_path": "logs/audit.log",
+      "log_sha256": "2cf95e99e82cb271be676a15473379b94e814360bd6b8641268f79e8ad75b942",
+      "requirement": "FREE terminal nonzero eta, STRAIGHT rejects",
+      "test": "test_terminal_nonzero_eta_free_passes_straight_rejected",
+      "test_class": "test_virtual_a_audit.PolicySemanticsTests",
+      "test_outcome": "ok"
+    },
+    {
+      "expected": "pass",
+      "log": "audit",
+      "log_path": "logs/audit.log",
+      "log_sha256": "2cf95e99e82cb271be676a15473379b94e814360bd6b8641268f79e8ad75b942",
+      "requirement": "clamped cubic spline STRAIGHT reference",
+      "test": "test_clamped_cubic_spline_straight_reference_passes",
+      "test_class": "test_virtual_a_audit.ReferenceAuditTests",
+      "test_outcome": "ok"
+    },
+    {
+      "expected": "pass",
+      "log": "audit",
+      "log_path": "logs/audit.log",
+      "log_sha256": "2cf95e99e82cb271be676a15473379b94e814360bd6b8641268f79e8ad75b942",
+      "requirement": "G1 double-lane-change endpoint as straight path",
+      "test": "test_g1_double_lane_change_endpoint_can_be_a_straight_path",
+      "test_class": "test_virtual_a_audit.ReferenceAuditTests",
+      "test_outcome": "ok"
+    },
+    {
+      "expected": "pass for exact; ENDPOINT_MISMATCH for 1e-9",
+      "log": "audit",
+      "log_path": "logs/audit.log",
+      "log_sha256": "2cf95e99e82cb271be676a15473379b94e814360bd6b8641268f79e8ad75b942",
+      "requirement": "exact hold only for identical start and goal",
+      "test": "test_hold_only_for_exactly_identical_start_and_goal",
+      "test_class": "test_virtual_a_audit.ReferenceAuditTests",
+      "test_outcome": "ok"
+    },
+    {
+      "expected": "NUMERICAL_FAILURE/IPOPT_EXCEPTION",
+      "log": "optimizer",
+      "log_path": "logs/optimizer.log",
+      "log_sha256": "fa09aeb84b38bb904a8e0711f997f8f1bdee23f9e606d451f840ba940968e1f2",
+      "requirement": "solver exception",
+      "test": "test_solver_exception_maps_to_numerical_failure",
+      "test_class": "test_virtual_a_optimizer.AcceptanceSolveTests",
+      "test_outcome": "ok"
+    },
+    {
+      "expected": "BUDGET_EXHAUSTED",
+      "log": "optimizer",
+      "log_path": "logs/optimizer.log",
+      "log_sha256": "fa09aeb84b38bb904a8e0711f997f8f1bdee23f9e606d451f840ba940968e1f2",
+      "requirement": "very small total budget",
+      "test": "test_small_budget_returns_budget_exhausted_without_path",
+      "test_class": "test_virtual_a_optimizer.AcceptanceSolveTests",
+      "test_outcome": "ok"
+    },
+    {
+      "expected": "no GEOMETRY_FEASIBLE path",
+      "log": "optimizer",
+      "log_path": "logs/optimizer.log",
+      "log_sha256": "fa09aeb84b38bb904a8e0711f997f8f1bdee23f9e606d451f840ba940968e1f2",
+      "requirement": "fake solver success with wrong endpoint",
+      "test": "test_fake_solver_success_wrong_endpoint_is_not_feasible",
+      "test_class": "test_virtual_a_optimizer.AcceptanceSolveTests",
+      "test_outcome": "ok"
+    },
+    {
+      "expected": "no GEOMETRY_FEASIBLE path",
+      "log": "optimizer",
+      "log_path": "logs/optimizer.log",
+      "log_sha256": "fa09aeb84b38bb904a8e0711f997f8f1bdee23f9e606d451f840ba940968e1f2",
+      "requirement": "fake solver success with curvature violation",
+      "test": "test_fake_solver_success_curvature_violation_is_not_feasible",
+      "test_class": "test_virtual_a_optimizer.AcceptanceSolveTests",
+      "test_outcome": "ok"
+    },
+    {
+      "expected": "zero file opens",
+      "log": "optimizer",
+      "log_path": "logs/optimizer.log",
+      "log_sha256": "fa09aeb84b38bb904a8e0711f997f8f1bdee23f9e606d451f840ba940968e1f2",
+      "requirement": "production solve does not read reference/fixtures",
+      "test": "test_solve_reads_no_reference_or_fixture_file",
+      "test_class": "test_virtual_a_optimizer.InitialGuessTests",
+      "test_outcome": "ok"
+    },
+    {
+      "expected": "6 C2 guesses, no fixture/plan lookup",
+      "log": "optimizer",
+      "log_path": "logs/optimizer.log",
+      "log_sha256": "fa09aeb84b38bb904a8e0711f997f8f1bdee23f9e606d451f840ba940968e1f2",
+      "requirement": "six guesses, fixed order, C2, request-only",
+      "test": "test_six_guesses_fixed_order_reconstructible_and_c2",
+      "test_class": "test_virtual_a_optimizer.InitialGuessTests",
+      "test_outcome": "ok"
+    },
+    {
+      "expected": "NO_MOTION only for exact hold",
+      "log": "optimizer",
+      "log_path": "logs/optimizer.log",
+      "log_sha256": "fa09aeb84b38bb904a8e0711f997f8f1bdee23f9e606d451f840ba940968e1f2",
+      "requirement": "exact hold is NO_MOTION, near/turned is not",
+      "test": "test_exact_hold_is_no_motion_but_near_or_turned_goal_is_not",
+      "test_class": "test_virtual_a_optimizer.AcceptanceSolveTests",
+      "test_outcome": "ok"
+    },
+    {
+      "expected": "both solves feasible, same length/profile",
+      "log": "optimizer",
+      "log_path": "logs/optimizer.log",
+      "log_sha256": "fa09aeb84b38bb904a8e0711f997f8f1bdee23f9e606d451f840ba940968e1f2",
+      "requirement": "rigid transform equivalence",
+      "test": "test_rotation_and_translation_equivalence",
+      "test_class": "test_virtual_a_optimizer.AcceptanceSolveTests",
+      "test_outcome": "ok"
+    },
+    {
+      "expected": "solver=scipy_slsqp",
+      "log": "optimizer",
+      "log_path": "logs/optimizer.log",
+      "log_sha256": "fa09aeb84b38bb904a8e0711f997f8f1bdee23f9e606d451f840ba940968e1f2",
+      "requirement": "explicit SciPy fallback is labelled",
+      "test": "test_scipy_fallback_is_recorded_explicitly",
+      "test_class": "test_virtual_a_optimizer.AcceptanceSolveTests",
+      "test_outcome": "ok"
+    },
+    {
+      "expected": "INVALID_AUDIT_CONFIG for each field",
+      "log": "audit",
+      "log_path": "logs/audit.log",
+      "log_sha256": "2cf95e99e82cb271be676a15473379b94e814360bd6b8641268f79e8ad75b942",
+      "requirement": "every integer audit-config field rejects bool/float/zero/negative",
+      "test": "test_every_integer_field_rejects_bool_float_zero_and_negative",
+      "test_class": "test_virtual_a_audit.AuditConfigFailureClosedTests",
+      "test_outcome": "ok"
+    },
+    {
+      "expected": "INVALID_AUDIT_CONFIG for each field",
+      "log": "audit",
+      "log_path": "logs/audit.log",
+      "log_sha256": "2cf95e99e82cb271be676a15473379b94e814360bd6b8641268f79e8ad75b942",
+      "requirement": "every float audit-config field rejects NaN/inf/negative/types/bool",
+      "test": "test_every_float_field_rejects_nan_infinity_negative_and_types",
+      "test_class": "test_virtual_a_audit.AuditConfigFailureClosedTests",
+      "test_outcome": "ok"
+    },
+    {
+      "expected": "INVALID_AUDIT_CONFIG audit_position_budget_m",
+      "log": "audit",
+      "log_path": "logs/audit.log",
+      "log_sha256": "2cf95e99e82cb271be676a15473379b94e814360bd6b8641268f79e8ad75b942",
+      "requirement": "audit position budget cannot exceed G1 contract",
+      "test": "test_audit_budget_cannot_exceed_g1_contract",
+      "test_class": "test_virtual_a_audit.AuditConfigFailureClosedTests",
+      "test_outcome": "ok"
+    },
+    {
+      "expected": "valid zero domains",
+      "log": "audit",
+      "log_path": "logs/audit.log",
+      "log_sha256": "2cf95e99e82cb271be676a15473379b94e814360bd6b8641268f79e8ad75b942",
+      "requirement": "zero nonnegative tolerances are valid",
+      "test": "test_zero_nonnegative_tolerances_are_a_valid_domain",
+      "test_class": "test_virtual_a_audit.AuditConfigFailureClosedTests",
+      "test_outcome": "ok"
+    },
+    {
+      "expected": "INVALID_AUDIT_CONFIG, no hold",
+      "log": "audit",
+      "log_path": "logs/audit.log",
+      "log_sha256": "2cf95e99e82cb271be676a15473379b94e814360bd6b8641268f79e8ad75b942",
+      "requirement": "invalid audit config rejected before hold branch",
+      "test": "test_invalid_config_is_rejected_before_the_hold_branch",
+      "test_class": "test_virtual_a_audit.AuditConfigFailureClosedTests",
+      "test_outcome": "ok"
+    },
+    {
+      "expected": "NONFINITE_AUDIT_VALUE",
+      "log": "audit",
+      "log_path": "logs/audit.log",
+      "log_sha256": "2cf95e99e82cb271be676a15473379b94e814360bd6b8641268f79e8ad75b942",
+      "requirement": "nonfinite audit intermediate fails closed",
+      "test": "test_nonfinite_intermediate_audit_value_fails_closed",
+      "test_class": "test_virtual_a_audit.AuditConfigFailureClosedTests",
+      "test_outcome": "ok"
+    },
+    {
+      "expected": "INVALID_AUDIT_CONFIG then ENDPOINT_POSITION_ERROR 4 m",
+      "log": "audit",
+      "log_path": "logs/audit.log",
+      "log_sha256": "2cf95e99e82cb271be676a15473379b94e814360bd6b8641268f79e8ad75b942",
+      "requirement": "6 m path to 10 m goal with NaN tolerance is rejected",
+      "test": "test_six_metre_path_to_ten_metre_goal_nan_tolerance_is_rejected",
+      "test_class": "test_virtual_a_audit.RealCounterexampleTests",
+      "test_outcome": "ok"
+    },
+    {
+      "expected": "confirmed Simpson budget within 5e-8 m",
+      "log": "audit",
+      "log_path": "logs/audit.log",
+      "log_sha256": "2cf95e99e82cb271be676a15473379b94e814360bd6b8641268f79e8ad75b942",
+      "requirement": "nonzero fourth derivative multi-segment audit budget vs quad",
+      "test": "test_nonzero_g_multisegment_against_independent_quadrature",
+      "test_class": "test_virtual_a_audit.IndependentIntegrationBudgetTests",
+      "test_outcome": "ok"
+    },
+    {
+      "expected": "refinement_steps>0 and confirmed",
+      "log": "audit",
+      "log_path": "logs/audit.log",
+      "log_sha256": "2cf95e99e82cb271be676a15473379b94e814360bd6b8641268f79e8ad75b942",
+      "requirement": "coarse audit grid refines until budget confirmed",
+      "test": "test_coarse_grid_refines_until_the_budget_is_confirmed",
+      "test_class": "test_virtual_a_audit.IndependentIntegrationBudgetTests",
+      "test_outcome": "ok"
+    },
+    {
+      "expected": "AUDIT_INTEGRATION_TOTAL_LIMIT",
+      "log": "audit",
+      "log_path": "logs/audit.log",
+      "log_sha256": "2cf95e99e82cb271be676a15473379b94e814360bd6b8641268f79e8ad75b942",
+      "requirement": "audit resource limit is BOUND_UNCONFIRMED",
+      "test": "test_resource_limit_is_bound_unconfirmed_never_feasible",
+      "test_class": "test_virtual_a_audit.IndependentIntegrationBudgetTests",
+      "test_outcome": "ok"
+    },
+    {
+      "expected": "audit integration limit",
+      "log": "audit",
+      "log_path": "logs/audit.log",
+      "log_sha256": "2cf95e99e82cb271be676a15473379b94e814360bd6b8641268f79e8ad75b942",
+      "requirement": "unreachable audit budget is BOUND_UNCONFIRMED",
+      "test": "test_unreachable_budget_is_bound_unconfirmed",
+      "test_class": "test_virtual_a_audit.IndependentIntegrationBudgetTests",
+      "test_outcome": "ok"
+    },
+    {
+      "expected": "Maximum_WallTime_Exceeded",
+      "log": "optimizer",
+      "log_path": "logs/optimizer.log",
+      "log_sha256": "fa09aeb84b38bb904a8e0711f997f8f1bdee23f9e606d451f840ba940968e1f2",
+      "requirement": "IPOPT max_wall_time is effective and truthful",
+      "test": "test_ipopt_max_wall_time_is_effective_and_truthful",
+      "test_class": "test_virtual_a_optimizer.SoftDeadlineTests",
+      "test_outcome": "ok"
+    },
+    {
+      "expected": "SLSQP_SOFT_DEADLINE",
+      "log": "optimizer",
+      "log_path": "logs/optimizer.log",
+      "log_sha256": "fa09aeb84b38bb904a8e0711f997f8f1bdee23f9e606d451f840ba940968e1f2",
+      "requirement": "SLSQP iteration callback stops at soft deadline",
+      "test": "test_slsqp_iteration_callback_stops_and_marks_timeout",
+      "test_class": "test_virtual_a_optimizer.SoftDeadlineTests",
+      "test_outcome": "ok"
+    },
+    {
+      "expected": "SOLVER_TIMEOUT, zero audit calls",
+      "log": "optimizer",
+      "log_path": "logs/optimizer.log",
+      "log_sha256": "fa09aeb84b38bb904a8e0711f997f8f1bdee23f9e606d451f840ba940968e1f2",
+      "requirement": "timed-out success flag never reaches the audit",
+      "test": "test_timed_out_success_flag_never_reaches_the_audit",
+      "test_class": "test_virtual_a_optimizer.SoftDeadlineTests",
+      "test_outcome": "ok"
+    },
+    {
+      "expected": "GEOMETRY_FEASIBLE with audited candidate preserved",
+      "log": "optimizer",
+      "log_path": "logs/optimizer.log",
+      "log_sha256": "fa09aeb84b38bb904a8e0711f997f8f1bdee23f9e606d451f840ba940968e1f2",
+      "requirement": "timeout preserves only a previously audited candidate",
+      "test": "test_timeout_preserves_only_a_previously_audited_candidate",
+      "test_class": "test_virtual_a_optimizer.SoftDeadlineTests",
+      "test_outcome": "ok"
+    },
+    {
+      "expected": "INVALID_REQUEST/INVALID_CONFIG then INVALID_AUDIT_CONFIG",
+      "log": "optimizer",
+      "log_path": "logs/optimizer.log",
+      "log_sha256": "fa09aeb84b38bb904a8e0711f997f8f1bdee23f9e606d451f840ba940968e1f2",
+      "requirement": "NaN planner tolerance cannot enter audit conversion",
+      "test": "test_nan_planner_tolerance_cannot_enter_the_audit_conversion",
+      "test_class": "test_virtual_a_optimizer.SoftDeadlineTests",
+      "test_outcome": "ok"
+    }
+  ],
+  "nonclaims": [
+    "GEOMETRY_FEASIBLE only; no timing, dynamics, map, collision certification, ROS execution or hardware claim",
+    "30 s is a soft total budget: IPOPT max_wall_time and the SLSQP iteration callback are checked, but library shutdown latency is recorded, not pre-empted; no hard-real-time guarantee is made",
+    "the quadratic and clamped-spline references are independent oracles, never solver seeds or production inputs",
+    "Simpson remainder arithmetic is certified analytically; libm/trig rounding remains a documented floating-point assumption, not a formal proof",
+    "passing G2 tests and benchmark checks is not Codex acceptance"
+  ],
+  "per_request": {
+    "E1": {
+      "all_segments_confirmed": true,
+      "angle_budget_limit_rad": 1e-09,
+      "angle_budget_rad": 1.600027546373686e-10,
+      "attempt_count": 6,
+      "attempt_solvers": [
+        "ipopt"
+      ],
+      "attempt_statuses": [
+        "SOLVER_SUCCESS_AUDITED"
+      ],
+      "audit_angle_budget_rad": 1.6000219654221068e-10,
+      "audit_budget_confirmed": true,
+      "audit_check_count": 155,
+      "audit_integration_method": "independent_composite_simpson_v1",
+      "audit_passed": true,
+      "audit_position_budget_limit_m": 5e-08,
+      "audit_position_budget_m": 1.7802442289799212e-08,
+      "audit_reason": null,
+      "audit_refinement_steps": 0,
+      "audit_total_subintervals": 304,
+      "c2_max_abs_g": 0.009242257343010448,
+      "c2_max_second_error": 1.78537740147533e-14,
+      "c2_max_slope_error": 1.3877787807814457e-17,
+      "c2_max_value_error": 3.469446951953614e-18,
+      "combined_position_budget_m": 3.560052492100231e-08,
+      "curvature_limit_1_per_m": 1.2345679012345678,
+      "deadline_exhausted": false,
+      "deadline_summary": {
+        "audited_candidate_preserved": false,
+        "final_wall_time_s": 3.4854245289461687,
+        "hard_real_time_guarantee": false,
+        "policy": "checked at initial and attempt boundaries; IPOPT uses a soft max_wall_time and SLSQP a Python iteration callback; the library is not claimed to interrupt immediately",
+        "soft_budget_s": 30.0,
+        "trigger_solver_status": "",
+        "trigger_stage": "",
+        "trigger_wall_time_s": null,
+        "triggered": false
+      },
+      "endpoint_heading_error_rad": 5.551115123125783e-17,
+      "endpoint_heading_limit_rad": 0.003490658503988659,
+      "endpoint_position_error_m": 4.800352564706754e-12,
+      "endpoint_position_limit_m": 0.005,
+      "integration_independent_heading_error_rad": 5.551115123125783e-17,
+      "integration_independent_position_error_m": 4.800352564706754e-12,
+      "iterations": [
+        7,
+        7,
+        7,
+        6,
+        7,
+        7
+      ],
+      "max_abs_C": 0.11294495214429547,
+      "max_static_wheel_angle_rad": 0.02847519833473783,
+      "outer_wall_time_s": 3.4855242630001158,
+      "position_budget_limit_m": 1e-07,
+      "position_budget_m": 1.7798082631203094e-08,
+      "rigidity_error_m": 6.661338147750939e-16,
+      "rigidity_limit_m": 1e-06,
+      "static_wheel_limit_rad": 1.5707963267948966,
+      "status": "GEOMETRY_FEASIBLE",
+      "wall_time_s": 3.4854245289461687,
+      "whole_segment_count": 8,
+      "whole_segment_leaves": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "whole_segment_max_depth_reached": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "E2": {
+      "all_segments_confirmed": true,
+      "angle_budget_limit_rad": 1e-09,
+      "angle_budget_rad": 1.6000177658382964e-10,
+      "attempt_count": 6,
+      "attempt_solvers": [
+        "ipopt"
+      ],
+      "attempt_statuses": [
+        "SOLVER_SUCCESS_AUDITED"
+      ],
+      "audit_angle_budget_rad": 1.6000219654221068e-10,
+      "audit_budget_confirmed": true,
+      "audit_check_count": 155,
+      "audit_integration_method": "independent_composite_simpson_v1",
+      "audit_passed": true,
+      "audit_position_budget_limit_m": 5e-08,
+      "audit_position_budget_m": 1.780244228979921e-08,
+      "audit_reason": null,
+      "audit_refinement_steps": 0,
+      "audit_total_subintervals": 304,
+      "c2_max_abs_g": 0.009242257343010004,
+      "c2_max_second_error": 1.7884131675582893e-14,
+      "c2_max_slope_error": 2.42861286636753e-17,
+      "c2_max_value_error": 6.938893903907228e-18,
+      "combined_position_budget_m": 3.5584826822160045e-08,
+      "curvature_limit_1_per_m": 1.2345679012345678,
+      "deadline_exhausted": false,
+      "deadline_summary": {
+        "audited_candidate_preserved": false,
+        "final_wall_time_s": 3.237426873994991,
+        "hard_real_time_guarantee": false,
+        "policy": "checked at initial and attempt boundaries; IPOPT uses a soft max_wall_time and SLSQP a Python iteration callback; the library is not claimed to interrupt immediately",
+        "soft_budget_s": 30.0,
+        "trigger_solver_status": "",
+        "trigger_stage": "",
+        "trigger_wall_time_s": null,
+        "triggered": false
+      },
+      "endpoint_heading_error_rad": 5.551115123125783e-17,
+      "endpoint_heading_limit_rad": 0.003490658503988659,
+      "endpoint_position_error_m": 4.802038091199509e-12,
+      "endpoint_position_limit_m": 0.005,
+      "integration_independent_heading_error_rad": 5.551115123125783e-17,
+      "integration_independent_position_error_m": 4.8012163931337344e-12,
+      "iterations": [
+        7,
+        7,
+        6,
+        7,
+        7,
+        7
+      ],
+      "max_abs_C": 0.11294495214429624,
+      "max_static_wheel_angle_rad": 0.02847519833473803,
+      "outer_wall_time_s": 3.2375099839409813,
+      "position_budget_limit_m": 1e-07,
+      "position_budget_m": 1.7782384532360833e-08,
+      "rigidity_error_m": 6.661338147750939e-16,
+      "rigidity_limit_m": 1e-06,
+      "static_wheel_limit_rad": 1.5707963267948966,
+      "status": "GEOMETRY_FEASIBLE",
+      "wall_time_s": 3.237426873994991,
+      "whole_segment_count": 8,
+      "whole_segment_leaves": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "whole_segment_max_depth_reached": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "E3": {
+      "all_segments_confirmed": true,
+      "angle_budget_limit_rad": 1e-09,
+      "angle_budget_rad": 1.6000373169403745e-10,
+      "attempt_count": 6,
+      "attempt_solvers": [
+        "ipopt"
+      ],
+      "attempt_statuses": [
+        "SOLVER_SUCCESS_AUDITED"
+      ],
+      "audit_angle_budget_rad": 1.6000261669339234e-10,
+      "audit_budget_confirmed": true,
+      "audit_check_count": 155,
+      "audit_integration_method": "independent_composite_simpson_v1",
+      "audit_passed": true,
+      "audit_position_budget_limit_m": 5e-08,
+      "audit_position_budget_m": 1.7886556266590512e-08,
+      "audit_reason": null,
+      "audit_refinement_steps": 0,
+      "audit_total_subintervals": 304,
+      "c2_max_abs_g": 0.018626287642832112,
+      "c2_max_second_error": 3.8560300785750456e-14,
+      "c2_max_slope_error": 2.0816681711721685e-17,
+      "c2_max_value_error": 6.938893903907228e-18,
+      "combined_position_budget_m": 3.576150749835758e-08,
+      "curvature_limit_1_per_m": 1.2345679012345678,
+      "deadline_exhausted": false,
+      "deadline_summary": {
+        "audited_candidate_preserved": false,
+        "final_wall_time_s": 3.167712096008472,
+        "hard_real_time_guarantee": false,
+        "policy": "checked at initial and attempt boundaries; IPOPT uses a soft max_wall_time and SLSQP a Python iteration callback; the library is not claimed to interrupt immediately",
+        "soft_budget_s": 30.0,
+        "trigger_solver_status": "",
+        "trigger_stage": "",
+        "trigger_wall_time_s": null,
+        "triggered": false
+      },
+      "endpoint_heading_error_rad": 5.551115123125783e-17,
+      "endpoint_heading_limit_rad": 0.003490658503988659,
+      "endpoint_position_error_m": 1.9511137136637053e-11,
+      "endpoint_position_limit_m": 0.005,
+      "integration_independent_heading_error_rad": 5.551115123125783e-17,
+      "integration_independent_position_error_m": 1.9511137136637053e-11,
+      "iterations": [
+        7,
+        6,
+        7,
+        7,
+        7,
+        7
+      ],
+      "max_abs_C": 0.2425112377602047,
+      "max_static_wheel_angle_rad": 0.06258433723874038,
+      "outer_wall_time_s": 3.167804704979062,
+      "position_budget_limit_m": 1e-07,
+      "position_budget_m": 1.7874951231767068e-08,
+      "rigidity_error_m": 8.881784197001252e-16,
+      "rigidity_limit_m": 1e-06,
+      "static_wheel_limit_rad": 1.5707963267948966,
+      "status": "GEOMETRY_FEASIBLE",
+      "wall_time_s": 3.167712096008472,
+      "whole_segment_count": 8,
+      "whole_segment_leaves": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "whole_segment_max_depth_reached": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "E4": {
+      "all_segments_confirmed": true,
+      "angle_budget_limit_rad": 1e-09,
+      "angle_budget_rad": 1.6000177707301304e-10,
+      "attempt_count": 6,
+      "attempt_solvers": [
+        "ipopt"
+      ],
+      "attempt_statuses": [
+        "SOLVER_SUCCESS_AUDITED"
+      ],
+      "audit_angle_budget_rad": 1.6000261669339234e-10,
+      "audit_budget_confirmed": true,
+      "audit_check_count": 155,
+      "audit_integration_method": "independent_composite_simpson_v1",
+      "audit_passed": true,
+      "audit_position_budget_limit_m": 5e-08,
+      "audit_position_budget_m": 1.788655626659066e-08,
+      "audit_reason": null,
+      "audit_refinement_steps": 0,
+      "audit_total_subintervals": 304,
+      "c2_max_abs_g": 0.018626287642888404,
+      "c2_max_second_error": 4.091692262786495e-14,
+      "c2_max_slope_error": 4.163336342344337e-17,
+      "c2_max_value_error": 1.3877787807814457e-17,
+      "combined_position_budget_m": 3.56917347835658e-08,
+      "curvature_limit_1_per_m": 1.2345679012345678,
+      "deadline_exhausted": false,
+      "deadline_summary": {
+        "audited_candidate_preserved": false,
+        "final_wall_time_s": 3.143237082986161,
+        "hard_real_time_guarantee": false,
+        "policy": "checked at initial and attempt boundaries; IPOPT uses a soft max_wall_time and SLSQP a Python iteration callback; the library is not claimed to interrupt immediately",
+        "soft_budget_s": 30.0,
+        "trigger_solver_status": "",
+        "trigger_stage": "",
+        "trigger_wall_time_s": null,
+        "triggered": false
+      },
+      "endpoint_heading_error_rad": 5.551115123125783e-17,
+      "endpoint_heading_limit_rad": 0.003490658503988659,
+      "endpoint_position_error_m": 1.9511892527727798e-11,
+      "endpoint_position_limit_m": 0.005,
+      "integration_independent_heading_error_rad": 5.551115123125783e-17,
+      "integration_independent_position_error_m": 1.9511137136637053e-11,
+      "iterations": [
+        6,
+        7,
+        7,
+        7,
+        7,
+        7
+      ],
+      "max_abs_C": 0.2425112377601255,
+      "max_static_wheel_angle_rad": 0.06258433723871906,
+      "outer_wall_time_s": 3.143319007009268,
+      "position_budget_limit_m": 1e-07,
+      "position_budget_m": 1.7805178516975134e-08,
+      "rigidity_error_m": 8.881784197001252e-16,
+      "rigidity_limit_m": 1e-06,
+      "static_wheel_limit_rad": 1.5707963267948966,
+      "status": "GEOMETRY_FEASIBLE",
+      "wall_time_s": 3.143237082986161,
+      "whole_segment_count": 8,
+      "whole_segment_leaves": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "whole_segment_max_depth_reached": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "E5": {
+      "all_segments_confirmed": true,
+      "angle_budget_limit_rad": 1e-09,
+      "angle_budget_rad": 1.6000567697249237e-10,
+      "attempt_count": 6,
+      "attempt_solvers": [
+        "ipopt"
+      ],
+      "attempt_statuses": [
+        "SOLVER_SUCCESS_AUDITED"
+      ],
+      "audit_angle_budget_rad": 1.600034567454204e-10,
+      "audit_budget_confirmed": true,
+      "audit_check_count": 155,
+      "audit_integration_method": "independent_composite_simpson_v1",
+      "audit_passed": true,
+      "audit_position_budget_limit_m": 5e-08,
+      "audit_position_budget_m": 2.3869470916501254e-08,
+      "audit_reason": null,
+      "audit_refinement_steps": 0,
+      "audit_total_subintervals": 416,
+      "c2_max_abs_g": 0.012150254444239566,
+      "c2_max_second_error": 3.986394547794703e-14,
+      "c2_max_slope_error": 4.163336342344337e-17,
+      "c2_max_value_error": 2.7755575615628914e-17,
+      "combined_position_budget_m": 4.772565267135602e-08,
+      "curvature_limit_1_per_m": 1.2345679012345678,
+      "deadline_exhausted": false,
+      "deadline_summary": {
+        "audited_candidate_preserved": false,
+        "final_wall_time_s": 3.17243049305398,
+        "hard_real_time_guarantee": false,
+        "policy": "checked at initial and attempt boundaries; IPOPT uses a soft max_wall_time and SLSQP a Python iteration callback; the library is not claimed to interrupt immediately",
+        "soft_budget_s": 30.0,
+        "trigger_solver_status": "",
+        "trigger_stage": "",
+        "trigger_wall_time_s": null,
+        "triggered": false
+      },
+      "endpoint_heading_error_rad": 0.0,
+      "endpoint_heading_limit_rad": 0.003490658503988659,
+      "endpoint_position_error_m": 3.1965654568943594e-11,
+      "endpoint_position_limit_m": 0.005,
+      "integration_independent_heading_error_rad": 0.0,
+      "integration_independent_position_error_m": 3.1965428180926906e-11,
+      "iterations": [
+        7,
+        6,
+        7,
+        7,
+        7,
+        7
+      ],
+      "max_abs_C": 0.42850603559971573,
+      "max_static_wheel_angle_rad": 0.11429323612503078,
+      "outer_wall_time_s": 3.172523103072308,
+      "position_budget_limit_m": 1e-07,
+      "position_budget_m": 2.385618175485476e-08,
+      "rigidity_error_m": 1.1102230246251565e-15,
+      "rigidity_limit_m": 1e-06,
+      "static_wheel_limit_rad": 1.5707963267948966,
+      "status": "GEOMETRY_FEASIBLE",
+      "wall_time_s": 3.17243049305398,
+      "whole_segment_count": 8,
+      "whole_segment_leaves": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "whole_segment_max_depth_reached": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "E6": {
+      "all_segments_confirmed": true,
+      "angle_budget_limit_rad": 1e-09,
+      "angle_budget_rad": 1.6000177992624755e-10,
+      "attempt_count": 6,
+      "attempt_solvers": [
+        "ipopt"
+      ],
+      "attempt_statuses": [
+        "SOLVER_SUCCESS_AUDITED"
+      ],
+      "audit_angle_budget_rad": 1.600034567454204e-10,
+      "audit_budget_confirmed": true,
+      "audit_check_count": 155,
+      "audit_integration_method": "independent_composite_simpson_v1",
+      "audit_passed": true,
+      "audit_position_budget_limit_m": 5e-08,
+      "audit_position_budget_m": 2.3869470916501363e-08,
+      "audit_reason": null,
+      "audit_refinement_steps": 0,
+      "audit_total_subintervals": 416,
+      "c2_max_abs_g": 0.012150254444279182,
+      "c2_max_second_error": 4.4347338301609085e-14,
+      "c2_max_slope_error": 4.85722573273506e-17,
+      "c2_max_value_error": 1.3877787807814457e-17,
+      "combined_position_budget_m": 4.758570360887684e-08,
+      "curvature_limit_1_per_m": 1.2345679012345678,
+      "deadline_exhausted": false,
+      "deadline_summary": {
+        "audited_candidate_preserved": false,
+        "final_wall_time_s": 3.1729814300779253,
+        "hard_real_time_guarantee": false,
+        "policy": "checked at initial and attempt boundaries; IPOPT uses a soft max_wall_time and SLSQP a Python iteration callback; the library is not claimed to interrupt immediately",
+        "soft_budget_s": 30.0,
+        "trigger_solver_status": "",
+        "trigger_stage": "",
+        "trigger_wall_time_s": null,
+        "triggered": false
+      },
+      "endpoint_heading_error_rad": 0.0,
+      "endpoint_heading_limit_rad": 0.003490658503988659,
+      "endpoint_position_error_m": 3.1968075069569994e-11,
+      "endpoint_position_limit_m": 0.005,
+      "integration_independent_heading_error_rad": 0.0,
+      "integration_independent_position_error_m": 3.1968075069569994e-11,
+      "iterations": [
+        6,
+        7,
+        7,
+        7,
+        7,
+        7
+      ],
+      "max_abs_C": 0.42850603559952033,
+      "max_static_wheel_angle_rad": 0.11429323612497477,
+      "outer_wall_time_s": 3.1730740389321,
+      "position_budget_limit_m": 1e-07,
+      "position_budget_m": 2.3716232692375468e-08,
+      "rigidity_error_m": 6.661338147750939e-16,
+      "rigidity_limit_m": 1e-06,
+      "static_wheel_limit_rad": 1.5707963267948966,
+      "status": "GEOMETRY_FEASIBLE",
+      "wall_time_s": 3.1729814300779253,
+      "whole_segment_count": 8,
+      "whole_segment_leaves": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "whole_segment_max_depth_reached": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "STRAIGHT_LINE": {
+      "all_segments_confirmed": true,
+      "angle_budget_limit_rad": 1e-09,
+      "angle_budget_rad": 1.6000177635683942e-10,
+      "attempt_count": 6,
+      "attempt_solvers": [
+        "ipopt"
+      ],
+      "attempt_statuses": [
+        "SOLVER_SUCCESS_AUDITED"
+      ],
+      "audit_angle_budget_rad": 1.6000177635683942e-10,
+      "audit_budget_confirmed": true,
+      "audit_check_count": 155,
+      "audit_integration_method": "independent_composite_simpson_v1",
+      "audit_passed": true,
+      "audit_position_budget_limit_m": 5e-08,
+      "audit_position_budget_m": 1.7760010658146656e-08,
+      "audit_reason": null,
+      "audit_refinement_steps": 0,
+      "audit_total_subintervals": 304,
+      "c2_max_abs_g": 2.1784677958571423e-12,
+      "c2_max_second_error": 1.0303661700787584e-17,
+      "c2_max_slope_error": 2.0194839173657902e-28,
+      "c2_max_value_error": 5.048709793414476e-29,
+      "combined_position_budget_m": 3.552002131629152e-08,
+      "curvature_limit_1_per_m": 1.2345679012345678,
+      "deadline_exhausted": false,
+      "deadline_summary": {
+        "audited_candidate_preserved": false,
+        "final_wall_time_s": 3.528343321988359,
+        "hard_real_time_guarantee": false,
+        "policy": "checked at initial and attempt boundaries; IPOPT uses a soft max_wall_time and SLSQP a Python iteration callback; the library is not claimed to interrupt immediately",
+        "soft_budget_s": 30.0,
+        "trigger_solver_status": "",
+        "trigger_stage": "",
+        "trigger_wall_time_s": null,
+        "triggered": false
+      },
+      "endpoint_heading_error_rad": 3.232115216024302e-20,
+      "endpoint_heading_limit_rad": 0.003490658503988659,
+      "endpoint_position_error_m": 8.881784200401347e-16,
+      "endpoint_position_limit_m": 0.005,
+      "integration_independent_heading_error_rad": 3.232115216024302e-20,
+      "integration_independent_position_error_m": 1.776356839570255e-15,
+      "iterations": [
+        18,
+        18,
+        9,
+        9,
+        9,
+        9
+      ],
+      "max_abs_C": 1.8163406132087109e-12,
+      "max_static_wheel_angle_rad": 4.4863613146269996e-13,
+      "outer_wall_time_s": 3.528428807039745,
+      "position_budget_limit_m": 1e-07,
+      "position_budget_m": 1.7760010658144856e-08,
+      "rigidity_error_m": 4.440892098500626e-16,
+      "rigidity_limit_m": 1e-06,
+      "static_wheel_limit_rad": 1.5707963267948966,
+      "status": "GEOMETRY_FEASIBLE",
+      "wall_time_s": 3.528343321988359,
+      "whole_segment_count": 8,
+      "whole_segment_leaves": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "whole_segment_max_depth_reached": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    "STRAIGHT_POLICY": {
+      "all_segments_confirmed": true,
+      "angle_budget_limit_rad": 1e-09,
+      "angle_budget_rad": 1.6000393113859488e-10,
+      "attempt_count": 6,
+      "attempt_solvers": [
+        "ipopt"
+      ],
+      "attempt_statuses": [
+        "SOLVER_SUCCESS_AUDITED"
+      ],
+      "audit_angle_budget_rad": 1.6000347273261916e-10,
+      "audit_budget_confirmed": true,
+      "audit_check_count": 155,
+      "audit_integration_method": "independent_composite_simpson_v1",
+      "audit_passed": true,
+      "audit_position_budget_limit_m": 5e-08,
+      "audit_position_budget_m": 2.290588271381117e-08,
+      "audit_reason": null,
+      "audit_refinement_steps": 0,
+      "audit_total_subintervals": 304,
+      "c2_max_abs_g": 0.7666826446435963,
+      "c2_max_second_error": 1.5830418752322188e-15,
+      "c2_max_slope_error": 1.942890293094024e-16,
+      "c2_max_value_error": 8.326672684688674e-17,
+      "combined_position_budget_m": 4.282015969838725e-08,
+      "curvature_limit_1_per_m": 1.2345679012345678,
+      "deadline_exhausted": false,
+      "deadline_summary": {
+        "audited_candidate_preserved": false,
+        "final_wall_time_s": 3.2452561269747093,
+        "hard_real_time_guarantee": false,
+        "policy": "checked at initial and attempt boundaries; IPOPT uses a soft max_wall_time and SLSQP a Python iteration callback; the library is not claimed to interrupt immediately",
+        "soft_budget_s": 30.0,
+        "trigger_solver_status": "",
+        "trigger_stage": "",
+        "trigger_wall_time_s": null,
+        "triggered": false
+      },
+      "endpoint_heading_error_rad": 5.551115123125783e-17,
+      "endpoint_heading_limit_rad": 0.003490658503988659,
+      "endpoint_position_error_m": 8.316120027176057e-10,
+      "endpoint_position_limit_m": 0.005,
+      "integration_independent_heading_error_rad": 5.551115123125783e-17,
+      "integration_independent_position_error_m": 8.316118916953035e-10,
+      "iterations": [
+        6,
+        8,
+        7,
+        10,
+        8,
+        9
+      ],
+      "max_abs_C": 0.5131177222470878,
+      "max_static_wheel_angle_rad": 0.13889506324643935,
+      "outer_wall_time_s": 3.245328553020954,
+      "position_budget_limit_m": 1e-07,
+      "position_budget_m": 1.9914276984576074e-08,
+      "rigidity_error_m": 6.661338147750939e-16,
+      "rigidity_limit_m": 1e-06,
+      "static_wheel_limit_rad": 1.5707963267948966,
+      "status": "GEOMETRY_FEASIBLE",
+      "wall_time_s": 3.2452561269747093,
+      "whole_segment_count": 8,
+      "whole_segment_leaves": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "whole_segment_max_depth_reached": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "required_request_count": 8,
+  "required_requests": [
+    "E1",
+    "E2",
+    "E3",
+    "E4",
+    "E5",
+    "E6",
+    "STRAIGHT_LINE",
+    "STRAIGHT_POLICY"
+  ],
+  "run_id": "20261115T165745Z",
+  "schema": "virtual_rigid_a.g2.acceptance_summary.v2",
+  "segment_interior_fixture": {
+    "benchmark_first_failure": {
+      "constraint": "CURVATURE_LIMIT",
+      "depth": 20,
+      "interval": 0,
+      "limit": 1.2345679012345678,
+      "s": 0.006856250762939453,
+      "value": -1.2345687277601716,
+      "vehicle_id": 1
+    },
+    "benchmark_reason": "CURVATURE_LIMIT",
+    "hermite_in_q_where_q=s/h": {
+      "c0": 0.0,
+      "c1": 0.0,
+      "c2": -1.0,
+      "c3": 1.0,
+      "eta_q": "(-2q+3q^2)/h",
+      "h_m": 0.1,
+      "k_q": "-q^2+q^3"
+    },
+    "knots_s_k_eta": [
+      [
+        0.0,
+        0.0,
+        0.0
+      ],
+      [
+        0.1,
+        0.0,
+        10.0
+      ]
+    ]
+  },
+  "stage": "G2",
+  "status": "PASS_PENDING_CODEX_RECHECK",
+  "tests": {
+    "audit": {
+      "count": 31,
+      "status": "OK",
+      "wall_time_s": 0.293
+    },
+    "g1_geometry": {
+      "count": 20,
+      "status": "OK",
+      "wall_time_s": 1.07
+    },
+    "g1_profile": {
+      "count": 22,
+      "status": "OK",
+      "wall_time_s": 1.273
+    },
+    "optimizer": {
+      "count": 17,
+      "status": "OK",
+      "wall_time_s": 48.186
+    }
+  },
+  "wheel_model": {
+    "audit_uses_interval_endpoints": true,
+    "definition": "ideal static wheel angle: xw=+/-wheelbase/2, yw=+/-track/2, m=1-yw*C, n=xw*C, delta=atan2(n,m); max |delta| over four wheels",
+    "gross_ackermann_formula_used": false,
+    "source": "fwis_v3_optimizer/retiming.py wheel_configuration"
+  }
+}

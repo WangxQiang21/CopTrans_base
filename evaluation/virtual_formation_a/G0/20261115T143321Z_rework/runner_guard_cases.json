@@ -1,0 +1,56 @@
+{
+  "cases": [
+    {
+      "actual": "REJECT",
+      "case": "historical_fr06",
+      "detail": "output must be below /home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a",
+      "expected": "REJECT",
+      "pass": true,
+      "subprocess_starts": 0,
+      "target": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/formation_refactor_v02/FR06",
+      "writes": 0
+    },
+    {
+      "actual": "REJECT",
+      "case": "external_tmp",
+      "detail": "output must be below /home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a",
+      "expected": "REJECT",
+      "pass": true,
+      "subprocess_starts": 0,
+      "target": "/tmp/virtual_a_rework_guard_probe",
+      "writes": 0
+    },
+    {
+      "actual": "REJECT",
+      "case": "evidence_root",
+      "detail": "output must name a unique run directory",
+      "expected": "REJECT",
+      "pass": true,
+      "subprocess_starts": 0,
+      "target": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a",
+      "writes": 0
+    },
+    {
+      "actual": "REJECT",
+      "case": "existing_case_artifact",
+      "detail": "REGRESSION_OUTPUT_EXISTS: ['/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G0/20261115T143321Z_rework/guard_probe/existing_case_output/regression_artifacts/geometry_continuous']",
+      "expected": "REJECT",
+      "pass": true,
+      "subprocess_starts": 0,
+      "target": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G0/20261115T143321Z_rework/guard_probe/existing_case_output",
+      "writes": 0
+    },
+    {
+      "actual": "ACCEPT",
+      "case": "clean_run_with_main_metadata",
+      "expected": "ACCEPT",
+      "mock_child_starts": 2,
+      "note": "one mocked child per case; main's metadata files are not case paths",
+      "pass": true,
+      "rows": 2,
+      "target": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G0/20261115T143321Z_rework/guard_probe/clean_run_with_metadata"
+    }
+  ],
+  "method": "mocked subprocess.run and _write_text; zero real child starts",
+  "schema": "virtual_rigid_a.g0.rework.runner_guard.v1"
+}

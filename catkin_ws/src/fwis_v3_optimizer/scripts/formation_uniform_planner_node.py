@@ -24,7 +24,7 @@ import time as _time
 
 import numpy as np
 import rospy
-from geometry_msgs.msg import Point, Pose2D
+from geometry_msgs.msg import Point, Pose2D, PoseWithCovarianceStamped
 from nav_msgs.msg import OccupancyGrid
 from std_msgs.msg import String
 
@@ -285,15 +285,33 @@ def timed_message(fields):
         message.vehicles.append(spec)
     for x, y, theta in fields["formation_poses"]:
         message.formation_poses.append(Pose2D(x=x, y=y, theta=theta))
-    for value in fields["times_from_start"]:
-        message.times_from_start.append(rospy.Duration.from_sec(float(value)))
+    times_ns = fields.get("times_ns")
+    if times_ns is not None:
+        if len(times_ns) != len(fields["times_from_start"]):
+            raise ValueError("times_ns differs from the common time axis")
+        for value in times_ns:
+            secs, nsecs = divmod(int(value), 1000000000)
+            message.times_from_start.append(rospy.Duration(secs, nsecs))
+    else:
+        for value in fields["times_from_start"]:
+            message.times_from_start.append(
+                rospy.Duration.from_sec(float(value)))
     for values in fields["trajectories"]:
         trajectory = FormationVehicleTrajectory()
         trajectory.vehicle_id = int(values["vehicle_id"])
-        for (time, x, y, theta, speed, yaw_rate, mode,
-             control) in values["points"]:
+        point_times_ns = values.get("point_times_ns")
+        if point_times_ns is not None and \
+                len(point_times_ns) != len(values["points"]):
+            raise ValueError("point_times_ns differs from the point count")
+        for index, (time, x, y, theta, speed, yaw_rate, mode,
+                    control) in enumerate(values["points"]):
             point = FormationTimedPoint()
-            point.time_from_start = rospy.Duration.from_sec(float(time))
+            if point_times_ns is not None:
+                secs, nsecs = divmod(int(point_times_ns[index]),
+                                     1000000000)
+                point.time_from_start = rospy.Duration(secs, nsecs)
+            else:
+                point.time_from_start = rospy.Duration.from_sec(float(time))
             point.center_pose = Pose2D(x=float(x), y=float(y),
                                        theta=float(theta))
             point.center_speed_mps = float(speed)
@@ -315,10 +333,21 @@ def _load_limits(parameter):
 class UniformPlannerNode(object):
     """Admission state machine, worker thread and the atomic envelope."""
 
-    def __init__(self, plan=plan_uniform):
+    def __init__(self, plan=plan_uniform, *, backend_hooks=None):
         self._lock = threading.RLock()
         self._plan = plan
-        self.backend = PLAYBACK_PLAN_BACKEND
+        self._backend_hooks = backend_hooks
+        if backend_hooks is None:
+            self.backend = PLAYBACK_PLAN_BACKEND
+            self.model_version = MODEL_VERSION
+            self.semantic_version = PLAYBACK_PLAN_SCHEMA
+            self.certification = CERTIFICATION
+        else:
+            self.backend = str(backend_hooks.backend)
+            self.model_version = str(backend_hooks.model_version)
+            self.semantic_version = str(backend_hooks.semantic_version)
+            self.certification = str(
+                getattr(backend_hooks, "certification", ""))
         self.frame_id = rospy.get_param("~frame_id", "map")
         if self.frame_id != "map":
             raise ValueError("~frame_id must be 'map'")
@@ -365,6 +394,23 @@ class UniformPlannerNode(object):
             "~planning_timeout_s", 0.0))
         if self.planning_timeout_s <= 0.0:
             self.planning_timeout_s = self.search_config.max_seconds + 15.0
+        self.virtual_a_planning_budget_s = None
+        if self._backend_hooks is not None:
+            # The G4 solve has a 60 s soft internal budget.  The watchdog is an
+            # explicit wall-clock tolerance outside that budget; it is not a
+            # second, shorter budget that would reject a still-valid solve.
+            self.virtual_a_planning_budget_s = float(rospy.get_param(
+                "~virtual_a_planning_budget_s", 60.0))
+            self.planning_timeout_s = float(rospy.get_param(
+                "~virtual_a_planning_timeout_s",
+                self.virtual_a_planning_budget_s + 15.0))
+            if (not math.isfinite(self.virtual_a_planning_budget_s) or
+                    self.virtual_a_planning_budget_s <= 0.0 or
+                    not math.isfinite(self.planning_timeout_s) or
+                    self.planning_timeout_s <= 0.0):
+                raise ValueError(
+                    "virtual_rigid_a planning budgets must be positive and "
+                    "finite")
         self.job_state_heartbeat_s = float(rospy.get_param(
             "~job_state_heartbeat_s", 1.0))
         self.publication_dt = float(rospy.get_param("~publication_dt", 0.02))
@@ -405,6 +451,20 @@ class UniformPlannerNode(object):
         self._last_quality = None
         self._last_result = None
         self._last_heartbeat = 0.0
+        # G5 virtual_rigid_a experiment state.  ``_initial_context`` is the
+        # planner-owned reset or verified-terminal record used by the next
+        # request; it is never inferred from appearance.
+        self._initial_context = None
+        self._reset_serial = 0
+        self._initial_reset_ready = False
+        self._worker_active = False
+        self._virtual_snapshot = None
+        self._virtual_request = None
+        self._virtual_map_request = None
+        self._virtual_context = None
+        self._virtual_context_sha256 = None
+        self._virtual_grid_sha256 = None
+        self._virtual_admission = None
 
         self.status_pub = rospy.Publisher(
             STATUS_TOPIC, String, queue_size=1, latch=True)
@@ -420,6 +480,12 @@ class UniformPlannerNode(object):
                          self.on_request, queue_size=1)
         rospy.Subscriber(PLAYBACK_STATUS_TOPIC, String,
                          self.on_playback_status, queue_size=10)
+        if self._backend_hooks is not None:
+            # Only the new backend owns an explicit experiment reset.  The old
+            # uniform path keeps its historical automatic fallback and never
+            # claims to have observed a manual reset.
+            rospy.Subscriber("/initialpose", PoseWithCovarianceStamped,
+                             self.on_initial_pose, queue_size=1)
         self.timer = rospy.Timer(rospy.Duration(self.watchdog_s),
                                  self.on_timer)
         self._publish_job_state("ready")
@@ -470,9 +536,10 @@ class UniformPlannerNode(object):
             "detail": detail,
             "requests_seen": int(self._requests_seen),
             "busy_rejections": int(self._busy_rejections),
-            "model_version": MODEL_VERSION,
+            "model_version": getattr(self, "model_version", MODEL_VERSION),
             "model_sha256": self._active_model_sha256,
-            "semantic_version": PLAYBACK_PLAN_SCHEMA,
+            "semantic_version": getattr(
+                self, "semantic_version", PLAYBACK_PLAN_SCHEMA),
             "request_sha256": self._active_request_sha256,
         }
         document.update(self._map_payload())
@@ -497,9 +564,10 @@ class UniformPlannerNode(object):
             "executable": bool(executable),
             "trajectory_published": bool(published),
             "playback_confirmed": bool(self._playback_seen),
-            "model_version": MODEL_VERSION,
+            "model_version": getattr(self, "model_version", MODEL_VERSION),
             "model_sha256": self._active_model_sha256,
-            "semantic_version": PLAYBACK_PLAN_SCHEMA,
+            "semantic_version": getattr(
+                self, "semantic_version", PLAYBACK_PLAN_SCHEMA),
             "request_sha256": self._active_request_sha256,
             "publication": self._publication_summary(),
         }
@@ -541,6 +609,45 @@ class UniformPlannerNode(object):
             "detail": detail,
         }
         document.update(self._map_payload())
+        if getattr(self, "_backend_hooks", None) is not None:
+            context = getattr(self, "_initial_context", None)
+            settings = getattr(self._backend_hooks, "settings", None)
+            document.update({
+                "initial_reset_ready": bool(getattr(
+                    self, "_initial_reset_ready", False)),
+                "initial_context_id": (
+                    None if context is None else context.context_id),
+                "initial_context_source": (
+                    None if context is None else context.source),
+                "initial_compatible": (
+                    None if context is None else bool(context.compatible)),
+                "worker_active": bool(getattr(
+                    self, "_worker_active", False)),
+                "planning_window_s": getattr(
+                    self, "planning_timeout_s", None),
+                "virtual_a_goal_policy": (
+                    None if settings is None else settings.goal_policy),
+            })
+            request = getattr(self, "_virtual_request", None)
+            map_request = getattr(self, "_virtual_map_request", None)
+            context_record = getattr(self, "_initial_context", None)
+            if request is not None:
+                document.update({
+                    "request_sha256": getattr(
+                        map_request, "request_sha256", None),
+                    "planning_context_sha256": getattr(
+                        self, "_virtual_context_sha256", None),
+                    "grid_sha256": getattr(
+                        self, "_virtual_grid_sha256", None),
+                    "planning_context": (
+                        None if getattr(self, "_virtual_context", None)
+                        is None else dict(self._virtual_context)),
+                    "admission": (
+                        None if getattr(self, "_virtual_admission", None)
+                        is None else dict(self._virtual_admission)),
+                })
+            if context_record is not None:
+                document["initial_context"] = context_record.as_dict()
         return document
 
     def _publish_job_state(self, reason="", detail=""):
@@ -625,6 +732,107 @@ class UniformPlannerNode(object):
                 grid.width, grid.height, grid.res, grid.ox, grid.oy,
                 signature[:16])
 
+    # ---- virtual experiment reset -------------------------------------
+
+    def _next_context_id(self, kind):
+        self._reset_serial = int(getattr(self, "_reset_serial", 0)) + 1
+        return "virtual-a-{}-{}-{}".format(
+            kind, self._state_plan, self._reset_serial)
+
+    def on_initial_pose(self, message):
+        """Record an explicit 2D Pose Estimate for the new A experiment.
+
+        This is an observation of the user's command, not a measurement of the
+        physical wheel state.  It is accepted only while the node is not busy;
+        a rejected pose never replaces the current confirmed context.
+        """
+        if getattr(self, "_backend_hooks", None) is None:
+            return
+        from fwis_v3_optimizer.formation import FormationPose
+        from fwis_v3_optimizer.formation_continuous_a.ros_adapter import (
+            VirtualAInitialContext)
+        with self._lock:
+            if (self._state in BUSY_STATES or
+                    bool(getattr(self, "_worker_active", False))):
+                detail = ("a job is already planning or playing; the 2D Pose "
+                          "Estimate was not consumed and the active plan is "
+                          "unchanged")
+                self._busy_rejections += 1
+                self._publish_status(self._base_status(
+                    "RESET_REJECTED", "REJECTED", "BUSY", detail,
+                    plan_id=self._state_plan, feasible=False,
+                    executable=False, published=False,
+                    extra={"admitted": False, "busy_rejected": True,
+                           "reset_consumed": False}))
+                rospy.logwarn("[uniform planner] %s", detail)
+                return
+            frame = str(getattr(message.header, "frame_id", "") or "")
+            if frame not in ("", self.frame_id):
+                detail = "initial pose frame {!r} is not {!r}".format(
+                    frame, self.frame_id)
+                self._publish_status(self._base_status(
+                    "RESET_REJECTED", "REJECTED", "RESET_FRAME_REJECTED",
+                    detail, plan_id=self._state_plan,
+                    feasible=False, executable=False, published=False,
+                    extra={"admitted": False, "reset_consumed": False}))
+                rospy.logwarn("[uniform planner] %s", detail)
+                return
+            pose = message.pose.pose
+            try:
+                x = _finite(pose.position.x, "initialpose x")
+                y = _finite(pose.position.y, "initialpose y")
+                qx = _finite(pose.orientation.x, "initialpose qx")
+                qy = _finite(pose.orientation.y, "initialpose qy")
+                qz = _finite(pose.orientation.z, "initialpose qz")
+                qw = _finite(pose.orientation.w, "initialpose qw")
+                norm = math.sqrt(qx * qx + qy * qy + qz * qz + qw * qw)
+                if norm < 1e-9:
+                    raise ValueError("initialpose quaternion is degenerate")
+                qx, qy, qz, qw = (qx / norm, qy / norm,
+                                  qz / norm, qw / norm)
+                sinr = 2.0 * (qw * qx + qy * qz)
+                cosr = 1.0 - 2.0 * (qx * qx + qy * qy)
+                roll = math.atan2(sinr, cosr)
+                sinp = 2.0 * (qw * qy - qz * qx)
+                pitch = math.asin(max(-1.0, min(1.0, sinp)))
+                if abs(roll) > 1e-6 or abs(pitch) > 1e-6:
+                    raise ValueError(
+                        "initialpose is not planar (roll={:.3g}, "
+                        "pitch={:.3g})".format(roll, pitch))
+                yaw = math.atan2(
+                    2.0 * (qw * qz + qx * qy),
+                    1.0 - 2.0 * (qy * qy + qz * qz))
+            except (TypeError, ValueError, AttributeError) as exc:
+                detail = "invalid 2D Pose Estimate: {}".format(exc)
+                self._publish_status(self._base_status(
+                    "RESET_REJECTED", "REJECTED", "RESET_POSE_REJECTED",
+                    detail, plan_id=self._state_plan,
+                    feasible=False, executable=False, published=False,
+                    extra={"admitted": False, "reset_consumed": False}))
+                rospy.logwarn("[uniform planner] %s", detail)
+                return
+            context_id = self._next_context_id("reset")
+            context = VirtualAInitialContext(
+                source="rviz_reset", context_id=context_id,
+                qf=FormationPose(x, y, yaw))
+            self._initial_context = context
+            self._initial_reset_ready = True
+            detail = ("explicit virtual experiment reset recorded at "
+                      "F=({:.6g}, {:.6g}, {:.6g}); this is a declared "
+                      "A-straight stationary initial state, not a physical "
+                      "wheel measurement".format(x, y, yaw))
+            self._publish_status(self._base_status(
+                "RESET_CONFIRMED", "IDLE", "OK", detail,
+                plan_id=self._state_plan, feasible=False,
+                executable=False, published=False,
+                extra={"admitted": False, "reset_consumed": True,
+                       "initial_reset_ready": True,
+                       "initial_context_id": context_id,
+                       "initial_context_source": "rviz_reset",
+                       "initial_pose": {"x": x, "y": y, "yaw": yaw}}))
+            self._publish_job_state("RESET_CONFIRMED", detail)
+            rospy.loginfo("[uniform planner] %s", detail)
+
     # ---- request admission --------------------------------------------
 
     def on_request(self, message):
@@ -633,7 +841,8 @@ class UniformPlannerNode(object):
             request_plan_id = getattr(message, "plan_id", None)
             if not isinstance(request_plan_id, int):
                 request_plan_id = None
-            if self._state in BUSY_STATES:
+            if (self._state in BUSY_STATES or
+                    bool(getattr(self, "_worker_active", False))):
                 self._busy_rejections += 1
                 rospy.logwarn(
                     "[uniform planner] busy: rejecting plan %s while job %s "
@@ -696,6 +905,9 @@ class UniformPlannerNode(object):
                     plan_id=plan_id, formation_id=snapshot.formation_id,
                     extra={"admitted": False, "valid": True,
                            "last_accepted_plan_id": self._last_accepted_plan}))
+                return
+            if getattr(self, "_backend_hooks", None) is not None:
+                self._admit_virtual(snapshot)
                 return
             free_flags = dict(snapshot.goal_heading_free)
             if any(free_flags.values()) and not all(free_flags.values()):
@@ -828,6 +1040,347 @@ class UniformPlannerNode(object):
             self._finish_success(generation, plan_id, snapshot, result,
                                  started)
 
+    # ---- virtual_rigid_a admission and worker -------------------------
+
+    @staticmethod
+    def _virtual_status_word(status):
+        if status == "SUCCESS":
+            return "FEASIBLE"
+        if status == "NO_MOTION":
+            return "NO_MOTION"
+        return "REJECTED"
+
+    def _admit_virtual(self, snapshot):
+        """Adapt one raw request through the virtual hook surface.
+
+        A structured rejection keeps the actual confirmed terminal or reset
+        record, never consumes a start override (the bridge owns that) and
+        does not start a worker.  No prior executable envelope is treated as
+        the result of this request.
+        """
+        from fwis_v3_optimizer.formation_continuous_a.contracts import (
+            VirtualAContractError)
+        from fwis_v3_optimizer.formation_continuous_a.ros_adapter import (
+            request_from_snapshot)
+        plan_id = snapshot.plan_id
+        context_sha = None
+        try:
+            map_request = self._backend_hooks.request_from_snapshot(
+                snapshot, self._grid,
+                getattr(self._backend_hooks, "settings", None),
+                getattr(self, "_initial_context", None))
+            request = map_request.request
+            context = map_request.context()
+            from fwis_v3_optimizer.formation_continuous_a.contracts import (
+                planning_context_sha256, request_fingerprint)
+            context = dict(context)
+            context_sha = planning_context_sha256(context)
+            grid_sha = map_request.grid_sha256
+            request_sha = map_request.request_sha256
+            if request_sha != request_fingerprint(request):
+                raise VirtualAContractError(
+                    "REQUEST_DIGEST_MISMATCH",
+                    "map request digest differs from the physical request")
+            admission = {
+                "plan_id": request.plan_id,
+                "formation_id": request.formation_id,
+                "request_sha256": request_sha,
+                "planning_context_sha256": context_sha,
+                "grid_sha256": grid_sha,
+                "initial_source": request.initial.source,
+                "initial_context_id": request.initial.context_id,
+                "goal_policy": request.goal_policy.value,
+            }
+        except VirtualAContractError as exc:
+            self._state = FAILED
+            self._state_plan = plan_id
+            terminal = exc.location.get("terminal")
+            extra = {
+                "admitted": False, "valid": True,
+                "planning_started": False, "retry_allowed": True,
+                "rejection": exc.as_dict(),
+            }
+            if terminal is not None:
+                extra["terminal"] = terminal
+            self._publish_status(self._base_status(
+                "REQUEST_REJECTED", "REJECTED", exc.reason, exc.detail,
+                plan_id=plan_id, formation_id=snapshot.formation_id,
+                feasible=False, executable=False, published=False,
+                extra=extra))
+            self._publish_quality(self._base_quality(
+                "request", "REJECTED", exc.reason, exc.detail,
+                plan_id=plan_id, formation_id=snapshot.formation_id,
+                extra={"admitted": False, "retry_allowed": True}))
+            self._publish_job_state(exc.reason, exc.detail)
+            rospy.logerr(
+                "[uniform planner] plan %s virtual admission rejected: "
+                "%s: %s", plan_id, exc.reason, exc.detail)
+            return
+        if request.plan_id != plan_id:
+            raise RuntimeError("hook changed the admitted plan identity")
+        self._generation += 1
+        generation = self._generation
+        self._state = PLANNING
+        self._state_plan = plan_id
+        self._last_accepted_plan = plan_id
+        self._request_map_signature = self._map_signature
+        self._active_model_sha256 = None
+        self._active_request_sha256 = None
+        self._active_formation_id = snapshot.formation_id
+        self._active_status_word = None
+        self._playback_seen = False
+        self._published_wall = None
+        self._published_duration = None
+        self._published_stamp = None
+        self._playback_started_wall = None
+        self._last_result = None
+        self._virtual_snapshot = snapshot
+        self._virtual_request = request
+        self._virtual_map_request = map_request
+        self._virtual_context = context
+        self._virtual_context_sha256 = context_sha
+        self._virtual_grid_sha256 = grid_sha
+        self._virtual_admission = admission
+        self._worker_active = True
+        # A just-admitted request has no executable result yet.  Clear the
+        # latched display without pretending plan_id=0 belongs to this job.
+        self._publish_no_envelope(0, "", "ADMITTED_PLANNING")
+        rospy.loginfo(
+            "[uniform planner] plan %s admitted for virtual_rigid_a: "
+            "start=(%.3f, %.3f, %.3f) goal=(%.3f, %.3f, %.3f) "
+            "initial=%s/%s policy=%s", plan_id, request.start_qf.x,
+            request.start_qf.y, request.start_qf.psi, request.goal_qf.x,
+            request.goal_qf.y, request.goal_qf.psi,
+            request.initial.source, request.initial.context_id,
+            request.goal_policy.value)
+        self._publish_job_state("planning")
+        self._publish_status(self._base_status(
+            "REQUEST_VALIDATED", "PLANNING", "OK",
+            "request validated; the autonomous G4 A-only solve is running",
+            plan_id=plan_id, formation_id=snapshot.formation_id,
+            extra={"admitted": True, "valid": True,
+                   "planning_started": True, "wall_time_s": None,
+                   "initial_source": request.initial.source,
+                   "initial_context_id": request.initial.context_id,
+                   "goal_policy": request.goal_policy.value,
+                   "planning_window_s": self.planning_timeout_s}))
+        self._publish_quality(self._base_quality(
+            "request", "PLANNING", "OK",
+            "request validated; no virtual envelope exists before the three "
+            "G4 audits", plan_id=plan_id,
+            formation_id=snapshot.formation_id,
+            extra={"admitted": True, "valid": True}))
+        self._plan_started_wall = _time.monotonic()
+        thread = threading.Thread(
+            target=self._virtual_plan_worker,
+            args=(generation, plan_id, snapshot, map_request, admission),
+            name="virtual-a-plan-{}".format(plan_id), daemon=True)
+        self._plan_thread = thread
+        thread.start()
+
+    def _virtual_plan_worker(self, generation, plan_id, snapshot,
+                             map_request, admission):
+        started = _time.monotonic()
+        try:
+            result = self._backend_hooks.solve(map_request)
+        except Exception as exc:
+            with self._lock:
+                self._worker_active = False
+            self._finish_exception(generation, plan_id, snapshot, started, exc)
+            return
+        with self._lock:
+            self._worker_active = False
+            if generation != self._generation or self._state != PLANNING:
+                rospy.logwarn(
+                    "[uniform planner] discarding virtual result for stale "
+                    "job %s", plan_id)
+                return
+            if (self._map_signature is not None and
+                    self._request_map_signature is not None and
+                    self._map_signature != self._request_map_signature):
+                self._finish_virtual_failure(
+                    plan_id, snapshot, result, started,
+                    "MAP_VERSION_MISMATCH",
+                    "the exact map changed while the virtual plan was being "
+                    "built; the result is not published", layer="map")
+                return
+            if not bool(getattr(result, "executable", False)):
+                self._finish_virtual_failure(
+                    plan_id, snapshot, result, started,
+                    getattr(result, "reason", "") or "NOT_EXECUTABLE",
+                    getattr(result, "detail", ""),
+                    layer=getattr(result, "first_failure_layer", ""))
+                return
+            self._finish_virtual_success(
+                generation, plan_id, snapshot, result, started)
+
+    def _finish_virtual_failure(self, plan_id, snapshot, result, started,
+                                reason, detail, layer="none"):
+        self._state = FAILED
+        self._state_plan = plan_id
+        wall = _time.monotonic() - started
+        status_word = self._virtual_status_word(
+            str(getattr(result, "status", "REJECTED")))
+        rospy.logerr(
+            "[uniform planner] virtual plan %s not executable: status=%s "
+            "reason=%s layer=%s wall=%.3fs", plan_id,
+            getattr(result, "status", None), reason, layer, wall)
+        extra = {
+            "admitted": True,
+            "planning_started": True,
+            "pipeline_status": getattr(result, "status", None),
+            "first_failure_layer": layer,
+            "wall_time_s": wall,
+            "request_sha256": getattr(result, "request_sha256", ""),
+            "planning_context_sha256": getattr(
+                result, "planning_context_sha256", ""),
+            "grid_sha256": getattr(result, "grid_sha256", ""),
+            "virtual_result": self._backend_hooks.result_summary(result),
+            "collision_claim": (
+                "no executable envelope; the failed result does not certify "
+                "geometry, dynamics or map collision"),
+        }
+        self._publish_status(self._base_status(
+            "REJECTED", status_word, reason, detail,
+            plan_id=plan_id, formation_id=snapshot.formation_id,
+            feasible=False, executable=False, published=False, extra=extra))
+        self._publish_quality(self._base_quality(
+            "plan", status_word, reason, detail,
+            plan_id=plan_id, formation_id=snapshot.formation_id,
+            feasible=False, executable=False, published=False, extra=extra))
+        self._publish_no_envelope(plan_id, snapshot.formation_id, reason)
+        self._publish_job_state(reason, detail)
+
+    def _finish_virtual_success(self, generation, plan_id, snapshot, result,
+                                started):
+        plan = result.plan
+        try:
+            provisional = self._now()
+            fields = self._backend_hooks.publication_fields(
+                snapshot, result, provisional, self.publication_dt)
+            if (int(fields.get("plan_id", -1)) != plan_id or
+                    fields.get("formation_id") != snapshot.formation_id):
+                raise ValueError(
+                    "projected fields changed the plan identity")
+            message = timed_message(fields)
+            validation = validate_formation_timed_trajectory(message)
+            if not validation.valid:
+                raise ValueError(
+                    "converted trajectory violates the ROS contract: {} {}"
+                    .format(validation.field, validation.detail))
+            model_json = plan.to_model_json()
+            digest = result.model_sha256
+            envelope = FormationPlaybackPlan()
+            envelope.header.frame_id = fields["frame_id"]
+            envelope.header.stamp = rospy.Time(*fields["stamp"])
+            envelope.plan_id = int(plan_id)
+            envelope.formation_id = snapshot.formation_id
+            envelope.backend = self.backend
+            envelope.semantic_version = self.semantic_version
+            envelope.model_version = self.model_version
+            envelope.model_sha256 = digest
+            envelope.model_json = model_json
+            envelope.certification = self.certification
+            envelope.trajectory = message
+            embedded = fields_from_timed_message(message)
+            if embedded["stamp"] != fields["stamp"]:
+                raise ValueError("envelope stamp differs from its trajectory")
+            verified = self._backend_hooks.verify_envelope_fields({
+                "plan_id": int(plan_id),
+                "formation_id": snapshot.formation_id,
+                "backend": self.backend,
+                "semantic_version": self.semantic_version,
+                "model_version": self.model_version,
+                "model_sha256": digest,
+                "model_json": model_json,
+                "certification": self.certification,
+                "trajectory_fields": embedded,
+                "expected_request": self._virtual_request,
+                "expected_context": self._virtual_context,
+                "expected_grid_sha256": self._virtual_grid_sha256,
+                "expected_admission": self._virtual_admission,
+            })
+            if verified.model_sha256 != digest:
+                raise ValueError("verifier returned a different model digest")
+            stamp = self._now()
+            fields = dict(fields, stamp=stamp)
+            message.header.stamp = rospy.Time(*stamp)
+            envelope.header.stamp = rospy.Time(*stamp)
+            envelope.trajectory = message
+            if ((int(message.header.stamp.secs),
+                 int(message.header.stamp.nsecs)) != stamp or
+                    (int(envelope.header.stamp.secs),
+                     int(envelope.header.stamp.nsecs)) != stamp):
+                raise ValueError(
+                    "restamped envelope header is inconsistent with the "
+                    "common start")
+            self._publication_delay_s = (
+                stamp[0] + stamp[1] * 1e-9
+                - (provisional[0] + provisional[1] * 1e-9))
+        except Exception as exc:
+            self._finish_virtual_failure(
+                plan_id, snapshot, result, started, "ENVELOPE_INVALID",
+                "the executable virtual plan could not be enveloped and "
+                "re-verified: {!r}".format(exc), layer="envelope")
+            return
+        self._active_model_sha256 = verified.model_sha256
+        self._active_request_sha256 = result.request_sha256
+        self._active_digest = verified.model_sha256
+        self._active_status_word = self._virtual_status_word(result.status)
+        self._last_result = result
+        self._published_wall = _time.monotonic()
+        self._published_duration = float(plan.duration_s)
+        self._published_stamp = fields["stamp"]
+        self._playback_seen = False
+        self.playback_plan_pub.publish(envelope)
+        status_word = self._active_status_word
+        wall = float(getattr(result, "wall_time_s", 0.0))
+        extra = {
+            "admitted": True,
+            "planning_started": True,
+            "pipeline_status": result.status,
+            "first_failure_layer": result.first_failure_layer,
+            "wall_time_s": wall,
+            "T_end": float(plan.duration_s),
+            "duration_s": float(plan.duration_s),
+            "trajectory_stamp": {"secs": int(fields["stamp"][0]),
+                                 "nsecs": int(fields["stamp"][1])},
+            "verification": {
+                "samples": len(fields["times_from_start"]),
+                "model_sha256": verified.model_sha256,
+                "certification": self.certification,
+                "content_verified": True,
+                "stamp_set_at_publication": True,
+                "verification_to_publication_stamp_delay_s":
+                    getattr(self, "_publication_delay_s", None),
+            },
+            "request_sha256": result.request_sha256,
+            "planning_context_sha256": result.planning_context_sha256,
+            "grid_sha256": result.grid_sha256,
+            "initial_source": self._virtual_request.initial.source,
+            "initial_context_id": self._virtual_request.initial.context_id,
+            "goal_policy": self._virtual_request.goal_policy.value,
+            "virtual_result": self._backend_hooks.result_summary(result),
+            "collision_claim": (
+                "certification applies to the three G4 audits frozen with "
+                "this planning context; playback does not rerun map collision"),
+        }
+        self._publish_status(self._base_status(
+            "PUBLISHED", status_word, result.reason, result.detail,
+            plan_id=plan_id, formation_id=snapshot.formation_id,
+            feasible=True, executable=True, published=True, extra=extra))
+        self._publish_quality(self._base_quality(
+            "plan", status_word, result.reason, result.detail,
+            plan_id=plan_id, formation_id=snapshot.formation_id,
+            feasible=True, executable=True, published=True, extra=extra))
+        rospy.loginfo(
+            "[uniform planner] virtual plan %s published: T_end=%.3f s "
+            "model_sha256=%s samples=%d wall=%.3f s "
+            "verification_to_stamp_delay=%.4f s",
+            plan_id, plan.duration_s, verified.model_sha256,
+            len(fields["times_from_start"]), wall,
+            getattr(self, "_publication_delay_s", 0.0))
+
     def _finish_exception(self, generation, plan_id, snapshot, started, exc):
         with self._lock:
             if generation != self._generation or self._state != PLANNING:
@@ -869,8 +1422,10 @@ class UniformPlannerNode(object):
                             else 0)
         envelope.formation_id = formation_id or ""
         envelope.backend = self.backend
-        envelope.semantic_version = PLAYBACK_PLAN_SCHEMA
-        envelope.model_version = MODEL_VERSION
+        envelope.semantic_version = getattr(
+            self, "semantic_version", PLAYBACK_PLAN_SCHEMA)
+        envelope.model_version = getattr(
+            self, "model_version", MODEL_VERSION)
         envelope.model_sha256 = ""
         envelope.model_json = ""
         envelope.certification = ""
@@ -1130,6 +1685,38 @@ class UniformPlannerNode(object):
                 if self._state in (PLANNING, PLAYING):
                     self._playback_seen = True
                     self._state = HOLD_END
+                    terminal_extra = {"terminal": True,
+                                      "playback_confirmed": True}
+                    if (getattr(self, "_backend_hooks", None) is not None and
+                            getattr(self, "_last_result", None) is not None
+                            and getattr(self._last_result, "plan",
+                                        None) is not None):
+                        try:
+                            from fwis_v3_optimizer.formation_continuous_a\
+                                .ros_adapter import terminal_context_from_plan
+                            context_id = self._next_context_id("terminal")
+                            terminal = terminal_context_from_plan(
+                                self._last_result.plan,
+                                self._virtual_request, context_id)
+                            self._initial_context = terminal
+                            self._initial_reset_ready = False
+                            terminal_extra.update({
+                                "terminal_context_id": context_id,
+                                "terminal_compatible": bool(
+                                    terminal.compatible),
+                                "terminal_detail": terminal.detail,
+                                "terminal_state": dict(terminal.terminal),
+                            })
+                            rospy.loginfo(
+                                "[uniform planner] plan %s terminal record "
+                                "%s compatible=%s: %s", plan_id, context_id,
+                                terminal.compatible, terminal.detail)
+                        except Exception as exc:
+                            terminal_extra["terminal_record_error"] = (
+                                "{}: {}".format(type(exc).__name__, exc))
+                            rospy.logerr(
+                                "[uniform planner] cannot record terminal "
+                                "state for plan %s: %r", plan_id, exc)
                     self._publish_job_state(
                         "playback reached its terminal hold")
                     self._publish_status(self._base_status(
@@ -1140,8 +1727,7 @@ class UniformPlannerNode(object):
                         plan_id=plan_id,
                         formation_id=self._active_formation_id,
                         feasible=True, executable=True, published=True,
-                        extra={"terminal": True,
-                               "playback_confirmed": True}))
+                        extra=terminal_extra))
                     rospy.loginfo(
                         "[uniform planner] plan %s HOLD_END; busy released",
                         plan_id)
@@ -1215,7 +1801,23 @@ class UniformPlannerNode(object):
 def main():
     rospy.init_node("formation_uniform_planner")
     try:
-        UniformPlannerNode()
+        backend = str(rospy.get_param("~backend", PLAYBACK_PLAN_BACKEND))
+        hooks = None
+        if backend == "virtual_rigid_a":
+            from fwis_v3_optimizer.formation_continuous_a.ros_adapter import (
+                VirtualABackendHooks, VirtualABackendSettings)
+            settings = VirtualABackendSettings(
+                goal_policy=str(rospy.get_param(
+                    "~virtual_a_goal_policy", "free")),
+                frame_id=str(rospy.get_param("~frame_id", "map")),
+                max_publication_samples=int(rospy.get_param(
+                    "~max_publication_samples", 200001)))
+            hooks = VirtualABackendHooks(settings)
+        elif backend != PLAYBACK_PLAN_BACKEND:
+            raise ValueError(
+                "~backend={!r}; this node starts only {!r} or "
+                "'virtual_rigid_a'".format(backend, PLAYBACK_PLAN_BACKEND))
+        UniformPlannerNode(backend_hooks=hooks)
     except Exception as exc:
         rospy.logfatal("[uniform planner] failed to start: %s", exc)
         raise

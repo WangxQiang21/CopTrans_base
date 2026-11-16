@@ -1,0 +1,56 @@
+test_audit_budget_cannot_exceed_g1_contract (test_virtual_a_audit.AuditConfigFailureClosedTests) ... ok
+test_every_float_field_rejects_nan_infinity_negative_and_types (test_virtual_a_audit.AuditConfigFailureClosedTests) ... ok
+test_every_integer_field_rejects_bool_float_zero_and_negative (test_virtual_a_audit.AuditConfigFailureClosedTests) ... ok
+test_invalid_config_is_rejected_before_the_hold_branch (test_virtual_a_audit.AuditConfigFailureClosedTests) ... ok
+test_nonfinite_intermediate_audit_value_fails_closed (test_virtual_a_audit.AuditConfigFailureClosedTests) ... ok
+test_zero_nonnegative_tolerances_are_a_valid_domain (test_virtual_a_audit.AuditConfigFailureClosedTests) ... ok
+test_degenerate_interval_contains_codex_counterexample (test_virtual_a_audit.AuditIntervalBoundCoverageTests) ... ok
+test_narrow_intervals_cover_all_sign_combinations_and_components (test_virtual_a_audit.AuditIntervalBoundCoverageTests) ... ok
+test_center_vehicle_lateral_acceleration_limit (test_virtual_a_audit.G3DurationCounterexampleTests) ... ok
+test_front_wheel_steer_acceleration_limit (test_virtual_a_audit.G3DurationCounterexampleTests) ... ok
+test_front_wheel_steer_rate_limit (test_virtual_a_audit.G3DurationCounterexampleTests) ... ok
+test_side_vehicle_front_right_wheel_speed_limit (test_virtual_a_audit.G3DurationCounterexampleTests) ... ok
+test_side_vehicle_jerk_limit_rejects_a_shortened_plan (test_virtual_a_audit.G3DurationCounterexampleTests) ... ok
+test_side_vehicle_speed_limit (test_virtual_a_audit.G3DurationCounterexampleTests) ... ok
+test_coarse_interval_subdivides_until_every_bound_is_confirmed (test_virtual_a_audit.G3HoldAndFailClosedTests) ... ok
+test_coarse_interval_without_refinement_fails_closed (test_virtual_a_audit.G3HoldAndFailClosedTests) ... ok
+test_hold_dynamics_are_audited_without_inverse_division (test_virtual_a_audit.G3HoldAndFailClosedTests) ... ok
+test_invalid_dynamic_audit_config_fails_closed (test_virtual_a_audit.G3HoldAndFailClosedTests) ... ok
+test_leaf_budget_exhaustion_never_reports_feasible (test_virtual_a_audit.G3HoldAndFailClosedTests) ... ok
+test_curve_is_certified_on_the_complete_domain (test_virtual_a_audit.G3WholeDomainCertificateTests) ... ok
+test_differential_oracle_recomputes_raw_profile_dynamics (test_virtual_a_audit.G3WholeDomainCertificateTests) ... ok
+test_endpoints_and_one_hundred_nonuniform_inverse_samples (test_virtual_a_audit.G3WholeDomainCertificateTests) ... ok
+test_every_segment_covers_all_metrics_vehicles_and_wheels (test_virtual_a_audit.G3WholeDomainCertificateTests) ... ok
+test_internal_nodes_have_left_and_right_motion_limits (test_virtual_a_audit.G3WholeDomainCertificateTests) ... ok
+test_node_left_and_right_values_have_adjacent_cell_certificates (test_virtual_a_audit.G3WholeDomainCertificateTests) ... ok
+test_pointwise_values_lie_below_every_local_interval_certificate (test_virtual_a_audit.G3WholeDomainCertificateTests) ... ok
+test_coarse_grid_refines_until_the_budget_is_confirmed (test_virtual_a_audit.IndependentIntegrationBudgetTests) ... ok
+test_nonzero_g_multisegment_against_independent_quadrature (test_virtual_a_audit.IndependentIntegrationBudgetTests) ... ok
+test_resource_limit_is_bound_unconfirmed_never_feasible (test_virtual_a_audit.IndependentIntegrationBudgetTests) ... ok
+test_unreachable_budget_is_bound_unconfirmed (test_virtual_a_audit.IndependentIntegrationBudgetTests) ... ok
+test_car1_wrong_initial_heading_rejected (test_virtual_a_audit.NegativeAuditTests) ... ok
+test_forged_goal_is_checked_against_original_request (test_virtual_a_audit.NegativeAuditTests) ... ok
+test_forged_request_digest_rejected (test_virtual_a_audit.NegativeAuditTests) ... ok
+test_invalid_limit_rejected (test_virtual_a_audit.NegativeAuditTests) ... ok
+test_nan_goal_rejected_before_any_geometry_claim (test_virtual_a_audit.NegativeAuditTests) ... ok
+test_non_c2_profile_rejected (test_virtual_a_audit.NegativeAuditTests) ... ok
+test_segment_interior_curvature_violation_with_legal_nodes (test_virtual_a_audit.NegativeAuditTests) ... ok
+test_static_wheel_limit_uses_whole_segment_envelope (test_virtual_a_audit.NegativeAuditTests) ... ok
+test_unconfirmed_enclosure_is_not_published_as_feasible (test_virtual_a_audit.NegativeAuditTests) ... ok
+test_wrong_vehicle_shape_rejected (test_virtual_a_audit.NegativeAuditTests) ... ok
+test_terminal_nonzero_curvature_free_passes_straight_rejected (test_virtual_a_audit.PolicySemanticsTests) ... ok
+test_terminal_nonzero_eta_free_passes_straight_rejected (test_virtual_a_audit.PolicySemanticsTests) ... ok
+test_six_metre_path_to_ten_metre_goal_nan_tolerance_is_rejected (test_virtual_a_audit.RealCounterexampleTests) ... ok
+test_clamped_cubic_spline_straight_reference_passes (test_virtual_a_audit.ReferenceAuditTests) ... ok
+test_frozen_reference_endpoints_match_rounded_task_requests (test_virtual_a_audit.ReferenceAuditTests) ... ok
+test_g1_double_lane_change_endpoint_can_be_a_straight_path (test_virtual_a_audit.ReferenceAuditTests) ... ok
+test_hold_only_for_exactly_identical_start_and_goal (test_virtual_a_audit.ReferenceAuditTests) ... ok
+test_planning_context_keyword_is_accepted_without_map_claim (test_virtual_a_audit.ReferenceAuditTests) ... ok
+test_six_quadratic_existence_profiles_pass_independent_audit (test_virtual_a_audit.ReferenceAuditTests) ... ok
+test_straight_line_goal_passes (test_virtual_a_audit.ReferenceAuditTests) ... ok
+test_structural_model_identity_is_not_object_identity (test_virtual_a_audit.ReferenceAuditTests) ... ok
+
+----------------------------------------------------------------------
+Ran 51 tests in 3.449s
+
+OK

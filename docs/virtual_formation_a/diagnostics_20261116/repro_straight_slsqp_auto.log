@@ -1,0 +1,23 @@
+CASE start=(12.570000,10.320000,-0.029734) goal=(16.500000,10.320000,-0.029734)
+STATUS SUCCESS   wall=13.298
+attempts:
+  idx=0 label=route_guide=0;source=astar_primary solver=ipopt status=Maximum_Iterations_Exceeded iters=300 obj=2116.592 residual=5.062970283797874e-06 audit=None rej=Maximum_Iterations_Exceeded detail=Maximum_Iterations_Exceeded
+  idx=0 label=route_guide=0;source=astar_primary solver=scipy_slsqp status=Optimization terminated successfully iters=55 obj=2079.771 residual=1.5742651626737825e-10 audit=True rej= detail=IPOPT Maximum_Iterations_Exceeded; SLSQP fallback used: Optimization terminated successfully
+PATH length=3.930330 m knots=9
+knots s: [0.0, 0.491, 0.983, 1.474, 1.965, 2.456, 2.948, 3.439, 3.93]
+knots kappa: [0.0, 0.0951, -0.0201, -0.0182, -0.0218, 0.0298, 0.026, -0.01, -0.1902]
+knots eta: [0.0, 0.0154, -0.1846, 0.0314, 0.049, 0.065, -0.0177, -0.2373, -0.3532]
+max_abs_kappa=0.1902 (radius 5.26 m) max_abs_eta=0.3532
+dense: max|k|=0.1902 rms|k|=0.0522 sign_changes=4 total_variation_kappa=0.5309 max_steer_deg=5.37
+dense: TV per metre=0.13509  mean|dk/ds|=0.00007
+heading change total=-0.0000 rad, min/max psi=-0.0297/0.0174
+ROUTE 0 astar_primary points=82 length=3.935 nodes kappa: [0.0, 0.0273, 0.0, -0.0, 0.0, -0.0, 0.0, 0.0275, 0.0]
+  route max|k|=0.0275 sign_changes_nodes=6 TV_nodes=0.1097
+  path-to-route dist mean=0.0033 max=0.0092 m
+ROUTE 1 astar_alternative_1 points=87 length=4.202 nodes kappa: [0.0, 0.7576, 0.0, -0.0, 0.0, -0.0, 0.0, 0.8401, 0.0]
+  route max|k|=0.8401 sign_changes_nodes=6 TV_nodes=3.1953
+  path-to-route dist mean=0.1414 max=0.1575 m
+ROUTE 2 astar_alternative_2 points=87 length=4.202 nodes kappa: [0.0, -0.702, -0.0, 0.0, 0.0, -0.0, 0.0, -0.7798, 0.0]
+  route max|k|=0.7798 sign_changes_nodes=6 TV_nodes=2.9637
+  path-to-route dist mean=0.1392 max=0.1531 m
+OBJECTIVE 2116.5918427873817

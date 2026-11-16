@@ -1,0 +1,56 @@
+{
+  "task": "G0",
+  "status": "REWORK",
+  "gate_passed": false,
+  "reviewer": "Codex",
+  "implementer": "Claude Code",
+  "reviewed_at_utc": "2026-11-15T14:43:59.621194+00:00",
+  "branch": "feature/virtual-rigid-formation-a",
+  "head": "567bdecba9676313da3bc9a97b82f57b5b569a2b",
+  "submitted_evidence_directory": "evaluation/virtual_formation_a/G0/20261115T143321Z_rework",
+  "evidence_directory": "evaluation/virtual_formation_a/G0/codex_recheck_20261115T144127Z",
+  "report": "CODEX_REVIEW.md",
+  "rework_prompt": "REWORK_REQUEST.md",
+  "reviewed_source_sha256": {
+    "tools/virtual_a_baseline.py": "4bf3c9468d09c7554d9006361d5c94081b3c8ba2b941eca3edc92208dcbfb92e",
+    "docs/virtual_formation_a/G0_INTERFACE_CHECK.md": "0abad6582d3bf53e2454264bf3ad0bee72e161812569298c7d04d32519a739bd"
+  },
+  "submitted_hash_entries_verified": 25,
+  "R2_status": "CLOSED",
+  "R1_status": "PARTIAL_ONE_MANDATORY_FIXTURE_OMITTED",
+  "blocking_findings": [
+    {
+      "id": "R1-remaining",
+      "severity": "P1",
+      "path": "tools/virtual_a_baseline.py",
+      "line": 125,
+      "required_by": "docs/virtual_formation_a/CLAUDE_G2_TASK.md:20",
+      "missing_authorized_path": "tests/fixtures/virtual_a/open_requests.json",
+      "impact": "Planned G2 fixture is rejected by later timing/full regression workspace gate.",
+      "evidence": [
+        "authorized_fixture_probe.json",
+        "task_path_matrix.json"
+      ],
+      "minimal_correction": "Add exact path to G2 additions and test four levels plus adjacent unauthorized fixture."
+    }
+  ],
+  "verification": {
+    "R2": "CLOSED",
+    "R1": "PARTIALLY_FIXED_ONE_MANDATORY_FIXTURE_MISSING",
+    "authorized_task_paths_checked": 26,
+    "unresolved_paths": [
+      "tests/fixtures/virtual_a/open_requests.json"
+    ],
+    "runner_cases_passed": 9,
+    "baseline_blobs_verified": 3550,
+    "submission_drift": [],
+    "old_test_cases_executed": 0,
+    "ROS_started": false,
+    "G1_started": false
+  },
+  "implementation_modified_by_codex": false,
+  "submitted_evidence_modified_by_codex": false,
+  "git_committed": false,
+  "G1_started": false,
+  "next_stage_authorized": false
+}

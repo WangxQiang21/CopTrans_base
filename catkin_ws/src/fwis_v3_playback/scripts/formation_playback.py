@@ -27,6 +27,10 @@ from fwis_v3_optimizer.formation_playback import (
     INVALID,
     PLAYBACK_PLAN_BACKEND,
     PLAYBACK_PLAN_SCHEMA,
+    VIRTUAL_CERTIFICATION,
+    VIRTUAL_PLAYBACK_BACKEND,
+    VIRTUAL_PLAYBACK_SEMANTIC_VERSION,
+    VIRTUAL_MODEL_VERSION,
     PlaybackMarkerOptions,
     PlaybackValidationError,
     build_markers,
@@ -37,9 +41,16 @@ from fwis_v3_optimizer.formation_playback import (
     terminal_errors,
     tf_frame_prefix,
     trajectory_from_fields,
+    verify_playback_plan,
     verify_uniform_playback_plan,
+    virtual_a_request_from_raw_request,
     PlaybackVehicleSpec,
     build_hold_markers,
+)
+from fwis_v3_optimizer.formation_continuous_a.contracts import (
+    INITIAL_HEADING_TOLERANCE_RAD,
+    geometry_audit_config_from_dict,
+    request_fingerprint,
 )
 from fwis_v3_optimizer.transport_contract import load_contract
 
@@ -90,6 +101,12 @@ class FormationPlaybackNode:
         self._active_plan = None
         self._hold_reason = "START"
         self._previewing = False
+        # The static hold uses marker ids that do not all collide with the
+        # trajectory markers (the cargo label, for example), so accepting a
+        # plan must clear the hold before the first trajectory frame.  The
+        # deletion is prepended to that frame atomically; a separate message
+        # could be dropped by the queue_size=1 marker publisher.
+        self._clear_markers_pending = False
         self._frontend_reports = {}
         self.frame_id = rospy.get_param("~frame_id", "map")
         if not isinstance(self.frame_id, str) or not self.frame_id.strip():
@@ -113,16 +130,22 @@ class FormationPlaybackNode:
             arrow_head_length_m=float(
                 rospy.get_param("~arrow_head_length", 0.08)))
         self.backend = str(rospy.get_param("~backend", "legacy"))
-        if self.backend not in ("legacy", PLAYBACK_PLAN_BACKEND):
+        if self.backend not in (
+                "legacy", PLAYBACK_PLAN_BACKEND, VIRTUAL_PLAYBACK_BACKEND):
             raise ValueError(
-                "~backend must be 'legacy' or {!r}, got {!r}".format(
-                    PLAYBACK_PLAN_BACKEND, self.backend))
+                "~backend must be 'legacy', {!r} or {!r}, got {!r}".format(
+                    PLAYBACK_PLAN_BACKEND, VIRTUAL_PLAYBACK_BACKEND,
+                    self.backend))
         self._job_state = "IDLE"
         self._job_state_plan = None
         self._playback_model_sha256 = None
         self._playback_semantic_version = None
+        self._raw_requests = {}
+        self._virtual_jobs = {}
+        self._virtual_terminals = {}
         self.trajectory = None
         self.optimizer_status = None
+        self._optimizer_status_by_plan = {}
         self.quality_report = None
         self._last_state = None
         self._tf_prefix = None
@@ -132,7 +155,7 @@ class FormationPlaybackNode:
             STATUS_TOPIC, String, queue_size=1, latch=True)
         self.tf_broadcaster = (TransformBroadcaster()
                                if self.publish_tf else None)
-        if self.backend == PLAYBACK_PLAN_BACKEND:
+        if self.backend in (PLAYBACK_PLAN_BACKEND, VIRTUAL_PLAYBACK_BACKEND):
             rospy.Subscriber(
                 PLAYBACK_PLAN_TOPIC, FormationPlaybackPlan,
                 self.on_playback_plan, queue_size=1)
@@ -147,11 +170,14 @@ class FormationPlaybackNode:
             queue_size=1)
         rospy.Subscriber(
             QUALITY_TOPIC, String, self.on_quality, queue_size=1)
+        if self.transport_ui or self.backend == VIRTUAL_PLAYBACK_BACKEND:
+            # The virtual receiver must retain the raw request even when the
+            # optional transport preview UI is disabled.
+            rospy.Subscriber("/formation/plan_request", FormationPlanRequest,
+                             self.on_request, queue_size=1)
         if self.transport_ui:
             rospy.Subscriber("/formation/display_pose", PoseStamped,
                              self.on_preview, queue_size=1)
-            rospy.Subscriber("/formation/plan_request", FormationPlanRequest,
-                             self.on_request, queue_size=1)
             rospy.Subscriber("/formation/status", String,
                              self.on_frontend_status, queue_size=1)
         self.timer = rospy.Timer(rospy.Duration(1.0 / rate), self.tick)
@@ -187,6 +213,7 @@ class FormationPlaybackNode:
             return
         self.trajectory = trajectory
         self.hold = None
+        self._clear_markers_pending = True
         self._tf_prefix = tf_frame_prefix(trajectory.formation_id)
         self._last_state = None
         rospy.loginfo(
@@ -199,6 +226,83 @@ class FormationPlaybackNode:
         # already old is still visible without waiting for the next tick.
         self._publish_tick()
 
+    @staticmethod
+    def _raw_request_document(message):
+        """Neutral, strict-JSON snapshot of the raw transport request."""
+        vehicles = []
+        for spec in message.vehicles:
+            vehicles.append({
+                "vehicle_id": int(spec.vehicle_id),
+                "offset_x": float(spec.offset_in_formation.x),
+                "offset_y": float(spec.offset_in_formation.y),
+                "start_x": float(spec.start_center.x),
+                "start_y": float(spec.start_center.y),
+                "start_theta": float(spec.start_center.theta),
+                "goal_x": float(spec.goal_center.x),
+                "goal_y": float(spec.goal_center.y),
+                "goal_theta": float(spec.goal_center.theta),
+                "goal_heading_free": bool(spec.goal_heading_free),
+                "body_length_m": float(spec.body_length_m),
+                "body_width_m": float(spec.body_width_m),
+            })
+        return {
+            "plan_id": int(message.plan_id),
+            "formation_id": str(message.formation_id),
+            "formation_start": {
+                "x": float(message.formation_start.x),
+                "y": float(message.formation_start.y),
+                "theta": float(message.formation_start.theta),
+            },
+            "formation_goal": {
+                "x": float(message.formation_goal.x),
+                "y": float(message.formation_goal.y),
+                "theta": float(message.formation_goal.theta),
+            },
+            "allow_reverse": bool(message.allow_reverse),
+            "vehicles": vehicles,
+        }
+
+    def _record_raw_request(self, message):
+        if self.backend != VIRTUAL_PLAYBACK_BACKEND:
+            return
+        try:
+            document = self._raw_request_document(message)
+        except (AttributeError, TypeError, ValueError) as exc:
+            rospy.logwarn(
+                "[formation playback] cannot retain raw request %s: %s",
+                getattr(message, "plan_id", None), exc)
+            return
+        self._raw_requests[document["plan_id"]] = document
+        while len(self._raw_requests) > 64:
+            del self._raw_requests[min(self._raw_requests)]
+
+    def _record_virtual_job(self, report):
+        if self.backend != VIRTUAL_PLAYBACK_BACKEND:
+            return
+        plan_id = report.get("plan_id")
+        if not isinstance(plan_id, int) or isinstance(plan_id, bool):
+            return
+        if report.get("backend") != VIRTUAL_PLAYBACK_BACKEND:
+            return
+        try:
+            record = json.loads(json.dumps(
+                report, sort_keys=True, allow_nan=False))
+        except (TypeError, ValueError):
+            return
+        if report.get("state") == "PLANNING":
+            self._virtual_jobs[plan_id] = record
+            while len(self._virtual_jobs) > 64:
+                del self._virtual_jobs[min(self._virtual_jobs)]
+        elif plan_id not in self._virtual_jobs:
+            self._virtual_jobs[plan_id] = record
+            while len(self._virtual_jobs) > 64:
+                del self._virtual_jobs[min(self._virtual_jobs)]
+        if (report.get("state") == "HOLD_END" and
+                isinstance(report.get("initial_context"), dict)):
+            self._virtual_terminals[plan_id] = report["initial_context"]
+            while len(self._virtual_terminals) > 64:
+                del self._virtual_terminals[min(self._virtual_terminals)]
+
     @synchronized
     def on_job_state(self, message):
         report = self._parse_json(message, "job_state")
@@ -210,6 +314,7 @@ class FormationPlaybackNode:
         plan_id = report.get("plan_id")
         self._job_state = state
         self._job_state_plan = plan_id
+        self._record_virtual_job(report)
         if (state == "PLANNING" and plan_id is not None and
                 self.trajectory is not None and
                 self.trajectory.plan_id != plan_id):
@@ -251,16 +356,33 @@ class FormationPlaybackNode:
                 raise PlaybackValidationError(
                     "envelope header stamp differs from the embedded "
                     "trajectory stamp")
-            trajectory, plan, digest = verify_uniform_playback_plan(
-                plan_id=int(message.plan_id),
-                formation_id=message.formation_id,
-                backend=message.backend,
-                semantic_version=message.semantic_version,
-                model_version=message.model_version,
-                model_sha256=message.model_sha256,
-                model_json=message.model_json,
-                certification=message.certification,
-                trajectory_fields=fields)
+            if self.backend == PLAYBACK_PLAN_BACKEND:
+                if message.backend != PLAYBACK_PLAN_BACKEND:
+                    raise PlaybackValidationError(
+                        "envelope backend {!r} differs from the node's "
+                        "configured {!r}".format(
+                            message.backend, PLAYBACK_PLAN_BACKEND))
+                trajectory, plan, digest = verify_uniform_playback_plan(
+                    plan_id=int(message.plan_id),
+                    formation_id=message.formation_id,
+                    backend=message.backend,
+                    semantic_version=message.semantic_version,
+                    model_version=message.model_version,
+                    model_sha256=message.model_sha256,
+                    model_json=message.model_json,
+                    certification=message.certification,
+                    trajectory_fields=fields)
+            elif self.backend == VIRTUAL_PLAYBACK_BACKEND:
+                if message.backend != VIRTUAL_PLAYBACK_BACKEND:
+                    raise PlaybackValidationError(
+                        "envelope backend {!r} differs from the node's "
+                        "configured {!r}".format(
+                            message.backend, VIRTUAL_PLAYBACK_BACKEND))
+                trajectory, plan, digest = self._verify_virtual_envelope(
+                    message, fields)
+            else:
+                raise PlaybackValidationError(
+                    "legacy playback does not accept atomic envelopes")
         except (PlaybackValidationError, AttributeError, TypeError,
                 ValueError, KeyError, IndexError) as exc:
             rospy.logerr(
@@ -270,18 +392,186 @@ class FormationPlaybackNode:
             return
         self.trajectory = trajectory
         self.hold = None
+        self._clear_markers_pending = True
         self._active_plan = trajectory.plan_id
         self._tf_prefix = tf_frame_prefix(trajectory.formation_id)
         self._playback_model_sha256 = digest
         self._playback_semantic_version = message.semantic_version
         self._last_state = None
         rospy.loginfo(
-            "[formation playback] accepted uniform_v02 plan %s formation %s "
+            "[formation playback] accepted %s plan %s formation %s "
             "model_sha256=%s: %d vehicles, %d shared samples, T_end=%.6f s",
-            trajectory.plan_id, trajectory.formation_id, digest,
-            len(trajectory.vehicles), trajectory.sample_count,
+            self.backend, trajectory.plan_id, trajectory.formation_id,
+            digest, len(trajectory.vehicles), trajectory.sample_count,
             trajectory.duration)
         self._publish_tick()
+
+    @staticmethod
+    def _wrap(angle):
+        return math.atan2(math.sin(angle), math.cos(angle))
+
+    def _check_virtual_initial(self, request, context_record):
+        """Bind the raw request start to the planner's confirmed context."""
+        if not isinstance(context_record, dict):
+            raise PlaybackValidationError(
+                "no confirmed initial_context is retained for this plan")
+        if not bool(context_record.get("compatible")):
+            raise PlaybackValidationError(
+                "the retained initial context is not compatible: {}".format(
+                    context_record.get("detail")))
+        source = context_record.get("source")
+        context_id = context_record.get("context_id")
+        if source not in ("rviz_reset", "verified_terminal"):
+            raise PlaybackValidationError(
+                "retained initial source {!r} is not a ROS experiment "
+                "source".format(source))
+        if not isinstance(context_id, str) or not context_id.strip():
+            raise PlaybackValidationError(
+                "retained initial context has no context_id")
+        if request.initial.source != source or \
+                request.initial.context_id != context_id:
+            raise PlaybackValidationError(
+                "raw request initial source/context differs from the "
+                "retained confirmed record")
+        qf = context_record.get("qf")
+        if not isinstance(qf, dict):
+            raise PlaybackValidationError(
+                "retained initial context has no F pose")
+        try:
+            qf_values = (float(qf["x"]), float(qf["y"]), float(qf["psi"]))
+        except (KeyError, TypeError, ValueError) as exc:
+            raise PlaybackValidationError(
+                "retained initial F pose is invalid: {}".format(exc)) from exc
+        position_error = math.hypot(
+            request.start_qf.x - qf_values[0],
+            request.start_qf.y - qf_values[1])
+        heading_error = abs(self._wrap(request.start_qf.psi - qf_values[2]))
+        if position_error > 1e-6 or heading_error > 1e-6:
+            raise PlaybackValidationError(
+                "raw request start differs from the retained initial F pose "
+                "by {:.6g} m / {:.6g} rad".format(
+                    position_error, heading_error))
+        if source == "rviz_reset":
+            for vehicle_id in sorted(request.start_headings):
+                if abs(self._wrap(
+                        request.start_headings[vehicle_id]
+                        - qf_values[2])) > INITIAL_HEADING_TOLERANCE_RAD:
+                    raise PlaybackValidationError(
+                        "vehicle_id={} start heading is not parallel to the "
+                        "confirmed reset heading".format(vehicle_id))
+            return
+        headings = context_record.get("headings")
+        achieved = {}
+        if isinstance(headings, list):
+            for item in headings:
+                if not isinstance(item, dict):
+                    continue
+                vehicle_id = item.get("vehicle_id")
+                value = item.get("heading_rad")
+                if isinstance(vehicle_id, int) and not isinstance(
+                        vehicle_id, bool):
+                    try:
+                        achieved[int(vehicle_id)] = float(value)
+                    except (TypeError, ValueError):
+                        continue
+        if set(achieved) != set(request.start_headings):
+            raise PlaybackValidationError(
+                "retained verified-terminal headings do not cover the "
+                "request vehicle ids")
+        for vehicle_id in sorted(request.start_headings):
+            if abs(self._wrap(
+                    request.start_headings[vehicle_id]
+                    - achieved[vehicle_id])) > 1e-9:
+                raise PlaybackValidationError(
+                    "vehicle_id={} start heading differs from the retained "
+                    "verified terminal".format(vehicle_id))
+
+    def _verify_virtual_envelope(self, message, fields):
+        plan_id = int(message.plan_id)
+        raw = self._raw_requests.get(plan_id)
+        if raw is None:
+            raise PlaybackValidationError(
+                "no raw /formation/plan_request is retained for plan {}; "
+                "the virtual envelope cannot be accepted".format(plan_id))
+        if raw.get("formation_id") != message.formation_id:
+            raise PlaybackValidationError(
+                "retained raw request formation_id differs from the "
+                "envelope")
+        job = self._virtual_jobs.get(plan_id)
+        if job is None:
+            raise PlaybackValidationError(
+                "no admitted virtual job record is retained for plan {}; "
+                "wait for an explicit job_state/reset match".format(plan_id))
+        if job.get("formation_id") != message.formation_id:
+            raise PlaybackValidationError(
+                "retained job formation_id differs from the envelope")
+        if job.get("state") not in ("PLANNING", "PLAYING", "HOLD_END"):
+            raise PlaybackValidationError(
+                "retained job state {!r} cannot certify a playback "
+                "envelope".format(job.get("state")))
+        context_record = job.get("initial_context")
+        try:
+            request = virtual_a_request_from_raw_request(
+                raw,
+                initial_source=(None if context_record is None
+                                else context_record.get("source")),
+                initial_context_id=(None if context_record is None
+                                    else context_record.get("context_id")))
+        except PlaybackValidationError:
+            raise
+        except Exception as exc:
+            raise PlaybackValidationError(
+                "raw request cannot rebuild the expected request: {}: {}"
+                .format(type(exc).__name__, exc)) from exc
+        self._check_virtual_initial(request, context_record)
+        fingerprint = request_fingerprint(request)
+        if job.get("request_sha256") != fingerprint:
+            raise PlaybackValidationError(
+                "retained admission request_sha256 differs from the raw "
+                "request rebuilt by the receiver")
+        if str(job.get("virtual_a_goal_policy", "")).lower() != \
+                request.goal_policy.value.lower():
+            raise PlaybackValidationError(
+                "retained goal policy differs from the raw request flags")
+        context = job.get("planning_context")
+        if not isinstance(context, dict):
+            raise PlaybackValidationError(
+                "no admitted planning context is retained for this plan")
+        if context.get("request_sha256") != fingerprint:
+            raise PlaybackValidationError(
+                "admitted planning context request_sha256 differs from the "
+                "raw request")
+        grid_sha = job.get("grid_sha256")
+        if not isinstance(grid_sha, str) or len(grid_sha) != 64:
+            raise PlaybackValidationError(
+                "no admitted grid_sha256 is retained for this plan")
+        timing = context.get("timing_config")
+        geometry_payload = (None if not isinstance(timing, dict)
+                            else timing.get("geometry_audit_config"))
+        try:
+            geometry_config = geometry_audit_config_from_dict(
+                geometry_payload)
+        except Exception as exc:
+            raise PlaybackValidationError(
+                "admitted geometry audit config is invalid: {}: {}".format(
+                    type(exc).__name__, exc)) from exc
+        return verify_playback_plan(
+            backend=message.backend,
+            plan_id=plan_id,
+            formation_id=message.formation_id,
+            semantic_version=message.semantic_version,
+            model_version=message.model_version,
+            model_sha256=message.model_sha256,
+            model_json=message.model_json,
+            certification=message.certification,
+            trajectory_fields=fields,
+            expected_request=request,
+            expected_context=context,
+            expected_grid_sha256=grid_sha,
+            geometry_audit_config=geometry_config,
+            position_tolerance=1e-9,
+            angle_tolerance=1e-9,
+            speed_tolerance=1e-9)
 
     @synchronized
     def on_optimizer_status(self, message):
@@ -293,6 +583,22 @@ class FormationPlaybackNode:
         # clear, and status delivery can race the trajectory on the wire.
         # Playback therefore clears only on the trajectory itself.
         self.optimizer_status = report
+        plan_id = report.get("plan_id")
+        if isinstance(plan_id, int) and not isinstance(plan_id, bool):
+            statuses = getattr(self, "_optimizer_status_by_plan", None)
+            if statuses is None:
+                statuses = self._optimizer_status_by_plan = {}
+            previous = statuses.get(int(plan_id))
+            # A rejected busy reset is labelled with the active plan id but is
+            # not a statement about that plan's envelope; it must not erase the
+            # certification already published for the playing trajectory.
+            if not (previous is not None and
+                    previous.get("trajectory_published") and
+                    report.get("admitted") is False and
+                    not report.get("trajectory_published")):
+                statuses[int(plan_id)] = report
+            while len(statuses) > 32:
+                del statuses[min(statuses)]
         if (self.transport_ui and report.get("plan_id") == self._active_plan
                 and report.get("status") in ("INVALID", "REJECTED")):
             self._hold_reason = "{}: {}".format(report.get("status"),
@@ -306,8 +612,9 @@ class FormationPlaybackNode:
 
     @synchronized
     def on_request(self, message):
-        if (self.backend == PLAYBACK_PLAN_BACKEND and
-                self._job_state in ("PLANNING", "PLAYING") and
+        self._record_raw_request(message)
+        if (self.backend in (PLAYBACK_PLAN_BACKEND, VIRTUAL_PLAYBACK_BACKEND)
+                and self._job_state in ("PLANNING", "PLAYING") and
                 message.plan_id != self._job_state_plan):
             # A busy-admission rejection must not clear or restart the active
             # replay.  The planner never admits this request; a direct
@@ -317,15 +624,15 @@ class FormationPlaybackNode:
                 "job %s is %s", message.plan_id, self._job_state_plan,
                 self._job_state)
             return
-        if (self.backend == PLAYBACK_PLAN_BACKEND and
-                self.trajectory is not None and
+        if (self.backend in (PLAYBACK_PLAN_BACKEND, VIRTUAL_PLAYBACK_BACKEND)
+                and self.trajectory is not None and
                 self.trajectory.plan_id == message.plan_id):
             # The atomic envelope for this admitted request may arrive before
             # the request itself.  Never clear a trajectory that is already
             # playing the same plan.
             return
-        if (self.backend == PLAYBACK_PLAN_BACKEND and
-                self._active_plan is not None and
+        if (self.backend in (PLAYBACK_PLAN_BACKEND, VIRTUAL_PLAYBACK_BACKEND)
+                and self._active_plan is not None and
                 message.plan_id < self._active_plan):
             # A stale latched request must not replace a newer experiment.
             return
@@ -340,9 +647,8 @@ class FormationPlaybackNode:
              v.start_center.x, v.start_center.y, v.start_center.theta)
             for v in message.vehicles))
         self.trajectory = None
-        self.marker_pub.publish(self._marker_array(
-            clear_marker_specs(self.frame_id), rospy.Time.now()))
-        self._publish_hold()
+        self._clear_markers_pending = False
+        self._publish_hold(clear=True)
 
     @synchronized
     def on_preview(self, message):
@@ -363,12 +669,11 @@ class FormationPlaybackNode:
                              contract.vehicle_ids, contract.offsets))
         self.hold = (contract.formation_id, (p.x, p.y, yaw), vehicles)
         self.trajectory = None
+        self._clear_markers_pending = False
         self._previewing = True
         self._active_plan = None
         self._hold_reason = "START"
-        self.marker_pub.publish(self._marker_array(
-            clear_marker_specs(self.frame_id), rospy.Time.now()))
-        self._publish_hold()
+        self._publish_hold(clear=True)
 
     @synchronized
     def on_frontend_status(self, message):
@@ -378,7 +683,7 @@ class FormationPlaybackNode:
             while len(self._frontend_reports) > 32:
                 del self._frontend_reports[min(self._frontend_reports)]
 
-    def _publish_hold(self):
+    def _publish_hold(self, clear=False, stamp=None):
         if self.hold is None:
             return
         formation_id, qf, vehicles = self.hold
@@ -389,13 +694,20 @@ class FormationPlaybackNode:
             reason = "{}: {}".format(prefix, frontend["reason"])
         specs = build_hold_markers(formation_id, qf, vehicles,
                                    reason, self.frame_id)
-        self.marker_pub.publish(self._marker_array(specs, rospy.Time.now()))
+        if clear:
+            # A DELETEALL sent as its own marker message can be dropped by the
+            # queue_size=1 publisher when the static hold follows immediately,
+            # leaving the old path visible in RViz.  Send the deletion and the
+            # replacement hold atomically, in that order.
+            specs = clear_marker_specs(self.frame_id) + specs
+        stamp = stamp if stamp is not None else rospy.Time.now()
+        self.marker_pub.publish(self._marker_array(specs, stamp))
         self._tf_prefix = tf_frame_prefix(formation_id)
         self._broadcast_tf(SimpleNamespace(
             formation_x=qf[0], formation_y=qf[1], formation_psi=qf[2],
             vehicles=tuple(SimpleNamespace(vehicle_id=v.vehicle_id,
                 center_x=x, center_y=y, theta=theta)
-                for v, x, y, theta in vehicles)), rospy.Time.now())
+                for v, x, y, theta in vehicles)), stamp)
         self.status_pub.publish(String(data=json.dumps({
             "schema": "formation_playback/v1", "state": "STATIC",
             "plan_id": self._active_plan, "formation_id": formation_id,
@@ -428,7 +740,12 @@ class FormationPlaybackNode:
         self._publish_tick()
 
     def _status_for_trajectory(self):
-        report = self.optimizer_status
+        # A busy rejection (or a newly admitted plan) publishes its own status
+        # while this plan is still playing.  Certification must come from the
+        # status retained for this exact plan, never from whichever report
+        # happened to arrive last.
+        report = getattr(self, "_optimizer_status_by_plan", {}).get(
+            self.trajectory.plan_id)
         if not (isinstance(report, dict) and report.get(
                 "plan_id") == self.trajectory.plan_id):
             return None
@@ -438,10 +755,11 @@ class FormationPlaybackNode:
         # must never certify this replay.  Legacy trajectories keep the
         # historical plan_id-only rule.
         digest = self.trajectory.model_sha256
+        audit_backend = self.trajectory.backend or PLAYBACK_PLAN_BACKEND
         if digest is not None and (
                 report.get("model_sha256") != digest or
                 report.get("formation_id") != self.trajectory.formation_id or
-                report.get("backend") != PLAYBACK_PLAN_BACKEND):
+                report.get("backend") != audit_backend):
             rospy.logwarn_throttle(
                 5.0,
                 "[formation playback] ignoring audit status for plan %s: "
@@ -474,6 +792,11 @@ class FormationPlaybackNode:
             status = self._status_for_trajectory()
             markers, namespaces, audit_state, executable = build_markers(
                 trajectory, frame, self.options, status)
+            publish_markers = markers
+            if self._clear_markers_pending:
+                publish_markers = (
+                    clear_marker_specs(self.frame_id) + tuple(markers))
+                self._clear_markers_pending = False
         except (PlaybackValidationError, ValueError) as exc:
             rospy.logerr(
                 "[formation playback] cannot build playback frame: %s", exc)
@@ -502,7 +825,7 @@ class FormationPlaybackNode:
                 "cleared": True,
                 "reason": "playback status was not finite",
             }, sort_keys=True)
-        self.marker_pub.publish(self._marker_array(markers, now))
+        self.marker_pub.publish(self._marker_array(publish_markers, now))
         self.status_pub.publish(String(data=payload))
         if self.publish_tf:
             self._broadcast_tf(frame, now)
@@ -576,10 +899,9 @@ class FormationPlaybackNode:
                                for v in frame.vehicles))
             self._hold_reason = hold_reason or "CLEARED"
         self.trajectory = None
+        self._clear_markers_pending = False
         self._last_state = CLEARED
-        specs = clear_marker_specs(self.frame_id)
         now = rospy.Time.now()
-        self.marker_pub.publish(self._marker_array(specs, now))
         document = status_document(
             cleared=True, invalid_reason=reason, frame_id=self.frame_id,
             model_sha256=self._playback_model_sha256,
@@ -588,8 +910,11 @@ class FormationPlaybackNode:
         self.status_pub.publish(String(data=json.dumps(
             document, sort_keys=True, allow_nan=False)))
         rospy.loginfo("[formation playback] cleared: %s", reason)
-        if self.transport_ui and freeze:
-            self._publish_hold()
+        if self.transport_ui and freeze and self.hold is not None:
+            self._publish_hold(clear=True, stamp=now)
+        else:
+            specs = clear_marker_specs(self.frame_id)
+            self.marker_pub.publish(self._marker_array(specs, now))
 
 
 def main():

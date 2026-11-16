@@ -1,0 +1,205 @@
+===== test_virtual_a_geometry.py =====
+test_reference_profile_is_within_the_limit (test_virtual_a_geometry.CurvatureLimitTests) ... ok
+test_short_profile_reports_the_front_vehicle_value (test_virtual_a_geometry.CurvatureLimitTests) ... ok
+test_heading_id_set_must_match_the_model (test_virtual_a_geometry.InitialStateTests) ... ok
+test_initial_source_contract (test_virtual_a_geometry.InitialStateTests) ... ok
+test_measured_heading_mismatch_is_rejected_per_vehicle (test_virtual_a_geometry.InitialStateTests) ... ok
+test_nonstationary_or_non_a_declarations_are_rejected (test_virtual_a_geometry.InitialStateTests) ... ok
+test_nonzero_initial_curvature_is_rejected (test_virtual_a_geometry.InitialStateTests) ... ok
+test_valid_stationary_state_is_accepted (test_virtual_a_geometry.InitialStateTests) ... ok
+test_c2_profile_matches_motion_block (test_virtual_a_geometry.ProfileReuseTests) ... ok
+test_g_jump_is_c2_valid_and_side_semantics_hold (test_virtual_a_geometry.ProfileReuseTests) ... ok
+test_node_side_limits_and_auto_policy (test_virtual_a_geometry.ProfileReuseTests) ... ok
+test_non_c2_profile_is_rejected_at_the_node (test_virtual_a_geometry.ProfileReuseTests) ... ok
+test_hold_path_accepts_only_zero_station (test_virtual_a_geometry.RejectionTests) ... ok
+test_invalid_knots_are_rejected (test_virtual_a_geometry.RejectionTests) ... ok
+test_normal_branch_violation_names_the_vehicle (test_virtual_a_geometry.RejectionTests) ... ok
+test_station_domain_is_rejected_not_clipped (test_virtual_a_geometry.RejectionTests) ... ok
+test_wrong_formation_is_rejected (test_virtual_a_geometry.RejectionTests) ... ok
+test_constant_curvature_jets_match_analytic_relations (test_virtual_a_geometry.StraightAndArcTests) ... ok
+test_constant_curvature_matches_fixed_pivot_arc (test_virtual_a_geometry.StraightAndArcTests) ... ok
+test_straight_motion_is_exact_and_rigid (test_virtual_a_geometry.StraightAndArcTests) ... ok
+
+----------------------------------------------------------------------
+Ran 20 tests in 1.065s
+
+OK
+test_virtual_a_geometry_exit=0
+===== test_virtual_a_optimizer.py =====
+test_exact_hold_is_no_motion_but_near_or_turned_goal_is_not (test_virtual_a_optimizer.AcceptanceSolveTests) ... ok
+test_fake_solver_success_curvature_violation_is_not_feasible (test_virtual_a_optimizer.AcceptanceSolveTests) ... ok
+test_fake_solver_success_wrong_endpoint_is_not_feasible (test_virtual_a_optimizer.AcceptanceSolveTests) ... ok
+test_rotation_and_translation_equivalence (test_virtual_a_optimizer.AcceptanceSolveTests) ... ok
+test_scipy_fallback_is_recorded_explicitly (test_virtual_a_optimizer.AcceptanceSolveTests) ... ok
+test_six_endpoints_straight_and_clamped_straight_policy (test_virtual_a_optimizer.AcceptanceSolveTests) ... ok
+test_small_budget_returns_budget_exhausted_without_path (test_virtual_a_optimizer.AcceptanceSolveTests) ... ok
+test_solver_exception_maps_to_numerical_failure (test_virtual_a_optimizer.AcceptanceSolveTests) ... ok
+test_missing_or_nonfinite_success_vector_never_reports_a_residual (test_virtual_a_optimizer.ConstraintResidualTests) ... ok
+test_real_ipopt_success_residual_is_finite_and_recomputable (test_virtual_a_optimizer.ConstraintResidualTests) ... ok
+test_real_slsqp_fallback_success_residual_is_finite_and_recomputable (test_virtual_a_optimizer.ConstraintResidualTests) ... ok
+test_residual_calculation_anomaly_fails_closed (test_virtual_a_optimizer.ConstraintResidualTests) ... ok
+test_default_config_is_the_frozen_fixture (test_virtual_a_optimizer.InitialGuessTests) ... ok
+test_initial_guess_uses_request_only_automatic_length (test_virtual_a_optimizer.InitialGuessTests) ... ok
+test_six_guesses_fixed_order_reconstructible_and_c2 (test_virtual_a_optimizer.InitialGuessTests) ... ok
+test_solve_reads_no_reference_or_fixture_file (test_virtual_a_optimizer.InitialGuessTests) ... ok
+test_auto_exception_with_exhausted_budget_never_starts_slsqp (test_virtual_a_optimizer.SoftDeadlineTests) ... ok
+test_auto_ordinary_failure_with_budget_uses_real_slsqp_and_audit (test_virtual_a_optimizer.SoftDeadlineTests) ... ok
+test_auto_slsqp_timeout_is_recorded_without_audit (test_virtual_a_optimizer.SoftDeadlineTests) ... ok
+test_auto_timeout_after_audited_candidate_never_falls_back (test_virtual_a_optimizer.SoftDeadlineTests) ... ok
+test_auto_timeout_never_starts_slsqp_or_audits (test_virtual_a_optimizer.SoftDeadlineTests) ... ok
+test_ipopt_max_wall_time_is_effective_and_truthful (test_virtual_a_optimizer.SoftDeadlineTests) ... ok
+test_nan_planner_tolerance_cannot_enter_the_audit_conversion (test_virtual_a_optimizer.SoftDeadlineTests) ... ok
+test_slsqp_iteration_callback_stops_and_marks_timeout (test_virtual_a_optimizer.SoftDeadlineTests) ... ok
+test_timed_out_success_flag_never_reaches_the_audit (test_virtual_a_optimizer.SoftDeadlineTests) ... ok
+test_timeout_preserves_only_a_previously_audited_candidate (test_virtual_a_optimizer.SoftDeadlineTests) ... ok
+
+----------------------------------------------------------------------
+Ran 26 tests in 49.737s
+
+OK
+test_virtual_a_optimizer_exit=0
+===== test_virtual_a_profile.py =====
+test_analytic_eta_sup_and_sampled_peaks (test_virtual_a_profile.AnalyticReferenceTests) ... ok
+test_curvature_sign_sequence_both_branches (test_virtual_a_profile.AnalyticReferenceTests) ... ok
+test_endpoints_match_the_mandatory_reference (test_virtual_a_profile.AnalyticReferenceTests) ... ok
+test_mandatory_node_stations_and_left_right_states (test_virtual_a_profile.AnalyticReferenceTests) ... ok
+test_mirror_maps_centres_headings_and_curvature_jets (test_virtual_a_profile.AnalyticReferenceTests) ... ok
+test_production_endpoint_is_within_one_micrometre (test_virtual_a_profile.AnalyticReferenceTests) ... ok
+test_reference_rigidity_and_pair_distances (test_virtual_a_profile.AnalyticReferenceTests) ... ok
+test_wheel_speed_and_yaw_rate_diagnostics (test_virtual_a_profile.AnalyticReferenceTests) ... ok
+test_analytic_profile_domain_rejections (test_virtual_a_profile.IntegrationBudgetTests) ... ok
+test_differential_recovery_against_independent_quadrature (test_virtual_a_profile.IntegrationBudgetTests) ... ok
+test_quadratic_and_cubic_profile_errors_within_reported_budgets (test_virtual_a_profile.IntegrationBudgetTests) ... ok
+test_analytic_envelope_contains_samples_and_is_not_the_sample_max (test_virtual_a_profile.NodeAndBoundTests) ... ok
+test_c2_node_values_side_limits_and_auto_policy (test_virtual_a_profile.NodeAndBoundTests) ... ok
+test_m4_bound_covers_dense_fourth_derivative_expression (test_virtual_a_profile.NodeAndBoundTests) ... ok
+test_production_interval_bounds_contain_dense_samples (test_virtual_a_profile.NodeAndBoundTests) ... ok
+test_query_order_does_not_change_the_state (test_virtual_a_profile.NodeAndBoundTests) ... ok
+test_bound_unconfirmed_when_budget_cannot_be_met (test_virtual_a_profile.SimpsonRemainderReworkTests) ... ok
+test_nonzero_g_c2_positions_within_corrected_budget (test_virtual_a_profile.SimpsonRemainderReworkTests) ... ok
+test_partial_queries_use_at_most_one_two_d_panel (test_virtual_a_profile.SimpsonRemainderReworkTests) ... ok
+test_position_budget_sums_complete_and_local_panels (test_virtual_a_profile.SimpsonRemainderReworkTests) ... ok
+test_refinement_is_recorded_and_uses_the_corrected_remainder (test_virtual_a_profile.SimpsonRemainderReworkTests) ... ok
+test_simpson_segment_uses_2d_full_panels_for_even_n (test_virtual_a_profile.SimpsonRemainderReworkTests) ... ok
+
+----------------------------------------------------------------------
+Ran 22 tests in 1.292s
+
+OK
+test_virtual_a_profile_exit=0
+===== test_virtual_a_audit.py =====
+test_audit_budget_cannot_exceed_g1_contract (test_virtual_a_audit.AuditConfigFailureClosedTests) ... ok
+test_every_float_field_rejects_nan_infinity_negative_and_types (test_virtual_a_audit.AuditConfigFailureClosedTests) ... ok
+test_every_integer_field_rejects_bool_float_zero_and_negative (test_virtual_a_audit.AuditConfigFailureClosedTests) ... ok
+test_invalid_config_is_rejected_before_the_hold_branch (test_virtual_a_audit.AuditConfigFailureClosedTests) ... ok
+test_nonfinite_intermediate_audit_value_fails_closed (test_virtual_a_audit.AuditConfigFailureClosedTests) ... ok
+test_zero_nonnegative_tolerances_are_a_valid_domain (test_virtual_a_audit.AuditConfigFailureClosedTests) ... ok
+test_degenerate_interval_contains_codex_counterexample (test_virtual_a_audit.AuditIntervalBoundCoverageTests) ... ok
+test_narrow_intervals_cover_all_sign_combinations_and_components (test_virtual_a_audit.AuditIntervalBoundCoverageTests) ... ok
+test_center_vehicle_lateral_acceleration_limit (test_virtual_a_audit.G3DurationCounterexampleTests) ... ok
+test_front_wheel_steer_acceleration_limit (test_virtual_a_audit.G3DurationCounterexampleTests) ... ok
+test_front_wheel_steer_rate_limit (test_virtual_a_audit.G3DurationCounterexampleTests) ... ok
+test_side_vehicle_front_right_wheel_speed_limit (test_virtual_a_audit.G3DurationCounterexampleTests) ... ok
+test_side_vehicle_jerk_limit_rejects_a_shortened_plan (test_virtual_a_audit.G3DurationCounterexampleTests) ... ok
+test_side_vehicle_speed_limit (test_virtual_a_audit.G3DurationCounterexampleTests) ... ok
+test_coarse_interval_subdivides_until_every_bound_is_confirmed (test_virtual_a_audit.G3HoldAndFailClosedTests) ... ok
+test_coarse_interval_without_refinement_fails_closed (test_virtual_a_audit.G3HoldAndFailClosedTests) ... ok
+test_hold_dynamics_are_audited_without_inverse_division (test_virtual_a_audit.G3HoldAndFailClosedTests) ... ok
+test_invalid_dynamic_audit_config_fails_closed (test_virtual_a_audit.G3HoldAndFailClosedTests) ... ok
+test_leaf_budget_exhaustion_never_reports_feasible (test_virtual_a_audit.G3HoldAndFailClosedTests) ... ok
+test_curve_is_certified_on_the_complete_domain (test_virtual_a_audit.G3WholeDomainCertificateTests) ... ok
+test_differential_oracle_recomputes_raw_profile_dynamics (test_virtual_a_audit.G3WholeDomainCertificateTests) ... ok
+test_endpoints_and_one_hundred_nonuniform_inverse_samples (test_virtual_a_audit.G3WholeDomainCertificateTests) ... ok
+test_every_segment_covers_all_metrics_vehicles_and_wheels (test_virtual_a_audit.G3WholeDomainCertificateTests) ... ok
+test_internal_nodes_have_left_and_right_motion_limits (test_virtual_a_audit.G3WholeDomainCertificateTests) ... ok
+test_node_left_and_right_values_have_adjacent_cell_certificates (test_virtual_a_audit.G3WholeDomainCertificateTests) ... ok
+test_pointwise_values_lie_below_every_local_interval_certificate (test_virtual_a_audit.G3WholeDomainCertificateTests) ... ok
+test_coarse_grid_refines_until_the_budget_is_confirmed (test_virtual_a_audit.IndependentIntegrationBudgetTests) ... ok
+test_nonzero_g_multisegment_against_independent_quadrature (test_virtual_a_audit.IndependentIntegrationBudgetTests) ... ok
+test_resource_limit_is_bound_unconfirmed_never_feasible (test_virtual_a_audit.IndependentIntegrationBudgetTests) ... ok
+test_unreachable_budget_is_bound_unconfirmed (test_virtual_a_audit.IndependentIntegrationBudgetTests) ... ok
+test_car1_wrong_initial_heading_rejected (test_virtual_a_audit.NegativeAuditTests) ... ok
+test_forged_goal_is_checked_against_original_request (test_virtual_a_audit.NegativeAuditTests) ... ok
+test_forged_request_digest_rejected (test_virtual_a_audit.NegativeAuditTests) ... ok
+test_invalid_limit_rejected (test_virtual_a_audit.NegativeAuditTests) ... ok
+test_nan_goal_rejected_before_any_geometry_claim (test_virtual_a_audit.NegativeAuditTests) ... ok
+test_non_c2_profile_rejected (test_virtual_a_audit.NegativeAuditTests) ... ok
+test_segment_interior_curvature_violation_with_legal_nodes (test_virtual_a_audit.NegativeAuditTests) ... ok
+test_static_wheel_limit_uses_whole_segment_envelope (test_virtual_a_audit.NegativeAuditTests) ... ok
+test_unconfirmed_enclosure_is_not_published_as_feasible (test_virtual_a_audit.NegativeAuditTests) ... ok
+test_wrong_vehicle_shape_rejected (test_virtual_a_audit.NegativeAuditTests) ... ok
+test_terminal_nonzero_curvature_free_passes_straight_rejected (test_virtual_a_audit.PolicySemanticsTests) ... ok
+test_terminal_nonzero_eta_free_passes_straight_rejected (test_virtual_a_audit.PolicySemanticsTests) ... ok
+test_six_metre_path_to_ten_metre_goal_nan_tolerance_is_rejected (test_virtual_a_audit.RealCounterexampleTests) ... ok
+test_clamped_cubic_spline_straight_reference_passes (test_virtual_a_audit.ReferenceAuditTests) ... ok
+test_frozen_reference_endpoints_match_rounded_task_requests (test_virtual_a_audit.ReferenceAuditTests) ... ok
+test_g1_double_lane_change_endpoint_can_be_a_straight_path (test_virtual_a_audit.ReferenceAuditTests) ... ok
+test_hold_only_for_exactly_identical_start_and_goal (test_virtual_a_audit.ReferenceAuditTests) ... ok
+test_planning_context_keyword_is_accepted_without_map_claim (test_virtual_a_audit.ReferenceAuditTests) ... ok
+test_six_quadratic_existence_profiles_pass_independent_audit (test_virtual_a_audit.ReferenceAuditTests) ... ok
+test_straight_line_goal_passes (test_virtual_a_audit.ReferenceAuditTests) ... ok
+test_structural_model_identity_is_not_object_identity (test_virtual_a_audit.ReferenceAuditTests) ... ok
+
+----------------------------------------------------------------------
+Ran 51 tests in 3.330s
+
+OK
+test_virtual_a_audit_exit=0
+===== test_virtual_a_timing.py =====
+test_duration_budget_is_a_hard_gate (test_virtual_a_timing.DurationSelectionTests) ... ok
+test_exhausted_rescales_never_publish_a_feasible_plan (test_virtual_a_timing.DurationSelectionTests) ... ok
+test_longer_straight_path_requires_proportional_common_time (test_virtual_a_timing.DurationSelectionTests) ... ok
+test_rescale_configuration_cap_is_enforced (test_virtual_a_timing.DurationSelectionTests) ... ok
+test_rescale_loop_is_recorded_in_the_plan (test_virtual_a_timing.DurationSelectionTests) ... ok
+test_rejected_geometry_never_yields_a_timed_plan (test_virtual_a_timing.GeometryGateTests) ... ok
+test_hold_rejects_a_different_goal (test_virtual_a_timing.HoldRetimingTests) ... ok
+test_no_motion_is_exact_hold (test_virtual_a_timing.HoldRetimingTests) ... ok
+test_degenerate_interval_contains_codex_counterexample (test_virtual_a_timing.IntervalBoundCoverageTests) ... ok
+test_narrow_intervals_cover_all_sign_combinations_and_components (test_virtual_a_timing.IntervalBoundCoverageTests) ... ok
+test_derivatives_match_centered_differences (test_virtual_a_timing.QuinticLawTests) ... ok
+test_h1_is_strictly_positive_inside_and_zero_at_both_ends (test_virtual_a_timing.QuinticLawTests) ... ok
+test_inverse_map_at_one_hundred_nonuniform_fractions (test_virtual_a_timing.QuinticLawTests) ... ok
+test_inverse_rejects_out_of_range_fraction (test_virtual_a_timing.QuinticLawTests) ... ok
+test_quintic_progress_and_derivative_identities (test_virtual_a_timing.QuinticLawTests) ... ok
+test_straight_line_selects_speed_limited_duration (test_virtual_a_timing.StraightRetimingTests) ... ok
+test_straight_scaling_records_all_metric_orders (test_virtual_a_timing.StraightRetimingTests) ... ok
+test_two_second_selection_changes_only_the_common_time (test_virtual_a_timing.StraightRetimingTests) ... ok
+
+----------------------------------------------------------------------
+Ran 18 tests in 0.367s
+
+OK
+test_virtual_a_timing_exit=0
+===== test_virtual_a_trajectory.py =====
+test_initial_hold_is_exactly_the_straight_start (test_virtual_a_trajectory.CurvedPointwiseTests) ... ok
+test_internal_nodes_are_motion_with_one_sided_limits (test_virtual_a_trajectory.CurvedPointwiseTests) ... ok
+test_inverse_map_on_one_hundred_nonuniform_stations (test_virtual_a_trajectory.CurvedPointwiseTests) ... ok
+test_sample_is_the_same_pointwise_states (test_virtual_a_trajectory.CurvedPointwiseTests) ... ok
+test_terminal_hold_preserves_free_endpoint_state (test_virtual_a_trajectory.CurvedPointwiseTests) ... ok
+test_time_beyond_the_terminal_hold_does_not_rezero_geometry (test_virtual_a_trajectory.CurvedPointwiseTests) ... ok
+test_time_law_composition_matches_spatial_jets (test_virtual_a_trajectory.CurvedPointwiseTests) ... ok
+test_wheel_vectors_have_four_diagnostic_wheels (test_virtual_a_trajectory.CurvedPointwiseTests) ... ok
+test_hold_state_and_projection_are_exact (test_virtual_a_trajectory.NoMotionTrajectoryTests) ... ok
+test_endpoints_are_stationary_rest_to_rest (test_virtual_a_trajectory.PointwiseStraightTests) ... ok
+test_straight_pointwise_time_law_and_translation (test_virtual_a_trajectory.PointwiseStraightTests) ... ok
+test_straight_vehicle_centres_keep_fixed_offsets (test_virtual_a_trajectory.PointwiseStraightTests) ... ok
+test_coordinated_duration_tamper_is_rejected (test_virtual_a_trajectory.SerializationIdentityTests) ... ok
+test_hold_roundtrip_and_one_sample_contract (test_virtual_a_trajectory.SerializationIdentityTests) ... ok
+test_model_has_no_self_digest_audit_or_execution_claim (test_virtual_a_trajectory.SerializationIdentityTests) ... ok
+test_request_identity_tamper_is_rejected (test_virtual_a_trajectory.SerializationIdentityTests) ... ok
+test_roundtrip_restores_the_exact_authoritative_model (test_virtual_a_trajectory.SerializationIdentityTests) ... ok
+test_sample_is_pointwise_non_authoritative_and_cannot_alter_model (test_virtual_a_trajectory.SerializationIdentityTests) ... ok
+test_sample_rejects_nonfinite_or_noniterable_times (test_virtual_a_trajectory.SerializationIdentityTests) ... ok
+test_selection_metric_table_tamper_is_rejected (test_virtual_a_trajectory.SerializationIdentityTests) ... ok
+test_timing_and_selection_tamper_is_rejected (test_virtual_a_trajectory.SerializationIdentityTests) ... ok
+test_unknown_extra_and_self_referential_fields_are_rejected (test_virtual_a_trajectory.SerializationIdentityTests) ... ok
+test_version_numerics_and_profile_tamper_is_rejected (test_virtual_a_trajectory.SerializationIdentityTests) ... ok
+
+----------------------------------------------------------------------
+Ran 23 tests in 0.440s
+
+OK
+test_virtual_a_trajectory_exit=0
+benchmark_G1_exit=0
+benchmark_G2_exit=0
+benchmark_G3_exit=0

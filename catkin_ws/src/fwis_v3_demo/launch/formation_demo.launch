@@ -7,9 +7,11 @@
        backend:=uniform_v02 (default) starts only the autonomous FR05 uniform
        planner: it publishes the atomic /formation/playback_plan envelope and
        the legacy C++ front end / legacy optimizer are not started.
+       backend:=virtual_rigid_a starts the same node with the G5 virtual rigid
+       A backend hooks; it never starts the legacy front end/optimizer.
        backend:=legacy starts only the historical C++ formation_planner and
-       formation_optimizer_node.py; the uniform planner is not started.  The
-       two publishing backends can never run at the same time. -->
+       formation_optimizer_node.py; neither autonomous planner is started.
+       Exactly one publishing backend can run at a time. -->
   <arg name="backend" default="uniform_v02"/>
   <arg name="planner" default="true"/>
   <arg name="scene" default="S09_underground_garage"/>
@@ -62,6 +64,12 @@
   <arg name="playback_start_timeout_s" default="5.0"/>
   <arg name="playback_finish_grace_s" default="3.0"/>
   <arg name="job_state_timeout_s" default="3.0"/>
+  <!-- G5 virtual_rigid_a only.  FREE accepts all goal_heading_free=true;
+       STRAIGHT publishes explicit all-fixed headings equal to the cargo goal
+       heading.  The uniform_v02 and legacy paths ignore this argument. -->
+  <arg name="virtual_a_goal_policy" default="free"/>
+  <arg name="virtual_a_planning_budget_s" default="60.0"/>
+  <arg name="virtual_a_planning_timeout_s" default="75.0"/>
 
   <node if="$(arg start_map)" name="fwis_map_publisher"
         pkg="fwis_map_server" type="map_publisher.py" output="screen">
@@ -75,11 +83,13 @@
   </node>
 
   <!-- The only V0.2 publisher.  It does not start in legacy mode. -->
-  <node if="$(eval arg('planner') and arg('backend') == 'uniform_v02')"
+  <node if="$(eval arg('planner') and (arg('backend') == 'uniform_v02' or arg('backend') == 'virtual_rigid_a'))"
         name="formation_uniform_planner"
         pkg="fwis_v3_optimizer" type="formation_uniform_planner_node.py"
         output="screen">
+    <param name="backend" value="$(arg backend)"/>
     <param name="frame_id" value="map"/>
+    <param name="max_publication_samples" value="200001"/>
     <param name="max_expansions" value="$(arg max_expansions)"/>
     <param name="max_seconds" value="$(arg uniform_max_seconds)"/>
     <param name="translation_step" value="$(arg uniform_translation_step)"/>
@@ -93,6 +103,14 @@
            value="$(arg playback_start_timeout_s)"/>
     <param name="playback_finish_grace_s"
            value="$(arg playback_finish_grace_s)"/>
+    <param if="$(eval arg('backend') == 'virtual_rigid_a')"
+           name="virtual_a_goal_policy" value="$(arg virtual_a_goal_policy)"/>
+    <param if="$(eval arg('backend') == 'virtual_rigid_a')"
+           name="virtual_a_planning_budget_s"
+           value="$(arg virtual_a_planning_budget_s)"/>
+    <param if="$(eval arg('backend') == 'virtual_rigid_a')"
+           name="virtual_a_planning_timeout_s"
+           value="$(arg virtual_a_planning_timeout_s)"/>
   </node>
 
   <node if="$(eval arg('optimizer') and arg('backend') == 'legacy')"
@@ -137,6 +155,7 @@
     <param name="map_timeout_s" value="8.0"/>
     <param name="playback_tf_timeout_s" value="0.5"/>
     <param name="admission_backend" value="$(arg backend)"/>
+    <param name="virtual_a_goal_policy" value="$(arg virtual_a_goal_policy)"/>
     <param name="job_state_timeout_s" value="$(arg job_state_timeout_s)"/>
     <rosparam command="load" file="$(arg transport_config)"/>
   </node>

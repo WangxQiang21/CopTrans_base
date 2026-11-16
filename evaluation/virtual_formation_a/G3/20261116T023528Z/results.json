@@ -1,0 +1,2263 @@
+{
+  "aggregate": {
+    "all_dynamic_audits_passed": true,
+    "benchmark_check_count": 151,
+    "benchmark_failed_checks": 0,
+    "differential_tolerances": {
+      "acceleration": 0.0001,
+      "angular_accel": 0.0001,
+      "angular_jerk": 0.01,
+      "angular_rate": 1e-05,
+      "jerk": 0.01,
+      "velocity": 1e-05
+    },
+    "dynamic_feasible_cases": 8,
+    "inverse_samples_per_case": 100,
+    "max_actual_utilization": 0.9900990099009902,
+    "max_differential_errors": {
+      "acceleration": 8.039931498338149e-10,
+      "angular_accel": 1.6268510497075006e-10,
+      "angular_jerk": 3.4959529070267836e-06,
+      "angular_rate": 4.6609993642476866e-11,
+      "jerk": 3.5857609076983543e-06,
+      "velocity": 4.779254769715635e-11
+    },
+    "max_independent_time_inverse_error_s": 7.60218412665381e-08,
+    "max_node_continuity_error": 8.743006318923108e-15,
+    "max_node_jump_magnitude": 0.06982298109228557,
+    "max_node_state_error": 1.7763568394002505e-15,
+    "max_required_duration_s": 20.635904281985216,
+    "max_selected_duration_s": 20.842263324805067,
+    "max_time_inverse_error_s": 4.3716497089008044e-10,
+    "no_motion_cases": 1,
+    "short_duration_rejections": 8,
+    "tamper_rejections": 8,
+    "time_inverse_tolerance_s": 1e-09,
+    "total_rescalings": 0
+  },
+  "benchmark": {
+    "check_count": 151,
+    "codex_acceptance": "NOT_RUN_NOT_CLAIMED",
+    "failed": [],
+    "nonclaims": [
+      "DYNAMIC_FEASIBLE only when the independent dynamic audit passes",
+      "collision_checked=false; executable=false",
+      "no map, ROS, hardware, real-time or time-optimal claim",
+      "retimer selection is not a certificate",
+      "DYNAMIC_FEASIBLE is not Codex ACCEPTED"
+    ],
+    "status": "PASS"
+  },
+  "codex_acceptance": "NOT_RUN_NOT_CLAIMED",
+  "generated_at_utc": "2026-11-16T02:42:20.583267+00:00",
+  "legacy": {
+    "disclosed_wrapper": {
+      "cases": {
+        "fr02_a_timing": {
+          "returncode": 0,
+          "status": "PASS",
+          "stderr_log": "logs/fr02_a_timing.stderr.log",
+          "wall_s": 0.40251196699682623
+        },
+        "fr02_a_trajectory": {
+          "returncode": 0,
+          "status": "PASS",
+          "stderr_log": "logs/fr02_a_trajectory.stderr.log",
+          "wall_s": 1.0008325460366905
+        },
+        "fr02_b_quality": {
+          "returncode": 0,
+          "status": "PASS",
+          "stderr_log": "logs/fr02_b_quality.stderr.log",
+          "wall_s": 7.55365582392551
+        },
+        "timing_continuous": {
+          "returncode": 1,
+          "status": "FAIL",
+          "stderr_log": "logs/timing_continuous.stderr.log",
+          "wall_s": 0.632182625005953
+        },
+        "timing_formation": {
+          "returncode": 0,
+          "status": "PASS",
+          "stderr_log": "logs/timing_formation.stderr.log",
+          "wall_s": 0.5113383249845356
+        }
+      },
+      "log": "logs/legacy.log",
+      "scope": "adds only the prior-stage rework documents and G2 fixtures that accepted G1/G2 explicitly authorized to the G0 in-memory allowlists; edits no workspace file",
+      "script": "baseline_runner_rework_docs_and_fixtures.py",
+      "status": "FAIL"
+    },
+    "pre_existing_failure_proof": {
+      "case": "timing_continuous",
+      "conclusion": "pre-existing baseline test staleness, not a G3 source effect; old tests were not modified or relaxed",
+      "exit_code": 1,
+      "export_root": "/tmp/g3_baseline_probe_20261116",
+      "failed_source_file_sha256": "2d1e9b182028e63d5fa9b25566ea0b9ab0cccb4ea7d3921ccfe651f3186ea8ef",
+      "failed_test_file_sha256": "b7a36fd70c5d2bc5535334836d958a10afa10109f0c7cd2b226745179c7eee0c",
+      "failure": "test_short_translation_has_finite_acceleration_and_zero_end_speed KeyError: 'dynamic_peaks'",
+      "log": "logs/legacy_baseline_probe.log",
+      "reproduced_from": "git archive HEAD pristine export"
+    },
+    "unmodified_g0_gate": {
+      "detail": "G0 FAILED: BaselineError: UNKNOWN_WORKSPACE_MODIFICATIONS: ['docs/virtual_formation_a/CLAUDE_G1_REWORK_01.md', 'docs/virtual_formation_a/CLAUDE_G2_REWORK_01.md', 'docs/virtual_formation_a/CLAUDE_G2_REWORK_02.md', 'docs/virtual_formation_a/CLAUDE_G2_REWORK_03.md', 'tests/fixtures/virtual_a/existence_reference.json', 'tests/fixtures/virtual_a/open_requests.json']",
+      "exit_code": 1,
+      "log": "logs/legacy_unmodified_gate.log",
+      "status": "BLOCKED"
+    }
+  },
+  "model_cases": [
+    {
+      "S_m": 6.000496658791536,
+      "T_s": 14.627622484021819,
+      "audit": {
+        "check_count": 845,
+        "collision_checked": false,
+        "differential": {
+          "checked_sample_count": 80,
+          "max_errors": {
+            "acceleration": 4.622331128967261e-10,
+            "angular_accel": 4.4678653138285895e-11,
+            "angular_jerk": 1.0162110947696534e-07,
+            "angular_rate": 1.3610362836757872e-12,
+            "jerk": 3.1074100107289504e-07,
+            "velocity": 4.177450052544884e-12
+          },
+          "oracle": {
+            "boundary_rule": "stencils that cross a Hermite g-jump or the time-domain hold boundary are skipped; analytic one-sided limits are used instead",
+            "grid_subintervals": [
+              376,
+              376,
+              376,
+              376,
+              376,
+              376,
+              376,
+              376
+            ],
+            "method": "independent_composite_simpson_positions",
+            "oracle_step_m": 0.002
+          },
+          "skipped_sample_count": 0,
+          "tolerances": {
+            "acceleration": 0.0001,
+            "angular_accel": 0.0001,
+            "angular_jerk": 0.01,
+            "angular_rate": 1e-05,
+            "jerk": 0.01,
+            "velocity": 1e-05
+          }
+        },
+        "executable": false,
+        "leaves": 64,
+        "map_used": false,
+        "max_utilization": {
+          "acceleration": 0.3165818134649048,
+          "jerk": 0.06585012508941288,
+          "lateral_acceleration": 0.06280195810258539,
+          "speed": 0.9900990099009901,
+          "steer_acceleration": 0.0011500597438330819,
+          "steer_rate": 0.006104983644934536,
+          "wheel_angle": 0.017851028768919697,
+          "wheel_speed": 0.796594315278819,
+          "yaw_acceleration": 0.024879931847296612,
+          "yaw_jerk": 0.0046833644197063545,
+          "yaw_rate": 0.06837133243041596
+        },
+        "nodes": {
+          "internal_node_count": 7,
+          "max_continuity_error": 4.427014310692812e-15,
+          "max_inverse_error_s": 4.2571990377382463e-10,
+          "max_jump_magnitude": 0.0011108757364862512,
+          "max_state_error": 4.440892098500626e-16,
+          "records": [
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.47831541347432e-10,
+              "jump_max": 0.0007109372663795929,
+              "left_jerk_vector_location": "benchmark/results.json:E1 .dynamic_audit.metrics.nodes.records[0].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 8.300651832549022e-16,
+              "node": 1,
+              "right_jerk_vector_location": "benchmark/results.json:E1 .dynamic_audit.metrics.nodes.records[0].right_jerk",
+              "right_region": "motion",
+              "s": 0.750062082348942,
+              "t": 3.9403680523788607,
+              "tau": 0.26937857171820234,
+              "w": 0.47670050527879415
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.5351455096588325e-10,
+              "jump_max": 0.0011108757364862512,
+              "left_jerk_vector_location": "benchmark/results.json:E1 .dynamic_audit.metrics.nodes.records[1].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 8.309325449928906e-16,
+              "node": 2,
+              "right_jerk_vector_location": "benchmark/results.json:E1 .dynamic_audit.metrics.nodes.records[1].right_jerk",
+              "right_region": "motion",
+              "s": 1.500124164697884,
+              "t": 5.257696525647614,
+              "tau": 0.35943616478964713,
+              "w": 0.6523836742756752
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.567812711935403e-10,
+              "jump_max": 0.0009242807064054471,
+              "left_jerk_vector_location": "benchmark/results.json:E1 .dynamic_audit.metrics.nodes.records[2].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 4.326400349086157e-15,
+              "node": 3,
+              "right_jerk_vector_location": "benchmark/results.json:E1 .dynamic_audit.metrics.nodes.records[2].right_jerk",
+              "right_region": "motion",
+              "s": 2.250186247046826,
+              "t": 6.326715216342636,
+              "tau": 0.4325183551362153,
+              "w": 0.7413912101787594
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 4.2571990377382463e-10,
+              "jump_max": 0.0003693751656122582,
+              "left_jerk_vector_location": "benchmark/results.json:E1 .dynamic_audit.metrics.nodes.records[3].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 4.427014310692812e-15,
+              "node": 4,
+              "right_jerk_vector_location": "benchmark/results.json:E1 .dynamic_audit.metrics.nodes.records[3].right_jerk",
+              "right_region": "motion",
+              "s": 3.000248329395768,
+              "t": 7.313811242010909,
+              "tau": 0.5,
+              "w": 0.769156522020161
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.567812711935403e-10,
+              "jump_max": 0.00023301345666112278,
+              "left_jerk_vector_location": "benchmark/results.json:E1 .dynamic_audit.metrics.nodes.records[4].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 4.427014310692812e-15,
+              "node": 5,
+              "right_jerk_vector_location": "benchmark/results.json:E1 .dynamic_audit.metrics.nodes.records[4].right_jerk",
+              "right_region": "motion",
+              "s": 3.75031041174471,
+              "t": 8.300907267679182,
+              "tau": 0.5674816448637847,
+              "w": 0.7413912101787594
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.5351455096588325e-10,
+              "jump_max": 0.0005813906290599163,
+              "left_jerk_vector_location": "benchmark/results.json:E1 .dynamic_audit.metrics.nodes.records[5].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 4.427014310692812e-15,
+              "node": 6,
+              "right_jerk_vector_location": "benchmark/results.json:E1 .dynamic_audit.metrics.nodes.records[5].right_jerk",
+              "right_region": "motion",
+              "s": 4.500372494093652,
+              "t": 9.369925958374205,
+              "tau": 0.6405638352103529,
+              "w": 0.6523836742756751
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.4783198543664184e-10,
+              "jump_max": 0.0004590575260302191,
+              "left_jerk_vector_location": "benchmark/results.json:E1 .dynamic_audit.metrics.nodes.records[6].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 4.427014310692812e-15,
+              "node": 7,
+              "right_jerk_vector_location": "benchmark/results.json:E1 .dynamic_audit.metrics.nodes.records[6].right_jerk",
+              "right_region": "motion",
+              "s": 5.250434576442594,
+              "t": 10.687254431642959,
+              "tau": 0.7306214282817978,
+              "w": 0.4767005052787938
+            }
+          ]
+        },
+        "ros_used": false,
+        "time_inverse": {
+          "max_error_s": 4.0974423853867847e-10,
+          "max_independent_error_s": 5.31411714632668e-08,
+          "sample_count": 100,
+          "tolerance_s": 1e-09
+        },
+        "whole_domain_certificate": true
+      },
+      "model_json_location": "benchmark/results.json:E1 .model_json",
+      "model_sha256": "19d676e6e8b9ac6a9a3740e45d9b802b6b9715b98b27b655aa3559347b7922b4",
+      "name": "E1",
+      "request_sha256": "75b9ea75aa4639cf4829a7af9203db28a3abf7757c94616719cf7cbea3adceb5",
+      "roundtrip": {
+        "equal_digest": true,
+        "equal_json": true,
+        "equal_state_midpoint": true
+      },
+      "sample": {
+        "authoritative": false,
+        "states_equal_pointwise": true,
+        "times": [
+          0.0,
+          7.313811242010909,
+          14.627622484021819
+        ]
+      },
+      "selection": {
+        "T0_s": 1.0,
+        "interval_subdivisions_per_segment": 8,
+        "required_duration_s": 14.482794538635464,
+        "rescalings": 0,
+        "safety_factor": 1.01,
+        "selected_duration_s": 14.627622484021819,
+        "wheel_angle_bound_rad": 0.028040330419729084,
+        "wheel_angle_limit_rad": 1.5707963267948966,
+        "worst": {
+          "order": 1,
+          "quantity": "speed",
+          "s0": 3.1877638499830034,
+          "s1": 3.2815216102766214,
+          "segment_index": 4,
+          "vehicle_id": 3,
+          "wheel_index": 0
+        },
+        "worst_metric": {
+          "limit": 0.8,
+          "order": 1,
+          "required_duration_s": 14.482794538635464,
+          "segment_index": 4,
+          "upper_at_T0_s": 11.586235630908371,
+          "upper_bound_interval": [
+            3.1877638499830034,
+            3.2815216102766214
+          ],
+          "vehicle_id": 3,
+          "wheel_index": 0
+        }
+      },
+      "short_duration": {
+        "check_count": 155,
+        "first_failure": {
+          "limit": 2.0,
+          "quantity": "jerk",
+          "value": 4.797024928543142,
+          "vehicle_id": 3,
+          "wheel_index": 0
+        },
+        "reason": "DYNAMIC_LIMIT",
+        "rejected": true
+      },
+      "tamper": {
+        "extra_field": "UNSUPPORTED_MODEL_FIELD",
+        "self_digest": "UNSUPPORTED_MODEL_FIELD",
+        "timing_T": "MODEL_TIMING_INCONSISTENT"
+      },
+      "timing_status": "DYNAMIC_FEASIBLE"
+    },
+    {
+      "S_m": 6.000496658791535,
+      "T_s": 14.627622484021813,
+      "audit": {
+        "check_count": 845,
+        "collision_checked": false,
+        "differential": {
+          "checked_sample_count": 80,
+          "max_errors": {
+            "acceleration": 5.351999121661066e-10,
+            "angular_accel": 4.798637702474462e-11,
+            "angular_jerk": 1.0153784243266406e-07,
+            "angular_rate": 1.3556517020063552e-12,
+            "jerk": 3.1057446762614016e-07,
+            "velocity": 4.167208245142717e-12
+          },
+          "oracle": {
+            "boundary_rule": "stencils that cross a Hermite g-jump or the time-domain hold boundary are skipped; analytic one-sided limits are used instead",
+            "grid_subintervals": [
+              376,
+              376,
+              376,
+              376,
+              376,
+              376,
+              376,
+              376
+            ],
+            "method": "independent_composite_simpson_positions",
+            "oracle_step_m": 0.002
+          },
+          "skipped_sample_count": 0,
+          "tolerances": {
+            "acceleration": 0.0001,
+            "angular_accel": 0.0001,
+            "angular_jerk": 0.01,
+            "angular_rate": 1e-05,
+            "jerk": 0.01,
+            "velocity": 1e-05
+          }
+        },
+        "executable": false,
+        "leaves": 64,
+        "map_used": false,
+        "max_utilization": {
+          "acceleration": 0.3165818134649053,
+          "jerk": 0.06585012508941299,
+          "lateral_acceleration": 0.06280195810258522,
+          "speed": 0.9900990099009901,
+          "steer_acceleration": 0.0011500597438330565,
+          "steer_rate": 0.006104983644934539,
+          "wheel_angle": 0.017851028768919846,
+          "wheel_speed": 0.796594315278819,
+          "yaw_acceleration": 0.024879931847296897,
+          "yaw_jerk": 0.004683364419706401,
+          "yaw_rate": 0.06837133243041607
+        },
+        "nodes": {
+          "internal_node_count": 7,
+          "max_continuity_error": 4.3298697960381105e-15,
+          "max_inverse_error_s": 4.2571990377382463e-10,
+          "max_jump_magnitude": 0.0011108757364861749,
+          "max_state_error": 8.881784197001252e-16,
+          "records": [
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.47831541347432e-10,
+              "jump_max": 0.0007109372663795617,
+              "left_jerk_vector_location": "benchmark/results.json:E2 .dynamic_audit.metrics.nodes.records[0].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 8.291978215169138e-16,
+              "node": 1,
+              "right_jerk_vector_location": "benchmark/results.json:E2 .dynamic_audit.metrics.nodes.records[0].right_jerk",
+              "right_region": "motion",
+              "s": 0.7500620823489419,
+              "t": 3.9403680523788593,
+              "tau": 0.26937857171820234,
+              "w": 0.47670050527879426
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.5351366278746355e-10,
+              "jump_max": 0.0011108757364861749,
+              "left_jerk_vector_location": "benchmark/results.json:E2 .dynamic_audit.metrics.nodes.records[1].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 8.378714388967978e-16,
+              "node": 2,
+              "right_jerk_vector_location": "benchmark/results.json:E2 .dynamic_audit.metrics.nodes.records[1].right_jerk",
+              "right_region": "motion",
+              "s": 1.5001241646978838,
+              "t": 5.257696525647612,
+              "tau": 0.35943616478964713,
+              "w": 0.6523836742756753
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.567812711935403e-10,
+              "jump_max": 0.0009242807064054844,
+              "left_jerk_vector_location": "benchmark/results.json:E2 .dynamic_audit.metrics.nodes.records[2].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 4.322930902134203e-15,
+              "node": 3,
+              "right_jerk_vector_location": "benchmark/results.json:E2 .dynamic_audit.metrics.nodes.records[2].right_jerk",
+              "right_region": "motion",
+              "s": 2.250186247046826,
+              "t": 6.326715216342635,
+              "tau": 0.4325183551362153,
+              "w": 0.7413912101787595
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 4.2571990377382463e-10,
+              "jump_max": 0.00036937516561221006,
+              "left_jerk_vector_location": "benchmark/results.json:E2 .dynamic_audit.metrics.nodes.records[3].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 4.3298697960381105e-15,
+              "node": 4,
+              "right_jerk_vector_location": "benchmark/results.json:E2 .dynamic_audit.metrics.nodes.records[3].right_jerk",
+              "right_region": "motion",
+              "s": 3.0002483293957676,
+              "t": 7.313811242010907,
+              "tau": 0.5,
+              "w": 0.7691565220201612
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.567812711935403e-10,
+              "jump_max": 0.0002330134566614463,
+              "left_jerk_vector_location": "benchmark/results.json:E2 .dynamic_audit.metrics.nodes.records[4].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 4.3298697960381105e-15,
+              "node": 5,
+              "right_jerk_vector_location": "benchmark/results.json:E2 .dynamic_audit.metrics.nodes.records[4].right_jerk",
+              "right_region": "motion",
+              "s": 3.7503104117447092,
+              "t": 8.300907267679179,
+              "tau": 0.5674816448637847,
+              "w": 0.7413912101787595
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.5351810367956205e-10,
+              "jump_max": 0.0005813906290596162,
+              "left_jerk_vector_location": "benchmark/results.json:E2 .dynamic_audit.metrics.nodes.records[5].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 4.3298697960381105e-15,
+              "node": 6,
+              "right_jerk_vector_location": "benchmark/results.json:E2 .dynamic_audit.metrics.nodes.records[5].right_jerk",
+              "right_region": "motion",
+              "s": 4.500372494093652,
+              "t": 9.369925958374205,
+              "tau": 0.6405638352103531,
+              "w": 0.652383674275675
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.4783198543664184e-10,
+              "jump_max": 0.0004590575260301757,
+              "left_jerk_vector_location": "benchmark/results.json:E2 .dynamic_audit.metrics.nodes.records[6].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 4.3298697960381105e-15,
+              "node": 7,
+              "right_jerk_vector_location": "benchmark/results.json:E2 .dynamic_audit.metrics.nodes.records[6].right_jerk",
+              "right_region": "motion",
+              "s": 5.2504345764425935,
+              "t": 10.687254431642955,
+              "tau": 0.7306214282817978,
+              "w": 0.47670050527879393
+            }
+          ]
+        },
+        "ros_used": false,
+        "time_inverse": {
+          "max_error_s": 4.0974512671709817e-10,
+          "max_independent_error_s": 5.31411714632668e-08,
+          "sample_count": 100,
+          "tolerance_s": 1e-09
+        },
+        "whole_domain_certificate": true
+      },
+      "model_json_location": "benchmark/results.json:E2 .model_json",
+      "model_sha256": "b53273d2b6aab168bb3bd53351edb664df94f6a6084b45aa208d5fc712a69f2b",
+      "name": "E2",
+      "request_sha256": "a738277bb87e73d11f72931cab1e989a09a1419ddbaad21df3efe32266c0ec1c",
+      "roundtrip": {
+        "equal_digest": true,
+        "equal_json": true,
+        "equal_state_midpoint": true
+      },
+      "sample": {
+        "authoritative": false,
+        "states_equal_pointwise": true,
+        "times": [
+          0.0,
+          7.313811242010907,
+          14.627622484021813
+        ]
+      },
+      "selection": {
+        "T0_s": 1.0,
+        "interval_subdivisions_per_segment": 8,
+        "required_duration_s": 14.482794538635458,
+        "rescalings": 0,
+        "safety_factor": 1.01,
+        "selected_duration_s": 14.627622484021813,
+        "wheel_angle_bound_rad": 0.028040330419729316,
+        "wheel_angle_limit_rad": 1.5707963267948966,
+        "worst": {
+          "order": 1,
+          "quantity": "speed",
+          "s0": 3.187763849983003,
+          "s1": 3.281521610276621,
+          "segment_index": 4,
+          "vehicle_id": 2,
+          "wheel_index": 0
+        },
+        "worst_metric": {
+          "limit": 0.8,
+          "order": 1,
+          "required_duration_s": 14.482794538635458,
+          "segment_index": 4,
+          "upper_at_T0_s": 11.586235630908368,
+          "upper_bound_interval": [
+            3.187763849983003,
+            3.281521610276621
+          ],
+          "vehicle_id": 2,
+          "wheel_index": 0
+        }
+      },
+      "short_duration": {
+        "check_count": 155,
+        "first_failure": {
+          "limit": 2.0,
+          "quantity": "jerk",
+          "value": 4.797024928543146,
+          "vehicle_id": 2,
+          "wheel_index": 0
+        },
+        "reason": "DYNAMIC_LIMIT",
+        "rejected": true
+      },
+      "tamper": {
+        "extra_field": "UNSUPPORTED_MODEL_FIELD",
+        "self_digest": "UNSUPPORTED_MODEL_FIELD",
+        "timing_T": "MODEL_TIMING_INCONSISTENT"
+      },
+      "timing_status": "DYNAMIC_FEASIBLE"
+    },
+    {
+      "S_m": 6.0020064978265975,
+      "T_s": 15.10059882623887,
+      "audit": {
+        "check_count": 845,
+        "collision_checked": false,
+        "differential": {
+          "checked_sample_count": 80,
+          "max_errors": {
+            "acceleration": 4.057577607241569e-10,
+            "angular_accel": 5.851199386119887e-11,
+            "angular_jerk": 1.719688448552359e-07,
+            "angular_rate": 2.3021445860749168e-12,
+            "jerk": 5.3007484870915e-07,
+            "velocity": 7.061268236796536e-12
+          },
+          "oracle": {
+            "boundary_rule": "stencils that cross a Hermite g-jump or the time-domain hold boundary are skipped; analytic one-sided limits are used instead",
+            "grid_subintervals": [
+              376,
+              376,
+              376,
+              376,
+              376,
+              376,
+              376,
+              376
+            ],
+            "method": "independent_composite_simpson_positions",
+            "oracle_step_m": 0.002
+          },
+          "skipped_sample_count": 0,
+          "tolerances": {
+            "acceleration": 0.0001,
+            "angular_accel": 0.0001,
+            "angular_jerk": 0.01,
+            "angular_rate": 1e-05,
+            "jerk": 0.01,
+            "velocity": 1e-05
+          }
+        },
+        "executable": false,
+        "leaves": 64,
+        "map_used": false,
+        "max_utilization": {
+          "acceleration": 0.3485282810946418,
+          "jerk": 0.06790346610306425,
+          "lateral_acceleration": 0.11812993215433594,
+          "speed": 0.9900990099009902,
+          "steer_acceleration": 0.0021866578555738408,
+          "steer_rate": 0.012573154628738308,
+          "wheel_angle": 0.03656888333724614,
+          "wheel_speed": 0.8017922036860033,
+          "yaw_acceleration": 0.04640965568451117,
+          "yaw_jerk": 0.008462650916582218,
+          "yaw_rate": 0.1320588942675733
+        },
+        "nodes": {
+          "internal_node_count": 7,
+          "max_continuity_error": 8.496675585334401e-15,
+          "max_inverse_error_s": 4.3948489292233717e-10,
+          "max_jump_magnitude": 0.0020351890247849672,
+          "max_state_error": 1.1102230246251565e-16,
+          "records": [
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.5907898876530453e-10,
+              "jump_max": 0.001305409867360956,
+              "left_jerk_vector_location": "benchmark/results.json:E3 .dynamic_audit.metrics.nodes.records[0].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 1.5508427875232655e-15,
+              "node": 1,
+              "right_jerk_vector_location": "benchmark/results.json:E3 .dynamic_audit.metrics.nodes.records[0].right_jerk",
+              "right_region": "motion",
+              "s": 0.7502508122283247,
+              "t": 4.0677777439017895,
+              "tau": 0.26937857171820234,
+              "w": 0.46188562768481406
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.6494451904900416e-10,
+              "jump_max": 0.0020351890247849672,
+              "left_jerk_vector_location": "benchmark/results.json:E3 .dynamic_audit.metrics.nodes.records[1].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 1.5508427875232655e-15,
+              "node": 2,
+              "right_jerk_vector_location": "benchmark/results.json:E3 .dynamic_audit.metrics.nodes.records[1].right_jerk",
+              "right_region": "motion",
+              "s": 1.5005016244566494,
+              "t": 5.427701328130347,
+              "tau": 0.35943616478964713,
+              "w": 0.6321089227877307
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.6831604433018583e-10,
+              "jump_max": 0.001687941401359699,
+              "left_jerk_vector_location": "benchmark/results.json:E3 .dynamic_audit.metrics.nodes.records[2].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 7.906869603502287e-15,
+              "node": 3,
+              "right_jerk_vector_location": "benchmark/results.json:E3 .dynamic_audit.metrics.nodes.records[2].right_jerk",
+              "right_region": "motion",
+              "s": 2.250752436684974,
+              "t": 6.531286165896698,
+              "tau": 0.43251835513621517,
+              "w": 0.7183502863567311
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 4.3948489292233717e-10,
+              "jump_max": 0.0006668315387400713,
+              "left_jerk_vector_location": "benchmark/results.json:E3 .dynamic_audit.metrics.nodes.records[3].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 8.496675585334401e-15,
+              "node": 4,
+              "right_jerk_vector_location": "benchmark/results.json:E3 .dynamic_audit.metrics.nodes.records[3].right_jerk",
+              "right_region": "motion",
+              "s": 3.0010032489132987,
+              "t": 7.550299413119435,
+              "tau": 0.5,
+              "w": 0.7452527090429208
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.6831693250860553e-10,
+              "jump_max": 0.00043390820186996887,
+              "left_jerk_vector_location": "benchmark/results.json:E3 .dynamic_audit.metrics.nodes.records[4].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 8.496675585334401e-15,
+              "node": 5,
+              "right_jerk_vector_location": "benchmark/results.json:E3 .dynamic_audit.metrics.nodes.records[4].right_jerk",
+              "right_region": "motion",
+              "s": 3.7512540611416236,
+              "t": 8.569312660342172,
+              "tau": 0.5674816448637847,
+              "w": 0.7183502863567311
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.6494540722742386e-10,
+              "jump_max": 0.0010596964641655798,
+              "left_jerk_vector_location": "benchmark/results.json:E3 .dynamic_audit.metrics.nodes.records[5].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 8.496675585334401e-15,
+              "node": 6,
+              "right_jerk_vector_location": "benchmark/results.json:E3 .dynamic_audit.metrics.nodes.records[5].right_jerk",
+              "right_region": "motion",
+              "s": 4.501504873369948,
+              "t": 9.672897498108524,
+              "tau": 0.6405638352103529,
+              "w": 0.6321089227877307
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.5907987694372423e-10,
+              "jump_max": 0.0008246126951051112,
+              "left_jerk_vector_location": "benchmark/results.json:E3 .dynamic_audit.metrics.nodes.records[6].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 8.496675585334401e-15,
+              "node": 7,
+              "right_jerk_vector_location": "benchmark/results.json:E3 .dynamic_audit.metrics.nodes.records[6].right_jerk",
+              "right_region": "motion",
+              "s": 5.2517556855982725,
+              "t": 11.032821082337083,
+              "tau": 0.7306214282817978,
+              "w": 0.4618856276848137
+            }
+          ]
+        },
+        "ros_used": false,
+        "time_inverse": {
+          "max_error_s": 4.2299319602534524e-10,
+          "max_independent_error_s": 5.4859464526657575e-08,
+          "sample_count": 100,
+          "tolerance_s": 1e-09
+        },
+        "whole_domain_certificate": true
+      },
+      "model_json_location": "benchmark/results.json:E3 .model_json",
+      "model_sha256": "0bcec22ba51f0a3eb9e07c1fd0fde343102c9f16b07fc8496ee3ae354c3817cc",
+      "name": "E3",
+      "request_sha256": "c8f2bb0b1ac8d09389557b43299983dcf9a1ae793d8a543a585c30eaa189b529",
+      "roundtrip": {
+        "equal_digest": true,
+        "equal_json": true,
+        "equal_state_midpoint": true
+      },
+      "sample": {
+        "authoritative": false,
+        "states_equal_pointwise": true,
+        "times": [
+          0.0,
+          7.550299413119435,
+          15.10059882623887
+        ]
+      },
+      "selection": {
+        "T0_s": 1.0,
+        "interval_subdivisions_per_segment": 8,
+        "required_duration_s": 14.951087946771159,
+        "rescalings": 0,
+        "safety_factor": 1.01,
+        "selected_duration_s": 15.10059882623887,
+        "wheel_angle_bound_rad": 0.05744226762113733,
+        "wheel_angle_limit_rad": 1.5707963267948966,
+        "worst": {
+          "order": 1,
+          "quantity": "speed",
+          "s0": 3.282347303498921,
+          "s1": 3.376128655027461,
+          "segment_index": 4,
+          "vehicle_id": 3,
+          "wheel_index": 0
+        },
+        "worst_metric": {
+          "limit": 0.8,
+          "order": 1,
+          "required_duration_s": 14.951087946771159,
+          "segment_index": 4,
+          "upper_at_T0_s": 11.960870357416928,
+          "upper_bound_interval": [
+            3.282347303498921,
+            3.376128655027461
+          ],
+          "vehicle_id": 3,
+          "wheel_index": 0
+        }
+      },
+      "short_duration": {
+        "check_count": 155,
+        "first_failure": {
+          "limit": 2.0,
+          "quantity": "jerk",
+          "value": 4.361341095150091,
+          "vehicle_id": 2,
+          "wheel_index": 0
+        },
+        "reason": "DYNAMIC_LIMIT",
+        "rejected": true
+      },
+      "tamper": {
+        "extra_field": "UNSUPPORTED_MODEL_FIELD",
+        "self_digest": "UNSUPPORTED_MODEL_FIELD",
+        "timing_T": "MODEL_TIMING_INCONSISTENT"
+      },
+      "timing_status": "DYNAMIC_FEASIBLE"
+    },
+    {
+      "S_m": 6.002006497826603,
+      "T_s": 15.10059882623911,
+      "audit": {
+        "check_count": 845,
+        "collision_checked": false,
+        "differential": {
+          "checked_sample_count": 80,
+          "max_errors": {
+            "acceleration": 6.801051943838843e-10,
+            "angular_accel": 1.175779890116857e-10,
+            "angular_jerk": 1.7196884770712129e-07,
+            "angular_rate": 2.295386103412511e-12,
+            "jerk": 5.304079133752748e-07,
+            "velocity": 7.088274411870543e-12
+          },
+          "oracle": {
+            "boundary_rule": "stencils that cross a Hermite g-jump or the time-domain hold boundary are skipped; analytic one-sided limits are used instead",
+            "grid_subintervals": [
+              376,
+              376,
+              376,
+              376,
+              376,
+              376,
+              376,
+              376
+            ],
+            "method": "independent_composite_simpson_positions",
+            "oracle_step_m": 0.002
+          },
+          "skipped_sample_count": 0,
+          "tolerances": {
+            "acceleration": 0.0001,
+            "angular_accel": 0.0001,
+            "angular_jerk": 0.01,
+            "angular_rate": 1e-05,
+            "jerk": 0.01,
+            "velocity": 1e-05
+          }
+        },
+        "executable": false,
+        "leaves": 64,
+        "map_used": false,
+        "max_utilization": {
+          "acceleration": 0.34852828109461936,
+          "jerk": 0.06790346610305703,
+          "lateral_acceleration": 0.11812993215434357,
+          "speed": 0.9900990099009902,
+          "steer_acceleration": 0.0021866578555769884,
+          "steer_rate": 0.01257315462873718,
+          "wheel_angle": 0.03656888333723555,
+          "wheel_speed": 0.8017922036860065,
+          "yaw_acceleration": 0.04640965568448587,
+          "yaw_jerk": 0.008462650916577845,
+          "yaw_rate": 0.1320588942675673
+        },
+        "nodes": {
+          "internal_node_count": 7,
+          "max_continuity_error": 8.743006318923108e-15,
+          "max_inverse_error_s": 4.3948489292233717e-10,
+          "max_jump_magnitude": 0.002035189024792324,
+          "max_state_error": 1.7763568394002505e-15,
+          "records": [
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.5907898876530453e-10,
+              "jump_max": 0.001305409867364448,
+              "left_jerk_vector_location": "benchmark/results.json:E4 .dynamic_audit.metrics.nodes.records[0].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 1.6245685352522798e-15,
+              "node": 1,
+              "right_jerk_vector_location": "benchmark/results.json:E4 .dynamic_audit.metrics.nodes.records[0].right_jerk",
+              "right_region": "motion",
+              "s": 0.7502508122283253,
+              "t": 4.067777743901854,
+              "tau": 0.26937857171820234,
+              "w": 0.4618856276848071
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.6494451904900416e-10,
+              "jump_max": 0.002035189024792324,
+              "left_jerk_vector_location": "benchmark/results.json:E4 .dynamic_audit.metrics.nodes.records[1].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 1.6245685352522798e-15,
+              "node": 2,
+              "right_jerk_vector_location": "benchmark/results.json:E4 .dynamic_audit.metrics.nodes.records[1].right_jerk",
+              "right_region": "motion",
+              "s": 1.5005016244566507,
+              "t": 5.427701328130433,
+              "tau": 0.35943616478964713,
+              "w": 0.6321089227877212
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.6831782068702523e-10,
+              "jump_max": 0.0016879414013662962,
+              "left_jerk_vector_location": "benchmark/results.json:E4 .dynamic_audit.metrics.nodes.records[2].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 8.232997616985926e-15,
+              "node": 3,
+              "right_jerk_vector_location": "benchmark/results.json:E4 .dynamic_audit.metrics.nodes.records[2].right_jerk",
+              "right_region": "motion",
+              "s": 2.250752436684976,
+              "t": 6.5312861658968036,
+              "tau": 0.4325183551362153,
+              "w": 0.7183502863567203
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 4.3948489292233717e-10,
+              "jump_max": 0.0006668315387401919,
+              "left_jerk_vector_location": "benchmark/results.json:E4 .dynamic_audit.metrics.nodes.records[3].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 8.743006318923108e-15,
+              "node": 4,
+              "right_jerk_vector_location": "benchmark/results.json:E4 .dynamic_audit.metrics.nodes.records[3].right_jerk",
+              "right_region": "motion",
+              "s": 3.0010032489133014,
+              "t": 7.550299413119555,
+              "tau": 0.5,
+              "w": 0.7452527090429097
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.6831870886544493e-10,
+              "jump_max": 0.00043390820187604213,
+              "left_jerk_vector_location": "benchmark/results.json:E4 .dynamic_audit.metrics.nodes.records[4].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 8.743006318923108e-15,
+              "node": 5,
+              "right_jerk_vector_location": "benchmark/results.json:E4 .dynamic_audit.metrics.nodes.records[4].right_jerk",
+              "right_region": "motion",
+              "s": 3.7512540611416267,
+              "t": 8.569312660342307,
+              "tau": 0.5674816448637847,
+              "w": 0.7183502863567203
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.6494363087058446e-10,
+              "jump_max": 0.0010596964641716965,
+              "left_jerk_vector_location": "benchmark/results.json:E4 .dynamic_audit.metrics.nodes.records[5].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 8.743006318923108e-15,
+              "node": 6,
+              "right_jerk_vector_location": "benchmark/results.json:E4 .dynamic_audit.metrics.nodes.records[5].right_jerk",
+              "right_region": "motion",
+              "s": 4.501504873369952,
+              "t": 9.672897498108677,
+              "tau": 0.6405638352103529,
+              "w": 0.6321089227877211
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.5907987694372423e-10,
+              "jump_max": 0.0008246126951056455,
+              "left_jerk_vector_location": "benchmark/results.json:E4 .dynamic_audit.metrics.nodes.records[6].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 8.743006318923108e-15,
+              "node": 7,
+              "right_jerk_vector_location": "benchmark/results.json:E4 .dynamic_audit.metrics.nodes.records[6].right_jerk",
+              "right_region": "motion",
+              "s": 5.251755685598278,
+              "t": 11.032821082337257,
+              "tau": 0.7306214282817978,
+              "w": 0.46188562768480684
+            }
+          ]
+        },
+        "ros_used": false,
+        "time_inverse": {
+          "max_error_s": 4.2299319602534524e-10,
+          "max_independent_error_s": 5.4859464526657575e-08,
+          "sample_count": 100,
+          "tolerance_s": 1e-09
+        },
+        "whole_domain_certificate": true
+      },
+      "model_json_location": "benchmark/results.json:E4 .model_json",
+      "model_sha256": "abe3bfdfcec9ff0bdfae59b6ea20eb2de28b3ecb3f877df43e254729199ea3fc",
+      "name": "E4",
+      "request_sha256": "4ae0393ad3ce5da90f817fb60c877ba9441e15785be3f653b055d4aa337545f3",
+      "roundtrip": {
+        "equal_digest": true,
+        "equal_json": true,
+        "equal_state_midpoint": true
+      },
+      "sample": {
+        "authoritative": false,
+        "states_equal_pointwise": true,
+        "times": [
+          0.0,
+          7.550299413119555,
+          15.10059882623911
+        ]
+      },
+      "selection": {
+        "T0_s": 1.0,
+        "interval_subdivisions_per_segment": 8,
+        "required_duration_s": 14.951087946771397,
+        "rescalings": 0,
+        "safety_factor": 1.01,
+        "selected_duration_s": 15.10059882623911,
+        "wheel_angle_bound_rad": 0.057442267621120695,
+        "wheel_angle_limit_rad": 1.5707963267948966,
+        "worst": {
+          "order": 1,
+          "quantity": "speed",
+          "s0": 3.2823473034989235,
+          "s1": 3.376128655027464,
+          "segment_index": 4,
+          "vehicle_id": 2,
+          "wheel_index": 0
+        },
+        "worst_metric": {
+          "limit": 0.8,
+          "order": 1,
+          "required_duration_s": 14.951087946771397,
+          "segment_index": 4,
+          "upper_at_T0_s": 11.960870357417118,
+          "upper_bound_interval": [
+            3.2823473034989235,
+            3.376128655027464
+          ],
+          "vehicle_id": 2,
+          "wheel_index": 0
+        }
+      },
+      "short_duration": {
+        "check_count": 155,
+        "first_failure": {
+          "limit": 2.0,
+          "quantity": "jerk",
+          "value": 4.361341095149888,
+          "vehicle_id": 3,
+          "wheel_index": 0
+        },
+        "reason": "DYNAMIC_LIMIT",
+        "rejected": true
+      },
+      "tamper": {
+        "extra_field": "UNSUPPORTED_MODEL_FIELD",
+        "self_digest": "UNSUPPORTED_MODEL_FIELD",
+        "timing_T": "MODEL_TIMING_INCONSISTENT"
+      },
+      "timing_status": "DYNAMIC_FEASIBLE"
+    },
+    {
+      "S_m": 8.011137789911,
+      "T_s": 20.842263324804446,
+      "audit": {
+        "check_count": 845,
+        "collision_checked": false,
+        "differential": {
+          "checked_sample_count": 80,
+          "max_errors": {
+            "acceleration": 5.957206672402293e-10,
+            "angular_accel": 1.6268510497075006e-10,
+            "angular_jerk": 6.648186560119507e-08,
+            "angular_rate": 9.094947017729282e-13,
+            "jerk": 3.125316506355502e-07,
+            "velocity": 4.238553952262691e-12
+          },
+          "oracle": {
+            "boundary_rule": "stencils that cross a Hermite g-jump or the time-domain hold boundary are skipped; analytic one-sided limits are used instead",
+            "grid_subintervals": [
+              502,
+              502,
+              502,
+              502,
+              502,
+              502,
+              502,
+              502
+            ],
+            "method": "independent_composite_simpson_positions",
+            "oracle_step_m": 0.002
+          },
+          "skipped_sample_count": 0,
+          "tolerances": {
+            "acceleration": 0.0001,
+            "angular_accel": 0.0001,
+            "angular_jerk": 0.01,
+            "angular_rate": 1e-05,
+            "jerk": 0.01,
+            "velocity": 1e-05
+          }
+        },
+        "executable": false,
+        "leaves": 64,
+        "map_used": false,
+        "max_utilization": {
+          "acceleration": 0.31198732329205303,
+          "jerk": 0.0403799829716336,
+          "lateral_acceleration": 0.1538548442879231,
+          "speed": 0.9900990099009895,
+          "steer_acceleration": 0.0018094104038848847,
+          "steer_rate": 0.015775162691055944,
+          "wheel_angle": 0.06310528165403262,
+          "wheel_speed": 0.8073713379951929,
+          "yaw_acceleration": 0.04643500371510161,
+          "yaw_jerk": 0.0061126258922320036,
+          "yaw_rate": 0.1778635343873005
+        },
+        "nodes": {
+          "internal_node_count": 7,
+          "max_continuity_error": 7.834011217511261e-15,
+          "max_inverse_error_s": 3.0329516675919876e-10,
+          "max_jump_magnitude": 0.0011976704955405683,
+          "max_state_error": 8.881784197001252e-16,
+          "records": [
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 1.9231549686082872e-10,
+              "jump_max": 0.0007750845568596613,
+              "left_jerk_vector_location": "benchmark/results.json:E5 .dynamic_audit.metrics.nodes.records[0].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 1.4641066137244252e-15,
+              "node": 1,
+              "right_jerk_vector_location": "benchmark/results.json:E5 .dynamic_audit.metrics.nodes.records[0].right_jerk",
+              "right_region": "motion",
+              "s": 1.001392223738875,
+              "t": 5.614459125810493,
+              "tau": 0.26937857171820234,
+              "w": 0.44666454462782795
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 2.0041124315639536e-10,
+              "jump_max": 0.0011976704955405683,
+              "left_jerk_vector_location": "benchmark/results.json:E5 .dynamic_audit.metrics.nodes.records[1].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 1.4641066137244252e-15,
+              "node": 2,
+              "right_jerk_vector_location": "benchmark/results.json:E5 .dynamic_audit.metrics.nodes.records[1].right_jerk",
+              "right_region": "motion",
+              "s": 2.00278444747775,
+              "t": 7.49146319500363,
+              "tau": 0.35943616478964713,
+              "w": 0.6112782629054544
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 2.0506796261088311e-10,
+              "jump_max": 0.0009817966344608043,
+              "left_jerk_vector_location": "benchmark/results.json:E5 .dynamic_audit.metrics.nodes.records[2].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 7.37257477290143e-15,
+              "node": 3,
+              "right_jerk_vector_location": "benchmark/results.json:E5 .dynamic_audit.metrics.nodes.records[2].right_jerk",
+              "right_region": "motion",
+              "s": 3.004176671216625,
+              "t": 9.014661450560284,
+              "tau": 0.4325183551362153,
+              "w": 0.6946776091455951
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.0329516675919876e-10,
+              "jump_max": 0.0003712956614070938,
+              "left_jerk_vector_location": "benchmark/results.json:E5 .dynamic_audit.metrics.nodes.records[3].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 7.834011217511261e-15,
+              "node": 4,
+              "right_jerk_vector_location": "benchmark/results.json:E5 .dynamic_audit.metrics.nodes.records[3].right_jerk",
+              "right_region": "motion",
+              "s": 4.0055688949555,
+              "t": 10.421131662402223,
+              "tau": 0.5,
+              "w": 0.7206934833323367
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 2.0506796261088311e-10,
+              "jump_max": 0.0002745168439578869,
+              "left_jerk_vector_location": "benchmark/results.json:E5 .dynamic_audit.metrics.nodes.records[4].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 7.834011217511261e-15,
+              "node": 5,
+              "right_jerk_vector_location": "benchmark/results.json:E5 .dynamic_audit.metrics.nodes.records[4].right_jerk",
+              "right_region": "motion",
+              "s": 5.006961118694376,
+              "t": 11.827601874244161,
+              "tau": 0.5674816448637847,
+              "w": 0.6946776091455951
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 2.0041213133481506e-10,
+              "jump_max": 0.0006256840857054736,
+              "left_jerk_vector_location": "benchmark/results.json:E5 .dynamic_audit.metrics.nodes.records[5].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 7.834011217511261e-15,
+              "node": 6,
+              "right_jerk_vector_location": "benchmark/results.json:E5 .dynamic_audit.metrics.nodes.records[5].right_jerk",
+              "right_region": "motion",
+              "s": 6.00835334243325,
+              "t": 13.350800129800817,
+              "tau": 0.6405638352103529,
+              "w": 0.6112782629054543
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 1.9231727321766812e-10,
+              "jump_max": 0.00046681921611280153,
+              "left_jerk_vector_location": "benchmark/results.json:E5 .dynamic_audit.metrics.nodes.records[6].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 7.834011217511261e-15,
+              "node": 7,
+              "right_jerk_vector_location": "benchmark/results.json:E5 .dynamic_audit.metrics.nodes.records[6].right_jerk",
+              "right_region": "motion",
+              "s": 7.009745566172125,
+              "t": 15.227804198993955,
+              "tau": 0.7306214282817978,
+              "w": 0.4466645446278277
+            }
+          ]
+        },
+        "ros_used": false,
+        "time_inverse": {
+          "max_error_s": 2.8053204204070425e-10,
+          "max_independent_error_s": 7.60218412665381e-08,
+          "sample_count": 100,
+          "tolerance_s": 1e-09
+        },
+        "whole_domain_certificate": true
+      },
+      "model_json_location": "benchmark/results.json:E5 .model_json",
+      "model_sha256": "67401452fb51b3933e202a8f3ac671192d440f6f68de2c28821c4ce33e9ee5dc",
+      "name": "E5",
+      "request_sha256": "f6f9e78dba3d5bdaf9adf70578676dd8235c6acc7ddc0c63ad73b6f84059d3c3",
+      "roundtrip": {
+        "equal_digest": true,
+        "equal_json": true,
+        "equal_state_midpoint": true
+      },
+      "sample": {
+        "authoritative": false,
+        "states_equal_pointwise": true,
+        "times": [
+          0.0,
+          10.421131662402223,
+          20.842263324804446
+        ]
+      },
+      "selection": {
+        "T0_s": 1.0,
+        "interval_subdivisions_per_segment": 8,
+        "required_duration_s": 20.6359042819846,
+        "rescalings": 0,
+        "safety_factor": 1.01,
+        "selected_duration_s": 20.842263324804446,
+        "wheel_angle_bound_rad": 0.09912554462351181,
+        "wheel_angle_limit_rad": 1.5707963267948966,
+        "worst": {
+          "order": 1,
+          "quantity": "speed",
+          "s0": 4.631439034792297,
+          "s1": 4.756613062759657,
+          "segment_index": 4,
+          "vehicle_id": 3,
+          "wheel_index": 0
+        },
+        "worst_metric": {
+          "limit": 0.8,
+          "order": 1,
+          "required_duration_s": 20.6359042819846,
+          "segment_index": 4,
+          "upper_at_T0_s": 16.508723425587682,
+          "upper_bound_interval": [
+            4.631439034792297,
+            4.756613062759657
+          ],
+          "vehicle_id": 3,
+          "wheel_index": 0
+        }
+      },
+      "short_duration": {
+        "check_count": 155,
+        "first_failure": {
+          "limit": 0.6,
+          "quantity": "acceleration",
+          "value": 0.9007782162306525,
+          "vehicle_id": 2,
+          "wheel_index": 0
+        },
+        "reason": "DYNAMIC_LIMIT",
+        "rejected": true
+      },
+      "tamper": {
+        "extra_field": "UNSUPPORTED_MODEL_FIELD",
+        "self_digest": "UNSUPPORTED_MODEL_FIELD",
+        "timing_T": "MODEL_TIMING_INCONSISTENT"
+      },
+      "timing_status": "DYNAMIC_FEASIBLE"
+    },
+    {
+      "S_m": 8.011137789911029,
+      "T_s": 20.842263324805067,
+      "audit": {
+        "check_count": 845,
+        "collision_checked": false,
+        "differential": {
+          "checked_sample_count": 80,
+          "max_errors": {
+            "acceleration": 5.162680699610789e-10,
+            "angular_accel": 1.5939925421259993e-10,
+            "angular_jerk": 6.662064660697964e-08,
+            "angular_rate": 9.1729401852092e-13,
+            "jerk": 3.1280920893828057e-07,
+            "velocity": 4.261646591174895e-12
+          },
+          "oracle": {
+            "boundary_rule": "stencils that cross a Hermite g-jump or the time-domain hold boundary are skipped; analytic one-sided limits are used instead",
+            "grid_subintervals": [
+              502,
+              502,
+              502,
+              502,
+              502,
+              502,
+              502,
+              502
+            ],
+            "method": "independent_composite_simpson_positions",
+            "oracle_step_m": 0.002
+          },
+          "skipped_sample_count": 0,
+          "tolerances": {
+            "acceleration": 0.0001,
+            "angular_accel": 0.0001,
+            "angular_jerk": 0.01,
+            "angular_rate": 1e-05,
+            "jerk": 0.01,
+            "velocity": 1e-05
+          }
+        },
+        "executable": false,
+        "leaves": 64,
+        "map_used": false,
+        "max_utilization": {
+          "acceleration": 0.31198732329202855,
+          "jerk": 0.04037998297162609,
+          "lateral_acceleration": 0.1538548442879299,
+          "speed": 0.9900990099009893,
+          "steer_acceleration": 0.0018094104038814402,
+          "steer_rate": 0.01577516269105242,
+          "wheel_angle": 0.06310528165400918,
+          "wheel_speed": 0.8073713379951974,
+          "yaw_acceleration": 0.04643500371507522,
+          "yaw_jerk": 0.006112625892228562,
+          "yaw_rate": 0.17786353438729477
+        },
+        "nodes": {
+          "internal_node_count": 7,
+          "max_continuity_error": 8.635453463412546e-15,
+          "max_inverse_error_s": 3.0329516675919876e-10,
+          "max_jump_magnitude": 0.0011976704955447698,
+          "max_state_error": 2.220446049250313e-16,
+          "records": [
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 1.9231460868240902e-10,
+              "jump_max": 0.00077508455686192,
+              "left_jerk_vector_location": "benchmark/results.json:E6 .dynamic_audit.metrics.nodes.records[0].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 1.6037518535405582e-15,
+              "node": 1,
+              "right_jerk_vector_location": "benchmark/results.json:E6 .dynamic_audit.metrics.nodes.records[0].right_jerk",
+              "right_region": "motion",
+              "s": 1.0013922237388786,
+              "t": 5.614459125810661,
+              "tau": 0.26937857171820234,
+              "w": 0.44666454462781613
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 2.0041213133481506e-10,
+              "jump_max": 0.0011976704955447698,
+              "left_jerk_vector_location": "benchmark/results.json:E6 .dynamic_audit.metrics.nodes.records[1].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 1.6037518535405582e-15,
+              "node": 2,
+              "right_jerk_vector_location": "benchmark/results.json:E6 .dynamic_audit.metrics.nodes.records[1].right_jerk",
+              "right_region": "motion",
+              "s": 2.002784447477757,
+              "t": 7.491463195003853,
+              "tau": 0.35943616478964713,
+              "w": 0.6112782629054383
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 2.0506618625404371e-10,
+              "jump_max": 0.0009817966344646744,
+              "left_jerk_vector_location": "benchmark/results.json:E6 .dynamic_audit.metrics.nodes.records[2].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 8.076872504148014e-15,
+              "node": 3,
+              "right_jerk_vector_location": "benchmark/results.json:E6 .dynamic_audit.metrics.nodes.records[2].right_jerk",
+              "right_region": "motion",
+              "s": 3.004176671216636,
+              "t": 9.014661450560553,
+              "tau": 0.4325183551362153,
+              "w": 0.6946776091455769
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.0329516675919876e-10,
+              "jump_max": 0.0003712956614077621,
+              "left_jerk_vector_location": "benchmark/results.json:E6 .dynamic_audit.metrics.nodes.records[3].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 8.635453463412546e-15,
+              "node": 4,
+              "right_jerk_vector_location": "benchmark/results.json:E6 .dynamic_audit.metrics.nodes.records[3].right_jerk",
+              "right_region": "motion",
+              "s": 4.005568894955514,
+              "t": 10.421131662402534,
+              "tau": 0.5,
+              "w": 0.7206934833323178
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 2.0506618625404371e-10,
+              "jump_max": 0.00027451684396053236,
+              "left_jerk_vector_location": "benchmark/results.json:E6 .dynamic_audit.metrics.nodes.records[4].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 8.635453463412546e-15,
+              "node": 5,
+              "right_jerk_vector_location": "benchmark/results.json:E6 .dynamic_audit.metrics.nodes.records[4].right_jerk",
+              "right_region": "motion",
+              "s": 5.006961118694393,
+              "t": 11.827601874244515,
+              "tau": 0.5674816448637847,
+              "w": 0.6946776091455769
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 2.0041213133481506e-10,
+              "jump_max": 0.0006256840857091304,
+              "left_jerk_vector_location": "benchmark/results.json:E6 .dynamic_audit.metrics.nodes.records[5].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 8.635453463412546e-15,
+              "node": 6,
+              "right_jerk_vector_location": "benchmark/results.json:E6 .dynamic_audit.metrics.nodes.records[5].right_jerk",
+              "right_region": "motion",
+              "s": 6.008353342433272,
+              "t": 13.350800129801215,
+              "tau": 0.6405638352103529,
+              "w": 0.6112782629054382
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 1.9231727321766812e-10,
+              "jump_max": 0.00046681921611327337,
+              "left_jerk_vector_location": "benchmark/results.json:E6 .dynamic_audit.metrics.nodes.records[6].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 8.635453463412546e-15,
+              "node": 7,
+              "right_jerk_vector_location": "benchmark/results.json:E6 .dynamic_audit.metrics.nodes.records[6].right_jerk",
+              "right_region": "motion",
+              "s": 7.00974556617215,
+              "t": 15.22780419899441,
+              "tau": 0.7306214282817978,
+              "w": 0.4466645446278159
+            }
+          ]
+        },
+        "ros_used": false,
+        "time_inverse": {
+          "max_error_s": 2.8053204204070425e-10,
+          "max_independent_error_s": 7.60218412665381e-08,
+          "sample_count": 100,
+          "tolerance_s": 1e-09
+        },
+        "whole_domain_certificate": true
+      },
+      "model_json_location": "benchmark/results.json:E6 .model_json",
+      "model_sha256": "35d7e03c5ae2cfeebb68c62ec6de0a422e6550f59f63062912456ac4e61c0469",
+      "name": "E6",
+      "request_sha256": "e93366f3259a6a41625aa1b925c685fd24bb7423db8bb84ef7d7e05452166da8",
+      "roundtrip": {
+        "equal_digest": true,
+        "equal_json": true,
+        "equal_state_midpoint": true
+      },
+      "sample": {
+        "authoritative": false,
+        "states_equal_pointwise": true,
+        "times": [
+          0.0,
+          10.421131662402534,
+          20.842263324805067
+        ]
+      },
+      "selection": {
+        "T0_s": 1.0,
+        "interval_subdivisions_per_segment": 8,
+        "required_duration_s": 20.635904281985216,
+        "rescalings": 0,
+        "safety_factor": 1.01,
+        "selected_duration_s": 20.842263324805067,
+        "wheel_angle_bound_rad": 0.09912554462347499,
+        "wheel_angle_limit_rad": 1.5707963267948966,
+        "worst": {
+          "order": 1,
+          "quantity": "speed",
+          "s0": 4.631439034792313,
+          "s1": 4.756613062759674,
+          "segment_index": 4,
+          "vehicle_id": 2,
+          "wheel_index": 0
+        },
+        "worst_metric": {
+          "limit": 0.8,
+          "order": 1,
+          "required_duration_s": 20.635904281985216,
+          "segment_index": 4,
+          "upper_at_T0_s": 16.508723425588173,
+          "upper_bound_interval": [
+            4.631439034792313,
+            4.756613062759674
+          ],
+          "vehicle_id": 2,
+          "wheel_index": 0
+        }
+      },
+      "short_duration": {
+        "check_count": 155,
+        "first_failure": {
+          "limit": 0.6,
+          "quantity": "acceleration",
+          "value": 0.9007782162306021,
+          "vehicle_id": 3,
+          "wheel_index": 0
+        },
+        "reason": "DYNAMIC_LIMIT",
+        "rejected": true
+      },
+      "tamper": {
+        "extra_field": "UNSUPPORTED_MODEL_FIELD",
+        "self_digest": "UNSUPPORTED_MODEL_FIELD",
+        "timing_T": "MODEL_TIMING_INCONSISTENT"
+      },
+      "timing_status": "DYNAMIC_FEASIBLE"
+    },
+    {
+      "S_m": 0.0,
+      "T_s": 0.0,
+      "audit": {
+        "certificate_note": "not applicable: NO_MOTION uses the exact hold model S=T=0 with one t=0 sample, not the motion time law",
+        "check_count": 16,
+        "collision_checked": false,
+        "executable": false,
+        "hold": {
+          "checks": [
+            {
+              "region": "initial_hold",
+              "side": "left",
+              "t": -1.0
+            },
+            {
+              "region": "initial_hold",
+              "side": "left",
+              "t": 0.0
+            },
+            {
+              "region": "initial_hold",
+              "side": "right",
+              "t": 0.0
+            },
+            {
+              "region": "initial_hold",
+              "side": "auto",
+              "t": 0.0
+            },
+            {
+              "region": "initial_hold",
+              "side": "right",
+              "t": 1.0
+            }
+          ],
+          "hold_model": "explicit_zero_duration",
+          "inverse_division_free": true,
+          "max_state_error": 0.0,
+          "sample_times": [
+            0.0
+          ]
+        },
+        "map_used": false,
+        "ros_used": false,
+        "whole_domain_certificate": false
+      },
+      "model_json_location": "benchmark/results.json:NO_MOTION_HOLD .model_json",
+      "model_sha256": "39802144c887e534b1897a56836b389739fcfd90215d10161f0fede3a924660a",
+      "name": "NO_MOTION_HOLD",
+      "request_sha256": "b54b5b52797aa89a93fd930bc7aca971b2c2fec2419efaf075a4e102dff870ef",
+      "roundtrip": {
+        "available": true,
+        "equal_digest": true,
+        "equal_json": true
+      },
+      "sample": {
+        "authoritative": false,
+        "invalid": [
+          {
+            "rejected": true,
+            "times": []
+          },
+          {
+            "rejected": true,
+            "times": [
+              0.0,
+              1.0
+            ]
+          },
+          {
+            "rejected": true,
+            "times": [
+              1.0
+            ]
+          },
+          {
+            "rejected": true,
+            "times": [
+              -1.0
+            ]
+          }
+        ],
+        "times": [
+          0.0
+        ]
+      },
+      "selection": null,
+      "timing_status": "NO_MOTION"
+    },
+    {
+      "S_m": 5.999999999999998,
+      "T_s": 14.203125000005778,
+      "audit": {
+        "check_count": 845,
+        "collision_checked": false,
+        "differential": {
+          "checked_sample_count": 80,
+          "max_errors": {
+            "acceleration": 4.756785243476003e-10,
+            "angular_accel": 3.4729485232029796e-22,
+            "angular_jerk": 1.701771650598679e-17,
+            "angular_rate": 2.2689535424683727e-22,
+            "jerk": 1.9219279487857344e-07,
+            "velocity": 2.8825830611367564e-12
+          },
+          "oracle": {
+            "boundary_rule": "stencils that cross a Hermite g-jump or the time-domain hold boundary are skipped; analytic one-sided limits are used instead",
+            "grid_subintervals": [
+              376,
+              376,
+              376,
+              376,
+              376,
+              376,
+              376,
+              376
+            ],
+            "method": "independent_composite_simpson_positions",
+            "oracle_step_m": 0.002
+          },
+          "skipped_sample_count": 0,
+          "tolerances": {
+            "acceleration": 0.0001,
+            "angular_accel": 0.0001,
+            "angular_jerk": 0.01,
+            "angular_rate": 1e-05,
+            "jerk": 0.01,
+            "velocity": 1e-05
+          }
+        },
+        "executable": false,
+        "leaves": 64,
+        "map_used": false,
+        "max_utilization": {
+          "acceleration": 0.28620126840654153,
+          "jerk": 0.0628233046267741,
+          "lateral_acceleration": 9.013019773189231e-13,
+          "speed": 0.9900990099009902,
+          "steer_acceleration": 1.4830636239314615e-13,
+          "steer_rate": 2.5794333225747243e-13,
+          "wheel_angle": 2.7682431917581903e-13,
+          "wheel_speed": 0.7920792079208507,
+          "yaw_acceleration": 7.641728981419175e-13,
+          "yaw_jerk": 2.5637152978711556e-13,
+          "yaw_rate": 8.534203097741954e-13
+        },
+        "nodes": {
+          "internal_node_count": 7,
+          "max_continuity_error": 3.283015115252357e-18,
+          "max_inverse_error_s": 4.133653419557959e-10,
+          "max_jump_magnitude": 3.4499881110549765e-13,
+          "max_state_error": 8.881784197001252e-16,
+          "records": [
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.3773739360754007e-10,
+              "jump_max": 2.0156090669854936e-13,
+              "left_jerk_vector_location": "benchmark/results.json:STRAIGHT_LINE .dynamic_audit.metrics.nodes.records[0].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 6.030448424750222e-19,
+              "node": 1,
+              "right_jerk_vector_location": "benchmark/results.json:STRAIGHT_LINE .dynamic_audit.metrics.nodes.records[0].right_jerk",
+              "right_region": "motion",
+              "s": 0.7499999999999998,
+              "t": 3.826017526436649,
+              "tau": 0.26937857171820234,
+              "w": 0.4909073092753645
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.432543138615074e-10,
+              "jump_max": 3.4020303758768724e-13,
+              "left_jerk_vector_location": "benchmark/results.json:STRAIGHT_LINE .dynamic_audit.metrics.nodes.records[1].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 6.568203818513511e-19,
+              "node": 2,
+              "right_jerk_vector_location": "benchmark/results.json:STRAIGHT_LINE .dynamic_audit.metrics.nodes.records[1].right_jerk",
+              "right_region": "motion",
+              "s": 1.4999999999999996,
+              "t": 5.105116778030034,
+              "tau": 0.35943616478964713,
+              "w": 0.6718262527675449
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.4642599899825655e-10,
+              "jump_max": 1.3967081746060982e-13,
+              "left_jerk_vector_location": "benchmark/results.json:STRAIGHT_LINE .dynamic_audit.metrics.nodes.records[2].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 3.283015115252357e-18,
+              "node": 3,
+              "right_jerk_vector_location": "benchmark/results.json:STRAIGHT_LINE .dynamic_audit.metrics.nodes.records[2].right_jerk",
+              "right_region": "motion",
+              "s": 2.249999999999999,
+              "t": 6.1431122627965555,
+              "tau": 0.43251835513621517,
+              "w": 0.7634864240313852
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 4.133653419557959e-10,
+              "jump_max": 2.3998957387726633e-13,
+              "left_jerk_vector_location": "benchmark/results.json:STRAIGHT_LINE .dynamic_audit.metrics.nodes.records[3].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 3.283015115252357e-18,
+              "node": 4,
+              "right_jerk_vector_location": "benchmark/results.json:STRAIGHT_LINE .dynamic_audit.metrics.nodes.records[3].right_jerk",
+              "right_region": "motion",
+              "s": 2.999999999999999,
+              "t": 7.101562500002889,
+              "tau": 0.5,
+              "w": 0.7920792079204696
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.4642688717667625e-10,
+              "jump_max": 3.4499881110549765e-13,
+              "left_jerk_vector_location": "benchmark/results.json:STRAIGHT_LINE .dynamic_audit.metrics.nodes.records[4].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 3.283015115252357e-18,
+              "node": 5,
+              "right_jerk_vector_location": "benchmark/results.json:STRAIGHT_LINE .dynamic_audit.metrics.nodes.records[4].right_jerk",
+              "right_region": "motion",
+              "s": 3.749999999999999,
+              "t": 8.060012737209222,
+              "tau": 0.5674816448637847,
+              "w": 0.7634864240313852
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.432543138615074e-10,
+              "jump_max": 1.08228760578966e-13,
+              "left_jerk_vector_location": "benchmark/results.json:STRAIGHT_LINE .dynamic_audit.metrics.nodes.records[5].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 3.283015115252357e-18,
+              "node": 6,
+              "right_jerk_vector_location": "benchmark/results.json:STRAIGHT_LINE .dynamic_audit.metrics.nodes.records[5].right_jerk",
+              "right_region": "motion",
+              "s": 4.499999999999998,
+              "t": 9.098008221975745,
+              "tau": 0.6405638352103529,
+              "w": 0.6718262527675448
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.377387258751696e-10,
+              "jump_max": 5.308950299488515e-14,
+              "left_jerk_vector_location": "benchmark/results.json:STRAIGHT_LINE .dynamic_audit.metrics.nodes.records[6].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 3.283015115252357e-18,
+              "node": 7,
+              "right_jerk_vector_location": "benchmark/results.json:STRAIGHT_LINE .dynamic_audit.metrics.nodes.records[6].right_jerk",
+              "right_region": "motion",
+              "s": 5.249999999999998,
+              "t": 10.377107473569131,
+              "tau": 0.7306214282817978,
+              "w": 0.4909073092753642
+            }
+          ]
+        },
+        "ros_used": false,
+        "time_inverse": {
+          "max_error_s": 3.978533058557332e-10,
+          "max_independent_error_s": 5.159900062778888e-08,
+          "sample_count": 100,
+          "tolerance_s": 1e-09
+        },
+        "whole_domain_certificate": true
+      },
+      "model_json_location": "benchmark/results.json:STRAIGHT_LINE .model_json",
+      "model_sha256": "c6c0456a11872077d47c62fde1a8fcb6077397e39da476e38c355107b65d4277",
+      "name": "STRAIGHT_LINE",
+      "request_sha256": "184f690b1c531f671e26907ad778fcd122eb90e67faa0102b948d6ab8a094816",
+      "roundtrip": {
+        "equal_digest": true,
+        "equal_json": true,
+        "equal_state_midpoint": true
+      },
+      "sample": {
+        "authoritative": false,
+        "states_equal_pointwise": true,
+        "times": [
+          0.0,
+          7.101562500002889,
+          14.203125000005778
+        ]
+      },
+      "selection": {
+        "T0_s": 1.0,
+        "interval_subdivisions_per_segment": 8,
+        "required_duration_s": 14.062500000005722,
+        "rescalings": 0,
+        "safety_factor": 1.01,
+        "selected_duration_s": 14.203125000005778,
+        "wheel_angle_bound_rad": 4.348346237288746e-13,
+        "wheel_angle_limit_rad": 1.5707963267948966,
+        "worst": {
+          "order": 1,
+          "quantity": "speed",
+          "s0": 2.999999999999999,
+          "s1": 3.093749999999999,
+          "segment_index": 4,
+          "vehicle_id": 2,
+          "wheel_index": 0
+        },
+        "worst_metric": {
+          "limit": 0.8,
+          "order": 1,
+          "required_duration_s": 14.062500000005722,
+          "segment_index": 4,
+          "upper_at_T0_s": 11.250000000004578,
+          "upper_bound_interval": [
+            2.999999999999999,
+            3.093749999999999
+          ],
+          "vehicle_id": 2,
+          "wheel_index": 0
+        }
+      },
+      "short_duration": {
+        "check_count": 155,
+        "first_failure": {
+          "limit": 2.0,
+          "quantity": "jerk",
+          "value": 5.239689184614314,
+          "vehicle_id": 3,
+          "wheel_index": 0
+        },
+        "reason": "DYNAMIC_LIMIT",
+        "rejected": true
+      },
+      "tamper": {
+        "extra_field": "UNSUPPORTED_MODEL_FIELD",
+        "self_digest": "UNSUPPORTED_MODEL_FIELD",
+        "timing_T": "MODEL_TIMING_INCONSISTENT"
+      },
+      "timing_status": "DYNAMIC_FEASIBLE"
+    },
+    {
+      "S_m": 5.992304773484085,
+      "T_s": 15.606499280191949,
+      "audit": {
+        "check_count": 845,
+        "collision_checked": false,
+        "differential": {
+          "checked_sample_count": 80,
+          "max_errors": {
+            "acceleration": 8.039931498338149e-10,
+            "angular_accel": 6.6757252503713e-11,
+            "angular_jerk": 3.4959529070267836e-06,
+            "angular_rate": 4.6609993642476866e-11,
+            "jerk": 3.5857609076983543e-06,
+            "velocity": 4.779254769715635e-11
+          },
+          "oracle": {
+            "boundary_rule": "stencils that cross a Hermite g-jump or the time-domain hold boundary are skipped; analytic one-sided limits are used instead",
+            "grid_subintervals": [
+              376,
+              376,
+              376,
+              376,
+              376,
+              376,
+              376,
+              376
+            ],
+            "method": "independent_composite_simpson_positions",
+            "oracle_step_m": 0.002
+          },
+          "skipped_sample_count": 0,
+          "tolerances": {
+            "acceleration": 0.0001,
+            "angular_accel": 0.0001,
+            "angular_jerk": 0.01,
+            "angular_rate": 1e-05,
+            "jerk": 0.01,
+            "velocity": 1e-05
+          }
+        },
+        "executable": false,
+        "leaves": 64,
+        "map_used": false,
+        "max_utilization": {
+          "acceleration": 0.33366059468109716,
+          "jerk": 0.08417094288928864,
+          "lateral_acceleration": 0.22699089088169905,
+          "speed": 0.9900990099009895,
+          "steer_acceleration": 0.03660315410959666,
+          "steer_rate": 0.07045991257915829,
+          "wheel_angle": 0.04524992395602256,
+          "wheel_speed": 0.8094483043986187,
+          "yaw_acceleration": 0.2006042287907773,
+          "yaw_jerk": 0.05272762581556834,
+          "yaw_rate": 0.23911855240254828
+        },
+        "nodes": {
+          "internal_node_count": 7,
+          "max_continuity_error": 9.159339953157541e-16,
+          "max_inverse_error_s": 4.5420911476412584e-10,
+          "max_jump_magnitude": 0.06982298109228557,
+          "max_state_error": 2.220446049250313e-16,
+          "records": [
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.7110847728172303e-10,
+              "jump_max": 0.047779248076706,
+              "left_jerk_vector_location": "benchmark/results.json:STRAIGHT_POLICY .dynamic_audit.metrics.nodes.records[0].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 8.326672684688674e-17,
+              "node": 1,
+              "right_jerk_vector_location": "benchmark/results.json:STRAIGHT_POLICY .dynamic_audit.metrics.nodes.records[0].right_jerk",
+              "right_region": "motion",
+              "s": 0.7490380966855106,
+              "t": 4.20405648561926,
+              "tau": 0.26937857171820234,
+              "w": 0.4461907416186586
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.771702949961764e-10,
+              "jump_max": 0.06982298109228557,
+              "left_jerk_vector_location": "benchmark/results.json:STRAIGHT_POLICY .dynamic_audit.metrics.nodes.records[1].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 1.734723475976807e-16,
+              "node": 2,
+              "right_jerk_vector_location": "benchmark/results.json:STRAIGHT_POLICY .dynamic_audit.metrics.nodes.records[1].right_jerk",
+              "right_region": "motion",
+              "s": 1.4980761933710212,
+              "t": 5.609540247064583,
+              "tau": 0.35943616478964713,
+              "w": 0.6106298445702903
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.8065550711507967e-10,
+              "jump_max": 0.04916791104456582,
+              "left_jerk_vector_location": "benchmark/results.json:STRAIGHT_POLICY .dynamic_audit.metrics.nodes.records[2].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 1.734723475976807e-16,
+              "node": 3,
+              "right_jerk_vector_location": "benchmark/results.json:STRAIGHT_POLICY .dynamic_audit.metrics.nodes.records[2].right_jerk",
+              "right_region": "motion",
+              "s": 2.2471142900565315,
+              "t": 6.750097398103148,
+              "tau": 0.43251835513621517,
+              "w": 0.6939407242829517
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 4.5420911476412584e-10,
+              "jump_max": 2.001065979584382e-12,
+              "left_jerk_vector_location": "benchmark/results.json:STRAIGHT_POLICY .dynamic_audit.metrics.nodes.records[3].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 9.159339953157541e-16,
+              "node": 4,
+              "right_jerk_vector_location": "benchmark/results.json:STRAIGHT_POLICY .dynamic_audit.metrics.nodes.records[3].right_jerk",
+              "right_region": "motion",
+              "s": 2.9961523867420423,
+              "t": 7.8032496400959745,
+              "tau": 0.5,
+              "w": 0.7199290019218499
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.8065550711507967e-10,
+              "jump_max": 0.049167911041425,
+              "left_jerk_vector_location": "benchmark/results.json:STRAIGHT_POLICY .dynamic_audit.metrics.nodes.records[4].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 9.159339953157541e-16,
+              "node": 5,
+              "right_jerk_vector_location": "benchmark/results.json:STRAIGHT_POLICY .dynamic_audit.metrics.nodes.records[4].right_jerk",
+              "right_region": "motion",
+              "s": 3.745190483427553,
+              "t": 8.8564018820888,
+              "tau": 0.5674816448637847,
+              "w": 0.6939407242829517
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.771702949961764e-10,
+              "jump_max": 0.06982298109102568,
+              "left_jerk_vector_location": "benchmark/results.json:STRAIGHT_POLICY .dynamic_audit.metrics.nodes.records[5].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 9.159339953157541e-16,
+              "node": 6,
+              "right_jerk_vector_location": "benchmark/results.json:STRAIGHT_POLICY .dynamic_audit.metrics.nodes.records[5].right_jerk",
+              "right_region": "motion",
+              "s": 4.494228580113063,
+              "t": 9.996959033127366,
+              "tau": 0.6405638352103529,
+              "w": 0.6106298445702902
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.7111114181698213e-10,
+              "jump_max": 0.047779248079571554,
+              "left_jerk_vector_location": "benchmark/results.json:STRAIGHT_POLICY .dynamic_audit.metrics.nodes.records[6].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 9.159339953157541e-16,
+              "node": 7,
+              "right_jerk_vector_location": "benchmark/results.json:STRAIGHT_POLICY .dynamic_audit.metrics.nodes.records[6].right_jerk",
+              "right_region": "motion",
+              "s": 5.243266676798574,
+              "t": 11.402442794572691,
+              "tau": 0.7306214282817978,
+              "w": 0.4461907416186584
+            }
+          ]
+        },
+        "ros_used": false,
+        "time_inverse": {
+          "max_error_s": 4.3716497089008044e-10,
+          "max_independent_error_s": 6.396470730862802e-08,
+          "sample_count": 100,
+          "tolerance_s": 1e-09
+        },
+        "whole_domain_certificate": true
+      },
+      "model_json_location": "benchmark/results.json:STRAIGHT_POLICY .model_json",
+      "model_sha256": "b8a2d53c8d0f30adbb77d951e54e809660637e1213d3eaaf59cafcacefdfe0ea",
+      "name": "STRAIGHT_POLICY",
+      "request_sha256": "54734109878d0736e1fabb7e1d1224e1d42ac69ee29512ed993b34f83e01dfcd",
+      "roundtrip": {
+        "equal_digest": true,
+        "equal_json": true,
+        "equal_state_midpoint": true
+      },
+      "sample": {
+        "authoritative": false,
+        "states_equal_pointwise": true,
+        "times": [
+          0.0,
+          7.8032496400959745,
+          15.606499280191949
+        ]
+      },
+      "selection": {
+        "T0_s": 1.0,
+        "interval_subdivisions_per_segment": 8,
+        "required_duration_s": 15.451979485338564,
+        "rescalings": 0,
+        "safety_factor": 1.01,
+        "selected_duration_s": 15.606499280191949,
+        "wheel_angle_bound_rad": 0.07107841433786863,
+        "wheel_angle_limit_rad": 1.5707963267948966,
+        "worst": {
+          "order": 1,
+          "quantity": "speed",
+          "s0": 3.6515607213418644,
+          "s1": 3.745190483427553,
+          "segment_index": 4,
+          "vehicle_id": 2,
+          "wheel_index": 0
+        },
+        "worst_metric": {
+          "limit": 0.8,
+          "order": 1,
+          "required_duration_s": 15.451979485338564,
+          "segment_index": 4,
+          "upper_at_T0_s": 12.361583588270852,
+          "upper_bound_interval": [
+            3.6515607213418644,
+            3.745190483427553
+          ],
+          "vehicle_id": 2,
+          "wheel_index": 0
+        }
+      },
+      "short_duration": {
+        "check_count": 155,
+        "first_failure": {
+          "limit": 0.6,
+          "quantity": "acceleration",
+          "value": 1.2019030097760137,
+          "vehicle_id": 3,
+          "wheel_index": 0
+        },
+        "reason": "DYNAMIC_LIMIT",
+        "rejected": true
+      },
+      "tamper": {
+        "extra_field": "UNSUPPORTED_MODEL_FIELD",
+        "self_digest": "UNSUPPORTED_MODEL_FIELD",
+        "timing_T": "MODEL_TIMING_INCONSISTENT"
+      },
+      "timing_status": "DYNAMIC_FEASIBLE"
+    }
+  ],
+  "nonclaims": [
+    "DYNAMIC_FEASIBLE is a common-time whole-domain dynamic audit result, not collision freedom, executability, time optimality, map feasibility, ROS/Gazebo validation or hardware acceptance",
+    "collision_checked=false, executable=false, map_used=false, ros_used=false; no map, ROS, Gazebo or hardware run occurred",
+    "the NO_MOTION case is an exact hold with S=T=0 and one t=0 sample; no division or inverse formula is used there",
+    "the legacy regression overall FAIL is reported truthfully; four cases pass and timing_continuous has a pre-existing baseline failure reproduced from a pristine HEAD export",
+    "no Git commit, push, branch creation or other worktree operation occurred; Codex acceptance is NOT_RUN_NOT_CLAIMED"
+  ],
+  "protection": {
+    "added": [
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/timing.py",
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/trajectory.py",
+      "tests/test_virtual_a_timing.py",
+      "tests/test_virtual_a_trajectory.py"
+    ],
+    "changed": [
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/audit.py",
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/bounds.py",
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/contracts.py",
+      "tests/test_virtual_a_audit.py",
+      "tools/virtual_a_benchmark.py"
+    ],
+    "diff_location": "analysis/protection_diff_vs_g2_accepted.json",
+    "diff_sha256": "f4f6f6b61a799c65077bbef2eb725f06a1aa0c0724386a71dd4d6254b1b4a9f5",
+    "g2_accepted_tree_sha256": "fa1b0596f7b9ecef616512785ab65ef2b93884dfde3a9c2a9794a9f7ac222f67",
+    "g3_full_protected_tree_sha256": "8baa6d2d673ca9e5f2bc177f47adec726a66005bddb7f8cb4cac889066f21e65",
+    "only_authorized_changes": true,
+    "removed": []
+  },
+  "run_id": "20261116T023528Z",
+  "schema": "virtual_rigid_a.g3.results.v1",
+  "scope": {
+    "collision_checked": false,
+    "common_time": "PROVEN_FOR_TESTED_PATHS",
+    "executable": false,
+    "g4_entered": false,
+    "gazebo_used": false,
+    "hardware_used": false,
+    "map_used": false,
+    "output_status": "DYNAMIC_FEASIBLE only for plans that passed the independent raw-profile whole-domain dynamic audit",
+    "ros_used": false,
+    "three_vehicle_dynamics": "AUDITED_WHOLE_DOMAIN",
+    "time_optimal": false,
+    "timing_and_dynamics_proven": true
+  },
+  "stage": "G3",
+  "status": "PASS_PENDING_CODEX_RECHECK",
+  "tests": {
+    "audit": {
+      "count": 44,
+      "log": "logs/audit.log",
+      "log_sha256": "3e03f4b5a3769b03c34f18b2f9d707e95327b8bd22f6197c897014672d8c506f",
+      "status": "OK",
+      "wall_time_s": 2.323
+    },
+    "timing": {
+      "count": 16,
+      "log": "logs/timing.log",
+      "log_sha256": "0562bd00ada79c11cad9ed586846d94b49156c02abef4d15e58bfebcf7fe5977",
+      "status": "OK",
+      "wall_time_s": 0.326
+    },
+    "trajectory": {
+      "count": 23,
+      "log": "logs/trajectory.log",
+      "log_sha256": "409bfdb285aabfe974a4b2c37dd672bade2b0d91ad21cc31b6e21780ba2b0ac7",
+      "status": "OK",
+      "wall_time_s": 0.418
+    }
+  }
+}

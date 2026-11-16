@@ -1,0 +1,24 @@
+{
+  "stage": "G3",
+  "rework": "01",
+  "status": "ACCEPTED",
+  "review": "CODEX_REVIEW.md",
+  "branch": "feature/virtual-rigid-formation-a",
+  "head": "567bdecba9676313da3bc9a97b82f57b5b569a2b",
+  "evidence_run": "evaluation/virtual_formation_a/G3/20261116T031558Z",
+  "source_manifest_sha256": "bad6f55441bd34ca8d164cc954170336b56df398fcb0912dae10a4588279ceea",
+  "source_sha256": {
+    "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/timing.py": "3ec16bfe6fd0d3f6860f46a2ec1d0939d521edd88b69c860f891b8bfb0c42ab8",
+    "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/trajectory.py": "3f5c770ab7f1bcbf3e94aed7c96b07f11d839d7e8cc70ab0283f1a2c08aed491",
+    "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/audit.py": "819a44e85a578ab91271b2ad5da1d332dcf921e483dfc946296834308415097b",
+    "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/bounds.py": "0f1c47c7a1dc8614b213a5d4828e7f6d012e7a39f42077a5df5f26b2d323d6d2",
+    "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/contracts.py": "0fb50cf78bfdbe5546438e28530b7cc6c7344e3c3e810ee77874cace2ca18497",
+    "tests/test_virtual_a_timing.py": "3969ccf4ab0f573caf9583d1024765e1b3e12cd89818a8da02949b2dd318f88c",
+    "tests/test_virtual_a_trajectory.py": "d3c595a3c7a6fa2097332757a4e7c5016a701fe25b505f336a89dd47fe3e63e0",
+    "tests/test_virtual_a_audit.py": "7708c3b51404d810d6c3c055ee5979cd5401def04a892021f97c1b0267eb582f"
+  },
+  "scope": "G3 common-time parameterization and dynamic audit only",
+  "known_nonblocking_issue": "_audit_check_actual_metrics skips nonfinite per-wheel values; no end-to-end false acceptance established; see review",
+  "legacy_timing_regression": "FAIL: pre-existing timing_continuous KeyError dynamic_peaks; not counted as passed",
+  "next_stage_authorized": false
+}

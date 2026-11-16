@@ -1,0 +1,185 @@
+{
+  "expected_from_accepted_g4_manifest": {
+    "map_sha256": "054cf5c77079536f9a098e33232732d6c181f0f624f07e3a446ebfab0266a10e",
+    "planning_context_sha256": "80f625e28f50901991661a97f90e55364c8f4bd8f3fe0d8e7eb7ea7e79106282",
+    "request_sha256": "d44f9efeb70f636a1e0f24dbc367e7869366ce344d0d88bba020d4ad355c8a1a",
+    "timed_model_sha256": "022359fc5d1bf9c491141dec57ae319a9630045e75f4440e7573b0606426daaa"
+  },
+  "input_bundle": {
+    "files": {
+      "map.pgm": "0e975d9a49a2e1f2d6fc64f68f0536def44880587e0df4ff33f5fe4eac5175b8",
+      "map.yaml": "a2d302d74b44f9902fbf25e41ea83d3655a60b1326d668468f39832b29f4a0e0",
+      "request.json": "cdb38b6ca95eb839710549809fbf53a551eea44c97669cff69106e7256bb995f"
+    },
+    "note": "No reference profile, trajectory, audit or known-good plan is present in this bundle.",
+    "path": "evaluation/virtual_formation_a/G4/20261116T081458Z/scenes/inputs/S1",
+    "read_guard_active_during_planning": true,
+    "reference_file_present": false
+  },
+  "note": "In-memory frozen S1 inputs; planning ran behind a read guard. This is one known-feasible A-only scene, not a success-rate or general-completeness claim.",
+  "old_g4_benchmark_s1": {
+    "checks": 10664,
+    "model_sha256": "1e8f1a3dcd16b728fcc0c68380096d8365a8479226ac8f2af7b9e830fde9c589",
+    "model_sha256_equal": true,
+    "status": "SUCCESS"
+  },
+  "result": {
+    "checks": 10664,
+    "collision_audit": {
+      "check_count": 9584,
+      "detail": "static start/goal plus unchanged analytic three-vehicle OBB sweep over the whole closed path; declared per-lambda bounds independently verified; conservative margin includes the numerical envelope; map and G4 context bound",
+      "first_failure": null,
+      "passed": true,
+      "reason": null
+    },
+    "collision_margin_m": {
+      "baseline_half_length_m": 0.394,
+      "baseline_half_width_m": 0.275,
+      "baseline_margin_m": 0.05,
+      "checker_half_length_growth_lower_m": 4.149413740384133e-08,
+      "checker_half_length_m": 0.3940000414941374,
+      "checker_half_width_growth_lower_m": 4.149413740384133e-08,
+      "checker_half_width_m": 0.2750000414941374,
+      "checker_radius_upper_m": 0.48048002613965074,
+      "closure_gap_m": 5.2074639302573624e-17,
+      "contexts": {
+        "map_boundary": {
+          "actual_per_side_growth_lower_m": 4.149413740384133e-08,
+          "checker_padding_m": 0.0,
+          "covered": true,
+          "required_per_side_m": 4.149413735176669e-08
+        },
+        "motion_sweep": {
+          "actual_numerical_per_side_growth_lower_m": 4.149413740384133e-08,
+          "checker_padding_m": 0.01,
+          "covered": true,
+          "padding_role": "sampling-interval motion protection only; not counted in the numerical envelope and not subtracted from the margin",
+          "required_per_side_m": 4.149413735176669e-08
+        },
+        "no_motion_hold": {
+          "actual_per_side_growth_lower_m": 4.149413740384133e-08,
+          "checker_padding_m": 0.0,
+          "covered": true,
+          "required_per_side_m": 4.149413735176669e-08
+        },
+        "static_start_goal": {
+          "actual_per_side_growth_lower_m": 4.149413740384133e-08,
+          "checker_padding_m": 0.0,
+          "covered": true,
+          "required_per_side_m": 4.149413735176669e-08
+        },
+        "vehicle_vehicle": {
+          "actual_two_body_gap_reduction_lower_m": 8.298827480074376e-08,
+          "binding_pair": {
+            "first_vehicle_id": 1,
+            "pair_envelope_m": 8.298827470353339e-08,
+            "second_vehicle_id": 2
+          },
+          "checker_padding_m": 0.0,
+          "covered": true,
+          "required_pair_envelope_m": 8.298827470353339e-08
+        }
+      },
+      "formula": "e_i = eps_position + (|offset_i| + r_upper) * eps_psi + r_upper * eps_relative_heading, maximised over segments and vehicles; the legacy checker expands each body side by (margin - baseline)/2, so the required closure is (margin_used - baseline)/2 >= max_i e_i, equivalently margin_used >= baseline + 2*max_i e_i",
+      "margin_growth_lower_m": 8.298827480074376e-08,
+      "margin_minimum_required_m": 0.05000008298827471,
+      "margin_used_m": 0.050000082988274804,
+      "maximum_envelope_m": 4.149413735176669e-08,
+      "maximum_record": {
+        "envelope_m": 4.149413735176669e-08,
+        "eps_formation_heading_rad": 1.6001160220947768e-10,
+        "eps_position_m": 4.120919536813098e-08,
+        "eps_relative_heading_rad": 1e-10,
+        "inflated_body_radius_upper_m": 0.48048002613965074,
+        "offset_hypot_float_m": 1.0,
+        "offset_m": 1.0000000000000004,
+        "per_side_required_m": 4.149413735176669e-08,
+        "vehicle_id": 1
+      },
+      "pair_closure_gap_m": 9.721037146635022e-17,
+      "pair_envelope_required_m": 8.298827470353339e-08,
+      "per_side_margin_m": 4.149413740384133e-08,
+      "per_side_required_m": 4.149413735176669e-08,
+      "radius_upper_m": 0.48048002613965074,
+      "radius_upper_note": "radius_upper is an outward interval square root of the actual checker half extents (length+margin)/2 and (width+margin)/2 at the recorded margin; it is not the old fixed-point radius.  The margin is solved at this same expanded radius.",
+      "sweep_motion_padding_m": 0.01,
+      "unit_note": "The legacy FormationCollisionChecker uses half extents (shape_dimension + margin_m)/2.  A full-width margin increase delta therefore grows each side by only delta/2.  error_envelope reserves 2*max(e_i) of full-width margin so the actual per-side growth covers the numerical envelope.  Sweep motion padding is a separate sampling-interval protection and is never counted as numerical margin.",
+      "vehicles": [
+        {
+          "envelope_m": 4.149413735176669e-08,
+          "eps_formation_heading_rad": 1.6001160220947768e-10,
+          "eps_position_m": 4.120919536813098e-08,
+          "eps_relative_heading_rad": 1e-10,
+          "inflated_body_radius_upper_m": 0.48048002613965074,
+          "offset_hypot_float_m": 1.0,
+          "offset_m": 1.0000000000000004,
+          "per_side_required_m": 4.149413735176669e-08,
+          "vehicle_id": 1
+        },
+        {
+          "envelope_m": 4.149413735176669e-08,
+          "eps_formation_heading_rad": 1.6001160220947768e-10,
+          "eps_position_m": 4.120919536813098e-08,
+          "eps_relative_heading_rad": 1e-10,
+          "inflated_body_radius_upper_m": 0.48048002613965074,
+          "offset_hypot_float_m": 1.0,
+          "offset_m": 1.0000000000000004,
+          "per_side_required_m": 4.149413735176669e-08,
+          "vehicle_id": 2
+        },
+        {
+          "envelope_m": 4.149413735176669e-08,
+          "eps_formation_heading_rad": 1.6001160220947768e-10,
+          "eps_position_m": 4.120919536813098e-08,
+          "eps_relative_heading_rad": 1e-10,
+          "inflated_body_radius_upper_m": 0.48048002613965074,
+          "offset_hypot_float_m": 1.0,
+          "offset_m": 1.0000000000000004,
+          "per_side_required_m": 4.149413735176669e-08,
+          "vehicle_id": 3
+        }
+      ]
+    },
+    "dynamic_audit": {
+      "check_count": 917,
+      "detail": "independent raw-profile common-time dynamic audit; whole-domain interval certificate plus node/endpoint/inverse/differential checks; DYNAMIC_FEASIBLE; collision_checked=false; executable=false; no map/ROS",
+      "first_failure": null,
+      "passed": true,
+      "reason": null
+    },
+    "endpoint_error_m": 1.601861401748266e-10,
+    "executable": true,
+    "geometry_audit": {
+      "check_count": 163,
+      "detail": "independent C2/interval/integration audit; geometry only, no timing/map/ROS/collision claim",
+      "first_failure": null,
+      "passed": true,
+      "reason": null
+    },
+    "grid_sha256": "054cf5c77079536f9a098e33232732d6c181f0f624f07e3a446ebfab0266a10e",
+    "heading_error_rad": 0.0,
+    "model_sha256": "1e8f1a3dcd16b728fcc0c68380096d8365a8479226ac8f2af7b9e830fde9c589",
+    "path_length_m": 10.472910641286598,
+    "plan_model_sha256": "1e8f1a3dcd16b728fcc0c68380096d8365a8479226ac8f2af7b9e830fde9c589",
+    "plan_planning_context_sha256": "80f625e28f50901991661a97f90e55364c8f4bd8f3fe0d8e7eb7ea7e79106282",
+    "plan_request_sha256": "d44f9efeb70f636a1e0f24dbc367e7869366ce344d0d88bba020d4ad355c8a1a",
+    "planning_context_sha256": "80f625e28f50901991661a97f90e55364c8f4bd8f3fe0d8e7eb7ea7e79106282",
+    "request_sha256": "d44f9efeb70f636a1e0f24dbc367e7869366ce344d0d88bba020d4ad355c8a1a",
+    "rounds": 1,
+    "routes": 3,
+    "status": "SUCCESS",
+    "timings": {
+      "collision_audit_s": 1.2042922100517899,
+      "dynamics_audit_s": 0.9998772069811821,
+      "geometry_solve_s": 9.686957331956364,
+      "result_assembly_s": 0.0,
+      "retime_s": 0.4117707749828696,
+      "route_generation_s": 0.4108860419364646
+    },
+    "wall_time_s": 12.733762011048384
+  },
+  "run_id": "20261116T084435Z",
+  "scene": "S1",
+  "schema": "virtual_rigid_a.g3.g4_scene_regression.v1",
+  "status": "PASS"
+}

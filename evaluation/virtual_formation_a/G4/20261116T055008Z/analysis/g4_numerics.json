@@ -1,0 +1,615 @@
+{
+  "codex_acceptance": "NOT_RUN_NOT_CLAIMED",
+  "generated_at_utc": "2026-11-16T05:56:46.932294+00:00",
+  "independent_method": [
+    "PGM P5 and simple YAML reparsed from raw bytes with the standard library; occupancy follows the conservative ROS convention free only when probability < free_thresh",
+    "canonical G4 grid summary and SHA-256 recomputed without the project module",
+    "collision error envelope recomputed with the same binary64 outward-rounding operation order as the audit record",
+    "per-lambda declared bounds checked against the independent lower bounds recorded by the adapter; no segment self-report is trusted alone",
+    "dynamic max-utilization, whole-domain certificate and all three pointwise interval ratios checked below one"
+  ],
+  "nonclaims": [
+    "six frozen known-feasible A-only scenes only",
+    "no general completeness, optimality or real-time claim",
+    "no ROS, Gazebo or hardware validation",
+    "numerical checks are not Codex acceptance"
+  ],
+  "run_id": "20261116T055008Z",
+  "scenes": {
+    "S1": {
+      "autonomous": {
+        "attempt_count": 6,
+        "checks": 10664,
+        "collision": {
+          "bounds_verified": true,
+          "check_count": 9584,
+          "max_corner_step_m": 0.01,
+          "max_samples_per_segment": 200000,
+          "sample_count": 1590,
+          "segment_count": 8,
+          "static_stages": [
+            "goal",
+            "start"
+          ]
+        },
+        "dynamics": {
+          "check_count": 917,
+          "leaves": 64,
+          "max_utilization": 0.9900990099009894,
+          "pointwise_component_ratio": 0.9648162152945062,
+          "pointwise_jerk_ratio": 0.8822041261747272,
+          "pointwise_p_sss_ratio": 0.9613263709302828,
+          "whole_domain_certificate": true
+        },
+        "endpoint_error_m": 1.601861401748266e-10,
+        "envelope": {
+          "baseline_margin_m": 0.05,
+          "margin_minus_floor_m": 4.1494137348330185e-08,
+          "margin_used_m": 0.05000004149413735,
+          "maximum_envelope_m": 4.1494137344255645e-08,
+          "radius_upper_m": 0.4804799972523089,
+          "radius_upper_note": "body radius evaluated at the outward-rounded fixed-point solution of the margin equation; the recorded margin is then rounded outward from baseline plus this envelope, never from the baseline margin alone",
+          "vehicles": 3
+        },
+        "executable": true,
+        "geometry": {
+          "check_count": 163,
+          "max_heading_error_rad": 5.551115123125783e-17,
+          "max_pairwise_rigidity_error_m": 1.5543122344752192e-15,
+          "max_position_error_m": 5.402578411571407e-15,
+          "position_tolerance_m": 4.5585470883375134e-07,
+          "sample_count": 73
+        },
+        "heading_error_rad": 0.0,
+        "model_sha256": "5ac5843ebe5872a213ceed4dc580b50401ab6bbecda738a80a7f4a1b3cadef81",
+        "rigidity_error_m": 1.5543122344752192e-15,
+        "route_count": 3,
+        "search_rounds": 1,
+        "status": "SUCCESS",
+        "timings": {
+          "collision_audit_s": 1.129552623955533,
+          "dynamics_audit_s": 0.9424303130945191,
+          "geometry_solve_s": 9.19146438606549,
+          "result_assembly_s": 0.0,
+          "retime_s": 0.38621989893727005,
+          "route_generation_s": 0.4141942700371146
+        },
+        "wall_time_s": 12.084842565003783
+      },
+      "map": {
+        "files": [
+          "map.pgm",
+          "map.yaml",
+          "request.json"
+        ],
+        "map_file_sha256": "0e975d9a49a2e1f2d6fc64f68f0536def44880587e0df4ff33f5fe4eac5175b8",
+        "map_signature": "054cf5c77079536f9a098e33232732d6c181f0f624f07e3a446ebfab0266a10e",
+        "map_summary": {
+          "cell_count": 123518,
+          "height": 302,
+          "occupancy_sha256": "896d9d75b36950c942951c75753547c95c656656cf242add593867254e1f4307",
+          "occupied_cells": 102358,
+          "origin_x": -6.800000000000001,
+          "origin_y": -4.800000000000001,
+          "resolution_m": 0.05,
+          "width": 409
+        },
+        "occupancy_bytes_sha256": "896d9d75b36950c942951c75753547c95c656656cf242add593867254e1f4307",
+        "planning_context_sha256_declared": "e24160391a5e8792135ca2668474d541266ce30b347dcb9e0f5f023470f3d936",
+        "request_file_sha256": "28951ed48453ad4906f581cf09e49a2fd6e124b76e365231b62ee2532dd61ec5",
+        "request_sha256_declared": "d44f9efeb70f636a1e0f24dbc367e7869366ce344d0d88bba020d4ad355c8a1a",
+        "yaml_file_sha256": "a2d302d74b44f9902fbf25e41ea83d3655a60b1326d668468f39832b29f4a0e0"
+      },
+      "reference": {
+        "collision_checks": 8204,
+        "dynamic_checks": 909,
+        "endpoint_difference_m": 1.2839311938972403e-10,
+        "geometry_checks": 155,
+        "independent_accepted": true,
+        "reference_file": "reference/S1.json",
+        "reference_sha256": "fce065b1546c2ff79472b27e00310e17555b3c39b7522a9a774bbd59357cbee2",
+        "status": "REFERENCE_PASSED",
+        "timed_model_sha256": "7466b8600de4a3c1d6c27bc1a90c832d8d43018eaada2305dcb5a5077f36e7c8"
+      }
+    },
+    "S1_mirror": {
+      "autonomous": {
+        "attempt_count": 6,
+        "checks": 9886,
+        "collision": {
+          "bounds_verified": true,
+          "check_count": 8810,
+          "max_corner_step_m": 0.01,
+          "max_samples_per_segment": 200000,
+          "sample_count": 1461,
+          "segment_count": 8,
+          "static_stages": [
+            "goal",
+            "start"
+          ]
+        },
+        "dynamics": {
+          "check_count": 915,
+          "leaves": 64,
+          "max_utilization": 0.9900990099009893,
+          "pointwise_component_ratio": 0.9715518001894737,
+          "pointwise_jerk_ratio": 0.8982561556689109,
+          "pointwise_p_sss_ratio": 0.9653891036950468,
+          "whole_domain_certificate": true
+        },
+        "endpoint_error_m": 1.5408566196837104e-10,
+        "envelope": {
+          "baseline_margin_m": 0.05,
+          "margin_minus_floor_m": 3.2736834257307557e-08,
+          "margin_used_m": 0.05000003273683426,
+          "maximum_envelope_m": 3.2736834251768424e-08,
+          "radius_upper_m": 0.48047999115565954,
+          "radius_upper_note": "body radius evaluated at the outward-rounded fixed-point solution of the margin equation; the recorded margin is then rounded outward from baseline plus this envelope, never from the baseline margin alone",
+          "vehicles": 3
+        },
+        "executable": true,
+        "geometry": {
+          "check_count": 161,
+          "max_heading_error_rad": 2.220446049250313e-16,
+          "max_pairwise_rigidity_error_m": 1.1102230246251565e-15,
+          "max_position_error_m": 1.897149936107019e-15,
+          "position_tolerance_m": 3.620110432322728e-07,
+          "sample_count": 73
+        },
+        "heading_error_rad": 2.886579864025407e-15,
+        "model_sha256": "112cd7b52c3a31dc696ada7420aa733a5d516e2006dab9092b694f2574c0f244",
+        "rigidity_error_m": 1.1102230246251565e-15,
+        "route_count": 3,
+        "search_rounds": 1,
+        "status": "SUCCESS",
+        "timings": {
+          "collision_audit_s": 1.038696766947396,
+          "dynamics_audit_s": 0.9473802350694314,
+          "geometry_solve_s": 9.20228319906164,
+          "result_assembly_s": 0.0,
+          "retime_s": 0.3892463679658249,
+          "route_generation_s": 0.40417687699664384
+        },
+        "wall_time_s": 12.002563865040429
+      },
+      "map": {
+        "files": [
+          "map.pgm",
+          "map.yaml",
+          "request.json"
+        ],
+        "map_file_sha256": "cd199e172acf6a33a005ab82b86877d40a3eced81ace497cb9abd2ca2239708b",
+        "map_signature": "fb485abf73dd1e1953c43762dbee0f9f7ac26a94968766e817c6951135e7c595",
+        "map_summary": {
+          "cell_count": 123518,
+          "height": 302,
+          "occupancy_sha256": "7467e64b0b09b3bc2aaa969abfaeca74fdb63a71d16e8c113b59a7bdeb095bd2",
+          "occupied_cells": 102358,
+          "origin_x": -6.800000000000001,
+          "origin_y": -10.3,
+          "resolution_m": 0.05,
+          "width": 409
+        },
+        "occupancy_bytes_sha256": "7467e64b0b09b3bc2aaa969abfaeca74fdb63a71d16e8c113b59a7bdeb095bd2",
+        "planning_context_sha256_declared": "d4a9089ebdcfc6e53b830f4e155618c2b74222f2f50872a8c662887029e616c4",
+        "request_file_sha256": "1dd2ac74dd28c5745d772be757a49b55c80e3be24d92abeecd907a0fd904e0c4",
+        "request_sha256_declared": "5c945f973aa02c47d42cd11707c55c392df533c8688ce027d11a4415b05c5ee0",
+        "yaml_file_sha256": "bdefc6eb21ebb17148ca95173c2e76ae3996c33c404e95a3c97429b642116441"
+      },
+      "reference": {
+        "collision_checks": 8204,
+        "dynamic_checks": 909,
+        "endpoint_difference_m": 1.2839311938972403e-10,
+        "geometry_checks": 155,
+        "independent_accepted": true,
+        "reference_file": "reference/S1_mirror.json",
+        "reference_sha256": "3c1dc4ee4bb3192fa4139ff348a0dddd6686ecdc9ea790b87f0ff61296c8d327",
+        "status": "REFERENCE_PASSED",
+        "timed_model_sha256": "949d5de197910f5ec361c8feaa1d103d30e9e064cfff2850538e06f7de8d1a44"
+      }
+    },
+    "S2": {
+      "autonomous": {
+        "attempt_count": 6,
+        "checks": 16322,
+        "collision": {
+          "bounds_verified": true,
+          "check_count": 15206,
+          "max_corner_step_m": 0.01,
+          "max_samples_per_segment": 200000,
+          "sample_count": 2527,
+          "segment_count": 8,
+          "static_stages": [
+            "goal",
+            "start"
+          ]
+        },
+        "dynamics": {
+          "check_count": 935,
+          "leaves": 64,
+          "max_utilization": 0.990099009900991,
+          "pointwise_component_ratio": 0.9540282129492504,
+          "pointwise_jerk_ratio": 0.880248792848926,
+          "pointwise_p_sss_ratio": 0.9689480841606803,
+          "whole_domain_certificate": true
+        },
+        "endpoint_error_m": 4.275796780732511e-10,
+        "envelope": {
+          "baseline_margin_m": 0.05,
+          "margin_minus_floor_m": 7.545410287551624e-08,
+          "margin_used_m": 0.05000007545410288,
+          "maximum_envelope_m": 7.545410287150146e-08,
+          "radius_upper_m": 0.48048002089451924,
+          "radius_upper_note": "body radius evaluated at the outward-rounded fixed-point solution of the margin equation; the recorded margin is then rounded outward from baseline plus this envelope, never from the baseline margin alone",
+          "vehicles": 3
+        },
+        "executable": true,
+        "geometry": {
+          "check_count": 181,
+          "max_heading_error_rad": 1.6653345369377348e-16,
+          "max_pairwise_rigidity_error_m": 1.3322676295501878e-15,
+          "max_position_error_m": 1.027757718101043e-09,
+          "position_tolerance_m": 8.489618847404936e-07,
+          "sample_count": 73
+        },
+        "heading_error_rad": 4.718447854656915e-16,
+        "model_sha256": "13f34db886e20ac652f9a698b2a033161e7ecf89096b74f14d9f0a8323221cfb",
+        "rigidity_error_m": 1.3322676295501878e-15,
+        "route_count": 3,
+        "search_rounds": 1,
+        "status": "SUCCESS",
+        "timings": {
+          "collision_audit_s": 1.7783737399149686,
+          "dynamics_audit_s": 1.0532936389790848,
+          "geometry_solve_s": 9.000857266015373,
+          "result_assembly_s": 0.0,
+          "retime_s": 0.39451805292628706,
+          "route_generation_s": 0.3713926851050928
+        },
+        "wall_time_s": 12.61620358005166
+      },
+      "map": {
+        "files": [
+          "map.pgm",
+          "map.yaml",
+          "request.json"
+        ],
+        "map_file_sha256": "7249d848f3447a53aac908fd2b6a10c46dca3c5fa8880131372a142427f57343",
+        "map_signature": "55e3c5b82a99c74b96a550720fd7a467e76b40f48082c0212ca21574d3af8782",
+        "map_summary": {
+          "cell_count": 105222,
+          "height": 213,
+          "occupancy_sha256": "1a293de6eba01c54b8799941c7b0f1502952532cb990797a984614dc9a2a46b9",
+          "occupied_cells": 85491,
+          "origin_x": -6.6000000000000005,
+          "origin_y": -4.65,
+          "resolution_m": 0.05,
+          "width": 494
+        },
+        "occupancy_bytes_sha256": "1a293de6eba01c54b8799941c7b0f1502952532cb990797a984614dc9a2a46b9",
+        "planning_context_sha256_declared": "a84be59f52bf5e598be8424de0ebe7c808197b674f5d93fc6de39d6371af9d7c",
+        "request_file_sha256": "a55aff7db4694b7e6a21919b20996ce04f8ced2a5487a54aa662713fee25fed0",
+        "request_sha256_declared": "9feb7332db51d4f347a21b347416b6e7ffa1619ad28bda41ef88ad57c3bb2ba2",
+        "yaml_file_sha256": "407eaf102e19337a58cad2dd775007cd7969b91fc97b3f525991bb847f2f1add"
+      },
+      "reference": {
+        "collision_checks": 15620,
+        "dynamic_checks": 937,
+        "endpoint_difference_m": 2.806646496170421e-13,
+        "geometry_checks": 183,
+        "independent_accepted": true,
+        "reference_file": "reference/S2.json",
+        "reference_sha256": "6412aa4866bc7e7c43ac5dbd4ca291beafdbcfb45276dce98060a3b47bc46477",
+        "status": "REFERENCE_PASSED",
+        "timed_model_sha256": "b8cbf90acb495a7396ebf37a811c79f4646504b29564f442255698d49924580f"
+      }
+    },
+    "S2_mirror": {
+      "autonomous": {
+        "attempt_count": 6,
+        "checks": 16298,
+        "collision": {
+          "bounds_verified": true,
+          "check_count": 15182,
+          "max_corner_step_m": 0.01,
+          "max_samples_per_segment": 200000,
+          "sample_count": 2523,
+          "segment_count": 8,
+          "static_stages": [
+            "goal",
+            "start"
+          ]
+        },
+        "dynamics": {
+          "check_count": 935,
+          "leaves": 64,
+          "max_utilization": 0.990099009900991,
+          "pointwise_component_ratio": 0.9478962452508187,
+          "pointwise_jerk_ratio": 0.8808129995565638,
+          "pointwise_p_sss_ratio": 0.9692240240722989,
+          "whole_domain_certificate": true
+        },
+        "endpoint_error_m": 4.1284876399562624e-10,
+        "envelope": {
+          "baseline_margin_m": 0.05,
+          "margin_minus_floor_m": 7.368835353016578e-08,
+          "margin_used_m": 0.05000007368835353,
+          "maximum_envelope_m": 7.368835352363654e-08,
+          "radius_upper_m": 0.4804800196652419,
+          "radius_upper_note": "body radius evaluated at the outward-rounded fixed-point solution of the margin equation; the recorded margin is then rounded outward from baseline plus this envelope, never from the baseline margin alone",
+          "vehicles": 3
+        },
+        "executable": true,
+        "geometry": {
+          "check_count": 181,
+          "max_heading_error_rad": 1.1102230246251565e-16,
+          "max_pairwise_rigidity_error_m": 1.3322676295501878e-15,
+          "max_position_error_m": 1.039678987348122e-09,
+          "position_tolerance_m": 8.307483933897074e-07,
+          "sample_count": 73
+        },
+        "heading_error_rad": 2.220446049250313e-16,
+        "model_sha256": "4c7e2c87be9501f083a78f454442096714651b4cf2b43945e5270413477c2356",
+        "rigidity_error_m": 1.3322676295501878e-15,
+        "route_count": 3,
+        "search_rounds": 1,
+        "status": "SUCCESS",
+        "timings": {
+          "collision_audit_s": 1.7736660259542987,
+          "dynamics_audit_s": 1.071693483972922,
+          "geometry_solve_s": 9.124610087950714,
+          "result_assembly_s": 0.0,
+          "retime_s": 0.39785559999290854,
+          "route_generation_s": 0.36811568995472044
+        },
+        "wall_time_s": 12.753685337956995
+      },
+      "map": {
+        "files": [
+          "map.pgm",
+          "map.yaml",
+          "request.json"
+        ],
+        "map_file_sha256": "94fab242e95d66e22060f95a303fba2bb6ff91a4fa6e3cef3669f47f4fd26141",
+        "map_signature": "e50be3838ff411edc4a8cfeda5d28b0cf0188db89a1a4dababf72bb514b4d57c",
+        "map_summary": {
+          "cell_count": 105222,
+          "height": 213,
+          "occupancy_sha256": "645485491932b7d2c20a286a3d272f10c1f0bba2665954d7b36dd56bbd24519f",
+          "occupied_cells": 85491,
+          "origin_x": -6.6000000000000005,
+          "origin_y": -6.0,
+          "resolution_m": 0.05,
+          "width": 494
+        },
+        "occupancy_bytes_sha256": "645485491932b7d2c20a286a3d272f10c1f0bba2665954d7b36dd56bbd24519f",
+        "planning_context_sha256_declared": "a6a42bf1edda8dd769157bca5d3d8424c1b71028c186568fa48f31c00b85758c",
+        "request_file_sha256": "ebd26543d1c83d1a49f77f193765ceec7b790ecfbfc8c7320a613ea6245ee1b8",
+        "request_sha256_declared": "244db57aa644b6a202477d22b1f45f53a462b52ae9ecb64b5fe36b5c58a3e6d0",
+        "yaml_file_sha256": "f8e5f664772f28d4b6522a8b7c9876353beb2a19fe550efd59a415bf88082ee8"
+      },
+      "reference": {
+        "collision_checks": 15620,
+        "dynamic_checks": 937,
+        "endpoint_difference_m": 2.806646496170421e-13,
+        "geometry_checks": 183,
+        "independent_accepted": true,
+        "reference_file": "reference/S2_mirror.json",
+        "reference_sha256": "317dd67ff07a7416660428d3a2cec6714bd1fee9ae42b9f12ae2b86c71374347",
+        "status": "REFERENCE_PASSED",
+        "timed_model_sha256": "bf034bc02d02279eba3c0f05323510bfd735334e38ddf10c85c7bbc6a565b3d0"
+      }
+    },
+    "S3": {
+      "autonomous": {
+        "attempt_count": 12,
+        "checks": 12956,
+        "collision": {
+          "bounds_verified": true,
+          "check_count": 11864,
+          "max_corner_step_m": 0.01,
+          "max_samples_per_segment": 200000,
+          "sample_count": 1970,
+          "segment_count": 8,
+          "static_stages": [
+            "goal",
+            "start"
+          ]
+        },
+        "dynamics": {
+          "check_count": 923,
+          "leaves": 64,
+          "max_utilization": 0.9900990099009901,
+          "pointwise_component_ratio": 0.9498666074074866,
+          "pointwise_jerk_ratio": 0.8634026311032174,
+          "pointwise_p_sss_ratio": 0.9743329798031719,
+          "whole_domain_certificate": true
+        },
+        "endpoint_error_m": 4.367370357659129e-10,
+        "envelope": {
+          "baseline_margin_m": 0.05,
+          "margin_minus_floor_m": 4.7216468838928716e-08,
+          "margin_used_m": 0.05000004721646884,
+          "maximum_envelope_m": 4.721646883309045e-08,
+          "radius_upper_m": 0.48048000123607515,
+          "radius_upper_note": "body radius evaluated at the outward-rounded fixed-point solution of the margin equation; the recorded margin is then rounded outward from baseline plus this envelope, never from the baseline margin alone",
+          "vehicles": 3
+        },
+        "executable": true,
+        "geometry": {
+          "check_count": 169,
+          "max_heading_error_rad": 1.1102230246251565e-16,
+          "max_pairwise_rigidity_error_m": 1.3322676295501878e-15,
+          "max_position_error_m": 3.5566146649215975e-15,
+          "position_tolerance_m": 5.25271381293181e-07,
+          "sample_count": 73
+        },
+        "heading_error_rad": 2.7755575615628914e-17,
+        "model_sha256": "9147accd44a5b803b42c9f38e3d3623af38fcd484e12cb9f4e0d03587f3ea03d",
+        "rigidity_error_m": 1.3322676295501878e-15,
+        "route_count": 3,
+        "search_rounds": 2,
+        "status": "SUCCESS",
+        "timings": {
+          "collision_audit_s": 1.188426902052015,
+          "dynamics_audit_s": 2.1716011710232124,
+          "geometry_solve_s": 18.65454632102046,
+          "result_assembly_s": 0.0,
+          "retime_s": 0.8750239571090788,
+          "route_generation_s": 1.4416257669217885
+        },
+        "wall_time_s": 24.342815893003717
+      },
+      "map": {
+        "files": [
+          "map.pgm",
+          "map.yaml",
+          "request.json"
+        ],
+        "map_file_sha256": "42499b71080fe3a21498b84c8d0f28a66c4d66c4985d068e6d61ad4a115379f6",
+        "map_signature": "d4ca88971203636b4dcc0285b99d092823069d210d8ac3e13f67be49609ba1c3",
+        "map_summary": {
+          "cell_count": 42435,
+          "height": 123,
+          "occupancy_sha256": "cd724e0424da86f855e5b2b5a2ba37db766c9e1ce6bd7415f01b719d46c14119",
+          "occupied_cells": 1714,
+          "origin_x": -2.4000000000000004,
+          "origin_y": -3.0,
+          "resolution_m": 0.05,
+          "width": 345
+        },
+        "occupancy_bytes_sha256": "cd724e0424da86f855e5b2b5a2ba37db766c9e1ce6bd7415f01b719d46c14119",
+        "planning_context_sha256_declared": "29bd3557518099003a0f3431a3bb24364b7857cbf5b1554103ed9abb38afacc9",
+        "request_file_sha256": "4bbeb598df544cc9ce13882d695fa5e8d74092d95654cc041e3004d2b9678ecc",
+        "request_sha256_declared": "18dc626d71fa5b6e5e023215c04b01ceae45f94c8846790d6352b9d6c0e9f075",
+        "yaml_file_sha256": "59e801f5cdd99ec991ea0702e44069abb059f35463603189bcf12497c730d5d8"
+      },
+      "reference": {
+        "collision_checks": 15620,
+        "dynamic_checks": 937,
+        "endpoint_difference_m": 2.806646496170421e-13,
+        "geometry_checks": 183,
+        "independent_accepted": true,
+        "reference_file": "reference/S3.json",
+        "reference_sha256": "f9bda0eecfec4e6d800d3176a0a86e83305832ec1d4f20b06c14da718e0d8f3b",
+        "status": "REFERENCE_PASSED",
+        "timed_model_sha256": "eede881f03fbdf3d7e478d83b21c68011b7f625d1dcacf64529664824c272860"
+      }
+    },
+    "S3_mirror": {
+      "autonomous": {
+        "attempt_count": 12,
+        "checks": 13634,
+        "collision": {
+          "bounds_verified": true,
+          "check_count": 12530,
+          "max_corner_step_m": 0.01,
+          "max_samples_per_segment": 200000,
+          "sample_count": 2081,
+          "segment_count": 8,
+          "static_stages": [
+            "goal",
+            "start"
+          ]
+        },
+        "dynamics": {
+          "check_count": 929,
+          "leaves": 64,
+          "max_utilization": 0.9900990099009899,
+          "pointwise_component_ratio": 0.9456009008808421,
+          "pointwise_jerk_ratio": 0.8858335275572602,
+          "pointwise_p_sss_ratio": 0.9689026440259322,
+          "whole_domain_certificate": true
+        },
+        "endpoint_error_m": 7.199038644416448e-10,
+        "envelope": {
+          "baseline_margin_m": 0.05,
+          "margin_minus_floor_m": 4.452737074889246e-08,
+          "margin_used_m": 0.05000004452737075,
+          "maximum_envelope_m": 4.452737074138935e-08,
+          "radius_upper_m": 0.48047999936398184,
+          "radius_upper_note": "body radius evaluated at the outward-rounded fixed-point solution of the margin equation; the recorded margin is then rounded outward from baseline plus this envelope, never from the baseline margin alone",
+          "vehicles": 3
+        },
+        "executable": true,
+        "geometry": {
+          "check_count": 175,
+          "max_heading_error_rad": 1.1102230246251565e-16,
+          "max_pairwise_rigidity_error_m": 1.1102230246251565e-15,
+          "max_position_error_m": 3.568292035180542e-15,
+          "position_tolerance_m": 5.133033704558606e-07,
+          "sample_count": 73
+        },
+        "heading_error_rad": 8.326672684688674e-17,
+        "model_sha256": "b2e343dfea30dda136377e56da895fcc35a8993beb015a7b19cf3726a341f947",
+        "rigidity_error_m": 1.1102230246251565e-15,
+        "route_count": 3,
+        "search_rounds": 2,
+        "status": "SUCCESS",
+        "timings": {
+          "collision_audit_s": 1.174321161932312,
+          "dynamics_audit_s": 2.1660961349261925,
+          "geometry_solve_s": 18.053904747008346,
+          "result_assembly_s": 0.0,
+          "retime_s": 0.8552772899856791,
+          "route_generation_s": 1.445302675012499
+        },
+        "wall_time_s": 23.70212381298188
+      },
+      "map": {
+        "files": [
+          "map.pgm",
+          "map.yaml",
+          "request.json"
+        ],
+        "map_file_sha256": "cc3646b102a46c14ba6174919aaf0ab6f8b9f4d25a9d3a31248430260ff87fd1",
+        "map_signature": "84639455ed5a5b83b242fabd309875dcfd2676993ec8592674f323e022e3b741",
+        "map_summary": {
+          "cell_count": 42435,
+          "height": 123,
+          "occupancy_sha256": "a1d80e64b0b246081e5f0d56fc394dfc168ef68a3715ce50ede41a5301a85e98",
+          "occupied_cells": 1714,
+          "origin_x": -2.4000000000000004,
+          "origin_y": -3.1500000000000004,
+          "resolution_m": 0.05,
+          "width": 345
+        },
+        "occupancy_bytes_sha256": "a1d80e64b0b246081e5f0d56fc394dfc168ef68a3715ce50ede41a5301a85e98",
+        "planning_context_sha256_declared": "15bb39c1298fd315e6d553defa6b4f94cb5df754c28858ff451ff4c2dfcc1c36",
+        "request_file_sha256": "262d6e32504fa101b4b866c0af5078176756eb53e62fd6c05259b3c14a20db68",
+        "request_sha256_declared": "fc364d2558e9ec35950838bcb924496f6f56e45ccefbd585dc49dc4db4caf7bb",
+        "yaml_file_sha256": "c81e81a665a1f0004a2baa65d4633573031a04bed2bd2be12788cdbc36cb0713"
+      },
+      "reference": {
+        "collision_checks": 15620,
+        "dynamic_checks": 937,
+        "endpoint_difference_m": 2.806646496170421e-13,
+        "geometry_checks": 183,
+        "independent_accepted": true,
+        "reference_file": "reference/S3_mirror.json",
+        "reference_sha256": "0a7e484fd86679a1964b4c0830807b6e8b3f1f6b720b3b70a5883eae0c8c3b84",
+        "status": "REFERENCE_PASSED",
+        "timed_model_sha256": "943fbd495ab38d6676196b6f363c3c1a59af96c3dd9fb19f1a2ea85cbffbdda0"
+      }
+    }
+  },
+  "schema": "virtual_rigid_a.g4.numerics.v1",
+  "source": {
+    "benchmark_results": "benchmark/results.json",
+    "benchmark_results_sha256": "db474f2bcacd7e67a90899ff72171dd80491f0cda58e95e6dbbc88d1146590d6",
+    "benchmark_summary": "benchmark/summary.json",
+    "benchmark_summary_sha256": "d08f28ab82620e2a13f2325b766e776c2e3759f946a2304bde2d11ddd664f86f",
+    "scene_manifest": "scenes/scene_manifest.json",
+    "scene_manifest_self_digest": "e747868a01e505e82e6c4c0758b7ceb6951bd5f2ef2c6db1b2c26f474ec75c74",
+    "scene_manifest_sha256": "3cd821dfe78bf398c2fa84f855f3fb1a628f7c2e1014fc141c9adeb2cfd54516"
+  },
+  "status": "PASS",
+  "thresholds": {
+    "baseline_margin_m": 0.05,
+    "endpoint_m": 0.005,
+    "heading_rad": 0.003490658503988659,
+    "max_corner_step_m": 0.01,
+    "max_samples_per_segment": 200000,
+    "rigidity_m": 1e-06
+  }
+}

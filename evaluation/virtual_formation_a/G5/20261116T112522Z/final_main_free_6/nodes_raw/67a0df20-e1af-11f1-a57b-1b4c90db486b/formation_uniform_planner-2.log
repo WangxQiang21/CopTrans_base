@@ -1,0 +1,59 @@
+[rospy.client][INFO] 2026-11-16 21:25:59,233: init_node, name[/formation_uniform_planner], pid[3990068]
+[xmlrpc][INFO] 2026-11-16 21:25:59,234: XML-RPC server binding to 0.0.0.0:0
+[xmlrpc][INFO] 2026-11-16 21:25:59,234: Started XML-RPC server [http://wq-ubuntu:37277/]
+[rospy.init][INFO] 2026-11-16 21:25:59,234: ROS Slave URI: [http://wq-ubuntu:37277/]
+[rospy.impl.masterslave][INFO] 2026-11-16 21:25:59,234: _ready: http://wq-ubuntu:37277/
+[rospy.registration][INFO] 2026-11-16 21:25:59,235: Registering with master node http://127.0.0.1:11585
+[xmlrpc][INFO] 2026-11-16 21:25:59,235: xml rpc node: starting XML-RPC server
+[rospy.init][INFO] 2026-11-16 21:25:59,334: registered with master
+[rospy.rosout][INFO] 2026-11-16 21:25:59,335: initializing /rosout core topic
+[rospy.rosout][INFO] 2026-11-16 21:25:59,338: connected to core topic /rosout
+[rospy.simtime][INFO] 2026-11-16 21:25:59,338: /use_sim_time is not set, will not subscribe to simulated time [/clock] topic
+[rospy.internal][INFO] 2026-11-16 21:25:59,374: topic[/map] adding connection to [http://wq-ubuntu:40501/], count 0
+[rospy.internal][INFO] 2026-11-16 21:25:59,376: topic[/formation/plan_request] adding connection to [http://wq-ubuntu:35115/], count 0
+[rosout][INFO] 2026-11-16 21:25:59,375: [uniform planner] autonomous V0.2 planner ready; backend=virtual_rigid_a budget=10000 expansions / 30.0 s
+[rospy.internal][INFO] 2026-11-16 21:25:59,377: topic[/formation/playback_status] adding connection to [http://wq-ubuntu:44057/], count 0
+[rosout][INFO] 2026-11-16 21:25:59,386: [uniform planner] exact map 409x302 res=0.050 origin=(-6.80, -4.80) signature=74143528b109222a
+[rospy.internal][INFO] 2026-11-16 21:25:59,403: topic[/formation/optimizer_status] adding connection to [/formation_goal_bridge], count 0
+[rospy.internal][INFO] 2026-11-16 21:25:59,403: topic[/formation/job_state] adding connection to [/formation_goal_bridge], count 0
+[rospy.internal][INFO] 2026-11-16 21:25:59,403: topic[/formation/optimizer_status] adding connection to [/formation_playback], count 1
+[rospy.internal][INFO] 2026-11-16 21:25:59,404: topic[/formation/quality_report] adding connection to [/formation_playback], count 0
+[rospy.internal][INFO] 2026-11-16 21:25:59,404: topic[/formation/job_state] adding connection to [/formation_playback], count 1
+[rospy.internal][INFO] 2026-11-16 21:25:59,404: topic[/formation/playback_plan] adding connection to [/formation_playback], count 0
+[rospy.internal][INFO] 2026-11-16 21:25:59,599: topic[/rosout] adding connection to [/rosout], count 0
+[rospy.internal][INFO] 2026-11-16 21:25:59,904: topic[/initialpose] adding connection to [http://wq-ubuntu:35377/], count 0
+[rospy.internal][INFO] 2026-11-16 21:25:59,910: topic[/initialpose] removing connection to http://wq-ubuntu:35377/
+[rospy.internal][INFO] 2026-11-16 21:26:00,003: topic[/initialpose] adding connection to [http://wq-ubuntu:35377/], count 0
+[rospy.internal][INFO] 2026-11-16 21:26:10,264: topic[/formation/job_state] adding connection to [/virtual_a_smoke_3990362_1794835570115], count 2
+[rospy.internal][INFO] 2026-11-16 21:26:10,274: topic[/formation/playback_plan] adding connection to [/virtual_a_smoke_3990362_1794835570115], count 1
+[rospy.internal][INFO] 2026-11-16 21:26:10,275: topic[/formation/optimizer_status] adding connection to [/virtual_a_smoke_3990362_1794835570115], count 2
+[rospy.internal][INFO] 2026-11-16 21:26:11,321: topic[/initialpose] adding connection to [http://wq-ubuntu:33579/], count 1
+[rosout][INFO] 2026-11-16 21:26:11,595: [uniform planner] explicit virtual experiment reset recorded at F=(0, 0, 0); this is a declared A-straight stationary initial state, not a physical wheel measurement
+[rospy.internal][INFO] 2026-11-16 21:26:11,795: topic[/initialpose] removing connection to http://wq-ubuntu:33579/
+[rosout][WARNING] 2026-11-16 21:26:12,114: [uniform planner] plan 0 has no executable envelope (ADMITTED_PLANNING)
+[rosout][INFO] 2026-11-16 21:26:12,115: [uniform planner] plan 600000 admitted for virtual_rigid_a: start=(0.000, 0.000, 0.000) goal=(8.820, 3.486, 1.571) initial=rviz_reset/virtual-a-reset-None-1 policy=FREE
+[rosout][INFO] 2026-11-16 21:26:27,036: [uniform planner] virtual plan 600000 published: T_end=29.503 s model_sha256=df146b9bb4710132adeacd4d718d5a840c0f0e3bce353d06331a84142c2eaaf8 samples=1477 wall=13.133 s verification_to_stamp_delay=1.7057 s
+[rosout][INFO] 2026-11-16 21:26:28,351: [uniform planner] plan 600000 playback confirmed
+[rosout][INFO] 2026-11-16 21:26:56,516: [uniform planner] plan 600000 terminal record virtual-a-terminal-600000-2 compatible=False: the previous terminal is not a supported continuation: vehicle_id=1 failed ['formation_curvature', 'heading_parallel', 'ideal_wheel_angles']; vehicle_id=2 failed ['formation_curvature', 'ideal_wheel_angles']; vehicle_id=3 failed ['formation_curvature', 'ideal_wheel_angles']
+[rosout][INFO] 2026-11-16 21:26:56,517: [uniform planner] plan 600000 HOLD_END; busy released
+[rosout][ERROR] 2026-11-16 21:27:01,323: [uniform planner] plan 600001 virtual admission rejected: UNSUPPORTED_INITIAL_STATE: the previous terminal is not a supported continuation: vehicle_id=1 failed ['formation_curvature', 'heading_parallel', 'ideal_wheel_angles']; vehicle_id=2 failed ['formation_curvature', 'ideal_wheel_angles']; vehicle_id=3 failed ['formation_curvature', 'ideal_wheel_angles']
+[rospy.internal][INFO] 2026-11-16 21:27:01,940: topic[/formation/optimizer_status] removing connection to /virtual_a_smoke_3990362_1794835570115
+[rospy.internal][INFO] 2026-11-16 21:27:01,940: topic[/formation/job_state] removing connection to /virtual_a_smoke_3990362_1794835570115
+[rospy.internal][INFO] 2026-11-16 21:27:01,940: topic[/formation/playback_plan] removing connection to /virtual_a_smoke_3990362_1794835570115
+[rospy.core][INFO] 2026-11-16 21:27:21,919: signal_shutdown [signal-15]
+[rospy.internal][INFO] 2026-11-16 21:27:21,923: topic[/formation/plan_request] removing connection to http://wq-ubuntu:35115/
+[rospy.internal][INFO] 2026-11-16 21:27:21,924: topic[/map] removing connection to http://wq-ubuntu:40501/
+[rospy.internal][INFO] 2026-11-16 21:27:21,925: topic[/rosout] removing connection to /rosout
+[rospy.internal][INFO] 2026-11-16 21:27:21,925: topic[/formation/optimizer_status] removing connection to /formation_goal_bridge
+[rospy.internal][INFO] 2026-11-16 21:27:21,925: topic[/formation/optimizer_status] removing connection to /formation_playback
+[rospy.internal][INFO] 2026-11-16 21:27:21,925: topic[/formation/quality_report] removing connection to /formation_playback
+[rospy.internal][INFO] 2026-11-16 21:27:21,925: topic[/formation/job_state] removing connection to /formation_goal_bridge
+[rospy.internal][INFO] 2026-11-16 21:27:21,925: topic[/formation/job_state] removing connection to /formation_playback
+[rospy.internal][INFO] 2026-11-16 21:27:21,926: topic[/formation/playback_plan] removing connection to /formation_playback
+[rospy.internal][INFO] 2026-11-16 21:27:21,926: topic[/formation/playback_status] removing connection to http://wq-ubuntu:44057/
+[rospy.internal][INFO] 2026-11-16 21:27:21,926: topic[/formation/playback_status] removing connection to http://wq-ubuntu:44057/
+[rospy.internal][INFO] 2026-11-16 21:27:21,926: topic[/initialpose] removing connection to http://wq-ubuntu:35377/
+[rospy.internal][INFO] 2026-11-16 21:27:21,926: topic[/initialpose] removing connection to http://wq-ubuntu:35377/
+[rospy.impl.masterslave][INFO] 2026-11-16 21:27:21,926: signal-15
+[rospy.core][INFO] 2026-11-16 21:27:21,957: signal_shutdown [signal-2]
+[rospy.core][INFO] 2026-11-16 21:27:22,520: signal_shutdown [atexit]

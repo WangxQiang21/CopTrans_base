@@ -1,0 +1,104 @@
+{
+  "added_vs_g0": [
+    {
+      "path": "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/__init__.py",
+      "sha256": "81d470f466a7c11792d20d5d7ababdd52ff3ac56d408eaa975c34c63bd09108f",
+      "size_bytes": 834
+    },
+    {
+      "path": "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/bounds.py",
+      "sha256": "3c12cca5e062c6c35423feb0437eadf7700f72f4666822923a471b3644e8c650",
+      "size_bytes": 11452
+    },
+    {
+      "path": "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/contracts.py",
+      "sha256": "ae267d887b3ace4b30e4f58853d427286e4b6416a4b01deff7f5353944b36ce0",
+      "size_bytes": 13898
+    },
+    {
+      "path": "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/geometry.py",
+      "sha256": "1254c3340d5ac0866256b7b9dc8abe30ea2578d266643c25f4e6471db776a282",
+      "size_bytes": 36940
+    },
+    {
+      "path": "tests/test_virtual_a_geometry.py",
+      "sha256": "d1940842ad913cb03169481c29b5599dd8014e8a35670106508c9e387268756e",
+      "size_bytes": 24276
+    },
+    {
+      "path": "tests/test_virtual_a_profile.py",
+      "sha256": "7d93d86fd28bea5d11563f35f7ee904d24628b873023a73659fb5e86938a1797",
+      "size_bytes": 31207
+    },
+    {
+      "path": "tools/virtual_a_benchmark.py",
+      "sha256": "df804b0440dab54cdf90b26a1f3cc3131542e2813658116085c2de158c0ae7aa",
+      "size_bytes": 44194
+    }
+  ],
+  "authorization": {
+    "additions_exactly_whitelisted": true,
+    "allowed_new_files": [
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/__init__.py",
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/bounds.py",
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/contracts.py",
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/geometry.py",
+      "tests/test_virtual_a_geometry.py",
+      "tests/test_virtual_a_profile.py",
+      "tools/virtual_a_benchmark.py"
+    ],
+    "allowed_tracked_changes": [
+      "catkin_ws/src/fwis_v3_optimizer/setup.py"
+    ],
+    "no_protected_removals": true,
+    "only_authorized_changes": true,
+    "path_authorization_only": "Each actual diff still requires Codex review for minimality; this evidence does not claim Codex acceptance.",
+    "tracked_changes_exactly_whitelisted": true
+  },
+  "changed_vs_g0": [
+    {
+      "after_sha256": "de6138b17b91160b6827d9e7f2b89925bc9cc3f4705f1800387492708025eee8",
+      "after_size_bytes": 284,
+      "before_sha256": "d4f241e4463be69d55813d0b4e8ac7c80b0dd65377b3fd765c4be3cab23ccbf7",
+      "before_size_bytes": 217,
+      "path": "catkin_ws/src/fwis_v3_optimizer/setup.py"
+    }
+  ],
+  "codex_acceptance": "NOT_RUN_NOT_CLAIMED",
+  "comparison": "G1 protected_after versus accepted G0 protected_before",
+  "conclusion": "Only the seven G1 additions and setup.py changed relative to G0; no protected file was removed or otherwise modified.",
+  "g0_snapshot": {
+    "path": "evaluation/virtual_formation_a/G0/20261115T143321Z_rework/protected_before.json",
+    "protected_file_count": 3120,
+    "protected_tree_sha256": "ff58f2b5c6acfbc207327202f875e5e9a20734ef09ebb6070ee07edce6ebf091",
+    "sha256": "a89efe0887eb20aced4bad74bc8adf280079191b9c491436e2ae4e89c2506c9a",
+    "workspace_authorization_stage": "G0"
+  },
+  "g1_after_snapshot": {
+    "path": "evaluation/virtual_formation_a/G1/20261115T152858Z/legacy/protected_after.json",
+    "protected_file_count": 3127,
+    "protected_tree_sha256": "910efe32972dcbcb3a0c2585c002916ede878f4295b0f26b4dc917faeee4f519",
+    "sha256": "c9e4c874c3e7d0dc05a1850d74febd28ec7475a232b6f8f98d3e1c11d2892470",
+    "workspace_authorization_stage": "G1"
+  },
+  "g1_before_snapshot": {
+    "path": "evaluation/virtual_formation_a/G1/20261115T152858Z/legacy/protected_before.json",
+    "protected_file_count": 3127,
+    "protected_tree_sha256": "910efe32972dcbcb3a0c2585c002916ede878f4295b0f26b4dc917faeee4f519",
+    "sha256": "f0ce149c698dbb6dfd53d34de532b91130bac36164c24b6a8e7ea94706f96424",
+    "workspace_authorization_stage": "G1"
+  },
+  "generated_at_utc": "2026-11-15T15:35:06.559482+00:00",
+  "protected_trees_unchanged_within_run": true,
+  "removed_vs_g0": [],
+  "run_id": "20261115T152858Z",
+  "schema": "virtual_rigid_a.g1.protection_diff.v2",
+  "setup_diff": {
+    "deletions": 1,
+    "diff": "diff --git a/catkin_ws/src/fwis_v3_optimizer/setup.py b/catkin_ws/src/fwis_v3_optimizer/setup.py\nindex a2e0ede..c8a6f89 100644\n--- a/catkin_ws/src/fwis_v3_optimizer/setup.py\n+++ b/catkin_ws/src/fwis_v3_optimizer/setup.py\n@@ -2,7 +2,10 @@ from setuptools import setup\n from catkin_pkg.python_setup import generate_distutils_setup\n \n setup_args = generate_distutils_setup(\n-    packages=[\"fwis_v3_optimizer\"],\n+    packages=[\n+        \"fwis_v3_optimizer\",\n+        \"fwis_v3_optimizer.formation_continuous_a\",\n+    ],\n     package_dir={\"\": \"src\"},\n )\n setup(**setup_args)\n",
+    "insertions": 4,
+    "path": "catkin_ws/src/fwis_v3_optimizer/setup.py",
+    "stat": "catkin_ws/src/fwis_v3_optimizer/setup.py | 5 ++++-\n 1 file changed, 4 insertions(+), 1 deletion(-)"
+  },
+  "snapshot_files_byte_identical": false
+}

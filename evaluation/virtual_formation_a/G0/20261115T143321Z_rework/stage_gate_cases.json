@@ -1,0 +1,142 @@
+{
+  "cases": [
+    {
+      "actual": "ACCEPT",
+      "case": "g1_setup_edit_allowed_at_geometry",
+      "detail": "",
+      "expected": "ACCEPT",
+      "level": "geometry",
+      "pass": true,
+      "workspace_stage": "G1"
+    },
+    {
+      "actual": "REJECT",
+      "case": "g1_setup_edit_rejected_at_baseline",
+      "detail": "UNKNOWN_WORKSPACE_MODIFICATIONS: [' M catkin_ws/src/fwis_v3_optimizer/setup.py']",
+      "expected": "REJECT",
+      "level": "baseline",
+      "pass": true,
+      "workspace_stage": "G0"
+    },
+    {
+      "actual": "ACCEPT",
+      "case": "g1_new_package_allowed_at_geometry",
+      "detail": "",
+      "expected": "ACCEPT",
+      "level": "geometry",
+      "pass": true,
+      "workspace_stage": "G1"
+    },
+    {
+      "actual": "REJECT",
+      "case": "g1_new_package_rejected_at_baseline",
+      "detail": "UNKNOWN_WORKSPACE_MODIFICATIONS: ['catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/geometry.py']",
+      "expected": "REJECT",
+      "level": "baseline",
+      "pass": true,
+      "workspace_stage": "G0"
+    },
+    {
+      "actual": "REJECT",
+      "case": "g2_optimizer_rejected_at_geometry",
+      "detail": "UNKNOWN_WORKSPACE_MODIFICATIONS: ['catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/optimizer.py']",
+      "expected": "REJECT",
+      "level": "geometry",
+      "pass": true,
+      "workspace_stage": "G1"
+    },
+    {
+      "actual": "ACCEPT",
+      "case": "g2_optimizer_allowed_at_timing",
+      "detail": "",
+      "expected": "ACCEPT",
+      "level": "timing",
+      "pass": true,
+      "workspace_stage": "G3"
+    },
+    {
+      "actual": "REJECT",
+      "case": "vehicle_yaml_rejected_at_full",
+      "detail": "UNKNOWN_WORKSPACE_MODIFICATIONS: [' M catkin_ws/src/fwis_v3_demo/config/transport_formation.yaml']",
+      "expected": "REJECT",
+      "level": "full",
+      "pass": true,
+      "workspace_stage": "G5"
+    },
+    {
+      "actual": "REJECT",
+      "case": "old_algorithm_rejected_at_full",
+      "detail": "UNKNOWN_WORKSPACE_MODIFICATIONS: [' M catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation.py']",
+      "expected": "REJECT",
+      "level": "full",
+      "pass": true,
+      "workspace_stage": "G5"
+    },
+    {
+      "actual": "REJECT",
+      "case": "old_test_rejected_at_full",
+      "detail": "UNKNOWN_WORKSPACE_MODIFICATIONS: [' M tests/test_uniform_motion.py']",
+      "expected": "REJECT",
+      "level": "full",
+      "pass": true,
+      "workspace_stage": "G5"
+    },
+    {
+      "actual": "REJECT",
+      "case": "deletion_rejected_at_full",
+      "detail": "UNKNOWN_WORKSPACE_MODIFICATIONS: [' D catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation.py']",
+      "expected": "REJECT",
+      "level": "full",
+      "pass": true,
+      "workspace_stage": "G5"
+    },
+    {
+      "actual": "ACCEPT",
+      "case": "g5_node_allowed_at_full",
+      "detail": "",
+      "expected": "ACCEPT",
+      "level": "full",
+      "pass": true,
+      "workspace_stage": "G5"
+    },
+    {
+      "actual": "REJECT",
+      "case": "g5_node_rejected_at_timing",
+      "detail": "UNKNOWN_WORKSPACE_MODIFICATIONS: [' M catkin_ws/src/fwis_v3_optimizer/scripts/formation_uniform_planner_node.py']",
+      "expected": "REJECT",
+      "level": "timing",
+      "pass": true,
+      "workspace_stage": "G3"
+    },
+    {
+      "actual": "ACCEPT",
+      "case": "g4_fixture_map_allowed_at_full",
+      "detail": "",
+      "expected": "ACCEPT",
+      "level": "full",
+      "pass": true,
+      "workspace_stage": "G5"
+    },
+    {
+      "actual": "REJECT",
+      "case": "g4_fixture_map_rejected_at_geometry",
+      "detail": "UNKNOWN_WORKSPACE_MODIFICATIONS: ['tests/fixtures/virtual_a/maps/x.pgm']",
+      "expected": "REJECT",
+      "level": "geometry",
+      "pass": true,
+      "workspace_stage": "G1"
+    },
+    {
+      "actual": "REJECT",
+      "case": "unknown_file_rejected_at_full",
+      "detail": "UNKNOWN_WORKSPACE_MODIFICATIONS: ['tests/test_not_authorized.py']",
+      "expected": "REJECT",
+      "level": "full",
+      "pass": true,
+      "workspace_stage": "G5"
+    }
+  ],
+  "method": "in-memory manifest simulation; real git status unmodified",
+  "real_unknown_modifications": [],
+  "schema": "virtual_rigid_a.g0.rework.stage_gate.v1"
+}

@@ -1,0 +1,144 @@
+{
+  "baseline": {
+    "cases": [],
+    "reference_reaudit": true,
+    "status": "NOT_RUN_OLD_TESTS_IN_G0"
+  },
+  "full": {
+    "cases": [
+      {
+        "case_id": "geometry_continuous",
+        "group": "G1-light",
+        "pattern": "test_continuous_geometry.py"
+      },
+      {
+        "case_id": "geometry_formation",
+        "group": "G1-light",
+        "pattern": "test_formation_geometry.py"
+      },
+      {
+        "case_id": "timing_continuous",
+        "group": "G3-light",
+        "pattern": "test_continuous_retiming.py"
+      },
+      {
+        "case_id": "timing_formation",
+        "group": "G3-light",
+        "pattern": "test_formation_retiming.py"
+      },
+      {
+        "case_id": "fr01_uniform_motion",
+        "group": "FR01",
+        "pattern": "test_uniform_motion.py"
+      },
+      {
+        "case_id": "fr02_a_timing",
+        "group": "FR02-A",
+        "pattern": "test_uniform_timing.py"
+      },
+      {
+        "case_id": "fr02_a_trajectory",
+        "group": "FR02-A",
+        "pattern": "test_uniform_trajectory.py"
+      },
+      {
+        "case_id": "fr02_b_quality",
+        "group": "FR02-B",
+        "pattern": "test_uniform_quality.py"
+      },
+      {
+        "case_id": "fr03_uniform_search",
+        "group": "FR03",
+        "pattern": "test_uniform_search.py"
+      },
+      {
+        "case_id": "fr04_uniform_pipeline",
+        "group": "FR04",
+        "pattern": "test_uniform_pipeline.py"
+      }
+    ],
+    "not_included_in_g0_runner": [
+      "fresh FR06 autonomous search (requires separately authorized G5 evidence)",
+      "ROS/Gazebo (requires separately authorized G5 evidence)"
+    ],
+    "per_case_artifact_root": "regression_artifacts/<case_id>/",
+    "redirect_variables": [
+      "FR01_RESULTS_PATH",
+      "FR02_TIMING_RESULTS_PATH",
+      "FR02_TRAJECTORY_RESULTS_PATH",
+      "FR02_QUALITY_RESULTS_PATH",
+      "FR02_ARTIFACT_DIR",
+      "FR03_RESULTS_PATH",
+      "FR03_ARTIFACT_DIR",
+      "FR04_RESULTS_PATH",
+      "FR04_ARTIFACT_DIR"
+    ]
+  },
+  "geometry": {
+    "cases": [
+      {
+        "case_id": "geometry_continuous",
+        "group": "G1-light",
+        "pattern": "test_continuous_geometry.py"
+      },
+      {
+        "case_id": "geometry_formation",
+        "group": "G1-light",
+        "pattern": "test_formation_geometry.py"
+      }
+    ],
+    "per_case_artifact_root": "regression_artifacts/<case_id>/",
+    "redirect_variables": [
+      "FR01_RESULTS_PATH",
+      "FR02_TIMING_RESULTS_PATH",
+      "FR02_TRAJECTORY_RESULTS_PATH",
+      "FR02_QUALITY_RESULTS_PATH",
+      "FR02_ARTIFACT_DIR",
+      "FR03_RESULTS_PATH",
+      "FR03_ARTIFACT_DIR",
+      "FR04_RESULTS_PATH",
+      "FR04_ARTIFACT_DIR"
+    ]
+  },
+  "timing": {
+    "cases": [
+      {
+        "case_id": "timing_continuous",
+        "group": "G3-light",
+        "pattern": "test_continuous_retiming.py"
+      },
+      {
+        "case_id": "timing_formation",
+        "group": "G3-light",
+        "pattern": "test_formation_retiming.py"
+      },
+      {
+        "case_id": "fr02_a_timing",
+        "group": "FR02-A",
+        "pattern": "test_uniform_timing.py"
+      },
+      {
+        "case_id": "fr02_a_trajectory",
+        "group": "FR02-A",
+        "pattern": "test_uniform_trajectory.py"
+      },
+      {
+        "case_id": "fr02_b_quality",
+        "group": "FR02-B",
+        "pattern": "test_uniform_quality.py"
+      }
+    ],
+    "per_case_artifact_root": "regression_artifacts/<case_id>/",
+    "redirect_variables": [
+      "FR01_RESULTS_PATH",
+      "FR02_TIMING_RESULTS_PATH",
+      "FR02_TRAJECTORY_RESULTS_PATH",
+      "FR02_QUALITY_RESULTS_PATH",
+      "FR02_ARTIFACT_DIR",
+      "FR03_RESULTS_PATH",
+      "FR03_ARTIFACT_DIR",
+      "FR04_RESULTS_PATH",
+      "FR04_ARTIFACT_DIR"
+    ]
+  }
+}

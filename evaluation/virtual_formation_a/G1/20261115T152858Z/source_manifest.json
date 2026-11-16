@@ -1,0 +1,421 @@
+{
+  "baseline_head": "567bdecba9676313da3bc9a97b82f57b5b569a2b",
+  "excluded_self_referential": [
+    "logs/source_manifest_verification.log",
+    "logs/source_manifest_generation.log",
+    "source_manifest.json"
+  ],
+  "exclusion_reasons": {
+    "logs/source_manifest_generation.log": "the generator writes this log while scanning the run",
+    "logs/source_manifest_verification.log": "the verifier writes this log while checking the manifest",
+    "source_manifest.json": "the manifest cannot hash itself"
+  },
+  "generated_at_utc": "2026-11-15T15:42:35.074625+00:00",
+  "git": {
+    "baseline_head": "567bdecba9676313da3bc9a97b82f57b5b569a2b",
+    "baseline_is_ancestor": true,
+    "branch": "feature/virtual-rigid-formation-a",
+    "committed": "NO",
+    "head": "567bdecba9676313da3bc9a97b82f57b5b569a2b",
+    "pushed": "NO",
+    "staged_diff_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "staged_diff_stat": "",
+    "status_short": [
+      " M catkin_ws/src/fwis_v3_optimizer/setup.py",
+      "?? catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/",
+      "?? docs/VIRTUAL_FORMATION_A_FR06_TECHNICAL_REVIEW_20261115.md",
+      "?? docs/virtual_formation_a/",
+      "?? evaluation/virtual_formation_a/",
+      "?? tests/test_virtual_a_geometry.py",
+      "?? tests/test_virtual_a_profile.py",
+      "?? tools/virtual_a_baseline.py",
+      "?? tools/virtual_a_benchmark.py"
+    ]
+  },
+  "previous_evidence": {
+    "changed_sources_vs_old": {
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/bounds.py": {
+        "changed": true,
+        "new_sha256": "3c12cca5e062c6c35423feb0437eadf7700f72f4666822923a471b3644e8c650",
+        "old_sha256": "c6f4eeb5faaf5357acfaf342ca0a5f58967f6775f1f6d6d713853bf76f369e5d"
+      },
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/geometry.py": {
+        "changed": true,
+        "new_sha256": "1254c3340d5ac0866256b7b9dc8abe30ea2578d266643c25f4e6471db776a282",
+        "old_sha256": "4c8cb2f5515f9d69b50940bb3d0b838a2ff953f7dfef99f018773e210ca00107"
+      },
+      "tests/test_virtual_a_profile.py": {
+        "changed": true,
+        "new_sha256": "7d93d86fd28bea5d11563f35f7ee904d24628b873023a73659fb5e86938a1797",
+        "old_sha256": "2c26bd37ef0e37586299f0bfea5531998498f4bcd823b9afb995d625f6540dfb"
+      },
+      "tools/virtual_a_benchmark.py": {
+        "changed": true,
+        "new_sha256": "df804b0440dab54cdf90b26a1f3cc3131542e2813658116085c2de158c0ae7aa",
+        "old_sha256": "821359ff775ef8c8a79bcc03a4b632fdfe8736d80c7ea8f93cab068347bfe2f3"
+      }
+    },
+    "old_declared_source_hashes": {
+      "catkin_ws/src/fwis_v3_optimizer/setup.py": "de6138b17b91160b6827d9e7f2b89925bc9cc3f4705f1800387492708025eee8",
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/__init__.py": "81d470f466a7c11792d20d5d7ababdd52ff3ac56d408eaa975c34c63bd09108f",
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/bounds.py": "c6f4eeb5faaf5357acfaf342ca0a5f58967f6775f1f6d6d713853bf76f369e5d",
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/contracts.py": "ae267d887b3ace4b30e4f58853d427286e4b6416a4b01deff7f5353944b36ce0",
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/geometry.py": "4c8cb2f5515f9d69b50940bb3d0b838a2ff953f7dfef99f018773e210ca00107",
+      "docs/virtual_formation_a/CLAUDE_G1_TASK.md": "741261ef20baa775418753a94d302fc4f0d3f9fd78e800b9562d19a277207396",
+      "docs/virtual_formation_a/G0_INTERFACE_CHECK.md": "0abad6582d3bf53e2454264bf3ad0bee72e161812569298c7d04d32519a739bd",
+      "docs/virtual_formation_a/VIRTUAL_FORMATION_A_DECISIONS.md": "c20829d7c1a3415dc9b9bbbbf80749add075fa1976ba8422aa420496d3850a81",
+      "docs/virtual_formation_a/VIRTUAL_FORMATION_A_IMPLEMENTATION_PLAN_FOR_CLAUDE.md": "4a73b8b0969fef281e62c7d9ecdd89a2a093a80e79e1f7305de47b3201559fe8",
+      "evaluation/virtual_formation_a/G0/codex_acceptance_scope_correction_20261115/CODEX_ACCEPTANCE.json": "17bc8b14c7053a3914fd3f1f6d8d87074dcc8d37965cad7497c71f9d41edd161",
+      "tests/test_virtual_a_geometry.py": "d1940842ad913cb03169481c29b5599dd8014e8a35670106508c9e387268756e",
+      "tests/test_virtual_a_profile.py": "2c26bd37ef0e37586299f0bfea5531998498f4bcd823b9afb995d625f6540dfb",
+      "tools/virtual_a_baseline.py": "4bf3c9468d09c7554d9006361d5c94081b3c8ba2b941eca3edc92208dcbfb92e",
+      "tools/virtual_a_benchmark.py": "821359ff775ef8c8a79bcc03a4b632fdfe8736d80c7ea8f93cab068347bfe2f3"
+    },
+    "preliminary_run": {
+      "path": "evaluation/virtual_formation_a/G1/20261115T150114Z",
+      "source_manifest_sha256": "55bf0586f414a469ddb0b434784adb2008239664d0a197deee61fbbae98f7ce4",
+      "status": "PRESERVED_NOT_MODIFIED",
+      "tree": {
+        "file_count": 39,
+        "sha256": "777edd42225a2feef23edfabab558aff980dc08e92dbe88bbbe85772eb685dc8",
+        "total_bytes": 3597231
+      }
+    },
+    "submitted_run": {
+      "path": "evaluation/virtual_formation_a/G1/20261115T150639Z",
+      "source_manifest_sha256": "c40d3ac534aac957cc2206979ab85ef26f073bc6ca89fe5baf882d7cf124bc14",
+      "status": "PRESERVED_NOT_MODIFIED",
+      "tree": {
+        "file_count": 38,
+        "sha256": "d14cc53ee8026b250069547f3d441e1eac2f15b50c825f8f2112bfad65bf4739",
+        "total_bytes": 3614233
+      }
+    }
+  },
+  "protected": {
+    "added_vs_g0": [
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/__init__.py",
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/bounds.py",
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/contracts.py",
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/geometry.py",
+      "tests/test_virtual_a_geometry.py",
+      "tests/test_virtual_a_profile.py",
+      "tools/virtual_a_benchmark.py"
+    ],
+    "after_file_count": 3127,
+    "after_path": "evaluation/virtual_formation_a/G1/20261115T152858Z/legacy/protected_after.json",
+    "after_sha256": "c9e4c874c3e7d0dc05a1850d74febd28ec7475a232b6f8f98d3e1c11d2892470",
+    "after_tree_sha256": "910efe32972dcbcb3a0c2585c002916ede878f4295b0f26b4dc917faeee4f519",
+    "before_file_count": 3127,
+    "before_path": "evaluation/virtual_formation_a/G1/20261115T152858Z/legacy/protected_before.json",
+    "before_sha256": "f0ce149c698dbb6dfd53d34de532b91130bac36164c24b6a8e7ea94706f96424",
+    "before_tree_sha256": "910efe32972dcbcb3a0c2585c002916ede878f4295b0f26b4dc917faeee4f519",
+    "changed_vs_g0": [
+      "catkin_ws/src/fwis_v3_optimizer/setup.py"
+    ],
+    "comparison_path": "protection_diff_vs_g0.json",
+    "comparison_sha256": "a8390c4b06fef6d78e728b5fe409219d3d831247ef79b51bdb79563c27755945",
+    "g0_file_count": 3120,
+    "g0_path": "evaluation/virtual_formation_a/G0/20261115T143321Z_rework/protected_before.json",
+    "g0_sha256": "a89efe0887eb20aced4bad74bc8adf280079191b9c491436e2ae4e89c2506c9a",
+    "g0_tree_sha256": "ff58f2b5c6acfbc207327202f875e5e9a20734ef09ebb6070ee07edce6ebf091",
+    "only_authorized_changes": true,
+    "removed_vs_g0": [],
+    "setup_diff_stat": "catkin_ws/src/fwis_v3_optimizer/setup.py | 5 ++++-\n 1 file changed, 4 insertions(+), 1 deletion(-)",
+    "snapshot_files_byte_identical": false,
+    "unchanged_within_run": true
+  },
+  "repo_root": "/home/wq/whut_thesis/expv3_multi_virtual_a",
+  "results": {
+    "analytic_angle_budget_rad": 1.0000817124146124e-10,
+    "analytic_position_budget_m": 7.737011020460756e-08,
+    "analytic_worst_201_station_error_m": 5.633722200984435e-11,
+    "baseline_unmodified_gate": "FAILED_BEFORE_TESTS",
+    "baseline_wrapper": "PASS",
+    "benchmark_checks": 26,
+    "benchmark_failed": 0,
+    "c2_position_budget_m": 9.779693223310183e-09,
+    "c2_worst_quadrature_error_m": 1.0667751770314288e-09,
+    "codex_acceptance": "NOT_RUN_NOT_CLAIMED",
+    "g2_entered": false,
+    "geometry_tests": 20,
+    "nonclaims": {
+      "codex_acceptance": "NOT_RUN_NOT_CLAIMED",
+      "continuous_domain_proof": "NOT_CLAIMED_SAMPLED_EVIDENCE_ONLY",
+      "fr06_autonomous_search": "NOT_RUN",
+      "full_legacy_regression": "NOT_RUN",
+      "g2_entered": false,
+      "git_commit_or_push": "NOT_RUN",
+      "hardware_calibration": "NOT_CLAIMED",
+      "new_dependencies": "NOT_INSTALLED",
+      "ros_or_gazebo": "NOT_RUN"
+    },
+    "profile_tests": 22,
+    "status": "PASS_PENDING_CODEX_RECHECK"
+  },
+  "run_file_count": 47,
+  "run_files": {
+    "CLAUDE_REPORT.md": {
+      "bytes": 19070,
+      "sha256": "31b67b6961856ff29cdddd07b5c8b65cbf9501041310142c4df3543a10fd66a9"
+    },
+    "COMMANDS.md": {
+      "bytes": 9281,
+      "sha256": "60361e27fc580e8b6753e08d39c2ad3e5fad1665ffec22d134a4034be3244429"
+    },
+    "analysis/assemble_results.py": {
+      "bytes": 18020,
+      "sha256": "fede5c64f7158e0cb0535877bdfe117c714ad24d3f31a232f186998a91221de5"
+    },
+    "analysis/budget_evidence.json": {
+      "bytes": 22391,
+      "sha256": "070ee807140569a283e91097399ea2ce07417b2daa6ea691b41aa0b9d6400f50"
+    },
+    "analysis/budget_evidence.py": {
+      "bytes": 10740,
+      "sha256": "46008ccde17f6a08a915a1255b3c4857af0820afa8db3301dda2fa011f16ffd7"
+    },
+    "analysis/protection_diff.py": {
+      "bytes": 6139,
+      "sha256": "f171e571e5a26029c525d543928fd8deea31c6f87f03f17b15cd913bfd04d2c4"
+    },
+    "analysis/verify_source_manifest.py": {
+      "bytes": 26077,
+      "sha256": "bfc858f9b6bb054deb839f2e12dfbf071da2325fd299aa099569a9349268ff89"
+    },
+    "analysis/write_source_manifest.py": {
+      "bytes": 17384,
+      "sha256": "74db1fa8eecccf8e50f7d31d0bb34ae106a6c3d371df45abf29a19ecbc6337fd"
+    },
+    "baseline_runner_rework_doc.py": {
+      "bytes": 1113,
+      "sha256": "8c16f2fdcd02734f78f2fa2c79310fa6d2de375b503aa5c1490727aad86b1be4"
+    },
+    "benchmark/double_lane_change.csv": {
+      "bytes": 673982,
+      "sha256": "624681d2290147f170eddca84235067abd13ec42682e121fbce4cf7214a6754b"
+    },
+    "benchmark/figures/curvature.png": {
+      "bytes": 92472,
+      "sha256": "fc2f8bfc00494338e5b0282d5ddab8e808022e5c94c75b0f28275ba3463fe43a"
+    },
+    "benchmark/figures/double_lane_change.png": {
+      "bytes": 44150,
+      "sha256": "1e58d365fcb5bf7489b58e045c4a5f90735c25b82f262c66f8f19db2d338b7f3"
+    },
+    "benchmark/figures/headings.png": {
+      "bytes": 79291,
+      "sha256": "bb843c38ad0d523a7384a70e3c8fbc53c4a820443eb016bd626db6fc83cba04c"
+    },
+    "benchmark/figures/integration_error.png": {
+      "bytes": 48552,
+      "sha256": "7a7b7df635c6a650309c0e4950d4530f7ac7c8fa7b817a0e3b7f06364c2e4677"
+    },
+    "benchmark/mirror.csv": {
+      "bytes": 676653,
+      "sha256": "3b9809c0073d916dde889785c12838d051d0c32239b30dc81a72e0a85eaebd6a"
+    },
+    "benchmark/samples.json": {
+      "bytes": 7770,
+      "sha256": "a96f731f191ff0096289e5eb61aa1191ea15ca80404c050aabcde93a3af1e8a3"
+    },
+    "benchmark/summary.json": {
+      "bytes": 39628,
+      "sha256": "443755cf0019a064c8d6d98e8d64a22066e75ad844769a944c10325b22259a60"
+    },
+    "environment.json": {
+      "bytes": 894,
+      "sha256": "85f79dd7f0f8f0f8fb6e520a4d230b68c09c81a0439ace2caaa3e60dcd0b88eb"
+    },
+    "legacy/CLAUDE_REPORT.md": {
+      "bytes": 2465,
+      "sha256": "94997d42ca537227643ba6e03215cc2e458a6c6ffdb2f39f93ad34659d4f5ffb"
+    },
+    "legacy/COMMANDS.md": {
+      "bytes": 5020,
+      "sha256": "6c3b06be7f61687eae06f9dae11aa8f0a3d593b6dd053346bbe9b6bf8b8b769d"
+    },
+    "legacy/api_interfaces.json": {
+      "bytes": 3897,
+      "sha256": "3bc80888239fa5d338260d9b6a0aef2eba080f1926439f913a65cbbc5b762a33"
+    },
+    "legacy/environment.json": {
+      "bytes": 2803,
+      "sha256": "1d32ef521465eed0a393ba2fb966db49dc5bab8e6131f0bfa37283843595e4f1"
+    },
+    "legacy/logs/g0_summary.log": {
+      "bytes": 459,
+      "sha256": "05a622843914eea436adeea1cfd7177924345b7a40c39b1b108e8cfd6d4f4233"
+    },
+    "legacy/logs/geometry_continuous.stderr.log": {
+      "bytes": 2060,
+      "sha256": "1bf1eb0e6fda71bf1977e5a5d0b43face531bb4fefcadb489c7c255bb62ec46c"
+    },
+    "legacy/logs/geometry_continuous.stdout.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "legacy/logs/geometry_formation.stderr.log": {
+      "bytes": 1783,
+      "sha256": "0571d792e8e8fdfbda0d846ff90857941a8f841afe7e3ebff9dbf0d1d3f9028e"
+    },
+    "legacy/logs/geometry_formation.stdout.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "legacy/protected_after.json": {
+      "bytes": 866484,
+      "sha256": "c9e4c874c3e7d0dc05a1850d74febd28ec7475a232b6f8f98d3e1c11d2892470"
+    },
+    "legacy/protected_before.json": {
+      "bytes": 865408,
+      "sha256": "f0ce149c698dbb6dfd53d34de532b91130bac36164c24b6a8e7ea94706f96424"
+    },
+    "legacy/reference_reaudit.json": {
+      "bytes": 116736,
+      "sha256": "30ab0f1000161c4b4bd4f5c43dd6db65dbe053b9050858cb7485ef2835e77f62"
+    },
+    "legacy/regression_plan.json": {
+      "bytes": 8788,
+      "sha256": "3c8ae52289e503b32bf2ad00d1a5bad8b79b2d2856b881bc823ef31fe0db4c1e"
+    },
+    "legacy/regression_results.json": {
+      "bytes": 9554,
+      "sha256": "5782aed44b2e25173ff239faef26d2e72362d45b725df73f410c7d19b727392f"
+    },
+    "legacy/results.json": {
+      "bytes": 1587,
+      "sha256": "6f1028f40a27711e8bf9e366c73f6b0a88e4b581415550ffea2e8000ce256c8c"
+    },
+    "legacy/source_manifest.json": {
+      "bytes": 36493,
+      "sha256": "8c4286d6dca1d8321625e5e572edf022f4527606ae3124f09859485375ae451b"
+    },
+    "logs/assemble_results.log": {
+      "bytes": 702,
+      "sha256": "77b1e319aa4c200e1146730eb0026314fa753570228ce536a6f3ddfa5362d131"
+    },
+    "logs/benchmark.log": {
+      "bytes": 732,
+      "sha256": "09f542709dafd66a13f36204f2cd74273ab8ac0fa6507602f0f83b839a27b9ad"
+    },
+    "logs/budget_evidence.log": {
+      "bytes": 686,
+      "sha256": "34ce165cff1443e88ba31f655a7462d06b189642d93823ec8f8b81f2216ce2cf"
+    },
+    "logs/geometry.log": {
+      "bytes": 1976,
+      "sha256": "f54c9c28c2be1380876461db56f76b458fe5f5e66c5d13e40b866465b6a6bb4a"
+    },
+    "logs/git_state.log": {
+      "bytes": 835,
+      "sha256": "89115eb2f53624dff4b23ee962558ea13ae50e31eb2a6d6a090a6e2d19b6822a"
+    },
+    "logs/legacy_geometry.log": {
+      "bytes": 459,
+      "sha256": "05a622843914eea436adeea1cfd7177924345b7a40c39b1b108e8cfd6d4f4233"
+    },
+    "logs/legacy_geometry_unmodified_gate.log": {
+      "bytes": 111,
+      "sha256": "aa78380039b358650fe65a81f9ff1424d322af4b72e31f69b3e35498158a370a"
+    },
+    "logs/profile.log": {
+      "bytes": 2425,
+      "sha256": "496f7f2d0774500b5a156b5f148da1713b4015370e256f7497a0e7455d1ae103"
+    },
+    "logs/protection_diff.log": {
+      "bytes": 544,
+      "sha256": "48e03b42d68e1ac52e96f93719b3b03b7e8b82d0f5f59f1bb6e9aa0acea44528"
+    },
+    "logs/run_id.txt": {
+      "bytes": 58,
+      "sha256": "84b49ff0dcbc41b8d76c2003f34b0cc583c97f4fac292bb7cefda8382b64827e"
+    },
+    "logs/setup_registration.log": {
+      "bytes": 703,
+      "sha256": "ebadf0410a25eb39f79b582e13b4e7664f97b3792b11e7c810a08da2ec3a5af9"
+    },
+    "protection_diff_vs_g0.json": {
+      "bytes": 5248,
+      "sha256": "a8390c4b06fef6d78e728b5fe409219d3d831247ef79b51bdb79563c27755945"
+    },
+    "results.json": {
+      "bytes": 22546,
+      "sha256": "a26f26ec0acbba3398a5ea49ed9963c96f5e9cb3f8132858675535aed547e8f6"
+    }
+  },
+  "run_id": "20261115T152858Z",
+  "run_total_bytes": 3754169,
+  "schema": "virtual_rigid_a.g1.rework.source_manifest.v2",
+  "scope_note": "Source and run evidence for G1_REWORK_01. HEAD remains the baseline; no commit, push or G2 entry. Old G1 evidence is preserved and bound by its own tree hashes.",
+  "source_file_count": 15,
+  "source_files": {
+    "catkin_ws/src/fwis_v3_optimizer/setup.py": {
+      "bytes": 284,
+      "sha256": "de6138b17b91160b6827d9e7f2b89925bc9cc3f4705f1800387492708025eee8"
+    },
+    "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/__init__.py": {
+      "bytes": 834,
+      "sha256": "81d470f466a7c11792d20d5d7ababdd52ff3ac56d408eaa975c34c63bd09108f"
+    },
+    "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/bounds.py": {
+      "bytes": 11452,
+      "sha256": "3c12cca5e062c6c35423feb0437eadf7700f72f4666822923a471b3644e8c650"
+    },
+    "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/contracts.py": {
+      "bytes": 13898,
+      "sha256": "ae267d887b3ace4b30e4f58853d427286e4b6416a4b01deff7f5353944b36ce0"
+    },
+    "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/geometry.py": {
+      "bytes": 36940,
+      "sha256": "1254c3340d5ac0866256b7b9dc8abe30ea2578d266643c25f4e6471db776a282"
+    },
+    "docs/virtual_formation_a/CLAUDE_G1_REWORK_01.md": {
+      "bytes": 4173,
+      "sha256": "4921b7badbcdf7c8df6f354c4ac33b9765a7c11e19888dd32c30273d7b260b92"
+    },
+    "docs/virtual_formation_a/CLAUDE_G1_TASK.md": {
+      "bytes": 13744,
+      "sha256": "741261ef20baa775418753a94d302fc4f0d3f9fd78e800b9562d19a277207396"
+    },
+    "docs/virtual_formation_a/G0_INTERFACE_CHECK.md": {
+      "bytes": 9343,
+      "sha256": "0abad6582d3bf53e2454264bf3ad0bee72e161812569298c7d04d32519a739bd"
+    },
+    "docs/virtual_formation_a/VIRTUAL_FORMATION_A_DECISIONS.md": {
+      "bytes": 12417,
+      "sha256": "c20829d7c1a3415dc9b9bbbbf80749add075fa1976ba8422aa420496d3850a81"
+    },
+    "docs/virtual_formation_a/VIRTUAL_FORMATION_A_IMPLEMENTATION_PLAN_FOR_CLAUDE.md": {
+      "bytes": 30468,
+      "sha256": "4a73b8b0969fef281e62c7d9ecdd89a2a093a80e79e1f7305de47b3201559fe8"
+    },
+    "evaluation/virtual_formation_a/G0/codex_acceptance_scope_correction_20261115/CODEX_ACCEPTANCE.json": {
+      "bytes": 1046,
+      "sha256": "17bc8b14c7053a3914fd3f1f6d8d87074dcc8d37965cad7497c71f9d41edd161"
+    },
+    "tests/test_virtual_a_geometry.py": {
+      "bytes": 24276,
+      "sha256": "d1940842ad913cb03169481c29b5599dd8014e8a35670106508c9e387268756e"
+    },
+    "tests/test_virtual_a_profile.py": {
+      "bytes": 31207,
+      "sha256": "7d93d86fd28bea5d11563f35f7ee904d24628b873023a73659fb5e86938a1797"
+    },
+    "tools/virtual_a_baseline.py": {
+      "bytes": 52013,
+      "sha256": "4bf3c9468d09c7554d9006361d5c94081b3c8ba2b941eca3edc92208dcbfb92e"
+    },
+    "tools/virtual_a_benchmark.py": {
+      "bytes": 44194,
+      "sha256": "df804b0440dab54cdf90b26a1f3cc3131542e2813658116085c2de158c0ae7aa"
+    }
+  },
+  "stage": "G1_REWORK_01",
+  "verification": {
+    "command": "PYTHONDONTWRITEBYTECODE=1 python3 -B -I $RUN/analysis/verify_source_manifest.py",
+    "log": "logs/source_manifest_verification.log",
+    "rule": "Recompute every run and source SHA-256, rehash every protected snapshot entry from disk, recompute the canonical protected tree, recheck the G0 whitelist, results/nonclaims, setup registration, git state and both old evidence trees.",
+    "script": "analysis/verify_source_manifest.py"
+  }
+}

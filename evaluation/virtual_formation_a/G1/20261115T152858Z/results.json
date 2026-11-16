@@ -1,0 +1,596 @@
+{
+  "codex_acceptance": "NOT_RUN_NOT_CLAIMED",
+  "constraints": {
+    "codex_acceptance": "NOT_RUN_NOT_CLAIMED",
+    "continuous_domain_proof": "NOT_CLAIMED_SAMPLED_EVIDENCE_ONLY",
+    "fr06_autonomous_search": "NOT_RUN",
+    "full_legacy_regression": "NOT_RUN",
+    "g2_entered": false,
+    "git_commit_or_push": "NOT_RUN",
+    "hardware_calibration": "NOT_CLAIMED",
+    "new_dependencies": "NOT_INSTALLED",
+    "ros_or_gazebo": "NOT_RUN"
+  },
+  "correction": {
+    "actual_integration": "The grid has n equal subintervals of width d=h/n for even n. A complete Simpson panel spans 2*d, and a complete segment contains n/2 such panels. A query uses an even prefix plus at most one local panel whose width is < 2*d because an odd floor(local/d) is shortened to the preceding even node.",
+    "corrected_segment_bound": "(n/2)*R(2*d) + R(2*d)",
+    "floating_guard": "1e-10*(total_full_panels + total_local_panels + 8) + length_m*angle_error_bound_rad",
+    "guard_counts": "actual Simpson accumulation panels (n/2 complete + one local per segment), not equal subintervals; the 1e-10 per-panel term remains a documented numerical assumption, not a formal proof",
+    "local_panel_count": "one conservative local panel per segment",
+    "numerics_version": "virtual_rigid_a.numerics.g1.v2",
+    "old_defect": "position_budget treated d=h/n as the Simpson panel width and multiplied the per-panel remainder by n+1, underestimating the complete-panel remainder.",
+    "old_formula_underestimate_examples": [
+      {
+        "corrected_m": 0.12222222222222252,
+        "h_m": 2.0,
+        "n": 2,
+        "old_m": 0.005729166666666666,
+        "ratio": 21.33333333333339
+      },
+      {
+        "corrected_m": 0.002542061686197921,
+        "h_m": 1.7,
+        "n": 4,
+        "old_m": 0.00013239904615614147,
+        "ratio": 19.200000000000035
+      },
+      {
+        "corrected_m": 0.0008910000000000017,
+        "h_m": 3.0,
+        "n": 10,
+        "old_m": 5.1046874999999985e-05,
+        "ratio": 17.454545454545492
+      },
+      {
+        "corrected_m": 6.320355555555572e-12,
+        "h_m": 0.8,
+        "n": 200,
+        "old_m": 3.9306666666666667e-13,
+        "ratio": 16.07960199004979
+      },
+      {
+        "corrected_m": 1.8394444444444488e-09,
+        "h_m": 6.0,
+        "n": 600,
+        "old_m": 1.1477430555555557e-10,
+        "ratio": 16.02662229617308
+      }
+    ],
+    "per_panel_remainder": "R(H)=H^5*M4/2880",
+    "position_combination": "sum per-coordinate segment remainders over all segments, then multiply by sqrt(2)"
+  },
+  "differential": [
+    {
+      "h_m": 0.001,
+      "max_curvature_error_1_per_m": 3.6901384725673836e-09,
+      "max_heading_error_rad": 1.1463051138976117e-10,
+      "max_production_position_error_m": 5.63313100050224e-11,
+      "points": 121
+    },
+    {
+      "h_m": 0.0005,
+      "max_curvature_error_1_per_m": 1.314409775465819e-08,
+      "max_heading_error_rad": 1.4173831378301164e-11,
+      "max_production_position_error_m": 5.63313100050224e-11,
+      "points": 121
+    }
+  ],
+  "generated_at_utc": "2026-11-15T15:35:06.601957+00:00",
+  "integration_budget": {
+    "analytic_double_lane_change": {
+      "benchmark_201_station_bound_m": 7.737011020460756e-08,
+      "benchmark_201_station_within_bound": true,
+      "benchmark_201_station_worst_quadrature_error_m": 5.633722200984435e-11,
+      "benchmark_audit_fields_consistent": true,
+      "benchmark_audit_totals_consistent": true,
+      "budget": {
+        "angle_error_bound_rad": 1.0000817124146124e-10,
+        "floating_point_guard_m": 6.220009805489755e-08,
+        "initial_panels_per_segment": [
+          300,
+          300
+        ],
+        "kind": "motion",
+        "local_simpson_panels_per_segment": 1,
+        "m4_per_segment": [
+          16.036771786657795,
+          16.036771786657795
+        ],
+        "numerics_version": "virtual_rigid_a.numerics.g1.v2",
+        "panel_widths_m": [
+          0.020000000000000004,
+          0.020000000000000004
+        ],
+        "panels_per_segment": [
+          600,
+          600
+        ],
+        "position_error_bound_m": 7.737011020460756e-08,
+        "refinement_steps": 2,
+        "simpson_euclidean_m": 1.517001214970999e-08,
+        "simpson_full_remainders_m": [
+          5.345590595552611e-09,
+          5.345590595552611e-09
+        ],
+        "simpson_local_panel_widths_m": [
+          0.020000000000000004,
+          0.020000000000000004
+        ],
+        "simpson_local_remainders_m": [
+          1.7818635318508703e-11,
+          1.7818635318508703e-11
+        ],
+        "simpson_panel_widths_m": [
+          0.020000000000000004,
+          0.020000000000000004
+        ],
+        "simpson_per_coordinate_m": 1.0726818461742244e-08,
+        "simpson_segment_remainders_m": [
+          5.36340923087112e-09,
+          5.36340923087112e-09
+        ],
+        "subinterval_widths_m": [
+          0.01,
+          0.01
+        ],
+        "total_full_simpson_panels": 600,
+        "total_local_simpson_panels": 2,
+        "total_panels": 1200
+      },
+      "partial_queries": {
+        "all_within_bound": true,
+        "max_local_width_limit_m": 0.020000000000000004,
+        "max_local_width_m": 0.019999989999999634,
+        "stations": 7,
+        "worst_quadrature_error_m": 2.3672175331057588e-12
+      },
+      "raw_recompute": {
+        "recomputed_euclidean_m": 1.5170012149709943e-08,
+        "recomputed_guard_m": 6.220009805489754e-08,
+        "recomputed_per_coordinate_m": 1.0726818461742216e-08,
+        "recomputed_total_m": 7.737011020460749e-08,
+        "reported_euclidean_m": 1.517001214970999e-08,
+        "reported_guard_m": 6.220009805489755e-08,
+        "reported_per_coordinate_m": 1.0726818461742244e-08,
+        "reported_total_equals_recompute": true,
+        "reported_total_leq_1e_7": true,
+        "reported_total_m": 7.737011020460756e-08,
+        "rows": [
+          {
+            "full_panel_count": 300,
+            "full_panel_width_2d_m": 0.02,
+            "full_remainder_m": 5.3455905955525995e-09,
+            "h_m": 6.0,
+            "local_remainder_m": 1.7818635318508664e-11,
+            "reported_full_panel_width_m": 0.020000000000000004,
+            "reported_full_remainder_m": 5.345590595552611e-09,
+            "reported_local_remainder_m": 1.7818635318508703e-11,
+            "segment": 0,
+            "subinterval_width_d_m": 0.01,
+            "subintervals_n": 600
+          },
+          {
+            "full_panel_count": 300,
+            "full_panel_width_2d_m": 0.02,
+            "full_remainder_m": 5.3455905955525995e-09,
+            "h_m": 6.0,
+            "local_remainder_m": 1.7818635318508664e-11,
+            "reported_full_panel_width_m": 0.020000000000000004,
+            "reported_full_remainder_m": 5.345590595552611e-09,
+            "reported_local_remainder_m": 1.7818635318508703e-11,
+            "segment": 1,
+            "subinterval_width_d_m": 0.01,
+            "subintervals_n": 600
+          }
+        ]
+      }
+    },
+    "budget_evidence_file": "analysis/budget_evidence.json",
+    "budget_evidence_log": "logs/budget_evidence.log",
+    "budget_evidence_sha256": "070ee807140569a283e91097399ea2ce07417b2daa6ea691b41aa0b9d6400f50",
+    "c2_nonzero_g": {
+      "all_within_reported_budget": true,
+      "budget": {
+        "angle_error_bound_rad": 1.0000284217094304e-10,
+        "floating_point_guard_m": 6.2000056843418865e-09,
+        "initial_panels_per_segment": [
+          50,
+          50
+        ],
+        "kind": "motion",
+        "local_simpson_panels_per_segment": 1,
+        "m4_per_segment": [
+          0.630000000000038,
+          2.108100000000096
+        ],
+        "numerics_version": "virtual_rigid_a.numerics.g1.v2",
+        "panel_widths_m": [
+          0.04000000000000001,
+          0.04000000000000001
+        ],
+        "panels_per_segment": [
+          50,
+          50
+        ],
+        "position_error_bound_m": 9.779693223310183e-09,
+        "refinement_steps": 0,
+        "simpson_euclidean_m": 3.5796875389682943e-09,
+        "simpson_full_remainders_m": [
+          5.600000000000351e-10,
+          1.873866666666756e-09
+        ],
+        "simpson_local_panel_widths_m": [
+          0.04000000000000001,
+          0.04000000000000001
+        ],
+        "simpson_local_remainders_m": [
+          2.24000000000014e-11,
+          7.495466666667024e-11
+        ],
+        "simpson_panel_widths_m": [
+          0.04000000000000001,
+          0.04000000000000001
+        ],
+        "simpson_per_coordinate_m": 2.5312213333334636e-09,
+        "simpson_segment_remainders_m": [
+          5.824000000000366e-10,
+          1.9488213333334264e-09
+        ],
+        "subinterval_widths_m": [
+          0.02,
+          0.02
+        ],
+        "total_full_simpson_panels": 50,
+        "total_local_simpson_panels": 2,
+        "total_panels": 100
+      },
+      "g_at_0_25": 0.6000000000000001,
+      "g_at_1_75": -1.8000000000000003,
+      "profile": "c2_cubic_hermite_nonzero_g",
+      "quadrature_method": {
+        "break_points": "profile knots strictly inside [0, s]",
+        "epsabs": 1e-13,
+        "epsrel": 1e-13,
+        "integrand": "cos(psi(s)), sin(psi(s))",
+        "limit": 400,
+        "routine": "scipy.integrate.quad"
+      },
+      "raw_recompute": {
+        "recomputed_euclidean_m": 3.5796875389682844e-09,
+        "recomputed_guard_m": 6.200005684341886e-09,
+        "recomputed_per_coordinate_m": 2.5312213333334574e-09,
+        "recomputed_total_m": 9.77969322331017e-09,
+        "reported_total_equals_recompute": true,
+        "reported_total_leq_1e_7": true
+      },
+      "station_count": 7,
+      "worst_position_error_m": 1.0667751770314288e-09
+    },
+    "hand_parameter_checks": {
+      "cases": [
+        {
+          "corrected_over_old_ratio": 21.33333333333339,
+          "expected_full_remainder_m": 0.06111111111111111,
+          "expected_local_remainder_m": 0.06111111111111111,
+          "expected_segment_remainder_m": 0.12222222222222222,
+          "full_panel_count": 1,
+          "full_remainder_m": 0.061111111111111255,
+          "full_width_is_2d": true,
+          "h_m": 2.0,
+          "local_panel_count": 1,
+          "local_panel_width_m": 2.0000000000000004,
+          "local_remainder_m": 0.061111111111111255,
+          "old_formula_is_underestimate": true,
+          "old_n_plus_one_d_budget_m": 0.005729166666666666,
+          "reported_full_panel_width_m": 2.0000000000000004,
+          "required_full_panel_width_2d_m": 2.0,
+          "segment_remainder_m": 0.12222222222222252,
+          "subinterval_width_d_m": 1.0,
+          "subintervals_n": 2
+        },
+        {
+          "corrected_over_old_ratio": 19.200000000000035,
+          "expected_full_remainder_m": 0.0016947077907986108,
+          "expected_local_remainder_m": 0.0008473538953993054,
+          "expected_segment_remainder_m": 0.002542061686197916,
+          "full_panel_count": 2,
+          "full_remainder_m": 0.0016947077907986136,
+          "full_width_is_2d": true,
+          "h_m": 1.7,
+          "local_panel_count": 1,
+          "local_panel_width_m": 0.8500000000000001,
+          "local_remainder_m": 0.0008473538953993068,
+          "old_formula_is_underestimate": true,
+          "old_n_plus_one_d_budget_m": 0.00013239904615614147,
+          "reported_full_panel_width_m": 0.8500000000000001,
+          "required_full_panel_width_2d_m": 0.85,
+          "segment_remainder_m": 0.002542061686197921,
+          "subinterval_width_d_m": 0.425,
+          "subintervals_n": 4
+        },
+        {
+          "corrected_over_old_ratio": 17.454545454545492,
+          "expected_full_remainder_m": 0.0007424999999999998,
+          "expected_local_remainder_m": 0.00014849999999999995,
+          "expected_segment_remainder_m": 0.0008909999999999998,
+          "full_panel_count": 5,
+          "full_remainder_m": 0.0007425000000000013,
+          "full_width_is_2d": true,
+          "h_m": 3.0,
+          "local_panel_count": 1,
+          "local_panel_width_m": 0.6000000000000001,
+          "local_remainder_m": 0.00014850000000000028,
+          "old_formula_is_underestimate": true,
+          "old_n_plus_one_d_budget_m": 5.1046874999999985e-05,
+          "reported_full_panel_width_m": 0.6000000000000001,
+          "required_full_panel_width_2d_m": 0.6,
+          "segment_remainder_m": 0.0008910000000000017,
+          "subinterval_width_d_m": 0.3,
+          "subintervals_n": 10
+        },
+        {
+          "corrected_over_old_ratio": 16.07960199004979,
+          "expected_full_remainder_m": 6.257777777777778e-12,
+          "expected_local_remainder_m": 6.257777777777778e-14,
+          "expected_segment_remainder_m": 6.320355555555556e-12,
+          "full_panel_count": 100,
+          "full_remainder_m": 6.257777777777793e-12,
+          "full_width_is_2d": true,
+          "h_m": 0.8,
+          "local_panel_count": 1,
+          "local_panel_width_m": 0.008000000000000002,
+          "local_remainder_m": 6.257777777777794e-14,
+          "old_formula_is_underestimate": true,
+          "old_n_plus_one_d_budget_m": 3.9306666666666667e-13,
+          "reported_full_panel_width_m": 0.008000000000000002,
+          "required_full_panel_width_2d_m": 0.008,
+          "segment_remainder_m": 6.320355555555572e-12,
+          "subinterval_width_d_m": 0.004,
+          "subintervals_n": 200
+        },
+        {
+          "corrected_over_old_ratio": 16.02662229617308,
+          "expected_full_remainder_m": 1.8333333333333336e-09,
+          "expected_local_remainder_m": 6.111111111111112e-12,
+          "expected_segment_remainder_m": 1.8394444444444447e-09,
+          "full_panel_count": 300,
+          "full_remainder_m": 1.8333333333333375e-09,
+          "full_width_is_2d": true,
+          "h_m": 6.0,
+          "local_panel_count": 1,
+          "local_panel_width_m": 0.020000000000000004,
+          "local_remainder_m": 6.111111111111125e-12,
+          "old_formula_is_underestimate": true,
+          "old_n_plus_one_d_budget_m": 1.1477430555555557e-10,
+          "reported_full_panel_width_m": 0.020000000000000004,
+          "required_full_panel_width_2d_m": 0.02,
+          "segment_remainder_m": 1.8394444444444488e-09,
+          "subinterval_width_d_m": 0.01,
+          "subintervals_n": 600
+        }
+      ],
+      "m4": 5.5
+    }
+  },
+  "negative_reference": {
+    "expected_peak_front": 4.34822,
+    "first_failure": {
+      "result": {
+        "detail": "CURVATURE_LIMIT,vehicle_id=1 s=0.02755 curvature=1.236452965012903 limit=1.2345679012345678",
+        "location": {
+          "curvature": 1.236452965012903,
+          "limit": 1.2345679012345678,
+          "s": 0.02755,
+          "vehicle_id": 1
+        },
+        "metrics": {
+          "abs_curvature_by_vehicle": {
+            "1": 1.236452965012903
+          },
+          "limit": 1.2345679012345678,
+          "max_abs_curvature": 1.236452965012903
+        },
+        "passed": false,
+        "reason": "CURVATURE_LIMIT"
+      },
+      "s": 0.02755
+    },
+    "peak_abs_curvature_by_vehicle": {
+      "1": 4.348221620699077,
+      "2": 0.4285714285714286,
+      "3": 0.4285714285714286
+    }
+  },
+  "previous_evidence": {
+    "new_hashes": {
+      "bounds.py": "3c12cca5e062c6c35423feb0437eadf7700f72f4666822923a471b3644e8c650",
+      "geometry.py": "1254c3340d5ac0866256b7b9dc8abe30ea2578d266643c25f4e6471db776a282",
+      "tests/test_virtual_a_profile.py": "7d93d86fd28bea5d11563f35f7ee904d24628b873023a73659fb5e86938a1797",
+      "tools/virtual_a_benchmark.py": "df804b0440dab54cdf90b26a1f3cc3131542e2813658116085c2de158c0ae7aa"
+    },
+    "old_source_manifest_declared_hashes": {
+      "bounds.py": "c6f4eeb5faaf5357acfaf342ca0a5f58967f6775f1f6d6d713853bf76f369e5d",
+      "geometry.py": "4c8cb2f5515f9d69b50940bb3d0b838a2ff953f7dfef99f018773e210ca00107",
+      "tests/test_virtual_a_profile.py": "2c26bd37ef0e37586299f0bfea5531998498f4bcd823b9afb995d625f6540dfb",
+      "tools/virtual_a_benchmark.py": "821359ff775ef8c8a79bcc03a4b632fdfe8736d80c7ea8f93cab068347bfe2f3"
+    },
+    "preliminary_run": {
+      "path": "evaluation/virtual_formation_a/G1/20261115T150114Z",
+      "source_manifest_sha256": "55bf0586f414a469ddb0b434784adb2008239664d0a197deee61fbbae98f7ce4",
+      "status": "PRESERVED_NOT_MODIFIED",
+      "tree": {
+        "file_count": 39,
+        "sha256": "777edd42225a2feef23edfabab558aff980dc08e92dbe88bbbe85772eb685dc8",
+        "total_bytes": 3597231
+      }
+    },
+    "preservation_rule": "No old run file was edited or overwritten; the old runs remain under their original run IDs.",
+    "submitted_run": {
+      "path": "evaluation/virtual_formation_a/G1/20261115T150639Z",
+      "source_manifest_sha256": "c40d3ac534aac957cc2206979ab85ef26f073bc6ca89fe5baf882d7cf124bc14",
+      "status": "PRESERVED_NOT_MODIFIED",
+      "tree": {
+        "file_count": 38,
+        "sha256": "d14cc53ee8026b250069547f3d441e1eac2f15b50c825f8f2112bfad65bf4739",
+        "total_bytes": 3614233
+      }
+    }
+  },
+  "protection": {
+    "added": 7,
+    "changed": 1,
+    "comparison_file": "protection_diff_vs_g0.json",
+    "comparison_sha256": "a8390c4b06fef6d78e728b5fe409219d3d831247ef79b51bdb79563c27755945",
+    "g0_file_count": 3120,
+    "g0_tree_sha256": "ff58f2b5c6acfbc207327202f875e5e9a20734ef09ebb6070ee07edce6ebf091",
+    "g1_file_count": 3127,
+    "g1_tree_sha256": "910efe32972dcbcb3a0c2585c002916ede878f4295b0f26b4dc917faeee4f519",
+    "only_authorized_changes": true,
+    "protected_trees_unchanged_within_run": true,
+    "removed": 0
+  },
+  "refinement": {
+    "analytic_final_panels_per_segment": [
+      600,
+      600
+    ],
+    "analytic_initial_panels_per_segment": [
+      300,
+      300
+    ],
+    "analytic_refinement_steps": 2,
+    "analytic_total_complete_panels": 600,
+    "analytic_total_local_panels": 2,
+    "analytic_total_subintervals": 1200,
+    "bound_unconfirmed_test": "test_bound_unconfirmed_when_budget_cannot_be_met",
+    "c2_final_panels_per_segment": [
+      50,
+      50
+    ],
+    "c2_initial_panels_per_segment": [
+      50,
+      50
+    ],
+    "c2_refinement_steps": 0,
+    "c2_total_complete_panels": 50,
+    "c2_total_local_panels": 2,
+    "c2_total_subintervals": 100,
+    "refinement_uses_corrected_segment_remainder": true
+  },
+  "run_id": "20261115T152858Z",
+  "schema": "virtual_rigid_a.g1.rework.results.v2",
+  "scope": {
+    "changed_files": [
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/bounds.py",
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/geometry.py",
+      "tests/test_virtual_a_profile.py",
+      "tools/virtual_a_benchmark.py"
+    ],
+    "g2_entered": false,
+    "rework_document": "docs/virtual_formation_a/CLAUDE_G1_REWORK_01.md",
+    "rework_document_sha256": "4921b7badbcdf7c8df6f354c4ac33b9765a7c11e19888dd32c30273d7b260b92",
+    "unchanged_contracts": [
+      "1e-7 m position budget",
+      "1e-9 rad angle budget",
+      "G1 geometry/profile/benchmark acceptance expectations",
+      "old FR06 algorithms, tests, configuration and historical evidence"
+    ]
+  },
+  "stage": "G1_REWORK_01",
+  "status": "PASS_PENDING_CODEX_RECHECK",
+  "tests": {
+    "baseline_geometry_regression": {
+      "documented_wrapper_run": {
+        "exit_code": 0,
+        "log": "logs/legacy_geometry.log",
+        "next_stage_entered": false,
+        "overall_status": "PASS",
+        "protected_after_sha256": null,
+        "protected_before_sha256": null,
+        "protected_unchanged": null,
+        "qualification": "The safe geometry regression itself passed, but the unmodified baseline gate still failed. Codex must review whether this documented in-memory wrapper is acceptable; this report does not self-accept the deviation.",
+        "reference_checks": null,
+        "reference_duration_s": null,
+        "reference_status": null,
+        "regression_results": "legacy/regression_results.json",
+        "regression_subprocesses": null,
+        "results": "legacy/results.json",
+        "status": "PASS",
+        "wrapper": "baseline_runner_rework_doc.py",
+        "wrapper_behavior": "Imports the unmodified tools/virtual_a_baseline.py and adds only the user-supplied rework document to the in-memory KNOWN_DESIGN_DOCUMENTS set before calling its main(argv). No baseline tool file was edited and no other authorization rule changed.",
+        "wrapper_sha256": "8c16f2fdcd02734f78f2fa2c79310fa6d2de375b503aa5c1490727aad86b1be4"
+      },
+      "unmodified_runner_attempt": {
+        "cause": "The accepted G0 baseline tool's static KNOWN_DESIGN_DOCUMENTS allowlist predates the rework task book.",
+        "exit_code": 1,
+        "log": "logs/legacy_geometry_unmodified_gate.log",
+        "reason": "UNKNOWN_WORKSPACE_MODIFICATIONS",
+        "status": "FAILED_BEFORE_TESTS",
+        "unknown": [
+          "docs/virtual_formation_a/CLAUDE_G1_REWORK_01.md"
+        ]
+      }
+    },
+    "benchmark": {
+      "checks": 26,
+      "checks_by_category": {
+        "curvature": 5,
+        "differential": 2,
+        "endpoint": 6,
+        "initial": 1,
+        "integration": 6,
+        "mirror": 1,
+        "negative": 1,
+        "node": 1,
+        "rigidity": 2,
+        "wheel_diagnostic": 1
+      },
+      "exit_code": 0,
+      "failed": 0,
+      "log": "logs/benchmark.log",
+      "new_rework_checks": [
+        "simpson_budget_fields_use_2d_full_panels",
+        "simpson_budget_arithmetic_recomputed",
+        "partial_query_local_panel_bound"
+      ],
+      "stage": "G1",
+      "status": "PASS",
+      "summary": "benchmark/summary.json"
+    },
+    "geometry": {
+      "count": 20,
+      "exit_code": 0,
+      "log": "logs/geometry.log",
+      "pattern": "test_virtual_a_geometry.py",
+      "reported_duration_s": 1.055,
+      "status": "PASS"
+    },
+    "profile": {
+      "count": 22,
+      "exit_code": 0,
+      "log": "logs/profile.log",
+      "pattern": "test_virtual_a_profile.py",
+      "reported_duration_s": 1.28,
+      "rework_class": "SimpsonRemainderReworkTests",
+      "rework_tests": 6,
+      "status": "PASS"
+    },
+    "setup_registration": {
+      "checks": 3,
+      "log": "logs/setup_registration.log",
+      "package_list": [
+        "fwis_v3_optimizer",
+        "fwis_v3_optimizer.formation_continuous_a"
+      ],
+      "status": "PASS"
+    }
+  },
+  "workspace": {
+    "baseline_head": "567bdecba9676313da3bc9a97b82f57b5b569a2b",
+    "baseline_is_ancestor": true,
+    "branch": "feature/virtual-rigid-formation-a",
+    "committed_or_pushed": false,
+    "head": "567bdecba9676313da3bc9a97b82f57b5b569a2b",
+    "repo_root": "/home/wq/whut_thesis/expv3_multi_virtual_a"
+  }
+}

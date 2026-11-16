@@ -1,0 +1,761 @@
+{
+  "covered_vehicles": [
+    1,
+    2,
+    3
+  ],
+  "covered_wheels": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "curvature_case_count": 3,
+  "curvature_cases": [
+    {
+      "detail": "vehicle_id=2 wheel=None C_i is non-finite (NaN)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "C_i",
+        "vehicle_id": 2,
+        "wheel_index": null
+      },
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "value": "NaN",
+      "vehicle_id": 2
+    },
+    {
+      "detail": "vehicle_id=2 wheel=None C_i is non-finite (+Infinity)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "C_i",
+        "vehicle_id": 2,
+        "wheel_index": null
+      },
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "value": "+Infinity",
+      "vehicle_id": 2
+    },
+    {
+      "detail": "vehicle_id=2 wheel=None C_i is non-finite (-Infinity)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "C_i",
+        "vehicle_id": 2,
+        "wheel_index": null
+      },
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "value": "-Infinity",
+      "vehicle_id": 2
+    }
+  ],
+  "finite_cases": {
+    "below_limit_passed": true,
+    "nonfinite_dominates_finite_overlimit": {
+      "detail": "vehicle_id=3 wheel=2 jerk is non-finite (NaN)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "jerk",
+        "vehicle_id": 3,
+        "wheel_index": 2
+      },
+      "reason": "NONFINITE_AUDIT_VALUE"
+    },
+    "two_overlimits_later_smaller_reason": {
+      "detail": "vehicle_id=1 wheel=0 speed=1.6 exceeds 0.8",
+      "location": {
+        "constraint": "DYNAMIC_LIMIT",
+        "limit": 0.8,
+        "quantity": "speed",
+        "value": 1.6,
+        "vehicle_id": 1,
+        "wheel_index": 0
+      },
+      "reason": "DYNAMIC_LIMIT"
+    },
+    "two_overlimits_reason": {
+      "detail": "vehicle_id=3 wheel=2 jerk=4.0 exceeds 2.0",
+      "location": {
+        "constraint": "DYNAMIC_LIMIT",
+        "limit": 2.0,
+        "quantity": "jerk",
+        "value": 4.0,
+        "vehicle_id": 3,
+        "wheel_index": 2
+      },
+      "reason": "DYNAMIC_LIMIT"
+    },
+    "wheel_angle_overlimit_reason": {
+      "detail": "vehicle_id=2 wheel=None wheel_angle=2.356194490192345 exceeds 1.5707963267948966",
+      "location": {
+        "constraint": "WHEEL_ANGLE_LIMIT",
+        "limit": 1.5707963267948966,
+        "quantity": "wheel_angle",
+        "value": 2.356194490192345,
+        "vehicle_id": 2,
+        "wheel_index": null
+      },
+      "reason": "WHEEL_ANGLE_LIMIT"
+    }
+  },
+  "fixture_path": "tests/fixtures/virtual_a/open_requests.json",
+  "fixture_sha256": "5e7474ffd69aced189f4b0c8adaae6dc15f63742bc8f55400408e8c9f7f078fa",
+  "generation_source_case_count": 10,
+  "generation_source_cases": [
+    {
+      "detail": "vehicle_id=1 wheel=0 speed is non-finite (NaN)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "speed",
+        "vehicle_id": 1,
+        "wheel_index": 0
+      },
+      "metric": "speed",
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "source": "v_i",
+      "value": "NaN",
+      "vehicle_id": 1,
+      "wheel_index": 0
+    },
+    {
+      "detail": "vehicle_id=1 wheel=0 acceleration is non-finite (+Infinity)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "acceleration",
+        "vehicle_id": 1,
+        "wheel_index": 0
+      },
+      "metric": "acceleration",
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "source": "acceleration",
+      "value": "+Infinity",
+      "vehicle_id": 1,
+      "wheel_index": 0
+    },
+    {
+      "detail": "vehicle_id=1 wheel=0 jerk is non-finite (NaN)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "jerk",
+        "vehicle_id": 1,
+        "wheel_index": 0
+      },
+      "metric": "jerk",
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "source": "jerk",
+      "value": "NaN",
+      "vehicle_id": 1,
+      "wheel_index": 0
+    },
+    {
+      "detail": "vehicle_id=1 wheel=0 yaw_rate is non-finite (+Infinity)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "yaw_rate",
+        "vehicle_id": 1,
+        "wheel_index": 0
+      },
+      "metric": "yaw_rate",
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "source": "omega_i",
+      "value": "+Infinity",
+      "vehicle_id": 1,
+      "wheel_index": 0
+    },
+    {
+      "detail": "vehicle_id=1 wheel=0 yaw_acceleration is non-finite (NaN)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "yaw_acceleration",
+        "vehicle_id": 1,
+        "wheel_index": 0
+      },
+      "metric": "yaw_acceleration",
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "source": "yaw_accel",
+      "value": "NaN",
+      "vehicle_id": 1,
+      "wheel_index": 0
+    },
+    {
+      "detail": "vehicle_id=1 wheel=0 yaw_jerk is non-finite (+Infinity)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "yaw_jerk",
+        "vehicle_id": 1,
+        "wheel_index": 0
+      },
+      "metric": "yaw_jerk",
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "source": "yaw_jerk",
+      "value": "+Infinity",
+      "vehicle_id": 1,
+      "wheel_index": 0
+    },
+    {
+      "detail": "vehicle_id=1 wheel=0 lateral_acceleration is non-finite (+Infinity)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "lateral_acceleration",
+        "vehicle_id": 1,
+        "wheel_index": 0
+      },
+      "metric": "lateral_acceleration",
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "source": "lateral_accel",
+      "value": "+Infinity",
+      "vehicle_id": 1,
+      "wheel_index": 0
+    },
+    {
+      "detail": "vehicle_id=1 wheel=1 wheel_speed is non-finite (NaN)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "wheel_speed",
+        "vehicle_id": 1,
+        "wheel_index": 1
+      },
+      "metric": "wheel_speed",
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "source": "wheel_speeds",
+      "value": "NaN",
+      "vehicle_id": 1,
+      "wheel_index": 1
+    },
+    {
+      "detail": "vehicle_id=1 wheel=2 steer_rate is non-finite (+Infinity)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "steer_rate",
+        "vehicle_id": 1,
+        "wheel_index": 2
+      },
+      "metric": "steer_rate",
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "source": "steer_rates",
+      "value": "+Infinity",
+      "vehicle_id": 1,
+      "wheel_index": 2
+    },
+    {
+      "detail": "vehicle_id=1 wheel=3 steer_acceleration is non-finite (+Infinity)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "steer_acceleration",
+        "vehicle_id": 1,
+        "wheel_index": 3
+      },
+      "metric": "steer_acceleration",
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "source": "steer_accels",
+      "value": "+Infinity",
+      "vehicle_id": 1,
+      "wheel_index": 3
+    }
+  ],
+  "metric_case_count": 30,
+  "metric_cases": [
+    {
+      "detail": "vehicle_id=1 wheel=0 speed is non-finite (NaN)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "speed",
+        "vehicle_id": 1,
+        "wheel_index": 0
+      },
+      "metric": "speed",
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "value": "NaN",
+      "vehicle_id": 1,
+      "wheel_index": 0
+    },
+    {
+      "detail": "vehicle_id=2 wheel=1 speed is non-finite (+Infinity)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "speed",
+        "vehicle_id": 2,
+        "wheel_index": 1
+      },
+      "metric": "speed",
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "value": "+Infinity",
+      "vehicle_id": 2,
+      "wheel_index": 1
+    },
+    {
+      "detail": "vehicle_id=3 wheel=2 speed is non-finite (-Infinity)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "speed",
+        "vehicle_id": 3,
+        "wheel_index": 2
+      },
+      "metric": "speed",
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "value": "-Infinity",
+      "vehicle_id": 3,
+      "wheel_index": 2
+    },
+    {
+      "detail": "vehicle_id=2 wheel=3 acceleration is non-finite (NaN)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "acceleration",
+        "vehicle_id": 2,
+        "wheel_index": 3
+      },
+      "metric": "acceleration",
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "value": "NaN",
+      "vehicle_id": 2,
+      "wheel_index": 3
+    },
+    {
+      "detail": "vehicle_id=3 wheel=0 acceleration is non-finite (+Infinity)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "acceleration",
+        "vehicle_id": 3,
+        "wheel_index": 0
+      },
+      "metric": "acceleration",
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "value": "+Infinity",
+      "vehicle_id": 3,
+      "wheel_index": 0
+    },
+    {
+      "detail": "vehicle_id=1 wheel=1 acceleration is non-finite (-Infinity)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "acceleration",
+        "vehicle_id": 1,
+        "wheel_index": 1
+      },
+      "metric": "acceleration",
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "value": "-Infinity",
+      "vehicle_id": 1,
+      "wheel_index": 1
+    },
+    {
+      "detail": "vehicle_id=3 wheel=2 jerk is non-finite (NaN)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "jerk",
+        "vehicle_id": 3,
+        "wheel_index": 2
+      },
+      "metric": "jerk",
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "value": "NaN",
+      "vehicle_id": 3,
+      "wheel_index": 2
+    },
+    {
+      "detail": "vehicle_id=1 wheel=3 jerk is non-finite (+Infinity)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "jerk",
+        "vehicle_id": 1,
+        "wheel_index": 3
+      },
+      "metric": "jerk",
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "value": "+Infinity",
+      "vehicle_id": 1,
+      "wheel_index": 3
+    },
+    {
+      "detail": "vehicle_id=2 wheel=0 jerk is non-finite (-Infinity)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "jerk",
+        "vehicle_id": 2,
+        "wheel_index": 0
+      },
+      "metric": "jerk",
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "value": "-Infinity",
+      "vehicle_id": 2,
+      "wheel_index": 0
+    },
+    {
+      "detail": "vehicle_id=1 wheel=1 yaw_rate is non-finite (NaN)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "yaw_rate",
+        "vehicle_id": 1,
+        "wheel_index": 1
+      },
+      "metric": "yaw_rate",
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "value": "NaN",
+      "vehicle_id": 1,
+      "wheel_index": 1
+    },
+    {
+      "detail": "vehicle_id=2 wheel=2 yaw_rate is non-finite (+Infinity)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "yaw_rate",
+        "vehicle_id": 2,
+        "wheel_index": 2
+      },
+      "metric": "yaw_rate",
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "value": "+Infinity",
+      "vehicle_id": 2,
+      "wheel_index": 2
+    },
+    {
+      "detail": "vehicle_id=3 wheel=3 yaw_rate is non-finite (-Infinity)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "yaw_rate",
+        "vehicle_id": 3,
+        "wheel_index": 3
+      },
+      "metric": "yaw_rate",
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "value": "-Infinity",
+      "vehicle_id": 3,
+      "wheel_index": 3
+    },
+    {
+      "detail": "vehicle_id=2 wheel=0 yaw_acceleration is non-finite (NaN)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "yaw_acceleration",
+        "vehicle_id": 2,
+        "wheel_index": 0
+      },
+      "metric": "yaw_acceleration",
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "value": "NaN",
+      "vehicle_id": 2,
+      "wheel_index": 0
+    },
+    {
+      "detail": "vehicle_id=3 wheel=1 yaw_acceleration is non-finite (+Infinity)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "yaw_acceleration",
+        "vehicle_id": 3,
+        "wheel_index": 1
+      },
+      "metric": "yaw_acceleration",
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "value": "+Infinity",
+      "vehicle_id": 3,
+      "wheel_index": 1
+    },
+    {
+      "detail": "vehicle_id=1 wheel=2 yaw_acceleration is non-finite (-Infinity)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "yaw_acceleration",
+        "vehicle_id": 1,
+        "wheel_index": 2
+      },
+      "metric": "yaw_acceleration",
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "value": "-Infinity",
+      "vehicle_id": 1,
+      "wheel_index": 2
+    },
+    {
+      "detail": "vehicle_id=3 wheel=3 yaw_jerk is non-finite (NaN)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "yaw_jerk",
+        "vehicle_id": 3,
+        "wheel_index": 3
+      },
+      "metric": "yaw_jerk",
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "value": "NaN",
+      "vehicle_id": 3,
+      "wheel_index": 3
+    },
+    {
+      "detail": "vehicle_id=1 wheel=0 yaw_jerk is non-finite (+Infinity)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "yaw_jerk",
+        "vehicle_id": 1,
+        "wheel_index": 0
+      },
+      "metric": "yaw_jerk",
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "value": "+Infinity",
+      "vehicle_id": 1,
+      "wheel_index": 0
+    },
+    {
+      "detail": "vehicle_id=2 wheel=1 yaw_jerk is non-finite (-Infinity)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "yaw_jerk",
+        "vehicle_id": 2,
+        "wheel_index": 1
+      },
+      "metric": "yaw_jerk",
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "value": "-Infinity",
+      "vehicle_id": 2,
+      "wheel_index": 1
+    },
+    {
+      "detail": "vehicle_id=1 wheel=2 lateral_acceleration is non-finite (NaN)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "lateral_acceleration",
+        "vehicle_id": 1,
+        "wheel_index": 2
+      },
+      "metric": "lateral_acceleration",
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "value": "NaN",
+      "vehicle_id": 1,
+      "wheel_index": 2
+    },
+    {
+      "detail": "vehicle_id=2 wheel=3 lateral_acceleration is non-finite (+Infinity)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "lateral_acceleration",
+        "vehicle_id": 2,
+        "wheel_index": 3
+      },
+      "metric": "lateral_acceleration",
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "value": "+Infinity",
+      "vehicle_id": 2,
+      "wheel_index": 3
+    },
+    {
+      "detail": "vehicle_id=3 wheel=0 lateral_acceleration is non-finite (-Infinity)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "lateral_acceleration",
+        "vehicle_id": 3,
+        "wheel_index": 0
+      },
+      "metric": "lateral_acceleration",
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "value": "-Infinity",
+      "vehicle_id": 3,
+      "wheel_index": 0
+    },
+    {
+      "detail": "vehicle_id=2 wheel=1 wheel_speed is non-finite (NaN)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "wheel_speed",
+        "vehicle_id": 2,
+        "wheel_index": 1
+      },
+      "metric": "wheel_speed",
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "value": "NaN",
+      "vehicle_id": 2,
+      "wheel_index": 1
+    },
+    {
+      "detail": "vehicle_id=3 wheel=2 wheel_speed is non-finite (+Infinity)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "wheel_speed",
+        "vehicle_id": 3,
+        "wheel_index": 2
+      },
+      "metric": "wheel_speed",
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "value": "+Infinity",
+      "vehicle_id": 3,
+      "wheel_index": 2
+    },
+    {
+      "detail": "vehicle_id=1 wheel=3 wheel_speed is non-finite (-Infinity)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "wheel_speed",
+        "vehicle_id": 1,
+        "wheel_index": 3
+      },
+      "metric": "wheel_speed",
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "value": "-Infinity",
+      "vehicle_id": 1,
+      "wheel_index": 3
+    },
+    {
+      "detail": "vehicle_id=3 wheel=0 steer_rate is non-finite (NaN)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "steer_rate",
+        "vehicle_id": 3,
+        "wheel_index": 0
+      },
+      "metric": "steer_rate",
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "value": "NaN",
+      "vehicle_id": 3,
+      "wheel_index": 0
+    },
+    {
+      "detail": "vehicle_id=1 wheel=1 steer_rate is non-finite (+Infinity)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "steer_rate",
+        "vehicle_id": 1,
+        "wheel_index": 1
+      },
+      "metric": "steer_rate",
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "value": "+Infinity",
+      "vehicle_id": 1,
+      "wheel_index": 1
+    },
+    {
+      "detail": "vehicle_id=2 wheel=2 steer_rate is non-finite (-Infinity)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "steer_rate",
+        "vehicle_id": 2,
+        "wheel_index": 2
+      },
+      "metric": "steer_rate",
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "value": "-Infinity",
+      "vehicle_id": 2,
+      "wheel_index": 2
+    },
+    {
+      "detail": "vehicle_id=1 wheel=3 steer_acceleration is non-finite (NaN)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "steer_acceleration",
+        "vehicle_id": 1,
+        "wheel_index": 3
+      },
+      "metric": "steer_acceleration",
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "value": "NaN",
+      "vehicle_id": 1,
+      "wheel_index": 3
+    },
+    {
+      "detail": "vehicle_id=2 wheel=0 steer_acceleration is non-finite (+Infinity)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "steer_acceleration",
+        "vehicle_id": 2,
+        "wheel_index": 0
+      },
+      "metric": "steer_acceleration",
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "value": "+Infinity",
+      "vehicle_id": 2,
+      "wheel_index": 0
+    },
+    {
+      "detail": "vehicle_id=3 wheel=1 steer_acceleration is non-finite (-Infinity)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "steer_acceleration",
+        "vehicle_id": 3,
+        "wheel_index": 1
+      },
+      "metric": "steer_acceleration",
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "value": "-Infinity",
+      "vehicle_id": 3,
+      "wheel_index": 1
+    }
+  ],
+  "metric_names": [
+    "speed",
+    "acceleration",
+    "jerk",
+    "yaw_rate",
+    "yaw_acceleration",
+    "yaw_jerk",
+    "lateral_acceleration",
+    "wheel_speed",
+    "steer_rate",
+    "steer_acceleration"
+  ],
+  "mixed_angle_case_count": 2,
+  "mixed_angle_cases": [
+    {
+      "detail": "vehicle_id=1 wheel=None wheel_angle is non-finite (NaN)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "wheel_angle",
+        "vehicle_id": 1,
+        "wheel_index": null
+      },
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "value": "NaN",
+      "vehicle_id": 1
+    },
+    {
+      "detail": "vehicle_id=3 wheel=None wheel_angle is non-finite (+Infinity)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "wheel_angle",
+        "vehicle_id": 3,
+        "wheel_index": null
+      },
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "value": "+Infinity",
+      "vehicle_id": 3
+    }
+  ],
+  "note": "Direct private-function probe.  Non-finite cases are synthetic inputs, not naturally occurring motion values.",
+  "run_id": "20261116T084435Z",
+  "schema": "virtual_rigid_a.g3.nonfinite_probe.v1",
+  "status": "PASS",
+  "wheel_angle_case_count": 3,
+  "wheel_angle_cases": [
+    {
+      "detail": "vehicle_id=1 wheel=None wheel_angle is non-finite (NaN)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "wheel_angle",
+        "vehicle_id": 1,
+        "wheel_index": null
+      },
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "value": "NaN",
+      "vehicle_id": 1
+    },
+    {
+      "detail": "vehicle_id=2 wheel=None wheel_angle is non-finite (+Infinity)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "wheel_angle",
+        "vehicle_id": 2,
+        "wheel_index": null
+      },
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "value": "+Infinity",
+      "vehicle_id": 2
+    },
+    {
+      "detail": "vehicle_id=3 wheel=None wheel_angle is non-finite (-Infinity)",
+      "location": {
+        "constraint": "NONFINITE_AUDIT_VALUE",
+        "quantity": "wheel_angle",
+        "vehicle_id": 3,
+        "wheel_index": null
+      },
+      "reason": "NONFINITE_AUDIT_VALUE",
+      "value": "-Infinity",
+      "vehicle_id": 3
+    }
+  ]
+}

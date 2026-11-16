@@ -1,0 +1,73 @@
+{
+  "task": "G0",
+  "status": "REWORK",
+  "gate_passed": false,
+  "reviewer": "Codex",
+  "implementer": "Claude Code",
+  "reviewed_at_utc": "2026-11-15T14:18:20.617770+00:00",
+  "branch": "feature/virtual-rigid-formation-a",
+  "head": "567bdecba9676313da3bc9a97b82f57b5b569a2b",
+  "submitted_evidence_directory": "evaluation/virtual_formation_a/G0/20261115T140936Z",
+  "evidence_directory": "evaluation/virtual_formation_a/G0/codex_review_20261115T141437Z",
+  "report": "CODEX_REVIEW.md",
+  "rework_prompt": "REWORK_REQUEST.md",
+  "reviewed_source_sha256": {
+    "tools/virtual_a_baseline.py": "77d280314198debca090dea9472df69f7a0d9b0817e88b2fd511234b38ba8dcb",
+    "docs/virtual_formation_a/G0_INTERFACE_CHECK.md": "97c5c411eead4c21abfbd2c70aa6c1af338ef2ce69f8ca6df9f9ef540b8917d3"
+  },
+  "submitted_manifest_entries_verified": 16,
+  "independent_git_blob_files_verified": 3550,
+  "original_worktree_files_verified": {
+    "expv3_multi": 823,
+    "expv3_multi_v02": 3559
+  },
+  "independent_reference": {
+    "status": "FEASIBLE",
+    "checks": 13390,
+    "duration_s": 29.95529475329162,
+    "model_sha256": "1da16fa1bdbe93e1bd3e55855b8fd900b6c4770f66a7ccbe8ae7eb368a5affde",
+    "wall_s": 1.8491821639472619,
+    "request_from_review_constants": true,
+    "submitted_reaudit_helper_used": false,
+    "search_executed": false
+  },
+  "blocking_findings": [
+    {
+      "id": "R1",
+      "severity": "P1",
+      "file": "tools/virtual_a_baseline.py",
+      "functions": [
+        "_classify_untracked",
+        "collect_manifest",
+        "_workspace_gate",
+        "main"
+      ],
+      "summary": "Regression workspace gate rejects task-authorized future-stage additions and setup.py edits; prescribed G1 regression command cannot run after G1 implementation.",
+      "evidence": "future_stage_gate.json"
+    },
+    {
+      "id": "R2",
+      "severity": "P1",
+      "file": "tools/virtual_a_baseline.py",
+      "functions": [
+        "run_regression",
+        "_prepare_output"
+      ],
+      "summary": "Public runner bypasses CLI output containment/no-overwrite protection; mocked call accepts a historical FR06 output destination.",
+      "evidence": "public_runner_guard.json",
+      "historical_files_written_by_probe": 0,
+      "legacy_test_cases_run_by_probe": 0
+    }
+  ],
+  "not_run": [
+    "old full regression test cases",
+    "FR06 autonomous searches",
+    "ROS/Gazebo/GUI",
+    "G1-G5"
+  ],
+  "implementation_modified_by_codex": false,
+  "submitted_evidence_modified_by_codex": false,
+  "submitted_hash_drift": [],
+  "git_committed": false,
+  "next_stage_authorized": false
+}

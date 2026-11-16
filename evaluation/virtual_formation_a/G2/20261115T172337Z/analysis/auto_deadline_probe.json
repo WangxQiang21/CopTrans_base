@@ -1,0 +1,454 @@
+{
+  "all_checks_pass": true,
+  "cases": {
+    "auto_exception_budget_exhausted": {
+      "audit_calls": 0,
+      "checks": [
+        {
+          "name": "status",
+          "pass": true
+        },
+        {
+          "name": "deadline_exhausted",
+          "pass": true
+        },
+        {
+          "name": "no_fallback",
+          "pass": true
+        },
+        {
+          "name": "no_audit",
+          "pass": true
+        },
+        {
+          "name": "no_path",
+          "pass": true
+        },
+        {
+          "name": "exception_attempt",
+          "pass": true
+        },
+        {
+          "name": "exception_detail",
+          "pass": true
+        },
+        {
+          "name": "trigger_stage",
+          "pass": true
+        },
+        {
+          "name": "trigger_status",
+          "pass": true
+        },
+        {
+          "name": "not_a_solver_timeout",
+          "pass": true
+        }
+      ],
+      "checks_pass": true,
+      "fallback_calls": 0,
+      "result": {
+        "attempts": [
+          {
+            "attempt_index": 0,
+            "audit_passed": null,
+            "audit_present": false,
+            "deadline_trigger_stage": "",
+            "detail": "RuntimeError: forced non-timeout IPOPT exception",
+            "iterations": 0,
+            "rejection_reason": "IPOPT_EXCEPTION",
+            "soft_deadline_triggered": false,
+            "solver": "ipopt",
+            "solver_status": "IPOPT_EXCEPTION",
+            "status": "SOLVER_FAILED"
+          }
+        ],
+        "audit_passed": null,
+        "audit_present": false,
+        "deadline_exhausted": true,
+        "deadline_summary": {
+          "audited_candidate_preserved": false,
+          "final_wall_time_s": 10.4,
+          "hard_real_time_guarantee": false,
+          "policy": "checked at initial and attempt boundaries; IPOPT uses a soft max_wall_time and SLSQP a Python iteration callback; the library is not claimed to interrupt immediately",
+          "pre_fallback_solver_status": "IPOPT_EXCEPTION",
+          "soft_budget_s": 10.0,
+          "trigger_solver_status": "IPOPT_EXCEPTION",
+          "trigger_stage": "pre_fallback_boundary",
+          "trigger_wall_time_s": 10.3,
+          "triggered": true
+        },
+        "detail": "soft wall budget 10.0s exhausted before an audited candidate",
+        "path_present": false,
+        "reason": "SOFT_BUDGET_EXHAUSTED",
+        "solver_used": "ipopt",
+        "status": "BUDGET_EXHAUSTED"
+      }
+    },
+    "auto_ipopt_timeout": {
+      "audit_calls": 0,
+      "checks": [
+        {
+          "name": "status",
+          "pass": true
+        },
+        {
+          "name": "deadline_exhausted",
+          "pass": true
+        },
+        {
+          "name": "no_fallback",
+          "pass": true
+        },
+        {
+          "name": "no_audit",
+          "pass": true
+        },
+        {
+          "name": "no_path",
+          "pass": true
+        },
+        {
+          "name": "timeout_attempt",
+          "pass": true
+        },
+        {
+          "name": "trigger_stage",
+          "pass": true
+        },
+        {
+          "name": "timeout_status",
+          "pass": true
+        }
+      ],
+      "checks_pass": true,
+      "fallback_calls": 0,
+      "result": {
+        "attempts": [
+          {
+            "attempt_index": 0,
+            "audit_passed": null,
+            "audit_present": false,
+            "deadline_trigger_stage": "ipopt_max_wall_time",
+            "detail": "forced ipopt_max_wall_time timeout",
+            "iterations": 3,
+            "rejection_reason": "SOFT_BUDGET_EXHAUSTED",
+            "soft_deadline_triggered": true,
+            "solver": "ipopt",
+            "solver_status": "Maximum_WallTime_Exceeded",
+            "status": "SOLVER_TIMEOUT"
+          }
+        ],
+        "audit_passed": null,
+        "audit_present": false,
+        "deadline_exhausted": true,
+        "deadline_summary": {
+          "audited_candidate_preserved": false,
+          "final_wall_time_s": 0.0005271659465506673,
+          "hard_real_time_guarantee": false,
+          "policy": "checked at initial and attempt boundaries; IPOPT uses a soft max_wall_time and SLSQP a Python iteration callback; the library is not claimed to interrupt immediately",
+          "soft_budget_s": 30.0,
+          "timeout_iterations": 3,
+          "timeout_solver_status": "Maximum_WallTime_Exceeded",
+          "trigger_solver_status": "Maximum_WallTime_Exceeded",
+          "trigger_stage": "ipopt_max_wall_time",
+          "trigger_wall_time_s": 0.0005152929807081819,
+          "triggered": true
+        },
+        "detail": "soft wall budget 30.0s exhausted before an audited candidate",
+        "path_present": false,
+        "reason": "SOFT_BUDGET_EXHAUSTED",
+        "solver_used": "ipopt",
+        "status": "BUDGET_EXHAUSTED"
+      }
+    },
+    "auto_ordinary_failure_real_fallback": {
+      "audit_calls": 1,
+      "checks": [
+        {
+          "name": "status",
+          "pass": true
+        },
+        {
+          "name": "audit_passed",
+          "pass": true
+        },
+        {
+          "name": "audit_calls",
+          "pass": true
+        },
+        {
+          "name": "solver_used",
+          "pass": true
+        },
+        {
+          "name": "attempt_sequence",
+          "pass": true
+        },
+        {
+          "name": "primary_failure_kept",
+          "pass": true
+        },
+        {
+          "name": "fallback_label",
+          "pass": true
+        }
+      ],
+      "checks_pass": true,
+      "result": {
+        "attempts": [
+          {
+            "attempt_index": 0,
+            "audit_passed": null,
+            "audit_present": false,
+            "deadline_trigger_stage": "",
+            "detail": "forced ordinary failure",
+            "iterations": 2,
+            "rejection_reason": "Solve_Failed",
+            "soft_deadline_triggered": false,
+            "solver": "ipopt",
+            "solver_status": "Solve_Failed",
+            "status": "SOLVER_FAILED"
+          },
+          {
+            "attempt_index": 0,
+            "audit_passed": true,
+            "audit_present": true,
+            "deadline_trigger_stage": "",
+            "detail": "IPOPT Solve_Failed; SLSQP fallback used: Optimization terminated successfully",
+            "iterations": 15,
+            "rejection_reason": "",
+            "soft_deadline_triggered": false,
+            "solver": "scipy_slsqp",
+            "solver_status": "Optimization terminated successfully",
+            "status": "SOLVER_SUCCESS_AUDITED"
+          }
+        ],
+        "audit_passed": true,
+        "audit_present": true,
+        "deadline_exhausted": false,
+        "deadline_summary": {
+          "audited_candidate_preserved": false,
+          "final_wall_time_s": 0.2904794809874147,
+          "hard_real_time_guarantee": false,
+          "policy": "checked at initial and attempt boundaries; IPOPT uses a soft max_wall_time and SLSQP a Python iteration callback; the library is not claimed to interrupt immediately",
+          "soft_budget_s": 30.0,
+          "trigger_solver_status": "",
+          "trigger_stage": "",
+          "trigger_wall_time_s": null,
+          "triggered": false
+        },
+        "detail": "best independently audited candidate; geometry only",
+        "path_present": true,
+        "reason": "",
+        "solver_used": "scipy_slsqp",
+        "status": "GEOMETRY_FEASIBLE"
+      }
+    },
+    "auto_slsqp_timeout": {
+      "audit_calls": 0,
+      "checks": [
+        {
+          "name": "real_slsqp_timeout",
+          "pass": true
+        },
+        {
+          "name": "status",
+          "pass": true
+        },
+        {
+          "name": "deadline_exhausted",
+          "pass": true
+        },
+        {
+          "name": "no_audit",
+          "pass": true
+        },
+        {
+          "name": "no_path",
+          "pass": true
+        },
+        {
+          "name": "attempt_sequence",
+          "pass": true
+        },
+        {
+          "name": "timeout_status",
+          "pass": true
+        },
+        {
+          "name": "trigger_stage",
+          "pass": true
+        },
+        {
+          "name": "solver_used",
+          "pass": true
+        }
+      ],
+      "checks_pass": true,
+      "real_slsqp_iterations": 1,
+      "result": {
+        "attempts": [
+          {
+            "attempt_index": 0,
+            "audit_passed": null,
+            "audit_present": false,
+            "deadline_trigger_stage": "",
+            "detail": "forced IPOPT failure before SLSQP timeout",
+            "iterations": 2,
+            "rejection_reason": "Solve_Failed",
+            "soft_deadline_triggered": false,
+            "solver": "ipopt",
+            "solver_status": "Solve_Failed",
+            "status": "SOLVER_FAILED"
+          },
+          {
+            "attempt_index": 0,
+            "audit_passed": null,
+            "audit_present": false,
+            "deadline_trigger_stage": "slsqp_iteration_callback",
+            "detail": "SLSQP iteration callback reached the soft wall budget; the returned iterate is not audited",
+            "iterations": 1,
+            "rejection_reason": "SOFT_BUDGET_EXHAUSTED",
+            "soft_deadline_triggered": true,
+            "solver": "scipy_slsqp",
+            "solver_status": "SLSQP_SOFT_DEADLINE",
+            "status": "SOLVER_TIMEOUT"
+          }
+        ],
+        "audit_passed": null,
+        "audit_present": false,
+        "deadline_exhausted": true,
+        "deadline_summary": {
+          "audited_candidate_preserved": false,
+          "final_wall_time_s": 0.0006553970742970705,
+          "hard_real_time_guarantee": false,
+          "policy": "checked at initial and attempt boundaries; IPOPT uses a soft max_wall_time and SLSQP a Python iteration callback; the library is not claimed to interrupt immediately",
+          "soft_budget_s": 30.0,
+          "timeout_iterations": 1,
+          "timeout_solver_status": "SLSQP_SOFT_DEADLINE",
+          "trigger_solver_status": "SLSQP_SOFT_DEADLINE",
+          "trigger_stage": "slsqp_iteration_callback",
+          "trigger_wall_time_s": 0.0006482730386778712,
+          "triggered": true
+        },
+        "detail": "soft wall budget 30.0s exhausted before an audited candidate",
+        "path_present": false,
+        "reason": "SOFT_BUDGET_EXHAUSTED",
+        "solver_used": "scipy_slsqp",
+        "status": "BUDGET_EXHAUSTED"
+      }
+    },
+    "auto_timeout_after_audited_candidate": {
+      "audit_calls": 1,
+      "checks": [
+        {
+          "name": "real_ipopt_success",
+          "pass": true
+        },
+        {
+          "name": "status",
+          "pass": true
+        },
+        {
+          "name": "audit_passed",
+          "pass": true
+        },
+        {
+          "name": "deadline_exhausted",
+          "pass": true
+        },
+        {
+          "name": "no_fallback",
+          "pass": true
+        },
+        {
+          "name": "audit_calls",
+          "pass": true
+        },
+        {
+          "name": "candidate_preserved",
+          "pass": true
+        },
+        {
+          "name": "attempt_sequence",
+          "pass": true
+        },
+        {
+          "name": "timeout_status",
+          "pass": true
+        }
+      ],
+      "checks_pass": true,
+      "fallback_calls": 0,
+      "real_ipopt_iterations": 7,
+      "result": {
+        "attempts": [
+          {
+            "attempt_index": 0,
+            "audit_passed": true,
+            "audit_present": true,
+            "deadline_trigger_stage": "",
+            "detail": "Solve_Succeeded",
+            "iterations": 7,
+            "rejection_reason": "",
+            "soft_deadline_triggered": false,
+            "solver": "ipopt",
+            "solver_status": "Solve_Succeeded",
+            "status": "SOLVER_SUCCESS_AUDITED"
+          },
+          {
+            "attempt_index": 1,
+            "audit_passed": null,
+            "audit_present": false,
+            "deadline_trigger_stage": "ipopt_max_wall_time",
+            "detail": "forced ipopt_max_wall_time timeout",
+            "iterations": 3,
+            "rejection_reason": "SOFT_BUDGET_EXHAUSTED",
+            "soft_deadline_triggered": true,
+            "solver": "ipopt",
+            "solver_status": "Maximum_WallTime_Exceeded",
+            "status": "SOLVER_TIMEOUT"
+          }
+        ],
+        "audit_passed": true,
+        "audit_present": true,
+        "deadline_exhausted": true,
+        "deadline_summary": {
+          "audited_candidate_preserved": true,
+          "final_wall_time_s": 0.019688009982928634,
+          "hard_real_time_guarantee": false,
+          "policy": "checked at initial and attempt boundaries; IPOPT uses a soft max_wall_time and SLSQP a Python iteration callback; the library is not claimed to interrupt immediately",
+          "soft_budget_s": 30.0,
+          "timeout_iterations": 3,
+          "timeout_solver_status": "Maximum_WallTime_Exceeded",
+          "trigger_solver_status": "Maximum_WallTime_Exceeded",
+          "trigger_stage": "ipopt_max_wall_time",
+          "trigger_wall_time_s": 0.019679698976688087,
+          "triggered": true
+        },
+        "detail": "best independently audited candidate; geometry only; soft budget exhausted after it was audited",
+        "path_present": true,
+        "reason": "",
+        "solver_used": "ipopt",
+        "status": "GEOMETRY_FEASIBLE"
+      }
+    }
+  },
+  "codex_acceptance": "NOT_RUN_NOT_CLAIMED",
+  "generated_at_utc": "2026-11-15T17:29:30.785086+00:00",
+  "notes": [
+    "The timeout cases mock solver boundary results; the test suite also exercises genuine IPOPT and SLSQP timeout wrappers.",
+    "The ordinary-failure fallback case uses a genuine SLSQP solve and the production independent audit.",
+    "No timed-out iterate appears in an audit."
+  ],
+  "run_id": "20261115T172337Z",
+  "schema": "virtual_rigid_a.g2.auto_deadline_probe.v1",
+  "scope": "geometry-only auto-solver deadline control flow",
+  "source_hashes": {
+    "contracts.py": "27b101f4a8143f549cab67794999a5fb7a9d9a66e253e3db0518bd0745a1ec69",
+    "optimizer.py": "188c814ced25828d95e3c170220e5853818f72a6de86b7053eee831b69a9381d",
+    "tests/test_virtual_a_optimizer.py": "eee7a0fa0240e5be400b54e4afb397fc680674789c2d9afb7340a3a1ef5be130"
+  },
+  "stage": "G2"
+}

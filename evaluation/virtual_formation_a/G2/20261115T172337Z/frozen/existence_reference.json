@@ -1,0 +1,134 @@
+{
+  "not_read_by_production": true,
+  "quadratic_profiles": {
+    "E1": {
+      "S": 6.0,
+      "alpha": 0.1,
+      "curvature_limit": 1.2345679012345678,
+      "endpoint_abs_error_vs_task_fixture_m": 3.3990322386813827e-13,
+      "exact_endpoint": {
+        "psi": 0.2,
+        "x": 5.9828878840329685,
+        "y": 0.2992009993076616
+      },
+      "formula": "k=alpha*(s/S)^2",
+      "integration_method": "scipy.integrate.quad epsabs=epsrel=1e-13",
+      "sampled_C_within_limit": true,
+      "sampled_max_abs_C_20001": 0.1323432302490514
+    },
+    "E2": {
+      "S": 6.0,
+      "alpha": -0.1,
+      "curvature_limit": 1.2345679012345678,
+      "endpoint_abs_error_vs_task_fixture_m": 3.3990322386813827e-13,
+      "exact_endpoint": {
+        "psi": -0.2,
+        "x": 5.9828878840329685,
+        "y": -0.2992009993076616
+      },
+      "formula": "k=alpha*(s/S)^2",
+      "integration_method": "scipy.integrate.quad epsabs=epsrel=1e-13",
+      "sampled_C_within_limit": true,
+      "sampled_max_abs_C_20001": 0.1323432302490514
+    },
+    "E3": {
+      "S": 6.0,
+      "alpha": 0.2,
+      "curvature_limit": 1.2345679012345678,
+      "endpoint_abs_error_vs_task_fixture_m": 3.945642192475302e-13,
+      "exact_endpoint": {
+        "psi": 0.4,
+        "x": 5.931919086525016,
+        "y": 0.5936319114966058
+      },
+      "formula": "k=alpha*(s/S)^2",
+      "integration_method": "scipy.integrate.quad epsabs=epsrel=1e-13",
+      "sampled_C_within_limit": true,
+      "sampled_max_abs_C_20001": 0.2589738707593969
+    },
+    "E4": {
+      "S": 6.0,
+      "alpha": -0.2,
+      "curvature_limit": 1.2345679012345678,
+      "endpoint_abs_error_vs_task_fixture_m": 3.945642192475302e-13,
+      "exact_endpoint": {
+        "psi": -0.4,
+        "x": 5.931919086525016,
+        "y": -0.5936319114966058
+      },
+      "formula": "k=alpha*(s/S)^2",
+      "integration_method": "scipy.integrate.quad epsabs=epsrel=1e-13",
+      "sampled_C_within_limit": true,
+      "sampled_max_abs_C_20001": 0.2589738707593969
+    },
+    "E5": {
+      "S": 8.0,
+      "alpha": 0.3,
+      "curvature_limit": 1.2345679012345678,
+      "endpoint_abs_error_vs_task_fixture_m": 5.15829116269364e-13,
+      "exact_endpoint": {
+        "psi": 0.7999999999999999,
+        "x": 7.6446363017235015,
+        "y": 1.5330836408718667
+      },
+      "formula": "k=alpha*(s/S)^2",
+      "integration_method": "scipy.integrate.quad epsabs=epsrel=1e-13",
+      "sampled_C_within_limit": true,
+      "sampled_max_abs_C_20001": 0.42857142857142855
+    },
+    "E6": {
+      "S": 8.0,
+      "alpha": -0.3,
+      "curvature_limit": 1.2345679012345678,
+      "endpoint_abs_error_vs_task_fixture_m": 5.15829116269364e-13,
+      "exact_endpoint": {
+        "psi": -0.7999999999999999,
+        "x": 7.6446363017235015,
+        "y": -1.5330836408718667
+      },
+      "formula": "k=alpha*(s/S)^2",
+      "integration_method": "scipy.integrate.quad epsabs=epsrel=1e-13",
+      "sampled_C_within_limit": true,
+      "sampled_max_abs_C_20001": 0.42857142857142855
+    }
+  },
+  "schema": "virtual_rigid_a.g2.existence_reference.v1",
+  "straight_spline": {
+    "bc_type": "clamped zero slope at both endpoints",
+    "curvature_1_per_m": [
+      0.0,
+      0.1,
+      0.2,
+      0.0,
+      -0.2,
+      -0.1,
+      0.0
+    ],
+    "exact_endpoint": {
+      "psi": -7.28583859910259e-17,
+      "x": 5.905433044534477,
+      "y": 0.7946299458610391
+    },
+    "integration_method": "scipy.integrate.quad epsabs=epsrel=1e-13",
+    "note": "Spline is reproduced exactly by G1 Hermite pieces at these nodes.",
+    "slope_1_per_m2": [
+      0.0,
+      0.16153846153846158,
+      -0.04615384615384617,
+      -0.27692307692307694,
+      -0.04615384615384617,
+      0.16153846153846158,
+      0.0
+    ],
+    "spline": "scipy.interpolate.CubicSpline",
+    "stations_m": [
+      0.0,
+      1.0,
+      2.0,
+      3.0,
+      4.0,
+      5.0,
+      6.0
+    ]
+  }
+}

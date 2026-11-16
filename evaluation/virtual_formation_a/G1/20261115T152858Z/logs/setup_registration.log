@@ -1,0 +1,13 @@
+$ (cd catkin_ws/src/fwis_v3_optimizer && python3 -B setup.py --name)
+fwis_v3_optimizer
+exit_code=0
+
+$ (cd catkin_ws/src/fwis_v3_optimizer && python3 -B -c "from catkin_pkg...")
+fwis_v3_optimizer
+['fwis_v3_optimizer', 'fwis_v3_optimizer.formation_continuous_a']
+exit_code=0
+
+$ python3 -B -c "import fwis_v3_optimizer.formation_continuous_a ..."
+fwis_v3_optimizer.formation_continuous_a
+['C2CurvatureProfile', 'CurvatureJet', 'FormationSpatialState', 'GoalPolicy', 'InitialAssumption', 'ValidationResult', 'VehicleSpatialJet', 'VirtualAContractError', 'VirtualAPath', 'check_vehicle_curvatures', 'coerce_goal_policy', 'map_spatial_state', 'validate_formation_model', 'validate_initial_state']
+exit_code=0

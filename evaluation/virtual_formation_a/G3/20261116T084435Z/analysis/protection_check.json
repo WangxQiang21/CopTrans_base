@@ -1,0 +1,144 @@
+{
+  "acceptance": {
+    "G3": {
+      "audit_source_sha256": "819a44e85a578ab91271b2ad5da1d332dcf921e483dfc946296834308415097b",
+      "audit_test_source_sha256": "7708c3b51404d810d6c3c055ee5979cd5401def04a892021f97c1b0267eb582f",
+      "evidence_run": "evaluation/virtual_formation_a/G3/20261116T031558Z",
+      "head": "567bdecba9676313da3bc9a97b82f57b5b569a2b",
+      "known_nonblocking_issue": "_audit_check_actual_metrics skips nonfinite per-wheel values; no end-to-end false acceptance established; see review",
+      "legacy_timing_regression": "FAIL: pre-existing timing_continuous KeyError dynamic_peaks; not counted as passed",
+      "next_stage_authorized": false,
+      "path": "evaluation/virtual_formation_a/G3/codex_acceptance_rework_01/CODEX_ACCEPTANCE.json",
+      "sha256": "adea82755b9fbaec7c589ff411d9b6a06b7cb23d7a89866c0edb4e5d882bff9d",
+      "source_manifest_sha256": "bad6f55441bd34ca8d164cc954170336b56df398fcb0912dae10a4588279ceea",
+      "status": "ACCEPTED"
+    },
+    "G4": {
+      "audit_source_sha256": "7549420ea2319aa6d153592e7b6a9b205018352969891214a97111cb3875e604",
+      "audit_test_source_sha256": null,
+      "evidence_run": "evaluation/virtual_formation_a/G4/20261116T081458Z",
+      "head": "567bdecba9676313da3bc9a97b82f57b5b569a2b",
+      "known_nonblocking_issue": "G3 _audit_check_actual_metrics skips nonfinite per-wheel values; no end-to-end false acceptance established; see review",
+      "legacy_timing_regression": "FAIL: pre-existing timing_continuous KeyError dynamic_peaks; not counted as passed",
+      "next_stage_authorized": false,
+      "path": "evaluation/virtual_formation_a/G4/codex_acceptance_rework_01/CODEX_ACCEPTANCE.json",
+      "sha256": "413f5f4cc1965bb982be8771d0ea94c41e240a0ac5c934d20812fbeef638a17a",
+      "source_manifest_sha256": "caa929d09a4a346e910a13f8c1d5b4ad4a2bfe3b9dbf2e95b0609bd81994f8c6",
+      "status": "ACCEPTED"
+    }
+  },
+  "git": {
+    "branch": "feature/virtual-rigid-formation-a",
+    "branch_created": "NO",
+    "committed": "NO",
+    "head": "567bdecba9676313da3bc9a97b82f57b5b569a2b",
+    "head_is_baseline": true,
+    "pushed": "NO",
+    "staged_bytes": 0,
+    "status_short": [
+      " M catkin_ws/src/fwis_v3_optimizer/setup.py",
+      "?? catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/",
+      "?? docs/VIRTUAL_FORMATION_A_FR06_TECHNICAL_REVIEW_20261115.md",
+      "?? docs/virtual_formation_a/",
+      "?? evaluation/virtual_formation_a/",
+      "?? tests/fixtures/",
+      "?? tests/test_virtual_a_audit.py",
+      "?? tests/test_virtual_a_collision.py",
+      "?? tests/test_virtual_a_geometry.py",
+      "?? tests/test_virtual_a_integration_bounds.py",
+      "?? tests/test_virtual_a_optimizer.py",
+      "?? tests/test_virtual_a_pipeline.py",
+      "?? tests/test_virtual_a_profile.py",
+      "?? tests/test_virtual_a_timing.py",
+      "?? tests/test_virtual_a_trajectory.py",
+      "?? tests/virtual_a_g4_support.py",
+      "?? tools/virtual_a_baseline.py",
+      "?? tools/virtual_a_benchmark.py",
+      "?? tools/virtual_a_scenes.py"
+    ]
+  },
+  "historical": {
+    "note": "Old runs are read-only historical evidence.  Each is checked against its own manifest; unmanifested older runs are not individually hash-verified.",
+    "runs": [
+      {
+        "checked_bytes": 22013548,
+        "checked_files": 156,
+        "excluded_self_referential": [
+          "logs/source_manifest_generation.log",
+          "logs/source_manifest_verification.log",
+          "source_manifest.json"
+        ],
+        "manifest_sha256": "050fa2dfab1687795d8bce7621f96d9dbe46b8900131b9282a0fbd393c209adc",
+        "run": "evaluation/virtual_formation_a/G3/20261116T023528Z",
+        "run_file_count": 156,
+        "status": "UNCHANGED"
+      },
+      {
+        "checked_bytes": 22728969,
+        "checked_files": 158,
+        "excluded_self_referential": [
+          "logs/source_manifest_generation.log",
+          "logs/source_manifest_verification.log",
+          "source_manifest.json"
+        ],
+        "manifest_sha256": "bad6f55441bd34ca8d164cc954170336b56df398fcb0912dae10a4588279ceea",
+        "run": "evaluation/virtual_formation_a/G3/20261116T031558Z",
+        "run_file_count": 158,
+        "status": "UNCHANGED"
+      },
+      {
+        "checked_bytes": 29709240,
+        "checked_files": 78,
+        "excluded_self_referential": [
+          "logs/source_manifest_generation.log",
+          "logs/source_manifest_verification.log",
+          "source_manifest.json"
+        ],
+        "manifest_sha256": "353b1e1f8733e53a14969575ac086466edcf089ce65283d03c3f31ce886e79ef",
+        "run": "evaluation/virtual_formation_a/G4/20261116T055008Z",
+        "run_file_count": 78,
+        "status": "UNCHANGED"
+      },
+      {
+        "checked_bytes": 32049751,
+        "checked_files": 81,
+        "excluded_self_referential": [
+          "logs/source_manifest_generation.log",
+          "logs/source_manifest_verification.log",
+          "source_manifest.json"
+        ],
+        "manifest_sha256": "caa929d09a4a346e910a13f8c1d5b4ad4a2bfe3b9dbf2e95b0609bd81994f8c6",
+        "run": "evaluation/virtual_formation_a/G4/20261116T081458Z",
+        "run_file_count": 81,
+        "status": "UNCHANGED"
+      }
+    ],
+    "total_checked_bytes": 106501508,
+    "total_checked_files": 473
+  },
+  "note": "G3/G4 acceptance records bind the pre-fix source hashes and are left untouched.  They are not claimed to accept this patch; Codex must re-verify applicability on the new source.",
+  "run_id": "20261116T084435Z",
+  "schema": "virtual_rigid_a.g3.protection_check.v1",
+  "source_tree": {
+    "accepted_sha256": {
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/audit.py": "7549420ea2319aa6d153592e7b6a9b205018352969891214a97111cb3875e604",
+      "tests/test_virtual_a_audit.py": "7708c3b51404d810d6c3c055ee5979cd5401def04a892021f97c1b0267eb582f"
+    },
+    "accepted_source_file_count": 73,
+    "authorised_changed_files": [
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/audit.py",
+      "tests/test_virtual_a_audit.py"
+    ],
+    "changed_source_files": [
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/audit.py",
+      "tests/test_virtual_a_audit.py"
+    ],
+    "current_sha256": {
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/audit.py": "54dda61ffc273e61be31eeeba3232dd896f00605c864a1b05056fc2de6620e5d",
+      "tests/test_virtual_a_audit.py": "7b7baa9a780de5c166f3abb37f134efdf4a5e4de81a57adf75668a00a04b33a7"
+    },
+    "missing_source_files": [],
+    "unchanged_source_file_count": 71
+  },
+  "status": "PASS"
+}

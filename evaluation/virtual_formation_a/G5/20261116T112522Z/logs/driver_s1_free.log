@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "tests/ros_virtual_a_smoke.py", line 1781, in <module>
+    sys.exit(main())
+  File "tests/ros_virtual_a_smoke.py", line 1753, in main
+    result = scenario_main(
+  File "tests/ros_virtual_a_smoke.py", line 1597, in scenario_main
+    continuation = expect_rejection(
+  File "tests/ros_virtual_a_smoke.py", line 1385, in expect_rejection
+    note(checks, prefix + "rejection_no_playback", not playback,
+  File "tests/ros_virtual_a_smoke.py", line 159, in note
+    raise SmokeError("{}: {}".format(name, detail))
+__main__.SmokeError: free_continuationrejection_no_playback: ['STATIC', 'STATIC', 'STATIC', 'STATIC']

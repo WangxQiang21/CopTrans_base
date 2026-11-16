@@ -1,0 +1,22 @@
+G1 rework source manifest verification
+run: evaluation/virtual_formation_a/G1/20261115T152858Z
+manifest: evaluation/virtual_formation_a/G1/20261115T152858Z/source_manifest.json
+manifest_sha256: fa6ca4387bf57d35f76097f5e50c23715bf72256f186707b59f4e1ec4262718a
+verifier: /home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G1/20261115T152858Z/analysis/verify_source_manifest.py
+cwd: /home/wq/whut_thesis/expv3_multi_virtual_a
+verified_at_utc: 2026-11-15T15:42:35.113563+00:00
+excluded_self_referential: ["logs/source_manifest_generation.log", "logs/source_manifest_verification.log", "source_manifest.json"]
+[PASS] schema_and_scope: schema, run id, baseline, exclusions and rework document
+[PASS] run_file_coverage_and_hashes: 47 files, 3754169 bytes; three exclusions present
+[PASS] source_file_hashes: 15 source files rehashed from disk
+[PASS] results_and_budgets: 20 geometry + 22 profile tests; 26/26 benchmark checks; analytic 7.737e-08 m and C2 9.780e-09 m within 1e-7 m; sampled C2/partial errors within budgets
+[PASS] protected_snapshots_current_and_unchanged: 3123 files + 4 symlinks rehashed before and after; tree 910efe32972dcbcb3a0c2585c002916ede878f4295b0f26b4dc917faeee4f519 unchanged; snapshots differ only by generated_at
+[PASS] g0_comparison_and_g1_whitelist: seven authorized additions; setup.py sole tracked change; no removals; G0 tree verified
+[PASS] setup_registration: both packages registered; setup.py diff is 4 insertions / 1 deletion
+[PASS] git_state: HEAD is baseline 567bdecba967 on feature/virtual-rigid-formation-a; nothing staged; status matches manifest
+[PASS] old_evidence_preservation: old submitted tree d14cc53ee8026b250069547f3d441e1eac2f15b50c825f8f2112bfad65bf4739 (38 files) and preliminary tree 777edd42225a2feef23edfabab558aff980dc08e92dbe88bbbe85772eb685dc8 (39 files) unchanged; old manifests unchanged
+[PASS] run_id_and_evidence_presence: run id and all primary evidence files are present and hashed
+checked_checks: 10
+failed_checks: 0
+status: PASS
+exit_code: 0

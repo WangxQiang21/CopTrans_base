@@ -1,0 +1,27 @@
+CASE start=(12.570000,10.320000,-0.029734) goal=(16.500000,10.320000,-0.029734)
+STATUS SUCCESS   wall=26.500
+attempts:
+  idx=0 label=route_guide=0;source=astar_primary solver=ipopt status=Maximum_Iterations_Exceeded iters=120 obj=2160.011 residual=6.656830912055156e-07 audit=None rej=Maximum_Iterations_Exceeded detail=Maximum_Iterations_Exceeded
+  idx=1 label=route_guide=1;source=astar_alternative_1 solver=ipopt status=Maximum_Iterations_Exceeded iters=120 obj=11121.529 residual=1.8124612921610606e-11 audit=None rej=Maximum_Iterations_Exceeded detail=Maximum_Iterations_Exceeded
+  idx=2 label=route_guide=2;source=astar_alternative_2 solver=ipopt status=Solve_Succeeded iters=34 obj=10696.138 residual=9.994185257156118e-09 audit=True rej= detail=Solve_Succeeded
+  idx=3 label=length_multiplier=1.2;shape=left solver=ipopt status=Maximum_Iterations_Exceeded iters=120 obj=2191.902 residual=6.078003208065397e-06 audit=None rej=Maximum_Iterations_Exceeded detail=Maximum_Iterations_Exceeded
+  idx=4 label=length_multiplier=1.2;shape=right solver=ipopt status=Maximum_Iterations_Exceeded iters=120 obj=2227.635 residual=0.00011602985094771867 audit=None rej=Maximum_Iterations_Exceeded detail=Maximum_Iterations_Exceeded
+  idx=5 label=length_multiplier=1.8;shape=left solver=ipopt status=Maximum_Iterations_Exceeded iters=120 obj=2250.780 residual=0.0003496074884559164 audit=None rej=Maximum_Iterations_Exceeded detail=Maximum_Iterations_Exceeded
+PATH length=3.952016 m knots=9
+knots s: [0.0, 0.494, 0.988, 1.482, 1.976, 2.47, 2.964, 3.458, 3.952]
+knots kappa: [0.0, 0.3835, 0.006, -0.3362, 0.0131, -0.0034, -0.3567, 0.056, 0.5475]
+knots eta: [0.0, 0.3112, -1.2081, 0.1511, 0.6469, -0.7181, -0.02, 1.1588, 0.8754]
+max_abs_kappa=0.5475 (radius 1.83 m) max_abs_eta=1.2081
+dense: max|k|=0.5475 rms|k|=0.2425 sign_changes=5 total_variation_kappa=2.8983 max_steer_deg=15.13
+dense: TV per metre=0.73336  mean|dk/ds|=0.00037
+heading change total=-0.0000 rad, min/max psi=-0.1859/0.1858
+ROUTE 0 astar_primary points=82 length=3.935 nodes kappa: [0.0, 0.0273, 0.0, -0.0, 0.0, -0.0, 0.0, 0.0275, 0.0]
+  route max|k|=0.0275 sign_changes_nodes=6 TV_nodes=0.1097
+  path-to-route dist mean=0.0928 max=0.1562 m
+ROUTE 1 astar_alternative_1 points=87 length=4.202 nodes kappa: [0.0, 0.7576, 0.0, -0.0, 0.0, -0.0, 0.0, 0.8401, 0.0]
+  route max|k|=0.8401 sign_changes_nodes=6 TV_nodes=3.1953
+  path-to-route dist mean=0.2326 max=0.3044 m
+ROUTE 2 astar_alternative_2 points=87 length=4.202 nodes kappa: [0.0, -0.702, -0.0, 0.0, 0.0, -0.0, 0.0, -0.7798, 0.0]
+  route max|k|=0.7798 sign_changes_nodes=6 TV_nodes=2.9637
+  path-to-route dist mean=0.0515 max=0.1485 m
+OBJECTIVE 2160.0107331492045

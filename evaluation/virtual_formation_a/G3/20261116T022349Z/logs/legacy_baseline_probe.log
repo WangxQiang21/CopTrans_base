@@ -1,0 +1,14 @@
+test_short_translation_has_finite_acceleration_and_zero_end_speed (tests.test_continuous_retiming.ContinuousRetiming) ... ERROR
+
+======================================================================
+ERROR: test_short_translation_has_finite_acceleration_and_zero_end_speed (tests.test_continuous_retiming.ContinuousRetiming)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/tmp/g3_baseline_probe_20261116/tests/test_continuous_retiming.py", line 271, in test_short_translation_has_finite_acceleration_and_zero_end_speed
+    self.assertLessEqual(timed.phases[0]["dynamic_peaks"]["acceleration"],
+KeyError: 'dynamic_peaks'
+
+----------------------------------------------------------------------
+Ran 1 test in 0.024s
+
+FAILED (errors=1)

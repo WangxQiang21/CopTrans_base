@@ -1,0 +1,24 @@
+G1 source manifest verification
+run: evaluation/virtual_formation_a/G1/20261115T150639Z
+manifest: evaluation/virtual_formation_a/G1/20261115T150639Z/source_manifest.json
+manifest_sha256: c40d3ac534aac957cc2206979ab85ef26f073bc6ca89fe5baf882d7cf124bc14
+verifier: inline python3 -B; no persistent verifier file in the run
+verified_at_utc: 2026-11-15T15:10:31.522802+00:00
+excluded_self_referential: ["logs/source_manifest_verification.log", "source_manifest.json"]
+run_files: 36 (3601504 bytes)
+source_files: 14
+protected_files_rehashed: 3123 files + 4 symlinks
+checks:
+  [PASS] schema_and_scope: schema, baseline and exclusions
+  [PASS] run_file_coverage_and_hashes: 36 files, 3601504 bytes, exclusions ['logs/source_manifest_verification.log', 'source_manifest.json']
+  [PASS] source_file_hashes: 14 source files rehashed
+  [PASS] protected_snapshots_current_and_unchanged: 3123 files + 4 symlinks rehashed from disk; tree 35ebb7fecc1a0dde7955b6218b2c21cf65d9bdb6705fc5921718bcad652c6634 unchanged before/after
+  [PASS] g0_comparison_and_g1_whitelist: seven authorized additions only; setup.py sole tracked change; G0 tree ff58f2b... (3120 files) verified
+  [PASS] results_and_nonclaims: 20+16 tests OK; 23/23 benchmark checks; geometry regression PASS; non-claims intact
+  [PASS] setup_registration: both packages registered; setup.py diff is 4 insertions / 1 deletion
+  [PASS] git_state: HEAD is baseline 567bdecba967 on feature/virtual-rigid-formation-a; nothing staged; status matches manifest
+  [PASS] run_id: VA_RUN=evaluation/virtual_formation_a/G1/20261115T150639Z
+status: PASS
+checked_checks: 9
+failed_checks: 0
+exit_code: 0

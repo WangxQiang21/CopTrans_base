@@ -1,0 +1,67 @@
+map {'schema': 'virtual_rigid_a.g4.map.v1', 'format': 'ROS occupancy grid PGM/YAML', 'yaml_path': '/tmp/expv3-map-scale.PK7CD7/map05-p12-parking-row-env2/map.yaml', 'image_path': '/tmp/expv3-map-scale.PK7CD7/map05-p12-parking-row-env2/map.pgm', 'yaml_sha256': 'e6e33f343be878a846a48c56aa3097a1b29719ee8a39b1e14c493f97e6673f0e', 'image_sha256': '0856ad0af795b09e17e01e41bbf7c0f819170f53c93c6df718ed8342749ba718', 'image_size': [326, 489], 'maxval': 255, 'resolution_m': 0.049426, 'origin': [-4.5845285, -3.0563190000000002, 0.0], 'negate': False, 'occupied_thresh': 0.65, 'free_thresh': 0.196, 'unknown_cells_are': 'occupied', 'grid': {'height': 326, 'width': 489, 'resolution_m': 0.049426, 'origin_x': -4.5845285, 'origin_y': -3.0563190000000002, 'occupancy_sha256': 'e5f91759835d6b0a2fbad3bc46da8fe21b4153c4680a90b1082c51529bcf0a7a', 'cell_count': 159414, 'occupied_cells': 37838}, 'grid_sha256': '1fa8b79d556259ce40fb874120eea319dab6c8e413ac2a0b478e3f2c2224b6e7'} budget 1e-07 max_iter 120
+STATUS SUCCESS   wall 16.626615939079784
+metrics {
+ "collision_checks": 18842,
+ "collision_margin_m": {
+  "baseline_margin_m": 0.05,
+  "maximum_envelope_m": 6.616401091626704e-08,
+  "margin_used_m": 0.05000013232802186,
+  "margin_minimum_required_m": 0.05000013232802184,
+  "margin_growth_lower_m": 1.3232802185958456e-07,
+  "per_side_margin_m": 6.616401093673117e-08,
+  "per_side_required_m": 6.616401091626704e-08,
+  "closure_gap_m": 2.0464130717206684e-17,
+  "pair_envelope_required_m": 1.3232802183253411e-07,
+  "pair_closure_gap_m": 2.705044715681931e-17,
+  "checker_half_length_m": 0.39400006616401095,
+  "checker_half_width_m": 0.27500006616401096,
+  "baseline_half_length_m": 0.394,
+  "baseline_half_width_m": 0.275,
+  "checker_half_length_growth_lower_m": 6.616401093673117e-08,
+  "checker_half_width_growth_lower_m": 6.616401093673117e-08,
+  "radius_upper_m": 0.4804800604889401,
+  "checker_radius_upper_m": 0.4804800604889401,
+  "sweep_motion_padding_m": 0.01,
+  "maximum_record": {
+   "vehicle_id": 1,
+   "offset_m": 1.0000000000000004,
+   "offset_hypot_float_m": 1.0,
+   "inflated_body_radius_upper_m": 0.4804800604889401,
+   "eps_position_m": 6.58790602335143e-08,
+   "eps_formation_heading_rad": 1.6001747205267555e-10,
+   "eps_relative_heading_rad": 1e-10,
+   "envelope_m": 6.616401091626704e-08,
+   "per_side_required_m": 6.616401091626704e-08
+  },
+  "vehicles": [
+   {
+    "vehicle_id": 1,
+    "offset_m": 1.0000000000000004,
+    "offset_hypot_float_m": 1.0,
+    "inflated_body_radius_upper_m": 0.4804800604889401,
+    "eps_position_m": 6.58790602335143e-08,
+    "eps_formation_heading_rad": 1.6001747205267555e-10,
+    "eps_relative_heading_rad": 1e-10,
+    "envelope_m": 6.616401091626704e-08,
+    "per_side_required_m": 6.616401091626704e-08
+   },
+   {
+    "vehicle_id": 2,
+    "offset_m": 1.0000000000000004,
+    "offset_hypot_float_m": 1.0,
+    "inflated_body_radius_upper_m": 0.4804800604889401,
+    "eps_position_m": 6.58790602335143e-08,
+    "eps_formation_heading_rad": 1.6001747205267555e-10,
+    "eps_relative_heading_ra
+attempt 0 map_route_guide ipopt Solve_Succeeded iters 18 obj 15708.330420537533 status SOLVER_SUCCESS_AUDITED rej  audit True
+attempt 1 map_route_guide ipopt Solve_Succeeded iters 22 obj 32319.00021452339 status SOLVER_SUCCESS_AUDITED rej  audit True
+attempt 2 map_route_guide ipopt Solve_Succeeded iters 18 obj 21894.270335434296 status SOLVER_SUCCESS_AUDITED rej  audit True
+attempt 3 automatic_endpoint_shape ipopt Solve_Succeeded iters 26 obj 15303.167220818399 status SOLVER_SUCCESS_AUDITED rej  audit True
+attempt 4 automatic_endpoint_shape ipopt Solve_Succeeded iters 25 obj 15897.390678361042 status SOLVER_SUCCESS_AUDITED rej  audit True
+attempt 5 automatic_endpoint_shape ipopt Solve_Succeeded iters 23 obj 15373.621914702406 status SOLVER_SUCCESS_AUDITED rej  audit True
+geometry_audit passed True reason None detail independent C2/interval/integration audit; geometry only, no timing/map/ROS/collision claim
+  first_failure None
+dynamic_audit passed True reason None detail independent raw-profile common-time dynamic audit; whole-domain interval certificate plus node/endpoint/inverse/differential checks; DYNAMIC_FEASIBLE; collision_checked=false; executable=false; no map/ROS
+  first_failure None
+collision_audit passed True reason None detail static start/goal plus unchanged analytic three-vehicle OBB sweep over the whole closed path; declared per-lambda bounds independently verified; conservative margin includes the numerical envelope; map and G4 context bound
+  first_failure None

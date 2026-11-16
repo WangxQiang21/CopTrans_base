@@ -1,0 +1,62 @@
+{
+  "FormationModel": {
+    "module": "fwis_v3_optimizer.formation",
+    "signature": "(offsets: Iterable[fwis_v3_optimizer.formation.VehicleOffset])",
+    "source": "/home/wq/whut_thesis/expv3_multi_virtual_a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation.py",
+    "source_line": 128
+  },
+  "FormationPose": {
+    "module": "fwis_v3_optimizer.formation",
+    "signature": "(x: float, y: float, psi: float) -> None",
+    "source": "/home/wq/whut_thesis/expv3_multi_virtual_a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation.py",
+    "source_line": 74
+  },
+  "FormationTimingLimits": {
+    "module": "fwis_v3_optimizer.formation_retiming",
+    "signature": "(v_max: float = 0.8, a_max: float = 0.6, jerk_max: float = 2.0, yaw_rate_max: float = 0.8, yaw_accel_max: float = 0.8, yaw_jerk_max: float = 3.0, lateral_accel_max: float = 0.6, wheel_speed_max: float = 1.0, steer_angle_max: float = 1.5707963267948966, steer_rate_max: float = 0.8, steer_accel_max: float = 1.5, mode_setup_time: float = 0.15, mode_switch_duration: float = 0.3, min_mode_dwell_s: float = 0.3, wheelbase: float = 0.494, track: float = 0.364, r_min_ackermann: float = 0.81, max_block_duration_s: float = 120.0) -> None",
+    "source": "/home/wq/whut_thesis/expv3_multi_virtual_a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_retiming.py",
+    "source_line": 119
+  },
+  "Grid": {
+    "module": "fwis_v3_optimizer.core",
+    "signature": "(occupied, resolution, origin_x, origin_y, length=0.738, width=0.5, margin=0.04)",
+    "source": "/home/wq/whut_thesis/expv3_multi_virtual_a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/core.py",
+    "source_line": 428
+  },
+  "UniformAuditRequest": {
+    "module": "fwis_v3_optimizer.uniform_quality",
+    "signature": "(plan_id: int, formation_id: str, model: fwis_v3_optimizer.formation.FormationModel, vehicle_shapes: Mapping[int, fwis_v3_optimizer.formation_collision.VehicleShape], start_qf: fwis_v3_optimizer.formation.FormationPose, start_headings: Mapping[int, float], goal_qf: fwis_v3_optimizer.formation.FormationPose, goal_headings: Mapping[int, float], timing_limits: fwis_v3_optimizer.formation_retiming.FormationTimingLimits = <factory>, allow_reverse: bool = False) -> None",
+    "source": "/home/wq/whut_thesis/expv3_multi_virtual_a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_quality.py",
+    "source_line": 219
+  },
+  "UniformTimedPlan.from_model_json": {
+    "module": "fwis_v3_optimizer.uniform_trajectory",
+    "signature": "(payload)",
+    "source": "/home/wq/whut_thesis/expv3_multi_virtual_a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_trajectory.py",
+    "source_line": 1158
+  },
+  "UniformTimedPlan.sample": {
+    "module": "fwis_v3_optimizer.uniform_trajectory",
+    "signature": "(self, times=None)",
+    "source": "/home/wq/whut_thesis/expv3_multi_virtual_a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_trajectory.py",
+    "source_line": 1014
+  },
+  "VehicleOffset": {
+    "module": "fwis_v3_optimizer.formation",
+    "signature": "(vehicle_id: int, x: float, y: float) -> None",
+    "source": "/home/wq/whut_thesis/expv3_multi_virtual_a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation.py",
+    "source_line": 58
+  },
+  "VehicleShape": {
+    "module": "fwis_v3_optimizer.formation_collision",
+    "signature": "(length_m: float, width_m: float) -> None",
+    "source": "/home/wq/whut_thesis/expv3_multi_virtual_a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_collision.py",
+    "source_line": 57
+  },
+  "audit_uniform_timed_plan": {
+    "module": "fwis_v3_optimizer.uniform_quality",
+    "signature": "(request, plan, projection, grid, config=None)",
+    "source": "/home/wq/whut_thesis/expv3_multi_virtual_a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_quality.py",
+    "source_line": 3378
+  }
+}

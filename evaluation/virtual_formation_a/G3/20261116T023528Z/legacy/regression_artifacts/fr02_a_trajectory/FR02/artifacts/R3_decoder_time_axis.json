@@ -1,0 +1,581 @@
+{
+  "collapsed_cases": [
+    {
+      "collapsed_to_t0": true,
+      "decode_reason": "PHASE_TIME_UNREPRESENTABLE",
+      "name": "codex_motion_collapsed_1e-20",
+      "phase_id": "motion_0000",
+      "stored_duration_s": 1e-20,
+      "stored_end_time_s": 2.3432099798544908,
+      "t0_s": 2.3432099798544908
+    }
+  ],
+  "duration_mismatch_cases": [
+    {
+      "decode_reason": "PLAN_DURATION_MISMATCH",
+      "delta_s": -8.881784197001252e-16,
+      "final_phase_end_s": 6.0431716402346565,
+      "name": "total_duration_short_one_ulp",
+      "stored_duration_s": 6.043171640234656
+    },
+    {
+      "decode_reason": "PLAN_DURATION_MISMATCH",
+      "delta_s": -5.000000413701855e-10,
+      "final_phase_end_s": 6.0431716402346565,
+      "name": "total_duration_short_5e-10",
+      "stored_duration_s": 6.043171639734656
+    },
+    {
+      "decode_reason": "PLAN_DURATION_MISMATCH",
+      "delta_s": 5.000000413701855e-10,
+      "final_phase_end_s": 6.0431716402346565,
+      "name": "total_duration_long_5e-10",
+      "stored_duration_s": 6.0431716407346565
+    }
+  ],
+  "gap_overlap_cases": [
+    {
+      "actual_delta_s": 5.000000413701855e-10,
+      "decode_reason": "PHASE_TIME_DISCONTINUITY",
+      "name": "codex_motion_gap_5e-10",
+      "old_tolerance_s": 1e-09,
+      "phase_id": "motion_0000",
+      "requested_t0_s": 2.343209980354491,
+      "within_old_tolerance": true
+    },
+    {
+      "actual_delta_s": 4.440892098500626e-16,
+      "decode_reason": "PHASE_TIME_DISCONTINUITY",
+      "name": "motion_gap_one_ulp",
+      "old_tolerance_s": 1e-09,
+      "phase_id": "motion_0000",
+      "requested_t0_s": 2.343209979854491,
+      "within_old_tolerance": true
+    },
+    {
+      "actual_delta_s": 9.999991945619513e-10,
+      "decode_reason": "PHASE_TIME_DISCONTINUITY",
+      "name": "motion_gap_just_below_tolerance",
+      "old_tolerance_s": 1e-09,
+      "phase_id": "motion_0000",
+      "requested_t0_s": 2.34320998085449,
+      "within_old_tolerance": true
+    },
+    {
+      "actual_delta_s": 1e-09,
+      "decode_reason": "PHASE_TIME_DISCONTINUITY",
+      "name": "first_phase_gap_equal_tolerance",
+      "old_tolerance_s": 1e-09,
+      "phase_id": "initial_setup_0000",
+      "requested_t0_s": 1e-09,
+      "within_old_tolerance": true
+    },
+    {
+      "actual_delta_s": -5.000000413701855e-10,
+      "decode_reason": "PHASE_TIME_DISCONTINUITY",
+      "name": "motion_overlap_5e-10",
+      "old_tolerance_s": 1e-09,
+      "phase_id": "motion_0000",
+      "requested_t0_s": 2.3432099793544907,
+      "within_old_tolerance": true
+    },
+    {
+      "actual_delta_s": -4.440892098500626e-16,
+      "decode_reason": "PHASE_TIME_DISCONTINUITY",
+      "name": "motion_overlap_one_ulp",
+      "old_tolerance_s": 1e-09,
+      "phase_id": "motion_0000",
+      "requested_t0_s": 2.3432099798544903,
+      "within_old_tolerance": true
+    },
+    {
+      "actual_delta_s": -9.999991945619513e-10,
+      "decode_reason": "PHASE_TIME_DISCONTINUITY",
+      "name": "motion_overlap_just_below_tolerance",
+      "old_tolerance_s": 1e-09,
+      "phase_id": "motion_0000",
+      "requested_t0_s": 2.3432099788544916,
+      "within_old_tolerance": true
+    },
+    {
+      "actual_delta_s": -1e-09,
+      "decode_reason": "PHASE_TIME_DISCONTINUITY",
+      "name": "first_phase_overlap_equal_tolerance",
+      "old_tolerance_s": 1e-09,
+      "phase_id": "initial_setup_0000",
+      "requested_t0_s": -1e-09,
+      "within_old_tolerance": true
+    }
+  ],
+  "legal_zero_motion_hold": {
+    "duration_s": 0.0,
+    "phase_count": 0,
+    "sample_times_s": [
+      0.0
+    ],
+    "state": {
+      "centers": [
+        {
+          "vehicle_id": 1,
+          "x": 1.921060994002885,
+          "y": -1.6105816576913494
+        },
+        {
+          "vehicle_id": 2,
+          "x": 0.6105816576913494,
+          "y": -1.078939005997115
+        },
+        {
+          "vehicle_id": 3,
+          "x": 1.3894183423086506,
+          "y": -2.921060994002885
+        }
+      ],
+      "edge_index": null,
+      "from_mode": "A",
+      "headings": [
+        {
+          "theta": 0.2,
+          "vehicle_id": 1
+        },
+        {
+          "theta": -0.3,
+          "vehicle_id": 2
+        },
+        {
+          "theta": 0.7,
+          "vehicle_id": 3
+        }
+      ],
+      "mode": "A",
+      "phase_id": "hold",
+      "phase_index": -1,
+      "phase_kind": "hold",
+      "progress": 0.0,
+      "progress_acceleration": 0.0,
+      "progress_jerk": 0.0,
+      "progress_rate": 0.0,
+      "progress_unit": "m",
+      "qf": [
+        1.0,
+        -2.0,
+        0.4
+      ],
+      "qf_acceleration": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "qf_jerk": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "qf_velocity": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "stationary": true,
+      "time_s": 0.0,
+      "to_mode": "A",
+      "vehicles": [
+        {
+          "acceleration": [
+            0.0,
+            0.0
+          ],
+          "center": [
+            1.921060994002885,
+            -1.6105816576913494
+          ],
+          "center_acceleration_mps2": 0.0,
+          "center_jerk_mps3": 0.0,
+          "center_speed_mps": 0.0,
+          "direction": 1,
+          "jerk": [
+            0.0,
+            0.0
+          ],
+          "lateral_acceleration_mps2": 0.0,
+          "lateral_speed_mps": 0.0,
+          "longitudinal_speed_mps": 0.0,
+          "mode_control": 0.0,
+          "theta": 0.2,
+          "vehicle_id": 1,
+          "velocity": [
+            0.0,
+            0.0
+          ],
+          "wheel_angles_rad": [
+            0.0,
+            0.0,
+            -0.0,
+            -0.0
+          ],
+          "wheel_angular_accelerations_radps2": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "wheel_angular_rates_radps": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "wheel_rolling_speeds_mps": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "wheel_speed_mps": 0.0,
+          "yaw_acceleration_radps2": 0.0,
+          "yaw_jerk_radps3": 0.0,
+          "yaw_rate_radps": 0.0
+        },
+        {
+          "acceleration": [
+            0.0,
+            0.0
+          ],
+          "center": [
+            0.6105816576913494,
+            -1.078939005997115
+          ],
+          "center_acceleration_mps2": 0.0,
+          "center_jerk_mps3": 0.0,
+          "center_speed_mps": 0.0,
+          "direction": 1,
+          "jerk": [
+            0.0,
+            0.0
+          ],
+          "lateral_acceleration_mps2": 0.0,
+          "lateral_speed_mps": 0.0,
+          "longitudinal_speed_mps": 0.0,
+          "mode_control": 0.0,
+          "theta": -0.3,
+          "vehicle_id": 2,
+          "velocity": [
+            0.0,
+            0.0
+          ],
+          "wheel_angles_rad": [
+            0.0,
+            0.0,
+            -0.0,
+            -0.0
+          ],
+          "wheel_angular_accelerations_radps2": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "wheel_angular_rates_radps": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "wheel_rolling_speeds_mps": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "wheel_speed_mps": 0.0,
+          "yaw_acceleration_radps2": 0.0,
+          "yaw_jerk_radps3": 0.0,
+          "yaw_rate_radps": 0.0
+        },
+        {
+          "acceleration": [
+            0.0,
+            0.0
+          ],
+          "center": [
+            1.3894183423086506,
+            -2.921060994002885
+          ],
+          "center_acceleration_mps2": 0.0,
+          "center_jerk_mps3": 0.0,
+          "center_speed_mps": 0.0,
+          "direction": 1,
+          "jerk": [
+            0.0,
+            0.0
+          ],
+          "lateral_acceleration_mps2": 0.0,
+          "lateral_speed_mps": 0.0,
+          "longitudinal_speed_mps": 0.0,
+          "mode_control": 0.0,
+          "theta": 0.7,
+          "vehicle_id": 3,
+          "velocity": [
+            0.0,
+            0.0
+          ],
+          "wheel_angles_rad": [
+            0.0,
+            0.0,
+            -0.0,
+            -0.0
+          ],
+          "wheel_angular_accelerations_radps2": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "wheel_angular_rates_radps": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "wheel_rolling_speeds_mps": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "wheel_speed_mps": 0.0,
+          "yaw_acceleration_radps2": 0.0,
+          "yaw_jerk_radps3": 0.0,
+          "yaw_rate_radps": 0.0
+        }
+      ]
+    }
+  },
+  "normal_roundtrips": [
+    {
+      "duration_s": 4.710937499999999,
+      "edge_count": 1,
+      "goal_qf": [
+        2.0,
+        0.0,
+        0.0
+      ],
+      "last_motion_end_s": 4.710937499999999,
+      "max_roundtrip_abs_error": 0.0,
+      "name": "straight",
+      "phase_boundaries_s": [
+        0.0
+      ],
+      "phase_end_times_s": [
+        4.710937499999999
+      ],
+      "terminal_expected_progress_rad": 2.0,
+      "terminal_progress_rad": 2.0,
+      "terminal_qf": [
+        2.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "duration_s": 6.0431716402346565,
+      "edge_count": 1,
+      "goal_qf": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "last_motion_end_s": 6.0431716402346565,
+      "max_roundtrip_abs_error": 0.0,
+      "name": "spin",
+      "phase_boundaries_s": [
+        0.0,
+        2.3432099798544908
+      ],
+      "phase_end_times_s": [
+        2.3432099798544908,
+        6.0431716402346565
+      ],
+      "terminal_expected_progress_rad": 1.5707963267948966,
+      "terminal_progress_rad": 1.5707963267948966,
+      "terminal_qf": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "duration_s": 23.149048117966267,
+      "edge_count": 4,
+      "goal_qf": [
+        3.3910353946678446,
+        0.41537924676699056,
+        0.95
+      ],
+      "last_motion_end_s": 23.149048117966267,
+      "max_roundtrip_abs_error": 0.0,
+      "name": "complex",
+      "phase_boundaries_s": [
+        0.0,
+        2.3432099798544908,
+        4.78104324392389,
+        7.8115586459514645,
+        12.051402395951463,
+        15.081917797979036,
+        16.593130867165037,
+        20.21178325804969
+      ],
+      "phase_end_times_s": [
+        2.3432099798544908,
+        4.78104324392389,
+        7.8115586459514645,
+        12.051402395951463,
+        15.081917797979036,
+        16.593130867165037,
+        20.21178325804969,
+        23.149048117966267
+      ],
+      "terminal_expected_progress_rad": 0.8321658488546619,
+      "terminal_progress_rad": 0.8321658488546619,
+      "terminal_qf": [
+        3.3910353946678446,
+        0.41537924676699056,
+        0.95
+      ]
+    }
+  ],
+  "numeric_support_domain_s": [
+    1e-100,
+    1e+100
+  ],
+  "old_time_continuity_tol_s": 1e-09,
+  "strict_boundary_rule": "adjacent t0 == previous end; first t0 == 0; final end == duration",
+  "support_boundary_acceptance": [
+    {
+      "duration_s": 1e-100,
+      "end_time_s": 1e-100,
+      "expected_progress_rad": 2.0,
+      "name": "minimum_supported_clock",
+      "states": [
+        {
+          "fraction": 0.0,
+          "progress_acceleration_radps2": 0.0,
+          "progress_jerk_radps3": 1.2e+302,
+          "progress_rad": 0.0,
+          "progress_rate_radps": 0.0,
+          "time_s": 0.0
+        },
+        {
+          "fraction": 0.25,
+          "progress_acceleration_radps2": 1.125e+201,
+          "progress_jerk_radps3": -1.5e+301,
+          "progress_rad": 0.20703125,
+          "progress_rate_radps": 2.109375e+100,
+          "time_s": 2.5e-101
+        },
+        {
+          "fraction": 0.5,
+          "progress_acceleration_radps2": 0.0,
+          "progress_jerk_radps3": -6e+301,
+          "progress_rad": 1.0,
+          "progress_rate_radps": 3.75e+100,
+          "time_s": 5e-101
+        },
+        {
+          "fraction": 0.75,
+          "progress_acceleration_radps2": -1.125e+201,
+          "progress_jerk_radps3": -1.5e+301,
+          "progress_rad": 1.79296875,
+          "progress_rate_radps": 2.109375e+100,
+          "time_s": 7.5e-101
+        },
+        {
+          "fraction": 1.0,
+          "progress_acceleration_radps2": 0.0,
+          "progress_jerk_radps3": 1.2e+302,
+          "progress_rad": 2.0,
+          "progress_rate_radps": 0.0,
+          "time_s": 1e-100
+        }
+      ],
+      "t0_s": 0.0,
+      "terminal_progress_rad": 2.0
+    },
+    {
+      "duration_s": 1e+100,
+      "end_time_s": 1e+100,
+      "expected_progress_rad": 2.0,
+      "name": "maximum_supported_clock",
+      "states": [
+        {
+          "fraction": 0.0,
+          "progress_acceleration_radps2": 0.0,
+          "progress_jerk_radps3": 1.2e-298,
+          "progress_rad": 0.0,
+          "progress_rate_radps": 0.0,
+          "time_s": 0.0
+        },
+        {
+          "fraction": 0.25,
+          "progress_acceleration_radps2": 1.125e-199,
+          "progress_jerk_radps3": -1.5e-299,
+          "progress_rad": 0.20703125,
+          "progress_rate_radps": 2.109375e-100,
+          "time_s": 2.5e+99
+        },
+        {
+          "fraction": 0.5,
+          "progress_acceleration_radps2": 0.0,
+          "progress_jerk_radps3": -6e-299,
+          "progress_rad": 1.0,
+          "progress_rate_radps": 3.75e-100,
+          "time_s": 5e+99
+        },
+        {
+          "fraction": 0.75,
+          "progress_acceleration_radps2": -1.125e-199,
+          "progress_jerk_radps3": -1.5e-299,
+          "progress_rad": 1.79296875,
+          "progress_rate_radps": 2.109375e-100,
+          "time_s": 7.500000000000001e+99
+        },
+        {
+          "fraction": 1.0,
+          "progress_acceleration_radps2": 0.0,
+          "progress_jerk_radps3": 1.2e-298,
+          "progress_rad": 2.0,
+          "progress_rate_radps": 0.0,
+          "time_s": 1e+100
+        }
+      ],
+      "t0_s": 0.0,
+      "terminal_progress_rad": 2.0
+    }
+  ],
+  "support_boundary_rejection": [
+    {
+      "decode_reason": "PHASE_DURATION_UNSUPPORTED",
+      "duration_s": 1e-101,
+      "name": "motion_below_minimum_clock",
+      "phase_id": "motion_0000"
+    },
+    {
+      "decode_reason": "PHASE_DURATION_UNSUPPORTED",
+      "duration_s": 1e+101,
+      "name": "motion_above_maximum_clock",
+      "phase_id": "motion_0000"
+    },
+    {
+      "decode_reason": "PHASE_DURATION_UNSUPPORTED",
+      "name": "setup_steering_below_minimum_clock",
+      "phase_id": "initial_setup_0000",
+      "steering_duration_s": 1e-101
+    },
+    {
+      "decode_reason": "PHASE_DURATION_UNSUPPORTED",
+      "name": "setup_steering_above_maximum_clock",
+      "phase_id": "initial_setup_0000",
+      "steering_duration_s": 1e+101
+    }
+  ]
+}

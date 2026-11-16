@@ -1,0 +1,148 @@
+{
+  "request": {
+    "start": [
+      12.57,
+      10.32,
+      -0.0297339
+    ],
+    "goal": [
+      9.694,
+      2.854,
+      3.132
+    ],
+    "policy": "free"
+  },
+  "status": "REJECTED",
+  "reason": "Maximum_Iterations_Exceeded",
+  "first_failure_layer": "GEOMETRY",
+  "pipeline_status": "NO_ACCEPTED_CANDIDATE",
+  "grid_sha256": "33b3f0a68d2bfdda3aa393732d064b9406b7f8d24be1b52508e7d0159a93e3d1",
+  "routes": [
+    {
+      "source": "astar_primary",
+      "points": 293,
+      "length_m": 15.562507658609519
+    },
+    {
+      "source": "astar_alternative_1",
+      "points": 305,
+      "length_m": 16.23751134446502
+    },
+    {
+      "source": "astar_alternative_2",
+      "points": 289,
+      "length_m": 15.32385781681235
+    }
+  ],
+  "attempts": [
+    {
+      "index": 0,
+      "label": "route_guide=0;source=astar_primary",
+      "source": "map_route_guide",
+      "solver": "ipopt",
+      "solver_status": "Solve_Succeeded",
+      "iterations": 20,
+      "objective": 15605.464999607979,
+      "status": "SOLVER_SUCCESS_AUDIT_REJECTED",
+      "rejection_reason": "BOUND_UNCONFIRMED",
+      "audit_passed": false,
+      "audit_detail": "audit Simpson refinement did not reach 5e-08",
+      "audit_first_failure": {
+        "constraint": "AUDIT_INTEGRATION_REMAINDER",
+        "limit": 5e-08,
+        "refinement_steps": 64,
+        "value": 9.92347727921772e-08
+      }
+    },
+    {
+      "index": 1,
+      "label": "route_guide=1;source=astar_alternative_1",
+      "source": "map_route_guide",
+      "solver": "ipopt",
+      "solver_status": "Solve_Succeeded",
+      "iterations": 22,
+      "objective": 32584.616113946522,
+      "status": "SOLVER_SUCCESS_AUDIT_REJECTED",
+      "rejection_reason": "BOUND_UNCONFIRMED",
+      "audit_passed": false,
+      "audit_detail": "audit Simpson refinement did not reach 5e-08",
+      "audit_first_failure": {
+        "constraint": "AUDIT_INTEGRATION_REMAINDER",
+        "limit": 5e-08,
+        "refinement_steps": 64,
+        "value": 1.013823838635864e-07
+      }
+    },
+    {
+      "index": 2,
+      "label": "route_guide=2;source=astar_alternative_2",
+      "source": "map_route_guide",
+      "solver": "ipopt",
+      "solver_status": "Solve_Succeeded",
+      "iterations": 20,
+      "objective": 17543.92522610745,
+      "status": "SOLVER_SUCCESS_AUDIT_REJECTED",
+      "rejection_reason": "BOUND_UNCONFIRMED",
+      "audit_passed": false,
+      "audit_detail": "audit Simpson refinement did not reach 5e-08",
+      "audit_first_failure": {
+        "constraint": "AUDIT_INTEGRATION_REMAINDER",
+        "limit": 5e-08,
+        "refinement_steps": 64,
+        "value": 9.665779545317919e-08
+      }
+    },
+    {
+      "index": 3,
+      "label": "length_multiplier=1.2;shape=left",
+      "source": "automatic_endpoint_shape",
+      "solver": "ipopt",
+      "solver_status": "Solve_Succeeded",
+      "iterations": 25,
+      "objective": 15218.308302989288,
+      "status": "SOLVER_SUCCESS_AUDIT_REJECTED",
+      "rejection_reason": "BOUND_UNCONFIRMED",
+      "audit_passed": false,
+      "audit_detail": "audit Simpson refinement did not reach 5e-08",
+      "audit_first_failure": {
+        "constraint": "AUDIT_INTEGRATION_REMAINDER",
+        "limit": 5e-08,
+        "refinement_steps": 64,
+        "value": 9.923363501195568e-08
+      }
+    },
+    {
+      "index": 4,
+      "label": "length_multiplier=1.2;shape=right",
+      "source": "automatic_endpoint_shape",
+      "solver": "ipopt",
+      "solver_status": "Solve_Succeeded",
+      "iterations": 23,
+      "objective": 15759.102755685662,
+      "status": "SOLVER_SUCCESS_AUDIT_REJECTED",
+      "rejection_reason": "BOUND_UNCONFIRMED",
+      "audit_passed": false,
+      "audit_detail": "audit Simpson refinement did not reach 5e-08",
+      "audit_first_failure": {
+        "constraint": "AUDIT_INTEGRATION_REMAINDER",
+        "limit": 5e-08,
+        "refinement_steps": 64,
+        "value": 9.922588550294816e-08
+      }
+    },
+    {
+      "index": 5,
+      "label": "length_multiplier=1.8;shape=left",
+      "source": "automatic_endpoint_shape",
+      "solver": "ipopt",
+      "solver_status": "Maximum_Iterations_Exceeded",
+      "iterations": 120,
+      "objective": 15251.459219933142,
+      "status": "SOLVER_FAILED",
+      "rejection_reason": "Maximum_Iterations_Exceeded",
+      "audit_passed": null,
+      "audit_detail": null,
+      "audit_first_failure": null
+    }
+  ]
+}

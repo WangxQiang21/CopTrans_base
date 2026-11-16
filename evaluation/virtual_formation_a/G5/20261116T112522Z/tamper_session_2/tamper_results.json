@@ -1,0 +1,156 @@
+[
+ {
+  "case": "unknown_semantic_version",
+  "ok": true,
+  "publisher": "d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+  "status": {
+   "backend": "virtual_rigid_a",
+   "cleared": true,
+   "executable": false,
+   "formation_id": null,
+   "frame_id": "map",
+   "geometry_only": true,
+   "marker_count": 0,
+   "marker_namespaces": [],
+   "model_sha256": "d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+   "plan_id": null,
+   "reason": "invalid playback plan: unsupported playback semantic_version 'virtual_rigid_a.playback.v0'; expected 'virtual_rigid_a.playback.v1'",
+   "schema": "formation_playback/v1",
+   "semantic_version": "virtual_rigid_a.playback.v1",
+   "state": "CLEARED",
+   "time_source": "header_stamp_common_clock"
+  }
+ },
+ {
+  "case": "unknown_model_version",
+  "ok": true,
+  "publisher": "d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+  "status": {
+   "backend": "virtual_rigid_a",
+   "cleared": true,
+   "executable": false,
+   "formation_id": null,
+   "frame_id": "map",
+   "geometry_only": true,
+   "marker_count": 0,
+   "marker_namespaces": [],
+   "model_sha256": "d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+   "plan_id": null,
+   "reason": "invalid playback plan: unsupported model_version 'virtual_rigid_a.timed.v0'; expected 'virtual_rigid_a.timed.v1'",
+   "schema": "formation_playback/v1",
+   "semantic_version": "virtual_rigid_a.playback.v1",
+   "state": "CLEARED",
+   "time_source": "header_stamp_common_clock"
+  }
+ },
+ {
+  "case": "wrong_digest",
+  "ok": true,
+  "publisher": "05b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+  "status": {
+   "backend": "virtual_rigid_a",
+   "cleared": true,
+   "executable": false,
+   "formation_id": null,
+   "frame_id": "map",
+   "geometry_only": true,
+   "marker_count": 0,
+   "marker_namespaces": [],
+   "model_sha256": "d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+   "plan_id": null,
+   "reason": "invalid playback plan: model_sha256 mismatch: message=05b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c transmitted-bytes=d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+   "schema": "formation_playback/v1",
+   "semantic_version": "virtual_rigid_a.playback.v1",
+   "state": "CLEARED",
+   "time_source": "header_stamp_common_clock"
+  }
+ },
+ {
+  "case": "tampered_position",
+  "ok": true,
+  "publisher": "d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+  "status": {
+   "backend": "virtual_rigid_a",
+   "cleared": true,
+   "executable": false,
+   "formation_id": null,
+   "frame_id": "map",
+   "geometry_only": true,
+   "marker_count": 0,
+   "marker_namespaces": [],
+   "model_sha256": "d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+   "plan_id": null,
+   "reason": "invalid playback plan: vehicle 1 sample 364 x=13.23844886808603 differs from the model 13.23744886808603 by 0.001 > 1e-09",
+   "schema": "formation_playback/v1",
+   "semantic_version": "virtual_rigid_a.playback.v1",
+   "state": "CLEARED",
+   "time_source": "header_stamp_common_clock"
+  }
+ },
+ {
+  "case": "tampered_heading",
+  "ok": true,
+  "publisher": "d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+  "status": {
+   "backend": "virtual_rigid_a",
+   "cleared": true,
+   "executable": false,
+   "formation_id": null,
+   "frame_id": "map",
+   "geometry_only": true,
+   "marker_count": 0,
+   "marker_namespaces": [],
+   "model_sha256": "d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+   "plan_id": null,
+   "reason": "invalid playback plan: vehicle 1 sample 364 theta=0.0010000000000000009 differs from the model 0 by 0.001 > 1e-09",
+   "schema": "formation_playback/v1",
+   "semantic_version": "virtual_rigid_a.playback.v1",
+   "state": "CLEARED",
+   "time_source": "header_stamp_common_clock"
+  }
+ },
+ {
+  "case": "tampered_speed",
+  "ok": true,
+  "publisher": "d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+  "status": {
+   "backend": "virtual_rigid_a",
+   "cleared": true,
+   "executable": false,
+   "formation_id": null,
+   "frame_id": "map",
+   "geometry_only": true,
+   "marker_count": 0,
+   "marker_namespaces": [],
+   "model_sha256": "d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+   "plan_id": null,
+   "reason": "invalid playback plan: vehicle 1 sample 364 center speed=0.2039635526928123 differs from the model 0.2029635526928123 by 0.001 > 1e-09",
+   "schema": "formation_playback/v1",
+   "semantic_version": "virtual_rigid_a.playback.v1",
+   "state": "CLEARED",
+   "time_source": "header_stamp_common_clock"
+  }
+ },
+ {
+  "case": "tampered_time",
+  "ok": true,
+  "publisher": "d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+  "status": {
+   "backend": "virtual_rigid_a",
+   "cleared": true,
+   "executable": false,
+   "formation_id": null,
+   "frame_id": "map",
+   "geometry_only": true,
+   "marker_count": 0,
+   "marker_namespaces": [],
+   "model_sha256": "d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c",
+   "plan_id": null,
+   "reason": "invalid playback plan: vehicle 1 sample 364 mode_control=0.30853235392800588 differs from the model 0.30853235210697827 by 1.82103e-09 > 1e-09",
+   "schema": "formation_playback/v1",
+   "semantic_version": "virtual_rigid_a.playback.v1",
+   "state": "CLEARED",
+   "time_source": "header_stamp_common_clock"
+  }
+ }
+]

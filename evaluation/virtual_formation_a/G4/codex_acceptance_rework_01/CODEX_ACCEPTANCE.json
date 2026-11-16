@@ -1,0 +1,24 @@
+{
+  "stage": "G4",
+  "rework": "01",
+  "status": "ACCEPTED",
+  "review": "CODEX_REVIEW.md",
+  "branch": "feature/virtual-rigid-formation-a",
+  "head": "567bdecba9676313da3bc9a97b82f57b5b569a2b",
+  "evidence_run": "evaluation/virtual_formation_a/G4/20261116T081458Z",
+  "source_manifest_sha256": "caa929d09a4a346e910a13f8c1d5b4ad4a2bfe3b9dbf2e95b0609bd81994f8c6",
+  "scene_manifest_sha256": "f956e8316ebf1e72102d89338b88bbcabe48bae5aa52977deef3670abe24240d",
+  "source_sha256": {
+    "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/collision.py": "a2006cd0c780b35ded3219effed3e4dac047cd19ffa63a311474c7df11a47c7b",
+    "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/integration_bounds.py": "6e2340eff3ae19df142b2a9a40d94853e9dd8877d1d251f3078242e69df02188",
+    "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/audit.py": "7549420ea2319aa6d153592e7b6a9b205018352969891214a97111cb3875e604",
+    "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/pipeline.py": "ff45cc21657c4867a0803801b73d87be1e671e2b9d3926cd7e98690beee13dcc",
+    "tests/test_virtual_a_collision.py": "570fd8d4702a646fd187d92114e91374a0033d12d12256f25f4598ea575df199",
+    "tests/test_virtual_a_integration_bounds.py": "cb588e086b141993eaf1f624c7876757ab4b24e2916117301e36c892313b36a9",
+    "tests/test_virtual_a_pipeline.py": "a49e100e83677d130141209e48e9d7aa94725dab23de5e35a6f0cc33fc683915"
+  },
+  "scope": "Six frozen A-only scenes and geometry/dynamics/conservative collision audits; no ROS, controller or hardware validation",
+  "known_nonblocking_issue": "G3 _audit_check_actual_metrics skips nonfinite per-wheel values; no end-to-end false acceptance established; see review",
+  "legacy_timing_regression": "FAIL: pre-existing timing_continuous KeyError dynamic_peaks; not counted as passed",
+  "next_stage_authorized": false
+}

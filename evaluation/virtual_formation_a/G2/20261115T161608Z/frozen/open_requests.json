@@ -1,0 +1,188 @@
+{
+  "base": {
+    "initial": {
+      "context_id": "",
+      "mode": "A",
+      "source": "offline_fixture",
+      "stationary": true,
+      "wheels_straight": true
+    },
+    "limits": {
+      "a_max": 0.6,
+      "jerk_max": 2.0,
+      "lateral_accel_max": 0.6,
+      "max_block_duration_s": 120.0,
+      "min_mode_dwell_s": 0.3,
+      "mode_setup_time": 0.15,
+      "mode_switch_duration": 0.3,
+      "r_min_ackermann": 0.81,
+      "steer_accel_max": 1.5,
+      "steer_angle_max": 1.5707963267948966,
+      "steer_rate_max": 0.8,
+      "track": 0.364,
+      "v_max": 0.8,
+      "wheel_speed_max": 1.0,
+      "wheelbase": 0.494,
+      "yaw_accel_max": 0.8,
+      "yaw_jerk_max": 3.0,
+      "yaw_rate_max": 0.8
+    },
+    "model": {
+      "formation_id": "research_rigid_three_vehicle_a",
+      "offsets": [
+        {
+          "vehicle_id": 1,
+          "x": 1.0,
+          "y": 0.0
+        },
+        {
+          "vehicle_id": 2,
+          "x": 0.0,
+          "y": 1.0
+        },
+        {
+          "vehicle_id": 3,
+          "x": 0.0,
+          "y": -1.0
+        }
+      ],
+      "vehicle_shapes": [
+        {
+          "length_m": 0.738,
+          "vehicle_id": 1,
+          "width_m": 0.5
+        },
+        {
+          "length_m": 0.738,
+          "vehicle_id": 2,
+          "width_m": 0.5
+        },
+        {
+          "length_m": 0.738,
+          "vehicle_id": 3,
+          "width_m": 0.5
+        }
+      ]
+    },
+    "start_headings": {
+      "1": 0.0,
+      "2": 0.0,
+      "3": 0.0
+    },
+    "start_qf": {
+      "psi": 0.0,
+      "x": 0.0,
+      "y": 0.0
+    }
+  },
+  "note": "Frozen endpoint-only requests. Production code must not read this fixture or any reference profile.",
+  "planner_config": {
+    "allow_scipy_fallback": true,
+    "collocation_points": 9,
+    "curvature_margin": 0.02,
+    "eta_limit": 2.0,
+    "heading_tolerance_rad": 0.003490658503988659,
+    "intervals": 8,
+    "ipopt_tolerance": 1e-08,
+    "kappa_limit": 0.5524861878453039,
+    "max_initials": 6,
+    "max_iterations": 120,
+    "max_seconds": 30.0,
+    "position_tolerance_m": 0.005,
+    "rigidity_tolerance_m": 1e-06,
+    "scipy_maxiter": 120,
+    "scipy_tolerance": 1e-08,
+    "solver": "ipopt"
+  },
+  "requests": {
+    "E1": {
+      "formation_id": "G2_E1",
+      "goal_policy": "FREE",
+      "goal_qf": {
+        "psi": 0.2,
+        "x": 5.982887884033,
+        "y": 0.299200999308
+      },
+      "plan_id": 2001,
+      "reference_id": "E1"
+    },
+    "E2": {
+      "formation_id": "G2_E2",
+      "goal_policy": "FREE",
+      "goal_qf": {
+        "psi": -0.2,
+        "x": 5.982887884033,
+        "y": -0.299200999308
+      },
+      "plan_id": 2002,
+      "reference_id": "E2"
+    },
+    "E3": {
+      "formation_id": "G2_E3",
+      "goal_policy": "FREE",
+      "goal_qf": {
+        "psi": 0.4,
+        "x": 5.931919086525,
+        "y": 0.593631911497
+      },
+      "plan_id": 2003,
+      "reference_id": "E3"
+    },
+    "E4": {
+      "formation_id": "G2_E4",
+      "goal_policy": "FREE",
+      "goal_qf": {
+        "psi": -0.4,
+        "x": 5.931919086525,
+        "y": -0.593631911497
+      },
+      "plan_id": 2004,
+      "reference_id": "E4"
+    },
+    "E5": {
+      "formation_id": "G2_E5",
+      "goal_policy": "FREE",
+      "goal_qf": {
+        "psi": 0.8,
+        "x": 7.644636301724,
+        "y": 1.533083640872
+      },
+      "plan_id": 2005,
+      "reference_id": "E5"
+    },
+    "E6": {
+      "formation_id": "G2_E6",
+      "goal_policy": "FREE",
+      "goal_qf": {
+        "psi": -0.8,
+        "x": 7.644636301724,
+        "y": -1.533083640872
+      },
+      "plan_id": 2006,
+      "reference_id": "E6"
+    },
+    "STRAIGHT_LINE": {
+      "formation_id": "G2_STRAIGHT_LINE",
+      "goal_policy": "FREE",
+      "goal_qf": {
+        "psi": 0.0,
+        "x": 6.0,
+        "y": 0.0
+      },
+      "plan_id": 2007,
+      "reference_id": null
+    },
+    "STRAIGHT_POLICY": {
+      "formation_id": "G2_STRAIGHT_POLICY",
+      "goal_policy": "STRAIGHT",
+      "goal_qf": {
+        "psi": -7.28583859910259e-17,
+        "x": 5.905433044534477,
+        "y": 0.7946299458610391
+      },
+      "plan_id": 2008,
+      "reference_id": "STRAIGHT_SPLINE"
+    }
+  },
+  "schema": "virtual_rigid_a.g2.open_requests.v1"
+}

@@ -1,0 +1,165 @@
+[rospy.client][INFO] 2026-11-16 20:02:05,538: init_node, name[/formation_uniform_planner], pid[3957762]
+[xmlrpc][INFO] 2026-11-16 20:02:05,538: XML-RPC server binding to 0.0.0.0:0
+[xmlrpc][INFO] 2026-11-16 20:02:05,538: Started XML-RPC server [http://wq-ubuntu:34233/]
+[rospy.impl.masterslave][INFO] 2026-11-16 20:02:05,538: _ready: http://wq-ubuntu:34233/
+[rospy.init][INFO] 2026-11-16 20:02:05,538: ROS Slave URI: [http://wq-ubuntu:34233/]
+[rospy.registration][INFO] 2026-11-16 20:02:05,539: Registering with master node http://127.0.0.1:11585
+[xmlrpc][INFO] 2026-11-16 20:02:05,539: xml rpc node: starting XML-RPC server
+[rospy.init][INFO] 2026-11-16 20:02:05,639: registered with master
+[rospy.rosout][INFO] 2026-11-16 20:02:05,639: initializing /rosout core topic
+[rospy.rosout][INFO] 2026-11-16 20:02:05,642: connected to core topic /rosout
+[rospy.simtime][INFO] 2026-11-16 20:02:05,643: /use_sim_time is not set, will not subscribe to simulated time [/clock] topic
+[rospy.internal][INFO] 2026-11-16 20:02:05,677: topic[/map] adding connection to [http://wq-ubuntu:41159/], count 0
+[rospy.internal][INFO] 2026-11-16 20:02:05,679: topic[/formation/plan_request] adding connection to [http://wq-ubuntu:43535/], count 0
+[rosout][INFO] 2026-11-16 20:02:05,678: [uniform planner] autonomous V0.2 planner ready; backend=virtual_rigid_a budget=10000 expansions / 30.0 s
+[rospy.internal][INFO] 2026-11-16 20:02:05,681: topic[/formation/playback_status] adding connection to [http://wq-ubuntu:33351/], count 0
+[rosout][INFO] 2026-11-16 20:02:05,687: [uniform planner] exact map 494x213 res=0.050 origin=(-6.60, -4.65) signature=fa42e06c62437605
+[rospy.internal][INFO] 2026-11-16 20:02:05,772: topic[/formation/optimizer_status] adding connection to [/formation_goal_bridge], count 0
+[rospy.internal][INFO] 2026-11-16 20:02:05,773: topic[/formation/optimizer_status] adding connection to [/formation_playback], count 1
+[rospy.internal][INFO] 2026-11-16 20:02:05,773: topic[/formation/job_state] adding connection to [/formation_goal_bridge], count 0
+[rospy.internal][INFO] 2026-11-16 20:02:05,775: topic[/formation/quality_report] adding connection to [/formation_playback], count 0
+[rospy.internal][INFO] 2026-11-16 20:02:05,776: topic[/formation/playback_plan] adding connection to [/formation_playback], count 0
+[rospy.internal][INFO] 2026-11-16 20:02:05,776: topic[/formation/job_state] adding connection to [/formation_playback], count 1
+[rospy.internal][INFO] 2026-11-16 20:02:05,871: topic[/rosout] adding connection to [/rosout], count 0
+[rospy.internal][INFO] 2026-11-16 20:02:06,573: topic[/initialpose] adding connection to [http://wq-ubuntu:38955/], count 0
+[rospy.internal][INFO] 2026-11-16 20:02:18,330: topic[/formation/job_state] adding connection to [/virtual_a_smoke_3958133_1794830538180], count 2
+[rospy.internal][INFO] 2026-11-16 20:02:18,330: topic[/formation/optimizer_status] adding connection to [/virtual_a_smoke_3958133_1794830538180], count 2
+[rospy.internal][INFO] 2026-11-16 20:02:18,331: topic[/formation/playback_plan] adding connection to [/virtual_a_smoke_3958133_1794830538180], count 1
+[rospy.internal][INFO] 2026-11-16 20:02:19,396: topic[/initialpose] adding connection to [http://wq-ubuntu:46803/], count 1
+[rosout][INFO] 2026-11-16 20:02:19,658: [uniform planner] explicit virtual experiment reset recorded at F=(0, 0, 0); this is a declared A-straight stationary initial state, not a physical wheel measurement
+[rospy.internal][INFO] 2026-11-16 20:02:19,858: topic[/initialpose] removing connection to http://wq-ubuntu:46803/
+[rosout][WARNING] 2026-11-16 20:02:20,180: [uniform planner] plan 0 has no executable envelope (ADMITTED_PLANNING)
+[rosout][INFO] 2026-11-16 20:02:20,182: [uniform planner] plan 600000 admitted for virtual_rigid_a: start=(0.000, 0.000, 0.000) goal=(11.474, 0.000, 0.000) initial=rviz_reset/virtual-a-reset-None-1 policy=STRAIGHT
+[rosout][INFO] 2026-11-16 20:02:35,474: [uniform planner] virtual plan 600000 published: T_end=37.954 s model_sha256=32689bfd7c5a2f7abbb6c8c5b14b90d34ad10afae50342384bab9d519bfc812f samples=1899 wall=13.336 s verification_to_stamp_delay=1.8324 s
+[rospy.internal][INFO] 2026-11-16 20:02:35,921: topic[/initialpose] adding connection to [http://wq-ubuntu:46803/], count 1
+[rosout][WARNING] 2026-11-16 20:02:36,128: [uniform planner] a job is already planning or playing; the 2D Pose Estimate was not consumed and the active plan is unchanged
+[rospy.internal][INFO] 2026-11-16 20:02:36,329: topic[/initialpose] removing connection to http://wq-ubuntu:46803/
+[rosout][INFO] 2026-11-16 20:02:36,935: [uniform planner] plan 600000 playback confirmed
+[rospy.internal][INFO] 2026-11-16 20:02:37,224: topic[/formation/plan_request] adding connection to [http://wq-ubuntu:46803/], count 1
+[rosout][WARNING] 2026-11-16 20:02:37,339: [uniform planner] busy: rejecting plan 1100000 while job 600000 is PLAYING; no preemption and no override is consumed
+[rospy.internal][INFO] 2026-11-16 20:02:37,385: topic[/formation/plan_request] removing connection to http://wq-ubuntu:46803/
+[rosout][INFO] 2026-11-16 20:03:13,375: [uniform planner] plan 600000 terminal record virtual-a-terminal-600000-2 compatible=True: all vehicles stopped, parallel and wheel-straight at T
+[rosout][INFO] 2026-11-16 20:03:13,377: [uniform planner] plan 600000 HOLD_END; busy released
+[rosout][WARNING] 2026-11-16 20:03:15,770: [uniform planner] plan 0 has no executable envelope (ADMITTED_PLANNING)
+[rosout][INFO] 2026-11-16 20:03:15,771: [uniform planner] plan 600001 admitted for virtual_rigid_a: start=(11.474, 0.000, 0.000) goal=(13.000, 0.000, 0.000) initial=verified_terminal/virtual-a-terminal-600000-2 policy=STRAIGHT
+[rosout][INFO] 2026-11-16 20:03:29,062: [uniform planner] virtual plan 600001 published: T_end=14.557 s model_sha256=d5b1f7e35022543904484a5919b786b0712bd23bc5f60eefd7e315628cd3d83c samples=729 wall=12.510 s verification_to_stamp_delay=0.7324 s
+[rosout][INFO] 2026-11-16 20:03:29,638: [uniform planner] plan 600001 playback confirmed
+[rosout][INFO] 2026-11-16 20:03:43,623: [uniform planner] plan 600001 terminal record virtual-a-terminal-600001-3 compatible=True: all vehicles stopped, parallel and wheel-straight at T
+[rosout][INFO] 2026-11-16 20:03:43,625: [uniform planner] plan 600001 HOLD_END; busy released
+[rospy.internal][INFO] 2026-11-16 20:03:45,988: topic[/formation/optimizer_status] removing connection to /virtual_a_smoke_3958133_1794830538180
+[rospy.internal][INFO] 2026-11-16 20:03:45,989: topic[/formation/job_state] removing connection to /virtual_a_smoke_3958133_1794830538180
+[rospy.internal][INFO] 2026-11-16 20:03:45,989: topic[/formation/playback_plan] removing connection to /virtual_a_smoke_3958133_1794830538180
+[rospy.internal][INFO] 2026-11-16 20:04:27,066: topic[/formation/job_state] adding connection to [/virtual_a_smoke_3958879_1794830666918], count 2
+[rospy.internal][INFO] 2026-11-16 20:04:27,067: topic[/formation/optimizer_status] adding connection to [/virtual_a_smoke_3958879_1794830666918], count 2
+[rospy.internal][INFO] 2026-11-16 20:04:27,069: topic[/formation/playback_plan] adding connection to [/virtual_a_smoke_3958879_1794830666918], count 1
+[rospy.internal][INFO] 2026-11-16 20:04:28,184: topic[/initialpose] adding connection to [http://wq-ubuntu:36121/], count 1
+[rosout][INFO] 2026-11-16 20:04:28,390: [uniform planner] explicit virtual experiment reset recorded at F=(0, 0, 0); this is a declared A-straight stationary initial state, not a physical wheel measurement
+[rospy.internal][INFO] 2026-11-16 20:04:28,590: topic[/initialpose] removing connection to http://wq-ubuntu:36121/
+[rosout][WARNING] 2026-11-16 20:04:28,911: [uniform planner] plan 0 has no executable envelope (ADMITTED_PLANNING)
+[rosout][INFO] 2026-11-16 20:04:28,912: [uniform planner] plan 600002 admitted for virtual_rigid_a: start=(0.000, 0.000, 0.000) goal=(11.474, 0.000, 0.000) initial=rviz_reset/virtual-a-reset-600001-4 policy=STRAIGHT
+[rosout][INFO] 2026-11-16 20:04:43,980: [uniform planner] virtual plan 600002 published: T_end=37.954 s model_sha256=81d9c6a93fba957411c35d25a12c43f2db35f3d6c93d81352e580b5c654a2e5d samples=1899 wall=13.098 s verification_to_stamp_delay=1.8380 s
+[rosout][INFO] 2026-11-16 20:04:45,399: [uniform planner] plan 600002 playback confirmed
+[rosout][INFO] 2026-11-16 20:05:21,858: [uniform planner] plan 600002 terminal record virtual-a-terminal-600002-5 compatible=True: all vehicles stopped, parallel and wheel-straight at T
+[rosout][INFO] 2026-11-16 20:05:21,860: [uniform planner] plan 600002 HOLD_END; busy released
+[rosout][WARNING] 2026-11-16 20:05:24,187: [uniform planner] plan 0 has no executable envelope (ADMITTED_PLANNING)
+[rosout][INFO] 2026-11-16 20:05:24,188: [uniform planner] plan 600003 admitted for virtual_rigid_a: start=(11.474, 0.000, 0.000) goal=(15.500, 0.000, 0.000) initial=verified_terminal/virtual-a-terminal-600002-5 policy=STRAIGHT
+[rosout][ERROR] 2026-11-16 20:05:24,261: [uniform planner] virtual plan 600003 not executable: status=NO_ACCEPTED_CANDIDATE reason=NO_ROUTE_GUIDE layer=PLANNING wall=0.069s
+[rosout][WARNING] 2026-11-16 20:05:24,263: [uniform planner] plan 600003 has no executable envelope (NO_ROUTE_GUIDE)
+[rospy.internal][INFO] 2026-11-16 20:05:24,769: topic[/formation/optimizer_status] removing connection to /virtual_a_smoke_3958879_1794830666918
+[rospy.internal][INFO] 2026-11-16 20:05:24,769: topic[/formation/job_state] removing connection to /virtual_a_smoke_3958879_1794830666918
+[rospy.internal][INFO] 2026-11-16 20:05:24,769: topic[/formation/playback_plan] removing connection to /virtual_a_smoke_3958879_1794830666918
+[rospy.internal][INFO] 2026-11-16 20:07:16,433: topic[/formation/job_state] adding connection to [/virtual_a_smoke_3959656_1794830836286], count 2
+[rospy.internal][INFO] 2026-11-16 20:07:16,434: topic[/formation/optimizer_status] adding connection to [/virtual_a_smoke_3959656_1794830836286], count 2
+[rospy.internal][INFO] 2026-11-16 20:07:16,438: topic[/formation/playback_plan] adding connection to [/virtual_a_smoke_3959656_1794830836286], count 1
+[rospy.internal][INFO] 2026-11-16 20:07:17,517: topic[/initialpose] adding connection to [http://wq-ubuntu:46217/], count 1
+[rosout][INFO] 2026-11-16 20:07:17,757: [uniform planner] explicit virtual experiment reset recorded at F=(0, 0, 0); this is a declared A-straight stationary initial state, not a physical wheel measurement
+[rospy.internal][INFO] 2026-11-16 20:07:17,957: topic[/initialpose] removing connection to http://wq-ubuntu:46217/
+[rosout][WARNING] 2026-11-16 20:07:18,272: [uniform planner] plan 0 has no executable envelope (ADMITTED_PLANNING)
+[rosout][INFO] 2026-11-16 20:07:18,273: [uniform planner] plan 600004 admitted for virtual_rigid_a: start=(0.000, 0.000, 0.000) goal=(11.474, 0.000, 0.000) initial=rviz_reset/virtual-a-reset-600003-6 policy=STRAIGHT
+[rosout][INFO] 2026-11-16 20:07:33,212: [uniform planner] virtual plan 600004 published: T_end=37.954 s model_sha256=45c8a6cb15562da1a37a50d0ad360e7a56f825124895ba095385d4c5a61bc50a samples=1899 wall=12.998 s verification_to_stamp_delay=1.8357 s
+[rosout][INFO] 2026-11-16 20:07:34,666: [uniform planner] plan 600004 playback confirmed
+[rosout][INFO] 2026-11-16 20:08:11,123: [uniform planner] plan 600004 terminal record virtual-a-terminal-600004-7 compatible=True: all vehicles stopped, parallel and wheel-straight at T
+[rosout][INFO] 2026-11-16 20:08:11,125: [uniform planner] plan 600004 HOLD_END; busy released
+[rosout][WARNING] 2026-11-16 20:08:13,461: [uniform planner] plan 0 has no executable envelope (ADMITTED_PLANNING)
+[rosout][INFO] 2026-11-16 20:08:13,463: [uniform planner] plan 600005 admitted for virtual_rigid_a: start=(11.474, 0.000, 0.000) goal=(15.500, 0.000, 0.000) initial=verified_terminal/virtual-a-terminal-600004-7 policy=STRAIGHT
+[rosout][ERROR] 2026-11-16 20:08:13,524: [uniform planner] virtual plan 600005 not executable: status=NO_ACCEPTED_CANDIDATE reason=NO_ROUTE_GUIDE layer=PLANNING wall=0.056s
+[rosout][WARNING] 2026-11-16 20:08:13,526: [uniform planner] plan 600005 has no executable envelope (NO_ROUTE_GUIDE)
+[rospy.internal][INFO] 2026-11-16 20:08:14,099: topic[/formation/optimizer_status] removing connection to /virtual_a_smoke_3959656_1794830836286
+[rospy.internal][INFO] 2026-11-16 20:08:14,099: topic[/formation/job_state] removing connection to /virtual_a_smoke_3959656_1794830836286
+[rospy.internal][INFO] 2026-11-16 20:08:14,099: topic[/formation/playback_plan] removing connection to /virtual_a_smoke_3959656_1794830836286
+[rospy.internal][INFO] 2026-11-16 20:09:03,961: topic[/formation/job_state] adding connection to [/virtual_a_smoke_3960110_1794830943914], count 2
+[rospy.internal][INFO] 2026-11-16 20:09:03,963: topic[/formation/playback_plan] adding connection to [/virtual_a_smoke_3960110_1794830943914], count 1
+[rospy.internal][INFO] 2026-11-16 20:09:03,970: topic[/formation/optimizer_status] adding connection to [/virtual_a_smoke_3960110_1794830943914], count 2
+[rospy.internal][INFO] 2026-11-16 20:09:05,065: topic[/initialpose] adding connection to [http://wq-ubuntu:34091/], count 1
+[rosout][INFO] 2026-11-16 20:09:05,283: [uniform planner] explicit virtual experiment reset recorded at F=(0, 0, 0); this is a declared A-straight stationary initial state, not a physical wheel measurement
+[rospy.internal][INFO] 2026-11-16 20:09:05,483: topic[/initialpose] removing connection to http://wq-ubuntu:34091/
+[rosout][WARNING] 2026-11-16 20:09:05,801: [uniform planner] plan 0 has no executable envelope (ADMITTED_PLANNING)
+[rosout][INFO] 2026-11-16 20:09:05,802: [uniform planner] plan 600006 admitted for virtual_rigid_a: start=(0.000, 0.000, 0.000) goal=(11.474, 0.000, 0.000) initial=rviz_reset/virtual-a-reset-600005-8 policy=STRAIGHT
+[rosout][INFO] 2026-11-16 20:09:20,643: [uniform planner] virtual plan 600006 published: T_end=37.954 s model_sha256=4ced92f779cacd2203559b9d5a9be015ac7b0fe3eae3843c2bcf0c4fd3b7d9c8 samples=1899 wall=12.926 s verification_to_stamp_delay=1.8088 s
+[rosout][INFO] 2026-11-16 20:09:22,084: [uniform planner] plan 600006 playback confirmed
+[rosout][INFO] 2026-11-16 20:09:58,548: [uniform planner] plan 600006 terminal record virtual-a-terminal-600006-9 compatible=True: all vehicles stopped, parallel and wheel-straight at T
+[rosout][INFO] 2026-11-16 20:09:58,550: [uniform planner] plan 600006 HOLD_END; busy released
+[rosout][WARNING] 2026-11-16 20:10:01,030: [uniform planner] plan 0 has no executable envelope (ADMITTED_PLANNING)
+[rosout][INFO] 2026-11-16 20:10:01,031: [uniform planner] plan 600007 admitted for virtual_rigid_a: start=(11.474, 0.000, 0.000) goal=(15.500, 0.000, 0.000) initial=verified_terminal/virtual-a-terminal-600006-9 policy=STRAIGHT
+[rosout][ERROR] 2026-11-16 20:10:01,108: [uniform planner] virtual plan 600007 not executable: status=NO_ACCEPTED_CANDIDATE reason=NO_ROUTE_GUIDE layer=PLANNING wall=0.072s
+[rosout][WARNING] 2026-11-16 20:10:01,110: [uniform planner] plan 600007 has no executable envelope (NO_ROUTE_GUIDE)
+[rospy.internal][INFO] 2026-11-16 20:10:01,945: topic[/initialpose] adding connection to [http://wq-ubuntu:34091/], count 1
+[rosout][INFO] 2026-11-16 20:10:02,187: [uniform planner] explicit virtual experiment reset recorded at F=(0, 0, 0); this is a declared A-straight stationary initial state, not a physical wheel measurement
+[rospy.internal][INFO] 2026-11-16 20:10:02,387: topic[/initialpose] removing connection to http://wq-ubuntu:34091/
+[rosout][WARNING] 2026-11-16 20:10:02,707: [uniform planner] plan 0 has no executable envelope (ADMITTED_PLANNING)
+[rosout][INFO] 2026-11-16 20:10:02,708: [uniform planner] plan 600008 admitted for virtual_rigid_a: start=(0.000, 0.000, 0.000) goal=(11.474, 0.000, 0.000) initial=rviz_reset/virtual-a-reset-600007-10 policy=STRAIGHT
+[rosout][INFO] 2026-11-16 20:10:17,816: [uniform planner] virtual plan 600008 published: T_end=37.954 s model_sha256=28671bf165261849e3b24c67137b47aba3e8313a8b380c468091fce8fc6a3452 samples=1899 wall=13.144 s verification_to_stamp_delay=1.8597 s
+[rosout][INFO] 2026-11-16 20:10:19,255: [uniform planner] plan 600008 playback confirmed
+[rosout][INFO] 2026-11-16 20:10:55,769: [uniform planner] plan 600008 terminal record virtual-a-terminal-600008-11 compatible=True: all vehicles stopped, parallel and wheel-straight at T
+[rosout][INFO] 2026-11-16 20:10:55,771: [uniform planner] plan 600008 HOLD_END; busy released
+[rospy.internal][INFO] 2026-11-16 20:10:59,053: topic[/formation/optimizer_status] removing connection to /virtual_a_smoke_3960110_1794830943914
+[rospy.internal][INFO] 2026-11-16 20:10:59,053: topic[/formation/job_state] removing connection to /virtual_a_smoke_3960110_1794830943914
+[rospy.internal][INFO] 2026-11-16 20:10:59,053: topic[/formation/playback_plan] removing connection to /virtual_a_smoke_3960110_1794830943914
+[rospy.internal][INFO] 2026-11-16 20:12:11,699: topic[/formation/job_state] adding connection to [/virtual_a_smoke_3960946_1794831131538], count 2
+[rospy.internal][INFO] 2026-11-16 20:12:11,699: topic[/formation/optimizer_status] adding connection to [/virtual_a_smoke_3960946_1794831131538], count 2
+[rospy.internal][INFO] 2026-11-16 20:12:11,702: topic[/formation/playback_plan] adding connection to [/virtual_a_smoke_3960946_1794831131538], count 1
+[rospy.internal][INFO] 2026-11-16 20:12:12,824: topic[/initialpose] adding connection to [http://wq-ubuntu:46037/], count 1
+[rosout][INFO] 2026-11-16 20:12:13,043: [uniform planner] explicit virtual experiment reset recorded at F=(0, 0, 0); this is a declared A-straight stationary initial state, not a physical wheel measurement
+[rospy.internal][INFO] 2026-11-16 20:12:13,243: topic[/initialpose] removing connection to http://wq-ubuntu:46037/
+[rosout][WARNING] 2026-11-16 20:12:13,567: [uniform planner] plan 0 has no executable envelope (ADMITTED_PLANNING)
+[rosout][INFO] 2026-11-16 20:12:13,568: [uniform planner] plan 600009 admitted for virtual_rigid_a: start=(0.000, 0.000, 0.000) goal=(11.474, 0.000, 0.000) initial=rviz_reset/virtual-a-reset-600008-12 policy=STRAIGHT
+[rosout][INFO] 2026-11-16 20:12:29,012: [uniform planner] virtual plan 600009 published: T_end=37.954 s model_sha256=3ee14f9c2bd08908bf7855becc00f8c73006d7ebe11c5db19fb2c3737e84505c samples=1899 wall=13.368 s verification_to_stamp_delay=1.9317 s
+[rosout][INFO] 2026-11-16 20:12:30,473: [uniform planner] plan 600009 playback confirmed
+[rosout][INFO] 2026-11-16 20:13:06,923: [uniform planner] plan 600009 terminal record virtual-a-terminal-600009-13 compatible=True: all vehicles stopped, parallel and wheel-straight at T
+[rosout][INFO] 2026-11-16 20:13:06,925: [uniform planner] plan 600009 HOLD_END; busy released
+[rosout][WARNING] 2026-11-16 20:13:09,989: [uniform planner] plan 0 has no executable envelope (ADMITTED_PLANNING)
+[rosout][INFO] 2026-11-16 20:13:09,990: [uniform planner] plan 600010 admitted for virtual_rigid_a: start=(11.474, 0.000, 0.000) goal=(15.500, 0.000, 0.000) initial=verified_terminal/virtual-a-terminal-600009-13 policy=STRAIGHT
+[rosout][ERROR] 2026-11-16 20:13:10,046: [uniform planner] virtual plan 600010 not executable: status=NO_ACCEPTED_CANDIDATE reason=NO_ROUTE_GUIDE layer=PLANNING wall=0.052s
+[rosout][WARNING] 2026-11-16 20:13:10,048: [uniform planner] plan 600010 has no executable envelope (NO_ROUTE_GUIDE)
+[rospy.internal][INFO] 2026-11-16 20:13:11,306: topic[/initialpose] adding connection to [http://wq-ubuntu:46037/], count 1
+[rosout][INFO] 2026-11-16 20:13:11,516: [uniform planner] explicit virtual experiment reset recorded at F=(0, 0, 0); this is a declared A-straight stationary initial state, not a physical wheel measurement
+[rospy.internal][INFO] 2026-11-16 20:13:11,716: topic[/initialpose] removing connection to http://wq-ubuntu:46037/
+[rosout][WARNING] 2026-11-16 20:13:12,036: [uniform planner] plan 0 has no executable envelope (ADMITTED_PLANNING)
+[rosout][INFO] 2026-11-16 20:13:12,037: [uniform planner] plan 600011 admitted for virtual_rigid_a: start=(0.000, 0.000, 0.000) goal=(11.474, 0.000, 0.000) initial=rviz_reset/virtual-a-reset-600010-14 policy=STRAIGHT
+[rosout][INFO] 2026-11-16 20:13:27,019: [uniform planner] virtual plan 600011 published: T_end=37.954 s model_sha256=8f4e860fa46a344d3ae29799b0d1c07ce28ab8e51fecf1084a346a827715d90d samples=1899 wall=13.036 s verification_to_stamp_delay=1.8383 s
+[rosout][INFO] 2026-11-16 20:13:28,461: [uniform planner] plan 600011 playback confirmed
+[rosout][INFO] 2026-11-16 20:14:04,932: [uniform planner] plan 600011 terminal record virtual-a-terminal-600011-15 compatible=True: all vehicles stopped, parallel and wheel-straight at T
+[rosout][INFO] 2026-11-16 20:14:04,935: [uniform planner] plan 600011 HOLD_END; busy released
+[rospy.internal][INFO] 2026-11-16 20:14:08,901: topic[/formation/optimizer_status] removing connection to /virtual_a_smoke_3960946_1794831131538
+[rospy.internal][INFO] 2026-11-16 20:14:08,902: topic[/formation/job_state] removing connection to /virtual_a_smoke_3960946_1794831131538
+[rospy.internal][INFO] 2026-11-16 20:14:08,902: topic[/formation/playback_plan] removing connection to /virtual_a_smoke_3960946_1794831131538
+[rosout][WARNING] 2026-11-16 20:16:58,734: [uniform planner] plan 0 has no executable envelope (ADMITTED_PLANNING)
+[rosout][INFO] 2026-11-16 20:16:58,735: [uniform planner] plan 600012 admitted for virtual_rigid_a: start=(11.474, 0.000, 0.000) goal=(15.500, 0.000, 0.000) initial=verified_terminal/virtual-a-terminal-600011-15 policy=STRAIGHT
+[rosout][ERROR] 2026-11-16 20:16:58,792: [uniform planner] virtual plan 600012 not executable: status=NO_ACCEPTED_CANDIDATE reason=NO_ROUTE_GUIDE layer=PLANNING wall=0.053s
+[rosout][WARNING] 2026-11-16 20:16:58,794: [uniform planner] plan 600012 has no executable envelope (NO_ROUTE_GUIDE)
+[rospy.core][INFO] 2026-11-16 20:20:02,421: signal_shutdown [signal-2]
+[rospy.internal][INFO] 2026-11-16 20:20:02,425: topic[/formation/plan_request] removing connection to http://wq-ubuntu:43535/
+[rospy.internal][INFO] 2026-11-16 20:20:02,428: topic[/map] removing connection to http://wq-ubuntu:41159/
+[rospy.internal][INFO] 2026-11-16 20:20:02,428: topic[/rosout] removing connection to /rosout
+[rospy.internal][INFO] 2026-11-16 20:20:02,429: topic[/formation/optimizer_status] removing connection to /formation_goal_bridge
+[rospy.internal][INFO] 2026-11-16 20:20:02,429: topic[/formation/optimizer_status] removing connection to /formation_playback
+[rospy.internal][INFO] 2026-11-16 20:20:02,429: topic[/formation/quality_report] removing connection to /formation_playback
+[rospy.internal][INFO] 2026-11-16 20:20:02,429: topic[/formation/job_state] removing connection to /formation_goal_bridge
+[rospy.internal][INFO] 2026-11-16 20:20:02,429: topic[/formation/job_state] removing connection to /formation_playback
+[rospy.internal][INFO] 2026-11-16 20:20:02,429: topic[/formation/playback_plan] removing connection to /formation_playback
+[rospy.internal][INFO] 2026-11-16 20:20:02,429: topic[/formation/playback_status] removing connection to http://wq-ubuntu:33351/
+[rospy.internal][INFO] 2026-11-16 20:20:02,429: topic[/initialpose] removing connection to http://wq-ubuntu:38955/
+[rospy.internal][INFO] 2026-11-16 20:20:02,429: topic[/initialpose] removing connection to http://wq-ubuntu:38955/
+[rospy.internal][INFO] 2026-11-16 20:20:02,430: topic[/formation/playback_status] removing connection to http://wq-ubuntu:33351/
+[rospy.impl.masterslave][INFO] 2026-11-16 20:20:02,430: signal-2
+[rospy.core][INFO] 2026-11-16 20:20:03,022: signal_shutdown [atexit]

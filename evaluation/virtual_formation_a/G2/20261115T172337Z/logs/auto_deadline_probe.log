@@ -1,0 +1,83 @@
+{
+  "cases": {
+    "auto_exception_budget_exhausted": {
+      "attempts": [
+        [
+          "ipopt",
+          "IPOPT_EXCEPTION",
+          "SOLVER_FAILED"
+        ]
+      ],
+      "checks_pass": true,
+      "status": "BUDGET_EXHAUSTED",
+      "trigger_stage": "pre_fallback_boundary"
+    },
+    "auto_ipopt_timeout": {
+      "attempts": [
+        [
+          "ipopt",
+          "Maximum_WallTime_Exceeded",
+          "SOLVER_TIMEOUT"
+        ]
+      ],
+      "checks_pass": true,
+      "status": "BUDGET_EXHAUSTED",
+      "trigger_stage": "ipopt_max_wall_time"
+    },
+    "auto_ordinary_failure_real_fallback": {
+      "attempts": [
+        [
+          "ipopt",
+          "Solve_Failed",
+          "SOLVER_FAILED"
+        ],
+        [
+          "scipy_slsqp",
+          "Optimization terminated successfully",
+          "SOLVER_SUCCESS_AUDITED"
+        ]
+      ],
+      "checks_pass": true,
+      "status": "GEOMETRY_FEASIBLE",
+      "trigger_stage": ""
+    },
+    "auto_slsqp_timeout": {
+      "attempts": [
+        [
+          "ipopt",
+          "Solve_Failed",
+          "SOLVER_FAILED"
+        ],
+        [
+          "scipy_slsqp",
+          "SLSQP_SOFT_DEADLINE",
+          "SOLVER_TIMEOUT"
+        ]
+      ],
+      "checks_pass": true,
+      "status": "BUDGET_EXHAUSTED",
+      "trigger_stage": "slsqp_iteration_callback"
+    },
+    "auto_timeout_after_audited_candidate": {
+      "attempts": [
+        [
+          "ipopt",
+          "Solve_Succeeded",
+          "SOLVER_SUCCESS_AUDITED"
+        ],
+        [
+          "ipopt",
+          "Maximum_WallTime_Exceeded",
+          "SOLVER_TIMEOUT"
+        ]
+      ],
+      "checks_pass": true,
+      "status": "GEOMETRY_FEASIBLE",
+      "trigger_stage": "ipopt_max_wall_time"
+    }
+  },
+  "output": "evaluation/virtual_formation_a/G2/20261115T172337Z/analysis/auto_deadline_probe.json",
+  "output_sha256": "063921125fa960b15731a2fb645a110ddeef4556e0cd0a3292371c9e5b29d846",
+  "run_id": "20261115T172337Z",
+  "status": "PASS"
+}

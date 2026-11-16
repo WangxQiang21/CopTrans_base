@@ -1,0 +1,3056 @@
+{
+  "attempt_summary": {
+    "all_attempts_retained": true,
+    "status_counts": {
+      "SOLVER_SUCCESS_AUDITED": 44,
+      "SOLVER_SUCCESS_AUDIT_REJECTED": 4
+    },
+    "total_attempts": 48
+  },
+  "autonomous_benchmark": {
+    "checks": 84,
+    "failed": [],
+    "path": "benchmark",
+    "stage": "G4",
+    "status": "PASS",
+    "summary_sha256": "8c3b7b1d9c5719fd59e8d5205983da83567b2b81eeb614a29e23da4c841ccb1d"
+  },
+  "base_commit": "567bdecba9676313da3bc9a97b82f57b5b569a2b",
+  "codex_acceptance": "NOT_RUN_NOT_CLAIMED",
+  "command_logs": {
+    "exit_codes": {
+      "path": "logs/exit_codes.log",
+      "sha256": "2779adc6ed31746310351efdb573d2072bb9641e3f7b1497ab28bb24553a3a64",
+      "size_bytes": 175
+    },
+    "regression_exit_codes": {
+      "path": "logs/regression_exit_codes.log",
+      "sha256": "ec045223f5b4a4e8e1cec6b38363248b6427500570d0d642b45f2eb5479dd815",
+      "size_bytes": 138
+    }
+  },
+  "environment": {
+    "casadi": "3.7.2",
+    "git": {
+      "branch": "feature/virtual-rigid-formation-a",
+      "head": "567bdecba9676313da3bc9a97b82f57b5b569a2b",
+      "status_short": [
+        " M catkin_ws/src/fwis_v3_optimizer/setup.py",
+        "?? catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/",
+        "?? docs/VIRTUAL_FORMATION_A_FR06_TECHNICAL_REVIEW_20261115.md",
+        "?? docs/virtual_formation_a/",
+        "?? evaluation/virtual_formation_a/",
+        "?? tests/fixtures/",
+        "?? tests/test_virtual_a_audit.py",
+        "?? tests/test_virtual_a_collision.py",
+        "?? tests/test_virtual_a_geometry.py",
+        "?? tests/test_virtual_a_integration_bounds.py",
+        "?? tests/test_virtual_a_optimizer.py",
+        "?? tests/test_virtual_a_pipeline.py",
+        "?? tests/test_virtual_a_profile.py",
+        "?? tests/test_virtual_a_timing.py",
+        "?? tests/test_virtual_a_trajectory.py",
+        "?? tests/virtual_a_g4_support.py",
+        "?? tools/virtual_a_baseline.py",
+        "?? tools/virtual_a_benchmark.py",
+        "?? tools/virtual_a_scenes.py"
+      ]
+    },
+    "ipopt_available": true,
+    "path": "environment.json",
+    "platform": "Linux-5.15.0-139-generic-x86_64-with-glibc2.29",
+    "python": "3.8.10",
+    "selected_solver": "ipopt",
+    "sha256": "4bd6c680cead8a8b66d5cb18af8dc0903240b740ae7718e71c5b2b0053d349dd"
+  },
+  "generated_at_utc": "2026-11-16T08:27:34.575781+00:00",
+  "git_commit_created": false,
+  "historical_runs_read_only": true,
+  "independent_numerics": {
+    "method": [
+      "PGM P5 and simple YAML reparsed from raw bytes with the standard library; occupancy follows the conservative ROS convention free only when probability < free_thresh",
+      "canonical G4 grid summary and SHA-256 recomputed without the project module",
+      "collision error envelope recomputed from the recorded binary64 fields; the per-side closure (margin-baseline)/2 >= max(e_i) and the two-body gap reduction are verified with exact Fraction arithmetic on the recorded floats, and radius_upper is checked by squared rational enclosure of the actual checker half extents",
+      "independent Simpson audit budget rebuilt from the serialised C2 knots and recorded per-panel M4 bounds with the documented outward rounding; dense samples of the actual fourth derivative are required to lie below every recorded panel bound, and the fixed threshold is 5e-8 m",
+      "per-lambda declared bounds checked against the independent lower bounds recorded by the adapter; no segment self-report is trusted alone",
+      "dynamic max-utilization, whole-domain certificate and all three pointwise interval ratios checked below one"
+    ],
+    "path": "analysis/g4_numerics.json",
+    "scene_checks": {
+      "S1": {
+        "collision_contexts_checked": true,
+        "dynamic_certificate_checked": true,
+        "envelope_recomputed": true,
+        "grid_signature_matches_manifest": true,
+        "integration_budget_recomputed": true,
+        "map_reparsed": true,
+        "panel_m4_dense_sampled_below_bounds": true,
+        "per_side_factor2_closure_checked": true,
+        "radius_upper_enclosure_checked": true,
+        "sweep_bounds_checked": true
+      },
+      "S1_mirror": {
+        "collision_contexts_checked": true,
+        "dynamic_certificate_checked": true,
+        "envelope_recomputed": true,
+        "grid_signature_matches_manifest": true,
+        "integration_budget_recomputed": true,
+        "map_reparsed": true,
+        "panel_m4_dense_sampled_below_bounds": true,
+        "per_side_factor2_closure_checked": true,
+        "radius_upper_enclosure_checked": true,
+        "sweep_bounds_checked": true
+      },
+      "S2": {
+        "collision_contexts_checked": true,
+        "dynamic_certificate_checked": true,
+        "envelope_recomputed": true,
+        "grid_signature_matches_manifest": true,
+        "integration_budget_recomputed": true,
+        "map_reparsed": true,
+        "panel_m4_dense_sampled_below_bounds": true,
+        "per_side_factor2_closure_checked": true,
+        "radius_upper_enclosure_checked": true,
+        "sweep_bounds_checked": true
+      },
+      "S2_mirror": {
+        "collision_contexts_checked": true,
+        "dynamic_certificate_checked": true,
+        "envelope_recomputed": true,
+        "grid_signature_matches_manifest": true,
+        "integration_budget_recomputed": true,
+        "map_reparsed": true,
+        "panel_m4_dense_sampled_below_bounds": true,
+        "per_side_factor2_closure_checked": true,
+        "radius_upper_enclosure_checked": true,
+        "sweep_bounds_checked": true
+      },
+      "S3": {
+        "collision_contexts_checked": true,
+        "dynamic_certificate_checked": true,
+        "envelope_recomputed": true,
+        "grid_signature_matches_manifest": true,
+        "integration_budget_recomputed": true,
+        "map_reparsed": true,
+        "panel_m4_dense_sampled_below_bounds": true,
+        "per_side_factor2_closure_checked": true,
+        "radius_upper_enclosure_checked": true,
+        "sweep_bounds_checked": true
+      },
+      "S3_mirror": {
+        "collision_contexts_checked": true,
+        "dynamic_certificate_checked": true,
+        "envelope_recomputed": true,
+        "grid_signature_matches_manifest": true,
+        "integration_budget_recomputed": true,
+        "map_reparsed": true,
+        "panel_m4_dense_sampled_below_bounds": true,
+        "per_side_factor2_closure_checked": true,
+        "radius_upper_enclosure_checked": true,
+        "sweep_bounds_checked": true
+      }
+    },
+    "sha256": "0c36947d0f6c6df5cd366615614cd571d82597dfa35f2119cf623b22846c0790",
+    "status": "PASS",
+    "thresholds": {
+      "audit_position_budget_m": 5e-08,
+      "baseline_margin_m": 0.05,
+      "endpoint_m": 0.005,
+      "heading_rad": 0.003490658503988659,
+      "max_corner_step_m": 0.01,
+      "max_samples_per_segment": 200000,
+      "rigidity_m": 1e-06,
+      "sweep_motion_padding_m": 0.01
+    }
+  },
+  "nonclaims": [
+    "six frozen known-feasible A-only scenes; no general success rate, completeness or optimality is claimed",
+    "no real-time, hard-deadline or production acceptance claim",
+    "no ROS, Gazebo, hardware or mixed-mode FR06 validation",
+    "numerical checks and this report are not Codex acceptance",
+    "sampled maxima are not a whole-domain proof; continuous claims rest on the recorded interval operators, bounds and error envelope",
+    "the P0 correction proves the collision error envelope is covered by the actual checker per-side expansion in the six frozen scenes; the counterexamples are controlled legal-perturbation constructions and are not evidence that any earlier candidate physically collided",
+    "the P1 exact-panel bound is a documented interval arithmetic certificate under the stated libm/IEEE-754 assumptions, not a formal floating-point proof"
+  ],
+  "numbered_negative_coverage": [
+    {
+      "case": 1,
+      "observed_passing": true,
+      "requirement": "thin obstacle between two coarse samples must reject the true swept volume",
+      "tests": [
+        "test_thin_obstacle_between_coarse_samples_is_rejected"
+      ]
+    },
+    {
+      "case": 2,
+      "observed_passing": true,
+      "requirement": "corner collision with a body heading different from the formation heading must use the real OBB front",
+      "tests": [
+        "test_corner_collision_uses_actual_front_heading"
+      ]
+    },
+    {
+      "case": 3,
+      "observed_passing": true,
+      "requirement": "the same model with a changed map, limits, goal or stale context/old audit digest must fail binding or be re-audited",
+      "tests": [
+        "test_same_model_changed_map_limits_and_goal_are_rejected",
+        "test_missing_or_stale_planning_context_digest_is_rejected"
+      ]
+    },
+    {
+      "case": 4,
+      "observed_passing": true,
+      "requirement": "an adapter defect that omits the Delta factor must be caught by independent bounds, never trusted from a segment self-report",
+      "tests": [
+        "test_missing_delta_factor_is_caught_by_independent_bounds"
+      ]
+    },
+    {
+      "case": 5,
+      "observed_passing": true,
+      "requirement": "a construction blocked for the whole-formation circumcircle but passable by the true OBBs must not be rejected for the large circle alone",
+      "tests": [
+        "test_whole_formation_circumcircle_blocked_but_obb_passes",
+        "test_circumcircle_blocked_door_is_solved_by_real_obb_audit"
+      ]
+    },
+    {
+      "case": 6,
+      "observed_passing": true,
+      "requirement": "a deliberately tiny sweep sample budget must fail the audit and remain non-executable",
+      "tests": [
+        "test_sample_budget_is_a_failure_not_a_pass"
+      ]
+    },
+    {
+      "case": 7,
+      "observed_passing": true,
+      "requirement": "map boundary, unknown occupancy, start/goal collision, NO_MOTION collision, fake solver success, no accepted candidate and budget exhaustion are all non-executable failures",
+      "tests": [
+        "test_map_boundary_goal_is_rejected",
+        "test_unknown_cells_are_occupied_and_rejected",
+        "test_static_start_collision_is_rejected",
+        "test_no_motion_hold_collision_is_rejected",
+        "test_no_motion_free_hold_passes_and_blocked_hold_fails",
+        "test_no_motion_hold_checks_map_when_start_cell_is_occupied",
+        "test_fake_solver_success_never_becomes_an_executable_candidate",
+        "test_rejected_geometry_candidate_retains_evidence_but_no_plan",
+        "test_total_budget_exhaustion_is_not_executable"
+      ]
+    },
+    {
+      "case": 8,
+      "observed_passing": true,
+      "requirement": "P0: a static start pose whose obstacle lies between the old per-side increment e/2 and the corrected increment e must pass the old baseline+e margin but be rejected by the corrected factor-2 envelope; checker half extents are computed explicitly",
+      "tests": [
+        "test_static_start_map_obstacle_old_margin_passes_corrected_rejects"
+      ]
+    },
+    {
+      "case": 9,
+      "observed_passing": true,
+      "requirement": "P0: the same near-contact counterexample at the static goal map boundary distinguishes the old and corrected per-side margin",
+      "tests": [
+        "test_static_goal_map_boundary_old_margin_passes_corrected_rejects"
+      ]
+    },
+    {
+      "case": 10,
+      "observed_passing": true,
+      "requirement": "P0: the NO_MOTION free hold applies the corrected per-side numerical envelope, not the full-width margin",
+      "tests": [
+        "test_no_motion_hold_old_margin_passes_corrected_rejects"
+      ]
+    },
+    {
+      "case": 11,
+      "observed_passing": true,
+      "requirement": "P0: the 0.01 m swept-motion padding is kept as sampling protection and is not counted as numerical margin",
+      "tests": [
+        "test_motion_sweep_padding_is_not_numerical_envelope"
+      ]
+    },
+    {
+      "case": 12,
+      "observed_passing": true,
+      "requirement": "P0: a vehicle pair uses the two-body gap reduction (margin - baseline) to cover the sum of the two per-vehicle envelopes",
+      "tests": [
+        "test_vehicle_pair_envelope_uses_two_body_gap_reduction"
+      ]
+    },
+    {
+      "case": 13,
+      "observed_passing": true,
+      "requirement": "P0: closure inequality, per-side growth, expanded radius upper bound and all five collision contexts are explicitly checked",
+      "tests": [
+        "test_envelope_closure_radius_and_contexts"
+      ]
+    },
+    {
+      "case": 14,
+      "observed_passing": true,
+      "requirement": "P1: the exact per-panel fourth-derivative interval bound must enclose dense samples of the actual derivative on the S2 12 m profile and a structured cubic",
+      "tests": [
+        "test_s2_panel_bounds_enclose_dense_actual_fourth_derivative",
+        "test_structured_single_cubic_panel_bounds_enclose_samples",
+        "test_straight_profile_has_zero_panel_m4"
+      ]
+    },
+    {
+      "case": 15,
+      "observed_passing": true,
+      "requirement": "P1: the S2 12 m reference is confirmed at the restored 5e-8 m threshold with exact-panel arithmetic, an infeasible threshold fails closed, the frozen scene inputs and defaults bind 5e-8, and the G1 1e-7 m production contract is unchanged",
+      "tests": [
+        "test_s2_audit_confirms_5e8_with_exact_panel_arithmetic",
+        "test_infeasible_threshold_fails_closed",
+        "test_frozen_scene_inputs_and_defaults_bind_5e8_audit"
+      ]
+    }
+  ],
+  "pre_final_corrections": [
+    {
+      "action": "error_envelope now solves margin >= baseline + 2*max(e_i), checks the actual binary64 half-extent growth, uses the expanded checker radius, separates all five collision contexts and keeps the 0.01 m sweep padding as sampling protection only",
+      "final_run_reflects_fix": true,
+      "item": "P0: collision.py had treated the full-width margin as if the legacy checker expanded each side by the full amount; the checker actually expands each side by margin/2"
+    },
+    {
+      "action": "references, frozen requests, support tools and the independent audit use 5e-8 m again.  The S2 12 m profile is confirmed by an exact per-panel interval fourth-derivative bound (integration_bounds) with the G1 1e-7 m production contract, floating/angle guard and fail-closed behaviour unchanged",
+      "final_run_reflects_fix": true,
+      "item": "P1: the G4 scene freeze and independent audit had relaxed audit_position_budget_m from the accepted 5e-8 m to 1e-7 m"
+    },
+    {
+      "action": "refinement now adds even increments to the worst segment; the remainder formula, exact panel bound, guards and panel limits are unchanged",
+      "final_run_reflects_fix": true,
+      "item": "audit refinement doubled a whole worst segment, so the panel-count-dependent guard overshot the threshold on S3"
+    }
+  ],
+  "protection": {
+    "added_paths": [
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/collision.py",
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/integration_bounds.py",
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/pipeline.py",
+      "tests/fixtures/virtual_a/maps/scenes/S1.pgm",
+      "tests/fixtures/virtual_a/maps/scenes/S1.yaml",
+      "tests/fixtures/virtual_a/maps/scenes/S1_mirror.pgm",
+      "tests/fixtures/virtual_a/maps/scenes/S1_mirror.yaml",
+      "tests/fixtures/virtual_a/maps/scenes/S2.pgm",
+      "tests/fixtures/virtual_a/maps/scenes/S2.yaml",
+      "tests/fixtures/virtual_a/maps/scenes/S2_mirror.pgm",
+      "tests/fixtures/virtual_a/maps/scenes/S2_mirror.yaml",
+      "tests/fixtures/virtual_a/maps/scenes/S3.pgm",
+      "tests/fixtures/virtual_a/maps/scenes/S3.yaml",
+      "tests/fixtures/virtual_a/maps/scenes/S3_mirror.pgm",
+      "tests/fixtures/virtual_a/maps/scenes/S3_mirror.yaml",
+      "tests/fixtures/virtual_a/maps/synthetic/arc_corner/map.pgm",
+      "tests/fixtures/virtual_a/maps/synthetic/arc_corner/map.yaml",
+      "tests/fixtures/virtual_a/maps/synthetic/blocked_start/map.pgm",
+      "tests/fixtures/virtual_a/maps/synthetic/blocked_start/map.yaml",
+      "tests/fixtures/virtual_a/maps/synthetic/boundary_goal/map.pgm",
+      "tests/fixtures/virtual_a/maps/synthetic/boundary_goal/map.yaml",
+      "tests/fixtures/virtual_a/maps/synthetic/corridor/map.pgm",
+      "tests/fixtures/virtual_a/maps/synthetic/corridor/map.yaml",
+      "tests/fixtures/virtual_a/maps/synthetic/door_circumcircle/map.pgm",
+      "tests/fixtures/virtual_a/maps/synthetic/door_circumcircle/map.yaml",
+      "tests/fixtures/virtual_a/maps/synthetic/thin_barrier/map.pgm",
+      "tests/fixtures/virtual_a/maps/synthetic/thin_barrier/map.yaml",
+      "tests/fixtures/virtual_a/maps/synthetic/unknown_gray/map.pgm",
+      "tests/fixtures/virtual_a/maps/synthetic/unknown_gray/map.yaml",
+      "tests/fixtures/virtual_a/scenes/S1.request.json",
+      "tests/fixtures/virtual_a/scenes/S1_mirror.request.json",
+      "tests/fixtures/virtual_a/scenes/S2.request.json",
+      "tests/fixtures/virtual_a/scenes/S2_mirror.request.json",
+      "tests/fixtures/virtual_a/scenes/S3.request.json",
+      "tests/fixtures/virtual_a/scenes/S3_mirror.request.json",
+      "tests/test_virtual_a_collision.py",
+      "tests/test_virtual_a_integration_bounds.py",
+      "tests/test_virtual_a_pipeline.py",
+      "tests/virtual_a_g4_support.py",
+      "tools/virtual_a_scenes.py"
+    ],
+    "additions_count": 40,
+    "changed_count": 5,
+    "changed_paths": [
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/audit.py",
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/contracts.py",
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/optimizer.py",
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/trajectory.py",
+      "tools/virtual_a_benchmark.py"
+    ],
+    "current_file_count": 3177,
+    "full_protected_tree_sha256": "ccae8abae3ea69470bdb7a4edfc4b95b448350f64a765facbc7f269b44ebf7c0",
+    "g3_reconstructed_tree_sha256": "9bee7d7a483418877277fe63c83986363f7ffc114f03db6ff265927092d89fba",
+    "note": "G1/G2/G3 source and tests outside the G4 whitelist, old FR06 source, old maps and the old collision engine are unchanged. Path authorization is not Codex acceptance.",
+    "old_fr06_old_maps_old_collision_unchanged": true,
+    "only_authorized_changes": true,
+    "path": "analysis/protection_diff_vs_g3_accepted.json",
+    "removed_count": 0,
+    "sha256": "3781f956e290d0bd800c8c7c5856071443666ab4bde1a3555a0781719711cd83"
+  },
+  "regression_benchmarks": [
+    {
+      "checks": 26,
+      "failed": [],
+      "path": "regression/g1_benchmark",
+      "stage": "G1",
+      "status": "PASS",
+      "summary_sha256": "443755cf0019a064c8d6d98e8d64a22066e75ad844769a944c10325b22259a60"
+    },
+    {
+      "checks": 124,
+      "failed": [],
+      "path": "regression/g2_benchmark",
+      "stage": "G2",
+      "status": "PASS",
+      "summary_sha256": "08e0acdb3ec1de4106072329f8e50642b6e72eb68a1b899e643084276410783f"
+    },
+    {
+      "checks": 151,
+      "failed": [],
+      "path": "regression/g3_benchmark",
+      "stage": "G3",
+      "status": "PASS",
+      "summary_sha256": "f38bc8ea15598e8c22b7cabba01429965212b32bf5e1cb69ad6106b8a8cdc745"
+    }
+  ],
+  "run_id": "20261116T081458Z",
+  "scene_freeze": {
+    "collision_config": {
+      "baseline_margin_floor_m": 0.05,
+      "baseline_margin_m": 0.05,
+      "max_corner_step_ceiling_m": 0.01,
+      "max_corner_step_m": 0.01,
+      "max_samples_per_segment": 200000,
+      "sample_budget_ceiling": 200000
+    },
+    "collision_envelope_note": "The legacy checker expands each body by margin_m/2 per side.  The G4 numerical envelope e is a physical distance, so the required closure is (margin_used - baseline)/2 >= max_i e_i, equivalently margin_used >= baseline + 2*max_i e_i.  Static start/goal, NO_MOTION hold, map boundary and vehicle-vehicle pairs use the actual binary64 half extents; the 0.01 m sweep padding is motion-sampling protection and is not counted as numerical margin.",
+    "dynamic_audit_config": {
+      "acceleration_tolerance": 0.0001,
+      "angular_accel_tolerance": 0.0001,
+      "angular_jerk_tolerance": 0.01,
+      "angular_rate_tolerance": 1e-05,
+      "continuity_tolerance": 1e-06,
+      "differential_dt_s": [
+        0.01,
+        0.005
+      ],
+      "differential_samples_per_segment": 3,
+      "endpoint_tolerance": 1e-09,
+      "geometry_audit_config": {
+        "angle_budget_rad": 1e-09,
+        "audit_max_subintervals_per_segment": 4096,
+        "audit_max_total_subintervals": 20000,
+        "audit_panel_width_m": 0.02,
+        "audit_position_budget_m": 5e-08,
+        "c2_second_tol": 1e-08,
+        "c2_slope_tol": 1e-09,
+        "c2_third_abs_limit": 1000000.0,
+        "c2_value_tol": 1e-09,
+        "heading_tolerance_rad": 0.003490658503988659,
+        "integration_budget_m": 1e-07,
+        "interval_curvature_tolerance": 1e-09,
+        "max_depth": 20,
+        "max_leaves": 200000,
+        "position_tolerance_m": 0.005,
+        "rigidity_tolerance_m": 1e-06,
+        "sample_points_per_segment": 9
+      },
+      "interval_subdivisions_per_segment": 8,
+      "jerk_tolerance": 0.01,
+      "max_depth": 20,
+      "max_leaves": 200000,
+      "oracle_step_m": 0.002,
+      "samples_per_segment": 5,
+      "state_tolerance": 1e-07,
+      "time_inverse_tolerance_s": 1e-09,
+      "velocity_tolerance": 1e-05
+    },
+    "frozen": true,
+    "inputs_have_no_reference": true,
+    "manifest": {
+      "path": "scenes/scene_manifest.json",
+      "sha256": "f956e8316ebf1e72102d89338b88bbcabe48bae5aa52977deef3670abe24240d",
+      "size_bytes": 13421
+    },
+    "manifest_self_digest": "5bb3df2d829ef3b1051880fb916462cca60cd8c5a17e0c9174c8bb18370daa80",
+    "map_resolution_m": 0.05,
+    "note": "Maps and requests are frozen; modifications require a new scene version.  Reference files are not copied into inputs/.",
+    "planner_config": {
+      "allow_scipy_fallback": true,
+      "collocation_points": 9,
+      "curvature_margin": 0.02,
+      "eta_limit": 2.0,
+      "heading_tolerance_rad": 0.003490658503988659,
+      "intervals": 8,
+      "ipopt_tolerance": 1e-08,
+      "kappa_limit": 0.5524861878453039,
+      "max_initials": 6,
+      "max_iterations": 120,
+      "max_seconds": 30.0,
+      "position_tolerance_m": 0.005,
+      "rigidity_tolerance_m": 1e-06,
+      "scipy_maxiter": 120,
+      "scipy_tolerance": 1e-08,
+      "solver": "ipopt"
+    },
+    "reference_geometry_audit_note": "Independent geometry audit threshold is 5e-8 m, as fixed by G2 rework 01 and G2/G3 acceptance.  The S2 12 m curvature profile is confirmed by exact per-panel fourth-derivative interval bounds (integration_bounds), not by the coarse global triangle bound and not by sampling.  The production G1 1e-7 m contract, floating/angle guard, dynamic limits, collision margin, sweep step and vehicle geometry are unchanged.",
+    "reference_verification": [
+      {
+        "checks": {
+          "authoritative_map_sha256": true,
+          "base_matches": true,
+          "collision_passed": true,
+          "dynamic_passed": true,
+          "geometry_passed": true,
+          "independent_accepted": true,
+          "input_map_sha256": true,
+          "planning_context_sha256": true,
+          "reference_status": true,
+          "request_sha256": true,
+          "timed_model_sha256": true,
+          "timing_status": true
+        },
+        "passed": true,
+        "scene_id": "S1"
+      },
+      {
+        "checks": {
+          "authoritative_map_sha256": true,
+          "base_matches": true,
+          "collision_passed": true,
+          "dynamic_passed": true,
+          "geometry_passed": true,
+          "independent_accepted": true,
+          "input_map_sha256": true,
+          "planning_context_sha256": true,
+          "reference_status": true,
+          "request_sha256": true,
+          "timed_model_sha256": true,
+          "timing_status": true
+        },
+        "passed": true,
+        "scene_id": "S1_mirror"
+      },
+      {
+        "checks": {
+          "authoritative_map_sha256": true,
+          "base_matches": true,
+          "collision_passed": true,
+          "dynamic_passed": true,
+          "geometry_passed": true,
+          "independent_accepted": true,
+          "input_map_sha256": true,
+          "planning_context_sha256": true,
+          "reference_status": true,
+          "request_sha256": true,
+          "timed_model_sha256": true,
+          "timing_status": true
+        },
+        "passed": true,
+        "scene_id": "S2"
+      },
+      {
+        "checks": {
+          "authoritative_map_sha256": true,
+          "base_matches": true,
+          "collision_passed": true,
+          "dynamic_passed": true,
+          "geometry_passed": true,
+          "independent_accepted": true,
+          "input_map_sha256": true,
+          "planning_context_sha256": true,
+          "reference_status": true,
+          "request_sha256": true,
+          "timed_model_sha256": true,
+          "timing_status": true
+        },
+        "passed": true,
+        "scene_id": "S2_mirror"
+      },
+      {
+        "checks": {
+          "authoritative_map_sha256": true,
+          "base_matches": true,
+          "collision_passed": true,
+          "dynamic_passed": true,
+          "geometry_passed": true,
+          "independent_accepted": true,
+          "input_map_sha256": true,
+          "planning_context_sha256": true,
+          "reference_status": true,
+          "request_sha256": true,
+          "timed_model_sha256": true,
+          "timing_status": true
+        },
+        "passed": true,
+        "scene_id": "S3"
+      },
+      {
+        "checks": {
+          "authoritative_map_sha256": true,
+          "base_matches": true,
+          "collision_passed": true,
+          "dynamic_passed": true,
+          "geometry_passed": true,
+          "independent_accepted": true,
+          "input_map_sha256": true,
+          "planning_context_sha256": true,
+          "reference_status": true,
+          "request_sha256": true,
+          "timed_model_sha256": true,
+          "timing_status": true
+        },
+        "passed": true,
+        "scene_id": "S3_mirror"
+      }
+    ],
+    "reference_verified": true,
+    "scene_count": 6,
+    "timing_config": {
+      "geometry_audit_config": {
+        "angle_budget_rad": 1e-09,
+        "audit_max_subintervals_per_segment": 4096,
+        "audit_max_total_subintervals": 20000,
+        "audit_panel_width_m": 0.02,
+        "audit_position_budget_m": 5e-08,
+        "c2_second_tol": 1e-08,
+        "c2_slope_tol": 1e-09,
+        "c2_third_abs_limit": 1000000.0,
+        "c2_value_tol": 1e-09,
+        "heading_tolerance_rad": 0.003490658503988659,
+        "integration_budget_m": 1e-07,
+        "interval_curvature_tolerance": 1e-09,
+        "max_depth": 20,
+        "max_leaves": 200000,
+        "position_tolerance_m": 0.005,
+        "rigidity_tolerance_m": 1e-06,
+        "sample_points_per_segment": 9
+      },
+      "interval_subdivisions_per_segment": 8,
+      "max_rescalings": 8,
+      "max_subdivisions_per_segment": 4096,
+      "max_total_duration_s": 600.0,
+      "max_total_subdivisions": 200000,
+      "rescale_factor": 1.05,
+      "safety_factor": 1.01,
+      "timing_law": "virtual_rigid_a.timing.quintic_smoothstep.v1"
+    }
+  },
+  "scenes": {
+    "S1": {
+      "attempt_count": 6,
+      "attempt_statuses": [
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED"
+      ],
+      "attempts": [
+        {
+          "attempt_index": 0,
+          "initial_label": "route_guide=0;source=astar_primary",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.301401762990281
+        },
+        {
+          "attempt_index": 1,
+          "initial_label": "route_guide=1;source=astar_alternative_1",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.5730250549968332
+        },
+        {
+          "attempt_index": 2,
+          "initial_label": "route_guide=2;source=astar_alternative_2",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.361174740944989
+        },
+        {
+          "attempt_index": 3,
+          "initial_label": "length_multiplier=1.2;shape=left",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.305644080042839
+        },
+        {
+          "attempt_index": 4,
+          "initial_label": "length_multiplier=1.2;shape=right",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.3030819540144876
+        },
+        {
+          "attempt_index": 5,
+          "initial_label": "length_multiplier=1.8;shape=left",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.3726690150797367
+        }
+      ],
+      "audits": {
+        "collision": {
+          "check_count": 9584,
+          "passed": true,
+          "reason": null
+        },
+        "dynamics": {
+          "check_count": 917,
+          "passed": true,
+          "reason": null
+        },
+        "geometry": {
+          "check_count": 163,
+          "passed": true,
+          "reason": null
+        }
+      },
+      "checks": 10664,
+      "collision_checks": 9584,
+      "collision_margin_m": 0.050000082988274804,
+      "duration_s": 30.305438027214436,
+      "dynamics": {
+        "check_count": 917,
+        "leaves": 64,
+        "max_utilization": 0.9900990099009894,
+        "pointwise_component_ratio": 0.9648162152945062,
+        "pointwise_jerk_ratio": 0.8822041261747272,
+        "pointwise_p_sss_ratio": 0.9613263709302828,
+        "whole_domain_certificate": true
+      },
+      "endpoint_error_m": 1.601861401748266e-10,
+      "envelope": {
+        "baseline_margin_m": 0.05,
+        "binding_pair": [
+          1,
+          2
+        ],
+        "closure_gap_m": 5.2074645920018525e-17,
+        "contexts": [
+          "map_boundary",
+          "motion_sweep",
+          "no_motion_hold",
+          "static_start_goal",
+          "vehicle_vehicle"
+        ],
+        "exact_half_diagonal_m": 0.4804800261396506,
+        "exact_per_side_growth_m": 4.1494137403841336e-08,
+        "exact_required_margin_m": 0.050000082988274706,
+        "margin_minus_floor_m": 8.298827480074378e-08,
+        "margin_used_m": 0.050000082988274804,
+        "maximum_envelope_m": 4.149413735176669e-08,
+        "pair_envelope_m": 8.298827470353338e-08,
+        "per_side_growth_record_m": 4.149413740384133e-08,
+        "radius_upper_m": 0.48048002613965074,
+        "radius_upper_note": "radius_upper is an outward interval square root of the actual checker half extents (length+margin)/2 and (width+margin)/2 at the recorded margin; it is not the old fixed-point radius.  The margin is solved at this same expanded radius.",
+        "sweep_motion_padding_m": 0.01,
+        "vehicles": 3
+      },
+      "executable": true,
+      "grid_sha256": "054cf5c77079536f9a098e33232732d6c181f0f624f07e3a446ebfab0266a10e",
+      "heading_error_rad": 0.0,
+      "input_digests": {
+        "map_pgm_sha256": "0e975d9a49a2e1f2d6fc64f68f0536def44880587e0df4ff33f5fe4eac5175b8",
+        "map_signature": "054cf5c77079536f9a098e33232732d6c181f0f624f07e3a446ebfab0266a10e",
+        "map_yaml_sha256": "a2d302d74b44f9902fbf25e41ea83d3655a60b1326d668468f39832b29f4a0e0",
+        "request_file_sha256": "cdb38b6ca95eb839710549809fbf53a551eea44c97669cff69106e7256bb995f"
+      },
+      "input_files": [
+        "map.pgm",
+        "map.yaml",
+        "request.json"
+      ],
+      "integration": {
+        "euclidean_remainder_m": 4.346210769496702e-09,
+        "fixed_threshold_m": 5e-08,
+        "full_simpson_panels": 264,
+        "local_simpson_panels": 8,
+        "m4_method": "exact_interval_fourth_derivative_per_panel",
+        "method": "independent_composite_simpson_v2_exact_panel",
+        "per_coordinate_remainder_m": 3.0732351075771197e-09,
+        "refinement_steps": 0,
+        "roundoff_and_angle_guard_m": 2.967573753481012e-08,
+        "sampled_bound_deficit_m4": 0.0,
+        "sampled_max_actual_m4": 0.5495177128782195,
+        "samples_per_panel": 65,
+        "subintervals": [
+          66,
+          66,
+          66,
+          66,
+          66,
+          66,
+          66,
+          66
+        ],
+        "total_budget_m": 3.402194830430683e-08,
+        "total_subintervals": 528
+      },
+      "model_sha256": "1e8f1a3dcd16b728fcc0c68380096d8365a8479226ac8f2af7b9e830fde9c589",
+      "numerics": {
+        "attempt_count": 6,
+        "checks": 10664,
+        "collision": {
+          "bounds_verified": true,
+          "check_count": 9584,
+          "max_corner_step_m": 0.01,
+          "max_samples_per_segment": 200000,
+          "sample_count": 1590,
+          "segment_count": 8,
+          "static_stages": [
+            "goal",
+            "start"
+          ]
+        },
+        "dynamics": {
+          "check_count": 917,
+          "leaves": 64,
+          "max_utilization": 0.9900990099009894,
+          "pointwise_component_ratio": 0.9648162152945062,
+          "pointwise_jerk_ratio": 0.8822041261747272,
+          "pointwise_p_sss_ratio": 0.9613263709302828,
+          "whole_domain_certificate": true
+        },
+        "endpoint_error_m": 1.601861401748266e-10,
+        "envelope": {
+          "baseline_margin_m": 0.05,
+          "binding_pair": [
+            1,
+            2
+          ],
+          "closure_gap_m": 5.2074645920018525e-17,
+          "contexts": [
+            "map_boundary",
+            "motion_sweep",
+            "no_motion_hold",
+            "static_start_goal",
+            "vehicle_vehicle"
+          ],
+          "exact_half_diagonal_m": 0.4804800261396506,
+          "exact_per_side_growth_m": 4.1494137403841336e-08,
+          "exact_required_margin_m": 0.050000082988274706,
+          "margin_minus_floor_m": 8.298827480074378e-08,
+          "margin_used_m": 0.050000082988274804,
+          "maximum_envelope_m": 4.149413735176669e-08,
+          "pair_envelope_m": 8.298827470353338e-08,
+          "per_side_growth_record_m": 4.149413740384133e-08,
+          "radius_upper_m": 0.48048002613965074,
+          "radius_upper_note": "radius_upper is an outward interval square root of the actual checker half extents (length+margin)/2 and (width+margin)/2 at the recorded margin; it is not the old fixed-point radius.  The margin is solved at this same expanded radius.",
+          "sweep_motion_padding_m": 0.01,
+          "vehicles": 3
+        },
+        "executable": true,
+        "geometry": {
+          "check_count": 163,
+          "max_heading_error_rad": 5.551115123125783e-17,
+          "max_pairwise_rigidity_error_m": 1.5543122344752192e-15,
+          "max_position_error_m": 5.402578411571407e-15,
+          "position_tolerance_m": 4.4711390198561664e-07,
+          "sample_count": 73
+        },
+        "heading_error_rad": 0.0,
+        "integration": {
+          "euclidean_remainder_m": 4.346210769496702e-09,
+          "fixed_threshold_m": 5e-08,
+          "full_simpson_panels": 264,
+          "local_simpson_panels": 8,
+          "m4_method": "exact_interval_fourth_derivative_per_panel",
+          "method": "independent_composite_simpson_v2_exact_panel",
+          "per_coordinate_remainder_m": 3.0732351075771197e-09,
+          "refinement_steps": 0,
+          "roundoff_and_angle_guard_m": 2.967573753481012e-08,
+          "sampled_bound_deficit_m4": 0.0,
+          "sampled_max_actual_m4": 0.5495177128782195,
+          "samples_per_panel": 65,
+          "subintervals": [
+            66,
+            66,
+            66,
+            66,
+            66,
+            66,
+            66,
+            66
+          ],
+          "total_budget_m": 3.402194830430683e-08,
+          "total_subintervals": 528
+        },
+        "model_sha256": "1e8f1a3dcd16b728fcc0c68380096d8365a8479226ac8f2af7b9e830fde9c589",
+        "rigidity_error_m": 1.5543122344752192e-15,
+        "route_count": 3,
+        "search_rounds": 1,
+        "status": "SUCCESS",
+        "timings": {
+          "collision_audit_s": 1.183069680002518,
+          "dynamics_audit_s": 0.9816329679451883,
+          "geometry_solve_s": 9.513069947017357,
+          "result_assembly_s": 0.0,
+          "retime_s": 0.4051410900428891,
+          "route_generation_s": 0.39654384704772383
+        },
+        "wall_time_s": 12.49947403895203
+      },
+      "path_length_m": 10.472910641286598,
+      "planning_context_sha256": "80f625e28f50901991661a97f90e55364c8f4bd8f3fe0d8e7eb7ea7e79106282",
+      "reference": {
+        "collision_checks": 8204,
+        "dynamic_checks": 909,
+        "endpoint_difference_m": 1.2839311938972403e-10,
+        "envelope": {
+          "baseline_margin_m": 0.05,
+          "binding_pair": [
+            1,
+            2
+          ],
+          "closure_gap_m": 1.6568579870669854e-17,
+          "contexts": [
+            "map_boundary",
+            "motion_sweep",
+            "no_motion_hold",
+            "static_start_goal",
+            "vehicle_vehicle"
+          ],
+          "exact_half_diagonal_m": 0.48048001093665643,
+          "exact_per_side_growth_m": 3.0575252329967384e-08,
+          "exact_required_margin_m": 0.05000006115050463,
+          "margin_minus_floor_m": 6.115050464605698e-08,
+          "margin_used_m": 0.05000006115050465,
+          "maximum_envelope_m": 3.0575252313398804e-08,
+          "pair_envelope_m": 6.115050462679761e-08,
+          "per_side_growth_record_m": 3.057525232996738e-08,
+          "radius_upper_m": 0.4804800109366566,
+          "radius_upper_note": "radius_upper is an outward interval square root of the actual checker half extents (length+margin)/2 and (width+margin)/2 at the recorded margin; it is not the old fixed-point radius.  The margin is solved at this same expanded radius.",
+          "sweep_motion_padding_m": 0.01,
+          "vehicles": 3
+        },
+        "geometry_checks": 155,
+        "independent_accepted": true,
+        "integration": {
+          "euclidean_remainder_m": 2.784983649474895e-10,
+          "fixed_threshold_m": 5e-08,
+          "full_simpson_panels": 264,
+          "local_simpson_panels": 8,
+          "m4_method": "exact_interval_fourth_derivative_per_panel",
+          "method": "independent_composite_simpson_v2_exact_panel",
+          "per_coordinate_remainder_m": 1.9692808240373564e-10,
+          "refinement_steps": 0,
+          "roundoff_and_angle_guard_m": 2.967556961079017e-08,
+          "sampled_bound_deficit_m4": 0.0,
+          "sampled_max_actual_m4": 0.10450102781547313,
+          "samples_per_panel": 65,
+          "subintervals": [
+            66,
+            66,
+            66,
+            66,
+            66,
+            66,
+            66,
+            66
+          ],
+          "total_budget_m": 2.995406797573767e-08,
+          "total_subintervals": 528
+        },
+        "reference_file": "reference/S1.json",
+        "reference_sha256": "38a18f38ae6a112af1b3192e13a7797ac3f2477f7dd6eae754bc7fa4c4ae8c06",
+        "status": "REFERENCE_PASSED",
+        "timed_model_sha256": "022359fc5d1bf9c491141dec57ae319a9630045e75f4440e7573b0606426daaa"
+      },
+      "request_sha256": "d44f9efeb70f636a1e0f24dbc367e7869366ce344d0d88bba020d4ad355c8a1a",
+      "rigidity_error_m": 1.5543122344752192e-15,
+      "routes": [
+        {
+          "grid_sha256": "054cf5c77079536f9a098e33232732d6c181f0f624f07e3a446ebfab0266a10e",
+          "length_m": 10.833036915600722,
+          "point_count": 198,
+          "source": "astar_primary"
+        },
+        {
+          "grid_sha256": "054cf5c77079536f9a098e33232732d6c181f0f624f07e3a446ebfab0266a10e",
+          "length_m": 10.71587962807534,
+          "point_count": 194,
+          "source": "astar_alternative_1"
+        },
+        {
+          "grid_sha256": "054cf5c77079536f9a098e33232732d6c181f0f624f07e3a446ebfab0266a10e",
+          "length_m": 11.22801166243131,
+          "point_count": 203,
+          "source": "astar_alternative_2"
+        }
+      ],
+      "status": "SUCCESS",
+      "timings": {
+        "collision_audit_s": 1.183069680002518,
+        "dynamics_audit_s": 0.9816329679451883,
+        "geometry_solve_s": 9.513069947017357,
+        "result_assembly_s": 0.0,
+        "retime_s": 0.4051410900428891,
+        "route_generation_s": 0.39654384704772383
+      },
+      "wall_time_s": 12.49947403895203
+    },
+    "S1_mirror": {
+      "attempt_count": 6,
+      "attempt_statuses": [
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED"
+      ],
+      "attempts": [
+        {
+          "attempt_index": 0,
+          "initial_label": "route_guide=0;source=astar_primary",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.321679818094708
+        },
+        {
+          "attempt_index": 1,
+          "initial_label": "route_guide=1;source=astar_alternative_1",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.4925391159486026
+        },
+        {
+          "attempt_index": 2,
+          "initial_label": "route_guide=2;source=astar_alternative_2",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.4200100279413164
+        },
+        {
+          "attempt_index": 3,
+          "initial_label": "length_multiplier=1.2;shape=left",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.2764549079583958
+        },
+        {
+          "attempt_index": 4,
+          "initial_label": "length_multiplier=1.2;shape=right",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.3616204080171883
+        },
+        {
+          "attempt_index": 5,
+          "initial_label": "length_multiplier=1.8;shape=left",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.32082637201529
+        }
+      ],
+      "audits": {
+        "collision": {
+          "check_count": 8810,
+          "passed": true,
+          "reason": null
+        },
+        "dynamics": {
+          "check_count": 915,
+          "passed": true,
+          "reason": null
+        },
+        "geometry": {
+          "check_count": 161,
+          "passed": true,
+          "reason": null
+        }
+      },
+      "checks": 9886,
+      "collision_checks": 8810,
+      "collision_margin_m": 0.050000065473668594,
+      "duration_s": 29.91922601718084,
+      "dynamics": {
+        "check_count": 915,
+        "leaves": 64,
+        "max_utilization": 0.9900990099009893,
+        "pointwise_component_ratio": 0.9715518001894737,
+        "pointwise_jerk_ratio": 0.8982561556689109,
+        "pointwise_p_sss_ratio": 0.9653891036950468,
+        "whole_domain_certificate": true
+      },
+      "endpoint_error_m": 1.5408566196837104e-10,
+      "envelope": {
+        "baseline_margin_m": 0.05,
+        "binding_pair": [
+          1,
+          2
+        ],
+        "closure_gap_m": 4.1246878171478994e-17,
+        "contexts": [
+          "map_boundary",
+          "motion_sweep",
+          "no_motion_hold",
+          "static_start_goal",
+          "vehicle_vehicle"
+        ],
+        "exact_half_diagonal_m": 0.48048001394635187,
+        "exact_per_side_growth_m": 3.273683429894092e-08,
+        "exact_required_margin_m": 0.05000006547366852,
+        "margin_minus_floor_m": 6.547366859094295e-08,
+        "margin_used_m": 0.050000065473668594,
+        "maximum_envelope_m": 3.273683425769404e-08,
+        "pair_envelope_m": 6.547366851538808e-08,
+        "per_side_growth_record_m": 3.2736834298940913e-08,
+        "radius_upper_m": 0.480480013946352,
+        "radius_upper_note": "radius_upper is an outward interval square root of the actual checker half extents (length+margin)/2 and (width+margin)/2 at the recorded margin; it is not the old fixed-point radius.  The margin is solved at this same expanded radius.",
+        "sweep_motion_padding_m": 0.01,
+        "vehicles": 3
+      },
+      "executable": true,
+      "grid_sha256": "fb485abf73dd1e1953c43762dbee0f9f7ac26a94968766e817c6951135e7c595",
+      "heading_error_rad": 2.886579864025407e-15,
+      "input_digests": {
+        "map_pgm_sha256": "cd199e172acf6a33a005ab82b86877d40a3eced81ace497cb9abd2ca2239708b",
+        "map_signature": "fb485abf73dd1e1953c43762dbee0f9f7ac26a94968766e817c6951135e7c595",
+        "map_yaml_sha256": "bdefc6eb21ebb17148ca95173c2e76ae3996c33c404e95a3c97429b642116441",
+        "request_file_sha256": "046524b59b4e4ad593564467cd4cc9983f6ee1e9ee993f516cf1c8a8697622db"
+      },
+      "input_files": [
+        "map.pgm",
+        "map.yaml",
+        "request.json"
+      ],
+      "integration": {
+        "euclidean_remainder_m": 2.338516146772544e-09,
+        "fixed_threshold_m": 5e-08,
+        "full_simpson_panels": 264,
+        "local_simpson_panels": 8,
+        "m4_method": "exact_interval_fourth_derivative_per_panel",
+        "method": "independent_composite_simpson_v2_exact_panel",
+        "per_coordinate_remainder_m": 1.6535806252971007e-09,
+        "refinement_steps": 0,
+        "roundoff_and_angle_guard_m": 2.967480421789311e-08,
+        "sampled_bound_deficit_m4": 0.0,
+        "sampled_max_actual_m4": 0.3881335907646136,
+        "samples_per_panel": 65,
+        "subintervals": [
+          66,
+          66,
+          66,
+          66,
+          66,
+          66,
+          66,
+          66
+        ],
+        "total_budget_m": 3.201332036466566e-08,
+        "total_subintervals": 528
+      },
+      "model_sha256": "f765edd7f96d795898a32bde082c9805941c84a7822f33df6574bbbcc8e9de58",
+      "numerics": {
+        "attempt_count": 6,
+        "checks": 9886,
+        "collision": {
+          "bounds_verified": true,
+          "check_count": 8810,
+          "max_corner_step_m": 0.01,
+          "max_samples_per_segment": 200000,
+          "sample_count": 1461,
+          "segment_count": 8,
+          "static_stages": [
+            "goal",
+            "start"
+          ]
+        },
+        "dynamics": {
+          "check_count": 915,
+          "leaves": 64,
+          "max_utilization": 0.9900990099009893,
+          "pointwise_component_ratio": 0.9715518001894737,
+          "pointwise_jerk_ratio": 0.8982561556689109,
+          "pointwise_p_sss_ratio": 0.9653891036950468,
+          "whole_domain_certificate": true
+        },
+        "endpoint_error_m": 1.5408566196837104e-10,
+        "envelope": {
+          "baseline_margin_m": 0.05,
+          "binding_pair": [
+            1,
+            2
+          ],
+          "closure_gap_m": 4.1246878171478994e-17,
+          "contexts": [
+            "map_boundary",
+            "motion_sweep",
+            "no_motion_hold",
+            "static_start_goal",
+            "vehicle_vehicle"
+          ],
+          "exact_half_diagonal_m": 0.48048001394635187,
+          "exact_per_side_growth_m": 3.273683429894092e-08,
+          "exact_required_margin_m": 0.05000006547366852,
+          "margin_minus_floor_m": 6.547366859094295e-08,
+          "margin_used_m": 0.050000065473668594,
+          "maximum_envelope_m": 3.273683425769404e-08,
+          "pair_envelope_m": 6.547366851538808e-08,
+          "per_side_growth_record_m": 3.2736834298940913e-08,
+          "radius_upper_m": 0.480480013946352,
+          "radius_upper_note": "radius_upper is an outward interval square root of the actual checker half extents (length+margin)/2 and (width+margin)/2 at the recorded margin; it is not the old fixed-point radius.  The margin is solved at this same expanded radius.",
+          "sweep_motion_padding_m": 0.01,
+          "vehicles": 3
+        },
+        "executable": true,
+        "geometry": {
+          "check_count": 161,
+          "max_heading_error_rad": 2.220446049250313e-16,
+          "max_pairwise_rigidity_error_m": 1.1102230246251565e-15,
+          "max_position_error_m": 1.897149936107019e-15,
+          "position_tolerance_m": 3.575323886067375e-07,
+          "sample_count": 73
+        },
+        "heading_error_rad": 2.886579864025407e-15,
+        "integration": {
+          "euclidean_remainder_m": 2.338516146772544e-09,
+          "fixed_threshold_m": 5e-08,
+          "full_simpson_panels": 264,
+          "local_simpson_panels": 8,
+          "m4_method": "exact_interval_fourth_derivative_per_panel",
+          "method": "independent_composite_simpson_v2_exact_panel",
+          "per_coordinate_remainder_m": 1.6535806252971007e-09,
+          "refinement_steps": 0,
+          "roundoff_and_angle_guard_m": 2.967480421789311e-08,
+          "sampled_bound_deficit_m4": 0.0,
+          "sampled_max_actual_m4": 0.3881335907646136,
+          "samples_per_panel": 65,
+          "subintervals": [
+            66,
+            66,
+            66,
+            66,
+            66,
+            66,
+            66,
+            66
+          ],
+          "total_budget_m": 3.201332036466566e-08,
+          "total_subintervals": 528
+        },
+        "model_sha256": "f765edd7f96d795898a32bde082c9805941c84a7822f33df6574bbbcc8e9de58",
+        "rigidity_error_m": 1.1102230246251565e-15,
+        "route_count": 3,
+        "search_rounds": 1,
+        "status": "SUCCESS",
+        "timings": {
+          "collision_audit_s": 1.0808348490390927,
+          "dynamics_audit_s": 1.0212518849875778,
+          "geometry_solve_s": 9.50389346794691,
+          "result_assembly_s": 0.0,
+          "retime_s": 0.40677846607286483,
+          "route_generation_s": 0.4015946789877489
+        },
+        "wall_time_s": 12.434723671060055
+      },
+      "path_length_m": 10.467139660262553,
+      "planning_context_sha256": "ddf6bf0e7b2397826a7a3d1887612a2b5a01cb93e19dbbb32f715bedfffca7c9",
+      "reference": {
+        "collision_checks": 8204,
+        "dynamic_checks": 909,
+        "endpoint_difference_m": 1.2839311938972403e-10,
+        "envelope": {
+          "baseline_margin_m": 0.05,
+          "binding_pair": [
+            1,
+            2
+          ],
+          "closure_gap_m": 5.038318068135579e-17,
+          "contexts": [
+            "map_boundary",
+            "motion_sweep",
+            "no_motion_hold",
+            "static_start_goal",
+            "vehicle_vehicle"
+          ],
+          "exact_half_diagonal_m": 0.4804800100806486,
+          "exact_per_side_growth_m": 2.996046216674486e-08,
+          "exact_required_margin_m": 0.05000005992092423,
+          "margin_minus_floor_m": 5.992092432655083e-08,
+          "margin_used_m": 0.05000005992092433,
+          "maximum_envelope_m": 2.996046211636168e-08,
+          "pair_envelope_m": 5.992092423272336e-08,
+          "per_side_growth_record_m": 2.9960462166744855e-08,
+          "radius_upper_m": 0.4804800100806487,
+          "radius_upper_note": "radius_upper is an outward interval square root of the actual checker half extents (length+margin)/2 and (width+margin)/2 at the recorded margin; it is not the old fixed-point radius.  The margin is solved at this same expanded radius.",
+          "sweep_motion_padding_m": 0.01,
+          "vehicles": 3
+        },
+        "geometry_checks": 155,
+        "independent_accepted": true,
+        "integration": {
+          "euclidean_remainder_m": 2.784983649474895e-10,
+          "fixed_threshold_m": 5e-08,
+          "full_simpson_panels": 264,
+          "local_simpson_panels": 8,
+          "m4_method": "exact_interval_fourth_derivative_per_panel",
+          "method": "independent_composite_simpson_v2_exact_panel",
+          "per_coordinate_remainder_m": 1.9692808240373564e-10,
+          "refinement_steps": 0,
+          "roundoff_and_angle_guard_m": 2.967556961079017e-08,
+          "sampled_bound_deficit_m4": 0.0,
+          "sampled_max_actual_m4": 0.10450102781547313,
+          "samples_per_panel": 65,
+          "subintervals": [
+            66,
+            66,
+            66,
+            66,
+            66,
+            66,
+            66,
+            66
+          ],
+          "total_budget_m": 2.995406797573767e-08,
+          "total_subintervals": 528
+        },
+        "reference_file": "reference/S1_mirror.json",
+        "reference_sha256": "4272dd2cdd1ff72b88ce28b7c87c48be902d195ccbbdd150cc99ddc9f9824e50",
+        "status": "REFERENCE_PASSED",
+        "timed_model_sha256": "59b5960c825637f32d238df5093f2ad7473f01fd086bc72aec016b59487c3117"
+      },
+      "request_sha256": "5c945f973aa02c47d42cd11707c55c392df533c8688ce027d11a4415b05c5ee0",
+      "rigidity_error_m": 1.1102230246251565e-15,
+      "routes": [
+        {
+          "grid_sha256": "fb485abf73dd1e1953c43762dbee0f9f7ac26a94968766e817c6951135e7c595",
+          "length_m": 10.85374759371938,
+          "point_count": 198,
+          "source": "astar_primary"
+        },
+        {
+          "grid_sha256": "fb485abf73dd1e1953c43762dbee0f9f7ac26a94968766e817c6951135e7c595",
+          "length_m": 10.73659030619399,
+          "point_count": 194,
+          "source": "astar_alternative_1"
+        },
+        {
+          "grid_sha256": "fb485abf73dd1e1953c43762dbee0f9f7ac26a94968766e817c6951135e7c595",
+          "length_m": 11.248722340549962,
+          "point_count": 203,
+          "source": "astar_alternative_2"
+        }
+      ],
+      "status": "SUCCESS",
+      "timings": {
+        "collision_audit_s": 1.0808348490390927,
+        "dynamics_audit_s": 1.0212518849875778,
+        "geometry_solve_s": 9.50389346794691,
+        "result_assembly_s": 0.0,
+        "retime_s": 0.40677846607286483,
+        "route_generation_s": 0.4015946789877489
+      },
+      "wall_time_s": 12.434723671060055
+    },
+    "S2": {
+      "attempt_count": 6,
+      "attempt_statuses": [
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED"
+      ],
+      "attempts": [
+        {
+          "attempt_index": 0,
+          "initial_label": "route_guide=0;source=astar_primary",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.2666231520706788
+        },
+        {
+          "attempt_index": 1,
+          "initial_label": "route_guide=1;source=astar_alternative_1",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.3924592790426686
+        },
+        {
+          "attempt_index": 2,
+          "initial_label": "route_guide=2;source=astar_alternative_2",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.4047952629625797
+        },
+        {
+          "attempt_index": 3,
+          "initial_label": "length_multiplier=1.2;shape=left",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.3603716728975996
+        },
+        {
+          "attempt_index": 4,
+          "initial_label": "length_multiplier=1.2;shape=right",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.3334380479063839
+        },
+        {
+          "attempt_index": 5,
+          "initial_label": "length_multiplier=1.8;shape=left",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.3404763409635052
+        }
+      ],
+      "audits": {
+        "collision": {
+          "check_count": 15206,
+          "passed": true,
+          "reason": null
+        },
+        "dynamics": {
+          "check_count": 935,
+          "passed": true,
+          "reason": null
+        },
+        "geometry": {
+          "check_count": 181,
+          "passed": true,
+          "reason": null
+        }
+      },
+      "checks": 16322,
+      "collision_checks": 15206,
+      "collision_margin_m": 0.050000150908205816,
+      "duration_s": 37.54640846040029,
+      "dynamics": {
+        "check_count": 935,
+        "leaves": 64,
+        "max_utilization": 0.990099009900991,
+        "pointwise_component_ratio": 0.9540282129492504,
+        "pointwise_jerk_ratio": 0.880248792848926,
+        "pointwise_p_sss_ratio": 0.9689480841606803,
+        "whole_domain_certificate": true
+      },
+      "endpoint_error_m": 4.275796780732511e-10,
+      "envelope": {
+        "baseline_margin_m": 0.05,
+        "binding_pair": [
+          1,
+          2
+        ],
+        "closure_gap_m": 2.505065530791111e-17,
+        "contexts": [
+          "map_boundary",
+          "motion_sweep",
+          "no_motion_hold",
+          "static_start_goal",
+          "vehicle_vehicle"
+        ],
+        "exact_half_diagonal_m": 0.48048007342407145,
+        "exact_per_side_growth_m": 7.545410291021071e-08,
+        "exact_required_margin_m": 0.050000150908205775,
+        "margin_minus_floor_m": 1.5090820581348252e-07,
+        "margin_used_m": 0.050000150908205816,
+        "maximum_envelope_m": 7.545410288516005e-08,
+        "pair_envelope_m": 1.509082057703201e-07,
+        "per_side_growth_record_m": 7.54541029102107e-08,
+        "radius_upper_m": 0.4804800734240716,
+        "radius_upper_note": "radius_upper is an outward interval square root of the actual checker half extents (length+margin)/2 and (width+margin)/2 at the recorded margin; it is not the old fixed-point radius.  The margin is solved at this same expanded radius.",
+        "sweep_motion_padding_m": 0.01,
+        "vehicles": 3
+      },
+      "executable": true,
+      "grid_sha256": "55e3c5b82a99c74b96a550720fd7a467e76b40f48082c0212ca21574d3af8782",
+      "heading_error_rad": 4.718447854656915e-16,
+      "input_digests": {
+        "map_pgm_sha256": "7249d848f3447a53aac908fd2b6a10c46dca3c5fa8880131372a142427f57343",
+        "map_signature": "55e3c5b82a99c74b96a550720fd7a467e76b40f48082c0212ca21574d3af8782",
+        "map_yaml_sha256": "407eaf102e19337a58cad2dd775007cd7969b91fc97b3f525991bb847f2f1add",
+        "request_file_sha256": "03ebf17e284c1f889e9dd848875bf4ac91cc193dc1a068bff25f0bc5db538119"
+      },
+      "input_files": [
+        "map.pgm",
+        "map.yaml",
+        "request.json"
+      ],
+      "integration": {
+        "euclidean_remainder_m": 1.0250617983747053e-08,
+        "fixed_threshold_m": 5e-08,
+        "full_simpson_panels": 304,
+        "local_simpson_panels": 8,
+        "m4_method": "exact_interval_fourth_derivative_per_panel",
+        "method": "independent_composite_simpson_v2_exact_panel",
+        "per_coordinate_remainder_m": 7.248281487660313e-09,
+        "refinement_steps": 0,
+        "roundoff_and_angle_guard_m": 3.391780458949237e-08,
+        "sampled_bound_deficit_m4": 0.0,
+        "sampled_max_actual_m4": 1.257451785168356,
+        "samples_per_panel": 65,
+        "subintervals": [
+          76,
+          76,
+          76,
+          76,
+          76,
+          76,
+          76,
+          76
+        ],
+        "total_budget_m": 4.416842257323943e-08,
+        "total_subintervals": 608
+      },
+      "model_sha256": "8b91407b27788769e255f072f1d55c950e7163baa3c65b3c57839013a5c3da45",
+      "numerics": {
+        "attempt_count": 6,
+        "checks": 16322,
+        "collision": {
+          "bounds_verified": true,
+          "check_count": 15206,
+          "max_corner_step_m": 0.01,
+          "max_samples_per_segment": 200000,
+          "sample_count": 2527,
+          "segment_count": 8,
+          "static_stages": [
+            "goal",
+            "start"
+          ]
+        },
+        "dynamics": {
+          "check_count": 935,
+          "leaves": 64,
+          "max_utilization": 0.990099009900991,
+          "pointwise_component_ratio": 0.9540282129492504,
+          "pointwise_jerk_ratio": 0.880248792848926,
+          "pointwise_p_sss_ratio": 0.9689480841606803,
+          "whole_domain_certificate": true
+        },
+        "endpoint_error_m": 4.275796780732511e-10,
+        "envelope": {
+          "baseline_margin_m": 0.05,
+          "binding_pair": [
+            1,
+            2
+          ],
+          "closure_gap_m": 2.505065530791111e-17,
+          "contexts": [
+            "map_boundary",
+            "motion_sweep",
+            "no_motion_hold",
+            "static_start_goal",
+            "vehicle_vehicle"
+          ],
+          "exact_half_diagonal_m": 0.48048007342407145,
+          "exact_per_side_growth_m": 7.545410291021071e-08,
+          "exact_required_margin_m": 0.050000150908205775,
+          "margin_minus_floor_m": 1.5090820581348252e-07,
+          "margin_used_m": 0.050000150908205816,
+          "maximum_envelope_m": 7.545410288516005e-08,
+          "pair_envelope_m": 1.509082057703201e-07,
+          "per_side_growth_record_m": 7.54541029102107e-08,
+          "radius_upper_m": 0.4804800734240716,
+          "radius_upper_note": "radius_upper is an outward interval square root of the actual checker half extents (length+margin)/2 and (width+margin)/2 at the recorded margin; it is not the old fixed-point radius.  The margin is solved at this same expanded radius.",
+          "sweep_motion_padding_m": 0.01,
+          "vehicles": 3
+        },
+        "executable": true,
+        "geometry": {
+          "check_count": 181,
+          "max_heading_error_rad": 1.6653345369377348e-16,
+          "max_pairwise_rigidity_error_m": 1.3322676295501878e-15,
+          "max_position_error_m": 1.831026719408895e-15,
+          "position_tolerance_m": 7.968599472939595e-07,
+          "sample_count": 73
+        },
+        "heading_error_rad": 4.718447854656915e-16,
+        "integration": {
+          "euclidean_remainder_m": 1.0250617983747053e-08,
+          "fixed_threshold_m": 5e-08,
+          "full_simpson_panels": 304,
+          "local_simpson_panels": 8,
+          "m4_method": "exact_interval_fourth_derivative_per_panel",
+          "method": "independent_composite_simpson_v2_exact_panel",
+          "per_coordinate_remainder_m": 7.248281487660313e-09,
+          "refinement_steps": 0,
+          "roundoff_and_angle_guard_m": 3.391780458949237e-08,
+          "sampled_bound_deficit_m4": 0.0,
+          "sampled_max_actual_m4": 1.257451785168356,
+          "samples_per_panel": 65,
+          "subintervals": [
+            76,
+            76,
+            76,
+            76,
+            76,
+            76,
+            76,
+            76
+          ],
+          "total_budget_m": 4.416842257323943e-08,
+          "total_subintervals": 608
+        },
+        "model_sha256": "8b91407b27788769e255f072f1d55c950e7163baa3c65b3c57839013a5c3da45",
+        "rigidity_error_m": 1.3322676295501878e-15,
+        "route_count": 3,
+        "search_rounds": 1,
+        "status": "SUCCESS",
+        "timings": {
+          "collision_audit_s": 1.8476308769313619,
+          "dynamics_audit_s": 1.1036298699909821,
+          "geometry_solve_s": 9.417398213059641,
+          "result_assembly_s": 0.0,
+          "retime_s": 0.40393619495444,
+          "route_generation_s": 0.3660865090787411
+        },
+        "wall_time_s": 13.155662282020785
+      },
+      "path_length_m": 11.98531134280284,
+      "planning_context_sha256": "69467fc5b42d2568c3d666da4de31343ee7b738fb13f2766dff6ac29d585cd5f",
+      "reference": {
+        "collision_checks": 15620,
+        "dynamic_checks": 937,
+        "endpoint_difference_m": 2.806646496170421e-13,
+        "envelope": {
+          "baseline_margin_m": 0.05,
+          "binding_pair": [
+            1,
+            2
+          ],
+          "closure_gap_m": 2.4379156704085463e-17,
+          "contexts": [
+            "map_boundary",
+            "motion_sweep",
+            "no_motion_hold",
+            "static_start_goal",
+            "vehicle_vehicle"
+          ],
+          "exact_half_diagonal_m": 0.48048007773363277,
+          "exact_per_side_growth_m": 7.854925665462531e-08,
+          "exact_required_margin_m": 0.05000015709851326,
+          "margin_minus_floor_m": 1.5709851329537283e-07,
+          "margin_used_m": 0.0500001570985133,
+          "maximum_envelope_m": 7.854925663024615e-08,
+          "pair_envelope_m": 1.570985132604923e-07,
+          "per_side_growth_record_m": 7.85492566546253e-08,
+          "radius_upper_m": 0.4804800777336329,
+          "radius_upper_note": "radius_upper is an outward interval square root of the actual checker half extents (length+margin)/2 and (width+margin)/2 at the recorded margin; it is not the old fixed-point radius.  The margin is solved at this same expanded radius.",
+          "sweep_motion_padding_m": 0.01,
+          "vehicles": 3
+        },
+        "geometry_checks": 183,
+        "independent_accepted": true,
+        "integration": {
+          "euclidean_remainder_m": 1.1436697332247596e-08,
+          "fixed_threshold_m": 5e-08,
+          "full_simpson_panels": 304,
+          "local_simpson_panels": 8,
+          "m4_method": "exact_interval_fourth_derivative_per_panel",
+          "method": "independent_composite_simpson_v2_exact_panel",
+          "per_coordinate_remainder_m": 8.08696623801037e-09,
+          "refinement_steps": 0,
+          "roundoff_and_angle_guard_m": 3.3920161090188816e-08,
+          "sampled_bound_deficit_m4": 0.0,
+          "sampled_max_actual_m4": 1.110589601566439,
+          "samples_per_panel": 65,
+          "subintervals": [
+            76,
+            76,
+            76,
+            76,
+            76,
+            76,
+            76,
+            76
+          ],
+          "total_budget_m": 4.535685842243642e-08,
+          "total_subintervals": 608
+        },
+        "reference_file": "reference/S2.json",
+        "reference_sha256": "0dd6d546f93216dcb5a9850fc515f83c042c1944b3895ce424dc28cb0d304118",
+        "status": "REFERENCE_PASSED",
+        "timed_model_sha256": "a6b18991bb8a90eb475f14f003a6729d0eff70af33e47137fb5e46a852592642"
+      },
+      "request_sha256": "9feb7332db51d4f347a21b347416b6e7ffa1619ad28bda41ef88ad57c3bb2ba2",
+      "rigidity_error_m": 1.3322676295501878e-15,
+      "routes": [
+        {
+          "grid_sha256": "55e3c5b82a99c74b96a550720fd7a467e76b40f48082c0212ca21574d3af8782",
+          "length_m": 12.608030227999718,
+          "point_count": 232,
+          "source": "astar_primary"
+        },
+        {
+          "grid_sha256": "55e3c5b82a99c74b96a550720fd7a467e76b40f48082c0212ca21574d3af8782",
+          "length_m": 12.690872940474332,
+          "point_count": 232,
+          "source": "astar_alternative_1"
+        },
+        {
+          "grid_sha256": "55e3c5b82a99c74b96a550720fd7a467e76b40f48082c0212ca21574d3af8782",
+          "length_m": 12.73229429671164,
+          "point_count": 232,
+          "source": "astar_alternative_2"
+        }
+      ],
+      "status": "SUCCESS",
+      "timings": {
+        "collision_audit_s": 1.8476308769313619,
+        "dynamics_audit_s": 1.1036298699909821,
+        "geometry_solve_s": 9.417398213059641,
+        "result_assembly_s": 0.0,
+        "retime_s": 0.40393619495444,
+        "route_generation_s": 0.3660865090787411
+      },
+      "wall_time_s": 13.155662282020785
+    },
+    "S2_mirror": {
+      "attempt_count": 6,
+      "attempt_statuses": [
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED"
+      ],
+      "attempts": [
+        {
+          "attempt_index": 0,
+          "initial_label": "route_guide=0;source=astar_primary",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.356888392008841
+        },
+        {
+          "attempt_index": 1,
+          "initial_label": "route_guide=1;source=astar_alternative_1",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.3715099090477452
+        },
+        {
+          "attempt_index": 2,
+          "initial_label": "route_guide=2;source=astar_alternative_2",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.404001333983615
+        },
+        {
+          "attempt_index": 3,
+          "initial_label": "length_multiplier=1.2;shape=left",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.3072301079519093
+        },
+        {
+          "attempt_index": 4,
+          "initial_label": "length_multiplier=1.2;shape=right",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.3507158369757235
+        },
+        {
+          "attempt_index": 5,
+          "initial_label": "length_multiplier=1.8;shape=left",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.3683815650874749
+        }
+      ],
+      "audits": {
+        "collision": {
+          "check_count": 15182,
+          "passed": true,
+          "reason": null
+        },
+        "dynamics": {
+          "check_count": 935,
+          "passed": true,
+          "reason": null
+        },
+        "geometry": {
+          "check_count": 181,
+          "passed": true,
+          "reason": null
+        }
+      },
+      "checks": 16298,
+      "collision_checks": 15182,
+      "collision_margin_m": 0.05000014737670717,
+      "duration_s": 37.69549959251513,
+      "dynamics": {
+        "check_count": 935,
+        "leaves": 64,
+        "max_utilization": 0.990099009900991,
+        "pointwise_component_ratio": 0.9478962452508187,
+        "pointwise_jerk_ratio": 0.8808129995565638,
+        "pointwise_p_sss_ratio": 0.9692240240722989,
+        "whole_domain_certificate": true
+      },
+      "endpoint_error_m": 4.1284876399562624e-10,
+      "envelope": {
+        "baseline_margin_m": 0.05,
+        "binding_pair": [
+          1,
+          2
+        ],
+        "closure_gap_m": 4.870140338202728e-17,
+        "contexts": [
+          "map_boundary",
+          "motion_sweep",
+          "no_motion_hold",
+          "static_start_goal",
+          "vehicle_vehicle"
+        ],
+        "exact_half_diagonal_m": 0.4804800709655167,
+        "exact_per_side_growth_m": 7.368835358567694e-08,
+        "exact_required_margin_m": 0.05000014737670708,
+        "margin_minus_floor_m": 1.4737670716441498e-07,
+        "margin_used_m": 0.05000014737670717,
+        "maximum_envelope_m": 7.368835353697553e-08,
+        "pair_envelope_m": 1.4737670707395106e-07,
+        "per_side_growth_record_m": 7.368835358567692e-08,
+        "radius_upper_m": 0.4804800709655168,
+        "radius_upper_note": "radius_upper is an outward interval square root of the actual checker half extents (length+margin)/2 and (width+margin)/2 at the recorded margin; it is not the old fixed-point radius.  The margin is solved at this same expanded radius.",
+        "sweep_motion_padding_m": 0.01,
+        "vehicles": 3
+      },
+      "executable": true,
+      "grid_sha256": "e50be3838ff411edc4a8cfeda5d28b0cf0188db89a1a4dababf72bb514b4d57c",
+      "heading_error_rad": 2.220446049250313e-16,
+      "input_digests": {
+        "map_pgm_sha256": "94fab242e95d66e22060f95a303fba2bb6ff91a4fa6e3cef3669f47f4fd26141",
+        "map_signature": "e50be3838ff411edc4a8cfeda5d28b0cf0188db89a1a4dababf72bb514b4d57c",
+        "map_yaml_sha256": "f8e5f664772f28d4b6522a8b7c9876353beb2a19fe550efd59a415bf88082ee8",
+        "request_file_sha256": "594222be5f433583e9fd736129983dcb94d0af633f6c0e4f08f19753bfa49b88"
+      },
+      "input_files": [
+        "map.pgm",
+        "map.yaml",
+        "request.json"
+      ],
+      "integration": {
+        "euclidean_remainder_m": 1.014526062854579e-08,
+        "fixed_threshold_m": 5e-08,
+        "full_simpson_panels": 304,
+        "local_simpson_panels": 8,
+        "m4_method": "exact_interval_fourth_derivative_per_panel",
+        "method": "independent_composite_simpson_v2_exact_panel",
+        "per_coordinate_remainder_m": 7.173782587349621e-09,
+        "refinement_steps": 0,
+        "roundoff_and_angle_guard_m": 3.39173257911396e-08,
+        "sampled_bound_deficit_m4": 0.0,
+        "sampled_max_actual_m4": 1.3054632491538567,
+        "samples_per_panel": 65,
+        "subintervals": [
+          76,
+          76,
+          76,
+          76,
+          76,
+          76,
+          76,
+          76
+        ],
+        "total_budget_m": 4.40625864196854e-08,
+        "total_subintervals": 608
+      },
+      "model_sha256": "99b04bc31f9bc733368db2fedb8c232dd81430481ff1164cb3dd22e9999231d0",
+      "numerics": {
+        "attempt_count": 6,
+        "checks": 16298,
+        "collision": {
+          "bounds_verified": true,
+          "check_count": 15182,
+          "max_corner_step_m": 0.01,
+          "max_samples_per_segment": 200000,
+          "sample_count": 2523,
+          "segment_count": 8,
+          "static_stages": [
+            "goal",
+            "start"
+          ]
+        },
+        "dynamics": {
+          "check_count": 935,
+          "leaves": 64,
+          "max_utilization": 0.990099009900991,
+          "pointwise_component_ratio": 0.9478962452508187,
+          "pointwise_jerk_ratio": 0.8808129995565638,
+          "pointwise_p_sss_ratio": 0.9692240240722989,
+          "whole_domain_certificate": true
+        },
+        "endpoint_error_m": 4.1284876399562624e-10,
+        "envelope": {
+          "baseline_margin_m": 0.05,
+          "binding_pair": [
+            1,
+            2
+          ],
+          "closure_gap_m": 4.870140338202728e-17,
+          "contexts": [
+            "map_boundary",
+            "motion_sweep",
+            "no_motion_hold",
+            "static_start_goal",
+            "vehicle_vehicle"
+          ],
+          "exact_half_diagonal_m": 0.4804800709655167,
+          "exact_per_side_growth_m": 7.368835358567694e-08,
+          "exact_required_margin_m": 0.05000014737670708,
+          "margin_minus_floor_m": 1.4737670716441498e-07,
+          "margin_used_m": 0.05000014737670717,
+          "maximum_envelope_m": 7.368835353697553e-08,
+          "pair_envelope_m": 1.4737670707395106e-07,
+          "per_side_growth_record_m": 7.368835358567692e-08,
+          "radius_upper_m": 0.4804800709655168,
+          "radius_upper_note": "radius_upper is an outward interval square root of the actual checker half extents (length+margin)/2 and (width+margin)/2 at the recorded margin; it is not the old fixed-point radius.  The margin is solved at this same expanded radius.",
+          "sweep_motion_padding_m": 0.01,
+          "vehicles": 3
+        },
+        "executable": true,
+        "geometry": {
+          "check_count": 181,
+          "max_heading_error_rad": 1.1102230246251565e-16,
+          "max_pairwise_rigidity_error_m": 1.3322676295501878e-15,
+          "max_position_error_m": 3.580361673049448e-15,
+          "position_tolerance_m": 7.790966057326998e-07,
+          "sample_count": 73
+        },
+        "heading_error_rad": 2.220446049250313e-16,
+        "integration": {
+          "euclidean_remainder_m": 1.014526062854579e-08,
+          "fixed_threshold_m": 5e-08,
+          "full_simpson_panels": 304,
+          "local_simpson_panels": 8,
+          "m4_method": "exact_interval_fourth_derivative_per_panel",
+          "method": "independent_composite_simpson_v2_exact_panel",
+          "per_coordinate_remainder_m": 7.173782587349621e-09,
+          "refinement_steps": 0,
+          "roundoff_and_angle_guard_m": 3.39173257911396e-08,
+          "sampled_bound_deficit_m4": 0.0,
+          "sampled_max_actual_m4": 1.3054632491538567,
+          "samples_per_panel": 65,
+          "subintervals": [
+            76,
+            76,
+            76,
+            76,
+            76,
+            76,
+            76,
+            76
+          ],
+          "total_budget_m": 4.40625864196854e-08,
+          "total_subintervals": 608
+        },
+        "model_sha256": "99b04bc31f9bc733368db2fedb8c232dd81430481ff1164cb3dd22e9999231d0",
+        "rigidity_error_m": 1.3322676295501878e-15,
+        "route_count": 3,
+        "search_rounds": 1,
+        "status": "SUCCESS",
+        "timings": {
+          "collision_audit_s": 1.7910355989588425,
+          "dynamics_audit_s": 1.1048791820649058,
+          "geometry_solve_s": 9.438754062983207,
+          "result_assembly_s": 0.0,
+          "retime_s": 0.409127130988054,
+          "route_generation_s": 0.36693907796870917
+        },
+        "wall_time_s": 13.1288091680035
+      },
+      "path_length_m": 11.98231841326067,
+      "planning_context_sha256": "787df2c81cab95cd157eea89fda18e85e9070f5fdc81eb1b70c26b921667dc08",
+      "reference": {
+        "collision_checks": 15620,
+        "dynamic_checks": 937,
+        "endpoint_difference_m": 2.806646496170421e-13,
+        "envelope": {
+          "baseline_margin_m": 0.05,
+          "binding_pair": [
+            1,
+            2
+          ],
+          "closure_gap_m": 2.4379183173865065e-17,
+          "contexts": [
+            "map_boundary",
+            "motion_sweep",
+            "no_motion_hold",
+            "static_start_goal",
+            "vehicle_vehicle"
+          ],
+          "exact_half_diagonal_m": 0.48048007773363277,
+          "exact_per_side_growth_m": 7.854925665462531e-08,
+          "exact_required_margin_m": 0.05000015709851326,
+          "margin_minus_floor_m": 1.5709851329537283e-07,
+          "margin_used_m": 0.0500001570985133,
+          "maximum_envelope_m": 7.854925663024613e-08,
+          "pair_envelope_m": 1.5709851326049225e-07,
+          "per_side_growth_record_m": 7.85492566546253e-08,
+          "radius_upper_m": 0.4804800777336329,
+          "radius_upper_note": "radius_upper is an outward interval square root of the actual checker half extents (length+margin)/2 and (width+margin)/2 at the recorded margin; it is not the old fixed-point radius.  The margin is solved at this same expanded radius.",
+          "sweep_motion_padding_m": 0.01,
+          "vehicles": 3
+        },
+        "geometry_checks": 183,
+        "independent_accepted": true,
+        "integration": {
+          "euclidean_remainder_m": 1.1436697332247596e-08,
+          "fixed_threshold_m": 5e-08,
+          "full_simpson_panels": 304,
+          "local_simpson_panels": 8,
+          "m4_method": "exact_interval_fourth_derivative_per_panel",
+          "method": "independent_composite_simpson_v2_exact_panel",
+          "per_coordinate_remainder_m": 8.08696623801037e-09,
+          "refinement_steps": 0,
+          "roundoff_and_angle_guard_m": 3.3920161090188816e-08,
+          "sampled_bound_deficit_m4": 0.0,
+          "sampled_max_actual_m4": 1.110589601566439,
+          "samples_per_panel": 65,
+          "subintervals": [
+            76,
+            76,
+            76,
+            76,
+            76,
+            76,
+            76,
+            76
+          ],
+          "total_budget_m": 4.535685842243642e-08,
+          "total_subintervals": 608
+        },
+        "reference_file": "reference/S2_mirror.json",
+        "reference_sha256": "3795cc31c9837e4304510476448db8a25aefea602e6b2b597ddefe76de9e8ad6",
+        "status": "REFERENCE_PASSED",
+        "timed_model_sha256": "559b7bd823295d5dc5d9909efb56c97055e9043ce5c7b03d60b6e51e6e0c8ad0"
+      },
+      "request_sha256": "244db57aa644b6a202477d22b1f45f53a462b52ae9ecb64b5fe36b5c58a3e6d0",
+      "rigidity_error_m": 1.3322676295501878e-15,
+      "routes": [
+        {
+          "grid_sha256": "e50be3838ff411edc4a8cfeda5d28b0cf0188db89a1a4dababf72bb514b4d57c",
+          "length_m": 12.628740906118374,
+          "point_count": 232,
+          "source": "astar_primary"
+        },
+        {
+          "grid_sha256": "e50be3838ff411edc4a8cfeda5d28b0cf0188db89a1a4dababf72bb514b4d57c",
+          "length_m": 12.711583618592984,
+          "point_count": 232,
+          "source": "astar_alternative_1"
+        },
+        {
+          "grid_sha256": "e50be3838ff411edc4a8cfeda5d28b0cf0188db89a1a4dababf72bb514b4d57c",
+          "length_m": 12.753004974830294,
+          "point_count": 232,
+          "source": "astar_alternative_2"
+        }
+      ],
+      "status": "SUCCESS",
+      "timings": {
+        "collision_audit_s": 1.7910355989588425,
+        "dynamics_audit_s": 1.1048791820649058,
+        "geometry_solve_s": 9.438754062983207,
+        "result_assembly_s": 0.0,
+        "retime_s": 0.409127130988054,
+        "route_generation_s": 0.36693907796870917
+      },
+      "wall_time_s": 13.1288091680035
+    },
+    "S3": {
+      "attempt_count": 12,
+      "attempt_statuses": [
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDIT_REJECTED",
+        "SOLVER_SUCCESS_AUDIT_REJECTED"
+      ],
+      "attempts": [
+        {
+          "attempt_index": 0,
+          "initial_label": "route_guide=0;source=astar_primary",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.312238318962045
+        },
+        {
+          "attempt_index": 1,
+          "initial_label": "route_guide=1;source=astar_alternative_1",
+          "rejection_reason": "BOUND_UNCONFIRMED",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDIT_REJECTED",
+          "wall_time_s": 1.5005212359828874
+        },
+        {
+          "attempt_index": 2,
+          "initial_label": "route_guide=2;source=astar_alternative_2",
+          "rejection_reason": "CURVATURE_LIMIT",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDIT_REJECTED",
+          "wall_time_s": 1.338255506940186
+        },
+        {
+          "attempt_index": 3,
+          "initial_label": "length_multiplier=1.2;shape=left",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.3811238559428602
+        },
+        {
+          "attempt_index": 4,
+          "initial_label": "length_multiplier=1.2;shape=right",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.3334684359142557
+        },
+        {
+          "attempt_index": 5,
+          "initial_label": "length_multiplier=1.8;shape=left",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.3936557949054986
+        },
+        {
+          "attempt_index": 0,
+          "initial_label": "route_guide=0;source=astar_primary",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.1613814999582246
+        },
+        {
+          "attempt_index": 1,
+          "initial_label": "route_guide=1;source=astar_alternative_1",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.1743396180681884
+        },
+        {
+          "attempt_index": 2,
+          "initial_label": "route_guide=2;source=astar_alternative_2",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.334682062966749
+        },
+        {
+          "attempt_index": 3,
+          "initial_label": "length_multiplier=1.2;shape=left",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.2450214689597487
+        },
+        {
+          "attempt_index": 4,
+          "initial_label": "length_multiplier=1.2;shape=right",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.209377850056626
+        },
+        {
+          "attempt_index": 5,
+          "initial_label": "length_multiplier=1.8;shape=left",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.3041509869508445
+        }
+      ],
+      "audits": {
+        "collision": {
+          "check_count": 11864,
+          "passed": true,
+          "reason": null
+        },
+        "dynamics": {
+          "check_count": 923,
+          "passed": true,
+          "reason": null
+        },
+        "geometry": {
+          "check_count": 169,
+          "passed": true,
+          "reason": null
+        }
+      },
+      "checks": 12956,
+      "collision_checks": 11864,
+      "collision_margin_m": 0.050000094432937695,
+      "duration_s": 37.27956201763165,
+      "dynamics": {
+        "check_count": 923,
+        "leaves": 64,
+        "max_utilization": 0.9900990099009901,
+        "pointwise_component_ratio": 0.9498666074074866,
+        "pointwise_jerk_ratio": 0.8634026311032174,
+        "pointwise_p_sss_ratio": 0.9743329798031719,
+        "whole_domain_certificate": true
+      },
+      "endpoint_error_m": 4.367370357659129e-10,
+      "envelope": {
+        "baseline_margin_m": 0.05,
+        "binding_pair": [
+          1,
+          2
+        ],
+        "closure_gap_m": 4.230261209600287e-18,
+        "contexts": [
+          "map_boundary",
+          "motion_sweep",
+          "no_motion_hold",
+          "static_start_goal",
+          "vehicle_vehicle"
+        ],
+        "exact_half_diagonal_m": 0.4804800341071831,
+        "exact_per_side_growth_m": 4.721646884586761e-08,
+        "exact_required_margin_m": 0.05000009443293769,
+        "margin_minus_floor_m": 9.443293769173522e-08,
+        "margin_used_m": 0.050000094432937695,
+        "maximum_envelope_m": 4.721646884163735e-08,
+        "pair_envelope_m": 9.44329376832747e-08,
+        "per_side_growth_record_m": 4.72164688458676e-08,
+        "radius_upper_m": 0.4804800341071832,
+        "radius_upper_note": "radius_upper is an outward interval square root of the actual checker half extents (length+margin)/2 and (width+margin)/2 at the recorded margin; it is not the old fixed-point radius.  The margin is solved at this same expanded radius.",
+        "sweep_motion_padding_m": 0.01,
+        "vehicles": 3
+      },
+      "executable": true,
+      "grid_sha256": "d4ca88971203636b4dcc0285b99d092823069d210d8ac3e13f67be49609ba1c3",
+      "heading_error_rad": 2.7755575615628914e-17,
+      "input_digests": {
+        "map_pgm_sha256": "42499b71080fe3a21498b84c8d0f28a66c4d66c4985d068e6d61ad4a115379f6",
+        "map_signature": "d4ca88971203636b4dcc0285b99d092823069d210d8ac3e13f67be49609ba1c3",
+        "map_yaml_sha256": "59e801f5cdd99ec991ea0702e44069abb059f35463603189bcf12497c730d5d8",
+        "request_file_sha256": "48033eb755244f0b8860f919aae7bf2ac2730523089ce15fe4e2e32578c85adc"
+      },
+      "input_files": [
+        "map.pgm",
+        "map.yaml",
+        "request.json"
+      ],
+      "integration": {
+        "euclidean_remainder_m": 3.888362658757869e-09,
+        "fixed_threshold_m": 5e-08,
+        "full_simpson_panels": 304,
+        "local_simpson_panels": 8,
+        "m4_method": "exact_interval_fourth_derivative_per_panel",
+        "method": "independent_composite_simpson_v2_exact_panel",
+        "per_coordinate_remainder_m": 2.749487603720241e-09,
+        "refinement_steps": 0,
+        "roundoff_and_angle_guard_m": 3.389851347805831e-08,
+        "sampled_bound_deficit_m4": 0.0,
+        "sampled_max_actual_m4": 0.619136311252521,
+        "samples_per_panel": 65,
+        "subintervals": [
+          76,
+          76,
+          76,
+          76,
+          76,
+          76,
+          76,
+          76
+        ],
+        "total_budget_m": 3.778687613681619e-08,
+        "total_subintervals": 608
+      },
+      "model_sha256": "ca312f907c9c19972aea89ed75ec56ccdea1b99b33a052840fe49980117c6f13",
+      "numerics": {
+        "attempt_count": 12,
+        "checks": 12956,
+        "collision": {
+          "bounds_verified": true,
+          "check_count": 11864,
+          "max_corner_step_m": 0.01,
+          "max_samples_per_segment": 200000,
+          "sample_count": 1970,
+          "segment_count": 8,
+          "static_stages": [
+            "goal",
+            "start"
+          ]
+        },
+        "dynamics": {
+          "check_count": 923,
+          "leaves": 64,
+          "max_utilization": 0.9900990099009901,
+          "pointwise_component_ratio": 0.9498666074074866,
+          "pointwise_jerk_ratio": 0.8634026311032174,
+          "pointwise_p_sss_ratio": 0.9743329798031719,
+          "whole_domain_certificate": true
+        },
+        "endpoint_error_m": 4.367370357659129e-10,
+        "envelope": {
+          "baseline_margin_m": 0.05,
+          "binding_pair": [
+            1,
+            2
+          ],
+          "closure_gap_m": 4.230261209600287e-18,
+          "contexts": [
+            "map_boundary",
+            "motion_sweep",
+            "no_motion_hold",
+            "static_start_goal",
+            "vehicle_vehicle"
+          ],
+          "exact_half_diagonal_m": 0.4804800341071831,
+          "exact_per_side_growth_m": 4.721646884586761e-08,
+          "exact_required_margin_m": 0.05000009443293769,
+          "margin_minus_floor_m": 9.443293769173522e-08,
+          "margin_used_m": 0.050000094432937695,
+          "maximum_envelope_m": 4.721646884163735e-08,
+          "pair_envelope_m": 9.44329376832747e-08,
+          "per_side_growth_record_m": 4.72164688458676e-08,
+          "radius_upper_m": 0.4804800341071832,
+          "radius_upper_note": "radius_upper is an outward interval square root of the actual checker half extents (length+margin)/2 and (width+margin)/2 at the recorded margin; it is not the old fixed-point radius.  The margin is solved at this same expanded radius.",
+          "sweep_motion_padding_m": 0.01,
+          "vehicles": 3
+        },
+        "executable": true,
+        "geometry": {
+          "check_count": 169,
+          "max_heading_error_rad": 1.1102230246251565e-16,
+          "max_pairwise_rigidity_error_m": 1.3322676295501878e-15,
+          "max_position_error_m": 3.5566146649215975e-15,
+          "position_tolerance_m": 5.081021289086388e-07,
+          "sample_count": 73
+        },
+        "heading_error_rad": 2.7755575615628914e-17,
+        "integration": {
+          "euclidean_remainder_m": 3.888362658757869e-09,
+          "fixed_threshold_m": 5e-08,
+          "full_simpson_panels": 304,
+          "local_simpson_panels": 8,
+          "m4_method": "exact_interval_fourth_derivative_per_panel",
+          "method": "independent_composite_simpson_v2_exact_panel",
+          "per_coordinate_remainder_m": 2.749487603720241e-09,
+          "refinement_steps": 0,
+          "roundoff_and_angle_guard_m": 3.389851347805831e-08,
+          "sampled_bound_deficit_m4": 0.0,
+          "sampled_max_actual_m4": 0.619136311252521,
+          "samples_per_panel": 65,
+          "subintervals": [
+            76,
+            76,
+            76,
+            76,
+            76,
+            76,
+            76,
+            76
+          ],
+          "total_budget_m": 3.778687613681619e-08,
+          "total_subintervals": 608
+        },
+        "model_sha256": "ca312f907c9c19972aea89ed75ec56ccdea1b99b33a052840fe49980117c6f13",
+        "rigidity_error_m": 1.3322676295501878e-15,
+        "route_count": 3,
+        "search_rounds": 2,
+        "status": "SUCCESS",
+        "timings": {
+          "collision_audit_s": 1.1688414609525353,
+          "dynamics_audit_s": 2.319671427947469,
+          "geometry_solve_s": 19.197721419041045,
+          "result_assembly_s": 0.0,
+          "retime_s": 0.9147575440583751,
+          "route_generation_s": 1.4665244609350339
+        },
+        "wall_time_s": 25.07480152999051
+      },
+      "path_length_m": 11.865036452041057,
+      "planning_context_sha256": "a4b806295148c1ade5f7fd62d3bf0df408b8ad36ce9716c8792735d98c1383a0",
+      "reference": {
+        "collision_checks": 15620,
+        "dynamic_checks": 937,
+        "endpoint_difference_m": 2.806646496170421e-13,
+        "envelope": {
+          "baseline_margin_m": 0.05,
+          "binding_pair": [
+            1,
+            2
+          ],
+          "closure_gap_m": 2.4379156704085463e-17,
+          "contexts": [
+            "map_boundary",
+            "motion_sweep",
+            "no_motion_hold",
+            "static_start_goal",
+            "vehicle_vehicle"
+          ],
+          "exact_half_diagonal_m": 0.48048007773363277,
+          "exact_per_side_growth_m": 7.854925665462531e-08,
+          "exact_required_margin_m": 0.05000015709851326,
+          "margin_minus_floor_m": 1.5709851329537283e-07,
+          "margin_used_m": 0.0500001570985133,
+          "maximum_envelope_m": 7.854925663024615e-08,
+          "pair_envelope_m": 1.570985132604923e-07,
+          "per_side_growth_record_m": 7.85492566546253e-08,
+          "radius_upper_m": 0.4804800777336329,
+          "radius_upper_note": "radius_upper is an outward interval square root of the actual checker half extents (length+margin)/2 and (width+margin)/2 at the recorded margin; it is not the old fixed-point radius.  The margin is solved at this same expanded radius.",
+          "sweep_motion_padding_m": 0.01,
+          "vehicles": 3
+        },
+        "geometry_checks": 183,
+        "independent_accepted": true,
+        "integration": {
+          "euclidean_remainder_m": 1.1436697332247596e-08,
+          "fixed_threshold_m": 5e-08,
+          "full_simpson_panels": 304,
+          "local_simpson_panels": 8,
+          "m4_method": "exact_interval_fourth_derivative_per_panel",
+          "method": "independent_composite_simpson_v2_exact_panel",
+          "per_coordinate_remainder_m": 8.08696623801037e-09,
+          "refinement_steps": 0,
+          "roundoff_and_angle_guard_m": 3.3920161090188816e-08,
+          "sampled_bound_deficit_m4": 0.0,
+          "sampled_max_actual_m4": 1.110589601566439,
+          "samples_per_panel": 65,
+          "subintervals": [
+            76,
+            76,
+            76,
+            76,
+            76,
+            76,
+            76,
+            76
+          ],
+          "total_budget_m": 4.535685842243642e-08,
+          "total_subintervals": 608
+        },
+        "reference_file": "reference/S3.json",
+        "reference_sha256": "5bec2cfdfe72f5c43cf85b943ccf3aa1acc0bc6d2cec6da3c12be41a7204b989",
+        "status": "REFERENCE_PASSED",
+        "timed_model_sha256": "f22eac79ce17baecbaeda2fdfe5875276471c7013f1d2a95caae1e90a2d614d2"
+      },
+      "request_sha256": "18dc626d71fa5b6e5e023215c04b01ceae45f94c8846790d6352b9d6c0e9f075",
+      "rigidity_error_m": 1.3322676295501878e-15,
+      "routes": [
+        {
+          "grid_sha256": "d4ca88971203636b4dcc0285b99d092823069d210d8ac3e13f67be49609ba1c3",
+          "length_m": 12.649451584237026,
+          "point_count": 232,
+          "source": "astar_primary"
+        },
+        {
+          "grid_sha256": "d4ca88971203636b4dcc0285b99d092823069d210d8ac3e13f67be49609ba1c3",
+          "length_m": 12.749451584237027,
+          "point_count": 234,
+          "source": "astar_alternative_1"
+        },
+        {
+          "grid_sha256": "d4ca88971203636b4dcc0285b99d092823069d210d8ac3e13f67be49609ba1c3",
+          "length_m": 13.020162262355685,
+          "point_count": 239,
+          "source": "astar_alternative_2"
+        }
+      ],
+      "status": "SUCCESS",
+      "timings": {
+        "collision_audit_s": 1.1688414609525353,
+        "dynamics_audit_s": 2.319671427947469,
+        "geometry_solve_s": 19.197721419041045,
+        "result_assembly_s": 0.0,
+        "retime_s": 0.9147575440583751,
+        "route_generation_s": 1.4665244609350339
+      },
+      "wall_time_s": 25.07480152999051
+    },
+    "S3_mirror": {
+      "attempt_count": 12,
+      "attempt_statuses": [
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDITED",
+        "SOLVER_SUCCESS_AUDIT_REJECTED",
+        "SOLVER_SUCCESS_AUDIT_REJECTED"
+      ],
+      "attempts": [
+        {
+          "attempt_index": 0,
+          "initial_label": "route_guide=0;source=astar_primary",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.2896008540410548
+        },
+        {
+          "attempt_index": 1,
+          "initial_label": "route_guide=1;source=astar_alternative_1",
+          "rejection_reason": "BOUND_UNCONFIRMED",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDIT_REJECTED",
+          "wall_time_s": 1.3225980820134282
+        },
+        {
+          "attempt_index": 2,
+          "initial_label": "route_guide=2;source=astar_alternative_2",
+          "rejection_reason": "CURVATURE_LIMIT",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDIT_REJECTED",
+          "wall_time_s": 1.3029175921110436
+        },
+        {
+          "attempt_index": 3,
+          "initial_label": "length_multiplier=1.2;shape=left",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.3148380280472338
+        },
+        {
+          "attempt_index": 4,
+          "initial_label": "length_multiplier=1.2;shape=right",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.3121856619836763
+        },
+        {
+          "attempt_index": 5,
+          "initial_label": "length_multiplier=1.8;shape=left",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.3894094809656963
+        },
+        {
+          "attempt_index": 0,
+          "initial_label": "route_guide=0;source=astar_primary",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.1450923850061372
+        },
+        {
+          "attempt_index": 1,
+          "initial_label": "route_guide=1;source=astar_alternative_1",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.1708186350297183
+        },
+        {
+          "attempt_index": 2,
+          "initial_label": "route_guide=2;source=astar_alternative_2",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.3085420619463548
+        },
+        {
+          "attempt_index": 3,
+          "initial_label": "length_multiplier=1.2;shape=left",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.203414588002488
+        },
+        {
+          "attempt_index": 4,
+          "initial_label": "length_multiplier=1.2;shape=right",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.2046873919898644
+        },
+        {
+          "attempt_index": 5,
+          "initial_label": "length_multiplier=1.8;shape=left",
+          "rejection_reason": "",
+          "soft_deadline_triggered": false,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 1.2910545509075746
+        }
+      ],
+      "audits": {
+        "collision": {
+          "check_count": 12530,
+          "passed": true,
+          "reason": null
+        },
+        "dynamics": {
+          "check_count": 929,
+          "passed": true,
+          "reason": null
+        },
+        "geometry": {
+          "check_count": 175,
+          "passed": true,
+          "reason": null
+        }
+      },
+      "checks": 13634,
+      "collision_checks": 12530,
+      "collision_margin_m": 0.05000008905474157,
+      "duration_s": 37.27619633464934,
+      "dynamics": {
+        "check_count": 929,
+        "leaves": 64,
+        "max_utilization": 0.9900990099009899,
+        "pointwise_component_ratio": 0.9456009008808421,
+        "pointwise_jerk_ratio": 0.8858335275572602,
+        "pointwise_p_sss_ratio": 0.9689026440259322,
+        "whole_domain_certificate": true
+      },
+      "endpoint_error_m": 7.199038644416448e-10,
+      "envelope": {
+        "baseline_margin_m": 0.05,
+        "binding_pair": [
+          1,
+          2
+        ],
+        "closure_gap_m": 4.1076379703619564e-17,
+        "contexts": [
+          "map_boundary",
+          "motion_sweep",
+          "no_motion_hold",
+          "static_start_goal",
+          "vehicle_vehicle"
+        ],
+        "exact_half_diagonal_m": 0.4804800303629966,
+        "exact_per_side_growth_m": 4.452737079052582e-08,
+        "exact_required_margin_m": 0.0500000890547415,
+        "margin_minus_floor_m": 8.905474156717386e-08,
+        "margin_used_m": 0.05000008905474157,
+        "maximum_envelope_m": 4.452737074944944e-08,
+        "pair_envelope_m": 8.905474149889888e-08,
+        "per_side_growth_record_m": 4.4527370790525815e-08,
+        "radius_upper_m": 0.4804800303629967,
+        "radius_upper_note": "radius_upper is an outward interval square root of the actual checker half extents (length+margin)/2 and (width+margin)/2 at the recorded margin; it is not the old fixed-point radius.  The margin is solved at this same expanded radius.",
+        "sweep_motion_padding_m": 0.01,
+        "vehicles": 3
+      },
+      "executable": true,
+      "grid_sha256": "84639455ed5a5b83b242fabd309875dcfd2676993ec8592674f323e022e3b741",
+      "heading_error_rad": 8.326672684688674e-17,
+      "input_digests": {
+        "map_pgm_sha256": "cc3646b102a46c14ba6174919aaf0ab6f8b9f4d25a9d3a31248430260ff87fd1",
+        "map_signature": "84639455ed5a5b83b242fabd309875dcfd2676993ec8592674f323e022e3b741",
+        "map_yaml_sha256": "c81e81a665a1f0004a2baa65d4633573031a04bed2bd2be12788cdbc36cb0713",
+        "request_file_sha256": "562dd1b9323b11be1f72847e6cd77cda1fe65010bfa28bc517458c490858c581"
+      },
+      "input_files": [
+        "map.pgm",
+        "map.yaml",
+        "request.json"
+      ],
+      "integration": {
+        "euclidean_remainder_m": 5.391625111136447e-09,
+        "fixed_threshold_m": 5e-08,
+        "full_simpson_panels": 304,
+        "local_simpson_panels": 8,
+        "m4_method": "exact_interval_fourth_derivative_per_panel",
+        "method": "independent_composite_simpson_v2_exact_panel",
+        "per_coordinate_remainder_m": 3.812454677700253e-09,
+        "refinement_steps": 0,
+        "roundoff_and_angle_guard_m": 3.391432220292852e-08,
+        "sampled_bound_deficit_m4": 0.0,
+        "sampled_max_actual_m4": 1.0532830813410798,
+        "samples_per_panel": 65,
+        "subintervals": [
+          76,
+          76,
+          76,
+          76,
+          76,
+          76,
+          76,
+          76
+        ],
+        "total_budget_m": 3.9305947314064975e-08,
+        "total_subintervals": 608
+      },
+      "model_sha256": "cfdb21905b4e2f99a4062299967c10b2fef3a226d05f5b902a0f4a0217a76089",
+      "numerics": {
+        "attempt_count": 12,
+        "checks": 13634,
+        "collision": {
+          "bounds_verified": true,
+          "check_count": 12530,
+          "max_corner_step_m": 0.01,
+          "max_samples_per_segment": 200000,
+          "sample_count": 2081,
+          "segment_count": 8,
+          "static_stages": [
+            "goal",
+            "start"
+          ]
+        },
+        "dynamics": {
+          "check_count": 929,
+          "leaves": 64,
+          "max_utilization": 0.9900990099009899,
+          "pointwise_component_ratio": 0.9456009008808421,
+          "pointwise_jerk_ratio": 0.8858335275572602,
+          "pointwise_p_sss_ratio": 0.9689026440259322,
+          "whole_domain_certificate": true
+        },
+        "endpoint_error_m": 7.199038644416448e-10,
+        "envelope": {
+          "baseline_margin_m": 0.05,
+          "binding_pair": [
+            1,
+            2
+          ],
+          "closure_gap_m": 4.1076379703619564e-17,
+          "contexts": [
+            "map_boundary",
+            "motion_sweep",
+            "no_motion_hold",
+            "static_start_goal",
+            "vehicle_vehicle"
+          ],
+          "exact_half_diagonal_m": 0.4804800303629966,
+          "exact_per_side_growth_m": 4.452737079052582e-08,
+          "exact_required_margin_m": 0.0500000890547415,
+          "margin_minus_floor_m": 8.905474156717386e-08,
+          "margin_used_m": 0.05000008905474157,
+          "maximum_envelope_m": 4.452737074944944e-08,
+          "pair_envelope_m": 8.905474149889888e-08,
+          "per_side_growth_record_m": 4.4527370790525815e-08,
+          "radius_upper_m": 0.4804800303629967,
+          "radius_upper_note": "radius_upper is an outward interval square root of the actual checker half extents (length+margin)/2 and (width+margin)/2 at the recorded margin; it is not the old fixed-point radius.  The margin is solved at this same expanded radius.",
+          "sweep_motion_padding_m": 0.01,
+          "vehicles": 3
+        },
+        "executable": true,
+        "geometry": {
+          "check_count": 175,
+          "max_heading_error_rad": 1.1102230246251565e-16,
+          "max_pairwise_rigidity_error_m": 1.1102230246251565e-15,
+          "max_position_error_m": 3.568292035180542e-15,
+          "position_tolerance_m": 4.827302394791e-07,
+          "sample_count": 73
+        },
+        "heading_error_rad": 8.326672684688674e-17,
+        "integration": {
+          "euclidean_remainder_m": 5.391625111136447e-09,
+          "fixed_threshold_m": 5e-08,
+          "full_simpson_panels": 304,
+          "local_simpson_panels": 8,
+          "m4_method": "exact_interval_fourth_derivative_per_panel",
+          "method": "independent_composite_simpson_v2_exact_panel",
+          "per_coordinate_remainder_m": 3.812454677700253e-09,
+          "refinement_steps": 0,
+          "roundoff_and_angle_guard_m": 3.391432220292852e-08,
+          "sampled_bound_deficit_m4": 0.0,
+          "sampled_max_actual_m4": 1.0532830813410798,
+          "samples_per_panel": 65,
+          "subintervals": [
+            76,
+            76,
+            76,
+            76,
+            76,
+            76,
+            76,
+            76
+          ],
+          "total_budget_m": 3.9305947314064975e-08,
+          "total_subintervals": 608
+        },
+        "model_sha256": "cfdb21905b4e2f99a4062299967c10b2fef3a226d05f5b902a0f4a0217a76089",
+        "rigidity_error_m": 1.1102230246251565e-15,
+        "route_count": 3,
+        "search_rounds": 2,
+        "status": "SUCCESS",
+        "timings": {
+          "collision_audit_s": 1.1915026139467955,
+          "dynamics_audit_s": 2.315214179106988,
+          "geometry_solve_s": 18.669320282991976,
+          "result_assembly_s": 0.0,
+          "retime_s": 0.9192708370974287,
+          "route_generation_s": 1.4331741308560595
+        },
+        "wall_time_s": 24.5359916590387
+      },
+      "path_length_m": 11.963771845349948,
+      "planning_context_sha256": "46cb268388af3d713729bc574ec1ce4ea6142b01bf0ee922f3bffbb7f2da99d6",
+      "reference": {
+        "collision_checks": 15620,
+        "dynamic_checks": 937,
+        "endpoint_difference_m": 2.806646496170421e-13,
+        "envelope": {
+          "baseline_margin_m": 0.05,
+          "binding_pair": [
+            1,
+            2
+          ],
+          "closure_gap_m": 2.4379183173865065e-17,
+          "contexts": [
+            "map_boundary",
+            "motion_sweep",
+            "no_motion_hold",
+            "static_start_goal",
+            "vehicle_vehicle"
+          ],
+          "exact_half_diagonal_m": 0.48048007773363277,
+          "exact_per_side_growth_m": 7.854925665462531e-08,
+          "exact_required_margin_m": 0.05000015709851326,
+          "margin_minus_floor_m": 1.5709851329537283e-07,
+          "margin_used_m": 0.0500001570985133,
+          "maximum_envelope_m": 7.854925663024613e-08,
+          "pair_envelope_m": 1.5709851326049225e-07,
+          "per_side_growth_record_m": 7.85492566546253e-08,
+          "radius_upper_m": 0.4804800777336329,
+          "radius_upper_note": "radius_upper is an outward interval square root of the actual checker half extents (length+margin)/2 and (width+margin)/2 at the recorded margin; it is not the old fixed-point radius.  The margin is solved at this same expanded radius.",
+          "sweep_motion_padding_m": 0.01,
+          "vehicles": 3
+        },
+        "geometry_checks": 183,
+        "independent_accepted": true,
+        "integration": {
+          "euclidean_remainder_m": 1.1436697332247596e-08,
+          "fixed_threshold_m": 5e-08,
+          "full_simpson_panels": 304,
+          "local_simpson_panels": 8,
+          "m4_method": "exact_interval_fourth_derivative_per_panel",
+          "method": "independent_composite_simpson_v2_exact_panel",
+          "per_coordinate_remainder_m": 8.08696623801037e-09,
+          "refinement_steps": 0,
+          "roundoff_and_angle_guard_m": 3.3920161090188816e-08,
+          "sampled_bound_deficit_m4": 0.0,
+          "sampled_max_actual_m4": 1.110589601566439,
+          "samples_per_panel": 65,
+          "subintervals": [
+            76,
+            76,
+            76,
+            76,
+            76,
+            76,
+            76,
+            76
+          ],
+          "total_budget_m": 4.535685842243642e-08,
+          "total_subintervals": 608
+        },
+        "reference_file": "reference/S3_mirror.json",
+        "reference_sha256": "bbce179c0a1193916829dfba724dbee437ae8ce2680c9a8e6838515ab3ecaf7b",
+        "status": "REFERENCE_PASSED",
+        "timed_model_sha256": "c83ff6bf96aea11678ea606f78ba3a2294150d5d9ae8602dff79715fcb3939e1"
+      },
+      "request_sha256": "fc364d2558e9ec35950838bcb924496f6f56e45ccefbd585dc49dc4db4caf7bb",
+      "rigidity_error_m": 1.1102230246251565e-15,
+      "routes": [
+        {
+          "grid_sha256": "84639455ed5a5b83b242fabd309875dcfd2676993ec8592674f323e022e3b741",
+          "length_m": 12.67016226235568,
+          "point_count": 232,
+          "source": "astar_primary"
+        },
+        {
+          "grid_sha256": "84639455ed5a5b83b242fabd309875dcfd2676993ec8592674f323e022e3b741",
+          "length_m": 12.770162262355681,
+          "point_count": 234,
+          "source": "astar_alternative_1"
+        },
+        {
+          "grid_sha256": "84639455ed5a5b83b242fabd309875dcfd2676993ec8592674f323e022e3b741",
+          "length_m": 13.040872940474335,
+          "point_count": 239,
+          "source": "astar_alternative_2"
+        }
+      ],
+      "status": "SUCCESS",
+      "timings": {
+        "collision_audit_s": 1.1915026139467955,
+        "dynamics_audit_s": 2.315214179106988,
+        "geometry_solve_s": 18.669320282991976,
+        "result_assembly_s": 0.0,
+        "retime_s": 0.9192708370974287,
+        "route_generation_s": 1.4331741308560595
+      },
+      "wall_time_s": 24.5359916590387
+    }
+  },
+  "schema": "virtual_rigid_a.g4.results.v1",
+  "stage": "G4",
+  "status": "PASS_PENDING_CODEX_RECHECK",
+  "tests": {
+    "logs": [
+      {
+        "log": "logs/collision.log",
+        "reported_test_counts": [
+          17
+        ]
+      },
+      {
+        "log": "logs/g1_g2_g3_regression.log",
+        "reported_test_counts": [
+          18,
+          20,
+          22,
+          23,
+          26,
+          51
+        ]
+      },
+      {
+        "log": "logs/integration_bounds.log",
+        "reported_test_counts": [
+          6
+        ]
+      },
+      {
+        "log": "logs/pipeline.log",
+        "reported_test_counts": [
+          8
+        ]
+      }
+    ],
+    "suites": [
+      {
+        "log": "logs/collision.log",
+        "log_sha256": "0c9749d6140bfca23b5fd5c79cdb220a45e153bb2bb25f0322d646dee5dc2373",
+        "suite": "tests/test_virtual_a_collision.py",
+        "tests": 17
+      },
+      {
+        "log": "logs/pipeline.log",
+        "log_sha256": "d6b1bcd6e9473c6b0213ab0d0ac853e52fd49489dc8f33757b3a8415f280cdbe",
+        "suite": "tests/test_virtual_a_pipeline.py",
+        "tests": 8
+      },
+      {
+        "log": "logs/integration_bounds.log",
+        "log_sha256": "922d2f40421912b427211eb6aa240322d341f29dc04e5a93ef2c720f9691d9b7",
+        "suite": "tests/test_virtual_a_integration_bounds.py",
+        "tests": 6
+      },
+      {
+        "log": "logs/g1_g2_g3_regression.log",
+        "log_sha256": "46d06b36de5c970eaa289aa45a8450bb0ebd7ef5a1b497f7446430b755598cdd",
+        "suite": "tests/test_virtual_a_geometry.py",
+        "tests": 20
+      },
+      {
+        "log": "logs/g1_g2_g3_regression.log",
+        "log_sha256": "46d06b36de5c970eaa289aa45a8450bb0ebd7ef5a1b497f7446430b755598cdd",
+        "suite": "tests/test_virtual_a_optimizer.py",
+        "tests": 26
+      },
+      {
+        "log": "logs/g1_g2_g3_regression.log",
+        "log_sha256": "46d06b36de5c970eaa289aa45a8450bb0ebd7ef5a1b497f7446430b755598cdd",
+        "suite": "tests/test_virtual_a_profile.py",
+        "tests": 22
+      },
+      {
+        "log": "logs/g1_g2_g3_regression.log",
+        "log_sha256": "46d06b36de5c970eaa289aa45a8450bb0ebd7ef5a1b497f7446430b755598cdd",
+        "suite": "tests/test_virtual_a_audit.py",
+        "tests": 51
+      },
+      {
+        "log": "logs/g1_g2_g3_regression.log",
+        "log_sha256": "46d06b36de5c970eaa289aa45a8450bb0ebd7ef5a1b497f7446430b755598cdd",
+        "suite": "tests/test_virtual_a_timing.py",
+        "tests": 18
+      },
+      {
+        "log": "logs/g1_g2_g3_regression.log",
+        "log_sha256": "46d06b36de5c970eaa289aa45a8450bb0ebd7ef5a1b497f7446430b755598cdd",
+        "suite": "tests/test_virtual_a_trajectory.py",
+        "tests": 23
+      }
+    ],
+    "total_tests": 191
+  }
+}

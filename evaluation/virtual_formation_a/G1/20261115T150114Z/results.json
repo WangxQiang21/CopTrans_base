@@ -1,0 +1,570 @@
+{
+  "benchmark": {
+    "angle_error_bound_rad": 1.0000817124146124e-10,
+    "checks": [
+      {
+        "actual": 5.822254984922958,
+        "category": "endpoint",
+        "detail_keys": [
+          "absolute_error"
+        ],
+        "expected": 5.8222549849,
+        "name": "half_endpoint_x",
+        "pass": true
+      },
+      {
+        "actual": 1.125688927285853,
+        "category": "endpoint",
+        "detail_keys": [
+          "absolute_error"
+        ],
+        "expected": 1.1256889273,
+        "name": "half_endpoint_y",
+        "pass": true
+      },
+      {
+        "actual": 11.644509969845917,
+        "category": "endpoint",
+        "detail_keys": [
+          "absolute_error"
+        ],
+        "expected": 11.6445099698,
+        "name": "full_endpoint_x",
+        "pass": true
+      },
+      {
+        "actual": -1.6653345369377348e-16,
+        "category": "endpoint",
+        "detail_keys": [
+          "absolute_value"
+        ],
+        "expected": "0.0",
+        "name": "full_endpoint_y",
+        "pass": true
+      },
+      {
+        "actual": [
+          5.822254984922958,
+          1.1256889272858532,
+          11.644509969845917,
+          -2.220446049250313e-16
+        ],
+        "category": "endpoint",
+        "detail_keys": [
+          "full_error_m",
+          "half_error_m"
+        ],
+        "expected": [
+          5.822254984922958,
+          1.125688927285853,
+          11.644509969845917,
+          -1.6653345369377348e-16
+        ],
+        "name": "production_endpoint_matches_quadrature",
+        "pass": true
+      },
+      {
+        "actual": [
+          1.5902773407317584e-17,
+          1.5902773407317584e-17
+        ],
+        "category": "endpoint",
+        "detail_keys": [
+          "absolute"
+        ],
+        "expected": [
+          0.0,
+          0.0
+        ],
+        "name": "endpoint_psi_zero",
+        "pass": true
+      },
+      {
+        "actual": [
+          1,
+          -1,
+          -1,
+          1
+        ],
+        "category": "curvature",
+        "detail_keys": [
+          "values"
+        ],
+        "expected": [
+          1,
+          -1,
+          -1,
+          1
+        ],
+        "name": "formation_curvature_sign_sequence",
+        "pass": true
+      },
+      {
+        "actual": [
+          -1,
+          1,
+          1,
+          -1
+        ],
+        "category": "curvature",
+        "detail_keys": [
+          "values"
+        ],
+        "expected": [
+          -1,
+          1,
+          1,
+          -1
+        ],
+        "name": "mirror_curvature_sign_sequence",
+        "pass": true
+      },
+      {
+        "actual": 0.3627598709537155,
+        "category": "curvature",
+        "detail_keys": [
+          "analytic_sup",
+          "note",
+          "sampled_below_sup"
+        ],
+        "expected": 0.3627598728,
+        "name": "eta_sampled_max",
+        "pass": true
+      },
+      {
+        "actual": 0.5263131704781016,
+        "category": "curvature",
+        "detail_keys": [],
+        "expected": 0.526313,
+        "name": "front_vehicle_curvature_sampled_max",
+        "pass": true
+      },
+      {
+        "actual": 0.4285714285714286,
+        "category": "curvature",
+        "detail_keys": [],
+        "expected": 0.428571,
+        "name": "side_vehicle_curvature_sampled_max",
+        "pass": true
+      },
+      {
+        "actual": "continuous",
+        "category": "node",
+        "detail_keys": [
+          "g_jump_nonzero",
+          "g_left",
+          "g_right"
+        ],
+        "expected": "k/eta/u continuous",
+        "name": "node_continuity_and_g_jump",
+        "pass": true
+      },
+      {
+        "actual": {
+          "1-2": 1.4142135623730951,
+          "1-3": 1.4142135623730951,
+          "2-3": 2.0
+        },
+        "category": "rigidity",
+        "detail_keys": [
+          "max_residual_m"
+        ],
+        "expected": {
+          "1-2": 1.4142135623730951,
+          "1-3": 1.4142135623730951,
+          "2-3": 2.0
+        },
+        "name": "rigid_pair_distances",
+        "pass": true
+      },
+      {
+        "actual": 4.440892098500626e-16,
+        "category": "rigidity",
+        "detail_keys": [],
+        "expected": "<=1e-6",
+        "name": "rigidity_residual_within_1e_6",
+        "pass": true
+      },
+      {
+        "actual": [
+          {
+            "s": 1.3,
+            "vehicle1": {
+              "mirror_curvature_swapped": -0.4376217204764829,
+              "mirror_theta_swapped": -0.40599469256693455,
+              "positive_curvature": 0.4376217204764829,
+              "positive_theta": 0.40599469256693455
+            },
+            "vehicle2": {
+              "mirror_curvature_swapped": -0.39035549136577025,
+              "mirror_theta_swapped": -0.13228185847112048,
+              "positive_curvature": 0.39035549136577025,
+              "positive_theta": 0.13228185847112048
+            },
+            "vehicle3": {
+              "mirror_curvature_swapped": -0.21921327781501088,
+              "mirror_theta_swapped": -0.13228185847112048,
+              "positive_curvature": 0.21921327781501088,
+              "positive_theta": 0.13228185847112048
+            }
+          },
+          {
+            "s": 5.0,
+            "vehicle1": {
+              "mirror_curvature_swapped": -0.14295641380753749,
+              "mirror_theta_swapped": 0.13276117131163162,
+              "positive_curvature": 0.14295641380753749,
+              "positive_theta": -0.13276117131163162
+            },
+            "vehicle2": {
+              "mirror_curvature_swapped": 0.16307886656644352,
+              "mirror_theta_swapped": -0.05968310365946088,
+              "positive_curvature": -0.16307886656644352,
+              "positive_theta": 0.05968310365946088
+            },
+            "vehicle3": {
+              "mirror_curvature_swapped": 0.24201341261159562,
+              "mirror_theta_swapped": -0.05968310365946088,
+              "positive_curvature": -0.24201341261159562,
+              "positive_theta": 0.05968310365946088
+            }
+          },
+          {
+            "s": 7.7,
+            "vehicle1": {
+              "mirror_curvature_swapped": 0.10299410242262241,
+              "mirror_theta_swapped": 0.5234028390452424,
+              "positive_curvature": -0.10299410242262241,
+              "positive_theta": -0.5234028390452424
+            },
+            "vehicle2": {
+              "mirror_curvature_swapped": 0.21921327781501096,
+              "mirror_theta_swapped": 0.24969000494942825,
+              "positive_curvature": -0.21921327781501096,
+              "positive_theta": -0.24969000494942825
+            },
+            "vehicle3": {
+              "mirror_curvature_swapped": 0.3903554913657704,
+              "mirror_theta_swapped": 0.24969000494942825,
+              "positive_curvature": -0.3903554913657704,
+              "positive_theta": -0.24969000494942825
+            }
+          },
+          {
+            "s": 11.2,
+            "vehicle1": {
+              "mirror_curvature_swapped": 0.2183072539998551,
+              "mirror_theta_swapped": -0.09460390318404868,
+              "positive_curvature": -0.2183072539998551,
+              "positive_theta": 0.09460390318404868
+            },
+            "vehicle2": {
+              "mirror_curvature_swapped": -0.1404116985036248,
+              "mirror_theta_swapped": 0.0279032248275356,
+              "positive_curvature": 0.1404116985036248,
+              "positive_theta": -0.0279032248275356
+            },
+            "vehicle3": {
+              "mirror_curvature_swapped": -0.10962611928522574,
+              "mirror_theta_swapped": 0.0279032248275356,
+              "positive_curvature": 0.10962611928522574,
+              "positive_theta": -0.0279032248275356
+            }
+          }
+        ],
+        "category": "mirror",
+        "detail_keys": [],
+        "expected": "centres/headings/curvatures mirrored with car2<->car3",
+        "name": "mirror_center_heading_curvature_mapping",
+        "pass": true
+      },
+      {
+        "actual": {
+          "curvature_1_per_m": 3.6901384725673836e-09,
+          "heading_rad": 1.1463051138976117e-10
+        },
+        "category": "differential",
+        "detail_keys": [
+          "points",
+          "production_position_error_m"
+        ],
+        "expected": {
+          "curvature_1_per_m": 1e-05,
+          "heading_rad": 1e-06
+        },
+        "name": "derivative_recovery_h0.001",
+        "pass": true
+      },
+      {
+        "actual": {
+          "curvature_1_per_m": 1.314409775465819e-08,
+          "heading_rad": 1.4173831378301164e-11
+        },
+        "category": "differential",
+        "detail_keys": [
+          "points",
+          "production_position_error_m"
+        ],
+        "expected": {
+          "curvature_1_per_m": 1e-05,
+          "heading_rad": 1e-06
+        },
+        "name": "derivative_recovery_h0.0005",
+        "pass": true
+      },
+      {
+        "actual": 9.004649535719776e-10,
+        "category": "integration",
+        "detail_keys": [
+          "bound",
+          "points"
+        ],
+        "expected": "<= 7.717011020460753e-08",
+        "name": "integration_error_within_budget",
+        "pass": true
+      },
+      {
+        "actual": 7.717011020460753e-08,
+        "category": "integration",
+        "detail_keys": [],
+        "expected": "<=1e-7",
+        "name": "position_budget_within_1e_7",
+        "pass": true
+      },
+      {
+        "actual": 1.0000817124146124e-10,
+        "category": "integration",
+        "detail_keys": [],
+        "expected": "<=1e-9",
+        "name": "angle_budget_within_1e_9",
+        "pass": true
+      },
+      {
+        "actual": {
+          "angle_rad": 0.0,
+          "factor": 0.0
+        },
+        "category": "wheel_diagnostic",
+        "detail_keys": [
+          "note",
+          "rows",
+          "speed_m_per_s"
+        ],
+        "expected": {
+          "angle_rad": 1e-12,
+          "factor": 1e-12
+        },
+        "name": "wheel_configuration_reference",
+        "pass": true
+      },
+      {
+        "actual": {
+          "result": {
+            "detail": "CURVATURE_LIMIT,vehicle_id=1 s=0.02755 curvature=1.236452965012903 limit=1.2345679012345678",
+            "location": {
+              "curvature": 1.236452965012903,
+              "limit": 1.2345679012345678,
+              "s": 0.02755,
+              "vehicle_id": 1
+            },
+            "metrics": {
+              "abs_curvature_by_vehicle": {
+                "1": 1.236452965012903
+              },
+              "limit": 1.2345679012345678,
+              "max_abs_curvature": 1.236452965012903
+            },
+            "passed": false,
+            "reason": "CURVATURE_LIMIT"
+          },
+          "s": 0.02755
+        },
+        "category": "negative",
+        "detail_keys": [
+          "expected_peak_front",
+          "peak_front",
+          "peak_side",
+          "peak_within_1e_3",
+          "side_within_1e_3"
+        ],
+        "expected": "CURVATURE_LIMIT vehicle_id=1 with s and value",
+        "name": "short_profile_front_eta_curvature_limit",
+        "pass": true
+      },
+      {
+        "actual": {
+          "detail": "",
+          "location": {},
+          "metrics": {
+            "eta0": 0.0,
+            "initial_heading_tolerance_rad": 1e-07,
+            "kappa0": 0.0,
+            "max_heading_error_rad": 0.0,
+            "node_context_verified": false,
+            "source": "offline_fixture",
+            "vehicle_count": 3
+          },
+          "passed": true,
+          "reason": null
+        },
+        "category": "initial",
+        "detail_keys": [],
+        "expected": "passed",
+        "name": "offline_initial_state_accepted",
+        "pass": true
+      }
+    ],
+    "differential": [
+      {
+        "h_m": 0.001,
+        "max_curvature_error_1_per_m": 3.6901384725673836e-09,
+        "max_heading_error_rad": 1.1463051138976117e-10,
+        "max_production_position_error_m": 9.005729519629229e-10,
+        "points": 121
+      },
+      {
+        "h_m": 0.0005,
+        "max_curvature_error_1_per_m": 1.314409775465819e-08,
+        "max_heading_error_rad": 1.4173831378301164e-11,
+        "max_production_position_error_m": 9.005729519629229e-10,
+        "points": 121
+      }
+    ],
+    "endpoint_full_m": [
+      11.644509969845917,
+      -1.6653345369377348e-16
+    ],
+    "endpoint_half_m": [
+      5.822254984922958,
+      1.125688927285853
+    ],
+    "failed": [],
+    "negative_short_L0p5": {
+      "expected_peak_front": 4.34822,
+      "first_failure": {
+        "result": {
+          "detail": "CURVATURE_LIMIT,vehicle_id=1 s=0.02755 curvature=1.236452965012903 limit=1.2345679012345678",
+          "location": {
+            "curvature": 1.236452965012903,
+            "limit": 1.2345679012345678,
+            "s": 0.02755,
+            "vehicle_id": 1
+          },
+          "metrics": {
+            "abs_curvature_by_vehicle": {
+              "1": 1.236452965012903
+            },
+            "limit": 1.2345679012345678,
+            "max_abs_curvature": 1.236452965012903
+          },
+          "passed": false,
+          "reason": "CURVATURE_LIMIT"
+        },
+        "s": 0.02755
+      },
+      "peak_abs_curvature_by_vehicle": {
+        "1": 4.348221620699077,
+        "2": 0.4285714285714286,
+        "3": 0.4285714285714286
+      }
+    },
+    "position_error_bound_m": 7.717011020460753e-08,
+    "status": "PASS",
+    "summary": "benchmark/summary.json"
+  },
+  "codex_acceptance": "NOT_RUN_NOT_CLAIMED",
+  "constraints": {
+    "fr06_autonomous_search": "NOT_RUN",
+    "g2_entered": false,
+    "git_commit_or_push": "NOT_RUN",
+    "new_dependencies": "NOT_INSTALLED",
+    "ros_or_gazebo": "NOT_RUN"
+  },
+  "generated_at_utc": "2026-11-15T15:02:36.657336+00:00",
+  "legacy_geometry_regression": {
+    "authorized_stage": "G1",
+    "cases": [
+      "geometry_continuous",
+      "geometry_formation"
+    ],
+    "note": "G0 runner tool reported its own static stage field G0; the geometry authorization block is G1.",
+    "output": "legacy/",
+    "status": "PASS"
+  },
+  "schema": "virtual_rigid_a.g1.results.v1",
+  "setup_registration": {
+    "command": "cd catkin_ws/src/fwis_v3_optimizer && python3 -B setup.py --name",
+    "exit_code": 0,
+    "import_check": "fwis_v3_optimizer.formation_continuous_a imports with all documented exports",
+    "log": "logs/setup_registration.log",
+    "non_authoritative_probe": "logs/setup_registration_initial_probe.log (wrong cwd; invocation error only)",
+    "package_list": [
+      "fwis_v3_optimizer",
+      "fwis_v3_optimizer.formation_continuous_a"
+    ],
+    "status": "PASS"
+  },
+  "stage": "G1",
+  "status": "PASS",
+  "tests": [
+    {
+      "case_count_from_log": 20,
+      "case_names": [
+        "test_reference_profile_is_within_the_limit",
+        "test_short_profile_reports_the_front_vehicle_value",
+        "test_heading_id_set_must_match_the_model",
+        "test_initial_source_contract",
+        "test_measured_heading_mismatch_is_rejected_per_vehicle",
+        "test_nonstationary_or_non_a_declarations_are_rejected",
+        "test_nonzero_initial_curvature_is_rejected",
+        "test_valid_stationary_state_is_accepted",
+        "test_c2_profile_matches_motion_block",
+        "test_g_jump_is_c2_valid_and_side_semantics_hold",
+        "test_node_side_limits_and_auto_policy",
+        "test_non_c2_profile_is_rejected_at_the_node",
+        "test_hold_path_accepts_only_zero_station",
+        "test_invalid_knots_are_rejected",
+        "test_normal_branch_violation_names_the_vehicle",
+        "test_station_domain_is_rejected_not_clipped",
+        "test_wrong_formation_is_rejected",
+        "test_constant_curvature_jets_match_analytic_relations",
+        "test_constant_curvature_matches_fixed_pivot_arc",
+        "test_straight_motion_is_exact_and_rigid"
+      ],
+      "cases": 20,
+      "command": "python3 -B -m unittest discover -s tests -p test_virtual_a_geometry.py -v",
+      "exit_code": 0,
+      "log": "logs/geometry.log",
+      "name": "test_virtual_a_geometry.py",
+      "scope": "point mapping, initial contract, limits, structured rejections",
+      "status": "OK"
+    },
+    {
+      "case_count_from_log": 15,
+      "case_names": [
+        "test_analytic_eta_sup_and_sampled_peaks",
+        "test_curvature_sign_sequence_both_branches",
+        "test_endpoints_match_the_mandatory_reference",
+        "test_mirror_maps_centres_headings_and_curvature_jets",
+        "test_production_endpoint_is_within_one_micrometre",
+        "test_reference_rigidity_and_pair_distances",
+        "test_wheel_speed_and_yaw_rate_diagnostics",
+        "test_analytic_profile_domain_rejections",
+        "test_cubic_profile_error_is_within_the_reported_budget",
+        "test_differential_recovery_against_independent_quadrature",
+        "test_analytic_envelope_contains_samples_and_is_not_the_sample_max",
+        "test_c2_node_values_side_limits_and_auto_policy",
+        "test_m4_bound_covers_dense_fourth_derivative_expression",
+        "test_production_interval_bounds_contain_dense_samples",
+        "test_query_order_does_not_change_the_state"
+      ],
+      "cases": 15,
+      "command": "python3 -B -m unittest discover -s tests -p test_virtual_a_profile.py -v",
+      "exit_code": 0,
+      "log": "logs/profile.log",
+      "name": "test_virtual_a_profile.py",
+      "scope": "C2/quadrature/integration bounds/differential/mirror",
+      "status": "OK"
+    }
+  ]
+}

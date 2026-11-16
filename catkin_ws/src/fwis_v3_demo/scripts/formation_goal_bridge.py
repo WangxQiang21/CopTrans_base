@@ -39,6 +39,8 @@ REQUEST_TOPIC = "/formation/plan_request"
 STATUS_TOPIC = "/formation/optimizer_status"
 JOB_STATE_TOPIC = "/formation/job_state"
 PLAYBACK_PLAN_BACKEND = "uniform_v02"
+VIRTUAL_BACKEND = "virtual_rigid_a"
+ADMISSION_BACKENDS = ("legacy", PLAYBACK_PLAN_BACKEND, VIRTUAL_BACKEND)
 PLAN_ID_LIMIT = 2 ** 32 - 1
 BUSY_STATES = ("PLANNING", "PLAYING")
 
@@ -83,10 +85,19 @@ class FormationGoalBridge(object):
             rospy.get_param("~rigid_start_tolerance_m", 1e-3))
         self.admission_backend = str(
             rospy.get_param("~admission_backend", "legacy"))
-        if self.admission_backend not in ("legacy", PLAYBACK_PLAN_BACKEND):
+        if self.admission_backend not in ADMISSION_BACKENDS:
             raise ValueError(
-                "~admission_backend must be 'legacy' or {!r}, got {!r}"
-                .format(PLAYBACK_PLAN_BACKEND, self.admission_backend))
+                "~admission_backend must be one of {}, got {!r}".format(
+                    ADMISSION_BACKENDS, self.admission_backend))
+        self.virtual_a_goal_policy = None
+        if self.admission_backend == VIRTUAL_BACKEND:
+            policy = str(rospy.get_param(
+                "~virtual_a_goal_policy", "free")).strip().lower()
+            if policy not in ("free", "straight"):
+                raise ValueError(
+                    "~virtual_a_goal_policy must be 'free' or 'straight', "
+                    "got {!r}".format(policy))
+            self.virtual_a_goal_policy = policy
         self.job_state_timeout_s = float(
             rospy.get_param("~job_state_timeout_s", 3.0))
         if (not math.isfinite(self.job_state_timeout_s)
@@ -140,7 +151,8 @@ class FormationGoalBridge(object):
             rospy.logwarn(
                 "[formation goal bridge] /map not received within %.1f s; "
                 "the next goal will retry", self.map_timeout_s)
-        if self.admission_backend == PLAYBACK_PLAN_BACKEND:
+        if self.admission_backend in (
+                PLAYBACK_PLAN_BACKEND, VIRTUAL_BACKEND):
             try:
                 self.on_job_state(rospy.wait_for_message(
                     JOB_STATE_TOPIC, String, timeout=3.0))
@@ -186,7 +198,8 @@ class FormationGoalBridge(object):
         Only the V0.2 backend owns admission.  The legacy backend keeps the
         historical behaviour of the bridge (no job state exists).
         """
-        if self.admission_backend != PLAYBACK_PLAN_BACKEND:
+        if self.admission_backend not in (
+                PLAYBACK_PLAN_BACKEND, VIRTUAL_BACKEND):
             return False
         if self._job_state is None or self._job_state_received is None:
             return None
@@ -379,6 +392,12 @@ class FormationGoalBridge(object):
                 "[formation goal bridge] cannot build rigid centers: %s", exc)
             return False
 
+        goal_heading_free = bool(self.goal_heading_free)
+        if self.virtual_a_goal_policy is not None:
+            # FREE and STRAIGHT are explicit launch choices.  The virtual
+            # adapter still checks every flag and fixed heading; the bridge
+            # only expresses the selected policy in the unchanged message.
+            goal_heading_free = self.virtual_a_goal_policy == "free"
         plan_id = self._next_plan_id()
         request = FormationPlanRequest()
         request.header.frame_id = self.frame_id
@@ -407,9 +426,11 @@ class FormationGoalBridge(object):
             spec.goal_center.x = float(goal_center[0])
             spec.goal_center.y = float(goal_center[1])
             # Placeholder only when goal_heading_free is true; the backend
-            # still checks cargo psi_F and the rigid goal centres.
+            # still checks cargo psi_F and the rigid goal centres.  STRAIGHT
+            # uses the same cargo heading as an explicit fixed heading, so
+            # the adapter can verify kT=etaT=0 without editing the request.
             spec.goal_center.theta = float(goal[2])
-            spec.goal_heading_free = self.goal_heading_free
+            spec.goal_heading_free = goal_heading_free
             spec.body_length_m = self.body_length_m
             spec.body_width_m = self.body_width_m
             request.vehicles.append(spec)
@@ -422,6 +443,12 @@ class FormationGoalBridge(object):
             "goal=(%.3f, %.3f, %.3f) vehicles=%d",
             plan_id, start[0], start[1], start[2],
             goal[0], goal[1], goal[2], len(self.vehicle_ids))
+        if self.virtual_a_goal_policy is not None:
+            rospy.loginfo(
+                "[formation goal bridge] plan %d virtual_a_goal_policy=%s "
+                "goal_headings=%s", plan_id, self.virtual_a_goal_policy,
+                {vehicle_id: round(goal[2], 6)
+                 for vehicle_id in self.vehicle_ids})
         return True
 
     def on_optimizer_status(self, message):

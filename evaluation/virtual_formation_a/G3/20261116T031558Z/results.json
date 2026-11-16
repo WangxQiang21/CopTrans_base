@@ -1,0 +1,4082 @@
+{
+  "aggregate": {
+    "all_dynamic_audits_passed": true,
+    "benchmark_check_count": 151,
+    "benchmark_failed_checks": 0,
+    "differential_tolerances": {
+      "acceleration": 0.0001,
+      "angular_accel": 0.0001,
+      "angular_jerk": 0.01,
+      "angular_rate": 1e-05,
+      "jerk": 0.01,
+      "velocity": 1e-05
+    },
+    "dynamic_feasible_cases": 8,
+    "inverse_samples_per_case": 100,
+    "max_actual_utilization": 0.9900990099009902,
+    "max_differential_errors": {
+      "acceleration": 8.039931498338149e-10,
+      "angular_accel": 1.6268510497075006e-10,
+      "angular_jerk": 3.4959529070267836e-06,
+      "angular_rate": 4.6609993642476866e-11,
+      "jerk": 3.5857609076983543e-06,
+      "velocity": 4.779254769715635e-11
+    },
+    "max_independent_time_inverse_error_s": 7.60218412665381e-08,
+    "max_node_continuity_error": 8.743006318923108e-15,
+    "max_node_jump_magnitude": 0.06982298109228557,
+    "max_node_state_error": 1.7763568394002505e-15,
+    "max_pointwise_component_ratio": 0.9997915894625576,
+    "max_pointwise_jerk_ratio": 0.999791589461371,
+    "max_pointwise_p_sss_ratio": 0.9951789008465944,
+    "max_required_duration_s": 20.635904281985216,
+    "max_selected_duration_s": 20.842263324805067,
+    "max_time_inverse_error_s": 4.3716497089008044e-10,
+    "no_motion_cases": 1,
+    "pointwise_leaf_count": 512,
+    "pointwise_vehicle_count": 1536,
+    "short_duration_rejections": 8,
+    "tamper_rejections": 8,
+    "time_inverse_tolerance_s": 1e-09,
+    "total_rescalings": 0
+  },
+  "benchmark": {
+    "check_count": 151,
+    "codex_acceptance": "NOT_RUN_NOT_CLAIMED",
+    "failed": [],
+    "nonclaims": [
+      "DYNAMIC_FEASIBLE only when the independent dynamic audit passes",
+      "collision_checked=false; executable=false",
+      "no map, ROS, hardware, real-time or time-optimal claim",
+      "retimer selection is not a certificate",
+      "DYNAMIC_FEASIBLE is not Codex ACCEPTED"
+    ],
+    "status": "PASS"
+  },
+  "codex_acceptance": "NOT_RUN_NOT_CLAIMED",
+  "generated_at_utc": "2026-11-16T03:38:29.209292+00:00",
+  "interval_coverage": {
+    "broad_interval_fail_closed": {
+      "T_s": 7.628074976415586,
+      "coarse": {
+        "first_failure": {
+          "constraint": "BOUND_UNCONFIRMED",
+          "limit": 0.8,
+          "quantity": "speed",
+          "segment_index": 1,
+          "value": 0.8185223689206615,
+          "vehicle_id": 3,
+          "wheel_index": 0
+        },
+        "leaves": null,
+        "passed": false,
+        "reason": "BOUND_UNCONFIRMED"
+      },
+      "refined": {
+        "leaves": 13,
+        "max_utilization": {
+          "acceleration": 0.7891894224237934,
+          "jerk": 0.363463700165695,
+          "lateral_acceleration": 0.2108586828695036,
+          "speed": 0.9942039542263723,
+          "steer_acceleration": 0.03975194671429787,
+          "steer_rate": 0.06233189297657903,
+          "wheel_angle": 0.07219843375641173,
+          "wheel_speed": 0.8062896401188487,
+          "yaw_acceleration": 0.25248191556286886,
+          "yaw_jerk": 0.10565484028015325,
+          "yaw_rate": 0.2835130282408475
+        },
+        "passed": true,
+        "reason": null
+      }
+    },
+    "degenerate_counterexample": {
+      "audit_jerk": 0.10677546534667996,
+      "expected_p_sss_norm": 0.10677546534667971,
+      "timing_jerk": 0.10677546534667996
+    },
+    "jerk_overlimit_negative": {
+      "audit_reason": "DYNAMIC_LIMIT",
+      "first_failure": {
+        "constraint": "DYNAMIC_LIMIT",
+        "limit": 0.2,
+        "quantity": "jerk",
+        "value": 0.20980131467237287,
+        "vehicle_id": 3,
+        "wheel_index": 0
+      },
+      "interior_overlimit_samples": 3611,
+      "interior_scan_maximum": {
+        "a_time": -0.02228849890353116,
+        "components": [
+          0.3055394662328843,
+          -2.0988669086034485e-05
+        ],
+        "eta": 0.184997340355466,
+        "j_time": 0.2441170128285345,
+        "jerk": 0.3055394669537801,
+        "k": 0.2516611996229652,
+        "s": 2.999970448199999,
+        "t": 8.763178783107199,
+        "tau": 0.99,
+        "vehicle_id": 3,
+        "w": 0.0009965209219323524
+      },
+      "limit": {
+        "jerk_max": 0.2
+      }
+    },
+    "narrow_interval_case_count": 24,
+    "narrow_interval_failure_count": 0,
+    "numerics_location": "analysis/g3_rework_numerics.json",
+    "numerics_sha256": "567e4b7fa01278d981aebef1b1abb0360c8c2994daa3b6b27c2042c82c8d76f2",
+    "positive_paths": [
+      {
+        "T_s": 10.654562988281448,
+        "all_contained": true,
+        "front_nonzero_k_eta_samples": 20,
+        "front_sign_pairs": [
+          [
+            -1,
+            -1
+          ],
+          [
+            1,
+            -1
+          ],
+          [
+            1,
+            1
+          ]
+        ],
+        "interior_samples": 20,
+        "max_front_jerk_ratio": 0.9563717974527609,
+        "name": "positive_curvature_cubic",
+        "node_side_samples": 3
+      },
+      {
+        "T_s": 10.654562988281448,
+        "all_contained": true,
+        "front_nonzero_k_eta_samples": 20,
+        "front_sign_pairs": [
+          [
+            -1,
+            -1
+          ],
+          [
+            -1,
+            1
+          ],
+          [
+            1,
+            1
+          ]
+        ],
+        "interior_samples": 20,
+        "max_front_jerk_ratio": 0.9563717974527609,
+        "name": "negative_curvature_cubic",
+        "node_side_samples": 3
+      }
+    ]
+  },
+  "legacy": {
+    "disclosed_wrapper": {
+      "cases": {
+        "fr02_a_timing": {
+          "returncode": 0,
+          "status": "PASS",
+          "stderr_log": "logs/fr02_a_timing.stderr.log",
+          "wall_s": 0.4008947629481554
+        },
+        "fr02_a_trajectory": {
+          "returncode": 0,
+          "status": "PASS",
+          "stderr_log": "logs/fr02_a_trajectory.stderr.log",
+          "wall_s": 0.937822267995216
+        },
+        "fr02_b_quality": {
+          "returncode": 0,
+          "status": "PASS",
+          "stderr_log": "logs/fr02_b_quality.stderr.log",
+          "wall_s": 7.406309315934777
+        },
+        "timing_continuous": {
+          "returncode": 1,
+          "status": "FAIL",
+          "stderr_log": "logs/timing_continuous.stderr.log",
+          "wall_s": 0.6118202839279547
+        },
+        "timing_formation": {
+          "returncode": 0,
+          "status": "PASS",
+          "stderr_log": "logs/timing_formation.stderr.log",
+          "wall_s": 0.495601570000872
+        }
+      },
+      "log": "logs/legacy.log",
+      "scope": "adds only the prior-stage rework documents, the G3 rework task document and G2 fixtures that accepted G1/G2/G3 explicitly authorized to the G0 in-memory allowlists; edits no workspace file",
+      "script": "baseline_runner_rework_docs_and_fixtures.py",
+      "status": "FAIL"
+    },
+    "pre_existing_failure_proof": {
+      "case": "timing_continuous",
+      "conclusion": "pre-existing baseline test staleness, not a G3 source effect; old tests were not modified or relaxed",
+      "exit_code": 1,
+      "export_root": "/tmp/g3_rework_baseline_probe_20261116",
+      "failed_source_file_sha256": "2d1e9b182028e63d5fa9b25566ea0b9ab0cccb4ea7d3921ccfe651f3186ea8ef",
+      "failed_test_file_sha256": "b7a36fd70c5d2bc5535334836d958a10afa10109f0c7cd2b226745179c7eee0c",
+      "failure": "test_short_translation_has_finite_acceleration_and_zero_end_speed KeyError: 'dynamic_peaks'",
+      "log": "logs/legacy_baseline_probe.log",
+      "reproduced_from": "git archive HEAD pristine export"
+    },
+    "unmodified_g0_gate": {
+      "detail": "G0 FAILED: BaselineError: UNKNOWN_WORKSPACE_MODIFICATIONS: ['docs/virtual_formation_a/CLAUDE_G1_REWORK_01.md', 'docs/virtual_formation_a/CLAUDE_G2_REWORK_01.md', 'docs/virtual_formation_a/CLAUDE_G2_REWORK_02.md', 'docs/virtual_formation_a/CLAUDE_G2_REWORK_03.md', 'docs/virtual_formation_a/CLAUDE_G3_REWORK_01.md', 'tests/fixtures/virtual_a/existence_reference.json', 'tests/fixtures/virtual_a/open_requests.json']",
+      "exit_code": 1,
+      "log": "logs/legacy_unmodified_gate.log",
+      "status": "BLOCKED"
+    }
+  },
+  "model_cases": [
+    {
+      "S_m": 6.000496658791536,
+      "T_s": 14.627622484021819,
+      "audit": {
+        "check_count": 909,
+        "collision_checked": false,
+        "differential": {
+          "checked_sample_count": 80,
+          "max_errors": {
+            "acceleration": 4.622331128967261e-10,
+            "angular_accel": 4.4678653138285895e-11,
+            "angular_jerk": 1.0162110947696534e-07,
+            "angular_rate": 1.3610362836757872e-12,
+            "jerk": 3.1074100107289504e-07,
+            "velocity": 4.177450052544884e-12
+          },
+          "oracle": {
+            "boundary_rule": "stencils that cross a Hermite g-jump or the time-domain hold boundary are skipped; analytic one-sided limits are used instead",
+            "grid_subintervals": [
+              376,
+              376,
+              376,
+              376,
+              376,
+              376,
+              376,
+              376
+            ],
+            "method": "independent_composite_simpson_positions",
+            "oracle_step_m": 0.002
+          },
+          "skipped_sample_count": 0,
+          "tolerances": {
+            "acceleration": 0.0001,
+            "angular_accel": 0.0001,
+            "angular_jerk": 0.01,
+            "angular_rate": 1e-05,
+            "jerk": 0.01,
+            "velocity": 1e-05
+          }
+        },
+        "executable": false,
+        "leaves": 64,
+        "map_used": false,
+        "max_utilization": {
+          "acceleration": 0.3165818134649048,
+          "jerk": 0.06585012508941288,
+          "lateral_acceleration": 0.06280195810258539,
+          "speed": 0.9900990099009901,
+          "steer_acceleration": 0.0011500597438330819,
+          "steer_rate": 0.006104983644934536,
+          "wheel_angle": 0.017851028768919697,
+          "wheel_speed": 0.796594315278819,
+          "yaw_acceleration": 0.024879931847296612,
+          "yaw_jerk": 0.0046833644197063545,
+          "yaw_rate": 0.06837133243041596
+        },
+        "nodes": {
+          "internal_node_count": 7,
+          "max_continuity_error": 4.427014310692812e-15,
+          "max_inverse_error_s": 4.2571990377382463e-10,
+          "max_jump_magnitude": 0.0011108757364862512,
+          "max_state_error": 4.440892098500626e-16,
+          "records": [
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.47831541347432e-10,
+              "jump_max": 0.0007109372663795929,
+              "left_jerk_vector_location": "benchmark/results.json:E1 .dynamic_audit.metrics.nodes.records[0].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 8.300651832549022e-16,
+              "node": 1,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.9999998975156728,
+                  "jerk_ratio": 0.9963606590539923,
+                  "p_sss_ratio": 0.9999999999943643,
+                  "worst": {
+                    "actual": 0.0025478281845179016,
+                    "bound": 0.0025478281845322604,
+                    "label": "node.0[left].point",
+                    "quantity": "p_sss_y",
+                    "ratio": 0.9999999999943643,
+                    "vehicle_id": 3
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.8374875008590087,
+                  "jerk_ratio": 0.8305583084626518,
+                  "p_sss_ratio": 0.9646547302829984,
+                  "worst": {
+                    "actual": 0.006856166126912876,
+                    "bound": 0.007107378331002948,
+                    "label": "node.0[right].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9646547302829984,
+                    "vehicle_id": 3
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E1 .dynamic_audit.metrics.nodes.records[0].right_jerk",
+              "right_region": "motion",
+              "s": 0.750062082348942,
+              "t": 3.9403680523788607,
+              "tau": 0.26937857171820234,
+              "w": 0.47670050527879415
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.5351455096588325e-10,
+              "jump_max": 0.0011108757364862512,
+              "left_jerk_vector_location": "benchmark/results.json:E1 .dynamic_audit.metrics.nodes.records[1].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 8.309325449928906e-16,
+              "node": 2,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.999993977974217,
+                  "jerk_ratio": 0.9754496124006149,
+                  "p_sss_ratio": 0.9999999999982688,
+                  "worst": {
+                    "actual": 0.008557393532076695,
+                    "bound": 0.00855739353209151,
+                    "label": "node.1[left].point",
+                    "quantity": "p_sss_y",
+                    "ratio": 0.9999999999982688,
+                    "vehicle_id": 3
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9598587099740624,
+                  "jerk_ratio": 0.9308140372466245,
+                  "p_sss_ratio": 0.9999999999992776,
+                  "worst": {
+                    "actual": 0.008844505221909105,
+                    "bound": 0.008844505221915494,
+                    "label": "node.1[right].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9999999999992776,
+                    "vehicle_id": 3
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E1 .dynamic_audit.metrics.nodes.records[1].right_jerk",
+              "right_region": "motion",
+              "s": 1.500124164697884,
+              "t": 5.257696525647614,
+              "tau": 0.35943616478964713,
+              "w": 0.6523836742756752
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.567812711935403e-10,
+              "jump_max": 0.0009242807064054471,
+              "left_jerk_vector_location": "benchmark/results.json:E1 .dynamic_audit.metrics.nodes.records[2].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 4.326400349086157e-15,
+              "node": 3,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.9999292233618506,
+                  "jerk_ratio": 0.937232208018302,
+                  "p_sss_ratio": 0.9968191806219859,
+                  "worst": {
+                    "actual": 0.0547088912725048,
+                    "bound": 0.05471276365798037,
+                    "label": "node.2[left].point",
+                    "quantity": "jerk_x",
+                    "ratio": 0.9999292233618506,
+                    "vehicle_id": 1
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9852201356236036,
+                  "jerk_ratio": 0.9233611861287953,
+                  "p_sss_ratio": 0.9999999999991614,
+                  "worst": {
+                    "actual": 0.007693432857438541,
+                    "bound": 0.007693432857444993,
+                    "label": "node.2[right].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9999999999991614,
+                    "vehicle_id": 3
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E1 .dynamic_audit.metrics.nodes.records[2].right_jerk",
+              "right_region": "motion",
+              "s": 2.250186247046826,
+              "t": 6.326715216342636,
+              "tau": 0.4325183551362153,
+              "w": 0.7413912101787594
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 4.2571990377382463e-10,
+              "jump_max": 0.0003693751656122582,
+              "left_jerk_vector_location": "benchmark/results.json:E1 .dynamic_audit.metrics.nodes.records[3].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 4.427014310692812e-15,
+              "node": 4,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.9997020694291299,
+                  "jerk_ratio": 0.9052200779628331,
+                  "p_sss_ratio": 0.994020534818296,
+                  "worst": {
+                    "actual": 0.05853917342189308,
+                    "bound": 0.05855661922888817,
+                    "label": "node.3[left].point",
+                    "quantity": "jerk_x",
+                    "ratio": 0.9997020694291299,
+                    "vehicle_id": 1
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9992116151561687,
+                  "jerk_ratio": 0.9055647635943753,
+                  "p_sss_ratio": 0.999999999998536,
+                  "worst": {
+                    "actual": 0.004467545031795686,
+                    "bound": 0.0044675450318022265,
+                    "label": "node.3[right].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.999999999998536,
+                    "vehicle_id": 3
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E1 .dynamic_audit.metrics.nodes.records[3].right_jerk",
+              "right_region": "motion",
+              "s": 3.000248329395768,
+              "t": 7.313811242010909,
+              "tau": 0.5,
+              "w": 0.769156522020161
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.567812711935403e-10,
+              "jump_max": 0.00023301345666112278,
+              "left_jerk_vector_location": "benchmark/results.json:E1 .dynamic_audit.metrics.nodes.records[4].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 4.427014310692812e-15,
+              "node": 5,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.986120255050213,
+                  "jerk_ratio": 0.8032565232639457,
+                  "p_sss_ratio": 0.9944961587031035,
+                  "worst": {
+                    "actual": 0.004606548058175029,
+                    "bound": 0.0046320420826786385,
+                    "label": "node.4[left].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9944961587031035,
+                    "vehicle_id": 1
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9935837431266408,
+                  "jerk_ratio": 0.8021975597312391,
+                  "p_sss_ratio": 0.992729330285706,
+                  "worst": {
+                    "actual": 0.05602879921872948,
+                    "bound": 0.056390615895562345,
+                    "label": "node.4[right].point",
+                    "quantity": "jerk_x",
+                    "ratio": 0.9935837431266408,
+                    "vehicle_id": 1
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E1 .dynamic_audit.metrics.nodes.records[4].right_jerk",
+              "right_region": "motion",
+              "s": 3.75031041174471,
+              "t": 8.300907267679182,
+              "tau": 0.5674816448637847,
+              "w": 0.7413912101787594
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.5351455096588325e-10,
+              "jump_max": 0.0005813906290599163,
+              "left_jerk_vector_location": "benchmark/results.json:E1 .dynamic_audit.metrics.nodes.records[5].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 4.427014310692812e-15,
+              "node": 6,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.9605109695853956,
+                  "jerk_ratio": 0.7451962496874386,
+                  "p_sss_ratio": 0.9990780571103829,
+                  "worst": {
+                    "actual": 0.004705212386189058,
+                    "bound": 0.004709554326313468,
+                    "label": "node.5[left].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9990780571103829,
+                    "vehicle_id": 3
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.990746321873955,
+                  "jerk_ratio": 0.7599390471890061,
+                  "p_sss_ratio": 0.9999999999994765,
+                  "worst": {
+                    "actual": 0.021396519290454174,
+                    "bound": 0.021396519290465373,
+                    "label": "node.5[right].point",
+                    "quantity": "p_sss_y",
+                    "ratio": 0.9999999999994765,
+                    "vehicle_id": 1
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E1 .dynamic_audit.metrics.nodes.records[5].right_jerk",
+              "right_region": "motion",
+              "s": 4.500372494093652,
+              "t": 9.369925958374205,
+              "tau": 0.6405638352103529,
+              "w": 0.6523836742756751
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.4783198543664184e-10,
+              "jump_max": 0.0004590575260302191,
+              "left_jerk_vector_location": "benchmark/results.json:E1 .dynamic_audit.metrics.nodes.records[6].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 4.427014310692812e-15,
+              "node": 7,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.8521786988468252,
+                  "jerk_ratio": 0.6361341149294607,
+                  "p_sss_ratio": 0.9987372452305208,
+                  "worst": {
+                    "actual": 0.008462084316118607,
+                    "bound": 0.008472783363721911,
+                    "label": "node.6[left].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9987372452305208,
+                    "vehicle_id": 3
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.993107764530883,
+                  "jerk_ratio": 0.7080902132980121,
+                  "p_sss_ratio": 0.9970549615088915,
+                  "worst": {
+                    "actual": 0.016510255791966185,
+                    "bound": 0.016559022751344035,
+                    "label": "node.6[right].point",
+                    "quantity": "p_sss_y",
+                    "ratio": 0.9970549615088915,
+                    "vehicle_id": 2
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E1 .dynamic_audit.metrics.nodes.records[6].right_jerk",
+              "right_region": "motion",
+              "s": 5.250434576442594,
+              "t": 10.687254431642959,
+              "tau": 0.7306214282817978,
+              "w": 0.4767005052787938
+            }
+          ]
+        },
+        "pointwise_interval_checks": {
+          "leaf_count": 64,
+          "max_component_ratio": 0.9986857877358029,
+          "max_jerk_ratio": 0.9519608293506188,
+          "max_p_sss_ratio": 0.9951789008465938,
+          "vehicle_count": 192,
+          "worst": {
+            "actual": 0.05857696555823708,
+            "bound": 0.05865404942934195,
+            "label": "segment.4[0,0.125].point",
+            "quantity": "jerk_x",
+            "ratio": 0.9986857877358029,
+            "vehicle_id": 1
+          }
+        },
+        "ros_used": false,
+        "time_inverse": {
+          "max_error_s": 4.0974423853867847e-10,
+          "max_independent_error_s": 5.31411714632668e-08,
+          "sample_count": 100,
+          "tolerance_s": 1e-09
+        },
+        "whole_domain_certificate": true
+      },
+      "model_json_location": "benchmark/results.json:E1 .model_json",
+      "model_sha256": "19d676e6e8b9ac6a9a3740e45d9b802b6b9715b98b27b655aa3559347b7922b4",
+      "name": "E1",
+      "request_sha256": "75b9ea75aa4639cf4829a7af9203db28a3abf7757c94616719cf7cbea3adceb5",
+      "roundtrip": {
+        "equal_digest": true,
+        "equal_json": true,
+        "equal_state_midpoint": true
+      },
+      "sample": {
+        "authoritative": false,
+        "states_equal_pointwise": true,
+        "times": [
+          0.0,
+          7.313811242010909,
+          14.627622484021819
+        ]
+      },
+      "selection": {
+        "T0_s": 1.0,
+        "interval_subdivisions_per_segment": 8,
+        "required_duration_s": 14.482794538635464,
+        "rescalings": 0,
+        "safety_factor": 1.01,
+        "selected_duration_s": 14.627622484021819,
+        "wheel_angle_bound_rad": 0.028040330419729084,
+        "wheel_angle_limit_rad": 1.5707963267948966,
+        "worst": {
+          "order": 1,
+          "quantity": "speed",
+          "s0": 3.1877638499830034,
+          "s1": 3.2815216102766214,
+          "segment_index": 4,
+          "vehicle_id": 3,
+          "wheel_index": 0
+        },
+        "worst_metric": {
+          "limit": 0.8,
+          "order": 1,
+          "required_duration_s": 14.482794538635464,
+          "segment_index": 4,
+          "upper_at_T0_s": 11.586235630908371,
+          "upper_bound_interval": [
+            3.1877638499830034,
+            3.2815216102766214
+          ],
+          "vehicle_id": 3,
+          "wheel_index": 0
+        }
+      },
+      "short_duration": {
+        "check_count": 155,
+        "first_failure": {
+          "limit": 2.0,
+          "quantity": "jerk",
+          "value": 4.797024928543142,
+          "vehicle_id": 3,
+          "wheel_index": 0
+        },
+        "reason": "DYNAMIC_LIMIT",
+        "rejected": true
+      },
+      "tamper": {
+        "extra_field": "UNSUPPORTED_MODEL_FIELD",
+        "self_digest": "UNSUPPORTED_MODEL_FIELD",
+        "timing_T": "MODEL_TIMING_INCONSISTENT"
+      },
+      "timing_status": "DYNAMIC_FEASIBLE"
+    },
+    {
+      "S_m": 6.000496658791535,
+      "T_s": 14.627622484021813,
+      "audit": {
+        "check_count": 909,
+        "collision_checked": false,
+        "differential": {
+          "checked_sample_count": 80,
+          "max_errors": {
+            "acceleration": 5.351999121661066e-10,
+            "angular_accel": 4.798637702474462e-11,
+            "angular_jerk": 1.0153784243266406e-07,
+            "angular_rate": 1.3556517020063552e-12,
+            "jerk": 3.1057446762614016e-07,
+            "velocity": 4.167208245142717e-12
+          },
+          "oracle": {
+            "boundary_rule": "stencils that cross a Hermite g-jump or the time-domain hold boundary are skipped; analytic one-sided limits are used instead",
+            "grid_subintervals": [
+              376,
+              376,
+              376,
+              376,
+              376,
+              376,
+              376,
+              376
+            ],
+            "method": "independent_composite_simpson_positions",
+            "oracle_step_m": 0.002
+          },
+          "skipped_sample_count": 0,
+          "tolerances": {
+            "acceleration": 0.0001,
+            "angular_accel": 0.0001,
+            "angular_jerk": 0.01,
+            "angular_rate": 1e-05,
+            "jerk": 0.01,
+            "velocity": 1e-05
+          }
+        },
+        "executable": false,
+        "leaves": 64,
+        "map_used": false,
+        "max_utilization": {
+          "acceleration": 0.3165818134649053,
+          "jerk": 0.06585012508941299,
+          "lateral_acceleration": 0.06280195810258522,
+          "speed": 0.9900990099009901,
+          "steer_acceleration": 0.0011500597438330565,
+          "steer_rate": 0.006104983644934539,
+          "wheel_angle": 0.017851028768919846,
+          "wheel_speed": 0.796594315278819,
+          "yaw_acceleration": 0.024879931847296897,
+          "yaw_jerk": 0.004683364419706401,
+          "yaw_rate": 0.06837133243041607
+        },
+        "nodes": {
+          "internal_node_count": 7,
+          "max_continuity_error": 4.3298697960381105e-15,
+          "max_inverse_error_s": 4.2571990377382463e-10,
+          "max_jump_magnitude": 0.0011108757364861749,
+          "max_state_error": 8.881784197001252e-16,
+          "records": [
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.47831541347432e-10,
+              "jump_max": 0.0007109372663795617,
+              "left_jerk_vector_location": "benchmark/results.json:E2 .dynamic_audit.metrics.nodes.records[0].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 8.291978215169138e-16,
+              "node": 1,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.9999998975156726,
+                  "jerk_ratio": 0.9963606590539918,
+                  "p_sss_ratio": 0.9999999999943646,
+                  "worst": {
+                    "actual": 0.002547828184517985,
+                    "bound": 0.0025478281845323428,
+                    "label": "node.0[left].point",
+                    "quantity": "p_sss_y",
+                    "ratio": 0.9999999999943646,
+                    "vehicle_id": 2
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.8374875008590087,
+                  "jerk_ratio": 0.830558308462652,
+                  "p_sss_ratio": 0.9646547302830001,
+                  "worst": {
+                    "actual": 0.0068561661269128165,
+                    "bound": 0.007107378331002874,
+                    "label": "node.0[right].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9646547302830001,
+                    "vehicle_id": 2
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E2 .dynamic_audit.metrics.nodes.records[0].right_jerk",
+              "right_region": "motion",
+              "s": 0.7500620823489419,
+              "t": 3.9403680523788593,
+              "tau": 0.26937857171820234,
+              "w": 0.47670050527879426
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.5351366278746355e-10,
+              "jump_max": 0.0011108757364861749,
+              "left_jerk_vector_location": "benchmark/results.json:E2 .dynamic_audit.metrics.nodes.records[1].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 8.378714388967978e-16,
+              "node": 2,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.9999939779742172,
+                  "jerk_ratio": 0.9754496124006143,
+                  "p_sss_ratio": 0.999999999998269,
+                  "worst": {
+                    "actual": 0.008557393532076693,
+                    "bound": 0.008557393532091506,
+                    "label": "node.1[left].point",
+                    "quantity": "p_sss_y",
+                    "ratio": 0.999999999998269,
+                    "vehicle_id": 2
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9598587099740625,
+                  "jerk_ratio": 0.9308140372466241,
+                  "p_sss_ratio": 0.9999999999992778,
+                  "worst": {
+                    "actual": 0.008844505221908914,
+                    "bound": 0.008844505221915301,
+                    "label": "node.1[right].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9999999999992778,
+                    "vehicle_id": 2
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E2 .dynamic_audit.metrics.nodes.records[1].right_jerk",
+              "right_region": "motion",
+              "s": 1.5001241646978838,
+              "t": 5.257696525647612,
+              "tau": 0.35943616478964713,
+              "w": 0.6523836742756753
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.567812711935403e-10,
+              "jump_max": 0.0009242807064054844,
+              "left_jerk_vector_location": "benchmark/results.json:E2 .dynamic_audit.metrics.nodes.records[2].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 4.322930902134203e-15,
+              "node": 3,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.9999292233618506,
+                  "jerk_ratio": 0.9372322080183022,
+                  "p_sss_ratio": 0.9968191806219863,
+                  "worst": {
+                    "actual": 0.05470889127250485,
+                    "bound": 0.05471276365798042,
+                    "label": "node.2[left].point",
+                    "quantity": "jerk_x",
+                    "ratio": 0.9999292233618506,
+                    "vehicle_id": 1
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9852201356236036,
+                  "jerk_ratio": 0.9233611861287954,
+                  "p_sss_ratio": 0.9999999999991617,
+                  "worst": {
+                    "actual": 0.007693432857438476,
+                    "bound": 0.007693432857444926,
+                    "label": "node.2[right].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9999999999991617,
+                    "vehicle_id": 2
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E2 .dynamic_audit.metrics.nodes.records[2].right_jerk",
+              "right_region": "motion",
+              "s": 2.250186247046826,
+              "t": 6.326715216342635,
+              "tau": 0.4325183551362153,
+              "w": 0.7413912101787595
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 4.2571990377382463e-10,
+              "jump_max": 0.00036937516561221006,
+              "left_jerk_vector_location": "benchmark/results.json:E2 .dynamic_audit.metrics.nodes.records[3].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 4.3298697960381105e-15,
+              "node": 4,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.9997020694291296,
+                  "jerk_ratio": 0.905220077962834,
+                  "p_sss_ratio": 0.9940205348182958,
+                  "worst": {
+                    "actual": 0.05853917342189312,
+                    "bound": 0.05855661922888822,
+                    "label": "node.3[left].point",
+                    "quantity": "jerk_x",
+                    "ratio": 0.9997020694291296,
+                    "vehicle_id": 1
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9992116151561684,
+                  "jerk_ratio": 0.9055647635943767,
+                  "p_sss_ratio": 0.9999999999985362,
+                  "worst": {
+                    "actual": 0.004467545031795819,
+                    "bound": 0.004467545031802359,
+                    "label": "node.3[right].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9999999999985362,
+                    "vehicle_id": 2
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E2 .dynamic_audit.metrics.nodes.records[3].right_jerk",
+              "right_region": "motion",
+              "s": 3.0002483293957676,
+              "t": 7.313811242010907,
+              "tau": 0.5,
+              "w": 0.7691565220201612
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.567812711935403e-10,
+              "jump_max": 0.0002330134566614463,
+              "left_jerk_vector_location": "benchmark/results.json:E2 .dynamic_audit.metrics.nodes.records[4].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 4.3298697960381105e-15,
+              "node": 5,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.986120255050212,
+                  "jerk_ratio": 0.8032565232639454,
+                  "p_sss_ratio": 0.9944961587031035,
+                  "worst": {
+                    "actual": 0.004606548058175,
+                    "bound": 0.004632042082678609,
+                    "label": "node.4[left].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9944961587031035,
+                    "vehicle_id": 1
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9935837431266408,
+                  "jerk_ratio": 0.8021975597312396,
+                  "p_sss_ratio": 0.9927293302857065,
+                  "worst": {
+                    "actual": 0.05602879921872952,
+                    "bound": 0.05639061589556238,
+                    "label": "node.4[right].point",
+                    "quantity": "jerk_x",
+                    "ratio": 0.9935837431266408,
+                    "vehicle_id": 1
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E2 .dynamic_audit.metrics.nodes.records[4].right_jerk",
+              "right_region": "motion",
+              "s": 3.7503104117447092,
+              "t": 8.300907267679179,
+              "tau": 0.5674816448637847,
+              "w": 0.7413912101787595
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.5351810367956205e-10,
+              "jump_max": 0.0005813906290596162,
+              "left_jerk_vector_location": "benchmark/results.json:E2 .dynamic_audit.metrics.nodes.records[5].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 4.3298697960381105e-15,
+              "node": 6,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.960510969585397,
+                  "jerk_ratio": 0.7451962496874376,
+                  "p_sss_ratio": 0.9990780571103833,
+                  "worst": {
+                    "actual": 0.004705212386188422,
+                    "bound": 0.0047095543263128295,
+                    "label": "node.5[left].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9990780571103833,
+                    "vehicle_id": 2
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9907463218739555,
+                  "jerk_ratio": 0.7599390471890047,
+                  "p_sss_ratio": 0.9999999999994763,
+                  "worst": {
+                    "actual": 0.021396519290454708,
+                    "bound": 0.021396519290465914,
+                    "label": "node.5[right].point",
+                    "quantity": "p_sss_y",
+                    "ratio": 0.9999999999994763,
+                    "vehicle_id": 1
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E2 .dynamic_audit.metrics.nodes.records[5].right_jerk",
+              "right_region": "motion",
+              "s": 4.500372494093652,
+              "t": 9.369925958374205,
+              "tau": 0.6405638352103531,
+              "w": 0.652383674275675
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.4783198543664184e-10,
+              "jump_max": 0.0004590575260301757,
+              "left_jerk_vector_location": "benchmark/results.json:E2 .dynamic_audit.metrics.nodes.records[6].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 4.3298697960381105e-15,
+              "node": 7,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.8521786988468254,
+                  "jerk_ratio": 0.6361341149294604,
+                  "p_sss_ratio": 0.9987372452305209,
+                  "worst": {
+                    "actual": 0.008462084316118328,
+                    "bound": 0.00847278336372163,
+                    "label": "node.6[left].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9987372452305209,
+                    "vehicle_id": 2
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9931077645308828,
+                  "jerk_ratio": 0.7080902132980114,
+                  "p_sss_ratio": 0.9970549615088915,
+                  "worst": {
+                    "actual": 0.016510255791966487,
+                    "bound": 0.016559022751344337,
+                    "label": "node.6[right].point",
+                    "quantity": "p_sss_y",
+                    "ratio": 0.9970549615088915,
+                    "vehicle_id": 3
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E2 .dynamic_audit.metrics.nodes.records[6].right_jerk",
+              "right_region": "motion",
+              "s": 5.2504345764425935,
+              "t": 10.687254431642955,
+              "tau": 0.7306214282817978,
+              "w": 0.47670050527879393
+            }
+          ]
+        },
+        "pointwise_interval_checks": {
+          "leaf_count": 64,
+          "max_component_ratio": 0.9986857877358027,
+          "max_jerk_ratio": 0.9519608293506182,
+          "max_p_sss_ratio": 0.9951789008465944,
+          "vehicle_count": 192,
+          "worst": {
+            "actual": 0.058576965558237125,
+            "bound": 0.058654049429342,
+            "label": "segment.4[0,0.125].point",
+            "quantity": "jerk_x",
+            "ratio": 0.9986857877358027,
+            "vehicle_id": 1
+          }
+        },
+        "ros_used": false,
+        "time_inverse": {
+          "max_error_s": 4.0974512671709817e-10,
+          "max_independent_error_s": 5.31411714632668e-08,
+          "sample_count": 100,
+          "tolerance_s": 1e-09
+        },
+        "whole_domain_certificate": true
+      },
+      "model_json_location": "benchmark/results.json:E2 .model_json",
+      "model_sha256": "b53273d2b6aab168bb3bd53351edb664df94f6a6084b45aa208d5fc712a69f2b",
+      "name": "E2",
+      "request_sha256": "a738277bb87e73d11f72931cab1e989a09a1419ddbaad21df3efe32266c0ec1c",
+      "roundtrip": {
+        "equal_digest": true,
+        "equal_json": true,
+        "equal_state_midpoint": true
+      },
+      "sample": {
+        "authoritative": false,
+        "states_equal_pointwise": true,
+        "times": [
+          0.0,
+          7.313811242010907,
+          14.627622484021813
+        ]
+      },
+      "selection": {
+        "T0_s": 1.0,
+        "interval_subdivisions_per_segment": 8,
+        "required_duration_s": 14.482794538635458,
+        "rescalings": 0,
+        "safety_factor": 1.01,
+        "selected_duration_s": 14.627622484021813,
+        "wheel_angle_bound_rad": 0.028040330419729316,
+        "wheel_angle_limit_rad": 1.5707963267948966,
+        "worst": {
+          "order": 1,
+          "quantity": "speed",
+          "s0": 3.187763849983003,
+          "s1": 3.281521610276621,
+          "segment_index": 4,
+          "vehicle_id": 2,
+          "wheel_index": 0
+        },
+        "worst_metric": {
+          "limit": 0.8,
+          "order": 1,
+          "required_duration_s": 14.482794538635458,
+          "segment_index": 4,
+          "upper_at_T0_s": 11.586235630908368,
+          "upper_bound_interval": [
+            3.187763849983003,
+            3.281521610276621
+          ],
+          "vehicle_id": 2,
+          "wheel_index": 0
+        }
+      },
+      "short_duration": {
+        "check_count": 155,
+        "first_failure": {
+          "limit": 2.0,
+          "quantity": "jerk",
+          "value": 4.797024928543146,
+          "vehicle_id": 2,
+          "wheel_index": 0
+        },
+        "reason": "DYNAMIC_LIMIT",
+        "rejected": true
+      },
+      "tamper": {
+        "extra_field": "UNSUPPORTED_MODEL_FIELD",
+        "self_digest": "UNSUPPORTED_MODEL_FIELD",
+        "timing_T": "MODEL_TIMING_INCONSISTENT"
+      },
+      "timing_status": "DYNAMIC_FEASIBLE"
+    },
+    {
+      "S_m": 6.0020064978265975,
+      "T_s": 15.10059882623887,
+      "audit": {
+        "check_count": 909,
+        "collision_checked": false,
+        "differential": {
+          "checked_sample_count": 80,
+          "max_errors": {
+            "acceleration": 4.057577607241569e-10,
+            "angular_accel": 5.851199386119887e-11,
+            "angular_jerk": 1.719688448552359e-07,
+            "angular_rate": 2.3021445860749168e-12,
+            "jerk": 5.3007484870915e-07,
+            "velocity": 7.061268236796536e-12
+          },
+          "oracle": {
+            "boundary_rule": "stencils that cross a Hermite g-jump or the time-domain hold boundary are skipped; analytic one-sided limits are used instead",
+            "grid_subintervals": [
+              376,
+              376,
+              376,
+              376,
+              376,
+              376,
+              376,
+              376
+            ],
+            "method": "independent_composite_simpson_positions",
+            "oracle_step_m": 0.002
+          },
+          "skipped_sample_count": 0,
+          "tolerances": {
+            "acceleration": 0.0001,
+            "angular_accel": 0.0001,
+            "angular_jerk": 0.01,
+            "angular_rate": 1e-05,
+            "jerk": 0.01,
+            "velocity": 1e-05
+          }
+        },
+        "executable": false,
+        "leaves": 64,
+        "map_used": false,
+        "max_utilization": {
+          "acceleration": 0.3485282810946418,
+          "jerk": 0.06790346610306425,
+          "lateral_acceleration": 0.11812993215433594,
+          "speed": 0.9900990099009902,
+          "steer_acceleration": 0.0021866578555738408,
+          "steer_rate": 0.012573154628738308,
+          "wheel_angle": 0.03656888333724614,
+          "wheel_speed": 0.8017922036860033,
+          "yaw_acceleration": 0.04640965568451117,
+          "yaw_jerk": 0.008462650916582218,
+          "yaw_rate": 0.1320588942675733
+        },
+        "nodes": {
+          "internal_node_count": 7,
+          "max_continuity_error": 8.496675585334401e-15,
+          "max_inverse_error_s": 4.3948489292233717e-10,
+          "max_jump_magnitude": 0.0020351890247849672,
+          "max_state_error": 1.1102230246251565e-16,
+          "records": [
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.5907898876530453e-10,
+              "jump_max": 0.001305409867360956,
+              "left_jerk_vector_location": "benchmark/results.json:E3 .dynamic_audit.metrics.nodes.records[0].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 1.5508427875232655e-15,
+              "node": 1,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.9999995988320052,
+                  "jerk_ratio": 0.9935056330587732,
+                  "p_sss_ratio": 0.9999999999971463,
+                  "worst": {
+                    "actual": 0.005081973344548354,
+                    "bound": 0.005081973344562857,
+                    "label": "node.0[left].point",
+                    "quantity": "p_sss_y",
+                    "ratio": 0.9999999999971463,
+                    "vehicle_id": 3
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.8374246800187102,
+                  "jerk_ratio": 0.8247299880985274,
+                  "p_sss_ratio": 0.9645750389023913,
+                  "worst": {
+                    "actual": 0.013734162497526676,
+                    "bound": 0.014238563039278984,
+                    "label": "node.0[right].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9645750389023913,
+                    "vehicle_id": 3
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E3 .dynamic_audit.metrics.nodes.records[0].right_jerk",
+              "right_region": "motion",
+              "s": 0.7502508122283247,
+              "t": 4.0677777439017895,
+              "tau": 0.26937857171820234,
+              "w": 0.46188562768481406
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.6494451904900416e-10,
+              "jump_max": 0.0020351890247849672,
+              "left_jerk_vector_location": "benchmark/results.json:E3 .dynamic_audit.metrics.nodes.records[1].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 1.5508427875232655e-15,
+              "node": 2,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.9999760799774778,
+                  "jerk_ratio": 0.959820987619645,
+                  "p_sss_ratio": 0.9999999999991117,
+                  "worst": {
+                    "actual": 0.0173523514467327,
+                    "bound": 0.017352351446748116,
+                    "label": "node.1[left].point",
+                    "quantity": "p_sss_y",
+                    "ratio": 0.9999999999991117,
+                    "vehicle_id": 3
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9588751823733763,
+                  "jerk_ratio": 0.9115392227616332,
+                  "p_sss_ratio": 0.9999999999996348,
+                  "worst": {
+                    "actual": 0.01768387228458545,
+                    "bound": 0.017683872284591905,
+                    "label": "node.1[right].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9999999999996348,
+                    "vehicle_id": 3
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E3 .dynamic_audit.metrics.nodes.records[1].right_jerk",
+              "right_region": "motion",
+              "s": 1.5005016244566494,
+              "t": 5.427701328130347,
+              "tau": 0.35943616478964713,
+              "w": 0.6321089227877307
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.6831604433018583e-10,
+              "jump_max": 0.001687941401359699,
+              "left_jerk_vector_location": "benchmark/results.json:E3 .dynamic_audit.metrics.nodes.records[2].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 7.906869603502287e-15,
+              "node": 3,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.9997208494674612,
+                  "jerk_ratio": 0.9047382704813581,
+                  "p_sss_ratio": 0.9967443429889357,
+                  "worst": {
+                    "actual": 0.050657679201702346,
+                    "bound": 0.050671824268431594,
+                    "label": "node.2[left].point",
+                    "quantity": "jerk_x",
+                    "ratio": 0.9997208494674612,
+                    "vehicle_id": 1
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9818207010391138,
+                  "jerk_ratio": 0.8913135143967776,
+                  "p_sss_ratio": 0.9999999999995616,
+                  "worst": {
+                    "actual": 0.01502450346045668,
+                    "bound": 0.015024503460463266,
+                    "label": "node.2[right].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9999999999995616,
+                    "vehicle_id": 3
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E3 .dynamic_audit.metrics.nodes.records[2].right_jerk",
+              "right_region": "motion",
+              "s": 2.250752436684974,
+              "t": 6.531286165896698,
+              "tau": 0.43251835513621517,
+              "w": 0.7183502863567311
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 4.3948489292233717e-10,
+              "jump_max": 0.0006668315387400713,
+              "left_jerk_vector_location": "benchmark/results.json:E3 .dynamic_audit.metrics.nodes.records[3].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 8.496675585334401e-15,
+              "node": 4,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.9988641929908602,
+                  "jerk_ratio": 0.8598529997842206,
+                  "p_sss_ratio": 0.9939725574883852,
+                  "worst": {
+                    "actual": 0.056018592451666724,
+                    "bound": 0.056082291110999216,
+                    "label": "node.3[left].point",
+                    "quantity": "jerk_x",
+                    "ratio": 0.9988641929908602,
+                    "vehicle_id": 1
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9969384651992651,
+                  "jerk_ratio": 0.8618998068492071,
+                  "p_sss_ratio": 0.9999999999990826,
+                  "worst": {
+                    "actual": 0.007396101997165871,
+                    "bound": 0.0073961019971726565,
+                    "label": "node.3[right].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9999999999990826,
+                    "vehicle_id": 3
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E3 .dynamic_audit.metrics.nodes.records[3].right_jerk",
+              "right_region": "motion",
+              "s": 3.0010032489132987,
+              "t": 7.550299413119435,
+              "tau": 0.5,
+              "w": 0.7452527090429208
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.6831693250860553e-10,
+              "jump_max": 0.00043390820186996887,
+              "left_jerk_vector_location": "benchmark/results.json:E3 .dynamic_audit.metrics.nodes.records[4].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 8.496675585334401e-15,
+              "node": 5,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.9857380212778518,
+                  "jerk_ratio": 0.6980105057947665,
+                  "p_sss_ratio": 0.9963568156439594,
+                  "worst": {
+                    "actual": 0.004059330039946969,
+                    "bound": 0.004074173003296382,
+                    "label": "node.4[left].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9963568156439594,
+                    "vehicle_id": 3
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.976820531281168,
+                  "jerk_ratio": 0.6898210998868594,
+                  "p_sss_ratio": 0.992783493195852,
+                  "worst": {
+                    "actual": 0.04759146353566621,
+                    "bound": 0.04793740413880711,
+                    "label": "node.4[right].point",
+                    "quantity": "p_sss_y",
+                    "ratio": 0.992783493195852,
+                    "vehicle_id": 1
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E3 .dynamic_audit.metrics.nodes.records[4].right_jerk",
+              "right_region": "motion",
+              "s": 3.7512540611416236,
+              "t": 8.569312660342172,
+              "tau": 0.5674816448637847,
+              "w": 0.7183502863567311
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.6494540722742386e-10,
+              "jump_max": 0.0010596964641655798,
+              "left_jerk_vector_location": "benchmark/results.json:E3 .dynamic_audit.metrics.nodes.records[5].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 8.496675585334401e-15,
+              "node": 6,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.9596903085331521,
+                  "jerk_ratio": 0.6415591412750348,
+                  "p_sss_ratio": 0.9989400376064919,
+                  "worst": {
+                    "actual": 0.01775033120555556,
+                    "bound": 0.01776916585312388,
+                    "label": "node.5[left].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9989400376064919,
+                    "vehicle_id": 3
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9820869949292886,
+                  "jerk_ratio": 0.6468753176019216,
+                  "p_sss_ratio": 0.9999999999997237,
+                  "worst": {
+                    "actual": 0.0413856724384083,
+                    "bound": 0.041385672438419736,
+                    "label": "node.5[right].point",
+                    "quantity": "p_sss_y",
+                    "ratio": 0.9999999999997237,
+                    "vehicle_id": 1
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E3 .dynamic_audit.metrics.nodes.records[5].right_jerk",
+              "right_region": "motion",
+              "s": 4.501504873369948,
+              "t": 9.672897498108524,
+              "tau": 0.6405638352103529,
+              "w": 0.6321089227877307
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.5907987694372423e-10,
+              "jump_max": 0.0008246126951051112,
+              "left_jerk_vector_location": "benchmark/results.json:E3 .dynamic_audit.metrics.nodes.records[6].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 8.496675585334401e-15,
+              "node": 7,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.860009552418079,
+                  "jerk_ratio": 0.6084006404949295,
+                  "p_sss_ratio": 0.9984549476780569,
+                  "worst": {
+                    "actual": 0.031039759396111814,
+                    "bound": 0.03108779166080142,
+                    "label": "node.6[left].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9984549476780569,
+                    "vehicle_id": 3
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9871596999789577,
+                  "jerk_ratio": 0.6607755975498201,
+                  "p_sss_ratio": 0.991826113655407,
+                  "worst": {
+                    "actual": 0.061954139579094736,
+                    "bound": 0.06246471909351203,
+                    "label": "node.6[right].point",
+                    "quantity": "p_sss_y",
+                    "ratio": 0.991826113655407,
+                    "vehicle_id": 3
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E3 .dynamic_audit.metrics.nodes.records[6].right_jerk",
+              "right_region": "motion",
+              "s": 5.2517556855982725,
+              "t": 11.032821082337083,
+              "tau": 0.7306214282817978,
+              "w": 0.4618856276848137
+            }
+          ]
+        },
+        "pointwise_interval_checks": {
+          "leaf_count": 64,
+          "max_component_ratio": 0.9956079921953904,
+          "max_jerk_ratio": 0.9375904586411317,
+          "max_p_sss_ratio": 0.993147391472375,
+          "vehicle_count": 192,
+          "worst": {
+            "actual": 0.05618890374173928,
+            "bound": 0.056436774495791785,
+            "label": "segment.4[0,0.125].point",
+            "quantity": "jerk_x",
+            "ratio": 0.9956079921953904,
+            "vehicle_id": 1
+          }
+        },
+        "ros_used": false,
+        "time_inverse": {
+          "max_error_s": 4.2299319602534524e-10,
+          "max_independent_error_s": 5.4859464526657575e-08,
+          "sample_count": 100,
+          "tolerance_s": 1e-09
+        },
+        "whole_domain_certificate": true
+      },
+      "model_json_location": "benchmark/results.json:E3 .model_json",
+      "model_sha256": "0bcec22ba51f0a3eb9e07c1fd0fde343102c9f16b07fc8496ee3ae354c3817cc",
+      "name": "E3",
+      "request_sha256": "c8f2bb0b1ac8d09389557b43299983dcf9a1ae793d8a543a585c30eaa189b529",
+      "roundtrip": {
+        "equal_digest": true,
+        "equal_json": true,
+        "equal_state_midpoint": true
+      },
+      "sample": {
+        "authoritative": false,
+        "states_equal_pointwise": true,
+        "times": [
+          0.0,
+          7.550299413119435,
+          15.10059882623887
+        ]
+      },
+      "selection": {
+        "T0_s": 1.0,
+        "interval_subdivisions_per_segment": 8,
+        "required_duration_s": 14.951087946771159,
+        "rescalings": 0,
+        "safety_factor": 1.01,
+        "selected_duration_s": 15.10059882623887,
+        "wheel_angle_bound_rad": 0.05744226762113733,
+        "wheel_angle_limit_rad": 1.5707963267948966,
+        "worst": {
+          "order": 1,
+          "quantity": "speed",
+          "s0": 3.282347303498921,
+          "s1": 3.376128655027461,
+          "segment_index": 4,
+          "vehicle_id": 3,
+          "wheel_index": 0
+        },
+        "worst_metric": {
+          "limit": 0.8,
+          "order": 1,
+          "required_duration_s": 14.951087946771159,
+          "segment_index": 4,
+          "upper_at_T0_s": 11.960870357416928,
+          "upper_bound_interval": [
+            3.282347303498921,
+            3.376128655027461
+          ],
+          "vehicle_id": 3,
+          "wheel_index": 0
+        }
+      },
+      "short_duration": {
+        "check_count": 155,
+        "first_failure": {
+          "limit": 2.0,
+          "quantity": "jerk",
+          "value": 4.361341095150091,
+          "vehicle_id": 2,
+          "wheel_index": 0
+        },
+        "reason": "DYNAMIC_LIMIT",
+        "rejected": true
+      },
+      "tamper": {
+        "extra_field": "UNSUPPORTED_MODEL_FIELD",
+        "self_digest": "UNSUPPORTED_MODEL_FIELD",
+        "timing_T": "MODEL_TIMING_INCONSISTENT"
+      },
+      "timing_status": "DYNAMIC_FEASIBLE"
+    },
+    {
+      "S_m": 6.002006497826603,
+      "T_s": 15.10059882623911,
+      "audit": {
+        "check_count": 909,
+        "collision_checked": false,
+        "differential": {
+          "checked_sample_count": 80,
+          "max_errors": {
+            "acceleration": 6.801051943838843e-10,
+            "angular_accel": 1.175779890116857e-10,
+            "angular_jerk": 1.7196884770712129e-07,
+            "angular_rate": 2.295386103412511e-12,
+            "jerk": 5.304079133752748e-07,
+            "velocity": 7.088274411870543e-12
+          },
+          "oracle": {
+            "boundary_rule": "stencils that cross a Hermite g-jump or the time-domain hold boundary are skipped; analytic one-sided limits are used instead",
+            "grid_subintervals": [
+              376,
+              376,
+              376,
+              376,
+              376,
+              376,
+              376,
+              376
+            ],
+            "method": "independent_composite_simpson_positions",
+            "oracle_step_m": 0.002
+          },
+          "skipped_sample_count": 0,
+          "tolerances": {
+            "acceleration": 0.0001,
+            "angular_accel": 0.0001,
+            "angular_jerk": 0.01,
+            "angular_rate": 1e-05,
+            "jerk": 0.01,
+            "velocity": 1e-05
+          }
+        },
+        "executable": false,
+        "leaves": 64,
+        "map_used": false,
+        "max_utilization": {
+          "acceleration": 0.34852828109461936,
+          "jerk": 0.06790346610305703,
+          "lateral_acceleration": 0.11812993215434357,
+          "speed": 0.9900990099009902,
+          "steer_acceleration": 0.0021866578555769884,
+          "steer_rate": 0.01257315462873718,
+          "wheel_angle": 0.03656888333723555,
+          "wheel_speed": 0.8017922036860065,
+          "yaw_acceleration": 0.04640965568448587,
+          "yaw_jerk": 0.008462650916577845,
+          "yaw_rate": 0.1320588942675673
+        },
+        "nodes": {
+          "internal_node_count": 7,
+          "max_continuity_error": 8.743006318923108e-15,
+          "max_inverse_error_s": 4.3948489292233717e-10,
+          "max_jump_magnitude": 0.002035189024792324,
+          "max_state_error": 1.7763568394002505e-15,
+          "records": [
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.5907898876530453e-10,
+              "jump_max": 0.001305409867364448,
+              "left_jerk_vector_location": "benchmark/results.json:E4 .dynamic_audit.metrics.nodes.records[0].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 1.6245685352522798e-15,
+              "node": 1,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.9999995988320054,
+                  "jerk_ratio": 0.9935056330588009,
+                  "p_sss_ratio": 0.9999999999971463,
+                  "worst": {
+                    "actual": 0.005081973344538042,
+                    "bound": 0.0050819733445525445,
+                    "label": "node.0[left].point",
+                    "quantity": "p_sss_y",
+                    "ratio": 0.9999999999971463,
+                    "vehicle_id": 2
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.8374246800187105,
+                  "jerk_ratio": 0.8247299880985306,
+                  "p_sss_ratio": 0.9645750389022888,
+                  "worst": {
+                    "actual": 0.01373416249753458,
+                    "bound": 0.014238563039288691,
+                    "label": "node.0[right].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9645750389022888,
+                    "vehicle_id": 2
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E4 .dynamic_audit.metrics.nodes.records[0].right_jerk",
+              "right_region": "motion",
+              "s": 0.7502508122283253,
+              "t": 4.067777743901854,
+              "tau": 0.26937857171820234,
+              "w": 0.4618856276848071
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.6494451904900416e-10,
+              "jump_max": 0.002035189024792324,
+              "left_jerk_vector_location": "benchmark/results.json:E4 .dynamic_audit.metrics.nodes.records[1].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 1.6245685352522798e-15,
+              "node": 2,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.999976079977478,
+                  "jerk_ratio": 0.9598209876196869,
+                  "p_sss_ratio": 0.9999999999991115,
+                  "worst": {
+                    "actual": 0.017352351446733385,
+                    "bound": 0.017352351446748803,
+                    "label": "node.1[left].point",
+                    "quantity": "p_sss_y",
+                    "ratio": 0.9999999999991115,
+                    "vehicle_id": 2
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9588751823733767,
+                  "jerk_ratio": 0.9115392227616612,
+                  "p_sss_ratio": 0.9999999999996345,
+                  "worst": {
+                    "actual": 0.017683872284607754,
+                    "bound": 0.017683872284614217,
+                    "label": "node.1[right].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9999999999996345,
+                    "vehicle_id": 2
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E4 .dynamic_audit.metrics.nodes.records[1].right_jerk",
+              "right_region": "motion",
+              "s": 1.5005016244566507,
+              "t": 5.427701328130433,
+              "tau": 0.35943616478964713,
+              "w": 0.6321089227877212
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.6831782068702523e-10,
+              "jump_max": 0.0016879414013662962,
+              "left_jerk_vector_location": "benchmark/results.json:E4 .dynamic_audit.metrics.nodes.records[2].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 8.232997616985926e-15,
+              "node": 3,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.9997208494674616,
+                  "jerk_ratio": 0.904738270481357,
+                  "p_sss_ratio": 0.9967443429889256,
+                  "worst": {
+                    "actual": 0.050657679201700265,
+                    "bound": 0.050671824268429484,
+                    "label": "node.2[left].point",
+                    "quantity": "jerk_x",
+                    "ratio": 0.9997208494674616,
+                    "vehicle_id": 1
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9818207010391112,
+                  "jerk_ratio": 0.8913135143967742,
+                  "p_sss_ratio": 0.9999999999995615,
+                  "worst": {
+                    "actual": 0.015024503460470856,
+                    "bound": 0.015024503460477444,
+                    "label": "node.2[right].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9999999999995615,
+                    "vehicle_id": 2
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E4 .dynamic_audit.metrics.nodes.records[2].right_jerk",
+              "right_region": "motion",
+              "s": 2.250752436684976,
+              "t": 6.5312861658968036,
+              "tau": 0.4325183551362153,
+              "w": 0.7183502863567203
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 4.3948489292233717e-10,
+              "jump_max": 0.0006668315387401919,
+              "left_jerk_vector_location": "benchmark/results.json:E4 .dynamic_audit.metrics.nodes.records[3].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 8.743006318923108e-15,
+              "node": 4,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.9988641929908587,
+                  "jerk_ratio": 0.8598529997841321,
+                  "p_sss_ratio": 0.993972557488365,
+                  "worst": {
+                    "actual": 0.0560185924516662,
+                    "bound": 0.05608229111099878,
+                    "label": "node.3[left].point",
+                    "quantity": "jerk_x",
+                    "ratio": 0.9988641929908587,
+                    "vehicle_id": 1
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9969384651992634,
+                  "jerk_ratio": 0.8618998068491325,
+                  "p_sss_ratio": 0.9999999999990823,
+                  "worst": {
+                    "actual": 0.007396101997157932,
+                    "bound": 0.007396101997164719,
+                    "label": "node.3[right].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9999999999990823,
+                    "vehicle_id": 2
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E4 .dynamic_audit.metrics.nodes.records[3].right_jerk",
+              "right_region": "motion",
+              "s": 3.0010032489133014,
+              "t": 7.550299413119555,
+              "tau": 0.5,
+              "w": 0.7452527090429097
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.6831870886544493e-10,
+              "jump_max": 0.00043390820187604213,
+              "left_jerk_vector_location": "benchmark/results.json:E4 .dynamic_audit.metrics.nodes.records[4].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 8.743006318923108e-15,
+              "node": 5,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.9857380212778478,
+                  "jerk_ratio": 0.6980105057948467,
+                  "p_sss_ratio": 0.9963568156439746,
+                  "worst": {
+                    "actual": 0.004059330039977749,
+                    "bound": 0.004074173003327212,
+                    "label": "node.4[left].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9963568156439746,
+                    "vehicle_id": 2
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9768205312811646,
+                  "jerk_ratio": 0.6898210998869517,
+                  "p_sss_ratio": 0.9927834931959023,
+                  "worst": {
+                    "actual": 0.047591463535643294,
+                    "bound": 0.04793740413878159,
+                    "label": "node.4[right].point",
+                    "quantity": "p_sss_y",
+                    "ratio": 0.9927834931959023,
+                    "vehicle_id": 1
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E4 .dynamic_audit.metrics.nodes.records[4].right_jerk",
+              "right_region": "motion",
+              "s": 3.7512540611416267,
+              "t": 8.569312660342307,
+              "tau": 0.5674816448637847,
+              "w": 0.7183502863567203
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.6494363087058446e-10,
+              "jump_max": 0.0010596964641716965,
+              "left_jerk_vector_location": "benchmark/results.json:E4 .dynamic_audit.metrics.nodes.records[5].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 8.743006318923108e-15,
+              "node": 6,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.9596903085331449,
+                  "jerk_ratio": 0.641559141275127,
+                  "p_sss_ratio": 0.9989400376064921,
+                  "worst": {
+                    "actual": 0.017750331205594907,
+                    "bound": 0.017769165853163266,
+                    "label": "node.5[left].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9989400376064921,
+                    "vehicle_id": 2
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9820869949293018,
+                  "jerk_ratio": 0.6468753176020149,
+                  "p_sss_ratio": 0.9999999999997239,
+                  "worst": {
+                    "actual": 0.0413856724383547,
+                    "bound": 0.041385672438366126,
+                    "label": "node.5[right].point",
+                    "quantity": "p_sss_y",
+                    "ratio": 0.9999999999997239,
+                    "vehicle_id": 1
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E4 .dynamic_audit.metrics.nodes.records[5].right_jerk",
+              "right_region": "motion",
+              "s": 4.501504873369952,
+              "t": 9.672897498108677,
+              "tau": 0.6405638352103529,
+              "w": 0.6321089227877211
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.5907987694372423e-10,
+              "jump_max": 0.0008246126951056455,
+              "left_jerk_vector_location": "benchmark/results.json:E4 .dynamic_audit.metrics.nodes.records[6].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 8.743006318923108e-15,
+              "node": 7,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.8600095524180473,
+                  "jerk_ratio": 0.6084006404949731,
+                  "p_sss_ratio": 0.998454947678046,
+                  "worst": {
+                    "actual": 0.031039759396132606,
+                    "bound": 0.03108779166082258,
+                    "label": "node.6[left].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.998454947678046,
+                    "vehicle_id": 2
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9871596999789679,
+                  "jerk_ratio": 0.6607755975498814,
+                  "p_sss_ratio": 0.9918261136554146,
+                  "worst": {
+                    "actual": 0.06195413957903526,
+                    "bound": 0.06246471909345159,
+                    "label": "node.6[right].point",
+                    "quantity": "p_sss_y",
+                    "ratio": 0.9918261136554146,
+                    "vehicle_id": 2
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E4 .dynamic_audit.metrics.nodes.records[6].right_jerk",
+              "right_region": "motion",
+              "s": 5.251755685598278,
+              "t": 11.032821082337257,
+              "tau": 0.7306214282817978,
+              "w": 0.46188562768480684
+            }
+          ]
+        },
+        "pointwise_interval_checks": {
+          "leaf_count": 64,
+          "max_component_ratio": 0.9956079921953883,
+          "max_jerk_ratio": 0.937590458641162,
+          "max_p_sss_ratio": 0.9931473914723405,
+          "vehicle_count": 192,
+          "worst": {
+            "actual": 0.05618890374173884,
+            "bound": 0.056436774495791465,
+            "label": "segment.4[0,0.125].point",
+            "quantity": "jerk_x",
+            "ratio": 0.9956079921953883,
+            "vehicle_id": 1
+          }
+        },
+        "ros_used": false,
+        "time_inverse": {
+          "max_error_s": 4.2299319602534524e-10,
+          "max_independent_error_s": 5.4859464526657575e-08,
+          "sample_count": 100,
+          "tolerance_s": 1e-09
+        },
+        "whole_domain_certificate": true
+      },
+      "model_json_location": "benchmark/results.json:E4 .model_json",
+      "model_sha256": "abe3bfdfcec9ff0bdfae59b6ea20eb2de28b3ecb3f877df43e254729199ea3fc",
+      "name": "E4",
+      "request_sha256": "4ae0393ad3ce5da90f817fb60c877ba9441e15785be3f653b055d4aa337545f3",
+      "roundtrip": {
+        "equal_digest": true,
+        "equal_json": true,
+        "equal_state_midpoint": true
+      },
+      "sample": {
+        "authoritative": false,
+        "states_equal_pointwise": true,
+        "times": [
+          0.0,
+          7.550299413119555,
+          15.10059882623911
+        ]
+      },
+      "selection": {
+        "T0_s": 1.0,
+        "interval_subdivisions_per_segment": 8,
+        "required_duration_s": 14.951087946771397,
+        "rescalings": 0,
+        "safety_factor": 1.01,
+        "selected_duration_s": 15.10059882623911,
+        "wheel_angle_bound_rad": 0.057442267621120695,
+        "wheel_angle_limit_rad": 1.5707963267948966,
+        "worst": {
+          "order": 1,
+          "quantity": "speed",
+          "s0": 3.2823473034989235,
+          "s1": 3.376128655027464,
+          "segment_index": 4,
+          "vehicle_id": 2,
+          "wheel_index": 0
+        },
+        "worst_metric": {
+          "limit": 0.8,
+          "order": 1,
+          "required_duration_s": 14.951087946771397,
+          "segment_index": 4,
+          "upper_at_T0_s": 11.960870357417118,
+          "upper_bound_interval": [
+            3.2823473034989235,
+            3.376128655027464
+          ],
+          "vehicle_id": 2,
+          "wheel_index": 0
+        }
+      },
+      "short_duration": {
+        "check_count": 155,
+        "first_failure": {
+          "limit": 2.0,
+          "quantity": "jerk",
+          "value": 4.361341095149888,
+          "vehicle_id": 3,
+          "wheel_index": 0
+        },
+        "reason": "DYNAMIC_LIMIT",
+        "rejected": true
+      },
+      "tamper": {
+        "extra_field": "UNSUPPORTED_MODEL_FIELD",
+        "self_digest": "UNSUPPORTED_MODEL_FIELD",
+        "timing_T": "MODEL_TIMING_INCONSISTENT"
+      },
+      "timing_status": "DYNAMIC_FEASIBLE"
+    },
+    {
+      "S_m": 8.011137789911,
+      "T_s": 20.842263324804446,
+      "audit": {
+        "check_count": 909,
+        "collision_checked": false,
+        "differential": {
+          "checked_sample_count": 80,
+          "max_errors": {
+            "acceleration": 5.957206672402293e-10,
+            "angular_accel": 1.6268510497075006e-10,
+            "angular_jerk": 6.648186560119507e-08,
+            "angular_rate": 9.094947017729282e-13,
+            "jerk": 3.125316506355502e-07,
+            "velocity": 4.238553952262691e-12
+          },
+          "oracle": {
+            "boundary_rule": "stencils that cross a Hermite g-jump or the time-domain hold boundary are skipped; analytic one-sided limits are used instead",
+            "grid_subintervals": [
+              502,
+              502,
+              502,
+              502,
+              502,
+              502,
+              502,
+              502
+            ],
+            "method": "independent_composite_simpson_positions",
+            "oracle_step_m": 0.002
+          },
+          "skipped_sample_count": 0,
+          "tolerances": {
+            "acceleration": 0.0001,
+            "angular_accel": 0.0001,
+            "angular_jerk": 0.01,
+            "angular_rate": 1e-05,
+            "jerk": 0.01,
+            "velocity": 1e-05
+          }
+        },
+        "executable": false,
+        "leaves": 64,
+        "map_used": false,
+        "max_utilization": {
+          "acceleration": 0.31198732329205303,
+          "jerk": 0.0403799829716336,
+          "lateral_acceleration": 0.1538548442879231,
+          "speed": 0.9900990099009895,
+          "steer_acceleration": 0.0018094104038848847,
+          "steer_rate": 0.015775162691055944,
+          "wheel_angle": 0.06310528165403262,
+          "wheel_speed": 0.8073713379951929,
+          "yaw_acceleration": 0.04643500371510161,
+          "yaw_jerk": 0.0061126258922320036,
+          "yaw_rate": 0.1778635343873005
+        },
+        "nodes": {
+          "internal_node_count": 7,
+          "max_continuity_error": 7.834011217511261e-15,
+          "max_inverse_error_s": 3.0329516675919876e-10,
+          "max_jump_magnitude": 0.0011976704955405683,
+          "max_state_error": 8.881784197001252e-16,
+          "records": [
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 1.9231549686082872e-10,
+              "jump_max": 0.0007750845568596613,
+              "left_jerk_vector_location": "benchmark/results.json:E5 .dynamic_audit.metrics.nodes.records[0].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 1.4641066137244252e-15,
+              "node": 1,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.9999989003072348,
+                  "jerk_ratio": 0.9868820374378747,
+                  "p_sss_ratio": 0.9999999999980481,
+                  "worst": {
+                    "actual": 0.00562100272797753,
+                    "bound": 0.005621002727988501,
+                    "label": "node.0[left].point",
+                    "quantity": "p_sss_y",
+                    "ratio": 0.9999999999980481,
+                    "vehicle_id": 3
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.8372583439428424,
+                  "jerk_ratio": 0.8139320592721697,
+                  "p_sss_ratio": 0.9642716709623382,
+                  "worst": {
+                    "actual": 0.011663729465177334,
+                    "bound": 0.01209589560329714,
+                    "label": "node.0[right].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9642716709623382,
+                    "vehicle_id": 3
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E5 .dynamic_audit.metrics.nodes.records[0].right_jerk",
+              "right_region": "motion",
+              "s": 1.001392223738875,
+              "t": 5.614459125810493,
+              "tau": 0.26937857171820234,
+              "w": 0.44666454462782795
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 2.0041124315639536e-10,
+              "jump_max": 0.0011976704955405683,
+              "left_jerk_vector_location": "benchmark/results.json:E5 .dynamic_audit.metrics.nodes.records[1].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 1.4641066137244252e-15,
+              "node": 2,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.9999299896468289,
+                  "jerk_ratio": 0.9269093169312762,
+                  "p_sss_ratio": 0.9999999999993935,
+                  "worst": {
+                    "actual": 0.019792668479172163,
+                    "bound": 0.019792668479184167,
+                    "label": "node.1[left].point",
+                    "quantity": "p_sss_y",
+                    "ratio": 0.9999999999993935,
+                    "vehicle_id": 3
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9560664179345822,
+                  "jerk_ratio": 0.8722838602131073,
+                  "p_sss_ratio": 0.9999999999997515,
+                  "worst": {
+                    "actual": 0.014930917415678292,
+                    "bound": 0.014930917415682003,
+                    "label": "node.1[right].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9999999999997515,
+                    "vehicle_id": 3
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E5 .dynamic_audit.metrics.nodes.records[1].right_jerk",
+              "right_region": "motion",
+              "s": 2.00278444747775,
+              "t": 7.49146319500363,
+              "tau": 0.35943616478964713,
+              "w": 0.6112782629054544
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 2.0506796261088311e-10,
+              "jump_max": 0.0009817966344608043,
+              "left_jerk_vector_location": "benchmark/results.json:E5 .dynamic_audit.metrics.nodes.records[2].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 7.37257477290143e-15,
+              "node": 3,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.9991819630671247,
+                  "jerk_ratio": 0.8557218556145675,
+                  "p_sss_ratio": 0.9965338056374414,
+                  "worst": {
+                    "actual": 0.02709885457332513,
+                    "bound": 0.027121040586182636,
+                    "label": "node.2[left].point",
+                    "quantity": "jerk_x",
+                    "ratio": 0.9991819630671247,
+                    "vehicle_id": 1
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9770729348317012,
+                  "jerk_ratio": 0.8408065266114675,
+                  "p_sss_ratio": 0.9999999999996639,
+                  "worst": {
+                    "actual": 0.011655231632482358,
+                    "bound": 0.011655231632486275,
+                    "label": "node.2[right].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9999999999996639,
+                    "vehicle_id": 3
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E5 .dynamic_audit.metrics.nodes.records[2].right_jerk",
+              "right_region": "motion",
+              "s": 3.004176671216625,
+              "t": 9.014661450560284,
+              "tau": 0.4325183551362153,
+              "w": 0.6946776091455951
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.0329516675919876e-10,
+              "jump_max": 0.0003712956614070938,
+              "left_jerk_vector_location": "benchmark/results.json:E5 .dynamic_audit.metrics.nodes.records[3].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 7.834011217511261e-15,
+              "node": 4,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.9969624531864295,
+                  "jerk_ratio": 0.8151343387069978,
+                  "p_sss_ratio": 0.9941255057301456,
+                  "worst": {
+                    "actual": 0.03283940045563864,
+                    "bound": 0.032939455594019,
+                    "label": "node.3[left].point",
+                    "quantity": "jerk_x",
+                    "ratio": 0.9969624531864295,
+                    "vehicle_id": 1
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.988580986046921,
+                  "jerk_ratio": 0.8184291733061995,
+                  "p_sss_ratio": 0.9999999999976382,
+                  "worst": {
+                    "actual": 0.0018079696281530886,
+                    "bound": 0.0018079696281573586,
+                    "label": "node.3[right].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9999999999976382,
+                    "vehicle_id": 3
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E5 .dynamic_audit.metrics.nodes.records[3].right_jerk",
+              "right_region": "motion",
+              "s": 4.0055688949555,
+              "t": 10.421131662402223,
+              "tau": 0.5,
+              "w": 0.7206934833323367
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 2.0506796261088311e-10,
+              "jump_max": 0.0002745168439578869,
+              "left_jerk_vector_location": "benchmark/results.json:E5 .dynamic_audit.metrics.nodes.records[4].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 7.834011217511261e-15,
+              "node": 5,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.9840001348611398,
+                  "jerk_ratio": 0.6038101108777647,
+                  "p_sss_ratio": 0.99763852756529,
+                  "worst": {
+                    "actual": 0.015299227975395558,
+                    "bound": 0.015335442199423585,
+                    "label": "node.4[left].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.99763852756529,
+                    "vehicle_id": 3
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9608297671543131,
+                  "jerk_ratio": 0.5894996016980742,
+                  "p_sss_ratio": 0.9929854309681595,
+                  "worst": {
+                    "actual": 0.05079117673879413,
+                    "bound": 0.05114997174658726,
+                    "label": "node.4[right].point",
+                    "quantity": "p_sss_y",
+                    "ratio": 0.9929854309681595,
+                    "vehicle_id": 1
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E5 .dynamic_audit.metrics.nodes.records[4].right_jerk",
+              "right_region": "motion",
+              "s": 5.006961118694376,
+              "t": 11.827601874244161,
+              "tau": 0.5674816448637847,
+              "w": 0.6946776091455951
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 2.0041213133481506e-10,
+              "jump_max": 0.0006256840857054736,
+              "left_jerk_vector_location": "benchmark/results.json:E5 .dynamic_audit.metrics.nodes.records[5].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 7.834011217511261e-15,
+              "node": 6,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.9556672060185296,
+                  "jerk_ratio": 0.5411573146441909,
+                  "p_sss_ratio": 0.9988260851955801,
+                  "worst": {
+                    "actual": 0.039184629531288984,
+                    "bound": 0.03923068301086294,
+                    "label": "node.5[left].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9988260851955801,
+                    "vehicle_id": 3
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9697823184893668,
+                  "jerk_ratio": 0.5393134597681639,
+                  "p_sss_ratio": 0.9999999999998191,
+                  "worst": {
+                    "actual": 0.042753523692926766,
+                    "bound": 0.042753523692934496,
+                    "label": "node.5[right].point",
+                    "quantity": "p_sss_y",
+                    "ratio": 0.9999999999998191,
+                    "vehicle_id": 1
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E5 .dynamic_audit.metrics.nodes.records[5].right_jerk",
+              "right_region": "motion",
+              "s": 6.00835334243325,
+              "t": 13.350800129800817,
+              "tau": 0.6405638352103529,
+              "w": 0.6112782629054543
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 1.9231727321766812e-10,
+              "jump_max": 0.00046681921611280153,
+              "left_jerk_vector_location": "benchmark/results.json:E5 .dynamic_audit.metrics.nodes.records[6].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 7.834011217511261e-15,
+              "node": 7,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.874474581367183,
+                  "jerk_ratio": 0.6144874326093934,
+                  "p_sss_ratio": 0.9981170101077566,
+                  "worst": {
+                    "actual": 0.06715336181915961,
+                    "bound": 0.06728004947226553,
+                    "label": "node.6[left].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9981170101077566,
+                    "vehicle_id": 3
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9781074904127638,
+                  "jerk_ratio": 0.6550456099196588,
+                  "p_sss_ratio": 0.9895346810626429,
+                  "worst": {
+                    "actual": 0.07950232810943507,
+                    "bound": 0.08034314474360717,
+                    "label": "node.6[right].point",
+                    "quantity": "p_sss_y",
+                    "ratio": 0.9895346810626429,
+                    "vehicle_id": 3
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E5 .dynamic_audit.metrics.nodes.records[6].right_jerk",
+              "right_region": "motion",
+              "s": 7.009745566172125,
+              "t": 15.227804198993955,
+              "tau": 0.7306214282817978,
+              "w": 0.4466645446278277
+            }
+          ]
+        },
+        "pointwise_interval_checks": {
+          "leaf_count": 64,
+          "max_component_ratio": 0.9877201288197411,
+          "max_jerk_ratio": 0.9140728162817655,
+          "max_p_sss_ratio": 0.9921069856825946,
+          "vehicle_count": 192,
+          "worst": {
+            "actual": 0.08160836489834082,
+            "bound": 0.0822576255142405,
+            "label": "segment.7[0.875,1].point",
+            "quantity": "p_sss_y",
+            "ratio": 0.9921069856825946,
+            "vehicle_id": 3
+          }
+        },
+        "ros_used": false,
+        "time_inverse": {
+          "max_error_s": 2.8053204204070425e-10,
+          "max_independent_error_s": 7.60218412665381e-08,
+          "sample_count": 100,
+          "tolerance_s": 1e-09
+        },
+        "whole_domain_certificate": true
+      },
+      "model_json_location": "benchmark/results.json:E5 .model_json",
+      "model_sha256": "67401452fb51b3933e202a8f3ac671192d440f6f68de2c28821c4ce33e9ee5dc",
+      "name": "E5",
+      "request_sha256": "f6f9e78dba3d5bdaf9adf70578676dd8235c6acc7ddc0c63ad73b6f84059d3c3",
+      "roundtrip": {
+        "equal_digest": true,
+        "equal_json": true,
+        "equal_state_midpoint": true
+      },
+      "sample": {
+        "authoritative": false,
+        "states_equal_pointwise": true,
+        "times": [
+          0.0,
+          10.421131662402223,
+          20.842263324804446
+        ]
+      },
+      "selection": {
+        "T0_s": 1.0,
+        "interval_subdivisions_per_segment": 8,
+        "required_duration_s": 20.6359042819846,
+        "rescalings": 0,
+        "safety_factor": 1.01,
+        "selected_duration_s": 20.842263324804446,
+        "wheel_angle_bound_rad": 0.09912554462351181,
+        "wheel_angle_limit_rad": 1.5707963267948966,
+        "worst": {
+          "order": 1,
+          "quantity": "speed",
+          "s0": 4.631439034792297,
+          "s1": 4.756613062759657,
+          "segment_index": 4,
+          "vehicle_id": 3,
+          "wheel_index": 0
+        },
+        "worst_metric": {
+          "limit": 0.8,
+          "order": 1,
+          "required_duration_s": 20.6359042819846,
+          "segment_index": 4,
+          "upper_at_T0_s": 16.508723425587682,
+          "upper_bound_interval": [
+            4.631439034792297,
+            4.756613062759657
+          ],
+          "vehicle_id": 3,
+          "wheel_index": 0
+        }
+      },
+      "short_duration": {
+        "check_count": 155,
+        "first_failure": {
+          "limit": 0.6,
+          "quantity": "acceleration",
+          "value": 0.9007782162306525,
+          "vehicle_id": 2,
+          "wheel_index": 0
+        },
+        "reason": "DYNAMIC_LIMIT",
+        "rejected": true
+      },
+      "tamper": {
+        "extra_field": "UNSUPPORTED_MODEL_FIELD",
+        "self_digest": "UNSUPPORTED_MODEL_FIELD",
+        "timing_T": "MODEL_TIMING_INCONSISTENT"
+      },
+      "timing_status": "DYNAMIC_FEASIBLE"
+    },
+    {
+      "S_m": 8.011137789911029,
+      "T_s": 20.842263324805067,
+      "audit": {
+        "check_count": 909,
+        "collision_checked": false,
+        "differential": {
+          "checked_sample_count": 80,
+          "max_errors": {
+            "acceleration": 5.162680699610789e-10,
+            "angular_accel": 1.5939925421259993e-10,
+            "angular_jerk": 6.662064660697964e-08,
+            "angular_rate": 9.1729401852092e-13,
+            "jerk": 3.1280920893828057e-07,
+            "velocity": 4.261646591174895e-12
+          },
+          "oracle": {
+            "boundary_rule": "stencils that cross a Hermite g-jump or the time-domain hold boundary are skipped; analytic one-sided limits are used instead",
+            "grid_subintervals": [
+              502,
+              502,
+              502,
+              502,
+              502,
+              502,
+              502,
+              502
+            ],
+            "method": "independent_composite_simpson_positions",
+            "oracle_step_m": 0.002
+          },
+          "skipped_sample_count": 0,
+          "tolerances": {
+            "acceleration": 0.0001,
+            "angular_accel": 0.0001,
+            "angular_jerk": 0.01,
+            "angular_rate": 1e-05,
+            "jerk": 0.01,
+            "velocity": 1e-05
+          }
+        },
+        "executable": false,
+        "leaves": 64,
+        "map_used": false,
+        "max_utilization": {
+          "acceleration": 0.31198732329202855,
+          "jerk": 0.04037998297162609,
+          "lateral_acceleration": 0.1538548442879299,
+          "speed": 0.9900990099009893,
+          "steer_acceleration": 0.0018094104038814402,
+          "steer_rate": 0.01577516269105242,
+          "wheel_angle": 0.06310528165400918,
+          "wheel_speed": 0.8073713379951974,
+          "yaw_acceleration": 0.04643500371507522,
+          "yaw_jerk": 0.006112625892228562,
+          "yaw_rate": 0.17786353438729477
+        },
+        "nodes": {
+          "internal_node_count": 7,
+          "max_continuity_error": 8.635453463412546e-15,
+          "max_inverse_error_s": 3.0329516675919876e-10,
+          "max_jump_magnitude": 0.0011976704955447698,
+          "max_state_error": 2.220446049250313e-16,
+          "records": [
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 1.9231460868240902e-10,
+              "jump_max": 0.00077508455686192,
+              "left_jerk_vector_location": "benchmark/results.json:E6 .dynamic_audit.metrics.nodes.records[0].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 1.6037518535405582e-15,
+              "node": 1,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.9999989003072353,
+                  "jerk_ratio": 0.9868820374379383,
+                  "p_sss_ratio": 0.9999999999980481,
+                  "worst": {
+                    "actual": 0.005621002727964851,
+                    "bound": 0.005621002727975822,
+                    "label": "node.0[left].point",
+                    "quantity": "p_sss_y",
+                    "ratio": 0.9999999999980481,
+                    "vehicle_id": 2
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.8372583439428437,
+                  "jerk_ratio": 0.8139320592721939,
+                  "p_sss_ratio": 0.964271670962244,
+                  "worst": {
+                    "actual": 0.011663729465185475,
+                    "bound": 0.012095895603306765,
+                    "label": "node.0[right].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.964271670962244,
+                    "vehicle_id": 2
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E6 .dynamic_audit.metrics.nodes.records[0].right_jerk",
+              "right_region": "motion",
+              "s": 1.0013922237388786,
+              "t": 5.614459125810661,
+              "tau": 0.26937857171820234,
+              "w": 0.44666454462781613
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 2.0041213133481506e-10,
+              "jump_max": 0.0011976704955447698,
+              "left_jerk_vector_location": "benchmark/results.json:E6 .dynamic_audit.metrics.nodes.records[1].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 1.6037518535405582e-15,
+              "node": 2,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.9999299896468292,
+                  "jerk_ratio": 0.9269093169313527,
+                  "p_sss_ratio": 0.9999999999993938,
+                  "worst": {
+                    "actual": 0.01979266847917297,
+                    "bound": 0.01979266847918497,
+                    "label": "node.1[left].point",
+                    "quantity": "p_sss_y",
+                    "ratio": 0.9999999999993938,
+                    "vehicle_id": 2
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.956066417934583,
+                  "jerk_ratio": 0.8722838602131587,
+                  "p_sss_ratio": 0.9999999999997518,
+                  "worst": {
+                    "actual": 0.014930917415698483,
+                    "bound": 0.01493091741570219,
+                    "label": "node.1[right].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9999999999997518,
+                    "vehicle_id": 2
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E6 .dynamic_audit.metrics.nodes.records[1].right_jerk",
+              "right_region": "motion",
+              "s": 2.002784447477757,
+              "t": 7.491463195003853,
+              "tau": 0.35943616478964713,
+              "w": 0.6112782629054383
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 2.0506618625404371e-10,
+              "jump_max": 0.0009817966344646744,
+              "left_jerk_vector_location": "benchmark/results.json:E6 .dynamic_audit.metrics.nodes.records[2].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 8.076872504148014e-15,
+              "node": 3,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.9991819630671241,
+                  "jerk_ratio": 0.8557218556145733,
+                  "p_sss_ratio": 0.996533805637431,
+                  "worst": {
+                    "actual": 0.027098854573323193,
+                    "bound": 0.027121040586180714,
+                    "label": "node.2[left].point",
+                    "quantity": "jerk_x",
+                    "ratio": 0.9991819630671241,
+                    "vehicle_id": 1
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9770729348316965,
+                  "jerk_ratio": 0.8408065266114652,
+                  "p_sss_ratio": 0.999999999999664,
+                  "worst": {
+                    "actual": 0.011655231632494375,
+                    "bound": 0.01165523163249829,
+                    "label": "node.2[right].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.999999999999664,
+                    "vehicle_id": 2
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E6 .dynamic_audit.metrics.nodes.records[2].right_jerk",
+              "right_region": "motion",
+              "s": 3.004176671216636,
+              "t": 9.014661450560553,
+              "tau": 0.4325183551362153,
+              "w": 0.6946776091455769
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.0329516675919876e-10,
+              "jump_max": 0.0003712956614077621,
+              "left_jerk_vector_location": "benchmark/results.json:E6 .dynamic_audit.metrics.nodes.records[3].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 8.635453463412546e-15,
+              "node": 4,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.9969624531864248,
+                  "jerk_ratio": 0.8151343387069047,
+                  "p_sss_ratio": 0.9941255057301267,
+                  "worst": {
+                    "actual": 0.032839400455639496,
+                    "bound": 0.03293945559402001,
+                    "label": "node.3[left].point",
+                    "quantity": "jerk_x",
+                    "ratio": 0.9969624531864248,
+                    "vehicle_id": 1
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9885809860469125,
+                  "jerk_ratio": 0.8184291733061233,
+                  "p_sss_ratio": 0.9999999999976384,
+                  "worst": {
+                    "actual": 0.0018079696281435038,
+                    "bound": 0.0018079696281477734,
+                    "label": "node.3[right].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9999999999976384,
+                    "vehicle_id": 2
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E6 .dynamic_audit.metrics.nodes.records[3].right_jerk",
+              "right_region": "motion",
+              "s": 4.005568894955514,
+              "t": 10.421131662402534,
+              "tau": 0.5,
+              "w": 0.7206934833323178
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 2.0506618625404371e-10,
+              "jump_max": 0.00027451684396053236,
+              "left_jerk_vector_location": "benchmark/results.json:E6 .dynamic_audit.metrics.nodes.records[4].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 8.635453463412546e-15,
+              "node": 5,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.9840001348611337,
+                  "jerk_ratio": 0.6038101108778477,
+                  "p_sss_ratio": 0.9976385275652876,
+                  "worst": {
+                    "actual": 0.015299227975428832,
+                    "bound": 0.015335442199456975,
+                    "label": "node.4[left].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9976385275652876,
+                    "vehicle_id": 2
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9608297671543158,
+                  "jerk_ratio": 0.589499601698171,
+                  "p_sss_ratio": 0.9929854309682161,
+                  "worst": {
+                    "actual": 0.05079117673877433,
+                    "bound": 0.051149971746564396,
+                    "label": "node.4[right].point",
+                    "quantity": "p_sss_y",
+                    "ratio": 0.9929854309682161,
+                    "vehicle_id": 1
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E6 .dynamic_audit.metrics.nodes.records[4].right_jerk",
+              "right_region": "motion",
+              "s": 5.006961118694393,
+              "t": 11.827601874244515,
+              "tau": 0.5674816448637847,
+              "w": 0.6946776091455769
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 2.0041213133481506e-10,
+              "jump_max": 0.0006256840857091304,
+              "left_jerk_vector_location": "benchmark/results.json:E6 .dynamic_audit.metrics.nodes.records[5].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 8.635453463412546e-15,
+              "node": 6,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.9556672060185202,
+                  "jerk_ratio": 0.5411573146443072,
+                  "p_sss_ratio": 0.9988260851955795,
+                  "worst": {
+                    "actual": 0.03918462953133263,
+                    "bound": 0.03923068301090666,
+                    "label": "node.5[left].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9988260851955795,
+                    "vehicle_id": 2
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9697823184893877,
+                  "jerk_ratio": 0.5393134597682796,
+                  "p_sss_ratio": 0.9999999999998191,
+                  "worst": {
+                    "actual": 0.042753523692870804,
+                    "bound": 0.042753523692878534,
+                    "label": "node.5[right].point",
+                    "quantity": "p_sss_y",
+                    "ratio": 0.9999999999998191,
+                    "vehicle_id": 1
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E6 .dynamic_audit.metrics.nodes.records[5].right_jerk",
+              "right_region": "motion",
+              "s": 6.008353342433272,
+              "t": 13.350800129801215,
+              "tau": 0.6405638352103529,
+              "w": 0.6112782629054382
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 1.9231727321766812e-10,
+              "jump_max": 0.00046681921611327337,
+              "left_jerk_vector_location": "benchmark/results.json:E6 .dynamic_audit.metrics.nodes.records[6].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 8.635453463412546e-15,
+              "node": 7,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.8744745813672323,
+                  "jerk_ratio": 0.614487432609495,
+                  "p_sss_ratio": 0.9981170101077417,
+                  "worst": {
+                    "actual": 0.0671533618191753,
+                    "bound": 0.06728004947228225,
+                    "label": "node.6[left].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9981170101077417,
+                    "vehicle_id": 2
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9781074904127816,
+                  "jerk_ratio": 0.6550456099197776,
+                  "p_sss_ratio": 0.9895346810626534,
+                  "worst": {
+                    "actual": 0.07950232810934912,
+                    "bound": 0.08034314474351946,
+                    "label": "node.6[right].point",
+                    "quantity": "p_sss_y",
+                    "ratio": 0.9895346810626534,
+                    "vehicle_id": 2
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:E6 .dynamic_audit.metrics.nodes.records[6].right_jerk",
+              "right_region": "motion",
+              "s": 7.00974556617215,
+              "t": 15.22780419899441,
+              "tau": 0.7306214282817978,
+              "w": 0.4466645446278159
+            }
+          ]
+        },
+        "pointwise_interval_checks": {
+          "leaf_count": 64,
+          "max_component_ratio": 0.9877201288197354,
+          "max_jerk_ratio": 0.9140728162818278,
+          "max_p_sss_ratio": 0.9921069856825567,
+          "vehicle_count": 192,
+          "worst": {
+            "actual": 0.0816083648982203,
+            "bound": 0.08225762551412216,
+            "label": "segment.7[0.875,1].point",
+            "quantity": "p_sss_y",
+            "ratio": 0.9921069856825567,
+            "vehicle_id": 2
+          }
+        },
+        "ros_used": false,
+        "time_inverse": {
+          "max_error_s": 2.8053204204070425e-10,
+          "max_independent_error_s": 7.60218412665381e-08,
+          "sample_count": 100,
+          "tolerance_s": 1e-09
+        },
+        "whole_domain_certificate": true
+      },
+      "model_json_location": "benchmark/results.json:E6 .model_json",
+      "model_sha256": "35d7e03c5ae2cfeebb68c62ec6de0a422e6550f59f63062912456ac4e61c0469",
+      "name": "E6",
+      "request_sha256": "e93366f3259a6a41625aa1b925c685fd24bb7423db8bb84ef7d7e05452166da8",
+      "roundtrip": {
+        "equal_digest": true,
+        "equal_json": true,
+        "equal_state_midpoint": true
+      },
+      "sample": {
+        "authoritative": false,
+        "states_equal_pointwise": true,
+        "times": [
+          0.0,
+          10.421131662402534,
+          20.842263324805067
+        ]
+      },
+      "selection": {
+        "T0_s": 1.0,
+        "interval_subdivisions_per_segment": 8,
+        "required_duration_s": 20.635904281985216,
+        "rescalings": 0,
+        "safety_factor": 1.01,
+        "selected_duration_s": 20.842263324805067,
+        "wheel_angle_bound_rad": 0.09912554462347499,
+        "wheel_angle_limit_rad": 1.5707963267948966,
+        "worst": {
+          "order": 1,
+          "quantity": "speed",
+          "s0": 4.631439034792313,
+          "s1": 4.756613062759674,
+          "segment_index": 4,
+          "vehicle_id": 2,
+          "wheel_index": 0
+        },
+        "worst_metric": {
+          "limit": 0.8,
+          "order": 1,
+          "required_duration_s": 20.635904281985216,
+          "segment_index": 4,
+          "upper_at_T0_s": 16.508723425588173,
+          "upper_bound_interval": [
+            4.631439034792313,
+            4.756613062759674
+          ],
+          "vehicle_id": 2,
+          "wheel_index": 0
+        }
+      },
+      "short_duration": {
+        "check_count": 155,
+        "first_failure": {
+          "limit": 0.6,
+          "quantity": "acceleration",
+          "value": 0.9007782162306021,
+          "vehicle_id": 3,
+          "wheel_index": 0
+        },
+        "reason": "DYNAMIC_LIMIT",
+        "rejected": true
+      },
+      "tamper": {
+        "extra_field": "UNSUPPORTED_MODEL_FIELD",
+        "self_digest": "UNSUPPORTED_MODEL_FIELD",
+        "timing_T": "MODEL_TIMING_INCONSISTENT"
+      },
+      "timing_status": "DYNAMIC_FEASIBLE"
+    },
+    {
+      "S_m": 0.0,
+      "T_s": 0.0,
+      "audit": {
+        "certificate_note": "not applicable: NO_MOTION uses the exact hold model S=T=0 with one t=0 sample, not the motion time law",
+        "check_count": 16,
+        "collision_checked": false,
+        "executable": false,
+        "hold": {
+          "checks": [
+            {
+              "region": "initial_hold",
+              "side": "left",
+              "t": -1.0
+            },
+            {
+              "region": "initial_hold",
+              "side": "left",
+              "t": 0.0
+            },
+            {
+              "region": "initial_hold",
+              "side": "right",
+              "t": 0.0
+            },
+            {
+              "region": "initial_hold",
+              "side": "auto",
+              "t": 0.0
+            },
+            {
+              "region": "initial_hold",
+              "side": "right",
+              "t": 1.0
+            }
+          ],
+          "hold_model": "explicit_zero_duration",
+          "inverse_division_free": true,
+          "max_state_error": 0.0,
+          "sample_times": [
+            0.0
+          ]
+        },
+        "map_used": false,
+        "ros_used": false,
+        "whole_domain_certificate": false
+      },
+      "model_json_location": "benchmark/results.json:NO_MOTION_HOLD .model_json",
+      "model_sha256": "39802144c887e534b1897a56836b389739fcfd90215d10161f0fede3a924660a",
+      "name": "NO_MOTION_HOLD",
+      "request_sha256": "b54b5b52797aa89a93fd930bc7aca971b2c2fec2419efaf075a4e102dff870ef",
+      "roundtrip": {
+        "available": true,
+        "equal_digest": true,
+        "equal_json": true
+      },
+      "sample": {
+        "authoritative": false,
+        "invalid": [
+          {
+            "rejected": true,
+            "times": []
+          },
+          {
+            "rejected": true,
+            "times": [
+              0.0,
+              1.0
+            ]
+          },
+          {
+            "rejected": true,
+            "times": [
+              1.0
+            ]
+          },
+          {
+            "rejected": true,
+            "times": [
+              -1.0
+            ]
+          }
+        ],
+        "times": [
+          0.0
+        ]
+      },
+      "selection": null,
+      "timing_status": "NO_MOTION"
+    },
+    {
+      "S_m": 5.999999999999998,
+      "T_s": 14.203125000005778,
+      "audit": {
+        "check_count": 909,
+        "collision_checked": false,
+        "differential": {
+          "checked_sample_count": 80,
+          "max_errors": {
+            "acceleration": 4.756785243476003e-10,
+            "angular_accel": 3.4729485232029796e-22,
+            "angular_jerk": 1.701771650598679e-17,
+            "angular_rate": 2.2689535424683727e-22,
+            "jerk": 1.9219279487857344e-07,
+            "velocity": 2.8825830611367564e-12
+          },
+          "oracle": {
+            "boundary_rule": "stencils that cross a Hermite g-jump or the time-domain hold boundary are skipped; analytic one-sided limits are used instead",
+            "grid_subintervals": [
+              376,
+              376,
+              376,
+              376,
+              376,
+              376,
+              376,
+              376
+            ],
+            "method": "independent_composite_simpson_positions",
+            "oracle_step_m": 0.002
+          },
+          "skipped_sample_count": 0,
+          "tolerances": {
+            "acceleration": 0.0001,
+            "angular_accel": 0.0001,
+            "angular_jerk": 0.01,
+            "angular_rate": 1e-05,
+            "jerk": 0.01,
+            "velocity": 1e-05
+          }
+        },
+        "executable": false,
+        "leaves": 64,
+        "map_used": false,
+        "max_utilization": {
+          "acceleration": 0.28620126840654153,
+          "jerk": 0.0628233046267741,
+          "lateral_acceleration": 9.013019773189231e-13,
+          "speed": 0.9900990099009902,
+          "steer_acceleration": 1.4830636239314615e-13,
+          "steer_rate": 2.5794333225747243e-13,
+          "wheel_angle": 2.7682431917581903e-13,
+          "wheel_speed": 0.7920792079208507,
+          "yaw_acceleration": 7.641728981419175e-13,
+          "yaw_jerk": 2.5637152978711556e-13,
+          "yaw_rate": 8.534203097741954e-13
+        },
+        "nodes": {
+          "internal_node_count": 7,
+          "max_continuity_error": 3.283015115252357e-18,
+          "max_inverse_error_s": 4.133653419557959e-10,
+          "max_jump_magnitude": 3.4499881110549765e-13,
+          "max_state_error": 8.881784197001252e-16,
+          "records": [
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.3773739360754007e-10,
+              "jump_max": 2.0156090669854936e-13,
+              "left_jerk_vector_location": "benchmark/results.json:STRAIGHT_LINE .dynamic_audit.metrics.nodes.records[0].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 6.030448424750222e-19,
+              "node": 1,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.999999999999994,
+                  "jerk_ratio": 0.9999999999931705,
+                  "p_sss_ratio": 0.9692624477827266,
+                  "worst": {
+                    "actual": 0.022727277937665463,
+                    "bound": 0.0227272779376656,
+                    "label": "node.0[left].point",
+                    "quantity": "jerk_x",
+                    "ratio": 0.999999999999994,
+                    "vehicle_id": 1
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.8375086720929192,
+                  "jerk_ratio": 0.8375086720884818,
+                  "p_sss_ratio": 0.9851359789758691,
+                  "worst": {
+                    "actual": 3.1394879060219387e-13,
+                    "bound": 3.1868574217395834e-13,
+                    "label": "node.0[right].point",
+                    "quantity": "p_sss_y",
+                    "ratio": 0.9851359789758691,
+                    "vehicle_id": 2
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:STRAIGHT_LINE .dynamic_audit.metrics.nodes.records[0].right_jerk",
+              "right_region": "motion",
+              "s": 0.7499999999999998,
+              "t": 3.826017526436649,
+              "tau": 0.26937857171820234,
+              "w": 0.4909073092753645
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.432543138615074e-10,
+              "jump_max": 3.4020303758768724e-13,
+              "left_jerk_vector_location": "benchmark/results.json:STRAIGHT_LINE .dynamic_audit.metrics.nodes.records[1].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 6.568203818513511e-19,
+              "node": 2,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.9999999999999957,
+                  "jerk_ratio": 0.9999999999986087,
+                  "p_sss_ratio": 0.9835306935941915,
+                  "worst": {
+                    "actual": 0.04792800582212863,
+                    "bound": 0.04792800582212884,
+                    "label": "node.1[left].point",
+                    "quantity": "jerk_x",
+                    "ratio": 0.9999999999999957,
+                    "vehicle_id": 1
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9601881205666989,
+                  "jerk_ratio": 0.9601881205653344,
+                  "p_sss_ratio": 0.9916969901438524,
+                  "worst": {
+                    "actual": 7.543642923931788e-13,
+                    "bound": 7.606802278221628e-13,
+                    "label": "node.1[right].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9916969901438524,
+                    "vehicle_id": 3
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:STRAIGHT_LINE .dynamic_audit.metrics.nodes.records[1].right_jerk",
+              "right_region": "motion",
+              "s": 1.4999999999999996,
+              "t": 5.105116778030034,
+              "tau": 0.35943616478964713,
+              "w": 0.6718262527675449
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.4642599899825655e-10,
+              "jump_max": 1.3967081746060982e-13,
+              "left_jerk_vector_location": "benchmark/results.json:STRAIGHT_LINE .dynamic_audit.metrics.nodes.records[2].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 3.283015115252357e-18,
+              "node": 3,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.999999999999995,
+                  "jerk_ratio": 0.9999999999969162,
+                  "p_sss_ratio": 0.9324463804497003,
+                  "worst": {
+                    "actual": 0.0593903082633297,
+                    "bound": 0.05939030826333,
+                    "label": "node.2[left].point",
+                    "quantity": "jerk_x",
+                    "ratio": 0.999999999999995,
+                    "vehicle_id": 1
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9863839484206638,
+                  "jerk_ratio": 0.986383948418094,
+                  "p_sss_ratio": 0.9770556395026241,
+                  "worst": {
+                    "actual": 0.0593903082633297,
+                    "bound": 0.060210132533504566,
+                    "label": "node.2[right].point",
+                    "quantity": "jerk_x",
+                    "ratio": 0.9863839484206638,
+                    "vehicle_id": 1
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:STRAIGHT_LINE .dynamic_audit.metrics.nodes.records[2].right_jerk",
+              "right_region": "motion",
+              "s": 2.249999999999999,
+              "t": 6.1431122627965555,
+              "tau": 0.43251835513621517,
+              "w": 0.7634864240313852
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 4.133653419557959e-10,
+              "jump_max": 2.3998957387726633e-13,
+              "left_jerk_vector_location": "benchmark/results.json:STRAIGHT_LINE .dynamic_audit.metrics.nodes.records[3].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 3.283015115252357e-18,
+              "node": 4,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.9999999999999951,
+                  "jerk_ratio": 0.9999999999986905,
+                  "p_sss_ratio": 0.9728038060374823,
+                  "worst": {
+                    "actual": 0.06282330462667501,
+                    "bound": 0.06282330462667532,
+                    "label": "node.3[left].point",
+                    "quantity": "jerk_x",
+                    "ratio": 0.9999999999999951,
+                    "vehicle_id": 1
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9999999999999951,
+                  "jerk_ratio": 0.9999999999988083,
+                  "p_sss_ratio": 0.9891901574880191,
+                  "worst": {
+                    "actual": 0.06282330462667501,
+                    "bound": 0.06282330462667532,
+                    "label": "node.3[right].point",
+                    "quantity": "jerk_x",
+                    "ratio": 0.9999999999999951,
+                    "vehicle_id": 1
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:STRAIGHT_LINE .dynamic_audit.metrics.nodes.records[3].right_jerk",
+              "right_region": "motion",
+              "s": 2.999999999999999,
+              "t": 7.101562500002889,
+              "tau": 0.5,
+              "w": 0.7920792079204696
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.4642688717667625e-10,
+              "jump_max": 3.4499881110549765e-13,
+              "left_jerk_vector_location": "benchmark/results.json:STRAIGHT_LINE .dynamic_audit.metrics.nodes.records[4].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 3.283015115252357e-18,
+              "node": 5,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.9863839484206643,
+                  "jerk_ratio": 0.9863839484191009,
+                  "p_sss_ratio": 0.9846526885982153,
+                  "worst": {
+                    "actual": 0.059390308263329736,
+                    "bound": 0.060210132533504566,
+                    "label": "node.4[left].point",
+                    "quantity": "jerk_x",
+                    "ratio": 0.9863839484206643,
+                    "vehicle_id": 1
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9999999999999956,
+                  "jerk_ratio": 0.99999999999841,
+                  "p_sss_ratio": 0.9922670100002587,
+                  "worst": {
+                    "actual": 0.059390308263329736,
+                    "bound": 0.05939030826333,
+                    "label": "node.4[right].point",
+                    "quantity": "jerk_x",
+                    "ratio": 0.9999999999999956,
+                    "vehicle_id": 1
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:STRAIGHT_LINE .dynamic_audit.metrics.nodes.records[4].right_jerk",
+              "right_region": "motion",
+              "s": 3.749999999999999,
+              "t": 8.060012737209222,
+              "tau": 0.5674816448637847,
+              "w": 0.7634864240313852
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.432543138615074e-10,
+              "jump_max": 1.08228760578966e-13,
+              "left_jerk_vector_location": "benchmark/results.json:STRAIGHT_LINE .dynamic_audit.metrics.nodes.records[5].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 3.283015115252357e-18,
+              "node": 6,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.960188120566698,
+                  "jerk_ratio": 0.9601881205590733,
+                  "p_sss_ratio": 0.9590927657605995,
+                  "worst": {
+                    "actual": 0.04792800582212859,
+                    "bound": 0.049915224731005556,
+                    "label": "node.5[left].point",
+                    "quantity": "jerk_x",
+                    "ratio": 0.960188120566698,
+                    "vehicle_id": 1
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9999999999999942,
+                  "jerk_ratio": 0.9999999999919851,
+                  "p_sss_ratio": 0.9893663763989703,
+                  "worst": {
+                    "actual": 0.04792800582212859,
+                    "bound": 0.04792800582212887,
+                    "label": "node.5[right].point",
+                    "quantity": "jerk_x",
+                    "ratio": 0.9999999999999942,
+                    "vehicle_id": 1
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:STRAIGHT_LINE .dynamic_audit.metrics.nodes.records[5].right_jerk",
+              "right_region": "motion",
+              "s": 4.499999999999998,
+              "t": 9.098008221975745,
+              "tau": 0.6405638352103529,
+              "w": 0.6718262527675448
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.377387258751696e-10,
+              "jump_max": 5.308950299488515e-14,
+              "left_jerk_vector_location": "benchmark/results.json:STRAIGHT_LINE .dynamic_audit.metrics.nodes.records[6].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 3.283015115252357e-18,
+              "node": 7,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.8375086720929966,
+                  "jerk_ratio": 0.8375086720888456,
+                  "p_sss_ratio": 0.9573088161894588,
+                  "worst": {
+                    "actual": 8.209561327998973e-13,
+                    "bound": 8.575666691002496e-13,
+                    "label": "node.6[left].point",
+                    "quantity": "p_sss_y",
+                    "ratio": 0.9573088161894588,
+                    "vehicle_id": 3
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9999999999999939,
+                  "jerk_ratio": 0.9999999999939372,
+                  "p_sss_ratio": 0.9827171823835426,
+                  "worst": {
+                    "actual": 0.0227272779376654,
+                    "bound": 0.02272727793766554,
+                    "label": "node.6[right].point",
+                    "quantity": "jerk_x",
+                    "ratio": 0.9999999999999939,
+                    "vehicle_id": 1
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:STRAIGHT_LINE .dynamic_audit.metrics.nodes.records[6].right_jerk",
+              "right_region": "motion",
+              "s": 5.249999999999998,
+              "t": 10.377107473569131,
+              "tau": 0.7306214282817978,
+              "w": 0.4909073092753642
+            }
+          ]
+        },
+        "pointwise_interval_checks": {
+          "leaf_count": 64,
+          "max_component_ratio": 0.9997915894625576,
+          "max_jerk_ratio": 0.999791589461371,
+          "max_p_sss_ratio": 0.9879828837352729,
+          "vehicle_count": 192,
+          "worst": {
+            "actual": 0.06281021158799417,
+            "bound": 0.06282330462667532,
+            "label": "segment.3[0.875,1].point",
+            "quantity": "jerk_x",
+            "ratio": 0.9997915894625576,
+            "vehicle_id": 1
+          }
+        },
+        "ros_used": false,
+        "time_inverse": {
+          "max_error_s": 3.978533058557332e-10,
+          "max_independent_error_s": 5.159900062778888e-08,
+          "sample_count": 100,
+          "tolerance_s": 1e-09
+        },
+        "whole_domain_certificate": true
+      },
+      "model_json_location": "benchmark/results.json:STRAIGHT_LINE .model_json",
+      "model_sha256": "c6c0456a11872077d47c62fde1a8fcb6077397e39da476e38c355107b65d4277",
+      "name": "STRAIGHT_LINE",
+      "request_sha256": "184f690b1c531f671e26907ad778fcd122eb90e67faa0102b948d6ab8a094816",
+      "roundtrip": {
+        "equal_digest": true,
+        "equal_json": true,
+        "equal_state_midpoint": true
+      },
+      "sample": {
+        "authoritative": false,
+        "states_equal_pointwise": true,
+        "times": [
+          0.0,
+          7.101562500002889,
+          14.203125000005778
+        ]
+      },
+      "selection": {
+        "T0_s": 1.0,
+        "interval_subdivisions_per_segment": 8,
+        "required_duration_s": 14.062500000005722,
+        "rescalings": 0,
+        "safety_factor": 1.01,
+        "selected_duration_s": 14.203125000005778,
+        "wheel_angle_bound_rad": 4.348346237288746e-13,
+        "wheel_angle_limit_rad": 1.5707963267948966,
+        "worst": {
+          "order": 1,
+          "quantity": "speed",
+          "s0": 2.999999999999999,
+          "s1": 3.093749999999999,
+          "segment_index": 4,
+          "vehicle_id": 2,
+          "wheel_index": 0
+        },
+        "worst_metric": {
+          "limit": 0.8,
+          "order": 1,
+          "required_duration_s": 14.062500000005722,
+          "segment_index": 4,
+          "upper_at_T0_s": 11.250000000004578,
+          "upper_bound_interval": [
+            2.999999999999999,
+            3.093749999999999
+          ],
+          "vehicle_id": 2,
+          "wheel_index": 0
+        }
+      },
+      "short_duration": {
+        "check_count": 155,
+        "first_failure": {
+          "limit": 2.0,
+          "quantity": "jerk",
+          "value": 5.239689184614314,
+          "vehicle_id": 3,
+          "wheel_index": 0
+        },
+        "reason": "DYNAMIC_LIMIT",
+        "rejected": true
+      },
+      "tamper": {
+        "extra_field": "UNSUPPORTED_MODEL_FIELD",
+        "self_digest": "UNSUPPORTED_MODEL_FIELD",
+        "timing_T": "MODEL_TIMING_INCONSISTENT"
+      },
+      "timing_status": "DYNAMIC_FEASIBLE"
+    },
+    {
+      "S_m": 5.992304773484085,
+      "T_s": 15.606499280191949,
+      "audit": {
+        "check_count": 909,
+        "collision_checked": false,
+        "differential": {
+          "checked_sample_count": 80,
+          "max_errors": {
+            "acceleration": 8.039931498338149e-10,
+            "angular_accel": 6.6757252503713e-11,
+            "angular_jerk": 3.4959529070267836e-06,
+            "angular_rate": 4.6609993642476866e-11,
+            "jerk": 3.5857609076983543e-06,
+            "velocity": 4.779254769715635e-11
+          },
+          "oracle": {
+            "boundary_rule": "stencils that cross a Hermite g-jump or the time-domain hold boundary are skipped; analytic one-sided limits are used instead",
+            "grid_subintervals": [
+              376,
+              376,
+              376,
+              376,
+              376,
+              376,
+              376,
+              376
+            ],
+            "method": "independent_composite_simpson_positions",
+            "oracle_step_m": 0.002
+          },
+          "skipped_sample_count": 0,
+          "tolerances": {
+            "acceleration": 0.0001,
+            "angular_accel": 0.0001,
+            "angular_jerk": 0.01,
+            "angular_rate": 1e-05,
+            "jerk": 0.01,
+            "velocity": 1e-05
+          }
+        },
+        "executable": false,
+        "leaves": 64,
+        "map_used": false,
+        "max_utilization": {
+          "acceleration": 0.33366059468109716,
+          "jerk": 0.08417094288928864,
+          "lateral_acceleration": 0.22699089088169905,
+          "speed": 0.9900990099009895,
+          "steer_acceleration": 0.03660315410959666,
+          "steer_rate": 0.07045991257915829,
+          "wheel_angle": 0.04524992395602256,
+          "wheel_speed": 0.8094483043986187,
+          "yaw_acceleration": 0.2006042287907773,
+          "yaw_jerk": 0.05272762581556834,
+          "yaw_rate": 0.23911855240254828
+        },
+        "nodes": {
+          "internal_node_count": 7,
+          "max_continuity_error": 9.159339953157541e-16,
+          "max_inverse_error_s": 4.5420911476412584e-10,
+          "max_jump_magnitude": 0.06982298109228557,
+          "max_state_error": 2.220446049250313e-16,
+          "records": [
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.7110847728172303e-10,
+              "jump_max": 0.047779248076706,
+              "left_jerk_vector_location": "benchmark/results.json:STRAIGHT_POLICY .dynamic_audit.metrics.nodes.records[0].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 8.326672684688674e-17,
+              "node": 1,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.9457939136522325,
+                  "jerk_ratio": 0.6479613716352981,
+                  "p_sss_ratio": 0.9846196388401454,
+                  "worst": {
+                    "actual": 0.08641702341031704,
+                    "bound": 0.08776691018687571,
+                    "label": "node.0[left].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9846196388401454,
+                    "vehicle_id": 3
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.8789229928517723,
+                  "jerk_ratio": 0.676194821867237,
+                  "p_sss_ratio": 0.999999999999842,
+                  "worst": {
+                    "actual": 0.07714550151219318,
+                    "bound": 0.07714550151220537,
+                    "label": "node.0[right].point",
+                    "quantity": "p_sss_y",
+                    "ratio": 0.999999999999842,
+                    "vehicle_id": 1
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:STRAIGHT_POLICY .dynamic_audit.metrics.nodes.records[0].right_jerk",
+              "right_region": "motion",
+              "s": 0.7490380966855106,
+              "t": 4.20405648561926,
+              "tau": 0.26937857171820234,
+              "w": 0.4461907416186586
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.771702949961764e-10,
+              "jump_max": 0.06982298109228557,
+              "left_jerk_vector_location": "benchmark/results.json:STRAIGHT_POLICY .dynamic_audit.metrics.nodes.records[1].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 1.734723475976807e-16,
+              "node": 2,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.9353913203542326,
+                  "jerk_ratio": 0.7395316804105123,
+                  "p_sss_ratio": 0.9974953664289629,
+                  "worst": {
+                    "actual": 0.21704078871339746,
+                    "bound": 0.21758576131576862,
+                    "label": "node.1[left].point",
+                    "quantity": "p_sss_y",
+                    "ratio": 0.9974953664289629,
+                    "vehicle_id": 1
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9486743350414102,
+                  "jerk_ratio": 0.7335979073641764,
+                  "p_sss_ratio": 0.9988111876049075,
+                  "worst": {
+                    "actual": 0.22430994125287837,
+                    "bound": 0.22457692108031035,
+                    "label": "node.1[right].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9988111876049075,
+                    "vehicle_id": 2
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:STRAIGHT_POLICY .dynamic_audit.metrics.nodes.records[1].right_jerk",
+              "right_region": "motion",
+              "s": 1.4980761933710212,
+              "t": 5.609540247064583,
+              "tau": 0.35943616478964713,
+              "w": 0.6106298445702903
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.8065550711507967e-10,
+              "jump_max": 0.04916791104456582,
+              "left_jerk_vector_location": "benchmark/results.json:STRAIGHT_POLICY .dynamic_audit.metrics.nodes.records[2].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 1.734723475976807e-16,
+              "node": 3,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.9555910219382746,
+                  "jerk_ratio": 0.815808760566877,
+                  "p_sss_ratio": 0.9617386127745174,
+                  "worst": {
+                    "actual": 0.3068756947043896,
+                    "bound": 0.31908430277025546,
+                    "label": "node.2[left].point",
+                    "quantity": "p_sss_y",
+                    "ratio": 0.9617386127745174,
+                    "vehicle_id": 1
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9677204049452202,
+                  "jerk_ratio": 0.8136600472599271,
+                  "p_sss_ratio": 0.9999999999999576,
+                  "worst": {
+                    "actual": 0.19778949739864357,
+                    "bound": 0.19778949739865195,
+                    "label": "node.2[right].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9999999999999576,
+                    "vehicle_id": 3
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:STRAIGHT_POLICY .dynamic_audit.metrics.nodes.records[2].right_jerk",
+              "right_region": "motion",
+              "s": 2.2471142900565315,
+              "t": 6.750097398103148,
+              "tau": 0.43251835513621517,
+              "w": 0.6939407242829517
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 4.5420911476412584e-10,
+              "jump_max": 2.001065979584382e-12,
+              "left_jerk_vector_location": "benchmark/results.json:STRAIGHT_POLICY .dynamic_audit.metrics.nodes.records[3].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 9.159339953157541e-16,
+              "node": 4,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.9948906009810554,
+                  "jerk_ratio": 0.6827054952710402,
+                  "p_sss_ratio": 0.9521940782047046,
+                  "worst": {
+                    "actual": 0.047293195410795213,
+                    "bound": 0.04753607619185435,
+                    "label": "node.3[left].point",
+                    "quantity": "jerk_x",
+                    "ratio": 0.9948906009810554,
+                    "vehicle_id": 2
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9999999999999162,
+                  "jerk_ratio": 0.704715871928996,
+                  "p_sss_ratio": 0.99999999999996,
+                  "worst": {
+                    "actual": 0.1925455126790125,
+                    "bound": 0.19254551267902018,
+                    "label": "node.3[right].point",
+                    "quantity": "p_sss_y",
+                    "ratio": 0.99999999999996,
+                    "vehicle_id": 3
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:STRAIGHT_POLICY .dynamic_audit.metrics.nodes.records[3].right_jerk",
+              "right_region": "motion",
+              "s": 2.9961523867420423,
+              "t": 7.8032496400959745,
+              "tau": 0.5,
+              "w": 0.7199290019218499
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.8065550711507967e-10,
+              "jump_max": 0.049167911041425,
+              "left_jerk_vector_location": "benchmark/results.json:STRAIGHT_POLICY .dynamic_audit.metrics.nodes.records[4].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 9.159339953157541e-16,
+              "node": 5,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.9642007205258649,
+                  "jerk_ratio": 0.8097148664182257,
+                  "p_sss_ratio": 0.9964970544306284,
+                  "worst": {
+                    "actual": 0.056220910314867104,
+                    "bound": 0.05641854139447529,
+                    "label": "node.4[left].point",
+                    "quantity": "p_sss_y",
+                    "ratio": 0.9964970544306284,
+                    "vehicle_id": 1
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9544593484404787,
+                  "jerk_ratio": 0.8213901148126294,
+                  "p_sss_ratio": 0.9751658010561688,
+                  "worst": {
+                    "actual": 0.17324291670609182,
+                    "bound": 0.17765483215106428,
+                    "label": "node.4[right].point",
+                    "quantity": "p_sss_y",
+                    "ratio": 0.9751658010561688,
+                    "vehicle_id": 2
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:STRAIGHT_POLICY .dynamic_audit.metrics.nodes.records[4].right_jerk",
+              "right_region": "motion",
+              "s": 3.745190483427553,
+              "t": 8.8564018820888,
+              "tau": 0.5674816448637847,
+              "w": 0.6939407242829517
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.771702949961764e-10,
+              "jump_max": 0.06982298109102568,
+              "left_jerk_vector_location": "benchmark/results.json:STRAIGHT_POLICY .dynamic_audit.metrics.nodes.records[5].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 9.159339953157541e-16,
+              "node": 6,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.9252601381005294,
+                  "jerk_ratio": 0.7251485264893907,
+                  "p_sss_ratio": 0.9976873474264649,
+                  "worst": {
+                    "actual": 0.28580297966387336,
+                    "bound": 0.2864654747813554,
+                    "label": "node.5[left].point",
+                    "quantity": "p_sss_y",
+                    "ratio": 0.9976873474264649,
+                    "vehicle_id": 1
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9429257271067528,
+                  "jerk_ratio": 0.7575061212343339,
+                  "p_sss_ratio": 0.9999999999999669,
+                  "worst": {
+                    "actual": 0.27853382712648417,
+                    "bound": 0.2785338271264934,
+                    "label": "node.5[right].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9999999999999669,
+                    "vehicle_id": 2
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:STRAIGHT_POLICY .dynamic_audit.metrics.nodes.records[5].right_jerk",
+              "right_region": "motion",
+              "s": 4.494228580113063,
+              "t": 9.996959033127366,
+              "tau": 0.6405638352103529,
+              "w": 0.6106298445702902
+            },
+            {
+              "auto_region": "motion",
+              "inverse_error_s": 3.7111114181698213e-10,
+              "jump_max": 0.047779248079571554,
+              "left_jerk_vector_location": "benchmark/results.json:STRAIGHT_POLICY .dynamic_audit.metrics.nodes.records[6].left_jerk",
+              "left_region": "motion",
+              "max_continuity_error": 9.159339953157541e-16,
+              "node": 7,
+              "pointwise_interval": {
+                "left": {
+                  "component_ratio": 0.7768954191723773,
+                  "jerk_ratio": 0.6220753167818589,
+                  "p_sss_ratio": 0.9174199756748669,
+                  "worst": {
+                    "actual": 0.1962998320640797,
+                    "bound": 0.21396943305020016,
+                    "label": "node.6[left].point",
+                    "quantity": "p_sss_y",
+                    "ratio": 0.9174199756748669,
+                    "vehicle_id": 2
+                  }
+                },
+                "right": {
+                  "component_ratio": 0.9651264748370966,
+                  "jerk_ratio": 0.7096064022997199,
+                  "p_sss_ratio": 0.9999999999999137,
+                  "worst": {
+                    "actual": 0.0864170234179611,
+                    "bound": 0.08641702341796856,
+                    "label": "node.6[right].point",
+                    "quantity": "p_sss_x",
+                    "ratio": 0.9999999999999137,
+                    "vehicle_id": 2
+                  }
+                }
+              },
+              "right_jerk_vector_location": "benchmark/results.json:STRAIGHT_POLICY .dynamic_audit.metrics.nodes.records[6].right_jerk",
+              "right_region": "motion",
+              "s": 5.243266676798574,
+              "t": 11.402442794572691,
+              "tau": 0.7306214282817978,
+              "w": 0.4461907416186584
+            }
+          ]
+        },
+        "pointwise_interval_checks": {
+          "leaf_count": 64,
+          "max_component_ratio": 0.9718054244580129,
+          "max_jerk_ratio": 0.8150816356239055,
+          "max_p_sss_ratio": 0.98220514376589,
+          "vehicle_count": 192,
+          "worst": {
+            "actual": 0.2748909935900069,
+            "bound": 0.27987126246971433,
+            "label": "segment.2[0,0.125].point",
+            "quantity": "p_sss_x",
+            "ratio": 0.98220514376589,
+            "vehicle_id": 3
+          }
+        },
+        "ros_used": false,
+        "time_inverse": {
+          "max_error_s": 4.3716497089008044e-10,
+          "max_independent_error_s": 6.396470730862802e-08,
+          "sample_count": 100,
+          "tolerance_s": 1e-09
+        },
+        "whole_domain_certificate": true
+      },
+      "model_json_location": "benchmark/results.json:STRAIGHT_POLICY .model_json",
+      "model_sha256": "b8a2d53c8d0f30adbb77d951e54e809660637e1213d3eaaf59cafcacefdfe0ea",
+      "name": "STRAIGHT_POLICY",
+      "request_sha256": "54734109878d0736e1fabb7e1d1224e1d42ac69ee29512ed993b34f83e01dfcd",
+      "roundtrip": {
+        "equal_digest": true,
+        "equal_json": true,
+        "equal_state_midpoint": true
+      },
+      "sample": {
+        "authoritative": false,
+        "states_equal_pointwise": true,
+        "times": [
+          0.0,
+          7.8032496400959745,
+          15.606499280191949
+        ]
+      },
+      "selection": {
+        "T0_s": 1.0,
+        "interval_subdivisions_per_segment": 8,
+        "required_duration_s": 15.451979485338564,
+        "rescalings": 0,
+        "safety_factor": 1.01,
+        "selected_duration_s": 15.606499280191949,
+        "wheel_angle_bound_rad": 0.07107841433786863,
+        "wheel_angle_limit_rad": 1.5707963267948966,
+        "worst": {
+          "order": 1,
+          "quantity": "speed",
+          "s0": 3.6515607213418644,
+          "s1": 3.745190483427553,
+          "segment_index": 4,
+          "vehicle_id": 2,
+          "wheel_index": 0
+        },
+        "worst_metric": {
+          "limit": 0.8,
+          "order": 1,
+          "required_duration_s": 15.451979485338564,
+          "segment_index": 4,
+          "upper_at_T0_s": 12.361583588270852,
+          "upper_bound_interval": [
+            3.6515607213418644,
+            3.745190483427553
+          ],
+          "vehicle_id": 2,
+          "wheel_index": 0
+        }
+      },
+      "short_duration": {
+        "check_count": 155,
+        "first_failure": {
+          "limit": 0.6,
+          "quantity": "acceleration",
+          "value": 1.2019030097760137,
+          "vehicle_id": 3,
+          "wheel_index": 0
+        },
+        "reason": "DYNAMIC_LIMIT",
+        "rejected": true
+      },
+      "tamper": {
+        "extra_field": "UNSUPPORTED_MODEL_FIELD",
+        "self_digest": "UNSUPPORTED_MODEL_FIELD",
+        "timing_T": "MODEL_TIMING_INCONSISTENT"
+      },
+      "timing_status": "DYNAMIC_FEASIBLE"
+    }
+  ],
+  "nonclaims": [
+    "DYNAMIC_FEASIBLE is a common-time whole-domain dynamic audit result, not collision freedom, executability, time optimality, map feasibility, ROS/Gazebo validation or hardware acceptance",
+    "collision_checked=false, executable=false, map_used=false, ros_used=false; no map, ROS, Gazebo or hardware run occurred",
+    "the whole-domain jerk certificate is a continuous interval proof in exact arithmetic followed by outward floating-point rounding; the pointwise independent formula and the 20001-point scan are coverage witnesses, not substitutes for that proof",
+    "the NO_MOTION case is an exact hold with S=T=0 and one t=0 sample; no division or inverse formula is used there",
+    "the legacy regression overall FAIL is reported truthfully; four cases pass and timing_continuous has a pre-existing baseline failure reproduced from a pristine HEAD export",
+    "no Git commit, push, branch creation or other worktree operation occurred; Codex acceptance is NOT_RUN_NOT_CLAIMED"
+  ],
+  "protection": {
+    "added": [
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/timing.py",
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/trajectory.py",
+      "tests/test_virtual_a_timing.py",
+      "tests/test_virtual_a_trajectory.py"
+    ],
+    "changed": [
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/audit.py",
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/bounds.py",
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/contracts.py",
+      "tests/test_virtual_a_audit.py",
+      "tools/virtual_a_benchmark.py"
+    ],
+    "diff_location": "analysis/protection_diff_vs_g2_accepted.json",
+    "diff_sha256": "9dcc43607ed02d67713f3d9fa060955740c850bf6f0d23aec0c4dcd5fe655855",
+    "g2_accepted_tree_sha256": "fa1b0596f7b9ecef616512785ab65ef2b93884dfde3a9c2a9794a9f7ac222f67",
+    "g3_full_protected_tree_sha256": "9bee7d7a483418877277fe63c83986363f7ffc114f03db6ff265927092d89fba",
+    "only_authorized_changes": true,
+    "removed": []
+  },
+  "run_id": "20261116T031558Z",
+  "schema": "virtual_rigid_a.g3.rework.results.v1",
+  "scope": {
+    "collision_checked": false,
+    "common_time": "PROVEN_FOR_TESTED_PATHS",
+    "executable": false,
+    "g4_entered": false,
+    "gazebo_used": false,
+    "hardware_used": false,
+    "map_used": false,
+    "output_status": "DYNAMIC_FEASIBLE only for plans that passed the independent raw-profile whole-domain dynamic audit",
+    "ros_used": false,
+    "three_vehicle_dynamics": "AUDITED_WHOLE_DOMAIN",
+    "time_optimal": false,
+    "timing_and_dynamics_proven": true
+  },
+  "stage": "G3",
+  "status": "PASS_PENDING_CODEX_RECHECK",
+  "tests": {
+    "audit": {
+      "count": 51,
+      "log": "logs/audit.log",
+      "log_sha256": "0d85f2320c2ccdbed3794c1492d1f892e7932926698cfca6a72058455571b489",
+      "status": "OK",
+      "wall_time_s": 3.449
+    },
+    "timing": {
+      "count": 18,
+      "log": "logs/timing.log",
+      "log_sha256": "1a566c19a55f82e682f6d7b5037a90484aa0c820d6ecfb72866cbb03ce749072",
+      "status": "OK",
+      "wall_time_s": 0.371
+    },
+    "trajectory": {
+      "count": 23,
+      "log": "logs/trajectory.log",
+      "log_sha256": "9974f9404953b68a110baf42ebb986b74c01855028281b13cb1ee4442d108db8",
+      "status": "OK",
+      "wall_time_s": 0.447
+    }
+  }
+}
