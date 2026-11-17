@@ -20,8 +20,10 @@ Im_max^2)``.  The right-hand side is evaluated per composite-Simpson panel
 with outward-rounded interval polynomial arithmetic, not by sampling.  A
 panel bound is therefore valid for every real station in that panel, and the
 maximum over panels is used in the same Simpson remainder
-``H^5*M4/2880`` as G1.  The floating/angle guard and the production G1
-``1e-7 m`` contract are untouched; the audit remains fail-closed.
+``H^5*M4/2880`` as G1.  The production G1 ``1e-7 m`` contract and its
+``1e-10 m`` accumulation guard are untouched; the audit's own float64
+evaluation error is bounded by :func:`evaluation_guard` instead of reusing
+that production guard, and the audit remains fail-closed at ``5e-8 m``.
 
 The cubic coefficients are floats.  As in :mod:`bounds`, each coefficient is
 widened by ``COEFFICIENT_ULPS`` before interval arithmetic, and the panel
@@ -257,6 +259,114 @@ def segment_budget(h, subintervals, panel_m4s, local_panels=1):
         "local_remainder_m": local,
         "maximum_panel_m4_upper_m": maximum,
         "segment_remainder_m": bounds._next_up(full + local),
+    }
+
+
+def evaluation_guard(records, psi_start, start_magnitude_m):
+    """Derived float64 evaluation guard for the audit's composite Simpson.
+
+    The G1 ``POSITION_ROUNDOFF_GUARD_M`` term (``1e-10 m`` per accumulation
+    panel) protects the production certificate, whose integrand is evaluated
+    through the production profile.  Reusing it as the independent audit's
+    own float64 guard makes the audit budget grow by ``1e-10 m`` per Simpson
+    panel: for the frozen U-turn candidate the guard reached ``9.7e-8 m``
+    with 1906 panels while the measured same-panel float64 error of the
+    audit's plain Simpson sums stayed below ``2e-15 m``.  The reused guard is
+    therefore an actually misapplied, overly loose bound, not a protection.
+
+    This function replaces it for the audit only.  ``records`` is an iterable
+    of ``(h, subintervals, coefficient_magnitude)`` where
+    ``coefficient_magnitude = |c0| + |c1| + |c2| + |c3|`` bounds every Horner
+    intermediate of the piece polynomial for ``q in [0, 1]``.  With
+    ``u = bounds.EPSILON``, ``L = sum h_j`` and
+
+        Psi = 1 + |psi_start| + sum_j h_j * coefficient_magnitude_j
+
+    bounding ``|psi|`` and every polynomial intermediate on the path, the
+    components are
+
+    * ``sum_j u * h_j * (8*n_j + 28 + 16*Psi)``: rounded sample locations
+      (``|q| <= 1``), the 13-rounding Horner evaluation of
+      ``psi_increment(q)``, one libm rounding of ``sin``/``cos``, the
+      weighted product and the sequential accumulation of the two sums.
+      The classic sequential-sum bound for ``n+1`` terms of total weight
+      ``3n`` is ``(n+1) * u * 3n`` on the sum, i.e. ``(n+1)`` units of
+      ``u * h`` after the Simpson factor, plus one unit each for the product
+      and the libm value; ``8*n_j`` keeps a documented safety factor over
+      that count.
+    * ``16 * (segments + 1) * u * L * Psi``: the ``psi`` prefix accumulation
+      shifts the integrand of a whole segment by ``d psi``, costing at most
+      ``h_j * d psi`` in position.
+    * ``2 * (segments + 1) * u * (|start| + L)``: the coordinate prefix
+      accumulation ``x += dx`` over the segments.
+
+    Every product and sum is outward rounded with ``bounds._next_up``.  The
+    result is a bound on the float64 evaluation error of the audit's own
+    Simpson sums, to be added to the analytic truncation remainder and to
+    the unchanged production-angle term; it does not weaken or replace any
+    truncation bound.
+    """
+    epsilon = bounds.EPSILON
+    origin = abs(_finite(psi_start, "psi_start"))
+    magnitude = _finite(start_magnitude_m, "start_magnitude")
+    if magnitude < 0.0:
+        raise PanelBoundError("start_magnitude must be non-negative")
+    base = []
+    length_total = 0.0
+    psi_bound = origin
+    for h, subintervals, coefficient_magnitude in records:
+        length = _finite(h, "piece_length")
+        if length <= 0.0:
+            raise PanelBoundError("piece length must be positive")
+        if isinstance(subintervals, bool) or not isinstance(subintervals, int):
+            raise PanelBoundError("subintervals must be an even integer")
+        if subintervals < 2 or subintervals % 2:
+            raise PanelBoundError("subintervals must be even and >= 2")
+        coefficient = _finite(coefficient_magnitude, "coefficient_magnitude")
+        if coefficient < 0.0:
+            raise PanelBoundError("negative coefficient magnitude")
+        psi_bound = bounds._next_up(
+            psi_bound + bounds._next_up(length * coefficient))
+        length_total = bounds._next_up(length_total + length)
+        base.append((length, subintervals))
+    if not base:
+        raise PanelBoundError("at least one piece is required")
+    psi_bound = bounds._next_up(psi_bound + 1.0)
+    segment_guards = []
+    per_segment = 0.0
+    for length, subintervals in base:
+        units = bounds._next_up(8.0 * float(subintervals))
+        units = bounds._next_up(units + 28.0)
+        units = bounds._next_up(units + bounds._next_up(16.0 * psi_bound))
+        term = bounds._next_up(
+            bounds._next_up(length * units) * epsilon)
+        segment_guards.append(term)
+        per_segment = bounds._next_up(per_segment + term)
+    count = float(len(base) + 1)
+    psi_accumulation = bounds._next_up(
+        bounds._next_up(bounds._next_up(16.0 * count) * epsilon)
+        * bounds._next_up(length_total * psi_bound))
+    coordinate_accumulation = bounds._next_up(
+        bounds._next_up(bounds._next_up(2.0 * count) * epsilon)
+        * bounds._next_up(magnitude + length_total))
+    total = bounds._next_up(
+        bounds._next_up(per_segment + psi_accumulation)
+        + coordinate_accumulation)
+    return {
+        "method": "derived_float64_simpson_evaluation_guard",
+        "formula": (
+            "EPSILON*sum_j h_j*(8*n_j+28+16*Psi) + "
+            "16*(segments+1)*EPSILON*L*Psi + "
+            "2*(segments+1)*EPSILON*(|start|+L), "
+            "Psi=1+|psi_start|+sum_j h_j*sum_i|c_i|, outward rounded"),
+        "epsilon": epsilon,
+        "psi_bound_rad": psi_bound,
+        "length_m": length_total,
+        "segment_evaluation_m": segment_guards,
+        "per_segment_evaluation_m": per_segment,
+        "psi_accumulation_m": psi_accumulation,
+        "coordinate_accumulation_m": coordinate_accumulation,
+        "total_evaluation_m": total,
     }
 
 

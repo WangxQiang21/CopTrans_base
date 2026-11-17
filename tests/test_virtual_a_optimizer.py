@@ -339,6 +339,8 @@ class AcceptanceSolveTests(unittest.TestCase):
                 request, planner_config(max_initials=2))
         self.assertNotEqual(result.status, "GEOMETRY_FEASIBLE")
         self.assertIsNone(result.path)
+        self.assertEqual(result.status, "NO_ACCEPTED_CANDIDATE")
+        self.assertEqual(result.reason, "AUDIT_REJECTED")
         self.assertTrue(result.attempts)
         for attempt in result.attempts:
             self.assertEqual(attempt.status,
@@ -369,6 +371,117 @@ class AcceptanceSolveTests(unittest.TestCase):
                 request, planner_config(max_initials=2))
         self.assertNotEqual(result.status, "GEOMETRY_FEASIBLE")
         self.assertIsNone(result.path)
+
+    def test_audit_rejection_survives_later_solver_failure(self):
+        """A later iteration limit must not overwrite the audited rejection."""
+        request = request_from_fixture("E1")
+
+        def fake_rejection(_request, _config, _packet, guess,
+                           wall_limit_s=None):
+            values = np.asarray(guess.vector, dtype=float).copy()
+            values[1:] = values[1:] * 1.1
+            return {
+                "solver": "ipopt",
+                "z": values,
+                "objective": 1.0,
+                "solver_status": "Solve_Succeeded",
+                "success": True,
+                "iterations": 1,
+                "detail": "fake success",
+                "wall_time_s": 0.0,
+            }
+
+        def fake_failure(_request, _config, _packet, guess,
+                         wall_limit_s=None):
+            return {
+                "solver": "ipopt",
+                "z": None,
+                "objective": None,
+                "solver_status": "Maximum_Iterations_Exceeded",
+                "success": False,
+                "iterations": 120,
+                "detail": "fake iteration limit",
+                "wall_time_s": 0.0,
+            }
+
+        calls = []
+
+        def sequence(*args, **kwargs):
+            calls.append(1)
+            if len(calls) == 1:
+                return fake_rejection(*args, **kwargs)
+            return fake_failure(*args, **kwargs)
+
+        with mock.patch.object(
+                optimizer_module, "_solve_with_ipopt",
+                side_effect=sequence):
+            result = solve_open_path(
+                request, planner_config(max_initials=2))
+        self.assertEqual(result.status, "NO_ACCEPTED_CANDIDATE")
+        self.assertEqual(result.reason, "AUDIT_REJECTED")
+        self.assertIn("ENDPOINT_POSITION_ERROR", result.detail)
+        self.assertEqual(result.attempts[0].status,
+                         "SOLVER_SUCCESS_AUDIT_REJECTED")
+        self.assertEqual(result.attempts[1].status, "SOLVER_FAILED")
+        self.assertEqual(result.attempts[1].rejection_reason,
+                         "Maximum_Iterations_Exceeded")
+
+    def test_all_nonconverged_attempts_report_solver_not_converged(self):
+        request = request_from_fixture("E1")
+
+        def fake_failure(_request, _config, _packet, guess,
+                         wall_limit_s=None):
+            return {
+                "solver": "ipopt",
+                "z": None,
+                "objective": None,
+                "solver_status": "Maximum_Iterations_Exceeded",
+                "success": False,
+                "iterations": 120,
+                "detail": "fake iteration limit",
+                "wall_time_s": 0.0,
+            }
+
+        with mock.patch.object(
+                optimizer_module, "_solve_with_ipopt",
+                side_effect=fake_failure):
+            result = solve_open_path(
+                request, planner_config(max_initials=2))
+        self.assertEqual(result.status, "NO_ACCEPTED_CANDIDATE")
+        self.assertEqual(result.reason, "SOLVER_NOT_CONVERGED")
+        self.assertTrue(result.attempts)
+        self.assertTrue(all(attempt.status == "SOLVER_FAILED"
+                            for attempt in result.attempts))
+
+    def test_explicit_ipopt_never_starts_the_slsqp_fallback(self):
+        request = request_from_fixture("E1")
+
+        def fake_failure(_request, _config, _packet, guess,
+                         wall_limit_s=None):
+            return {
+                "solver": "ipopt",
+                "z": None,
+                "objective": None,
+                "solver_status": "Solve_Failed",
+                "success": False,
+                "iterations": 1,
+                "detail": "fake failure",
+                "wall_time_s": 0.0,
+            }
+
+        with mock.patch.object(
+                optimizer_module, "_solve_with_ipopt",
+                side_effect=fake_failure), mock.patch.object(
+                optimizer_module, "_solve_with_scipy") as fallback:
+            result = solve_open_path(
+                request, planner_config(
+                    solver="ipopt", allow_scipy_fallback=True,
+                    max_initials=1))
+        fallback.assert_not_called()
+        self.assertEqual(result.status, "NO_ACCEPTED_CANDIDATE")
+        self.assertEqual(result.reason, "SOLVER_NOT_CONVERGED")
+        self.assertEqual([attempt.solver for attempt in result.attempts],
+                         ["ipopt"])
 
     def test_scipy_fallback_is_recorded_explicitly(self):
         request = request_from_fixture("E1")

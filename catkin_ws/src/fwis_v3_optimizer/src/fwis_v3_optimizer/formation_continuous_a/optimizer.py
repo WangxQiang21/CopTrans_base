@@ -81,6 +81,37 @@ def _coeffs(h, k0, k1, eta0, eta1):
     )
 
 
+def _piece_position_samples(h, coeffs, psi0, q_values, sin, cos):
+    """Prefix-integral positions inside one cubic curvature piece.
+
+    For each ``q`` in ``q_values`` the displacement is
+    ``h q sum_l w_l e(psi0 + h q xi_l [c0 + ...])``, i.e. the Gauss
+    quadrature of the prefix integral from the piece start.  It is never the
+    cumulative full-weight sum of the whole piece.  ``sin``/``cos`` let the
+    same routine serve ``math`` and CasADi scalars; the Gauss order is the
+    number of collocation values, so production uses the cached 9-point rule.
+    Segment endpoints are integrated separately with the full Gauss rule.
+    """
+    c0, c1, c2, c3 = coeffs
+    nodes, weights = _gauss(len(q_values))
+    displacements = []
+    headings = []
+    for q in q_values:
+        dx = 0.0
+        dy = 0.0
+        for node, weight in zip(nodes, weights):
+            t = q * node
+            angle = psi0 + h * t * (
+                c0 + t * (c1 / 2.0 + t * (c2 / 3.0 + t * c3 / 4.0)))
+            dx = dx + weight * cos(angle)
+            dy = dy + weight * sin(angle)
+        scale = h * q
+        displacements.append((scale * dx, scale * dy))
+        headings.append(psi0 + h * q * (
+            c0 + q * (c1 / 2.0 + q * (c2 / 3.0 + q * c3 / 4.0))))
+    return displacements, headings
+
+
 def _search_packet(request, config):
     """Endpoint-only local target and engineering search domain."""
     start = request.start_qf
@@ -429,8 +460,8 @@ class _ClearanceProxy:
 def _collocation_states(vector, packet, collocation):
     """Reconstruct collocation positions/headings/curvature from a guess.
 
-    The integration exactly matches :func:`_numeric_objective`: the same Gauss
-    nodes and weights integrate ``x/y`` cumulatively from the start.  The local
+    Positions use the per-piece prefix integral at each Gauss node, matching
+    :func:`_numeric_objective` and :func:`_build_casadi_nlp`.  The local
     heading at a collocation point is used for each vehicle's actual theta_i.
     """
     n = int(packet["intervals"])
@@ -450,13 +481,16 @@ def _collocation_states(vector, packet, collocation):
     for j in range(n):
         c0, c1, c2, c3 = _coeffs(h, kappas[j], kappas[j + 1],
                                  etas[j], etas[j + 1])
-        for q, weight in zip(nodes, weights):
-            local_psi = psi + h * q * (
-                c0 + q * (c1 / 2.0 + q * (c2 / 3.0 + q * c3 / 4.0)))
-            x += h * weight * math.cos(local_psi)
-            y += h * weight * math.sin(local_psi)
+        displacements, headings = _piece_position_samples(
+            h, (c0, c1, c2, c3), psi, nodes, math.sin, math.cos)
+        for q, (dx, dy), local_psi in zip(nodes, displacements, headings):
             kappa = c0 + q * (c1 + q * (c2 + q * c3))
-            states.append((x, y, local_psi, kappa))
+            states.append((x + dx, y + dy, local_psi, kappa))
+        for node, weight in zip(nodes, weights):
+            angle = psi + h * node * (
+                c0 + node * (c1 / 2.0 + node * (c2 / 3.0 + node * c3 / 4.0)))
+            x += h * weight * math.cos(angle)
+            y += h * weight * math.sin(angle)
         psi += h * (c0 + c1 / 2.0 + c2 / 3.0 + c3 / 4.0)
     return tuple(states)
 
@@ -667,26 +701,33 @@ def _numeric_objective(z, request, config, packet, collocation,
     for j in range(n):
         c0, c1, c2, c3 = _coeffs(h, kappas[j], kappas[j + 1],
                                  etas[j], etas[j + 1])
-        for q, weight in zip(nodes, weights):
+        displacements, headings = _piece_position_samples(
+            h, (c0, c1, c2, c3), psi, nodes, math.sin, math.cos)
+        for q, weight, (dx, dy), local_psi in zip(
+                nodes, weights, displacements, headings):
             eta = (c1 + q * (2.0 * c2 + 3.0 * q * c3)) / h
             u = (2.0 * c2 + 6.0 * c3 * q) / (h * h)
-            local_psi = psi + h * q * (
-                c0 + q * (c1 / 2.0 + q * (c2 / 3.0 + q * c3 / 4.0)))
-            x += h * weight * math.cos(local_psi)
-            y += h * weight * math.sin(local_psi)
             eta_integral += h * weight * eta * eta
             u_integral += h * weight * u * u
+            sample_x = x + dx
+            sample_y = y + dy
             if route_collocation_points is not None \
                     and route_collocation_weight > 0.0:
                 point = route_collocation_points[sample]
-                dx = x - float(point[0])
-                dy = y - float(point[1])
-                collocation_penalty += dx * dx + dy * dy
+                delta_x = sample_x - float(point[0])
+                delta_y = sample_y - float(point[1])
+                collocation_penalty += delta_x * delta_x + delta_y * delta_y
             if clearance_proxy is not None:
                 kappa = c0 + q * (c1 + q * (c2 + q * c3))
                 clearance_penalty += _proxy_numeric_penalty(
-                    clearance_proxy, request, x, y, local_psi, kappa, sample)
+                    clearance_proxy, request, sample_x, sample_y, local_psi,
+                    kappa, sample)
             sample += 1
+        for node, weight in zip(nodes, weights):
+            angle = psi + h * node * (
+                c0 + node * (c1 / 2.0 + node * (c2 / 3.0 + node * c3 / 4.0)))
+            x += h * weight * math.cos(angle)
+            y += h * weight * math.sin(angle)
         psi += h * (c0 + c1 / 2.0 + c2 / 3.0 + c3 / 4.0)
         node_positions.append((x, y))
     l0 = packet["l0"]
@@ -869,29 +910,31 @@ def _build_casadi_nlp(request, config, packet, wall_limit_s=None,
         c0, c1, c2, c3 = coeffs(
             kappas[j], kappas[j + 1], etas[j], etas[j + 1])
         piece_coefficients.append((c0, c1, c2, c3))
-        for q, weight in zip(nodes, weights):
-            local_psi = psi + h * q * (
-                c0 + q * (c1 / 2.0 + q * (c2 / 3.0 + q * c3 / 4.0)))
-            x += h * weight * ca.cos(local_psi)
-            y += h * weight * ca.sin(local_psi)
+        displacements, headings = _piece_position_samples(
+            h, (c0, c1, c2, c3), psi, nodes, ca.sin, ca.cos)
+        for q, weight, (dx, dy), local_psi in zip(
+                nodes, weights, displacements, headings):
             eta = (c1 + q * (2.0 * c2 + 3.0 * q * c3)) / h
             u = (2.0 * c2 + 6.0 * c3 * q) / (h * h)
             eta_integral += h * weight * eta * eta
             u_integral += h * weight * u * u
+            sample_x = x + dx
+            sample_y = y + dy
             if route_collocation_points is not None \
                     and route_collocation_weight > 0.0:
                 point = route_collocation_points[collocation_sample]
                 collocation_route_penalty += (
-                    (x - float(point[0])) ** 2 + (y - float(point[1])) ** 2)
+                    (sample_x - float(point[0])) ** 2
+                    + (sample_y - float(point[1])) ** 2)
             if clearance_fn is not None:
                 kappa = c0 + q * (c1 + q * (c2 + q * c3))
                 angles = clearance_proxy.angles[collocation_sample]
                 for index, offset in enumerate(request.model.offsets):
                     a, b = offset.x, offset.y
                     shape = request.vehicle_shapes[offset.vehicle_id]
-                    center_x = x + ca.cos(local_psi) * a \
+                    center_x = sample_x + ca.cos(local_psi) * a \
                         - ca.sin(local_psi) * b
-                    center_y = y + ca.sin(local_psi) * a \
+                    center_y = sample_y + ca.sin(local_psi) * a \
                         + ca.cos(local_psi) * b
                     center_x = ca.fmin(ca.fmax(
                         center_x, clearance_bounds[0]), clearance_bounds[1])
@@ -909,6 +952,11 @@ def _build_casadi_nlp(request, config, packet, wall_limit_s=None,
                         0.0, clearance_proxy.target_m + support - clearance)
                     clearance_proxy_penalty += hinge * hinge
             collocation_sample += 1
+        for node, weight in zip(nodes, weights):
+            angle = psi + h * node * (
+                c0 + node * (c1 / 2.0 + node * (c2 / 3.0 + node * c3 / 4.0)))
+            x += h * weight * ca.cos(angle)
+            y += h * weight * ca.sin(angle)
         psi += h * (c0 + c1 / 2.0 + c2 / 3.0 + c3 / 4.0)
         node_positions.append((x, y))
     constraints.extend((x - packet["dx"], y - packet["dy"],
@@ -1624,18 +1672,37 @@ def solve_open_path_guided(request, config, *, route_guides=(),
             config=config, solver_used=best["result"]["solver"],
             branch=branch, deadline=deadline_exhausted,
             deadline_summary=deadline_info)
+    audit_rejections = [
+        attempt for attempt in attempts
+        if attempt.status == "SOLVER_SUCCESS_AUDIT_REJECTED"]
+    all_exceptions = bool(attempts) and all(
+        attempt.status in ("CANDIDATE_CONSTRUCTION_FAILURE", "SOLVER_FAILED")
+        and attempt.solver_status.endswith("EXCEPTION")
+        for attempt in attempts)
     if deadline_exhausted:
         status = "BUDGET_EXHAUSTED"
         reason = "SOFT_BUDGET_EXHAUSTED"
         detail = "soft wall budget {!r}s exhausted before an audited candidate".format(
             config.max_seconds)
-    elif attempts and all(attempt.status in (
-            "CANDIDATE_CONSTRUCTION_FAILURE", "SOLVER_FAILED")
-            and attempt.solver_status.endswith("EXCEPTION")
-            for attempt in attempts):
+    elif audit_rejections:
+        # A later ordinary solver failure must not overwrite the concrete
+        # reason a successful iterate was rejected by the independent audit.
+        status = "NO_ACCEPTED_CANDIDATE"
+        reason = "AUDIT_REJECTED"
+        concrete = audit_rejections[-1].rejection_reason or "unknown"
+        detail = (
+            "solver success was rejected by the independent geometry audit: "
+            "{} ({} of {} attempts)".format(
+                concrete, len(audit_rejections), len(attempts)))
+    elif all_exceptions:
         status = "NUMERICAL_FAILURE"
         reason = "ALL_ATTEMPTS_NUMERICAL_FAILURE"
         detail = "every initial encountered a numerical exception"
+    elif attempts and all(attempt.status == "SOLVER_FAILED"
+                          for attempt in attempts):
+        status = "NO_ACCEPTED_CANDIDATE"
+        reason = "SOLVER_NOT_CONVERGED"
+        detail = "every initial failed to converge and no audit was reached"
     elif attempts:
         status = "NO_ACCEPTED_CANDIDATE"
         reason = attempts[-1].rejection_reason or "NO_AUDITED_CANDIDATE"

@@ -337,16 +337,23 @@ def _refresh_panel_bounds(record):
     return record
 
 
-def _integration_plan(pieces, start_psi, config):
+def _integration_plan(pieces, start_psi, config, start_magnitude_m=0.0):
     """Certified Simpson plan built only from the independently rebuilt knots.
 
     The budget is a composite-Simpson truncation remainder whose fourth
     derivative envelope is evaluated analytically per Simpson panel with
     outward interval arithmetic in :mod:`integration_bounds`, plus the
-    documented G1 floating-point/angle protection terms.  It never reads the
-    path's own ``position_error_bound_m``.  The coarse G1 triangle bound is
-    retained in the record only as a diagnostic; it is not used in the
-    budget.
+    derived float64 evaluation guard of
+    :func:`integration_bounds.evaluation_guard` (the production
+    ``POSITION_ROUNDOFF_GUARD_M`` term does not apply to the audit's own
+    plain Simpson sums) and the unchanged angle guard
+    ``length * audit_angle_budget``.  Evaluation and angle terms bound one
+    coordinate and are converted with ``sqrt(2)`` before being added to the
+    Euclidean truncation remainder.  It never reads the path's own
+    ``position_error_bound_m``.  The coarse G1 triangle bound is retained in
+    the record only as a diagnostic; it is not used in the budget.
+    ``start_magnitude_m`` is ``max(|start_x|, |start_y|)`` of the audited
+    path and bounds the coordinate prefix accumulation.
     """
     base = []
     max_kappa = 0.0
@@ -425,12 +432,23 @@ def _integration_plan(pieces, start_psi, config):
         remainder = integration_bounds.position_budget([
             (record["h"], record["subintervals"], record["panel_m4s"])
             for record in base])
-        guard = bounds.position_guard(
-            pieces[-1].s1,
-            remainder["full_panels"] + remainder["local_panels"],
-            angle_bound)
+        evaluation = integration_bounds.evaluation_guard(
+            [(record["h"], record["subintervals"],
+              abs(record["c0"]) + abs(record["c1"])
+              + abs(record["c2"]) + abs(record["c3"]))
+             for record in base],
+            start_psi, start_magnitude_m)
+        angle_guard = bounds._next_up(pieces[-1].s1 * angle_bound)
+        per_coordinate_guard = bounds._next_up(
+            evaluation["total_evaluation_m"] + angle_guard)
+        # Both terms bound one coordinate; the budget is Euclidean.
+        guard = bounds._next_up(
+            bounds._next_up(math.sqrt(2.0)) * per_coordinate_guard)
         _finite_audit(remainder["per_coordinate_m"], "audit_per_coordinate")
         _finite_audit(remainder["euclidean_m"], "audit_euclidean")
+        _finite_audit(evaluation["total_evaluation_m"], "audit_evaluation")
+        _finite_audit(angle_guard, "audit_angle_guard")
+        _finite_audit(per_coordinate_guard, "audit_per_coordinate_guard")
         _finite_audit(guard, "audit_guard")
         total_budget = bounds._next_up(remainder["euclidean_m"] + guard)
         _finite_audit(total_budget, "audit_total_budget")
@@ -489,6 +507,7 @@ def _integration_plan(pieces, start_psi, config):
             "remainder_m": segment_remainder["segment_remainder_m"],
             "full_remainder_m": segment_remainder["full_remainder_m"],
             "local_remainder_m": segment_remainder["local_remainder_m"],
+            "evaluation_guard_m": evaluation["segment_evaluation_m"][index],
         })
     budget_record = {
         "method": _INTEGRATION_METHOD,
@@ -505,14 +524,33 @@ def _integration_plan(pieces, start_psi, config):
         "full_simpson_panels": remainder["full_panels"],
         "local_simpson_panels": remainder["local_panels"],
         "angle_bound_rad": angle_bound,
+        "evaluation_guard_m": evaluation["total_evaluation_m"],
+        "evaluation_guard_components": {
+            "method": evaluation["method"],
+            "formula": evaluation["formula"],
+            "epsilon": evaluation["epsilon"],
+            "psi_bound_rad": evaluation["psi_bound_rad"],
+            "per_segment_m": evaluation["per_segment_evaluation_m"],
+            "psi_accumulation_m": evaluation["psi_accumulation_m"],
+            "coordinate_accumulation_m":
+                evaluation["coordinate_accumulation_m"],
+        },
+        "angle_guard_m": angle_guard,
+        "per_coordinate_roundoff_and_angle_guard_m":
+            per_coordinate_guard,
+        "guard_euclidean_scale": bounds._next_up(math.sqrt(2.0)),
         "roundoff_and_angle_guard_m": guard,
         "total_budget_m": total_budget,
         "fixed_threshold_m": threshold,
         "confirmed": True,
         "refinement_steps": refinement_steps,
         "floating_point_assumption": (
-            "G1 POSITION_ROUNDOFF_GUARD_M per accumulation panel and "
-            "ANGLE_ROUNDOFF_GUARD_RAD plus 8*EPSILON*(1+|psi|); libm/trig "
+            "audit Simpson float64 evaluation bounded by "
+            "integration_bounds.evaluation_guard (derived Horner, libm and "
+            "prefix-accumulation terms, outward rounded); per-coordinate "
+            "evaluation and angle terms combined by sqrt(2) into the "
+            "Euclidean budget; ANGLE_ROUNDOFF_GUARD_RAD plus "
+            "8*EPSILON*(1+|psi|) for the angle term; libm/trig "
             "values are assumed correctly rounded within these guards; "
             "cubic coefficients and panel endpoints are widened by "
             "bounds.COEFFICIENT_ULPS before the exact per-panel interval M4"),
@@ -1566,7 +1604,10 @@ def audit_geometry(request, path, config=None, *, planning_context=None):
                     value=knot_derivatives[-1], limit=config.c2_slope_tol)
         c2 = _node_c2_audit(pieces, config)
         _profile_pieces_crosscheck(path, pieces)
-        plan = _integration_plan(pieces, path.start_qf.psi, config)
+        plan = _integration_plan(
+            pieces, path.start_qf.psi, config,
+            start_magnitude_m=max(
+                abs(path.start_qf.x), abs(path.start_qf.y)))
         endpoint_checks = _endpoint_audit(
             path, request, pieces, path.start_qf, config, plan)
         cmax = 1.0 / float(limits.r_min_ackermann)
@@ -3984,7 +4025,9 @@ def audit_dynamics(request, plan, config=None, *,
                 })
         integration_plan = _integration_plan(
             bind["pieces"], bind["start_qf"].psi,
-            config.geometry_audit_config)
+            config.geometry_audit_config,
+            start_magnitude_m=max(
+                abs(bind["start_qf"].x), abs(bind["start_qf"].y)))
         subintervals = integration_plan["subintervals"]
         certificate = _audit_certificate(
             bind["pieces"], bind["prefixes"], bind["start_qf"], request,

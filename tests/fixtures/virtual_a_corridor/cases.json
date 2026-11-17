@@ -1,0 +1,240 @@
+{
+  "schema": "virtual_a_corridor.c0a.cases.v1",
+  "base_commit": "23fd16227e75a68f03f3ac7483555063c8189313",
+  "map_grid_construction": "load_map(yaml) then Grid(occ.copy(), float(np.float32(res)), ox, oy); the float32 resolution reproduces the ROS OccupancyGrid grid_sha256",
+  "maps": {
+    "A": {
+      "yaml": "tests/fixtures/virtual_a_corridor/local_straight/map.yaml",
+      "image": "tests/fixtures/virtual_a_corridor/local_straight/map.pgm",
+      "yaml_sha256": "888936d6d5503a99aa8232181e0df1a53f99e843e0257f53759c7073698ceca9",
+      "image_sha256": "1524d82a357465f58f065b8345a43c20cef224099f263f40ab22002786f34ac9",
+      "grid_sha256": "c8da34543eb8136247c2d8c173a6ef21deb232058de6b9efa67b89d4ef02764a"
+    },
+    "B": {
+      "yaml": "tests/fixtures/virtual_a_corridor/map05_scale2/map.yaml",
+      "image": "tests/fixtures/virtual_a_corridor/map05_scale2/map.pgm",
+      "yaml_sha256": "e6e33f343be878a846a48c56aa3097a1b29719ee8a39b1e14c493f97e6673f0e",
+      "image_sha256": "0856ad0af795b09e17e01e41bbf7c0f819170f53c93c6df718ed8342749ba718",
+      "grid_sha256": "33b3f0a68d2bfdda3aa393732d064b9406b7f8d24be1b52508e7d0159a93e3d1",
+      "historical_source": "docs/virtual_formation_a/diagnostics_20261116/repro_uturn_summary.json"
+    },
+    "C": {
+      "yaml": "tests/fixtures/virtual_a_corridor/map05_scale2/map.yaml",
+      "image": "tests/fixtures/virtual_a_corridor/map05_scale2/map.pgm",
+      "yaml_sha256": "e6e33f343be878a846a48c56aa3097a1b29719ee8a39b1e14c493f97e6673f0e",
+      "image_sha256": "0856ad0af795b09e17e01e41bbf7c0f819170f53c93c6df718ed8342749ba718",
+      "grid_sha256": "33b3f0a68d2bfdda3aa393732d064b9406b7f8d24be1b52508e7d0159a93e3d1",
+      "historical_source": "docs/virtual_formation_a/diagnostics_20261116/repro_uturn_summary.json"
+    }
+  },
+  "model": {
+    "offsets": [
+      {
+        "vehicle_id": 1,
+        "x": 1.0,
+        "y": 0.0
+      },
+      {
+        "vehicle_id": 2,
+        "x": 0.0,
+        "y": 1.0
+      },
+      {
+        "vehicle_id": 3,
+        "x": 0.0,
+        "y": -1.0
+      }
+    ],
+    "vehicle_shapes": {
+      "1": {
+        "length_m": 0.738,
+        "width_m": 0.5
+      },
+      "2": {
+        "length_m": 0.738,
+        "width_m": 0.5
+      },
+      "3": {
+        "length_m": 0.738,
+        "width_m": 0.5
+      }
+    }
+  },
+  "limits": {
+    "a_max": 0.6,
+    "jerk_max": 2.0,
+    "lateral_accel_max": 0.6,
+    "max_block_duration_s": 120.0,
+    "min_mode_dwell_s": 0.3,
+    "mode_setup_time": 0.15,
+    "mode_switch_duration": 0.3,
+    "r_min_ackermann": 0.81,
+    "steer_accel_max": 1.5,
+    "steer_angle_max": 1.5707963267948966,
+    "steer_rate_max": 0.8,
+    "track": 0.364,
+    "v_max": 0.8,
+    "wheel_speed_max": 1.0,
+    "wheelbase": 0.494,
+    "yaw_accel_max": 0.8,
+    "yaw_jerk_max": 3.0,
+    "yaw_rate_max": 0.8
+  },
+  "planner_config": {
+    "allow_scipy_fallback": true,
+    "collocation_points": 9,
+    "curvature_margin": 0.02,
+    "eta_limit": 2.0,
+    "heading_tolerance_rad": 0.003490658503988659,
+    "intervals": 8,
+    "ipopt_tolerance": 1e-08,
+    "kappa_limit": 0.5524861878453039,
+    "max_initials": 6,
+    "max_iterations": 120,
+    "max_seconds": 30.0,
+    "position_tolerance_m": 0.005,
+    "rigidity_tolerance_m": 1e-06,
+    "scipy_maxiter": 120,
+    "scipy_tolerance": 1e-08,
+    "solver": "ipopt"
+  },
+  "timing_config": {
+    "geometry_audit_config": {
+      "angle_budget_rad": 1e-09,
+      "audit_max_subintervals_per_segment": 4096,
+      "audit_max_total_subintervals": 20000,
+      "audit_panel_width_m": 0.02,
+      "audit_position_budget_m": 5e-08,
+      "c2_second_tol": 1e-08,
+      "c2_slope_tol": 1e-09,
+      "c2_third_abs_limit": 1000000.0,
+      "c2_value_tol": 1e-09,
+      "heading_tolerance_rad": 0.003490658503988659,
+      "integration_budget_m": 1e-07,
+      "interval_curvature_tolerance": 1e-09,
+      "max_depth": 20,
+      "max_leaves": 200000,
+      "position_tolerance_m": 0.005,
+      "rigidity_tolerance_m": 1e-06,
+      "sample_points_per_segment": 9
+    },
+    "interval_subdivisions_per_segment": 8,
+    "max_rescalings": 8,
+    "max_subdivisions_per_segment": 4096,
+    "max_total_duration_s": 600.0,
+    "max_total_subdivisions": 200000,
+    "rescale_factor": 1.05,
+    "safety_factor": 1.01,
+    "timing_law": "virtual_rigid_a.timing.quintic_smoothstep.v1"
+  },
+  "collision_config": {
+    "baseline_margin_floor_m": 0.05,
+    "baseline_margin_m": 0.05,
+    "max_corner_step_ceiling_m": 0.01,
+    "max_corner_step_m": 0.01,
+    "max_samples_per_segment": 200000,
+    "sample_budget_ceiling": 200000
+  },
+  "cases": {
+    "A": {
+      "purpose": "local exact straight, start (0,0,0) to goal (4,0,0)",
+      "plan_id": 700001,
+      "formation_id": "cargo_wedge",
+      "start_qf": {
+        "x": 0.0,
+        "y": 0.0,
+        "psi": 0.0
+      },
+      "start_headings": {
+        "1": 0.0,
+        "2": 0.0,
+        "3": 0.0
+      },
+      "goal_qf": {
+        "x": 4.0,
+        "y": 0.0,
+        "psi": 0.0
+      },
+      "initial": {
+        "stationary": true,
+        "mode": "A",
+        "wheels_straight": true,
+        "source": "offline_fixture",
+        "context_id": ""
+      },
+      "goal_policy": "FREE",
+      "request_sha256": "5f99cf2cc35f62bbd248259ca785746e56e21397d34a3bc449f2cf51c06d9355"
+    },
+    "B": {
+      "purpose": "historical near-straight with about 0.117 m local lateral offset",
+      "plan_id": 600000,
+      "formation_id": "cargo_wedge",
+      "start_qf": {
+        "x": 12.57,
+        "y": 10.32,
+        "psi": -0.0297339
+      },
+      "start_headings": {
+        "1": -0.0297339,
+        "2": -0.0297339,
+        "3": -0.0297339
+      },
+      "goal_qf": {
+        "x": 16.5,
+        "y": 10.32,
+        "psi": -0.0297339
+      },
+      "initial": {
+        "stationary": true,
+        "mode": "A",
+        "wheels_straight": true,
+        "source": "rviz_reset",
+        "context_id": "repro"
+      },
+      "goal_policy": "FREE",
+      "request_sha256": "3fa8e46b6e8d170d47f4b4ae7b8b9d324491fef2c6cf0515543825ea20eddf3a"
+    },
+    "C": {
+      "purpose": "historical open-area U-turn; same start as B",
+      "plan_id": 600000,
+      "formation_id": "cargo_wedge",
+      "start_qf": {
+        "x": 12.57,
+        "y": 10.32,
+        "psi": -0.029733900000000004
+      },
+      "start_headings": {
+        "1": -0.029733900000000004,
+        "2": -0.029733900000000004,
+        "3": -0.029733900000000004
+      },
+      "goal_qf": {
+        "x": 9.694,
+        "y": 2.854,
+        "psi": 3.132
+      },
+      "initial": {
+        "stationary": true,
+        "mode": "A",
+        "wheels_straight": true,
+        "source": "rviz_reset",
+        "context_id": "virtual-a-reset-None-3"
+      },
+      "goal_policy": "FREE",
+      "request_sha256": "88f3d15d6f68613e89379ebb776ea98ba02803827d8c21778ade87eb841ab0bf"
+    }
+  },
+  "historical_baseline_evidence": {
+    "B": {
+      "log": "docs/virtual_formation_a/diagnostics_20261116/repro_straight_slsqp_auto.log",
+      "status": "SUCCESS",
+      "note": "pre-C0 run; historical grid SHA in the ROS U-turn summary"
+    },
+    "C": {
+      "summary": "docs/virtual_formation_a/diagnostics_20261116/repro_uturn_summary.json",
+      "status": "NO_ACCEPTED_CANDIDATE",
+      "reason": "Maximum_Iterations_Exceeded",
+      "note": "five IPOPT successes rejected by AUDIT_INTEGRATION_REMAINDER; the sixth iteration limit overwrote the top-level reason (the C0-A failure-summary defect)"
+    }
+  }
+}

@@ -1,0 +1,931 @@
+{
+ "base_commit": "23fd16227e75a68f03f3ac7483555063c8189313",
+ "cases": {
+  "A": {
+   "attempts": [
+    {
+     "audit_first_failure": null,
+     "audit_integration_budget": {
+      "angle_bound_rad": 1.6000299355138193e-10,
+      "angle_guard_m": 6.401581092369254e-10,
+      "confirmed": true,
+      "euclidean_remainder_m": 1.801788649176609e-08,
+      "evaluation_guard_m": 5.566898088132038e-13,
+      "fixed_threshold_m": 5e-08,
+      "floating_point_assumption": "audit Simpson float64 evaluation bounded by integration_bounds.evaluation_guard (derived Horner, libm and prefix-accumulation terms, outward rounded); per-coordinate evaluation and angle terms combined by sqrt(2) into the Euclidean budget; ANGLE_ROUNDOFF_GUARD_RAD plus 8*EPSILON*(1+|psi|) for the angle term; libm/trig values are assumed correctly rounded within these guards; cubic coefficients and panel endpoints are widened by bounds.COEFFICIENT_ULPS before the exact per-panel interval M4",
+      "full_simpson_panels": 104,
+      "local_simpson_panels": 8,
+      "method": "independent_composite_simpson_v2_exact_panel",
+      "refinement_steps": 0,
+      "roundoff_and_angle_guard_m": 9.061075584236362e-10,
+      "total_budget_m": 1.892399405018973e-08,
+      "total_subintervals": 208
+     },
+     "audit_passed": true,
+     "constraint_residual": 7.105427357601002e-15,
+     "detail": "Solve_Succeeded",
+     "endpoint_error_m": 1.8932915890203498e-09,
+     "heading_error_rad": 1.1102230246251565e-16,
+     "index": 0,
+     "iterations": 19,
+     "label": "route_guide=0;source=astar_primary",
+     "objective": 1156.6354589725054,
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "source": "map_route_guide",
+     "status": "SOLVER_SUCCESS_AUDITED",
+     "wall_time_s": 2.8091940069571137
+    },
+    {
+     "audit_first_failure": null,
+     "audit_integration_budget": {
+      "angle_bound_rad": 1.6000600399343383e-10,
+      "angle_guard_m": 6.449729029295857e-10,
+      "confirmed": true,
+      "euclidean_remainder_m": 4.214416401027739e-08,
+      "evaluation_guard_m": 1.0781772163667925e-12,
+      "fixed_threshold_m": 5e-08,
+      "floating_point_assumption": "audit Simpson float64 evaluation bounded by integration_bounds.evaluation_guard (derived Horner, libm and prefix-accumulation terms, outward rounded); per-coordinate evaluation and angle terms combined by sqrt(2) into the Euclidean budget; ANGLE_ROUNDOFF_GUARD_RAD plus 8*EPSILON*(1+|psi|) for the angle term; libm/trig values are assumed correctly rounded within these guards; cubic coefficients and panel endpoints are widened by bounds.COEFFICIENT_ULPS before the exact per-panel interval M4",
+      "full_simpson_panels": 112,
+      "local_simpson_panels": 8,
+      "method": "independent_composite_simpson_v2_exact_panel",
+      "refinement_steps": 2,
+      "roundoff_and_angle_guard_m": 9.136541995281938e-10,
+      "total_budget_m": 4.305781820980559e-08,
+      "total_subintervals": 224
+     },
+     "audit_passed": true,
+     "constraint_residual": 9.994538974211764e-09,
+     "detail": "Solve_Succeeded",
+     "endpoint_error_m": 2.9221511122748113e-09,
+     "heading_error_rad": 1.6653345369377348e-16,
+     "index": 1,
+     "iterations": 29,
+     "label": "route_guide=1;source=astar_alternative_1",
+     "objective": 12738.061031043218,
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "source": "map_route_guide",
+     "status": "SOLVER_SUCCESS_AUDITED",
+     "wall_time_s": 3.192209391039796
+    },
+    {
+     "audit_first_failure": null,
+     "audit_integration_budget": {
+      "angle_bound_rad": 1.6000573216185305e-10,
+      "angle_guard_m": 6.429073291588656e-10,
+      "confirmed": true,
+      "euclidean_remainder_m": 4.8579216567094544e-08,
+      "evaluation_guard_m": 1.029821694499533e-12,
+      "fixed_threshold_m": 5e-08,
+      "floating_point_assumption": "audit Simpson float64 evaluation bounded by integration_bounds.evaluation_guard (derived Horner, libm and prefix-accumulation terms, outward rounded); per-coordinate evaluation and angle terms combined by sqrt(2) into the Euclidean budget; ANGLE_ROUNDOFF_GUARD_RAD plus 8*EPSILON*(1+|psi|) for the angle term; libm/trig values are assumed correctly rounded within these guards; cubic coefficients and panel endpoints are widened by bounds.COEFFICIENT_ULPS before the exact per-panel interval M4",
+      "full_simpson_panels": 108,
+      "local_simpson_panels": 8,
+      "method": "independent_composite_simpson_v2_exact_panel",
+      "refinement_steps": 1,
+      "roundoff_and_angle_guard_m": 9.10664652052719e-10,
+      "total_budget_m": 4.948988121914727e-08,
+      "total_subintervals": 216
+     },
+     "audit_passed": true,
+     "constraint_residual": 9.983431858984204e-09,
+     "detail": "Solve_Succeeded",
+     "endpoint_error_m": 1.394073447165701e-08,
+     "heading_error_rad": 1.942890293094024e-16,
+     "index": 2,
+     "iterations": 26,
+     "label": "route_guide=2;source=astar_alternative_2",
+     "objective": 7855.624779113338,
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "source": "map_route_guide",
+     "status": "SOLVER_SUCCESS_AUDITED",
+     "wall_time_s": 3.041885824059136
+    },
+    {
+     "audit_first_failure": null,
+     "audit_integration_budget": {
+      "angle_bound_rad": 1.6000299355138183e-10,
+      "angle_guard_m": 6.401581092369098e-10,
+      "confirmed": true,
+      "euclidean_remainder_m": 1.8017886490950358e-08,
+      "evaluation_guard_m": 5.566898088043864e-13,
+      "fixed_threshold_m": 5e-08,
+      "floating_point_assumption": "audit Simpson float64 evaluation bounded by integration_bounds.evaluation_guard (derived Horner, libm and prefix-accumulation terms, outward rounded); per-coordinate evaluation and angle terms combined by sqrt(2) into the Euclidean budget; ANGLE_ROUNDOFF_GUARD_RAD plus 8*EPSILON*(1+|psi|) for the angle term; libm/trig values are assumed correctly rounded within these guards; cubic coefficients and panel endpoints are widened by bounds.COEFFICIENT_ULPS before the exact per-panel interval M4",
+      "full_simpson_panels": 104,
+      "local_simpson_panels": 8,
+      "method": "independent_composite_simpson_v2_exact_panel",
+      "refinement_steps": 0,
+      "roundoff_and_angle_guard_m": 9.061075584236017e-10,
+      "total_budget_m": 1.8923994049373963e-08,
+      "total_subintervals": 208
+     },
+     "audit_passed": true,
+     "constraint_residual": 2.7533531010703882e-14,
+     "detail": "Solve_Succeeded",
+     "endpoint_error_m": 1.8932941738294256e-09,
+     "heading_error_rad": 1.6653345369377348e-16,
+     "index": 3,
+     "iterations": 15,
+     "label": "length_multiplier=1.2;shape=left",
+     "objective": 1156.6354589724265,
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "source": "automatic_endpoint_shape",
+     "status": "SOLVER_SUCCESS_AUDITED",
+     "wall_time_s": 2.503221819992177
+    },
+    {
+     "audit_first_failure": null,
+     "audit_integration_budget": {
+      "angle_bound_rad": 1.6000299355138183e-10,
+      "angle_guard_m": 6.401581092369098e-10,
+      "confirmed": true,
+      "euclidean_remainder_m": 1.801788649094905e-08,
+      "evaluation_guard_m": 5.56689808804372e-13,
+      "fixed_threshold_m": 5e-08,
+      "floating_point_assumption": "audit Simpson float64 evaluation bounded by integration_bounds.evaluation_guard (derived Horner, libm and prefix-accumulation terms, outward rounded); per-coordinate evaluation and angle terms combined by sqrt(2) into the Euclidean budget; ANGLE_ROUNDOFF_GUARD_RAD plus 8*EPSILON*(1+|psi|) for the angle term; libm/trig values are assumed correctly rounded within these guards; cubic coefficients and panel endpoints are widened by bounds.COEFFICIENT_ULPS before the exact per-panel interval M4",
+      "full_simpson_panels": 104,
+      "local_simpson_panels": 8,
+      "method": "independent_composite_simpson_v2_exact_panel",
+      "refinement_steps": 0,
+      "roundoff_and_angle_guard_m": 9.061075584236016e-10,
+      "total_budget_m": 1.8923994049372656e-08,
+      "total_subintervals": 208
+     },
+     "audit_passed": true,
+     "constraint_residual": 3.197442310920451e-14,
+     "detail": "Solve_Succeeded",
+     "endpoint_error_m": 1.893294037083987e-09,
+     "heading_error_rad": 2.3592239273284576e-16,
+     "index": 4,
+     "iterations": 15,
+     "label": "length_multiplier=1.2;shape=right",
+     "objective": 1156.635458972427,
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "source": "automatic_endpoint_shape",
+     "status": "SOLVER_SUCCESS_AUDITED",
+     "wall_time_s": 2.4724160049809143
+    },
+    {
+     "audit_first_failure": null,
+     "audit_integration_budget": {
+      "angle_bound_rad": 1.6000299355138002e-10,
+      "angle_guard_m": 6.401581092365693e-10,
+      "confirmed": true,
+      "euclidean_remainder_m": 1.801788647381993e-08,
+      "evaluation_guard_m": 5.566898086150727e-13,
+      "fixed_threshold_m": 5e-08,
+      "floating_point_assumption": "audit Simpson float64 evaluation bounded by integration_bounds.evaluation_guard (derived Horner, libm and prefix-accumulation terms, outward rounded); per-coordinate evaluation and angle terms combined by sqrt(2) into the Euclidean budget; ANGLE_ROUNDOFF_GUARD_RAD plus 8*EPSILON*(1+|psi|) for the angle term; libm/trig values are assumed correctly rounded within these guards; cubic coefficients and panel endpoints are widened by bounds.COEFFICIENT_ULPS before the exact per-panel interval M4",
+      "full_simpson_panels": 104,
+      "local_simpson_panels": 8,
+      "method": "independent_composite_simpson_v2_exact_panel",
+      "refinement_steps": 0,
+      "roundoff_and_angle_guard_m": 9.061075584228524e-10,
+      "total_budget_m": 1.8923994032242785e-08,
+      "total_subintervals": 208
+     },
+     "audit_passed": true,
+     "constraint_residual": 4.5208281562736374e-13,
+     "detail": "Solve_Succeeded",
+     "endpoint_error_m": 1.893355345600252e-09,
+     "heading_error_rad": 3.406996906818449e-15,
+     "index": 5,
+     "iterations": 16,
+     "label": "length_multiplier=1.8;shape=left",
+     "objective": 1156.6354589707576,
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "source": "automatic_endpoint_shape",
+     "status": "SOLVER_SUCCESS_AUDITED",
+     "wall_time_s": 2.5425216880394146
+    }
+   ],
+   "collision_audit": {
+    "detail": "static start/goal plus unchanged analytic three-vehicle OBB sweep over the whole closed path; declared per-lambda bounds independently verified; conservative margin includes the numerical envelope; map and G4 context bound",
+    "first_failure": null,
+    "integration_budget": null,
+    "passed": true,
+    "reason": null
+   },
+   "deadline_exhausted": false,
+   "dynamic_audit": {
+    "detail": "independent raw-profile common-time dynamic audit; whole-domain interval certificate plus node/endpoint/inverse/differential checks; DYNAMIC_FEASIBLE; collision_checked=false; executable=false; no map/ROS",
+    "first_failure": null,
+    "integration_budget": null,
+    "passed": true,
+    "reason": null
+   },
+   "endpoint_error_m": 1.893355345600252e-09,
+   "executable": true,
+   "first_failure_layer": "",
+   "geometry_audit": {
+    "detail": "independent C2/interval/integration audit; geometry only, no timing/map/ROS/collision claim",
+    "first_failure": null,
+    "integration_budget": {
+     "angle_bound_rad": 1.6000299355138002e-10,
+     "angle_guard_m": 6.401581092365693e-10,
+     "confirmed": true,
+     "euclidean_remainder_m": 1.801788647381993e-08,
+     "evaluation_guard_m": 5.566898086150727e-13,
+     "fixed_threshold_m": 5e-08,
+     "floating_point_assumption": "audit Simpson float64 evaluation bounded by integration_bounds.evaluation_guard (derived Horner, libm and prefix-accumulation terms, outward rounded); per-coordinate evaluation and angle terms combined by sqrt(2) into the Euclidean budget; ANGLE_ROUNDOFF_GUARD_RAD plus 8*EPSILON*(1+|psi|) for the angle term; libm/trig values are assumed correctly rounded within these guards; cubic coefficients and panel endpoints are widened by bounds.COEFFICIENT_ULPS before the exact per-panel interval M4",
+     "full_simpson_panels": 104,
+     "local_simpson_panels": 8,
+     "method": "independent_composite_simpson_v2_exact_panel",
+     "refinement_steps": 0,
+     "roundoff_and_angle_guard_m": 9.061075584228524e-10,
+     "total_budget_m": 1.8923994032242785e-08,
+     "total_subintervals": 208
+    },
+    "passed": true,
+    "reason": null
+   },
+   "heading_error_rad": 3.552713678800501e-15,
+   "identity": {
+    "expected_grid_sha256": "c8da34543eb8136247c2d8c173a6ef21deb232058de6b9efa67b89d4ef02764a",
+    "expected_request_sha256": "5f99cf2cc35f62bbd248259ca785746e56e21397d34a3bc449f2cf51c06d9355",
+    "grid_origin": [
+     -1.5,
+     -2.0
+    ],
+    "grid_resolution_m": 0.05000000074505806,
+    "grid_sha256": "c8da34543eb8136247c2d8c173a6ef21deb232058de6b9efa67b89d4ef02764a",
+    "grid_shape": [
+     100,
+     160
+    ],
+    "map_image_sha256": "1524d82a357465f58f065b8345a43c20cef224099f263f40ab22002786f34ac9",
+    "map_yaml_sha256": "888936d6d5503a99aa8232181e0df1a53f99e843e0257f53759c7073698ceca9",
+    "planning_context_sha256": "50018a88683d2791de97b7342db1d8ee635136b05a11cb40394e2215aae6418c",
+    "request_sha256": "5f99cf2cc35f62bbd248259ca785746e56e21397d34a3bc449f2cf51c06d9355"
+   },
+   "path": {
+    "angle_error_bound_rad": 1.6000461735274738e-10,
+    "knot_count": 9,
+    "knots": [
+     {
+      "eta": 0.0,
+      "kappa": 0.0,
+      "s": 0.0
+     },
+     {
+      "eta": -0.019277809842294,
+      "kappa": 0.08257384551726818,
+      "s": 0.5001141658569986
+     },
+     {
+      "eta": -0.23063230622004255,
+      "kappa": -0.05130230220007552,
+      "s": 1.0002283317139973
+     },
+     {
+      "eta": 0.13995811966534216,
+      "kappa": -0.05109815491510908,
+      "s": 1.5003424975709958
+     },
+     {
+      "eta": 0.08689219407463179,
+      "kappa": 0.018062260066455713,
+      "s": 2.0004566634279946
+     },
+     {
+      "eta": -0.06859657365673326,
+      "kappa": 0.018739507982502637,
+      "s": 2.5005708292849933
+     },
+     {
+      "eta": -0.2060487909179425,
+      "kappa": -0.047543198232412466,
+      "s": 3.0006849951419916
+     },
+     {
+      "eta": 0.330125782632462,
+      "kappa": -0.07505956354713603,
+      "s": 3.5007991609989904
+     },
+     {
+      "eta": 0.8759632867116346,
+      "kappa": 0.2842688187328568,
+      "s": 4.000913326855989
+     }
+    ],
+    "length_m": 4.000913326855989,
+    "max_abs_eta": 0.8759632867116346,
+    "max_abs_kappa": 0.2842688187328568,
+    "position_error_bound_m": 4.6364071632188947e-08
+   },
+   "plan": {
+    "duration_s": 9.736059538535692,
+    "is_executable_path": false,
+    "model_sha256": "26cb79be7dd29466ccfd7bf62ba3493786b0fba4d097954b3f9e0eaca2cc1007",
+    "planning_context_sha256": "50018a88683d2791de97b7342db1d8ee635136b05a11cb40394e2215aae6418c",
+    "request_sha256": "5f99cf2cc35f62bbd248259ca785746e56e21397d34a3bc449f2cf51c06d9355"
+   },
+   "reason": "",
+   "routes": [
+    {
+     "index": 0,
+     "length_m": 4.1121319797276925,
+     "points": 83,
+     "source": "astar_primary"
+    },
+    {
+     "index": 1,
+     "length_m": 4.3535533395624615,
+     "points": 87,
+     "source": "astar_alternative_1"
+    },
+    {
+     "index": 2,
+     "length_m": 4.194974693436764,
+     "points": 83,
+     "source": "astar_alternative_2"
+    }
+   ],
+   "status": "SUCCESS",
+   "wall_time_s": 20.018026096979156
+  },
+  "B": {
+   "attempts": [
+    {
+     "audit_first_failure": null,
+     "audit_integration_budget": null,
+     "audit_passed": null,
+     "constraint_residual": 4.869527425288567e-06,
+     "detail": "Maximum_Iterations_Exceeded",
+     "endpoint_error_m": null,
+     "heading_error_rad": null,
+     "index": 0,
+     "iterations": 120,
+     "label": "route_guide=0;source=astar_primary",
+     "objective": 1743.9702009073674,
+     "rejection_reason": "Maximum_Iterations_Exceeded",
+     "solver": "ipopt",
+     "solver_status": "Maximum_Iterations_Exceeded",
+     "source": "map_route_guide",
+     "status": "SOLVER_FAILED",
+     "wall_time_s": 8.292366283014417
+    },
+    {
+     "audit_first_failure": null,
+     "audit_integration_budget": null,
+     "audit_passed": null,
+     "constraint_residual": 1.6902386145378756e-05,
+     "detail": "Maximum_Iterations_Exceeded",
+     "endpoint_error_m": null,
+     "heading_error_rad": null,
+     "index": 1,
+     "iterations": 120,
+     "label": "route_guide=1;source=astar_alternative_1",
+     "objective": 11050.497001173435,
+     "rejection_reason": "Maximum_Iterations_Exceeded",
+     "solver": "ipopt",
+     "solver_status": "Maximum_Iterations_Exceeded",
+     "source": "map_route_guide",
+     "status": "SOLVER_FAILED",
+     "wall_time_s": 8.082607532967813
+    },
+    {
+     "audit_first_failure": null,
+     "audit_integration_budget": {
+      "angle_bound_rad": 1.6000574770545934e-10,
+      "angle_guard_m": 6.323605537828253e-10,
+      "confirmed": true,
+      "euclidean_remainder_m": 4.295338406887895e-08,
+      "evaluation_guard_m": 1.0749444089459684e-12,
+      "fixed_threshold_m": 5e-08,
+      "floating_point_assumption": "audit Simpson float64 evaluation bounded by integration_bounds.evaluation_guard (derived Horner, libm and prefix-accumulation terms, outward rounded); per-coordinate evaluation and angle terms combined by sqrt(2) into the Euclidean budget; ANGLE_ROUNDOFF_GUARD_RAD plus 8*EPSILON*(1+|psi|) for the angle term; libm/trig values are assumed correctly rounded within these guards; cubic coefficients and panel endpoints are widened by bounds.COEFFICIENT_ULPS before the exact per-panel interval M4",
+      "full_simpson_panels": 112,
+      "local_simpson_panels": 8,
+      "method": "independent_composite_simpson_v2_exact_panel",
+      "refinement_steps": 2,
+      "roundoff_and_angle_guard_m": 8.958130724313615e-10,
+      "total_budget_m": 4.384919714131032e-08,
+      "total_subintervals": 224
+     },
+     "audit_passed": true,
+     "constraint_residual": 9.994066685337089e-09,
+     "detail": "Solve_Succeeded",
+     "endpoint_error_m": 8.211547276396951e-09,
+     "heading_error_rad": 1.1102230246251565e-16,
+     "index": 2,
+     "iterations": 31,
+     "label": "route_guide=2;source=astar_alternative_2",
+     "objective": 10619.572797083081,
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "source": "map_route_guide",
+     "status": "SOLVER_SUCCESS_AUDITED",
+     "wall_time_s": 3.289509441005066
+    },
+    {
+     "audit_first_failure": null,
+     "audit_integration_budget": null,
+     "audit_passed": null,
+     "constraint_residual": 1.1898252533670828e-05,
+     "detail": "Maximum_Iterations_Exceeded",
+     "endpoint_error_m": null,
+     "heading_error_rad": null,
+     "index": 3,
+     "iterations": 120,
+     "label": "length_multiplier=1.2;shape=left",
+     "objective": 1908.7494112933969,
+     "rejection_reason": "Maximum_Iterations_Exceeded",
+     "solver": "ipopt",
+     "solver_status": "Maximum_Iterations_Exceeded",
+     "source": "automatic_endpoint_shape",
+     "status": "SOLVER_FAILED",
+     "wall_time_s": 8.072586956084706
+    },
+    {
+     "audit_first_failure": null,
+     "audit_integration_budget": null,
+     "audit_passed": null,
+     "constraint_residual": null,
+     "detail": "Maximum_WallTime_Exceeded",
+     "endpoint_error_m": null,
+     "heading_error_rad": null,
+     "index": 4,
+     "iterations": 17,
+     "label": "length_multiplier=1.2;shape=right",
+     "objective": 1763.0241211992973,
+     "rejection_reason": "SOFT_BUDGET_EXHAUSTED",
+     "solver": "ipopt",
+     "solver_status": "Maximum_WallTime_Exceeded",
+     "source": "automatic_endpoint_shape",
+     "status": "SOLVER_TIMEOUT",
+     "wall_time_s": 2.5946862250566483
+    }
+   ],
+   "collision_audit": {
+    "detail": "static start/goal plus unchanged analytic three-vehicle OBB sweep over the whole closed path; declared per-lambda bounds independently verified; conservative margin includes the numerical envelope; map and G4 context bound",
+    "first_failure": null,
+    "integration_budget": null,
+    "passed": true,
+    "reason": null
+   },
+   "deadline_exhausted": false,
+   "dynamic_audit": {
+    "detail": "independent raw-profile common-time dynamic audit; whole-domain interval certificate plus node/endpoint/inverse/differential checks; DYNAMIC_FEASIBLE; collision_checked=false; executable=false; no map/ROS",
+    "first_failure": null,
+    "integration_budget": null,
+    "passed": true,
+    "reason": null
+   },
+   "endpoint_error_m": 8.211547276396951e-09,
+   "executable": true,
+   "first_failure_layer": "",
+   "geometry_audit": {
+    "detail": "independent C2/interval/integration audit; geometry only, no timing/map/ROS/collision claim",
+    "first_failure": null,
+    "integration_budget": {
+     "angle_bound_rad": 1.6000574770545934e-10,
+     "angle_guard_m": 6.323605537828253e-10,
+     "confirmed": true,
+     "euclidean_remainder_m": 4.295338406887895e-08,
+     "evaluation_guard_m": 1.0749444089459684e-12,
+     "fixed_threshold_m": 5e-08,
+     "floating_point_assumption": "audit Simpson float64 evaluation bounded by integration_bounds.evaluation_guard (derived Horner, libm and prefix-accumulation terms, outward rounded); per-coordinate evaluation and angle terms combined by sqrt(2) into the Euclidean budget; ANGLE_ROUNDOFF_GUARD_RAD plus 8*EPSILON*(1+|psi|) for the angle term; libm/trig values are assumed correctly rounded within these guards; cubic coefficients and panel endpoints are widened by bounds.COEFFICIENT_ULPS before the exact per-panel interval M4",
+     "full_simpson_panels": 112,
+     "local_simpson_panels": 8,
+     "method": "independent_composite_simpson_v2_exact_panel",
+     "refinement_steps": 2,
+     "roundoff_and_angle_guard_m": 8.958130724313615e-10,
+     "total_budget_m": 4.384919714131032e-08,
+     "total_subintervals": 224
+    },
+    "passed": true,
+    "reason": null
+   },
+   "heading_error_rad": 0.0,
+   "identity": {
+    "expected_grid_sha256": "33b3f0a68d2bfdda3aa393732d064b9406b7f8d24be1b52508e7d0159a93e3d1",
+    "expected_request_sha256": "3fa8e46b6e8d170d47f4b4ae7b8b9d324491fef2c6cf0515543825ea20eddf3a",
+    "grid_origin": [
+     -4.5845285,
+     -3.0563190000000002
+    ],
+    "grid_resolution_m": 0.04942600056529045,
+    "grid_sha256": "33b3f0a68d2bfdda3aa393732d064b9406b7f8d24be1b52508e7d0159a93e3d1",
+    "grid_shape": [
+     326,
+     489
+    ],
+    "map_image_sha256": "0856ad0af795b09e17e01e41bbf7c0f819170f53c93c6df718ed8342749ba718",
+    "map_yaml_sha256": "e6e33f343be878a846a48c56aa3097a1b29719ee8a39b1e14c493f97e6673f0e",
+    "planning_context_sha256": "67a1f0e94d431484d9147d958ed30e4d1b6ac66210c352cfbf95e3a49a0364d5",
+    "request_sha256": "3fa8e46b6e8d170d47f4b4ae7b8b9d324491fef2c6cf0515543825ea20eddf3a"
+   },
+   "path": {
+    "angle_error_bound_rad": 1.6000883796591844e-10,
+    "knot_count": 9,
+    "knots": [
+     {
+      "eta": 0.0,
+      "kappa": 0.0,
+      "s": 0.0
+     },
+     {
+      "eta": 0.3044948227724401,
+      "kappa": 0.3829255782544353,
+      "s": 0.49401393610159766
+     },
+     {
+      "eta": -1.2074590211429335,
+      "kappa": 0.0017323866550944518,
+      "s": 0.9880278722031953
+     },
+     {
+      "eta": 0.19110124325999558,
+      "kappa": -0.3307994122681181,
+      "s": 1.482041808304793
+     },
+     {
+      "eta": 0.6040972120371877,
+      "kappa": 0.028251575754230065,
+      "s": 1.9760557444063906
+     },
+     {
+      "eta": -0.7427360547758287,
+      "kappa": -0.023727918435328003,
+      "s": 2.4700696805079883
+     },
+     {
+      "eta": 0.024471974985882713,
+      "kappa": -0.35747039405379244,
+      "s": 2.964083616609586
+     },
+     {
+      "eta": 1.1553096927297786,
+      "kappa": 0.0603304527530751,
+      "s": 3.4580975527111835
+     },
+     {
+      "eta": 0.849821040621868,
+      "kappa": 0.5474860355574015,
+      "s": 3.9521114888127813
+     }
+    ],
+    "length_m": 3.9521114888127813,
+    "max_abs_eta": 1.2074590211429335,
+    "max_abs_kappa": 0.5474860355574015,
+    "position_error_bound_m": 8.148385118941815e-08
+   },
+   "plan": {
+    "duration_s": 18.298357251029824,
+    "is_executable_path": false,
+    "model_sha256": "c3c0bde3de2fc4e153f47bed45acc7da8cc713e4f087e9a44c228cf78932b467",
+    "planning_context_sha256": "67a1f0e94d431484d9147d958ed30e4d1b6ac66210c352cfbf95e3a49a0364d5",
+    "request_sha256": "3fa8e46b6e8d170d47f4b4ae7b8b9d324491fef2c6cf0515543825ea20eddf3a"
+   },
+   "reason": "",
+   "routes": [
+    {
+     "index": 0,
+     "length_m": 3.934555777961586,
+     "points": 82,
+     "source": "astar_primary"
+    },
+    {
+     "index": 1,
+     "length_m": 4.2021587005560415,
+     "points": 87,
+     "source": "astar_alternative_1"
+    },
+    {
+     "index": 2,
+     "length_m": 4.2021587005560415,
+     "points": 87,
+     "source": "astar_alternative_2"
+    }
+   ],
+   "status": "SUCCESS",
+   "wall_time_s": 34.1603610169841
+  },
+  "C": {
+   "attempts": [
+    {
+     "audit_first_failure": null,
+     "audit_integration_budget": {
+      "angle_bound_rad": 1.600162657697844e-10,
+      "angle_guard_m": 2.4264034363612646e-09,
+      "confirmed": true,
+      "euclidean_remainder_m": 7.893303278466698e-09,
+      "evaluation_guard_m": 1.2700978299287573e-11,
+      "fixed_threshold_m": 5e-08,
+      "floating_point_assumption": "audit Simpson float64 evaluation bounded by integration_bounds.evaluation_guard (derived Horner, libm and prefix-accumulation terms, outward rounded); per-coordinate evaluation and angle terms combined by sqrt(2) into the Euclidean budget; ANGLE_ROUNDOFF_GUARD_RAD plus 8*EPSILON*(1+|psi|) for the angle term; libm/trig values are assumed correctly rounded within these guards; cubic coefficients and panel endpoints are widened by bounds.COEFFICIENT_ULPS before the exact per-panel interval M4",
+      "full_simpson_panels": 384,
+      "local_simpson_panels": 8,
+      "method": "independent_composite_simpson_v2_exact_panel",
+      "refinement_steps": 0,
+      "roundoff_and_angle_guard_m": 3.4494145432570443e-09,
+      "total_budget_m": 1.1342717821723744e-08,
+      "total_subintervals": 768
+     },
+     "audit_passed": true,
+     "constraint_residual": 3.1086244689504383e-15,
+     "detail": "Solve_Succeeded",
+     "endpoint_error_m": 5.25806088282922e-10,
+     "heading_error_rad": 2.4492935982947064e-16,
+     "index": 0,
+     "iterations": 20,
+     "label": "route_guide=0;source=astar_primary",
+     "objective": 11205.847743440232,
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "source": "map_route_guide",
+     "status": "SOLVER_SUCCESS_AUDITED",
+     "wall_time_s": 2.76980797003489
+    },
+    {
+     "audit_first_failure": null,
+     "audit_integration_budget": {
+      "angle_bound_rad": 1.6001508723145911e-10,
+      "angle_guard_m": 2.49201779581646e-09,
+      "confirmed": true,
+      "euclidean_remainder_m": 8.207807757949815e-09,
+      "evaluation_guard_m": 1.355277675889168e-11,
+      "fixed_threshold_m": 5e-08,
+      "floating_point_assumption": "audit Simpson float64 evaluation bounded by integration_bounds.evaluation_guard (derived Horner, libm and prefix-accumulation terms, outward rounded); per-coordinate evaluation and angle terms combined by sqrt(2) into the Euclidean budget; ANGLE_ROUNDOFF_GUARD_RAD plus 8*EPSILON*(1+|psi|) for the angle term; libm/trig values are assumed correctly rounded within these guards; cubic coefficients and panel endpoints are widened by bounds.COEFFICIENT_ULPS before the exact per-panel interval M4",
+      "full_simpson_panels": 392,
+      "local_simpson_panels": 8,
+      "method": "independent_composite_simpson_v2_exact_panel",
+      "refinement_steps": 0,
+      "roundoff_and_angle_guard_m": 3.543411885218985e-09,
+      "total_budget_m": 1.1751219643168802e-08,
+      "total_subintervals": 784
+     },
+     "audit_passed": true,
+     "constraint_residual": 9.997753291912659e-09,
+     "detail": "Solve_Succeeded",
+     "endpoint_error_m": 7.747813868731605e-11,
+     "heading_error_rad": 2.4492935982947064e-16,
+     "index": 1,
+     "iterations": 21,
+     "label": "route_guide=1;source=astar_alternative_1",
+     "objective": 21880.132820824212,
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "source": "map_route_guide",
+     "status": "SOLVER_SUCCESS_AUDITED",
+     "wall_time_s": 2.82996166695375
+    },
+    {
+     "audit_first_failure": null,
+     "audit_integration_budget": null,
+     "audit_passed": null,
+     "constraint_residual": 1.3954090771761685e-08,
+     "detail": "Maximum_Iterations_Exceeded",
+     "endpoint_error_m": null,
+     "heading_error_rad": null,
+     "index": 2,
+     "iterations": 120,
+     "label": "route_guide=2;source=astar_alternative_2",
+     "objective": 16321.418844796222,
+     "rejection_reason": "Maximum_Iterations_Exceeded",
+     "solver": "ipopt",
+     "solver_status": "Maximum_Iterations_Exceeded",
+     "source": "map_route_guide",
+     "status": "SOLVER_FAILED",
+     "wall_time_s": 8.138877111952752
+    },
+    {
+     "audit_first_failure": null,
+     "audit_integration_budget": {
+      "angle_bound_rad": 1.6001622191214006e-10,
+      "angle_guard_m": 2.4270727555665603e-09,
+      "confirmed": true,
+      "euclidean_remainder_m": 8.065817613285926e-09,
+      "evaluation_guard_m": 1.2779929403943155e-11,
+      "fixed_threshold_m": 5e-08,
+      "floating_point_assumption": "audit Simpson float64 evaluation bounded by integration_bounds.evaluation_guard (derived Horner, libm and prefix-accumulation terms, outward rounded); per-coordinate evaluation and angle terms combined by sqrt(2) into the Euclidean budget; ANGLE_ROUNDOFF_GUARD_RAD plus 8*EPSILON*(1+|psi|) for the angle term; libm/trig values are assumed correctly rounded within these guards; cubic coefficients and panel endpoints are widened by bounds.COEFFICIENT_ULPS before the exact per-panel interval M4",
+      "full_simpson_panels": 384,
+      "local_simpson_panels": 8,
+      "method": "independent_composite_simpson_v2_exact_panel",
+      "refinement_steps": 0,
+      "roundoff_and_angle_guard_m": 3.4504727572776984e-09,
+      "total_budget_m": 1.1516290370563627e-08,
+      "total_subintervals": 768
+     },
+     "audit_passed": true,
+     "constraint_residual": 1.3322676295501878e-15,
+     "detail": "Solve_Succeeded",
+     "endpoint_error_m": 5.134501779798759e-10,
+     "heading_error_rad": 2.4492935982947064e-16,
+     "index": 3,
+     "iterations": 29,
+     "label": "length_multiplier=1.2;shape=left",
+     "objective": 10803.947309766747,
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "source": "automatic_endpoint_shape",
+     "status": "SOLVER_SUCCESS_AUDITED",
+     "wall_time_s": 3.195760064991191
+    },
+    {
+     "audit_first_failure": null,
+     "audit_integration_budget": null,
+     "audit_passed": null,
+     "constraint_residual": 2.546738011588445e-07,
+     "detail": "Maximum_Iterations_Exceeded",
+     "endpoint_error_m": null,
+     "heading_error_rad": null,
+     "index": 4,
+     "iterations": 120,
+     "label": "length_multiplier=1.2;shape=right",
+     "objective": 11418.942598379752,
+     "rejection_reason": "Maximum_Iterations_Exceeded",
+     "solver": "ipopt",
+     "solver_status": "Maximum_Iterations_Exceeded",
+     "source": "automatic_endpoint_shape",
+     "status": "SOLVER_FAILED",
+     "wall_time_s": 8.063248356920667
+    },
+    {
+     "audit_first_failure": null,
+     "audit_integration_budget": null,
+     "audit_passed": null,
+     "constraint_residual": null,
+     "detail": "Maximum_WallTime_Exceeded",
+     "endpoint_error_m": null,
+     "heading_error_rad": null,
+     "index": 5,
+     "iterations": 58,
+     "label": "length_multiplier=1.8;shape=left",
+     "objective": 10857.890086714742,
+     "rejection_reason": "SOFT_BUDGET_EXHAUSTED",
+     "solver": "ipopt",
+     "solver_status": "Maximum_WallTime_Exceeded",
+     "source": "automatic_endpoint_shape",
+     "status": "SOLVER_TIMEOUT",
+     "wall_time_s": 4.848381011048332
+    }
+   ],
+   "collision_audit": {
+    "detail": "static start/goal plus unchanged analytic three-vehicle OBB sweep over the whole closed path; declared per-lambda bounds independently verified; conservative margin includes the numerical envelope; map and G4 context bound",
+    "first_failure": null,
+    "integration_budget": null,
+    "passed": true,
+    "reason": null
+   },
+   "deadline_exhausted": false,
+   "dynamic_audit": {
+    "detail": "independent raw-profile common-time dynamic audit; whole-domain interval certificate plus node/endpoint/inverse/differential checks; DYNAMIC_FEASIBLE; collision_checked=false; executable=false; no map/ROS",
+    "first_failure": null,
+    "integration_budget": null,
+    "passed": true,
+    "reason": null
+   },
+   "endpoint_error_m": 5.134501779798759e-10,
+   "executable": true,
+   "first_failure_layer": "",
+   "geometry_audit": {
+    "detail": "independent C2/interval/integration audit; geometry only, no timing/map/ROS/collision claim",
+    "first_failure": null,
+    "integration_budget": {
+     "angle_bound_rad": 1.6001622191214006e-10,
+     "angle_guard_m": 2.4270727555665603e-09,
+     "confirmed": true,
+     "euclidean_remainder_m": 8.065817613285926e-09,
+     "evaluation_guard_m": 1.2779929403943155e-11,
+     "fixed_threshold_m": 5e-08,
+     "floating_point_assumption": "audit Simpson float64 evaluation bounded by integration_bounds.evaluation_guard (derived Horner, libm and prefix-accumulation terms, outward rounded); per-coordinate evaluation and angle terms combined by sqrt(2) into the Euclidean budget; ANGLE_ROUNDOFF_GUARD_RAD plus 8*EPSILON*(1+|psi|) for the angle term; libm/trig values are assumed correctly rounded within these guards; cubic coefficients and panel endpoints are widened by bounds.COEFFICIENT_ULPS before the exact per-panel interval M4",
+     "full_simpson_panels": 384,
+     "local_simpson_panels": 8,
+     "method": "independent_composite_simpson_v2_exact_panel",
+     "refinement_steps": 0,
+     "roundoff_and_angle_guard_m": 3.4504727572776984e-09,
+     "total_budget_m": 1.1516290370563627e-08,
+     "total_subintervals": 768
+    },
+    "passed": true,
+    "reason": null
+   },
+   "heading_error_rad": 0.0,
+   "identity": {
+    "expected_grid_sha256": "33b3f0a68d2bfdda3aa393732d064b9406b7f8d24be1b52508e7d0159a93e3d1",
+    "expected_request_sha256": "88f3d15d6f68613e89379ebb776ea98ba02803827d8c21778ade87eb841ab0bf",
+    "grid_origin": [
+     -4.5845285,
+     -3.0563190000000002
+    ],
+    "grid_resolution_m": 0.04942600056529045,
+    "grid_sha256": "33b3f0a68d2bfdda3aa393732d064b9406b7f8d24be1b52508e7d0159a93e3d1",
+    "grid_shape": [
+     326,
+     489
+    ],
+    "map_image_sha256": "0856ad0af795b09e17e01e41bbf7c0f819170f53c93c6df718ed8342749ba718",
+    "map_yaml_sha256": "e6e33f343be878a846a48c56aa3097a1b29719ee8a39b1e14c493f97e6673f0e",
+    "planning_context_sha256": "b99387304d1e5b46bc5a1ef0ca7a8c8e88b9432b4eedd0cfd1fcf5479cd6563e",
+    "request_sha256": "88f3d15d6f68613e89379ebb776ea98ba02803827d8c21778ade87eb841ab0bf"
+   },
+   "path": {
+    "angle_error_bound_rad": 1.6001705383748326e-10,
+    "knot_count": 9,
+    "knots": [
+     {
+      "eta": 0.0,
+      "kappa": 0.0,
+      "s": 0.0
+     },
+     {
+      "eta": -0.2412312346464077,
+      "kappa": -0.3405124737349528,
+      "s": 1.8959583648487761
+     },
+     {
+      "eta": 0.18633519848072264,
+      "kappa": -0.49205791017911166,
+      "s": 3.7919167296975522
+     },
+     {
+      "eta": 0.12976191210534044,
+      "kappa": 0.0600854990668369,
+      "s": 5.687875094546328
+     },
+     {
+      "eta": -0.2864563955840336,
+      "kappa": -0.22730220696815429,
+      "s": 7.5838334593951044
+     },
+     {
+      "eta": 0.06372012488439083,
+      "kappa": -0.5417824046029138,
+      "s": 9.47979182424388
+     },
+     {
+      "eta": 0.22386724362544416,
+      "kappa": -0.10577674399135452,
+      "s": 11.375750189092656
+     },
+     {
+      "eta": -0.015607895562855738,
+      "kappa": 0.054547820831381384,
+      "s": 13.271708553941433
+     },
+     {
+      "eta": -0.3272036472029904,
+      "kappa": -0.21053981044354364,
+      "s": 15.167666918790209
+     }
+    ],
+    "length_m": 15.167666918790209,
+    "max_abs_eta": 0.3272036472029904,
+    "max_abs_kappa": 0.5417824046029138,
+    "position_error_bound_m": 6.448996161386036e-08
+   },
+   "plan": {
+    "duration_s": 55.8100602866931,
+    "is_executable_path": false,
+    "model_sha256": "d51d4aabaf7a5f3909fb850d47302860e66eb474c6b229427d8c1b3633b62b4a",
+    "planning_context_sha256": "b99387304d1e5b46bc5a1ef0ca7a8c8e88b9432b4eedd0cfd1fcf5479cd6563e",
+    "request_sha256": "88f3d15d6f68613e89379ebb776ea98ba02803827d8c21778ade87eb841ab0bf"
+   },
+   "reason": "",
+   "routes": [
+    {
+     "index": 0,
+     "length_m": 15.562507658609519,
+     "points": 293,
+     "source": "astar_primary"
+    },
+    {
+     "index": 1,
+     "length_m": 16.23751134446502,
+     "points": 305,
+     "source": "astar_alternative_1"
+    },
+    {
+     "index": 2,
+     "length_m": 15.32385781681235,
+     "points": 289,
+     "source": "astar_alternative_2"
+    }
+   ],
+   "status": "SUCCESS",
+   "wall_time_s": 37.64232467894908
+  }
+ },
+ "environment": {
+  "casadi": "3.7.2",
+  "numpy": "1.24.4",
+  "platform": "Linux-5.15.0-139-generic-x86_64-with-glibc2.29",
+  "python": "3.8.10 (default, Mar 18 2025, 20:04:55) \n[GCC 9.4.0]",
+  "scipy": "1.10.1"
+ },
+ "run_utc": "20261117T052817Z",
+ "schema": "virtual_a_corridor.c0b.results.v1"
+}
