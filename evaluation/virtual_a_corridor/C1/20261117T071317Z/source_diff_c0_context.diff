@@ -1,0 +1,604 @@
+diff --git a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/audit.py b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/audit.py
+index 3484293..35c9459 100644
+--- a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/audit.py
++++ b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/audit.py
+@@ -337,16 +337,23 @@ def _refresh_panel_bounds(record):
+     return record
+ 
+ 
+-def _integration_plan(pieces, start_psi, config):
++def _integration_plan(pieces, start_psi, config, start_magnitude_m=0.0):
+     """Certified Simpson plan built only from the independently rebuilt knots.
+ 
+     The budget is a composite-Simpson truncation remainder whose fourth
+     derivative envelope is evaluated analytically per Simpson panel with
+     outward interval arithmetic in :mod:`integration_bounds`, plus the
+-    documented G1 floating-point/angle protection terms.  It never reads the
+-    path's own ``position_error_bound_m``.  The coarse G1 triangle bound is
+-    retained in the record only as a diagnostic; it is not used in the
+-    budget.
++    derived float64 evaluation guard of
++    :func:`integration_bounds.evaluation_guard` (the production
++    ``POSITION_ROUNDOFF_GUARD_M`` term does not apply to the audit's own
++    plain Simpson sums) and the unchanged angle guard
++    ``length * audit_angle_budget``.  Evaluation and angle terms bound one
++    coordinate and are converted with ``sqrt(2)`` before being added to the
++    Euclidean truncation remainder.  It never reads the path's own
++    ``position_error_bound_m``.  The coarse G1 triangle bound is retained in
++    the record only as a diagnostic; it is not used in the budget.
++    ``start_magnitude_m`` is ``max(|start_x|, |start_y|)`` of the audited
++    path and bounds the coordinate prefix accumulation.
+     """
+     base = []
+     max_kappa = 0.0
+@@ -425,12 +432,23 @@ def _integration_plan(pieces, start_psi, config):
+         remainder = integration_bounds.position_budget([
+             (record["h"], record["subintervals"], record["panel_m4s"])
+             for record in base])
+-        guard = bounds.position_guard(
+-            pieces[-1].s1,
+-            remainder["full_panels"] + remainder["local_panels"],
+-            angle_bound)
++        evaluation = integration_bounds.evaluation_guard(
++            [(record["h"], record["subintervals"],
++              abs(record["c0"]) + abs(record["c1"])
++              + abs(record["c2"]) + abs(record["c3"]))
++             for record in base],
++            start_psi, start_magnitude_m)
++        angle_guard = bounds._next_up(pieces[-1].s1 * angle_bound)
++        per_coordinate_guard = bounds._next_up(
++            evaluation["total_evaluation_m"] + angle_guard)
++        # Both terms bound one coordinate; the budget is Euclidean.
++        guard = bounds._next_up(
++            bounds._next_up(math.sqrt(2.0)) * per_coordinate_guard)
+         _finite_audit(remainder["per_coordinate_m"], "audit_per_coordinate")
+         _finite_audit(remainder["euclidean_m"], "audit_euclidean")
++        _finite_audit(evaluation["total_evaluation_m"], "audit_evaluation")
++        _finite_audit(angle_guard, "audit_angle_guard")
++        _finite_audit(per_coordinate_guard, "audit_per_coordinate_guard")
+         _finite_audit(guard, "audit_guard")
+         total_budget = bounds._next_up(remainder["euclidean_m"] + guard)
+         _finite_audit(total_budget, "audit_total_budget")
+@@ -489,6 +507,7 @@ def _integration_plan(pieces, start_psi, config):
+             "remainder_m": segment_remainder["segment_remainder_m"],
+             "full_remainder_m": segment_remainder["full_remainder_m"],
+             "local_remainder_m": segment_remainder["local_remainder_m"],
++            "evaluation_guard_m": evaluation["segment_evaluation_m"][index],
+         })
+     budget_record = {
+         "method": _INTEGRATION_METHOD,
+@@ -505,14 +524,33 @@ def _integration_plan(pieces, start_psi, config):
+         "full_simpson_panels": remainder["full_panels"],
+         "local_simpson_panels": remainder["local_panels"],
+         "angle_bound_rad": angle_bound,
++        "evaluation_guard_m": evaluation["total_evaluation_m"],
++        "evaluation_guard_components": {
++            "method": evaluation["method"],
++            "formula": evaluation["formula"],
++            "epsilon": evaluation["epsilon"],
++            "psi_bound_rad": evaluation["psi_bound_rad"],
++            "per_segment_m": evaluation["per_segment_evaluation_m"],
++            "psi_accumulation_m": evaluation["psi_accumulation_m"],
++            "coordinate_accumulation_m":
++                evaluation["coordinate_accumulation_m"],
++        },
++        "angle_guard_m": angle_guard,
++        "per_coordinate_roundoff_and_angle_guard_m":
++            per_coordinate_guard,
++        "guard_euclidean_scale": bounds._next_up(math.sqrt(2.0)),
+         "roundoff_and_angle_guard_m": guard,
+         "total_budget_m": total_budget,
+         "fixed_threshold_m": threshold,
+         "confirmed": True,
+         "refinement_steps": refinement_steps,
+         "floating_point_assumption": (
+-            "G1 POSITION_ROUNDOFF_GUARD_M per accumulation panel and "
+-            "ANGLE_ROUNDOFF_GUARD_RAD plus 8*EPSILON*(1+|psi|); libm/trig "
++            "audit Simpson float64 evaluation bounded by "
++            "integration_bounds.evaluation_guard (derived Horner, libm and "
++            "prefix-accumulation terms, outward rounded); per-coordinate "
++            "evaluation and angle terms combined by sqrt(2) into the "
++            "Euclidean budget; ANGLE_ROUNDOFF_GUARD_RAD plus "
++            "8*EPSILON*(1+|psi|) for the angle term; libm/trig "
+             "values are assumed correctly rounded within these guards; "
+             "cubic coefficients and panel endpoints are widened by "
+             "bounds.COEFFICIENT_ULPS before the exact per-panel interval M4"),
+@@ -1566,7 +1604,10 @@ def audit_geometry(request, path, config=None, *, planning_context=None):
+                     value=knot_derivatives[-1], limit=config.c2_slope_tol)
+         c2 = _node_c2_audit(pieces, config)
+         _profile_pieces_crosscheck(path, pieces)
+-        plan = _integration_plan(pieces, path.start_qf.psi, config)
++        plan = _integration_plan(
++            pieces, path.start_qf.psi, config,
++            start_magnitude_m=max(
++                abs(path.start_qf.x), abs(path.start_qf.y)))
+         endpoint_checks = _endpoint_audit(
+             path, request, pieces, path.start_qf, config, plan)
+         cmax = 1.0 / float(limits.r_min_ackermann)
+@@ -3984,7 +4025,9 @@ def audit_dynamics(request, plan, config=None, *,
+                 })
+         integration_plan = _integration_plan(
+             bind["pieces"], bind["start_qf"].psi,
+-            config.geometry_audit_config)
++            config.geometry_audit_config,
++            start_magnitude_m=max(
++                abs(bind["start_qf"].x), abs(bind["start_qf"].y)))
+         subintervals = integration_plan["subintervals"]
+         certificate = _audit_certificate(
+             bind["pieces"], bind["prefixes"], bind["start_qf"], request,
+diff --git a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/integration_bounds.py b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/integration_bounds.py
+index 61279c0..76adc8f 100644
+--- a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/integration_bounds.py
++++ b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/integration_bounds.py
+@@ -20,8 +20,10 @@ Im_max^2)``.  The right-hand side is evaluated per composite-Simpson panel
+ with outward-rounded interval polynomial arithmetic, not by sampling.  A
+ panel bound is therefore valid for every real station in that panel, and the
+ maximum over panels is used in the same Simpson remainder
+-``H^5*M4/2880`` as G1.  The floating/angle guard and the production G1
+-``1e-7 m`` contract are untouched; the audit remains fail-closed.
++``H^5*M4/2880`` as G1.  The production G1 ``1e-7 m`` contract and its
++``1e-10 m`` accumulation guard are untouched; the audit's own float64
++evaluation error is bounded by :func:`evaluation_guard` instead of reusing
++that production guard, and the audit remains fail-closed at ``5e-8 m``.
+ 
+ The cubic coefficients are floats.  As in :mod:`bounds`, each coefficient is
+ widened by ``COEFFICIENT_ULPS`` before interval arithmetic, and the panel
+@@ -260,6 +262,114 @@ def segment_budget(h, subintervals, panel_m4s, local_panels=1):
+     }
+ 
+ 
++def evaluation_guard(records, psi_start, start_magnitude_m):
++    """Derived float64 evaluation guard for the audit's composite Simpson.
++
++    The G1 ``POSITION_ROUNDOFF_GUARD_M`` term (``1e-10 m`` per accumulation
++    panel) protects the production certificate, whose integrand is evaluated
++    through the production profile.  Reusing it as the independent audit's
++    own float64 guard makes the audit budget grow by ``1e-10 m`` per Simpson
++    panel: for the frozen U-turn candidate the guard reached ``9.7e-8 m``
++    with 1906 panels while the measured same-panel float64 error of the
++    audit's plain Simpson sums stayed below ``2e-15 m``.  The reused guard is
++    therefore an actually misapplied, overly loose bound, not a protection.
++
++    This function replaces it for the audit only.  ``records`` is an iterable
++    of ``(h, subintervals, coefficient_magnitude)`` where
++    ``coefficient_magnitude = |c0| + |c1| + |c2| + |c3|`` bounds every Horner
++    intermediate of the piece polynomial for ``q in [0, 1]``.  With
++    ``u = bounds.EPSILON``, ``L = sum h_j`` and
++
++        Psi = 1 + |psi_start| + sum_j h_j * coefficient_magnitude_j
++
++    bounding ``|psi|`` and every polynomial intermediate on the path, the
++    components are
++
++    * ``sum_j u * h_j * (8*n_j + 28 + 16*Psi)``: rounded sample locations
++      (``|q| <= 1``), the 13-rounding Horner evaluation of
++      ``psi_increment(q)``, one libm rounding of ``sin``/``cos``, the
++      weighted product and the sequential accumulation of the two sums.
++      The classic sequential-sum bound for ``n+1`` terms of total weight
++      ``3n`` is ``(n+1) * u * 3n`` on the sum, i.e. ``(n+1)`` units of
++      ``u * h`` after the Simpson factor, plus one unit each for the product
++      and the libm value; ``8*n_j`` keeps a documented safety factor over
++      that count.
++    * ``16 * (segments + 1) * u * L * Psi``: the ``psi`` prefix accumulation
++      shifts the integrand of a whole segment by ``d psi``, costing at most
++      ``h_j * d psi`` in position.
++    * ``2 * (segments + 1) * u * (|start| + L)``: the coordinate prefix
++      accumulation ``x += dx`` over the segments.
++
++    Every product and sum is outward rounded with ``bounds._next_up``.  The
++    result is a bound on the float64 evaluation error of the audit's own
++    Simpson sums, to be added to the analytic truncation remainder and to
++    the unchanged production-angle term; it does not weaken or replace any
++    truncation bound.
++    """
++    epsilon = bounds.EPSILON
++    origin = abs(_finite(psi_start, "psi_start"))
++    magnitude = _finite(start_magnitude_m, "start_magnitude")
++    if magnitude < 0.0:
++        raise PanelBoundError("start_magnitude must be non-negative")
++    base = []
++    length_total = 0.0
++    psi_bound = origin
++    for h, subintervals, coefficient_magnitude in records:
++        length = _finite(h, "piece_length")
++        if length <= 0.0:
++            raise PanelBoundError("piece length must be positive")
++        if isinstance(subintervals, bool) or not isinstance(subintervals, int):
++            raise PanelBoundError("subintervals must be an even integer")
++        if subintervals < 2 or subintervals % 2:
++            raise PanelBoundError("subintervals must be even and >= 2")
++        coefficient = _finite(coefficient_magnitude, "coefficient_magnitude")
++        if coefficient < 0.0:
++            raise PanelBoundError("negative coefficient magnitude")
++        psi_bound = bounds._next_up(
++            psi_bound + bounds._next_up(length * coefficient))
++        length_total = bounds._next_up(length_total + length)
++        base.append((length, subintervals))
++    if not base:
++        raise PanelBoundError("at least one piece is required")
++    psi_bound = bounds._next_up(psi_bound + 1.0)
++    segment_guards = []
++    per_segment = 0.0
++    for length, subintervals in base:
++        units = bounds._next_up(8.0 * float(subintervals))
++        units = bounds._next_up(units + 28.0)
++        units = bounds._next_up(units + bounds._next_up(16.0 * psi_bound))
++        term = bounds._next_up(
++            bounds._next_up(length * units) * epsilon)
++        segment_guards.append(term)
++        per_segment = bounds._next_up(per_segment + term)
++    count = float(len(base) + 1)
++    psi_accumulation = bounds._next_up(
++        bounds._next_up(bounds._next_up(16.0 * count) * epsilon)
++        * bounds._next_up(length_total * psi_bound))
++    coordinate_accumulation = bounds._next_up(
++        bounds._next_up(bounds._next_up(2.0 * count) * epsilon)
++        * bounds._next_up(magnitude + length_total))
++    total = bounds._next_up(
++        bounds._next_up(per_segment + psi_accumulation)
++        + coordinate_accumulation)
++    return {
++        "method": "derived_float64_simpson_evaluation_guard",
++        "formula": (
++            "EPSILON*sum_j h_j*(8*n_j+28+16*Psi) + "
++            "16*(segments+1)*EPSILON*L*Psi + "
++            "2*(segments+1)*EPSILON*(|start|+L), "
++            "Psi=1+|psi_start|+sum_j h_j*sum_i|c_i|, outward rounded"),
++        "epsilon": epsilon,
++        "psi_bound_rad": psi_bound,
++        "length_m": length_total,
++        "segment_evaluation_m": segment_guards,
++        "per_segment_evaluation_m": per_segment,
++        "psi_accumulation_m": psi_accumulation,
++        "coordinate_accumulation_m": coordinate_accumulation,
++        "total_evaluation_m": total,
++    }
++
++
+ def position_budget(records):
+     """Euclidean budget from exact per-panel segment categories.
+ 
+diff --git a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/optimizer.py b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/optimizer.py
+index a3f9438..17be4e2 100644
+--- a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/optimizer.py
++++ b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/optimizer.py
+@@ -81,6 +81,37 @@ def _coeffs(h, k0, k1, eta0, eta1):
+     )
+ 
+ 
++def _piece_position_samples(h, coeffs, psi0, q_values, sin, cos):
++    """Prefix-integral positions inside one cubic curvature piece.
++
++    For each ``q`` in ``q_values`` the displacement is
++    ``h q sum_l w_l e(psi0 + h q xi_l [c0 + ...])``, i.e. the Gauss
++    quadrature of the prefix integral from the piece start.  It is never the
++    cumulative full-weight sum of the whole piece.  ``sin``/``cos`` let the
++    same routine serve ``math`` and CasADi scalars; the Gauss order is the
++    number of collocation values, so production uses the cached 9-point rule.
++    Segment endpoints are integrated separately with the full Gauss rule.
++    """
++    c0, c1, c2, c3 = coeffs
++    nodes, weights = _gauss(len(q_values))
++    displacements = []
++    headings = []
++    for q in q_values:
++        dx = 0.0
++        dy = 0.0
++        for node, weight in zip(nodes, weights):
++            t = q * node
++            angle = psi0 + h * t * (
++                c0 + t * (c1 / 2.0 + t * (c2 / 3.0 + t * c3 / 4.0)))
++            dx = dx + weight * cos(angle)
++            dy = dy + weight * sin(angle)
++        scale = h * q
++        displacements.append((scale * dx, scale * dy))
++        headings.append(psi0 + h * q * (
++            c0 + q * (c1 / 2.0 + q * (c2 / 3.0 + q * c3 / 4.0))))
++    return displacements, headings
++
++
+ def _search_packet(request, config):
+     """Endpoint-only local target and engineering search domain."""
+     start = request.start_qf
+@@ -429,8 +460,8 @@ class _ClearanceProxy:
+ def _collocation_states(vector, packet, collocation):
+     """Reconstruct collocation positions/headings/curvature from a guess.
+ 
+-    The integration exactly matches :func:`_numeric_objective`: the same Gauss
+-    nodes and weights integrate ``x/y`` cumulatively from the start.  The local
++    Positions use the per-piece prefix integral at each Gauss node, matching
++    :func:`_numeric_objective` and :func:`_build_casadi_nlp`.  The local
+     heading at a collocation point is used for each vehicle's actual theta_i.
+     """
+     n = int(packet["intervals"])
+@@ -450,13 +481,16 @@ def _collocation_states(vector, packet, collocation):
+     for j in range(n):
+         c0, c1, c2, c3 = _coeffs(h, kappas[j], kappas[j + 1],
+                                  etas[j], etas[j + 1])
+-        for q, weight in zip(nodes, weights):
+-            local_psi = psi + h * q * (
+-                c0 + q * (c1 / 2.0 + q * (c2 / 3.0 + q * c3 / 4.0)))
+-            x += h * weight * math.cos(local_psi)
+-            y += h * weight * math.sin(local_psi)
++        displacements, headings = _piece_position_samples(
++            h, (c0, c1, c2, c3), psi, nodes, math.sin, math.cos)
++        for q, (dx, dy), local_psi in zip(nodes, displacements, headings):
+             kappa = c0 + q * (c1 + q * (c2 + q * c3))
+-            states.append((x, y, local_psi, kappa))
++            states.append((x + dx, y + dy, local_psi, kappa))
++        for node, weight in zip(nodes, weights):
++            angle = psi + h * node * (
++                c0 + node * (c1 / 2.0 + node * (c2 / 3.0 + node * c3 / 4.0)))
++            x += h * weight * math.cos(angle)
++            y += h * weight * math.sin(angle)
+         psi += h * (c0 + c1 / 2.0 + c2 / 3.0 + c3 / 4.0)
+     return tuple(states)
+ 
+@@ -667,26 +701,33 @@ def _numeric_objective(z, request, config, packet, collocation,
+     for j in range(n):
+         c0, c1, c2, c3 = _coeffs(h, kappas[j], kappas[j + 1],
+                                  etas[j], etas[j + 1])
+-        for q, weight in zip(nodes, weights):
++        displacements, headings = _piece_position_samples(
++            h, (c0, c1, c2, c3), psi, nodes, math.sin, math.cos)
++        for q, weight, (dx, dy), local_psi in zip(
++                nodes, weights, displacements, headings):
+             eta = (c1 + q * (2.0 * c2 + 3.0 * q * c3)) / h
+             u = (2.0 * c2 + 6.0 * c3 * q) / (h * h)
+-            local_psi = psi + h * q * (
+-                c0 + q * (c1 / 2.0 + q * (c2 / 3.0 + q * c3 / 4.0)))
+-            x += h * weight * math.cos(local_psi)
+-            y += h * weight * math.sin(local_psi)
+             eta_integral += h * weight * eta * eta
+             u_integral += h * weight * u * u
++            sample_x = x + dx
++            sample_y = y + dy
+             if route_collocation_points is not None \
+                     and route_collocation_weight > 0.0:
+                 point = route_collocation_points[sample]
+-                dx = x - float(point[0])
+-                dy = y - float(point[1])
+-                collocation_penalty += dx * dx + dy * dy
++                delta_x = sample_x - float(point[0])
++                delta_y = sample_y - float(point[1])
++                collocation_penalty += delta_x * delta_x + delta_y * delta_y
+             if clearance_proxy is not None:
+                 kappa = c0 + q * (c1 + q * (c2 + q * c3))
+                 clearance_penalty += _proxy_numeric_penalty(
+-                    clearance_proxy, request, x, y, local_psi, kappa, sample)
++                    clearance_proxy, request, sample_x, sample_y, local_psi,
++                    kappa, sample)
+             sample += 1
++        for node, weight in zip(nodes, weights):
++            angle = psi + h * node * (
++                c0 + node * (c1 / 2.0 + node * (c2 / 3.0 + node * c3 / 4.0)))
++            x += h * weight * math.cos(angle)
++            y += h * weight * math.sin(angle)
+         psi += h * (c0 + c1 / 2.0 + c2 / 3.0 + c3 / 4.0)
+         node_positions.append((x, y))
+     l0 = packet["l0"]
+@@ -869,29 +910,31 @@ def _build_casadi_nlp(request, config, packet, wall_limit_s=None,
+         c0, c1, c2, c3 = coeffs(
+             kappas[j], kappas[j + 1], etas[j], etas[j + 1])
+         piece_coefficients.append((c0, c1, c2, c3))
+-        for q, weight in zip(nodes, weights):
+-            local_psi = psi + h * q * (
+-                c0 + q * (c1 / 2.0 + q * (c2 / 3.0 + q * c3 / 4.0)))
+-            x += h * weight * ca.cos(local_psi)
+-            y += h * weight * ca.sin(local_psi)
++        displacements, headings = _piece_position_samples(
++            h, (c0, c1, c2, c3), psi, nodes, ca.sin, ca.cos)
++        for q, weight, (dx, dy), local_psi in zip(
++                nodes, weights, displacements, headings):
+             eta = (c1 + q * (2.0 * c2 + 3.0 * q * c3)) / h
+             u = (2.0 * c2 + 6.0 * c3 * q) / (h * h)
+             eta_integral += h * weight * eta * eta
+             u_integral += h * weight * u * u
++            sample_x = x + dx
++            sample_y = y + dy
+             if route_collocation_points is not None \
+                     and route_collocation_weight > 0.0:
+                 point = route_collocation_points[collocation_sample]
+                 collocation_route_penalty += (
+-                    (x - float(point[0])) ** 2 + (y - float(point[1])) ** 2)
++                    (sample_x - float(point[0])) ** 2
++                    + (sample_y - float(point[1])) ** 2)
+             if clearance_fn is not None:
+                 kappa = c0 + q * (c1 + q * (c2 + q * c3))
+                 angles = clearance_proxy.angles[collocation_sample]
+                 for index, offset in enumerate(request.model.offsets):
+                     a, b = offset.x, offset.y
+                     shape = request.vehicle_shapes[offset.vehicle_id]
+-                    center_x = x + ca.cos(local_psi) * a \
++                    center_x = sample_x + ca.cos(local_psi) * a \
+                         - ca.sin(local_psi) * b
+-                    center_y = y + ca.sin(local_psi) * a \
++                    center_y = sample_y + ca.sin(local_psi) * a \
+                         + ca.cos(local_psi) * b
+                     center_x = ca.fmin(ca.fmax(
+                         center_x, clearance_bounds[0]), clearance_bounds[1])
+@@ -909,6 +952,11 @@ def _build_casadi_nlp(request, config, packet, wall_limit_s=None,
+                         0.0, clearance_proxy.target_m + support - clearance)
+                     clearance_proxy_penalty += hinge * hinge
+             collocation_sample += 1
++        for node, weight in zip(nodes, weights):
++            angle = psi + h * node * (
++                c0 + node * (c1 / 2.0 + node * (c2 / 3.0 + node * c3 / 4.0)))
++            x += h * weight * ca.cos(angle)
++            y += h * weight * ca.sin(angle)
+         psi += h * (c0 + c1 / 2.0 + c2 / 3.0 + c3 / 4.0)
+         node_positions.append((x, y))
+     constraints.extend((x - packet["dx"], y - packet["dy"],
+@@ -1624,18 +1672,37 @@ def solve_open_path_guided(request, config, *, route_guides=(),
+             config=config, solver_used=best["result"]["solver"],
+             branch=branch, deadline=deadline_exhausted,
+             deadline_summary=deadline_info)
++    audit_rejections = [
++        attempt for attempt in attempts
++        if attempt.status == "SOLVER_SUCCESS_AUDIT_REJECTED"]
++    all_exceptions = bool(attempts) and all(
++        attempt.status in ("CANDIDATE_CONSTRUCTION_FAILURE", "SOLVER_FAILED")
++        and attempt.solver_status.endswith("EXCEPTION")
++        for attempt in attempts)
+     if deadline_exhausted:
+         status = "BUDGET_EXHAUSTED"
+         reason = "SOFT_BUDGET_EXHAUSTED"
+         detail = "soft wall budget {!r}s exhausted before an audited candidate".format(
+             config.max_seconds)
+-    elif attempts and all(attempt.status in (
+-            "CANDIDATE_CONSTRUCTION_FAILURE", "SOLVER_FAILED")
+-            and attempt.solver_status.endswith("EXCEPTION")
+-            for attempt in attempts):
++    elif audit_rejections:
++        # A later ordinary solver failure must not overwrite the concrete
++        # reason a successful iterate was rejected by the independent audit.
++        status = "NO_ACCEPTED_CANDIDATE"
++        reason = "AUDIT_REJECTED"
++        concrete = audit_rejections[-1].rejection_reason or "unknown"
++        detail = (
++            "solver success was rejected by the independent geometry audit: "
++            "{} ({} of {} attempts)".format(
++                concrete, len(audit_rejections), len(attempts)))
++    elif all_exceptions:
+         status = "NUMERICAL_FAILURE"
+         reason = "ALL_ATTEMPTS_NUMERICAL_FAILURE"
+         detail = "every initial encountered a numerical exception"
++    elif attempts and all(attempt.status == "SOLVER_FAILED"
++                          for attempt in attempts):
++        status = "NO_ACCEPTED_CANDIDATE"
++        reason = "SOLVER_NOT_CONVERGED"
++        detail = "every initial failed to converge and no audit was reached"
+     elif attempts:
+         status = "NO_ACCEPTED_CANDIDATE"
+         reason = attempts[-1].rejection_reason or "NO_AUDITED_CANDIDATE"
+diff --git a/tests/test_virtual_a_optimizer.py b/tests/test_virtual_a_optimizer.py
+index 92cad28..841d0ab 100644
+--- a/tests/test_virtual_a_optimizer.py
++++ b/tests/test_virtual_a_optimizer.py
+@@ -339,6 +339,8 @@ class AcceptanceSolveTests(unittest.TestCase):
+                 request, planner_config(max_initials=2))
+         self.assertNotEqual(result.status, "GEOMETRY_FEASIBLE")
+         self.assertIsNone(result.path)
++        self.assertEqual(result.status, "NO_ACCEPTED_CANDIDATE")
++        self.assertEqual(result.reason, "AUDIT_REJECTED")
+         self.assertTrue(result.attempts)
+         for attempt in result.attempts:
+             self.assertEqual(attempt.status,
+@@ -370,6 +372,117 @@ class AcceptanceSolveTests(unittest.TestCase):
+         self.assertNotEqual(result.status, "GEOMETRY_FEASIBLE")
+         self.assertIsNone(result.path)
+ 
++    def test_audit_rejection_survives_later_solver_failure(self):
++        """A later iteration limit must not overwrite the audited rejection."""
++        request = request_from_fixture("E1")
++
++        def fake_rejection(_request, _config, _packet, guess,
++                           wall_limit_s=None):
++            values = np.asarray(guess.vector, dtype=float).copy()
++            values[1:] = values[1:] * 1.1
++            return {
++                "solver": "ipopt",
++                "z": values,
++                "objective": 1.0,
++                "solver_status": "Solve_Succeeded",
++                "success": True,
++                "iterations": 1,
++                "detail": "fake success",
++                "wall_time_s": 0.0,
++            }
++
++        def fake_failure(_request, _config, _packet, guess,
++                         wall_limit_s=None):
++            return {
++                "solver": "ipopt",
++                "z": None,
++                "objective": None,
++                "solver_status": "Maximum_Iterations_Exceeded",
++                "success": False,
++                "iterations": 120,
++                "detail": "fake iteration limit",
++                "wall_time_s": 0.0,
++            }
++
++        calls = []
++
++        def sequence(*args, **kwargs):
++            calls.append(1)
++            if len(calls) == 1:
++                return fake_rejection(*args, **kwargs)
++            return fake_failure(*args, **kwargs)
++
++        with mock.patch.object(
++                optimizer_module, "_solve_with_ipopt",
++                side_effect=sequence):
++            result = solve_open_path(
++                request, planner_config(max_initials=2))
++        self.assertEqual(result.status, "NO_ACCEPTED_CANDIDATE")
++        self.assertEqual(result.reason, "AUDIT_REJECTED")
++        self.assertIn("ENDPOINT_POSITION_ERROR", result.detail)
++        self.assertEqual(result.attempts[0].status,
++                         "SOLVER_SUCCESS_AUDIT_REJECTED")
++        self.assertEqual(result.attempts[1].status, "SOLVER_FAILED")
++        self.assertEqual(result.attempts[1].rejection_reason,
++                         "Maximum_Iterations_Exceeded")
++
++    def test_all_nonconverged_attempts_report_solver_not_converged(self):
++        request = request_from_fixture("E1")
++
++        def fake_failure(_request, _config, _packet, guess,
++                         wall_limit_s=None):
++            return {
++                "solver": "ipopt",
++                "z": None,
++                "objective": None,
++                "solver_status": "Maximum_Iterations_Exceeded",
++                "success": False,
++                "iterations": 120,
++                "detail": "fake iteration limit",
++                "wall_time_s": 0.0,
++            }
++
++        with mock.patch.object(
++                optimizer_module, "_solve_with_ipopt",
++                side_effect=fake_failure):
++            result = solve_open_path(
++                request, planner_config(max_initials=2))
++        self.assertEqual(result.status, "NO_ACCEPTED_CANDIDATE")
++        self.assertEqual(result.reason, "SOLVER_NOT_CONVERGED")
++        self.assertTrue(result.attempts)
++        self.assertTrue(all(attempt.status == "SOLVER_FAILED"
++                            for attempt in result.attempts))
++
++    def test_explicit_ipopt_never_starts_the_slsqp_fallback(self):
++        request = request_from_fixture("E1")
++
++        def fake_failure(_request, _config, _packet, guess,
++                         wall_limit_s=None):
++            return {
++                "solver": "ipopt",
++                "z": None,
++                "objective": None,
++                "solver_status": "Solve_Failed",
++                "success": False,
++                "iterations": 1,
++                "detail": "fake failure",
++                "wall_time_s": 0.0,
++            }
++
++        with mock.patch.object(
++                optimizer_module, "_solve_with_ipopt",
++                side_effect=fake_failure), mock.patch.object(
++                optimizer_module, "_solve_with_scipy") as fallback:
++            result = solve_open_path(
++                request, planner_config(
++                    solver="ipopt", allow_scipy_fallback=True,
++                    max_initials=1))
++        fallback.assert_not_called()
++        self.assertEqual(result.status, "NO_ACCEPTED_CANDIDATE")
++        self.assertEqual(result.reason, "SOLVER_NOT_CONVERGED")
++        self.assertEqual([attempt.solver for attempt in result.attempts],
++                         ["ipopt"])
++
+     def test_scipy_fallback_is_recorded_explicitly(self):
+         request = request_from_fixture("E1")
+         result = solve_open_path(

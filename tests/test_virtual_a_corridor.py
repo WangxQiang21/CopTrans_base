@@ -1,0 +1,505 @@
+"""C1 tests for exact LOS, greedy simplification and convex corridor chains.
+
+The grids are small synthetic occupancy arrays.  Every generated chain must
+pass the independent polygon-cell SAT audit; explicit ``CORRIDOR_DEGENERATE``
+rejections are allowed and checked separately.
+"""
+import json
+import math
+import time
+import unittest
+
+import numpy as np
+
+from fwis_v3_optimizer.core import Grid
+from fwis_v3_optimizer.formation_continuous_a.contracts import (
+    ConvexCorridor,
+    CorridorChain,
+    GuideRoute,
+    VirtualAContractError,
+    grid_signature,
+)
+from fwis_v3_optimizer.formation_continuous_a.corridor import (
+    audit_corridor_chain,
+    build_corridor_chain,
+)
+from fwis_v3_optimizer.formation_continuous_a.route_processing import (
+    segment_is_free,
+    simplify_route,
+)
+
+
+def _grid(occupied, resolution=0.05, origin_x=0.0, origin_y=0.0):
+    return Grid(np.asarray(occupied, dtype=bool), resolution=resolution,
+                origin_x=origin_x, origin_y=origin_y)
+
+
+def _route(grid, points, source="fixture"):
+    return GuideRoute(
+        points=tuple(points), source=source, grid_sha256=grid_signature(grid))
+
+
+def _cell_box(grid, iy, ix):
+    res = float(grid.res)
+    return (grid.ox + ix * res, grid.oy + iy * res,
+            grid.ox + (ix + 1) * res, grid.oy + (iy + 1) * res)
+
+
+def _signed_twice_area(vertices):
+    return sum(
+        x0 * y1 - x1 * y0
+        for (x0, y0), (x1, y1) in zip(
+            vertices, vertices[1:] + vertices[:1]))
+
+
+def _point_polygon_violation(point, vertices):
+    violation = 0.0
+    for first, second in zip(vertices, vertices[1:] + vertices[:1]):
+        dx = second[0] - first[0]
+        dy = second[1] - first[1]
+        length = math.hypot(dx, dy)
+        if length <= 0.0:
+            continue
+        cross = dx * (point[1] - first[1]) - dy * (point[0] - first[0])
+        if cross < 0.0:
+            violation = max(violation, -cross / length)
+    return violation
+
+
+def _square_corridor(x0, y0, x1, y1, seed_start, seed_end):
+    return ConvexCorridor(
+        seed_start=seed_start,
+        seed_end=seed_end,
+        A=((-1.0, 0.0), (1.0, 0.0), (0.0, -1.0), (0.0, 1.0)),
+        b=(-x0, x1, -y0, y1),
+        vertices=((x0, y0), (x1, y0), (x1, y1), (x0, y1)))
+
+
+class _CorridorAssertions(unittest.TestCase):
+    def _assert_verified(self, grid, chain, audit):
+        self.assertTrue(audit["passed"], audit)
+        self.assertEqual(audit["reason"], "CORRIDOR_CHAIN_VERIFIED")
+        self.assertEqual(audit["region_count"], len(chain.regions))
+        self.assertEqual(len(audit["regions"]), len(chain.regions))
+        self.assertEqual(audit["grid_sha256"], chain.grid_sha256)
+        self.assertEqual(audit["route_source"], chain.route_source)
+        self.assertIsNone(audit["first_collision"])
+        self.assertLessEqual(audit["max_seed_violation_m"], 1e-9)
+        self.assertGreater(audit["min_region_area_m2"], 1e-10)
+        self.assertNotIn("feasible", audit)
+        threshold = min(0.005, 0.1 * float(grid.res))
+        self.assertAlmostEqual(
+            audit["thresholds"]["min_portal_radius_m"], threshold)
+        self.assertEqual(
+            len(audit["portals"]), len(chain.regions) - 1)
+        if len(chain.regions) > 1:
+            self.assertGreaterEqual(audit["min_portal_radius_m"], threshold)
+            self.assertGreater(audit["min_portal_area_m2"], 1e-10)
+        else:
+            self.assertIsNone(audit["min_portal_radius_m"])
+            self.assertIsNone(audit["min_portal_area_m2"])
+        right = grid.ox + grid.width * grid.res
+        top = grid.oy + grid.height * grid.res
+        for index, region in enumerate(chain.regions):
+            twice_area = _signed_twice_area(region.vertices)
+            self.assertGreater(twice_area, 0.0)
+            self.assertAlmostEqual(region.area_m2, 0.5 * twice_area)
+            self.assertEqual(region.vertices[0], min(region.vertices))
+            for x, y in region.vertices:
+                self.assertGreaterEqual(x, grid.ox - 1e-9)
+                self.assertLessEqual(x, right + 1e-9)
+                self.assertGreaterEqual(y, grid.oy - 1e-9)
+                self.assertLessEqual(y, top + 1e-9)
+            self.assertLessEqual(
+                _point_polygon_violation(
+                    region.seed_start, region.vertices), 1e-9)
+            self.assertLessEqual(
+                _point_polygon_violation(
+                    region.seed_end, region.vertices), 1e-9)
+            if index:
+                previous = chain.regions[index - 1].seed_end
+                current = region.seed_start
+                self.assertLessEqual(
+                    math.hypot(previous[0] - current[0],
+                               previous[1] - current[1]), 1e-9)
+        json.dumps(chain.as_dict(), sort_keys=True)
+        json.dumps(audit, sort_keys=True)
+
+
+class LosTests(unittest.TestCase):
+    def test_segment_through_cell_corner_is_rejected(self):
+        occupied = np.zeros((80, 80), dtype=bool)
+        occupied[20, 20] = True
+        grid = _grid(occupied)
+        self.assertFalse(
+            segment_is_free(grid, (0.5, 0.5), (1.5, 1.5)))
+        self.assertFalse(
+            segment_is_free(grid, (0.5, 1.5), (1.5, 0.5)))
+        self.assertTrue(
+            segment_is_free(grid, (0.5, 0.4), (1.5, 1.4)))
+
+    def test_zero_length_segment_is_a_point(self):
+        occupied = np.zeros((80, 80), dtype=bool)
+        occupied[20, 20] = True
+        grid = _grid(occupied)
+        self.assertTrue(segment_is_free(grid, (0.5, 0.5), (0.5, 0.5)))
+        self.assertFalse(
+            segment_is_free(grid, (1.0, 1.0), (1.0, 1.0)))
+
+    def test_margin_is_strict_and_outside_is_blocked(self):
+        occupied = np.zeros((80, 80), dtype=bool)
+        occupied[20, 20] = True
+        grid = _grid(occupied)
+        self.assertTrue(
+            segment_is_free(grid, (0.5, 1.2), (1.5, 1.2), margin_m=0.1))
+        self.assertFalse(
+            segment_is_free(grid, (0.5, 1.2), (1.5, 1.2), margin_m=0.2))
+        self.assertFalse(segment_is_free(grid, (-0.1, 0.5), (0.5, 0.5)))
+        self.assertFalse(segment_is_free(grid, (0.5, 0.5), (4.1, 0.5)))
+
+
+class RouteSimplificationTests(unittest.TestCase):
+    def _wall_grid(self):
+        occupied = np.zeros((80, 80), dtype=bool)
+        occupied[0:40, 20] = True
+        return _grid(occupied)
+
+    def test_farthest_visible_greedy_keeps_corner(self):
+        grid = self._wall_grid()
+        route = _route(grid, [
+            (0.5, 0.5), (0.5, 2.5), (3.0, 2.5), (3.0, 0.5)])
+        simplified = simplify_route(grid, route)
+        self.assertEqual(
+            simplified.points,
+            ((0.5, 0.5), (0.5, 2.5), (3.0, 0.5)))
+        self.assertEqual(simplified.source, route.source)
+        self.assertEqual(simplified.grid_sha256, route.grid_sha256)
+        for first, second in zip(
+                simplified.points, simplified.points[1:]):
+            self.assertTrue(segment_is_free(grid, first, second))
+
+    def test_diagonal_corner_cut_rejects_the_route(self):
+        occupied = np.zeros((80, 80), dtype=bool)
+        occupied[10, 11] = True
+        grid = _grid(occupied)
+        route = _route(grid, [(0.525, 0.525), (0.575, 0.575)])
+        self.assertFalse(
+            segment_is_free(grid, route.points[0], route.points[1]))
+        with self.assertRaises(VirtualAContractError) as raised:
+            simplify_route(grid, route)
+        self.assertEqual(raised.exception.reason, "ROUTE_SEGMENT_BLOCKED")
+
+    def test_two_point_route_is_preserved(self):
+        grid = _grid(np.zeros((100, 100), dtype=bool))
+        route = _route(grid, [(0.5, 0.5), (4.5, 3.5)])
+        simplified = simplify_route(grid, route)
+        self.assertEqual(simplified.points, route.points)
+        self.assertEqual(simplified.source, route.source)
+
+
+class ContractTests(unittest.TestCase):
+    def test_convex_corridor_validation_and_area(self):
+        corridor = _square_corridor(
+            1.0, 1.0, 2.0, 2.0, (1.2, 1.2), (1.8, 1.8))
+        self.assertEqual(corridor.area_m2, 1.0)
+        self.assertEqual(corridor.vertices[0], (1.0, 1.0))
+        with self.assertRaises(VirtualAContractError) as raised:
+            ConvexCorridor(
+                seed_start=(1.2, 1.2), seed_end=(1.8, 1.8),
+                A=((2.0, 0.0), (1.0, 0.0), (0.0, -1.0), (0.0, 1.0)),
+                b=(-1.0, 2.0, -1.0, 2.0),
+                vertices=((1.0, 1.0), (2.0, 1.0), (2.0, 2.0), (1.0, 2.0)))
+        self.assertEqual(
+            raised.exception.reason, "INVALID_CONVEX_CORRIDOR")
+        with self.assertRaises(VirtualAContractError) as raised:
+            ConvexCorridor(
+                seed_start=(1.2, 1.2), seed_end=(1.8, 1.8),
+                A=((-1.0, 0.0), (1.0, 0.0), (0.0, -1.0), (0.0, 1.0)),
+                b=(-1.0, 2.0, -1.0, 2.0),
+                vertices=((1.0, 2.0), (2.0, 2.0), (2.0, 1.0), (1.0, 1.0)))
+        self.assertEqual(
+            raised.exception.reason, "INVALID_CONVEX_CORRIDOR")
+
+    def test_chain_digest_binds_geometry_and_source(self):
+        grid = _grid(np.zeros((80, 80), dtype=bool))
+        first = _square_corridor(
+            1.0, 1.0, 2.0, 2.0, (1.2, 1.2), (1.8, 1.8))
+        same = _square_corridor(
+            1.0, 1.0, 2.0, 2.0, (1.2, 1.2), (1.8, 1.8))
+        moved = _square_corridor(
+            1.1, 1.0, 2.1, 2.0, (1.2, 1.2), (1.8, 1.8))
+        digest = grid_signature(grid)
+        chain = CorridorChain((first,), "fixture", digest)
+        self.assertEqual(
+            chain.digest,
+            CorridorChain((same,), "fixture", digest).digest)
+        self.assertNotEqual(
+            chain.digest,
+            CorridorChain((moved,), "fixture", digest).digest)
+        self.assertNotEqual(
+            chain.digest,
+            CorridorChain((same,), "other", digest).digest)
+        with self.assertRaises(VirtualAContractError) as raised:
+            CorridorChain((), "fixture", digest)
+        self.assertEqual(raised.exception.reason, "INVALID_CORRIDOR_CHAIN")
+
+
+class CorridorCategoryTests(_CorridorAssertions):
+    def test_empty_field_chain_is_verified_and_deterministic(self):
+        grid = _grid(np.zeros((100, 100), dtype=bool))
+        route = _route(grid, [
+            (0.5, 0.5), (2.0, 0.5), (2.0, 2.5), (4.0, 2.5)])
+        first = build_corridor_chain(grid, route)
+        second = build_corridor_chain(grid, route)
+        first_audit = audit_corridor_chain(grid, first)
+        second_audit = audit_corridor_chain(grid, second)
+        self._assert_verified(grid, first, first_audit)
+        self.assertEqual(first.digest, second.digest)
+        self.assertEqual(
+            [region.vertices for region in first.regions],
+            [region.vertices for region in second.regions])
+        self.assertEqual(first.as_dict(), second.as_dict())
+        self.assertEqual(first_audit, second_audit)
+        self.assertEqual(first_audit["region_count"], 3)
+
+    def test_single_box_plane_matches_hand_calculation(self):
+        occupied = np.zeros((80, 80), dtype=bool)
+        occupied[20:40, 20:40] = True
+        grid = _grid(occupied)
+        route = _route(grid, [(1.0, 3.0), (3.0, 3.0), (3.0, 0.5)])
+        chain = build_corridor_chain(grid, route)
+        audit = audit_corridor_chain(grid, chain)
+        self._assert_verified(grid, chain, audit)
+        expected_b = (-3.0 + 0.05 - 2.0) / 2.0 - 1e-8
+        north = [
+            limit for normal, limit in zip(
+                chain.regions[0].A, chain.regions[0].b)
+            if abs(normal[0]) < 1e-12 and abs(normal[1] + 1.0) < 1e-12]
+        self.assertTrue(
+            any(abs(value - expected_b) < 1e-12 for value in north))
+        west = [
+            limit for normal, limit in zip(
+                chain.regions[1].A, chain.regions[1].b)
+            if abs(normal[1]) < 1e-12 and abs(normal[0] + 1.0) < 1e-12]
+        self.assertTrue(
+            any(abs(value - expected_b) < 1e-12 for value in west))
+        minimum_y = min(y for _x, y in chain.regions[0].vertices)
+        self.assertAlmostEqual(minimum_y, 2.475 + 1e-8)
+        minimum_x = min(x for x, _y in chain.regions[1].vertices)
+        self.assertAlmostEqual(minimum_x, 2.475 + 1e-8)
+
+    def test_l_corner_chain(self):
+        occupied = np.zeros((100, 100), dtype=bool)
+        occupied[10:60, 20:24] = True
+        grid = _grid(occupied)
+        route = _route(grid, [
+            (0.5, 0.25), (0.5, 3.5), (3.5, 3.5), (3.5, 0.25)])
+        chain = build_corridor_chain(grid, route)
+        audit = audit_corridor_chain(grid, chain)
+        self._assert_verified(grid, chain, audit)
+        self.assertEqual(audit["region_count"], 3)
+        self.assertEqual(len(audit["portals"]), 2)
+
+    def test_concave_u_chain_is_verified(self):
+        occupied = np.zeros((120, 120), dtype=bool)
+        occupied[10:60, 20:24] = True
+        occupied[10:60, 60:64] = True
+        occupied[10:14, 20:64] = True
+        grid = _grid(occupied)
+        route = _route(grid, [(2.1, 1.5), (2.1, 3.5), (4.0, 3.5)])
+        chain = build_corridor_chain(grid, route)
+        audit = audit_corridor_chain(grid, chain)
+        self._assert_verified(grid, chain, audit)
+        self.assertEqual(audit["region_count"], 2)
+        bottom_wall_center = (2.025, 0.625)
+        for region in chain.regions:
+            self.assertGreater(
+                _point_polygon_violation(
+                    bottom_wall_center, region.vertices), 1e-6)
+
+    def test_narrow_gap_chain_is_verified(self):
+        occupied = np.zeros((100, 100), dtype=bool)
+        occupied[0:38, :] = True
+        occupied[44:100, :] = True
+        grid = _grid(occupied)
+        route = _route(grid, [
+            (0.5, 2.05), (2.5, 2.05), (4.5, 2.05)])
+        chain = build_corridor_chain(grid, route)
+        audit = audit_corridor_chain(grid, chain)
+        self._assert_verified(grid, chain, audit)
+        self.assertGreaterEqual(audit["min_portal_radius_m"], 0.005)
+        for region in chain.regions:
+            for _x, y in region.vertices:
+                self.assertGreaterEqual(y, 1.9 - 1e-9)
+                self.assertLessEqual(y, 2.2 + 1e-9)
+
+    def test_map_boundary_chain_is_verified(self):
+        grid = _grid(np.zeros((80, 80), dtype=bool))
+        route = _route(grid, [
+            (0.025, 0.025), (3.975, 0.025),
+            (3.975, 3.975), (0.025, 3.975)])
+        chain = build_corridor_chain(grid, route)
+        audit = audit_corridor_chain(grid, chain)
+        self._assert_verified(grid, chain, audit)
+        self.assertEqual(audit["region_count"], 3)
+        for region in chain.regions:
+            self.assertGreaterEqual(
+                min(x for x, _y in region.vertices), 1e-8 - 1e-12)
+            self.assertLessEqual(
+                max(x for x, _y in region.vertices), 4.0 - 1e-8 + 1e-12)
+            self.assertGreaterEqual(
+                min(y for _x, y in region.vertices), 1e-8 - 1e-12)
+            self.assertLessEqual(
+                max(y for _x, y in region.vertices), 4.0 - 1e-8 + 1e-12)
+
+    def test_far_obstacle_inside_padding_box_is_separated(self):
+        occupied = np.zeros((100, 100), dtype=bool)
+        occupied[40, 78] = True
+        grid = _grid(occupied)
+        route = _route(grid, [(0.5, 2.0), (2.0, 2.0)])
+        chain = build_corridor_chain(grid, route)
+        audit = audit_corridor_chain(grid, chain)
+        self._assert_verified(grid, chain, audit)
+        expected = 2.975 - 1e-8
+        self.assertAlmostEqual(
+            max(x for x, _y in chain.regions[0].vertices), expected)
+        east = [
+            limit for normal, limit in zip(
+                chain.regions[0].A, chain.regions[0].b)
+            if abs(normal[1]) < 1e-12 and abs(normal[0] - 1.0) < 1e-12]
+        self.assertTrue(
+            any(abs(value - expected) < 1e-12 for value in east))
+
+    def test_seed_touching_obstacle_fails_explicitly(self):
+        occupied = np.zeros((80, 80), dtype=bool)
+        occupied[20, 20] = True
+        grid = _grid(occupied)
+        route = _route(grid, [(0.5, 0.5), (1.0, 1.0)])
+        self.assertFalse(
+            segment_is_free(grid, route.points[0], route.points[1]))
+        with self.assertRaises(VirtualAContractError) as raised:
+            simplify_route(grid, route)
+        self.assertEqual(raised.exception.reason, "ROUTE_SEGMENT_BLOCKED")
+        with self.assertRaises(VirtualAContractError) as raised:
+            build_corridor_chain(grid, route)
+        self.assertEqual(raised.exception.reason, "CORRIDOR_DEGENERATE")
+
+    def test_route_point_outside_map_fails_explicitly(self):
+        grid = _grid(np.zeros((80, 80), dtype=bool))
+        route = _route(grid, [(-0.1, 0.5), (1.0, 0.5)])
+        self.assertFalse(
+            segment_is_free(grid, route.points[0], route.points[1]))
+        with self.assertRaises(VirtualAContractError) as raised:
+            build_corridor_chain(grid, route)
+        self.assertEqual(raised.exception.reason, "CORRIDOR_DEGENERATE")
+
+
+class AuditTests(unittest.TestCase):
+    def test_independent_sat_catches_unreported_cell_overlap(self):
+        occupied = np.zeros((80, 80), dtype=bool)
+        occupied[20, 20] = True
+        grid = _grid(occupied)
+        corridor = _square_corridor(
+            0.9, 0.9, 1.2, 1.2, (0.95, 0.95), (1.15, 1.15))
+        chain = CorridorChain(
+            (corridor,), "negative", grid_signature(grid))
+        audit = audit_corridor_chain(grid, chain)
+        self.assertFalse(audit["passed"])
+        self.assertEqual(audit["reason"], "CORRIDOR_CELL_OVERLAP")
+        self.assertEqual(
+            audit["first_collision"], {"region": 0, "cell": [20, 20]})
+
+    def test_point_touch_portal_is_degenerate(self):
+        grid = _grid(np.zeros((80, 80), dtype=bool))
+        first = _square_corridor(
+            0.5, 0.5, 1.5, 1.5, (0.75, 0.75), (1.5, 1.5))
+        second = _square_corridor(
+            1.5, 1.5, 2.5, 2.5, (1.5, 1.5), (2.25, 2.25))
+        chain = CorridorChain(
+            (first, second), "touch", grid_signature(grid))
+        audit = audit_corridor_chain(grid, chain)
+        self.assertFalse(audit["passed"])
+        self.assertEqual(audit["reason"], "CORRIDOR_DEGENERATE")
+        self.assertIsNone(audit["min_portal_radius_m"])
+
+    def test_audit_rejects_seed_discontinuity(self):
+        grid = _grid(np.zeros((80, 80), dtype=bool))
+        first = _square_corridor(
+            0.5, 0.5, 2.0, 2.0, (0.75, 0.75), (1.5, 1.5))
+        second = _square_corridor(
+            1.0, 1.0, 2.5, 2.5, (1.6, 1.6), (2.25, 2.25))
+        chain = CorridorChain(
+            (first, second), "jump", grid_signature(grid))
+        audit = audit_corridor_chain(grid, chain)
+        self.assertFalse(audit["passed"])
+        self.assertEqual(
+            audit["reason"], "CORRIDOR_SEED_DISCONTINUITY")
+
+    def test_audit_rejects_vertex_outside_map(self):
+        grid = _grid(np.zeros((80, 80), dtype=bool))
+        corridor = _square_corridor(
+            -0.1, 0.5, 0.5, 1.5, (0.1, 0.75), (0.4, 1.25))
+        chain = CorridorChain(
+            (corridor,), "outside", grid_signature(grid))
+        audit = audit_corridor_chain(grid, chain)
+        self.assertFalse(audit["passed"])
+        self.assertEqual(audit["reason"], "CORRIDOR_MAP_BOUNDARY")
+
+    def test_audit_rejects_grid_identity_mismatch(self):
+        grid = _grid(np.zeros((80, 80), dtype=bool))
+        corridor = _square_corridor(
+            0.5, 0.5, 1.5, 1.5, (0.75, 0.75), (1.25, 1.25))
+        chain = CorridorChain((corridor,), "mismatch", "0" * 64)
+        audit = audit_corridor_chain(grid, chain)
+        self.assertFalse(audit["passed"])
+        self.assertEqual(audit["reason"], "CORRIDOR_GRID_MISMATCH")
+
+    def test_audit_rejects_halfspaces_looser_than_polygon(self):
+        occupied = np.zeros((5, 5), dtype=bool)
+        occupied[0, 0] = True
+        grid = _grid(occupied, resolution=1.0)
+        corridor = ConvexCorridor(
+            seed_start=(3.2, 3.2), seed_end=(3.8, 3.2),
+            A=((-1.0, 0.0), (1.0, 0.0), (0.0, -1.0), (0.0, 1.0)),
+            b=(0.0, 4.0, 0.0, 4.0),
+            vertices=((3.0, 3.0), (4.0, 3.0), (4.0, 4.0), (3.0, 4.0)))
+        chain = CorridorChain((corridor,), "loose", grid_signature(grid))
+        audit = audit_corridor_chain(grid, chain)
+        self.assertFalse(audit["passed"])
+        self.assertEqual(audit["reason"], "CORRIDOR_INVALID")
+        self.assertIn("halfspace boundary", audit["detail"])
+
+    def test_audit_rejects_vertex_just_outside_map(self):
+        grid = _grid(np.zeros((20, 20), dtype=bool), resolution=0.1)
+        corridor = _square_corridor(
+            -5e-10, 0.5, 0.5, 1.5, (0.1, 0.75), (0.4, 1.25))
+        chain = CorridorChain((corridor,), "subnanometre", grid_signature(grid))
+        audit = audit_corridor_chain(grid, chain)
+        self.assertFalse(audit["passed"])
+        self.assertEqual(audit["reason"], "CORRIDOR_MAP_BOUNDARY")
+
+
+class PerformanceTests(_CorridorAssertions):
+    def test_fifty_by_fifty_sample_timing(self):
+        occupied = np.zeros((50, 50), dtype=bool)
+        occupied[0:41, 10] = True
+        occupied[9:50, 20] = True
+        occupied[0:41, 30] = True
+        occupied[9:50, 40] = True
+        grid = _grid(occupied, resolution=0.1)
+        route = _route(grid, [
+            (0.5, 4.5), (1.5, 4.5), (1.5, 0.5), (2.5, 0.5),
+            (2.5, 4.5), (3.5, 4.5), (3.5, 0.5), (4.5, 0.5)])
+        started = time.perf_counter()
+        chain = build_corridor_chain(grid, route)
+        built = time.perf_counter()
+        audit = audit_corridor_chain(grid, chain)
+        audited = time.perf_counter()
+        self._assert_verified(grid, chain, audit)
+        print("c1_50x50_build_s={:.6f} audit_s={:.6f}".format(
+            built - started, audited - built))
+        self.assertLess(audited - started, 30.0)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1,0 +1,155 @@
+diff --git a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/contracts.py b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/contracts.py
+index d109ebe..a8b781a 100644
+--- a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/contracts.py
++++ b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/contracts.py
+@@ -1884,6 +1884,141 @@ class GuideRoute:
+         }
+ 
+ 
++@dataclass(frozen=True)
++class ConvexCorridor:
++    """One closed convex separating-hyperplane corridor region.
++
++    ``A`` rows are outward unit normals and ``b`` the matching halfspace
++    limits, so the region is ``{p : A p <= b}``.  ``vertices`` are the closed
++    polygon in canonical counter-clockwise order.  The seed is the guide
++    segment the region was built for; a corridor is reference-point geometry
++    only and carries no three-vehicle safety claim.
++    """
++
++    seed_start: tuple
++    seed_end: tuple
++    A: tuple
++    b: tuple
++    vertices: tuple
++
++    def __post_init__(self):
++        try:
++            seed_start = (float(self.seed_start[0]), float(self.seed_start[1]))
++            seed_end = (float(self.seed_end[0]), float(self.seed_end[1]))
++            rows = tuple((float(row[0]), float(row[1])) for row in self.A)
++            limits = tuple(float(value) for value in self.b)
++            vertices = tuple(
++                (float(vertex[0]), float(vertex[1]))
++                for vertex in self.vertices)
++        except (TypeError, ValueError, IndexError) as exc:
++            raise VirtualAContractError(
++                "INVALID_CONVEX_CORRIDOR",
++                "corridor fields must be numeric pairs") from exc
++        for x, y in (seed_start, seed_end):
++            if not (math.isfinite(x) and math.isfinite(y)):
++                raise VirtualAContractError(
++                    "INVALID_CONVEX_CORRIDOR", "seed is not finite")
++        if len(rows) != len(limits) or len(rows) < 3:
++            raise VirtualAContractError(
++                "INVALID_CONVEX_CORRIDOR",
++                "A and b must have equal length >= 3")
++        for x, y in rows:
++            if not (math.isfinite(x) and math.isfinite(y)):
++                raise VirtualAContractError(
++                    "INVALID_CONVEX_CORRIDOR", "normal is not finite")
++            if abs(math.hypot(x, y) - 1.0) > 1e-9:
++                raise VirtualAContractError(
++                    "INVALID_CONVEX_CORRIDOR", "normal is not unit length")
++        for value in limits:
++            if not math.isfinite(value):
++                raise VirtualAContractError(
++                    "INVALID_CONVEX_CORRIDOR", "halfspace limit is not finite")
++        if len(vertices) < 3:
++            raise VirtualAContractError(
++                "INVALID_CONVEX_CORRIDOR",
++                "a corridor polygon needs at least three vertices")
++        for x, y in vertices:
++            if not (math.isfinite(x) and math.isfinite(y)):
++                raise VirtualAContractError(
++                    "INVALID_CONVEX_CORRIDOR", "vertex is not finite")
++        twice_area = sum(
++            x0 * y1 - x1 * y0
++            for (x0, y0), (x1, y1) in zip(
++                vertices, vertices[1:] + vertices[:1]))
++        if not twice_area > 0.0:
++            raise VirtualAContractError(
++                "INVALID_CONVEX_CORRIDOR",
++                "vertices must be counter-clockwise with positive area")
++        object.__setattr__(self, "seed_start", seed_start)
++        object.__setattr__(self, "seed_end", seed_end)
++        object.__setattr__(self, "A", rows)
++        object.__setattr__(self, "b", limits)
++        object.__setattr__(self, "vertices", vertices)
++
++    @property
++    def area_m2(self):
++        return 0.5 * sum(
++            x0 * y1 - x1 * y0
++            for (x0, y0), (x1, y1) in zip(
++                self.vertices, self.vertices[1:] + self.vertices[:1]))
++
++    def as_dict(self):
++        return {
++            "seed_start": [self.seed_start[0], self.seed_start[1]],
++            "seed_end": [self.seed_end[0], self.seed_end[1]],
++            "A": [[row[0], row[1]] for row in self.A],
++            "b": [value for value in self.b],
++            "vertices": [[x, y] for x, y in self.vertices],
++            "area_m2": self.area_m2,
++        }
++
++
++@dataclass(frozen=True)
++class CorridorChain:
++    """An ordered chain of convex corridors built from one guide route."""
++
++    regions: tuple
++    route_source: str
++    grid_sha256: str
++
++    def __post_init__(self):
++        regions = tuple(self.regions)
++        if not regions or any(
++                not isinstance(region, ConvexCorridor)
++                for region in regions):
++            raise VirtualAContractError(
++                "INVALID_CORRIDOR_CHAIN",
++                "regions must be a non-empty sequence of ConvexCorridor")
++        if not isinstance(self.route_source, str) or not self.route_source:
++            raise VirtualAContractError(
++                "INVALID_CORRIDOR_CHAIN",
++                "route_source must be a non-empty string")
++        if not isinstance(self.grid_sha256, str) or len(self.grid_sha256) != 64:
++            raise VirtualAContractError(
++                "INVALID_CORRIDOR_CHAIN",
++                "grid_sha256 must be 64 hex characters")
++        object.__setattr__(self, "regions", regions)
++
++    def _payload(self):
++        return {
++            "regions": [region.as_dict() for region in self.regions],
++            "route_source": self.route_source,
++            "grid_sha256": self.grid_sha256,
++            "is_executable_path": False,
++        }
++
++    @property
++    def digest(self):
++        payload = json.dumps(
++            self._payload(), sort_keys=True, separators=(",", ":"))
++        return hashlib.sha256(payload.encode("utf-8")).hexdigest()
++
++    def as_dict(self):
++        payload = self._payload()
++        payload["digest"] = self.digest
++        return payload
++
++
+ @dataclass(frozen=True)
+ class CachedClearanceField:
+     """Coarse immutable clearance cache for the NLP guidance proxy.
+@@ -2508,7 +2643,7 @@ __all__ = [
+     "G4_RESULT_STATUSES", "G4_EXECUTABLE_STATUSES",
+     "PLAYBACK_SEMANTIC_VERSION", "PLAYBACK_CERTIFICATION",
+     "CollisionConfig", "RouteGuideConfig", "GuideRoute", "ObstacleContext",
+-    "CachedClearanceField",
++    "ConvexCorridor", "CorridorChain", "CachedClearanceField",
+     "VirtualAMapRequest", "VirtualAResult",
+     "grid_occupancy_sha256", "grid_summary", "grid_signature",
+     "grid_summary_sha256", "planning_context", "planning_context_sha256",

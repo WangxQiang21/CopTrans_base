@@ -1,0 +1,27 @@
+base_commit: 23fd16227e75a68f03f3ac7483555063c8189313
+current_head_at_evidence: 23fd16227e75a68f03f3ac7483555063c8189313
+branch: feature/virtual-rigid-formation-a
+worktree: uncommitted at evidence generation
+
+status --porcelain=v1:
+M catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/audit.py
+ M catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/contracts.py
+ M catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/integration_bounds.py
+ M catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/optimizer.py
+ M tests/test_virtual_a_optimizer.py
+?? catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py
+?? catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/route_processing.py
+?? evaluation/virtual_a_corridor/
+?? plan/virtual_a_corridor_v01/
+?? tests/fixtures/virtual_a_corridor/
+?? tests/test_virtual_a_audit_evaluation_guard.py
+?? tests/test_virtual_a_collocation.py
+?? tests/test_virtual_a_corridor.py
+
+diff --stat:
+.../formation_continuous_a/audit.py                |  69 +++++++++--
+ .../formation_continuous_a/contracts.py            | 137 ++++++++++++++++++++-
+ .../formation_continuous_a/integration_bounds.py   | 114 ++++++++++++++++-
+ .../formation_continuous_a/optimizer.py            | 125 ++++++++++++++-----
+ tests/test_virtual_a_optimizer.py                  | 113 +++++++++++++++++
+ 5 files changed, 513 insertions(+), 45 deletions(-)

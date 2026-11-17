@@ -1,0 +1,698 @@
+"""Separating-hyperplane convex corridors and their independent audit.
+
+For every seed segment of a guide route this module builds a small local box
+``B`` (the seed bounding box expanded by ``box_padding_m``, clipped to the map
+with a 1e-8 m inset).  Every occupied closed cell intersecting ``B`` contributes
+one halfspace whose unit normal is the exact seed/cell nearest-pair direction.
+The corridor is ``B`` intersected with all halfspaces, stored with canonical
+counter-clockwise vertices.
+
+This is reference-point geometry only.  ``d_safe`` is zero: a corridor says
+nothing about the three-vehicle swept OBB safety, which remains with the
+unchanged final audit.  The independent auditor deliberately does not trust the
+generating halfspaces for obstacle containment: it traverses all original
+occupied cells intersecting each polygon's bounding box and applies a
+polygon-versus-cell SAT, treating a touching edge as a collision.
+"""
+import math
+
+import numpy as np
+from scipy.optimize import linprog
+
+from .contracts import (
+    ConvexCorridor,
+    CorridorChain,
+    GuideRoute,
+    VirtualAContractError,
+    grid_signature,
+)
+from .route_processing import _box_corners, _segment_box_nearest_pair
+
+
+_MAP_INSET_M = 1e-8
+_PLANE_INSET_M = 1e-8
+_RHO_MAX_M = 0.05
+_MIN_REGION_AREA_M2 = 1e-10
+_SEED_VIOLATION_TOL_M = 1e-9
+_TOUCH_TOL_M = 1e-9
+_VERTEX_DEDUP_M = 1e-12
+_HALFSPACE_MATCH_TOL_M = 1e-9
+_MIN_PORTAL_RADIUS_FLOOR_M = 0.005
+_MIN_PORTAL_RADIUS_CELL_FRACTION = 0.1
+
+
+class _DegenerateSeed(Exception):
+    """Internal one-attempt rejection of a seed; converted to a contract error."""
+
+
+def _portal_threshold_m(grid):
+    return min(_MIN_PORTAL_RADIUS_FLOOR_M,
+               _MIN_PORTAL_RADIUS_CELL_FRACTION * float(grid.res))
+
+
+def _clip_polygon(vertices, axis, limit):
+    """Clip a convex polygon by ``axis . p <= limit`` (Sutherland-Hodgman)."""
+    if len(vertices) < 3:
+        return []
+    kept = []
+    count = len(vertices)
+    for index in range(count):
+        point = vertices[index]
+        following = vertices[(index + 1) % count]
+        point_value = axis[0] * point[0] + axis[1] * point[1] - limit
+        following_value = (
+            axis[0] * following[0] + axis[1] * following[1] - limit)
+        point_inside = point_value <= 0.0
+        following_inside = following_value <= 0.0
+        if point_inside:
+            kept.append(point)
+        if point_inside != following_inside:
+            denominator = point_value - following_value
+            if denominator != 0.0:
+                ratio = point_value / denominator
+                kept.append((
+                    point[0] + ratio * (following[0] - point[0]),
+                    point[1] + ratio * (following[1] - point[1])))
+    result = []
+    for point in kept:
+        if not result or math.hypot(
+                point[0] - result[-1][0],
+                point[1] - result[-1][1]) > _VERTEX_DEDUP_M:
+            result.append(point)
+    if len(result) > 1 and math.hypot(
+            result[0][0] - result[-1][0],
+            result[0][1] - result[-1][1]) <= _VERTEX_DEDUP_M:
+        result.pop()
+    return result
+
+
+def _canonical_vertices(vertices):
+    """Return ``(counter-clockwise canonical vertices, area)`` or ``None``."""
+    points = list(vertices)
+    cleaned = []
+    for point in points:
+        if not cleaned or math.hypot(
+                point[0] - cleaned[-1][0],
+                point[1] - cleaned[-1][1]) > _VERTEX_DEDUP_M:
+            cleaned.append(point)
+    if len(cleaned) > 1 and math.hypot(
+            cleaned[0][0] - cleaned[-1][0],
+            cleaned[0][1] - cleaned[-1][1]) <= _VERTEX_DEDUP_M:
+        cleaned.pop()
+    if len(cleaned) < 3:
+        return None
+    twice_area = sum(
+        x0 * y1 - x1 * y0
+        for (x0, y0), (x1, y1) in zip(
+            cleaned, cleaned[1:] + cleaned[:1]))
+    if twice_area == 0.0:
+        return None
+    if twice_area < 0.0:
+        cleaned.reverse()
+        twice_area = -twice_area
+    start = min(range(len(cleaned)), key=lambda index: cleaned[index])
+    cleaned = cleaned[start:] + cleaned[:start]
+    return tuple(cleaned), 0.5 * twice_area
+
+
+def _edge_constraints(vertices):
+    """Outward halfspaces of a counter-clockwise convex polygon."""
+    constraints = []
+    for point, following in zip(vertices, vertices[1:] + vertices[:1]):
+        dx = following[0] - point[0]
+        dy = following[1] - point[1]
+        length = math.hypot(dx, dy)
+        if length <= 0.0:
+            continue
+        normal = (dy / length, -dx / length)
+        constraints.append(
+            (normal, normal[0] * point[0] + normal[1] * point[1]))
+    return constraints
+
+
+def _signed_twice_area(vertices):
+    return sum(
+        x0 * y1 - x1 * y0
+        for (x0, y0), (x1, y1) in zip(
+            vertices, vertices[1:] + vertices[:1]))
+
+
+def _seed_box(grid, start, end, padding):
+    left = grid.ox + _MAP_INSET_M
+    bottom = grid.oy + _MAP_INSET_M
+    right = grid.ox + grid.width * grid.res - _MAP_INSET_M
+    top = grid.oy + grid.height * grid.res - _MAP_INSET_M
+    if right <= left or top <= bottom:
+        raise _DegenerateSeed("map is too small for a corridor box")
+    x0 = max(left, min(start[0], end[0]) - padding)
+    x1 = min(right, max(start[0], end[0]) + padding)
+    y0 = max(bottom, min(start[1], end[1]) - padding)
+    y1 = min(top, max(start[1], end[1]) + padding)
+    if x1 <= x0 or y1 <= y0:
+        raise _DegenerateSeed("empty corridor box after map clipping")
+    return x0, y0, x1, y1
+
+
+def _occupied_cells(grid, x0, y0, x1, y1):
+    """All occupied cells whose closed square touches the search box.
+
+    One extra cell on every index boundary is included on purpose: a cell that
+    merely touches ``B`` is still inside the closed expanded range and must not
+    be skipped by an unproved distance argument.
+    """
+    res = float(grid.res)
+    ix0 = max(0, int(math.floor((x0 - grid.ox) / res)) - 1)
+    ix1 = min(grid.width - 1, int(math.floor((x1 - grid.ox) / res)) + 1)
+    iy0 = max(0, int(math.floor((y0 - grid.oy) / res)) - 1)
+    iy1 = min(grid.height - 1, int(math.floor((y1 - grid.oy) / res)) + 1)
+    if ix1 < ix0 or iy1 < iy0:
+        return
+    block = np.asarray(grid.occ[iy0:iy1 + 1, ix0:ix1 + 1], dtype=bool)
+    rows, columns = np.nonzero(block)
+    for row, column in zip(rows.tolist(), columns.tolist()):
+        yield iy0 + row, ix0 + column
+
+
+def _cell_box(grid, iy, ix):
+    res = float(grid.res)
+    return (
+        grid.ox + ix * res, grid.oy + iy * res,
+        grid.ox + (ix + 1) * res, grid.oy + (iy + 1) * res)
+
+
+def _build_region(grid, start, end, padding):
+    length = math.hypot(end[0] - start[0], end[1] - start[1])
+    if length <= _VERTEX_DEDUP_M:
+        raise _DegenerateSeed("zero-length seed")
+    x0, y0, x1, y1 = _seed_box(grid, start, end, padding)
+    constraints = [
+        ((-1.0, 0.0), -x0),
+        ((1.0, 0.0), x1),
+        ((0.0, -1.0), -y0),
+        ((0.0, 1.0), y1),
+    ]
+    pairs = []
+    for iy, ix in _occupied_cells(grid, x0, y0, x1, y1):
+        distance, segment_point, box_point = _segment_box_nearest_pair(
+            start, end, _cell_box(grid, iy, ix))
+        if segment_point is None or distance <= 0.0:
+            raise _DegenerateSeed(
+                "seed touches occupied cell ({}, {})".format(iy, ix))
+        normal = (
+            (box_point[0] - segment_point[0]) / distance,
+            (box_point[1] - segment_point[1]) / distance)
+        high = max(
+            normal[0] * start[0] + normal[1] * start[1],
+            normal[0] * end[0] + normal[1] * end[1])
+        low = min(
+            normal[0] * corner[0] + normal[1] * corner[1]
+            for corner in _box_corners(_cell_box(grid, iy, ix)))
+        gap = low - high
+        if gap <= 0.0:
+            raise _DegenerateSeed(
+                "occupied cell ({}, {}) is not separated from the seed".format(
+                    iy, ix))
+        pairs.append((iy, ix, normal, high, low, gap))
+    if pairs:
+        rho = min(_RHO_MAX_M, min(pair[5] for pair in pairs) / 4.0)
+    else:
+        rho = 0.0
+    for iy, ix, normal, high, low, _gap in sorted(
+            pairs, key=lambda pair: (pair[0], pair[1])):
+        constraints.append(
+            (normal, (high + rho + low) / 2.0 - _PLANE_INSET_M))
+    vertices = [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]
+    for axis, limit in constraints:
+        vertices = _clip_polygon(vertices, axis, limit)
+        if len(vertices) < 3:
+            raise _DegenerateSeed(
+                "empty polygon after clipping by a separating halfspace")
+    canonical = _canonical_vertices(vertices)
+    if canonical is None:
+        raise _DegenerateSeed("empty corridor polygon")
+    vertices, area = canonical
+    if area <= _MIN_REGION_AREA_M2:
+        raise _DegenerateSeed("corridor area {} is too small".format(area))
+    violation = 0.0
+    for point in (start, end):
+        for axis, limit in constraints:
+            value = axis[0] * point[0] + axis[1] * point[1] - limit
+            if value > violation:
+                violation = value
+    if violation > _SEED_VIOLATION_TOL_M:
+        raise _DegenerateSeed(
+            "seed violates a corridor halfspace by {} m".format(violation))
+    return ConvexCorridor(
+        seed_start=start,
+        seed_end=end,
+        A=tuple(axis for axis, _limit in constraints),
+        b=tuple(limit for _axis, limit in constraints),
+        vertices=vertices)
+
+
+def _chebyshev_center(rows, limits):
+    """Maximise the certified inscribed radius over ``A p + ||A_row|| r <= b``.
+
+    Returns ``(certified_radius, (x, y))``.  The radius is recomputed from the
+    LP center's actual slacks instead of trusting the solver objective, which
+    can be optimistic within the HiGHS primal feasibility tolerance.
+    """
+    if not rows:
+        return None
+    normals = [
+        (float(row[0]), float(row[1]), math.hypot(row[0], row[1]))
+        for row in rows]
+    if any(normal[2] <= 0.0 for normal in normals):
+        return None
+    matrix = np.asarray(normals, dtype=float)
+    values = np.asarray([float(value) for value in limits], dtype=float)
+    result = linprog(
+        np.asarray([0.0, 0.0, -1.0]),
+        A_ub=matrix, b_ub=values,
+        bounds=((None, None), (None, None), (0.0, None)),
+        method="highs")
+    if not result.success:
+        return None
+    x = float(result.x[0])
+    y = float(result.x[1])
+    radius = min(
+        (value - normal[0] * x - normal[1] * y) / normal[2]
+        for normal, value in zip(normals, values))
+    if not math.isfinite(radius):
+        return None
+    return radius, (x, y)
+
+
+def _intersection_vertices(vertices, constraints):
+    clipped = list(vertices)
+    for axis, limit in constraints:
+        clipped = _clip_polygon(clipped, axis, limit)
+        if len(clipped) < 3:
+            return (), 0.0
+    canonical = _canonical_vertices(clipped)
+    if canonical is None:
+        return (), 0.0
+    return canonical
+
+
+def _portal_measure(first, second):
+    """Generation-side portal measure from the stored halfspaces."""
+    radius = _chebyshev_center(first.A + second.A, first.b + second.b)
+    vertices, area = _intersection_vertices(
+        first.vertices, tuple(zip(second.A, second.b)))
+    return radius, area, vertices
+
+
+def _audit_portal_measure(first, second):
+    """Audit-side portal measure from polygon vertices, not stored halfspaces."""
+    vertices, area = _intersection_vertices(
+        first.vertices, _edge_constraints(second.vertices))
+    if not vertices:
+        return None, area, ()
+    portal_constraints = _edge_constraints(vertices)
+    radius = _chebyshev_center(
+        [axis for axis, _limit in portal_constraints],
+        [limit for _axis, limit in portal_constraints])
+    return radius, area, vertices
+
+
+def _build_regions(grid, seeds, split_flags, padding):
+    regions = []
+    owners = []
+    for index, (start, end) in enumerate(seeds):
+        if not split_flags[index]:
+            try:
+                regions.append(_build_region(grid, start, end, padding))
+                owners.append(index)
+                continue
+            except _DegenerateSeed:
+                split_flags[index] = True
+        middle = (
+            0.5 * (start[0] + end[0]), 0.5 * (start[1] + end[1]))
+        if math.hypot(middle[0] - start[0], middle[1] - start[1]) \
+                <= _VERTEX_DEDUP_M:
+            raise VirtualAContractError(
+                "CORRIDOR_DEGENERATE",
+                "seed {} cannot be split at its midpoint".format(index),
+                seed=index)
+        for half_start, half_end in ((start, middle), (middle, end)):
+            try:
+                regions.append(_build_region(
+                    grid, half_start, half_end, padding))
+            except _DegenerateSeed as exc:
+                raise VirtualAContractError(
+                    "CORRIDOR_DEGENERATE",
+                    "seed {} half after one split: {}".format(index, exc),
+                    seed=index) from exc
+            owners.append(index)
+    return regions, owners
+
+
+def build_corridor_chain(grid, guide, *, box_padding_m=2.0):
+    """Build one convex corridor per guide seed, with a single split retry."""
+    if not isinstance(guide, GuideRoute):
+        raise VirtualAContractError(
+            "INVALID_GUIDE_ROUTE", "expected GuideRoute")
+    try:
+        padding = float(box_padding_m)
+    except (TypeError, ValueError) as exc:
+        raise VirtualAContractError(
+            "INVALID_CORRIDOR_REQUEST",
+            "box_padding_m must be real") from exc
+    if not math.isfinite(padding) or padding < 0.0:
+        raise VirtualAContractError(
+            "INVALID_CORRIDOR_REQUEST",
+            "box_padding_m must be finite and nonnegative")
+    digest = grid_signature(grid)
+    if guide.grid_sha256 != digest:
+        raise VirtualAContractError(
+            "CORRIDOR_GRID_MISMATCH",
+            "guide grid_sha256 does not match the authoritative grid")
+    points = guide.points
+    seeds = list(zip(points, points[1:]))
+    split_flags = [False] * len(seeds)
+    regions, owners = _build_regions(grid, seeds, split_flags, padding)
+    threshold = _portal_threshold_m(grid)
+    failures = _portal_failures(regions, grid, threshold)
+    if failures:
+        changed = False
+        for index, _reason in failures:
+            for owner in (owners[index], owners[index + 1]):
+                if not split_flags[owner]:
+                    split_flags[owner] = True
+                    changed = True
+        if changed:
+            regions, owners = _build_regions(
+                grid, seeds, split_flags, padding)
+            failures = _portal_failures(regions, grid, threshold)
+        if failures:
+            index, reason = failures[0]
+            raise VirtualAContractError(
+                "CORRIDOR_DEGENERATE",
+                "portal {} between regions failed: {}".format(index, reason),
+                portal=index)
+    return CorridorChain(
+        regions=tuple(regions),
+        route_source=guide.source,
+        grid_sha256=guide.grid_sha256)
+
+
+def _portal_failures(regions, grid, threshold):
+    failures = []
+    for index in range(len(regions) - 1):
+        radius, area, _vertices = _portal_measure(
+            regions[index], regions[index + 1])
+        if radius is None:
+            failures.append((index, "portal is empty or infeasible"))
+            continue
+        if area <= _MIN_REGION_AREA_M2:
+            failures.append((
+                index, "portal area {} is too small".format(area)))
+            continue
+        if radius[0] < threshold:
+            failures.append((
+                index,
+                "portal radius {} < {} m".format(radius[0], threshold)))
+    return failures
+
+
+def _polygon_separated_from_box(vertices, box):
+    """Conservative convex-polygon/closed-cell SAT.
+
+    A projection gap must exceed ``_TOUCH_TOL_M`` on at least one axis; a
+    smaller positive gap is treated as touching and therefore as a collision.
+    """
+    axes = []
+    for point, following in zip(vertices, vertices[1:] + vertices[:1]):
+        dx = following[0] - point[0]
+        dy = following[1] - point[1]
+        length = math.hypot(dx, dy)
+        if length <= 0.0:
+            continue
+        axes.append((-dy / length, dx / length))
+    axes.append((1.0, 0.0))
+    axes.append((0.0, 1.0))
+    corners = _box_corners(box)
+    for axis in axes:
+        polygon = [axis[0] * x + axis[1] * y for x, y in vertices]
+        cell = [axis[0] * x + axis[1] * y for x, y in corners]
+        if min(polygon) > max(cell) + _TOUCH_TOL_M:
+            return True
+        if min(cell) > max(polygon) + _TOUCH_TOL_M:
+            return True
+    return False
+
+
+def _point_polygon_violation(point, vertices):
+    """Outward distance by which a point lies outside a CCW convex polygon."""
+    violation = 0.0
+    for first, second in zip(vertices, vertices[1:] + vertices[:1]):
+        dx = second[0] - first[0]
+        dy = second[1] - first[1]
+        length = math.hypot(dx, dy)
+        if length <= 0.0:
+            continue
+        cross = dx * (point[1] - first[1]) - dy * (point[0] - first[0])
+        if cross < 0.0:
+            violation = max(violation, -cross / length)
+    return violation
+
+
+def _audit_region(grid, region, index):
+    """Validate one corridor independently of the generator's obstacle proof.
+
+    Stored halfspaces are used only to require that the polygon and the
+    halfspace set define the same region; obstacle containment itself is the
+    polygon-cell SAT below.
+    """
+    if len(region.A) != len(region.b):
+        return None, "CORRIDOR_INVALID", "A/b length mismatch", None
+    for axis in region.A:
+        if abs(math.hypot(axis[0], axis[1]) - 1.0) > 1e-9:
+            return None, "CORRIDOR_INVALID", "non-unit normal", None
+    twice_area = _signed_twice_area(region.vertices)
+    if twice_area <= 0.0:
+        return None, "CORRIDOR_INVALID", \
+            "vertices are not counter-clockwise", None
+    area = 0.5 * twice_area
+    if area <= _MIN_REGION_AREA_M2:
+        return None, "CORRIDOR_DEGENERATE", \
+            "region area {} is too small".format(area), None
+    scale = 1e-30
+    for point, following in zip(region.vertices, region.vertices[1:] + region.vertices[:1]):
+        scale = max(scale, (following[0] - point[0]) ** 2
+                    + (following[1] - point[1]) ** 2)
+    for first, second, third in zip(
+            region.vertices,
+            region.vertices[1:] + region.vertices[:1],
+            region.vertices[2:] + region.vertices[:2]):
+        cross = ((second[0] - first[0]) * (third[1] - second[1])
+                 - (second[1] - first[1]) * (third[0] - second[0]))
+        if cross < -1e-9 * scale:
+            return None, "CORRIDOR_INVALID", "polygon is not convex", None
+    # Every polygon edge must lie on a stored halfspace boundary.  Together
+    # with the vertex check below this makes {p : A p <= b} equal the audited
+    # polygon; otherwise a looser stored A,b could expose an obstacle that the
+    # polygon SAT never sees, while C2 would consume the looser halfspaces.
+    for first, second in zip(
+            region.vertices, region.vertices[1:] + region.vertices[:1]):
+        supported = False
+        for axis, limit in zip(region.A, region.b):
+            if (abs(axis[0] * first[0] + axis[1] * first[1] - limit)
+                    <= _HALFSPACE_MATCH_TOL_M
+                    and abs(axis[0] * second[0] + axis[1] * second[1] - limit)
+                    <= _HALFSPACE_MATCH_TOL_M):
+                supported = True
+                break
+        if not supported:
+            return None, "CORRIDOR_INVALID", \
+                "polygon edge is not on a stored halfspace boundary", None
+    right = grid.ox + grid.width * grid.res
+    top = grid.oy + grid.height * grid.res
+    for x, y in region.vertices:
+        if (x < grid.ox or x > right or y < grid.oy or y > top):
+            return None, "CORRIDOR_MAP_BOUNDARY", \
+                "vertex ({}, {}) is outside the map".format(x, y), None
+    for x, y in region.vertices:
+        for axis, limit in zip(region.A, region.b):
+            if axis[0] * x + axis[1] * y - limit > _SEED_VIOLATION_TOL_M:
+                return None, "CORRIDOR_INVALID", \
+                    "vertex violates a stored halfspace", None
+    violation = 0.0
+    for point in (region.seed_start, region.seed_end):
+        for axis, limit in zip(region.A, region.b):
+            violation = max(
+                violation,
+                axis[0] * point[0] + axis[1] * point[1] - limit)
+        violation = max(
+            violation, _point_polygon_violation(point, region.vertices))
+    if violation > _SEED_VIOLATION_TOL_M:
+        return None, "CORRIDOR_SEED_VIOLATION", \
+            "seed violates a corridor by {} m".format(violation), None
+    minimum_x = min(x for x, _y in region.vertices)
+    maximum_x = max(x for x, _y in region.vertices)
+    minimum_y = min(y for _x, y in region.vertices)
+    maximum_y = max(y for _x, y in region.vertices)
+    res = float(grid.res)
+    ix0 = max(0, int(math.floor(
+        (minimum_x - grid.ox - _TOUCH_TOL_M) / res)))
+    ix1 = min(grid.width - 1, int(math.floor(
+        (maximum_x - grid.ox + _TOUCH_TOL_M) / res)))
+    iy0 = max(0, int(math.floor(
+        (minimum_y - grid.oy - _TOUCH_TOL_M) / res)))
+    iy1 = min(grid.height - 1, int(math.floor(
+        (maximum_y - grid.oy + _TOUCH_TOL_M) / res)))
+    checked = 0
+    first_collision = None
+    if ix1 >= ix0 and iy1 >= iy0:
+        block = np.asarray(
+            grid.occ[iy0:iy1 + 1, ix0:ix1 + 1], dtype=bool)
+        rows, columns = np.nonzero(block)
+        for row, column in zip(rows.tolist(), columns.tolist()):
+            iy = iy0 + row
+            ix = ix0 + column
+            checked += 1
+            if not _polygon_separated_from_box(
+                    region.vertices, _cell_box(grid, iy, ix)):
+                first_collision = {"region": index, "cell": [iy, ix]}
+                break
+    if first_collision is not None:
+        return None, "CORRIDOR_CELL_OVERLAP", \
+            "corridor polygon overlaps occupied cell {}".format(
+                first_collision["cell"]), first_collision
+    return {
+        "index": index,
+        "seed_start": [region.seed_start[0], region.seed_start[1]],
+        "seed_end": [region.seed_end[0], region.seed_end[1]],
+        "area_m2": area,
+        "seed_violation_m": violation,
+        "vertex_count": len(region.vertices),
+        "sat_checked_cells": checked,
+    }, None, None, None
+
+
+def audit_corridor_chain(grid, chain):
+    """Independently audit every region and portal of a corridor chain.
+
+    Obstacle containment uses polygon-versus-original-cell SAT over every
+    occupied cell in the polygon bounding box, never the generator's halfspace
+    list.  The stored halfspaces are separately required to describe exactly
+    the same polygon, because C2 consumes ``A, b``.  Map inclusion, seed
+    containment, region area, convexity and portal area/radius are checked
+    separately.  There is deliberately no three-vehicle ``FEASIBLE`` field
+    here.
+    """
+    result = {
+        "passed": False,
+        "reason": "",
+        "detail": "",
+        "grid_sha256": getattr(chain, "grid_sha256", ""),
+        "route_source": getattr(chain, "route_source", ""),
+        "region_count": 0,
+        "regions": [],
+        "portals": [],
+        "min_region_area_m2": None,
+        "max_seed_violation_m": None,
+        "min_portal_radius_m": None,
+        "min_portal_area_m2": None,
+        "first_collision": None,
+        "thresholds": {
+            "min_region_area_m2": _MIN_REGION_AREA_M2,
+            "min_portal_area_m2": _MIN_REGION_AREA_M2,
+            "min_portal_radius_m": _portal_threshold_m(grid),
+            "seed_violation_m": _SEED_VIOLATION_TOL_M,
+            "halfspace_match_m": _HALFSPACE_MATCH_TOL_M,
+            "touch_tolerance_m": _TOUCH_TOL_M,
+            "map_inset_m": _MAP_INSET_M,
+        },
+    }
+    if not isinstance(chain, CorridorChain):
+        result["reason"] = "INVALID_CORRIDOR_CHAIN"
+        result["detail"] = "expected CorridorChain"
+        return result
+    if chain.grid_sha256 != grid_signature(grid):
+        result["reason"] = "CORRIDOR_GRID_MISMATCH"
+        result["detail"] = "chain grid_sha256 does not match the grid"
+        return result
+    result["region_count"] = len(chain.regions)
+    minimum_area = math.inf
+    maximum_violation = 0.0
+    for index, region in enumerate(chain.regions):
+        if index:
+            previous = chain.regions[index - 1].seed_end
+            current = region.seed_start
+            if math.hypot(previous[0] - current[0],
+                          previous[1] - current[1]) > _SEED_VIOLATION_TOL_M:
+                result["reason"] = "CORRIDOR_SEED_DISCONTINUITY"
+                result["detail"] = "region {} seed does not continue".format(index)
+                return result
+        metrics, reason, detail, collision = _audit_region(
+            grid, region, index)
+        if reason is not None:
+            result["reason"] = reason
+            result["detail"] = detail
+            result["first_collision"] = collision
+            result["min_region_area_m2"] = (
+                None if minimum_area is math.inf else minimum_area)
+            result["max_seed_violation_m"] = maximum_violation
+            return result
+        result["regions"].append(metrics)
+        minimum_area = min(minimum_area, metrics["area_m2"])
+        maximum_violation = max(
+            maximum_violation, metrics["seed_violation_m"])
+    result["min_region_area_m2"] = minimum_area
+    result["max_seed_violation_m"] = maximum_violation
+    threshold = _portal_threshold_m(grid)
+    minimum_radius = math.inf
+    minimum_portal_area = math.inf
+    for index in range(len(chain.regions) - 1):
+        radius, area, _vertices = _audit_portal_measure(
+            chain.regions[index], chain.regions[index + 1])
+        if radius is None:
+            result["reason"] = "CORRIDOR_DEGENERATE"
+            result["detail"] = "portal {} is empty or infeasible".format(index)
+            result["min_portal_radius_m"] = (
+                None if minimum_radius is math.inf else minimum_radius)
+            result["min_portal_area_m2"] = (
+                None if minimum_portal_area is math.inf
+                else minimum_portal_area)
+            return result
+        radius_m, center = radius
+        if area <= _MIN_REGION_AREA_M2:
+            result["reason"] = "CORRIDOR_DEGENERATE"
+            result["detail"] = "portal {} area {} is too small".format(
+                index, area)
+            result["min_portal_radius_m"] = (
+                None if minimum_radius is math.inf else minimum_radius)
+            result["min_portal_area_m2"] = (
+                None if minimum_portal_area is math.inf
+                else minimum_portal_area)
+            return result
+        if radius_m < threshold:
+            result["reason"] = "CORRIDOR_DEGENERATE"
+            result["detail"] = "portal {} radius {} < {} m".format(
+                index, radius_m, threshold)
+            result["min_portal_radius_m"] = (
+                None if minimum_radius is math.inf else minimum_radius)
+            result["min_portal_area_m2"] = (
+                None if minimum_portal_area is math.inf
+                else minimum_portal_area)
+            return result
+        result["portals"].append({
+            "index": index,
+            "radius_m": radius_m,
+            "center": [center[0], center[1]],
+            "area_m2": area,
+        })
+        minimum_radius = min(minimum_radius, radius_m)
+        minimum_portal_area = min(minimum_portal_area, area)
+    result["min_portal_radius_m"] = (
+        None if minimum_radius is math.inf else minimum_radius)
+    result["min_portal_area_m2"] = (
+        None if minimum_portal_area is math.inf else minimum_portal_area)
+    result["passed"] = True
+    result["reason"] = "CORRIDOR_CHAIN_VERIFIED"
+    return result
+
+
+__all__ = ["build_corridor_chain", "audit_corridor_chain"]
