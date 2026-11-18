@@ -1,0 +1,38 @@
+Panels:
+  - Class: rviz/Displays
+    Name: Displays
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Class: rviz/Grid
+      Enabled: true
+      Name: Grid
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Name: C1 corridor candidates (reference point only)
+      Marker Topic: /formation/corridors
+      Value: true
+    - Class: rviz/TF
+      Enabled: true
+      Name: Formation TF
+      Show Arrows: true
+      Show Axes: true
+      Show Names: true
+      Value: true
+  Global Options:
+    Fixed Frame: map
+    Background Color: 30; 30; 30
+    Frame Rate: 30
+  Tools:
+    - Class: rviz/Interact
+    - Class: rviz/MoveCamera
+    - Class: rviz/Select
+  Views:
+    Current:
+      Class: rviz/TopDownOrtho
+      Name: Current View
+      Scale: 110
+      X: 2.0
+      Y: 1.6
+      Angle: 0

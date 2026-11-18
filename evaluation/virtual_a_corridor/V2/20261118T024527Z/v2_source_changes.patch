@@ -1,0 +1,677 @@
+--- a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py
++++ b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py
+@@ -1695,7 +1695,30 @@
+ CORRIDOR_DISPLAYS_KEY = "corridor_displays"
+ 
+ 
+-def corridor_display_fields(chain, identity):
++def _display_points(points, name):
++    """Copy one actual algorithm polyline for the planning-debug display."""
++    try:
++        copied = tuple((float(point[0]), float(point[1]))
++                       for point in points)
++    except (TypeError, ValueError, IndexError) as exc:
++        raise VirtualAContractError(
++            "INVALID_CORRIDOR_DISPLAY",
++            "{} must be (x, y) pairs".format(name)) from exc
++    if len(copied) < 2:
++        raise VirtualAContractError(
++            "INVALID_CORRIDOR_DISPLAY",
++            "{} needs at least two points".format(name))
++    for x, y in copied:
++        if not (math.isfinite(x) and math.isfinite(y)):
++            raise VirtualAContractError(
++                "INVALID_CORRIDOR_DISPLAY",
++                "{} contains a non-finite point".format(name))
++    return copied
++
++
++def corridor_display_fields(chain, identity, *, raw_route_points=None,
++                            guide_points=None, guide_quality=None,
++                            guide_source=None, corridor_used=False):
+     """Export one built chain verbatim for the planning-debug display.
+ 
+     This is a display-only view: it copies the original ``A``, ``b`` and
+@@ -1704,6 +1727,13 @@
+     resulting fields are *candidate reference-point geometry*; they carry no
+     executable-path or three-vehicle safety claim and cannot be used to
+     certify playback.
++
++    V2 adds the actual raw A* route, the centreline points and the centreline
++    quality that the same pipeline round consumed.  Nothing here is refitted,
++    sampled from another source or drawn from an illustrative line.
++    ``corridor_used`` states whether this chain was the solver's hard-halfspace
++    input for the current round.  A missing guide or guide quality is exported
++    under the explicit ``UNVALIDATED_GUIDE`` label.
+     """
+     if not isinstance(chain, CorridorChain):
+         raise VirtualAContractError(
+@@ -1748,12 +1778,30 @@
+         raise VirtualAContractError(
+             "INVALID_CORRIDOR_DISPLAY",
+             "identity.model_sha256 must be null or 64 characters")
++    if not isinstance(corridor_used, bool):
++        raise VirtualAContractError(
++            "INVALID_CORRIDOR_DISPLAY", "corridor_used must be a bool")
++    copied_raw_route = ([] if raw_route_points is None
++                        else [list(point) for point in _display_points(
++                            raw_route_points, "raw_route_points")])
++    copied_guide = ([] if guide_points is None
++                    else [list(point) for point in _display_points(
++                        guide_points, "guide_points")])
++    if guide_quality is not None and not isinstance(
++            guide_quality, MappingABC):
++        raise VirtualAContractError(
++            "INVALID_CORRIDOR_DISPLAY", "guide_quality must be a mapping")
++    if guide_source is not None and (
++            not isinstance(guide_source, str) or not guide_source):
++        raise VirtualAContractError(
++            "INVALID_CORRIDOR_DISPLAY",
++            "guide_source must be a non-empty string or None")
+     regions = []
+     for index, region in enumerate(chain.regions):
+         payload = region.as_dict()
+         payload["region_id"] = index
+         regions.append(payload)
+-    return {
++    display = {
+         "state": CORRIDOR_DISPLAY_STATE,
+         "plan_id": plan_id,
+         "formation_id": formation_id,
+@@ -1767,6 +1815,89 @@
+         "chain_digest": chain.digest,
+         "regions": regions,
+     }
++    has_v2_data = (
++        raw_route_points is not None or guide_points is not None
++        or guide_quality is not None or guide_source is not None
++        or corridor_used)
++    if not has_v2_data:
++        # A V1 caller supplies only the chain.  Omitting the V2 keys keeps
++        # that payload's corridor display unchanged; playback clears the
++        # guide layer because no actual route/guide was exported.
++        return display
++    quality = None if guide_quality is None else dict(guide_quality)
++    display.update({
++        "chain_sha256": chain.digest,
++        "corridor_used": corridor_used,
++        "raw_route_points": copied_raw_route,
++        "guide_points": copied_guide,
++        "guide_quality": quality,
++        "guide_source": guide_source,
++        "guide_label": (
++            "PL_GUIDE" if _display_guide_valid(
++                chain, copied_guide, quality) else "UNVALIDATED_GUIDE"),
++        "guide_is_executable_path": False,
++    })
++    return display
++
++
++def _display_guide_valid(chain, points, quality):
++    """Same structural test the guide layer uses before showing PL_GUIDE."""
++    if not points or not isinstance(quality, MappingABC):
++        return False
++    if quality.get("stage") != "C2_A":
++        return False
++    if quality.get("chain_digest") != chain.digest:
++        return False
++    if quality.get("is_executable_path") is not False:
++        return False
++    if quality.get("rounding") != "PL_ONLY_NO_BEZIER":
++        return False
++    if quality.get("smoothness_claim") != "NONE":
++        return False
++    if quality.get("region_count") != len(chain.regions):
++        return False
++    if quality.get("segment_corridor_indices") != list(
++            range(len(chain.regions))):
++        return False
++    warnings = quality.get("warnings")
++    return isinstance(warnings, list) and not warnings
++
++
++def corridor_chain_from_payload(payload):
++    """Rebuild the chain object from ``result.search[...]['chain']``."""
++    if not isinstance(payload, MappingABC):
++        raise VirtualAContractError(
++            "INVALID_CORRIDOR_DISPLAY", "chain payload must be a mapping")
++    regions_payload = payload.get("regions")
++    if not isinstance(regions_payload, (list, tuple)) or not regions_payload:
++        raise VirtualAContractError(
++            "INVALID_CORRIDOR_DISPLAY",
++            "chain payload needs at least one region")
++    regions = []
++    for index, region in enumerate(regions_payload):
++        if not isinstance(region, MappingABC):
++            raise VirtualAContractError(
++                "INVALID_CORRIDOR_DISPLAY",
++                "chain region must be a mapping")
++        if region.get("region_id") not in (None, index):
++            raise VirtualAContractError(
++                "INVALID_CORRIDOR_DISPLAY",
++                "chain region_id does not match its list position")
++        regions.append(ConvexCorridor(
++            seed_start=tuple(region["seed_start"]),
++            seed_end=tuple(region["seed_end"]),
++            A=tuple(tuple(row) for row in region["A"]),
++            b=tuple(region["b"]),
++            vertices=tuple(tuple(vertex) for vertex in region["vertices"])))
++    chain = CorridorChain(
++        regions=tuple(regions),
++        route_source=payload.get("route_source"),
++        grid_sha256=payload.get("grid_sha256"))
++    if payload.get("digest") not in (None, chain.digest):
++        raise VirtualAContractError(
++            "INVALID_CORRIDOR_DISPLAY",
++            "chain payload digest differs from the rebuilt chain")
++    return chain
+ 
+ 
+ __all__ = [
+@@ -1776,6 +1907,7 @@
+     "audit_corridor_chain",
+     "audit_path_in_corridors",
+     "build_corridor_chain",
++    "corridor_chain_from_payload",
+     "corridor_display_fields",
+     "corridor_effective_margin",
+     "corridor_min_portal_radius",
+--- a/catkin_ws/src/fwis_v3_optimizer/scripts/formation_uniform_planner_node.py
++++ b/catkin_ws/src/fwis_v3_optimizer/scripts/formation_uniform_planner_node.py
+@@ -619,16 +619,49 @@
+             "corridors": [],
+         })
+ 
++    @staticmethod
++    def _display_from_corridor_round(identity, result):
++        """Build the V2 display from the actual C2 round the solver used."""
++        from fwis_v3_optimizer.formation_continuous_a.corridor import (
++            corridor_chain_from_payload,
++            corridor_display_fields,
++        )
++        corridor = result.search.get("corridor")
++        rounds = (corridor.get("rounds")
++                  if isinstance(corridor, dict) else None)
++        if not isinstance(rounds, (list, tuple)) or not rounds:
++            return None
++        current = rounds[-1]
++        if not isinstance(current, dict):
++            return None
++        route_index = current.get("route_index")
++        routes = getattr(result, "routes", ())
++        if (not isinstance(route_index, int) or isinstance(route_index, bool)
++                or route_index < 0 or route_index >= len(routes)):
++            return None
++        raw_route = routes[route_index]
++        guide = current.get("guide")
++        if not isinstance(guide, dict):
++            return None
++        if (raw_route.grid_sha256 != result.grid_sha256
++                or guide.get("grid_sha256") != result.grid_sha256):
++            return None
++        chain = corridor_chain_from_payload(current.get("chain"))
++        identity = dict(identity)
++        identity["route_id"] = int(route_index)
++        return corridor_display_fields(
++            chain, identity,
++            raw_route_points=raw_route.points,
++            guide_points=guide.get("points"),
++            guide_quality=guide.get("quality"),
++            guide_source=guide.get("source"),
++            corridor_used=True)
++
+     def _publish_corridor_debug(self, generation, plan_id, snapshot, result):
+         from fwis_v3_optimizer.formation_continuous_a.corridor import (
+             CORRIDOR_DISPLAYS_KEY,
+             CORRIDOR_DISPLAY_STATE,
+         )
+-        displays = result.search.get(CORRIDOR_DISPLAYS_KEY)
+-        if not isinstance(displays, (list, tuple)) or not displays:
+-            self._clear_planning_debug(
+-                plan_id, generation, snapshot.formation_id)
+-            return
+         identity = {
+             "state": CORRIDOR_DISPLAY_STATE,
+             "plan_id": int(plan_id),
+@@ -639,6 +672,25 @@
+             "planning_context_sha256": result.planning_context_sha256,
+             "model_sha256": (result.model_sha256 or None),
+         }
++        try:
++            display = self._display_from_corridor_round(identity, result)
++        except (KeyError, TypeError, ValueError) as exc:
++            rospy.logerr(
++                "[uniform planner] cannot export the actual C2 corridor "
++                "round: %s: %s; no corridor/guide layer is published",
++                type(exc).__name__, exc)
++            self._clear_planning_debug(
++                plan_id, generation, snapshot.formation_id)
++            return
++        displays = ([] if display is None else [display])
++        if not displays:
++            # V1 callers may still supply pre-built display fields.  The C2
++            # pipeline itself stores the chain in ``corridor.rounds``.
++            displays = result.search.get(CORRIDOR_DISPLAYS_KEY)
++        if not isinstance(displays, (list, tuple)) or not displays:
++            self._clear_planning_debug(
++                plan_id, generation, snapshot.formation_id)
++            return
+         # C2-B writes only corridor_display_fields() output here.  Refuse to
+         # publish anything that is not display-only or that carries a stale
+         # admission identity: playback would otherwise show a chain from
+--- a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_playback.py
++++ b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_playback.py
+@@ -2052,7 +2052,7 @@
+     return "car{} | {} | v={:.2f} m/s".format(vehicle_id, mode, speed)
+ 
+ 
+-def hud_text(playback_status, job_state, quality):
++def hud_text(playback_status, job_state, quality, show_cargo_reason=True):
+     """Fixed-corner HUD text for the current playback sample and audit state.
+ 
+     ``playback_status`` is the strict playback document produced by
+@@ -2061,6 +2061,10 @@
+     decision rather than introducing a second certification rule.  The
+     quality block is used only for the three audit columns and only after
+     :func:`quality_identity_matches` accepts its full identity.
++
++    A STATIC hold repeats the white Cargo label in the fixed corner.  The
++    optional reason follows the existing :func:`build_hold_markers` switch so
++    the HUD and the map label show the same text in the interactive demo.
+     """
+     if not isinstance(playback_status, Mapping):
+         raise PlaybackValidationError("HUD playback_status must be an object")
+@@ -2068,6 +2072,9 @@
+         raise PlaybackValidationError("HUD job_state must be a string")
+     if quality is not None and not isinstance(quality, Mapping):
+         raise PlaybackValidationError("HUD quality must be an object or null")
++    if not isinstance(show_cargo_reason, bool):
++        raise PlaybackValidationError(
++            "HUD show_cargo_reason must be a bool")
+     plan_id = playback_status.get("plan_id")
+     formation_id = playback_status.get("formation_id")
+     backend = playback_status.get("backend")
+@@ -2105,6 +2112,14 @@
+     else:
+         lines.append("STATIC | v=0.00 m/s")
+ 
++    if state == "STATIC":
++        cargo_text = "Cargo"
++        reason = playback_status.get("reason")
++        if show_cargo_reason and reason:
++            cargo_text += " | " + str(reason)
++        lines.append(cargo_text)
++        lines.append("STATIC / no executable trajectory")
++
+     columns = _audit_columns(playback_status, quality)
+     if (quality is None and plan_id is not None and
+             columns["geometry"] == "UNKNOWN" and
+@@ -2445,6 +2460,176 @@
+     return tuple(markers)
+ 
+ 
++GUIDE_ASTAR_NAMESPACE = "formation/guides/astar"
++GUIDE_CENTERLINE_NAMESPACE = "formation/guides/centerline"
++GUIDE_ASTAR_CANDIDATE_NAMESPACE = "formation/guides/astar_candidate"
++GUIDE_CENTERLINE_CANDIDATE_NAMESPACE = (
++    "formation/guides/centerline_candidate")
++GUIDE_Z_M = 0.012
++GUIDE_ASTAR_WIDTH_M = 0.018
++GUIDE_CENTERLINE_WIDTH_M = 0.03
++GUIDE_ASTAR_COLOR = (1.0, 0.55, 0.0, 0.95)
++GUIDE_CENTERLINE_COLOR = (0.05, 0.82, 0.25, 0.95)
++GUIDE_UNVALIDATED_COLOR = (1.0, 0.78, 0.0, 0.95)
++
++
++def _guide_polyline(points, name):
++    """Copy an actual route/guide polyline without resampling it."""
++    if not isinstance(points, (list, tuple)) or len(points) < 2:
++        raise PlaybackValidationError(
++            "{} needs at least two points".format(name))
++    copied = []
++    for point in points:
++        if not isinstance(point, (list, tuple)) or len(point) != 2:
++            raise PlaybackValidationError(
++                "{} point must be a coordinate pair".format(name))
++        x, y = float(point[0]), float(point[1])
++        if not (math.isfinite(x) and math.isfinite(y)):
++            raise PlaybackValidationError(
++                "{} point is not finite".format(name))
++        copied.append((x, y, GUIDE_Z_M))
++    return tuple(copied)
++
++
++def guide_quality_valid(quality, chain_sha256, region_count):
++    """Whether the C2-A quality report fully describes this guide.
++
++    This is a display classification only.  The C2-A guide is an executable
++    planning primitive, but this layer remains a reference polyline: it is
++    never labelled as a smooth three-vehicle path.
++    """
++    if not isinstance(quality, Mapping):
++        return False
++    if quality.get("stage") != "C2_A":
++        return False
++    if quality.get("chain_digest") != chain_sha256:
++        return False
++    if quality.get("is_executable_path") is not False:
++        return False
++    if quality.get("rounding") != "PL_ONLY_NO_BEZIER":
++        return False
++    if quality.get("smoothness_claim") != "NONE":
++        return False
++    if (not isinstance(region_count, int) or isinstance(region_count, bool)
++            or region_count < 1):
++        return False
++    if quality.get("region_count") != region_count:
++        return False
++    if quality.get("segment_corridor_indices") != list(
++            range(region_count)):
++        return False
++    warnings = quality.get("warnings")
++    if not isinstance(warnings, list) or warnings:
++        return False
++    return True
++
++
++def _guide_free_text(markers, namespace, marker_id, point, text, color,
++                     frame_id):
++    markers.append(_marker(
++        namespace, marker_id, "TEXT_VIEW_FACING", frame_id,
++        position=(point[0], point[1], 0.45),
++        text=text, color=color, scale=(0.0, 0.0, 0.22)))
++
++
++def build_guide_markers(document, frame_id="map"):
++    """Draw the actual A* route and C2-A centreline of the used chain.
++
++    The two lines copy the planner's reported points verbatim; no Bezier,
++    smoothing, or interpolation is fabricated here.  The only labels this
++    function can produce are ``PL_GUIDE`` (reference polyline),
++    ``UNVALIDATED_GUIDE`` and ``REFERENCE_ONLY``/``CANDIDATE``.  It never
++    upgrades the guide to a safety certificate.
++    """
++    if (not isinstance(document, Mapping) or
++            document.get("state") != CORRIDOR_DISPLAY_STATE):
++        raise PlaybackValidationError(
++            "guide display state must be {!r}".format(
++                CORRIDOR_DISPLAY_STATE))
++    if document.get("used_by_optimizer"):
++        raise PlaybackValidationError(
++            "V2 guide display cannot carry used_by_optimizer")
++    _text(document.get("formation_id"), "formation_id")
++    corridors = document.get("corridors")
++    if not isinstance(corridors, (list, tuple)) or not corridors:
++        raise PlaybackValidationError(
++            "guide display needs at least one route")
++    v2_keys = ("raw_route_points", "guide_points", "guide_quality",
++               "chain_sha256", "corridor_used")
++    if not any(isinstance(corridor, Mapping)
++               and any(key in corridor for key in v2_keys)
++               for corridor in corridors):
++        # V1 payloads carry only corridor regions.  Clearing is the correct
++        # guide layer for them; stale guides from an earlier V2 plan must not
++        # survive.
++        return tuple(clear_marker_specs(frame_id))
++    markers = list(clear_marker_specs(frame_id))
++    for corridor in corridors:
++        if not isinstance(corridor, Mapping):
++            raise PlaybackValidationError("guide route must be a mapping")
++        for name in ("plan_id", "formation_id", "backend", "generation",
++                     "grid_sha256", "planning_context_sha256",
++                     "model_sha256"):
++            if corridor.get(name) != document.get(name):
++                raise PlaybackValidationError(
++                    "guide route identity does not match its document")
++        route_id = corridor.get("route_id")
++        if (not isinstance(route_id, int) or isinstance(route_id, bool)
++                or route_id < 0):
++            raise PlaybackValidationError(
++                "guide route_id must be a non-negative integer")
++        chain_sha256 = corridor.get("chain_sha256")
++        if (not isinstance(chain_sha256, str)
++                or len(chain_sha256) != 64
++                or any(character not in "0123456789abcdef"
++                       for character in chain_sha256)):
++            raise PlaybackValidationError(
++                "guide chain_sha256 must be a lowercase SHA-256")
++        corridor_used = corridor.get("corridor_used")
++        if not isinstance(corridor_used, bool):
++            raise PlaybackValidationError(
++                "guide corridor_used must be a bool")
++        raw_route = _guide_polyline(
++            corridor.get("raw_route_points"), "raw_route_points")
++        guide = _guide_polyline(
++            corridor.get("guide_points"), "guide_points")
++        regions = corridor.get("regions")
++        if not isinstance(regions, (list, tuple)) or not regions:
++            raise PlaybackValidationError(
++                "guide route needs at least one corridor region")
++        route_suffix = "" if corridor_used else " | CANDIDATE"
++        astar_namespace = (
++            GUIDE_ASTAR_NAMESPACE if corridor_used
++            else GUIDE_ASTAR_CANDIDATE_NAMESPACE)
++        centerline_namespace = (
++            GUIDE_CENTERLINE_NAMESPACE if corridor_used
++            else GUIDE_CENTERLINE_CANDIDATE_NAMESPACE)
++        line_id = 2 * route_id
++        text_id = line_id + 1
++        markers.append(_marker(
++            astar_namespace, line_id, "LINE_STRIP", frame_id,
++            points=raw_route, color=GUIDE_ASTAR_COLOR,
++            scale=(GUIDE_ASTAR_WIDTH_M, 0.0, 0.0)))
++        _guide_free_text(
++            markers, astar_namespace, text_id, raw_route[0],
++            "A* ROUTE{} | REFERENCE_ONLY".format(route_suffix),
++            GUIDE_ASTAR_COLOR, frame_id)
++        validated = guide_quality_valid(
++            corridor.get("guide_quality"), chain_sha256, len(regions))
++        color = (GUIDE_CENTERLINE_COLOR if validated
++                 else GUIDE_UNVALIDATED_COLOR)
++        label = ("PL_GUIDE | REFERENCE_ONLY" if validated else
++                 "UNVALIDATED_GUIDE | PL_GUIDE | REFERENCE_ONLY")
++        markers.append(_marker(
++            centerline_namespace, line_id, "LINE_STRIP", frame_id,
++            points=guide, color=color,
++            scale=(GUIDE_CENTERLINE_WIDTH_M, 0.0, 0.0)))
++        _guide_free_text(
++            markers, centerline_namespace, text_id, guide[len(guide) // 2],
++            label + route_suffix, color, frame_id)
++    return tuple(markers)
++
++
+ def build_hold_markers(formation_id, qf, vehicles, reason, frame_id="map",
+                        show_cargo_reason=True):
+     """Static bodies and cargo reference only; never an executable path.
+--- a/catkin_ws/src/fwis_v3_playback/scripts/formation_playback.py
++++ b/catkin_ws/src/fwis_v3_playback/scripts/formation_playback.py
+@@ -34,6 +34,7 @@
+     PlaybackMarkerOptions,
+     PlaybackValidationError,
+     build_corridor_markers,
++    build_guide_markers,
+     build_markers,
+     clear_marker_specs,
+     corridor_display_matches,
+@@ -67,6 +68,7 @@
+ MARKER_TOPIC = "/formation/markers"
+ HUD_TOPIC = "/formation/hud"
+ CORRIDOR_TOPIC = "/formation/corridors"
++GUIDES_TOPIC = "/formation/guides"
+ PLANNING_DEBUG_TOPIC = "/formation/planning_debug"
+ STATUS_TOPIC = "/formation/playback_status"
+ TRAJECTORY_TOPIC = "/formation/timed_trajectory"
+@@ -108,6 +110,7 @@
+     _virtual_jobs = {}
+     quality_report = None
+     corridor_pub = None
++    guide_pub = None
+ 
+     def __init__(self):
+         self._lock = threading.RLock()
+@@ -182,7 +185,7 @@
+         self.hud_left = int(rospy.get_param("~hud_left", 900))
+         self.hud_top = int(rospy.get_param("~hud_top", 20))
+         self.hud_width = int(rospy.get_param("~hud_width", 360))
+-        self.hud_height = int(rospy.get_param("~hud_height", 230))
++        self.hud_height = int(rospy.get_param("~hud_height", 270))
+         if (self.hud_left < 0 or self.hud_top < 0 or
+                 self.hud_width <= 0 or self.hud_height <= 0):
+             raise ValueError(
+@@ -203,9 +206,12 @@
+         self.marker_pub = rospy.Publisher(
+             MARKER_TOPIC, MarkerArray, queue_size=1)
+         self.corridor_pub = None
++        self.guide_pub = None
+         if self.backend == VIRTUAL_PLAYBACK_BACKEND:
+             self.corridor_pub = rospy.Publisher(
+                 CORRIDOR_TOPIC, MarkerArray, queue_size=1)
++            self.guide_pub = rospy.Publisher(
++                GUIDES_TOPIC, MarkerArray, queue_size=1)
+         self.status_pub = rospy.Publisher(
+             STATUS_TOPIC, String, queue_size=1, latch=True)
+         if self.hud_enabled:
+@@ -251,8 +257,9 @@
+                 quality=None, force=True)
+         if self.corridor_pub is not None:
+             # RViz keeps lifetime-zero markers across a node restart; start
+-            # from an empty corridor layer instead of a stale latched chain.
++            # from empty corridor and guide layers instead of a stale chain.
+             self._clear_corridors()
++            self._clear_guides()
+         rospy.loginfo(
+             "[formation playback] common-clock display ready; "
+             "GEOMETRY_ONLY is shown until an independent FEASIBLE status "
+@@ -695,6 +702,19 @@
+             return
+         job = (self._virtual_jobs.get(plan_id)
+                if isinstance(plan_id, int) else None)
++        if isinstance(job, dict) and job.get("model_sha256") is None:
++            # The planner freezes its active model digest immediately before
++            # publishing the envelope, so the PLANNING job record may still
++            # carry the admission-time None until the next heartbeat.  This
++            # receiver has already verified the envelope for the same plan;
++            # only that missing field is supplied, never a reported digest.
++            trajectory = getattr(self, "trajectory", None)
++            verified = getattr(self, "_playback_model_sha256", None)
++            if (trajectory is not None and
++                    trajectory.plan_id == plan_id and
++                    isinstance(verified, str) and verified):
++                job = dict(job)
++                job["model_sha256"] = verified
+         if not corridor_display_matches(document, job):
+             rospy.logwarn(
+                 "[formation playback] ignoring corridor payload for plan %s: "
+@@ -702,6 +722,7 @@
+             return
+         if document.get("state") == CLEARED:
+             self._clear_corridors()
++            self._clear_guides()
+             return
+         if self._job_state not in ("PLANNING", "PLAYING"):
+             rospy.logwarn(
+@@ -710,16 +731,23 @@
+             return
+         try:
+             specs = build_corridor_markers(document, self.frame_id)
++            guide_specs = build_guide_markers(document, self.frame_id)
+         except (TypeError, ValueError) as exc:
+             rospy.logerr(
+-                "[formation playback] rejecting corridor payload: %s", exc)
++                "[formation playback] rejecting corridor/guide payload: %s",
++                exc)
+             self._clear_corridors()
++            self._clear_guides()
+             return
+-        self.corridor_pub.publish(
+-            self._marker_array(specs, rospy.Time.now()))
++        stamp = rospy.Time.now()
++        self.corridor_pub.publish(self._marker_array(specs, stamp))
++        if self.guide_pub is not None:
++            self.guide_pub.publish(
++                self._marker_array(guide_specs, stamp))
+         rospy.loginfo(
+-            "[formation playback] corridor display plan=%s generation=%s "
+-            "routes=%d regions=%d state=CANDIDATE_REFERENCE_POINT_ONLY",
++            "[formation playback] corridor/guide display plan=%s "
++            "generation=%s routes=%d regions=%d "
++            "state=CANDIDATE_REFERENCE_POINT_ONLY",
+             plan_id, document.get("generation"),
+             len(document["corridors"]),
+             sum(len(corridor["regions"])
+@@ -731,6 +759,12 @@
+         self.corridor_pub.publish(self._marker_array(
+             clear_marker_specs(self.frame_id), rospy.Time.now()))
+ 
++    def _clear_guides(self):
++        if self.guide_pub is None:
++            return
++        self.guide_pub.publish(self._marker_array(
++            clear_marker_specs(self.frame_id), rospy.Time.now()))
++
+     @synchronized
+     def on_request(self, message):
+         self._record_raw_request(message)
+@@ -770,6 +804,7 @@
+         self.trajectory = None
+         self._clear_markers_pending = False
+         self._clear_corridors()
++        self._clear_guides()
+         self._publish_hold(clear=True)
+ 
+     @synchronized
+@@ -868,7 +903,8 @@
+         message.text_size = 13.0
+         message.font = "DejaVu Sans Mono"
+         message.fg_color = ColorRGBA(1.0, 1.0, 1.0, 0.95)
+-        message.text = hud_text(document, self._job_state, quality)
++        message.text = hud_text(
++            document, self._job_state, quality, self.show_cargo_reason)
+         self.hud_pub.publish(message)
+         self._last_hud_publish = now
+         self._last_hud_signature = signature
+@@ -1091,6 +1127,7 @@
+             document, sort_keys=True, allow_nan=False)))
+         self._publish_hud(document, quality=None, force=True)
+         self._clear_corridors()
++        self._clear_guides()
+         rospy.loginfo("[formation playback] cleared: %s", reason)
+         if self.transport_ui and freeze and self.hold is not None:
+             self._publish_hold(clear=True, stamp=now)
+--- a/catkin_ws/src/fwis_v3_demo/rviz/formation_demo.rviz
++++ b/catkin_ws/src/fwis_v3_demo/rviz/formation_demo.rviz
+@@ -15,12 +15,23 @@
+       Value: true
+     - Class: rviz/MarkerArray
+       Enabled: true
+-      Name: Formation vehicles, mode bands, status
++      Name: Final certified vehicle paths
+       Marker Topic: /formation/markers
+       Value: true
+     - Class: rviz/MarkerArray
+       Enabled: true
+-      Name: C1 corridor candidates (reference point only)
++      Marker Topic: /formation/guides
++      Name: A* route (default off) and C2-A centreline (reference only)
++      Namespaces:
++        formation/guides/astar: false
++        formation/guides/astar_candidate: false
++        formation/guides/centerline: true
++        formation/guides/centerline_candidate: false
++      Queue Size: 100
++      Value: true
++    - Class: rviz/MarkerArray
++      Enabled: true
++      Name: Corridor candidates (reference point only, low alpha)
+       Marker Topic: /formation/corridors
+       Value: true
+     - Align Bottom: false
+@@ -38,7 +49,7 @@
+       Topic: /formation/hud
+       Value: true
+       font: DejaVu Sans Mono
+-      height: 230
++      height: 270
+       left: 900
+       line width: 2
+       text size: 13

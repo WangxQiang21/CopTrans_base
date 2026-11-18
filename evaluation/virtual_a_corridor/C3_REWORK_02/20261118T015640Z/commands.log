@@ -1,0 +1,55 @@
+# C3_REWORK_02 command log
+# All commands were run from /home/wq/whut_thesis/expv3_multi_virtual_a.
+# Environment for Python commands:
+#   source /opt/ros/noetic/setup.bash
+#   source catkin_ws/devel/setup.bash
+#   export PYTHONDONTWRITEBYTECODE=1 OPENBLAS_NUM_THREADS=1
+#   export PYTHONPATH="$PWD/catkin_ws/src/fwis_v3_optimizer/src:$PWD/tests:$PWD:${PYTHONPATH:-}"
+
+## Baseline reconstruction (read-only inputs)
+rm -rf /tmp/c3_rework02_baseline
+mkdir -p /tmp/c3_rework02_baseline/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a /tmp/c3_rework02_baseline/tests
+cp /tmp/c3_rework_pre/pipeline.py /tmp/c3_rework_pre/optimizer.py /tmp/c3_rework_pre/contracts.py /tmp/c3_rework_pre/corridor.py /tmp/c3_rework02_baseline/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/
+cp /tmp/c3_rework_pre/test_virtual_a_corridor_recovery.py /tmp/c3_rework_pre/test_virtual_a_pipeline.py /tmp/c3_rework02_baseline/tests/
+cd /tmp/c3_rework02_baseline && patch -p1 --batch --forward < /home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_a_corridor/C3_REWORK_01/20261117T185418Z/source.diff
+sha256sum catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/pipeline.py catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/optimizer.py catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/contracts.py catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py tests/test_virtual_a_corridor_recovery.py tests/test_virtual_a_pipeline.py
+# Result: all six hashes equal C3_REWORK_01/source_hashes.txt.
+
+## Targeted tests (full logs in test_logs/)
+python3 -B -m unittest discover -s tests -p test_virtual_a_corridor_recovery.py -v > evaluation/virtual_a_corridor/C3_REWORK_02/20261118T015640Z/test_logs/test_virtual_a_corridor_recovery.log
+#   2026-11-18T01:56:44Z | 2026-11-18T01:57:00Z | exit=0
+
+python3 -B -m unittest discover -s tests -p test_virtual_a_corridor_optimizer.py -v > evaluation/virtual_a_corridor/C3_REWORK_02/20261118T015640Z/test_logs/test_virtual_a_corridor_optimizer.log
+#   2026-11-18T01:57:04Z | 2026-11-18T01:57:10Z | exit=0
+
+python3 -B -m unittest discover -s tests -p test_virtual_a_pipeline.py -v > evaluation/virtual_a_corridor/C3_REWORK_02/20261118T015640Z/test_logs/test_virtual_a_pipeline.log
+#   2026-11-18T01:57:13Z | 2026-11-18T01:58:58Z | exit=0
+
+python3 -B -m unittest discover -s tests -p test_virtual_a_optimizer.py -v > evaluation/virtual_a_corridor/C3_REWORK_02/20261118T015640Z/test_logs/test_virtual_a_optimizer.log
+#   2026-11-18T01:59:02Z | 2026-11-18T02:00:07Z | exit=0
+
+
+
+
+
+## Replays (full stdout and JSON in replays/)
+python3 -B run_replay.py S1 replays/S1_corridor_reallocation.json --guidance-mode corridor --solver ipopt
+python3 -B run_replay.py S3 replays/S3_legacy_success.json --guidance-mode legacy_route --solver ipopt
+python3 -B run_replay.py S1 replays/initial_pool_exhaustion.json --guidance-mode corridor --solver ipopt --max-initials 1
+# Timing and stdout excerpts: replays/replay_commands.log
+
+## Source and evidence checks (all from project root)
+for rel in catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/pipeline.py tests/test_virtual_a_corridor_recovery.py; do diff -u --label "a/$rel" --label "b/$rel" "/tmp/c3_rework02_baseline/$rel" "$rel"; done > source.diff
+git apply --numstat source.diff
+sed -n '...' source.diff  # inspected pipeline-only and corridor-only hunks
+sha256sum catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/pipeline.py catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/optimizer.py catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/contracts.py catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py tests/test_virtual_a_corridor_recovery.py tests/test_virtual_a_pipeline.py
+(cd evaluation/virtual_a_corridor/C3/20261117T155212Z && sha256sum -c manifest.sha256)
+(cd evaluation/virtual_a_corridor/C3_REWORK_01/20261117T185418Z && sha256sum -c manifest.sha256)
+(cd evaluation/virtual_a_corridor/C3/20261117T155212Z && find . -type f | sort | xargs sha256sum | sha256sum)
+(cd evaluation/virtual_a_corridor/C3_REWORK_01/20261117T185418Z && find . -type f | sort | xargs sha256sum | sha256sum)
+python3 -B assemble_results.py
+
+## Constraints observed
+# No git commit, push, checkout, reset, stash, clean or branch creation.
+# No ROS master, node, launch, RViz or publication was started.
+# C3 and C3_REWORK_01 evidence directories were only read.

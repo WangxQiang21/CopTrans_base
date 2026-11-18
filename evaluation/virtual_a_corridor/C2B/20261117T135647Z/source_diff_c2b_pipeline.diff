@@ -1,0 +1,263 @@
+diff --git a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/pipeline.py b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/pipeline.py
+index 1a90431..31358d3 100644
+--- a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/pipeline.py
++++ b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/pipeline.py
+@@ -37,7 +37,16 @@ from .contracts import (
+     validate_timing_config,
+     validate_virtual_a_request,
+ )
++from .corridor import (
++    allocate_corridors,
++    audit_corridor_chain,
++    audit_path_in_corridors,
++    build_corridor_chain,
++    corridor_effective_margin,
++    make_corridor_guide,
++)
+ from .optimizer import solve_open_path_guided
++from .route_processing import simplify_route
+ from .timing import retime_path
+ 
+ 
+@@ -455,6 +464,22 @@ def plan_virtual_a(map_request):
+                 map_request, "INVALID_REQUEST", validation.reason,
+                 validation.detail, "REQUEST", timings,
+                 time.monotonic() - started, search)
++    corridor_mode = str(planner_config.guidance_mode).strip().lower() == \
++        "corridor"
++    corridor_enforcement = str(
++        planner_config.corridor_enforcement).strip().lower()
++    if corridor_mode:
++        timings.update({
++            "corridor_build_s": 0.0,
++            "corridor_guide_s": 0.0,
++            "corridor_allocation_s": 0.0,
++            "corridor_containment_s": 0.0,
++        })
++        search["corridor"] = {
++            "guidance_mode": "corridor",
++            "enforcement": corridor_enforcement,
++            "rounds": [],
++        }
+     try:
+         context = map_request.context()
+         context_sha = planning_context_sha256(context)
+@@ -492,6 +517,8 @@ def plan_virtual_a(map_request):
+             clearance_weight=G4_ROUTE_CLEARANCE_WEIGHT).as_dict(),
+         "hard_real_time_guarantee": False,
+     }
++    if corridor_mode:
++        search["budget"]["planner_config"] = planner_config.as_dict()
+ 
+     def remaining():
+         return max(0.0, G4_TOTAL_SOFT_BUDGET_S - (
+@@ -508,6 +535,11 @@ def plan_virtual_a(map_request):
+     routes = ()
+     obstacle_context = None
+     clearance_field = None
++    chain = None
++    corridor_guide = None
++    corridor_allocation = None
++    corridor_round = None
++    containment = None
+     collision_retries = 0
+     all_attempts = []
+     last_geometry_audit = None
+@@ -581,16 +613,104 @@ def plan_virtual_a(map_request):
+                     geometry_audit=last_geometry_audit,
+                     dynamic_audit=last_dynamic_audit,
+                     collision_audit=last_collision_audit)
++            if corridor_mode:
++                build_started = time.monotonic()
++                try:
++                    simplified = simplify_route(grid, routes[0])
++                    chain = build_corridor_chain(
++                        grid, simplified,
++                        box_padding_m=float(
++                            planner_config.corridor_box_padding_m))
++                except VirtualAContractError as exc:
++                    return _empty_result(
++                        map_request, "NO_ACCEPTED_CANDIDATE",
++                        "CORRIDOR_BUILD_FAILED", exc.detail,
++                        "PLANNING", timings, time.monotonic() - started,
++                        search, attempts=all_attempts,
++                        geometry_audit=last_geometry_audit,
++                        dynamic_audit=last_dynamic_audit,
++                        collision_audit=last_collision_audit)
++                chain_audit = audit_corridor_chain(grid, chain)
++                timings["corridor_build_s"] += \
++                    time.monotonic() - build_started
++                if not chain_audit["passed"]:
++                    return _empty_result(
++                        map_request, "NO_ACCEPTED_CANDIDATE",
++                        chain_audit["reason"], chain_audit["detail"],
++                        "PLANNING", timings, time.monotonic() - started,
++                        search, attempts=all_attempts,
++                        geometry_audit=last_geometry_audit,
++                        dynamic_audit=last_dynamic_audit,
++                        collision_audit=last_collision_audit)
++                guide_started = time.monotonic()
++                try:
++                    corridor_guide = make_corridor_guide(
++                        chain,
++                        (float(request.start_qf.x),
++                         float(request.start_qf.y)),
++                        (float(request.goal_qf.x),
++                         float(request.goal_qf.y)))
++                except VirtualAContractError as exc:
++                    return _empty_result(
++                        map_request, "NO_ACCEPTED_CANDIDATE",
++                        "CORRIDOR_GUIDE_FAILED", exc.detail,
++                        "PLANNING", timings, time.monotonic() - started,
++                        search, attempts=all_attempts,
++                        geometry_audit=last_geometry_audit,
++                        dynamic_audit=last_dynamic_audit,
++                        collision_audit=last_collision_audit)
++                timings["corridor_guide_s"] += \
++                    time.monotonic() - guide_started
++                allocation_started = time.monotonic()
++                try:
++                    corridor_allocation = allocate_corridors(
++                        chain, corridor_guide,
++                        intervals=int(planner_config.intervals))
++                except VirtualAContractError as exc:
++                    return _empty_result(
++                        map_request, "NO_ACCEPTED_CANDIDATE",
++                        "CORRIDOR_ALLOCATION_FAILED", exc.detail,
++                        "PLANNING", timings, time.monotonic() - started,
++                        search, attempts=all_attempts,
++                        geometry_audit=last_geometry_audit,
++                        dynamic_audit=last_dynamic_audit,
++                        collision_audit=last_collision_audit)
++                timings["corridor_allocation_s"] += \
++                    time.monotonic() - allocation_started
++                corridor_round = {
++                    "round_index": len(search["rounds"]),
++                    "route_source": routes[0].source,
++                    "simplified_route": simplified.as_dict(),
++                    "chain": chain.as_dict(),
++                    "chain_digest": chain.digest,
++                    "chain_audit": chain_audit,
++                    "guide": corridor_guide.as_dict(),
++                    "allocation": [
++                        list(entry) for entry in corridor_allocation],
++                    "effective_margin_m": corridor_effective_margin(
++                        chain, planner_config),
++                }
++                search["corridor"]["rounds"].append(corridor_round)
+         if not isinstance(geometry_config, type(planner_config)):
+             geometry_config = planner_config
+         geometry_config = replace(
+             planner_config,
+             max_seconds=min(float(planner_config.max_seconds), remaining()))
++        if corridor_mode and not hold_request:
++            solve_routes = (corridor_guide,)
++            solve_chain = chain
++            solve_allocation = corridor_allocation
++        else:
++            solve_routes = routes
++            solve_chain = None
++            solve_allocation = None
+         solve_started = time.monotonic()
+         geometry = solve_open_path_guided(
+-            request, geometry_config, route_guides=routes,
++            request, geometry_config, route_guides=solve_routes,
+             obstacle_context=obstacle_context,
+-            geometry_audit_config=audit_config)
++            geometry_audit_config=audit_config,
++            corridor_chain=solve_chain,
++            corridor_allocation=solve_allocation)
+         timings["geometry_solve_s"] += time.monotonic() - solve_started
+         all_attempts.extend(geometry.attempts)
+         last_geometry_audit = geometry.audit
+@@ -600,6 +720,8 @@ def plan_virtual_a(map_request):
+             "geometry_reason": geometry.reason,
+             "geometry_attempts": len(geometry.attempts),
+             "route_count": len(routes),
++            "corridor_round_index": corridor_round["round_index"]
++            if corridor_round is not None else None,
+             "obstacle_context": obstacle_context.as_dict()
+             if obstacle_context is not None else None,
+         }
+@@ -614,6 +736,42 @@ def plan_virtual_a(map_request):
+                 checks=_report_checks(geometry.audit),
+                 attempts=all_attempts, routes=tuple(routes),
+                 geometry_audit=geometry.audit)
++        if corridor_mode and not hold_request:
++            containment_started = time.monotonic()
++            try:
++                containment = audit_path_in_corridors(
++                    geometry.path, chain, corridor_allocation,
++                    position_budget_m=float(
++                        planner_config.corridor_audit_position_margin_m),
++                    max_depth=int(planner_config.corridor_audit_max_depth),
++                    max_intervals=int(
++                        planner_config.corridor_audit_max_intervals),
++                    min_width_m=float(
++                        planner_config.corridor_audit_min_width_m))
++            except VirtualAContractError as exc:
++                timings["corridor_containment_s"] += \
++                    time.monotonic() - containment_started
++                return _empty_result(
++                    map_request, "GEOMETRY_FAILED",
++                    "CORRIDOR_AUDIT_INPUT_FAILED", exc.detail, "GEOMETRY",
++                    timings, time.monotonic() - started, search,
++                    attempts=all_attempts, routes=tuple(routes),
++                    geometry_audit=geometry.audit)
++            timings["corridor_containment_s"] += \
++                time.monotonic() - containment_started
++            corridor_round["containment"] = containment
++            round_record["corridor_containment_passed"] = bool(
++                containment["passed"])
++            round_record["corridor_containment_reason"] = containment["reason"]
++            if not containment["passed"] and corridor_enforcement == "hard":
++                search["rounds"].append(round_record)
++                return _empty_result(
++                    map_request, "GEOMETRY_FAILED", containment["reason"],
++                    containment["detail"], "GEOMETRY", timings,
++                    time.monotonic() - started, search,
++                    checks=_report_checks(geometry.audit),
++                    attempts=all_attempts, routes=tuple(routes),
++                    geometry_audit=geometry.audit)
+         path = geometry.path
+         retime_started = time.monotonic()
+         timing = retime_path(
+@@ -727,11 +885,29 @@ def plan_virtual_a(map_request):
+     status = "NO_MOTION" if getattr(plan, "kind", None) == "hold" else "SUCCESS"
+     checks = _report_checks(last_geometry_audit) + _report_checks(
+         last_dynamic_audit) + _report_checks(last_collision_audit)
++    corridor_metrics = {}
++    corridor_detail = ""
++    if corridor_mode and containment is not None:
++        corridor_metrics = {
++            "corridor_effective_margin_m": corridor_effective_margin(
++                chain, planner_config),
++            "corridor_containment_passed": bool(containment["passed"]),
++            "corridor_containment_certified": bool(
++                containment["passed"] and corridor_enforcement == "hard"),
++            "corridor_containment_samples": int(containment["sample_count"]),
++            "corridor_containment_max_bound_residual_m": containment[
++                "max_bound_residual_m"],
++        }
++        corridor_detail = (
++            "; continuous corridor containment certified"
++            if corridor_metrics["corridor_containment_certified"] else
++            "; corridor containment diagnostic only")
+     try:
+         result = VirtualAResult(
+             status=status,
+             reason="",
+-            detail="geometry, dynamics and collision audits passed",
++            detail="geometry, dynamics and collision audits passed"
++            + corridor_detail,
+             first_failure_layer="",
+             request_sha256=request_sha,
+             planning_context_sha256=plan_context_sha,
+@@ -756,6 +932,7 @@ def plan_virtual_a(map_request):
+                 "collision_margin_m": (
+                     last_collision_audit.metrics.get("margin")
+                     if isinstance(last_collision_audit.metrics, dict) else None),
++                **corridor_metrics,
+             },
+             checks=checks)
+     except VirtualAContractError as exc:

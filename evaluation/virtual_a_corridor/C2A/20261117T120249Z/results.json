@@ -1,0 +1,331 @@
+{
+  "stage": "C2_A",
+  "utc_run": "20261117T120249Z",
+  "overall": "IMPLEMENTED_UNCOMMITTED_AWAITING_CODEX",
+  "task": "plan/virtual_a_corridor_v01/TASK_C2.md",
+  "prerequisites": {
+    "required": "C0/C1 ACCEPTED",
+    "codex_acceptance_artifact_found": false,
+    "v1_c1_codex_accepted_artifact": null,
+    "note": "No C0/C1 Codex ACCEPTED artifact was found. C2-A was continued under the user's explicit instruction; this report does not claim C0/C1 acceptance."
+  },
+  "git": {
+    "task_source_baseline": "23fd16227e75a68f03f3ac7483555063c8189313",
+    "head": "9a19fd3e22d33188b13795f695757c3e4a36909f",
+    "head_subject": "Add C1 exact LOS and separating-hyperplane corridor geometry",
+    "branch": "feature/virtual-rigid-formation-a",
+    "worktree": "dirty",
+    "c2a_committed": false,
+    "commit_or_push_created": false,
+    "c2a_files": [
+      {
+        "path": "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/contracts.py",
+        "status": "modified",
+        "added_lines": 16,
+        "deleted_lines": 2
+      },
+      {
+        "path": "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py",
+        "status": "modified",
+        "added_lines": 456,
+        "deleted_lines": 1,
+        "worktree_added_lines_including_v1": 542,
+        "worktree_deleted_lines_including_v1": 2,
+        "diff": "source_diff_c2a_corridor_only.diff"
+      },
+      {
+        "path": "tests/test_virtual_a_corridor_optimizer.py",
+        "status": "new",
+        "lines": 344,
+        "tests": 13
+      }
+    ],
+    "prior_uncommitted_changes_within_c2a_files": {
+      "path": "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py",
+      "note": "corridor.py already contained uncommitted V1 display changes before C2-A; the C2-A-only added/deleted counts are relative to a reconstructed pre-C2A V1 baseline.",
+      "pre_c2a_baseline_sha256": "c1c9142129a3102144a796b0b7229abef7423d82c3dc2dbcbc4146a32b4ba715",
+      "pre_c2a_baseline_reconstruction": "HEAD corridor.py plus the corridor.py part of V1 v0_v1_changes.patch; copy saved as pre_c2a_v1_corridor.py; hash matches V1 source_hashes.txt",
+      "v1_only_added_lines": 86,
+      "v1_only_deleted_lines": 1
+    },
+    "unrelated_uncommitted_worktree_changes": [
+      "catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch",
+      "catkin_ws/src/fwis_v3_demo/rviz/formation_demo.rviz",
+      "catkin_ws/src/fwis_v3_optimizer/scripts/formation_uniform_planner_node.py",
+      "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_playback.py",
+      "catkin_ws/src/fwis_v3_playback/package.xml",
+      "catkin_ws/src/fwis_v3_playback/scripts/formation_playback.py",
+      "tests/test_formation_demo_assets.py",
+      "tests/test_virtual_a_ros_adapter.py",
+      "tests/test_formation_hud.py",
+      "tests/test_virtual_a_corridor_display.py"
+    ]
+  },
+  "environment": {
+    "python": "3.8.10",
+    "numpy": "1.24.4",
+    "scipy": "1.10.1",
+    "ros_distro": "noetic",
+    "uname": "Linux wq-ubuntu 5.15.0-139-generic #149~20.04.1-Ubuntu SMP Wed Apr 16 08:29:56 UTC 2025 x86_64 x86_64 x86_64 GNU/Linux"
+  },
+  "source_hashes": {
+    "corridor.py": "0172b0ff25c96333a5799eaf2f707c194070e646ee5c9f379e3e42d431b440fb",
+    "contracts.py": "383e87cd3f88ad0792125970e457ac0e4f3f75da87ae0fcd135e28b409288637",
+    "tests/test_virtual_a_corridor_optimizer.py": "3f4b5566bc20582cd84ece81afbd82a4c198a7e905ce798f95fb560e31eaaaae",
+    "sample_c2a.py": "5aabbd7a074a5a1f3856fc6f37a204a1fea170ff0ec64ea16560332432ab61f5",
+    "sample_c2a.json": "3f09b52481b41148c36606f8c9d178488fdafb36a3ab2f51f1721c9c9697e25b",
+    "TASK_C2.md": "1a99ef967fb80836018e86568b4f1087f09d9b3d23e16b30340190fa4a2f8ff9",
+    "corridor_pre_c2a_v1_sha256": "c1c9142129a3102144a796b0b7229abef7423d82c3dc2dbcbc4146a32b4ba715",
+    "tracked_diff_corridor_contracts_sha256": "76c7ba3070c4b3ec12836863a1dce56a7d13cbd6e0ef3df93d3f127d8cb6d79b",
+    "source_diff_c2a_contracts_sha256": "0f60f90b2cf651cde84a56f767201b687727a5dabbe2143e75a5fc9cecd40f28",
+    "source_diff_c2a_corridor_only_sha256": "e04bf39682f564f30b2d4c70bff443ac1c99d501898b90772257e083d5c34cd1",
+    "source_diff_corridor_from_head_including_v1_sha256": "9edd2eed1a0b8ac7c501d30e2eca03417052c6395667250fb7b7baeab3229c23",
+    "new_test_c2a_sha256": "4173529f8f91ce8a0bb074659853187a1135056ed2a552c4e47634c0904b8800"
+  },
+  "implementation": {
+    "guide_contract": "GuideRoute carries optional quality with field(default=None, compare=False); old as_dict keys, equality and hash are unchanged when quality is absent.",
+    "make_corridor_guide": {
+      "initialization": "Chebyshev centre of each adjacent-corridor portal via existing HiGHS _chebyshev_center",
+      "frozen_seed_length_m": "max(region seed length, 0.1)",
+      "L0_m": "max(goal-start distance, 1.0)",
+      "objective": "sum ||dx||^2/L0^2 + 0.1 sum ||dx_j/l_j - dx_(j-1)/l_(j-1)||^2 + 0.01 sum ||x_j-c_j||^2/L0^2",
+      "solver": "scipy.optimize.minimize SLSQP with analytic value/gradient and both-corridor linear halfspaces",
+      "solver_options": {
+        "ftol": 1e-9,
+        "maxiter": 300
+      },
+      "acceptance": [
+        "solver success",
+        "finite result",
+        "primal violation <= 1e-8 m",
+        "every segment length > 1e-8 m",
+        "every guide vertex in its assigned corridor",
+        "final guide metrics revalidation"
+      ],
+      "failure_behavior": "keep checked Chebyshev portal-centre polyline and record qp_attempted/qp_used/qp_status/qp_iterations/qp_objective/fallback_objective/fallback_reason/primal_violation_m",
+      "quality_fields": [
+        "stage",
+        "source",
+        "chain_digest",
+        "region_count",
+        "segment_corridor_indices",
+        "segment_lengths_m",
+        "guide_length_m",
+        "seed_lengths_m",
+        "portal_radius_m",
+        "negative_turn_indices",
+        "warnings",
+        "rounding",
+        "smoothness_claim",
+        "is_executable_path",
+        "qp metadata"
+      ]
+    },
+    "safety": {
+      "claim": "each segment's two endpoints lie in its assigned convex corridor C_j, therefore the full segment lies in C_j",
+      "rounding": "PL_ONLY_NO_BEZIER",
+      "smoothness_claim": "NONE",
+      "is_executable_path": false,
+      "negative_dot_policy": "warning only; vertices preserved; no deletion or shortcut",
+      "near_zero_policy": "reject/fallback at 1e-8 m; do not delete a portal because that would skip a corridor"
+    },
+    "allocate_corridors": {
+      "boundary": "tau_j from cumulative guide segment lengths normalized by S",
+      "cuts": "sorted union of tau internal boundaries and k/8, duplicate and zero-length cuts removed",
+      "ownership": "interval midpoint via bisect_right(tau, midpoint)-1",
+      "checks": [
+        "coverage [0,1]",
+        "contiguous intervals with no gap or reversal",
+        "nondecreasing corridor index",
+        "every corridor 0..M-1 appears",
+        "every interval has positive width"
+      ],
+      "switch_policy": "adjacent intervals with different corridor indices meet at one switch fraction; C2-B must constrain both corridors there"
+    }
+  },
+  "sample_cases": [
+    {
+      "name": "M1",
+      "region_count": 1,
+      "guide_source": "corridor_endpoint_polyline",
+      "qp_status": "NO_INTERNAL_PORTAL",
+      "qp_iterations": 0,
+      "qp_objective": null,
+      "fallback_objective": null,
+      "primal_violation_m": 0.0,
+      "points": [[0.0, 0.0], [1.0, 0.0]],
+      "allocation_intervals": 8,
+      "coverage": [0.0, 1.0],
+      "corridor_indices": [0],
+      "warnings": []
+    },
+    {
+      "name": "M3_unequal",
+      "region_count": 3,
+      "guide_source": "corridor_qp_polyline",
+      "qp_status": "SLSQP_SUCCESS",
+      "qp_iterations": 7,
+      "qp_objective": 0.35605817153423364,
+      "fallback_objective": 0.403303454001592,
+      "primal_violation_m": 0.0,
+      "points": [[0.0, 0.0], [1.9760771982504293, -0.0], [3.4, 0.0], [6.0, 0.0]],
+      "segment_lengths_m": [1.9760771982504293, 1.4239228017495706, 2.6],
+      "seed_lengths_m": [2.0, 1.4142135623730951, 3.1622776601683795],
+      "qp_terms": {
+        "length": 0.35256770107743374,
+        "smoothness": 0.0034458670400100535,
+        "centre": 4.460341678987477e-05
+      },
+      "allocation_intervals": 10,
+      "coverage": [0.0, 1.0],
+      "corridor_indices": [0, 1, 2],
+      "warnings": []
+    },
+    {
+      "name": "M12",
+      "region_count": 12,
+      "guide_source": "corridor_qp_polyline",
+      "qp_status": "SLSQP_SUCCESS",
+      "qp_iterations": 1,
+      "qp_objective": 0.08333333333333333,
+      "fallback_objective": 0.08333333333333333,
+      "primal_violation_m": 0.0,
+      "point_count": 13,
+      "allocation_intervals": 16,
+      "coverage": [0.0, 1.0],
+      "corridor_indices": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+      "warnings": []
+    },
+    {
+      "name": "U_topology",
+      "region_count": 3,
+      "guide_source": "corridor_qp_polyline",
+      "qp_status": "SLSQP_SUCCESS",
+      "qp_iterations": 2,
+      "qp_objective": 1.6274999999999997,
+      "fallback_objective": 3.4,
+      "primal_violation_m": 2.220446049250313e-16,
+      "points": [[0.0, 0.0], [1.5, 0.5000000000000002], [1.5, 1.4999999999999998], [0.0, 2.0]],
+      "allocation_intervals": 10,
+      "coverage": [0.0, 1.0],
+      "corridor_indices": [0, 1, 2],
+      "warnings": []
+    }
+  ],
+  "tests": [
+    {
+      "pattern": "test_virtual_a_corridor_optimizer.py",
+      "kind": "C2-A new",
+      "tests": 13,
+      "ok": true,
+      "seconds": 0.023,
+      "exit_code": 0,
+      "log": "test_logs/test_virtual_a_corridor_optimizer.log"
+    },
+    {
+      "pattern": "test_virtual_a_corridor.py",
+      "kind": "C1 corridor regression",
+      "tests": 25,
+      "ok": true,
+      "seconds": 0.628,
+      "exit_code": 0,
+      "log": "test_logs/test_virtual_a_corridor_final.log"
+    },
+    {
+      "pattern": "test_virtual_a_optimizer.py",
+      "kind": "optimizer regression",
+      "tests": 29,
+      "ok": true,
+      "seconds": 73.172,
+      "exit_code": 0,
+      "log": "test_logs/test_virtual_a_optimizer_final.log"
+    },
+    {
+      "pattern": "test_virtual_a_trajectory.py",
+      "kind": "trajectory regression",
+      "tests": 23,
+      "ok": true,
+      "seconds": 0.51,
+      "exit_code": 0,
+      "log": "test_logs/test_virtual_a_trajectory_final.log"
+    },
+    {
+      "pattern": "test_virtual_a_pipeline.py",
+      "kind": "pipeline legacy regression",
+      "tests": 8,
+      "ok": true,
+      "seconds": 206.107,
+      "exit_code": 0,
+      "log": "test_logs/test_virtual_a_pipeline_final.log"
+    }
+  ],
+  "gradient_check": {
+    "method": "central finite difference",
+    "step": 1e-06,
+    "max_abs_gradient_error": 5.292810634216e-11,
+    "regression_threshold": 1e-07,
+    "log": "gradient_check.log"
+  },
+  "acceptance_c2a": {
+    "portal_chebyshev_initialization": true,
+    "qp_objective_and_analytic_gradient": true,
+    "primal_tolerance_1e_8_m": true,
+    "safe_polyline_convexity_proof": true,
+    "bezier_fillet_implemented": false,
+    "unsafe_fillet_explicit_rejection": "NOT_APPLICABLE_NO_FILLET_IMPLEMENTED",
+    "near_zero_segment_policy": "REJECT_AT_1E_8_M_NOT_DELETE",
+    "negative_dot_warning": true,
+    "real_u_preserved": true,
+    "allocation_tau_and_hermite_union": true,
+    "m1_m3_m12_against_n8_coverage": true,
+    "all_corridors_present_no_skip": true,
+    "old_guide_route_serialization_and_hash_compatible": true
+  },
+  "not_run": [
+    "C2-B NLP/guidance_mode/continuous containment",
+    "pipeline integration of corridor guide/allocation",
+    "new-corridor three-vehicle executable solve",
+    "new-corridor three-vehicle geometry/dynamics/continuous OBB audit",
+    "real-map (including map05) offline/ROS run",
+    "ROS master, planner node, RViz, controller, publish/display",
+    "full unittest discover",
+    "QP runtime/request-budget measurement"
+  ],
+  "failures": {
+    "final_tests": "none",
+    "development_fix": "The first analytic QP gradient omitted the smoothness contribution at internal vertex k>=2; finite-difference error was about 0.823 and SLSQP hit the iteration limit. The missing term was added; the final central-difference check above and the 13-test module pass.",
+    "operator_notes": "Three early final-log launches started from the evidence test_logs directory; source setup failed before Python started, so no test ran. They were rerun from the repository root; only _final.log files are authoritative."
+  },
+  "limitations": [
+    "Bezier fillet is optional in TASK_C2 and was not implemented; all guides remain PL_ONLY_NO_BEZIER with no smoothness claim.",
+    "Near-zero segments are rejected rather than deduplicated because deleting a portal would collapse and skip a corridor.",
+    "C2-A is not wired into pipeline or the NLP; this is C2-B scope.",
+    "Samples use exact boxes, not real maps; map05/ROS/RViz are NOT_RUN.",
+    "C0/C1 Codex ACCEPTED artifact is missing; this report records the gap and does not claim acceptance.",
+    "The worktree contains earlier uncommitted V0/V1/Cargo HUD changes unrelated to C2-A; corridor.py itself contains uncommitted V1 display changes, so the C2-A-only corridor delta (+456/-1) is measured against a reconstructed pre-C2A V1 baseline, while the HEAD worktree diff is +542/-2.",
+    "Historical timing_continuous KeyError: dynamic_peaks remains untouched."
+  ],
+  "evidence_files": [
+    "SUMMARY.md",
+    "results.json",
+    "commands.log",
+    "source_hashes.txt",
+    "git_state.log",
+    "head_equality.txt",
+    "prerequisite_search.log",
+    "environment.txt",
+    "sample_c2a.py",
+    "sample_c2a.json",
+    "gradient_check.log",
+    "pre_c2a_v1_corridor.py",
+    "source_diff_c2a_contracts.diff",
+    "source_diff_c2a_corridor_only.diff",
+    "source_diff_corridor_from_head_including_v1.diff",
+    "new_test_c2a.diff",
+    "test_logs/test_virtual_a_corridor_optimizer.log",
+    "test_logs/test_virtual_a_corridor_final.log",
+    "test_logs/test_virtual_a_optimizer_final.log",
+    "test_logs/test_virtual_a_trajectory_final.log",
+    "test_logs/test_virtual_a_pipeline_final.log"
+  ]
+}

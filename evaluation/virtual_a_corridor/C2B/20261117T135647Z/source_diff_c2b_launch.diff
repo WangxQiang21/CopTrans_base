@@ -1,0 +1,20 @@
+--- a/catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch
++++ b/catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch
+@@ -76,6 +76,7 @@
+        STRAIGHT publishes explicit all-fixed headings equal to the cargo goal
+        heading.  The uniform_v02 and legacy paths ignore this argument. -->
+   <arg name="virtual_a_goal_policy" default="free"/>
++  <arg name="virtual_a_guidance_mode" default="legacy_route"/>
+   <arg name="virtual_a_planning_budget_s" default="60.0"/>
+   <arg name="virtual_a_planning_timeout_s" default="75.0"/>
+ 
+@@ -112,6 +113,9 @@
+     <param name="playback_finish_grace_s"
+            value="$(arg playback_finish_grace_s)"/>
+     <param if="$(eval arg('backend') == 'virtual_rigid_a')"
++           name="virtual_a_guidance_mode"
++           value="$(arg virtual_a_guidance_mode)"/>
++    <param if="$(eval arg('backend') == 'virtual_rigid_a')"
+            name="virtual_a_goal_policy" value="$(arg virtual_a_goal_policy)"/>
+     <param if="$(eval arg('backend') == 'virtual_rigid_a')"
+            name="virtual_a_planning_budget_s"

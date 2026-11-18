@@ -1,0 +1,69 @@
+PASS schema {'schema': 'virtual_a_corridor.v2.real_ros_scene.v1'}
+PASS private ROS master {'uri': 'http://127.0.0.1:11585'}
+PASS captured payload equals recorded /formation/planning_debug {'same': True}
+PASS captured payload equals recorded /formation/corridors {'same': True}
+PASS captured payload equals recorded /formation/guides {'same': True}
+PASS payload sha256 from raw recorded messages {'recomputed': '3c4ebe3cfdbdf3ba272a0b83f505363c764d8267fbb39db7b8b087a3e7c18b68', 'recorded': '3c4ebe3cfdbdf3ba272a0b83f505363c764d8267fbb39db7b8b087a3e7c18b68'}
+PASS payload sha256 from run_result documents {'same': True}
+PASS planning debug identity {'state': 'CANDIDATE_REFERENCE_POINT_ONLY', 'plan_id': 92001, 'formation_id': 'synthetic_g4', 'backend': 'virtual_rigid_a', 'generation': 1, 'grid_sha256': 'ec821c01fb57986bbcb907a755e91b3f723a0213bc5375af84079eb343899fa9', 'planning_context_sha256': 'ec12268f5f66c8f54c3000afddd6ad6d47700ea3a31fcad713931bccbdaaeee3', 'model_sha256': 'ea3463501c47cfa37c4f2331a968881f8a0c2d3c8a09f4d8c5febdcfd23b651f'}
+PASS planning debug has one used corridor route {'routes': 1}
+PASS route is algorithm-consumed current route {'route_id': 0, 'corridor_used': True, 'route_source': 'astar_primary', 'used_by_optimizer_present': False}
+PASS chain digest is also chain sha256 {'chain_digest': '8775e3d1d5761b75ee8bd68d2b44d9c99168e96a1ea84e28bc55af0e538f3183', 'chain_sha256': '8775e3d1d5761b75ee8bd68d2b44d9c99168e96a1ea84e28bc55af0e538f3183'}
+PASS corridor entry repeats document identity {'same': True}
+PASS guide label is PL_GUIDE {'guide_label': 'PL_GUIDE', 'guide_is_executable_path': False}
+PASS guide quality contract {'stage': 'C2_A', 'rounding': 'PL_ONLY_NO_BEZIER', 'smoothness_claim': 'NONE', 'is_executable_path': False, 'region_count': 2, 'warnings': [], 'chain_digest_matches': True}
+PASS raw A* route point count {'count': 246}
+PASS guide point count {'count': 3}
+PASS A* route endpoints {'first': [3.500000000000001, -6.06217782649107], 'last': [3.500000000000001, 6.06217782649107]}
+PASS guide endpoints equal chain endpoints {'first': [3.500000000000001, -6.06217782649107], 'last': [3.500000000000001, 6.06217782649107]}
+PASS guide portal lies inside both corridor regions {'portal': [4.392290590167718, 3.7168851651942636], 'region0': True, 'region1': True}
+PASS request fingerprint matches admission {'request': 'e6812ca7fead786a5ba5c84dd26664644fe212e773d4cc88ed3b46fce4675987', 'job': 'e6812ca7fead786a5ba5c84dd26664644fe212e773d4cc88ed3b46fce4675987'}
+PASS production envelope verifier {'digest': 'ea3463501c47cfa37c4f2331a968881f8a0c2d3c8a09f4d8c5febdcfd23b651f', 'message_digest': 'ea3463501c47cfa37c4f2331a968881f8a0c2d3c8a09f4d8c5febdcfd23b651f', 'sample_count': 1982, 'duration_s': 39.602577282743304}
+PASS guide layer clear marker {'markers': [('formation', 0, 3)]}
+PASS guide layer has five markers {'count': 5}
+PASS A* line namespace and point count {'count': 1, 'points': 246}
+PASS centerline namespace and point count {'count': 1, 'points': 3}
+PASS A* marker coordinates vs actual route {'actual': 0.0, 'expected': 0.0, 'error': 0.0, 'tolerance': 1e-09}
+PASS centerline marker coordinates vs actual guide {'actual': 0.0, 'expected': 0.0, 'error': 0.0, 'tolerance': 1e-09}
+PASS guide marker z values {'astar_ok': True, 'center_ok': True}
+PASS guide line colors and widths {'astar_color': [1.0, 0.550000011920929, 0.0, 0.949999988079071], 'center_color': [0.05000000074505806, 0.8199999928474426, 0.25, 0.949999988079071], 'astar_scale': [0.018, 0.0, 0.0], 'center_scale': [0.03, 0.0, 0.0]}
+PASS guide labels {'formation/guides/astar': 'A* ROUTE | REFERENCE_ONLY', 'formation/guides/centerline': 'PL_GUIDE | REFERENCE_ONLY'}
+PASS guide labels carry no safety words {'text': 'A* ROUTE | REFERENCE_ONLY PL_GUIDE | REFERENCE_ONLY'}
+PASS corridor layer clear marker {'first': 3}
+PASS corridor marker counts {'fill': 2, 'edge': 2}
+PASS corridor region 0 markers exist {'fill': True, 'edge': True}
+PASS corridor region 0 fill style {'color': [0.949999988079071, 0.23749999701976776, 0.23749999701976776, 0.15000000596046448], 'scale': [1.0, 1.0, 1.0]}
+PASS corridor region 0 edge style {'color': [0.949999988079071, 0.23749999701976776, 0.23749999701976776, 0.949999988079071], 'scale': [0.03, 0.0, 0.0]}
+PASS corridor region 1 markers exist {'fill': True, 'edge': True}
+PASS corridor region 1 fill style {'color': [0.949999988079071, 0.23749999701976776, 0.23749999701976776, 0.15000000596046448], 'scale': [1.0, 1.0, 1.0]}
+PASS corridor region 1 edge style {'color': [0.949999988079071, 0.23749999701976776, 0.23749999701976776, 0.949999988079071], 'scale': [0.03, 0.0, 0.0]}
+PASS corridor fill vertices vs actual regions {'actual': 0.0, 'expected': 0.0, 'error': 0.0, 'tolerance': 1e-09}
+PASS corridor edge vertices vs actual regions {'actual': 0.0, 'expected': 0.0, 'error': 0.0, 'tolerance': 1e-09}
+PASS final marker identity {'namespaces': ['formation/synthetic_g4/links', 'formation/synthetic_g4/reference', 'formation/synthetic_g4/vehicle_1', 'formation/synthetic_g4/vehicle_2', 'formation/synthetic_g4/vehicle_3']}
+PASS marker OBB matches an actual status tick {'error_m': 0.0, 'status_elapsed_s': 18.166410685, 'captured_elapsed_s': 18.36651969}
+PASS final path marker vehicle 1 {'path': True, 'obb': True}
+PASS final path is bold mode color vehicle 1 {'scale': [0.05, 0.0, 0.0], 'colors': [(0.1, 0.45, 1.0, 0.95)]}
+PASS final path marker vehicle 2 {'path': True, 'obb': True}
+PASS final path is bold mode color vehicle 2 {'scale': [0.05, 0.0, 0.0], 'colors': [(0.1, 0.45, 1.0, 0.95)]}
+PASS final path marker vehicle 3 {'path': True, 'obb': True}
+PASS final path is bold mode color vehicle 3 {'scale': [0.05, 0.0, 0.0], 'colors': [(0.1, 0.45, 1.0, 0.95)]}
+PASS final path coordinates vs analytic plan {'actual': 8.881784197001252e-16, 'expected': 0.0, 'error': 8.881784197001252e-16, 'tolerance': 1e-09}
+PASS final path mode colors {'actual': 1.1920928966180355e-08, 'expected': 0.0, 'error': 1.1920928966180355e-08, 'tolerance': 1e-06}
+PASS current OBB vs frame_at {'actual': 0.0, 'expected': 0.0, 'error': 0.0, 'tolerance': 1e-09}
+PASS capture status exists {'present': True}
+PASS capture status certification {'state': 'PLAYING', 'executable': True, 'certification': 'FEASIBLE', 'audit_status': 'FEASIBLE', 'geometry_only': False, 'marker_count': 19, 'model_sha256': 'ea3463501c47cfa37c4f2331a968881f8a0c2d3c8a09f4d8c5febdcfd23b651f'}
+PASS status marker namespaces equal final layer {'status': ['formation/synthetic_g4/links', 'formation/synthetic_g4/reference', 'formation/synthetic_g4/vehicle_1', 'formation/synthetic_g4/vehicle_2', 'formation/synthetic_g4/vehicle_3'], 'final': ['formation/synthetic_g4/links', 'formation/synthetic_g4/reference', 'formation/synthetic_g4/vehicle_1', 'formation/synthetic_g4/vehicle_2', 'formation/synthetic_g4/vehicle_3']}
+PASS captured instant is not a published sample {'nearest_sample_delta_s': 0.006519690000001077, 'non_sample_time': True, 'progress': 0.4637708187210357}
+PASS live status frame vs authoritative frame_at {'position_error_m': 0.0, 'heading_error_rad': 0.0, 'standard_m': 1e-07}
+PASS unused route is candidate-only and default-off namespaces {'namespaces': ['formation/guides/astar_candidate', 'formation/guides/centerline_candidate'], 'labels': ['A* ROUTE | CANDIDATE | REFERENCE_ONLY', 'PL_GUIDE | REFERENCE_ONLY | CANDIDATE']}
+PASS tampered guide is UNVALIDATED_GUIDE {'labels': ['A* ROUTE | REFERENCE_ONLY', 'UNVALIDATED_GUIDE | PL_GUIDE | REFERENCE_ONLY'], 'color': (1.0, 0.78, 0.0, 0.95)}
+PASS mismatched route identity is rejected {'error': 'guide route identity does not match its document'}
+PASS screenshot exists and size matches {'bytes': 104649, 'recorded_bytes': 104649, 'sha256': '61ddfbd47e3524052f1a94e61eedb84368658e877caa1aa16a17178f63fe2ad4'}
+PASS screenshot hash recorded {'sha256': '61ddfbd47e3524052f1a94e61eedb84368658e877caa1aa16a17178f63fe2ad4'}
+PASS rviz final layer {'topic': '/formation/markers', 'name': 'Final certified vehicle paths'}
+PASS rviz guide layer exists {'present': True}
+PASS rviz A* default hidden {'formation/guides/astar': False}
+PASS rviz centerline default visible {'formation/guides/centerline': True}
+PASS rviz candidate namespaces default hidden {'astar_candidate': False, 'centerline_candidate': False}
+PASS rviz corridor layer {'present': True, 'name': 'Corridor candidates (reference point only, low alpha)'}
+{"max_errors_m":{"astar_marker_vs_route":0.0,"centerline_marker_vs_guide":0.0,"corridor_edge_vs_regions":0.0,"corridor_fill_vs_regions":0.0,"current_obb_vs_frame_at":0.0,"final_path_mode_color":1.1920928966180355e-08,"final_path_vs_analytic_plan":8.881784197001252e-16,"live_status_vs_frame_at_heading_rad":0.0,"live_status_vs_frame_at_position":0.0},"ok":true,"payload_sha256":"3c4ebe3cfdbdf3ba272a0b83f505363c764d8267fbb39db7b8b087a3e7c18b68"}

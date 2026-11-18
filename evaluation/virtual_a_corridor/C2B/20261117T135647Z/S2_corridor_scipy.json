@@ -1,0 +1,289 @@
+{
+ "attempts": [
+  {
+   "attempt_index": 0,
+   "constraint_residual": 0.1833005963616543,
+   "corridor_residual_m": 0.0029469814353149243,
+   "detail": "Positive directional derivative for linesearch",
+   "initial_source": "map_route_guide",
+   "iterations": 88,
+   "objective": 260.105444961443,
+   "rejection_reason": "Positive directional derivative for linesearch",
+   "solver": "scipy_slsqp",
+   "solver_status": "Positive directional derivative for linesearch",
+   "status": "SOLVER_FAILED",
+   "wall_time_s": 11.625259205931798
+  },
+  {
+   "attempt_index": 1,
+   "constraint_residual": 0.5400223454913711,
+   "corridor_residual_m": 0.004119243276463493,
+   "detail": "Positive directional derivative for linesearch",
+   "initial_source": "automatic_endpoint_shape",
+   "iterations": 25,
+   "objective": 72.83470346268861,
+   "rejection_reason": "Positive directional derivative for linesearch",
+   "solver": "scipy_slsqp",
+   "solver_status": "Positive directional derivative for linesearch",
+   "status": "SOLVER_FAILED",
+   "wall_time_s": 2.9924497129395604
+  },
+  {
+   "attempt_index": 2,
+   "constraint_residual": 0.39547932045007883,
+   "corridor_residual_m": 0.017697523828000362,
+   "detail": "Iteration limit reached",
+   "initial_source": "automatic_endpoint_shape",
+   "iterations": 120,
+   "objective": 64.45480259591423,
+   "rejection_reason": "Iteration limit reached",
+   "solver": "scipy_slsqp",
+   "solver_status": "Iteration limit reached",
+   "status": "SOLVER_FAILED",
+   "wall_time_s": 15.491327116964385
+  },
+  {
+   "attempt_index": 3,
+   "constraint_residual": 1.0027069734729697,
+   "corridor_residual_m": 0.007425375182663179,
+   "detail": "Positive directional derivative for linesearch",
+   "initial_source": "automatic_endpoint_shape",
+   "iterations": 23,
+   "objective": 816.420713197574,
+   "rejection_reason": "Positive directional derivative for linesearch",
+   "solver": "scipy_slsqp",
+   "solver_status": "Positive directional derivative for linesearch",
+   "status": "SOLVER_FAILED",
+   "wall_time_s": 2.5959915400017053
+  },
+  {
+   "attempt_index": 4,
+   "constraint_residual": 0.25724730969381576,
+   "corridor_residual_m": 0.0017525467080161238,
+   "detail": "Positive directional derivative for linesearch",
+   "initial_source": "automatic_endpoint_shape",
+   "iterations": 52,
+   "objective": 494.30324465673516,
+   "rejection_reason": "Positive directional derivative for linesearch",
+   "solver": "scipy_slsqp",
+   "solver_status": "Positive directional derivative for linesearch",
+   "status": "SOLVER_FAILED",
+   "wall_time_s": 6.278888228931464
+  },
+  {
+   "attempt_index": 5,
+   "constraint_residual": null,
+   "corridor_residual_m": null,
+   "detail": "SLSQP iteration callback reached the soft wall budget; the returned iterate is not audited",
+   "initial_source": "automatic_endpoint_shape",
+   "iterations": 8,
+   "objective": null,
+   "rejection_reason": "SOFT_BUDGET_EXHAUSTED",
+   "solver": "scipy_slsqp",
+   "solver_status": "SLSQP_SOFT_DEADLINE",
+   "status": "SOLVER_TIMEOUT",
+   "wall_time_s": 1.03846762701869
+  }
+ ],
+ "checks": 0,
+ "collision_audit_passed": null,
+ "corridor_rounds": [
+  {
+   "allocation": [
+    [
+     0.0,
+     0.125,
+     0
+    ],
+    [
+     0.125,
+     0.25,
+     0
+    ],
+    [
+     0.25,
+     0.375,
+     0
+    ],
+    [
+     0.375,
+     0.5,
+     0
+    ],
+    [
+     0.5,
+     0.625,
+     0
+    ],
+    [
+     0.625,
+     0.75,
+     0
+    ],
+    [
+     0.75,
+     0.875,
+     0
+    ],
+    [
+     0.875,
+     0.9904572867960737,
+     0
+    ],
+    [
+     0.9904572867960737,
+     1.0,
+     1
+    ]
+   ],
+   "chain_audit_passed": true,
+   "chain_audit_reason": "CORRIDOR_CHAIN_VERIFIED",
+   "chain_digest": "0e1552637da62c1763fc0a535d87b758dea4bea3e504764c472270be62a0aa49",
+   "containment": null,
+   "effective_margin_m": 1e-05,
+   "guide_points": [
+    [
+     0.0,
+     0.0
+    ],
+    [
+     11.366326742047649,
+     0.018101928472965753
+    ],
+    [
+     11.474331036127456,
+     -8.326672684688674e-16
+    ]
+   ],
+   "guide_quality": {
+    "chain_digest": "0e1552637da62c1763fc0a535d87b758dea4bea3e504764c472270be62a0aa49",
+    "fallback_objective": 2.5237229960525864,
+    "fallback_reason": null,
+    "guide_length_m": 11.475851920182697,
+    "is_executable_path": false,
+    "negative_turn_indices": [],
+    "portal_radius_m": [
+     0.3353246795500233
+    ],
+    "primal_violation_m": 0.0,
+    "qp_attempted": true,
+    "qp_iterations": 5,
+    "qp_objective": 0.9854273309773218,
+    "qp_status": "SLSQP_SUCCESS",
+    "qp_terms": {
+     "centre": 1.0542807392851624e-05,
+     "length": 0.9813567997266869,
+     "smoothness": 0.00405998844324204
+    },
+    "qp_used": true,
+    "region_count": 2,
+    "rounding": "PL_ONLY_NO_BEZIER",
+    "seed_lengths_m": [
+     11.425027352264854,
+     0.1
+    ],
+    "segment_corridor_indices": [
+     0,
+     1
+    ],
+    "segment_lengths_m": [
+     11.366341156537667,
+     0.10951076364503089
+    ],
+    "smoothness_claim": "NONE",
+    "source": "corridor_qp_polyline",
+    "stage": "C2_A",
+    "warnings": []
+   },
+   "guide_source": "corridor_qp_polyline",
+   "region_count": 2,
+   "region_rows": [
+    55,
+    91
+   ],
+   "round_index": 0,
+   "route_source": "astar_primary"
+  }
+ ],
+ "detail": "soft wall budget 40.0s exhausted before an audited candidate",
+ "dynamic_audit_passed": null,
+ "executable": false,
+ "feasible": false,
+ "geometry_audit_passed": null,
+ "grid_sha256": "55e3c5b82a99c74b96a550720fd7a467e76b40f48082c0212ca21574d3af8782",
+ "guidance_mode": "corridor",
+ "kappa_peaks_per_vehicle": null,
+ "kappa_reference_peak": null,
+ "measured_wall_s": 40.9699719339842,
+ "metrics": {},
+ "path_length_m": null,
+ "path_present": false,
+ "plan_kind": null,
+ "plan_present": false,
+ "planner_config": {
+  "allow_scipy_fallback": true,
+  "collocation_points": 9,
+  "corridor_audit_max_depth": 20,
+  "corridor_audit_max_intervals": 20000,
+  "corridor_audit_min_width_m": 1e-05,
+  "corridor_audit_position_margin_m": 5e-08,
+  "corridor_box_padding_m": 2.0,
+  "corridor_clearance_target_m": 0.05,
+  "corridor_clearance_weight": 1.0,
+  "corridor_enforcement": "hard",
+  "corridor_guide_weight": 0.1,
+  "corridor_kappa_weight": 0.01,
+  "corridor_margin_m": 1e-05,
+  "corridor_margin_portal_fraction": 0.25,
+  "corridor_quadrature_points": 9,
+  "curvature_margin": 0.02,
+  "eta_limit": 2.0,
+  "guidance_mode": "corridor",
+  "heading_tolerance_rad": 0.003490658503988659,
+  "intervals": 8,
+  "ipopt_tolerance": 1e-08,
+  "kappa_limit": 0.5524861878453039,
+  "max_initials": 6,
+  "max_iterations": 120,
+  "max_seconds": 40.0,
+  "position_tolerance_m": 0.005,
+  "rigidity_tolerance_m": 1e-06,
+  "scipy_maxiter": 120,
+  "scipy_tolerance": 1e-08,
+  "solver": "scipy"
+ },
+ "planning_context_sha256": "f0f958e904c255b8e1ab9304913c991369e89e38a2dab8eb7d849f384a6e9ac1",
+ "reason": "SOFT_BUDGET_EXHAUSTED",
+ "request_sha256": "9feb7332db51d4f347a21b347416b6e7ffa1619ad28bda41ef88ad57c3bb2ba2",
+ "scene": "S2",
+ "search_rounds": [
+  {
+   "collision_first_failure": null,
+   "collision_passed": null,
+   "collision_reason": null,
+   "corridor_containment_passed": null,
+   "corridor_containment_reason": null,
+   "dynamics_passed": null,
+   "dynamics_reason": null,
+   "geometry_reason": "SOFT_BUDGET_EXHAUSTED",
+   "geometry_status": "BUDGET_EXHAUSTED",
+   "round_index": 0,
+   "timing_reason": null,
+   "timing_status": null
+  }
+ ],
+ "status": "BUDGET_EXHAUSTED",
+ "timings": {
+  "collision_audit_s": 0.0,
+  "corridor_allocation_s": 6.173993460834026e-05,
+  "corridor_build_s": 0.46756858995649964,
+  "corridor_containment_s": 0.0,
+  "corridor_guide_s": 0.0026892570313066244,
+  "dynamics_audit_s": 0.0,
+  "geometry_solve_s": 40.08470889390446,
+  "result_assembly_s": 0.0,
+  "retime_s": 0.0,
+  "route_generation_s": 0.3839380400022492
+ },
+ "wall_time_s": 40.95383757806849
+}

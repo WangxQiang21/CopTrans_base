@@ -1,0 +1,493 @@
+--- a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py
++++ b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py
+@@ -14,11 +14,12 @@
+ occupied cells intersecting each polygon's bounding box and applies a
+ polygon-versus-cell SAT, treating a touching edge as a collision.
+ """
++import bisect
+ import math
+ from collections.abc import Mapping as MappingABC
+ 
+ import numpy as np
+-from scipy.optimize import linprog
++from scipy.optimize import linprog, minimize
+ 
+ from .contracts import (
+     ConvexCorridor,
+@@ -40,6 +41,12 @@
+ _HALFSPACE_MATCH_TOL_M = 1e-9
+ _MIN_PORTAL_RADIUS_FLOOR_M = 0.005
+ _MIN_PORTAL_RADIUS_CELL_FRACTION = 0.1
++_GUIDE_POINT_DEDUP_M = 1e-8
++_GUIDE_MIN_SEED_LENGTH_M = 0.1
++_GUIDE_PRIMAL_TOL_M = 1e-8
++_GUIDE_QP_MAXITER = 300
++_GUIDE_QP_FTOL = 1e-9
++_ALLOCATION_ZERO_M = 1e-15
+ 
+ 
+ class _DegenerateSeed(Exception):
+@@ -696,6 +703,452 @@
+     return result
+ 
+ 
++def _row_violation(point, rows, limits):
++    if not rows:
++        return 0.0
++    return max(
++        0.0,
++        max(row[0] * point[0] + row[1] * point[1] - limit
++            for row, limit in zip(rows, limits)))
++
++
++def _portal_bundle(chain, index):
++    """Return the Chebyshev centre and both halfspace sets of one portal."""
++    first = chain.regions[index - 1]
++    second = chain.regions[index]
++    rows = first.A + second.A
++    limits = first.b + second.b
++    measured = _chebyshev_center(rows, limits)
++    if measured is None:
++        raise VirtualAContractError(
++            "CORRIDOR_GUIDE_DEGENERATE",
++            "portal {} has no Chebyshev centre".format(index - 1),
++            portal=index - 1)
++    radius, centre = measured
++    return centre, rows, limits, radius
++
++
++def _guide_region_violation(chain, points):
++    """Max halfspace violation of every guide segment in its assigned C."""
++    regions = chain.regions
++    if len(points) != len(regions) + 1:
++        raise VirtualAContractError(
++            "CORRIDOR_GUIDE_DEGENERATE",
++            "a corridor guide needs one vertex per region endpoint")
++    violation = 0.0
++    for index, region in enumerate(regions):
++        violation = max(
++            violation,
++            _row_violation(points[index], region.A, region.b),
++            _row_violation(points[index + 1], region.A, region.b))
++    return violation
++
++
++def _guide_segment_lengths(points):
++    return [math.hypot(
++        second[0] - first[0], second[1] - first[1])
++        for first, second in zip(points, points[1:])]
++
++
++def _guide_metrics(chain, points, reason):
++    """Validate count, positive lengths and assigned-region containment."""
++    regions = chain.regions
++    if len(points) != len(regions) + 1:
++        raise VirtualAContractError(
++            reason,
++            "guide has {} points for {} regions".format(
++                len(points), len(regions)))
++    lengths = _guide_segment_lengths(points)
++    if any(length <= _GUIDE_POINT_DEDUP_M for length in lengths):
++        raise VirtualAContractError(
++            reason, "guide contains a zero-length segment")
++    violation = _guide_region_violation(chain, points)
++    return lengths, violation
++
++
++def _guide_qp_terms(vector, start, goal, centres, seed_lengths, l0):
++    """C2-A convex QP value and analytic gradient.
++
++    The nine-point Hessian is not assembled: SLSQP receives the exact smooth
++    objective and linear portal constraints only.  ``seed_lengths`` are the
++    frozen per-region $\ell_j$, never the optimized segment lengths.
++    """
++    count = len(seed_lengths)
++    points = np.empty((count + 1, 2), dtype=float)
++    points[0] = start
++    points[-1] = goal
++    if count > 1:
++        points[1:-1] = np.asarray(vector, dtype=float).reshape(count - 1, 2)
++    segments = np.diff(points, axis=0)
++    length_term = float(np.sum(segments * segments)) / (l0 * l0)
++    normalised = segments / np.asarray(seed_lengths, dtype=float)[:, None]
++    smooth_residual = normalised[1:] - normalised[:-1]
++    smooth_term = 0.1 * float(np.sum(smooth_residual * smooth_residual))
++    centre_residual = points[1:-1] - np.asarray(centres, dtype=float)
++    centre_term = 0.01 * float(
++        np.sum(centre_residual * centre_residual)) / (l0 * l0)
++    gradient = np.zeros(2 * (count - 1), dtype=float)
++    for index in range(1, count):
++        offset = 2 * (index - 1)
++        gradient[offset:offset + 2] += (
++            2.0 / (l0 * l0)
++            * (2.0 * points[index] - points[index - 1] - points[index + 1]))
++        gradient[offset:offset + 2] += (
++            0.2 * (-1.0 / seed_lengths[index]
++                   - 1.0 / seed_lengths[index - 1])
++            * smooth_residual[index - 1])
++        if index <= count - 2:
++            gradient[offset:offset + 2] += (
++                0.2 / seed_lengths[index] * smooth_residual[index])
++        if index >= 2:
++            gradient[offset:offset + 2] += (
++                0.2 / seed_lengths[index - 1] * smooth_residual[index - 2])
++        gradient[offset:offset + 2] += (
++            0.02 / (l0 * l0) * centre_residual[index - 1])
++    return {
++        "value": length_term + smooth_term + centre_term,
++        "gradient": gradient,
++        "length_term": length_term,
++        "smoothness_term": smooth_term,
++        "centre_term": centre_term,
++    }
++
++
++def _negative_turn_indices(points):
++    indices = []
++    for index in range(1, len(points) - 1):
++        left = (
++            points[index][0] - points[index - 1][0],
++            points[index][1] - points[index - 1][1])
++        right = (
++            points[index + 1][0] - points[index][0],
++            points[index + 1][1] - points[index][1])
++        if left[0] * right[0] + left[1] * right[1] < 0.0:
++            indices.append(index)
++    return indices
++
++
++def _guide_quality(chain, points, source, portal_radii, qp):
++    lengths = _guide_segment_lengths(points)
++    seed_lengths = [
++        max(math.hypot(region.seed_end[0] - region.seed_start[0],
++                       region.seed_end[1] - region.seed_start[1]),
++            _GUIDE_MIN_SEED_LENGTH_M)
++        for region in chain.regions]
++    negative_turns = _negative_turn_indices(points)
++    quality = {
++        "stage": "C2_A",
++        "source": source,
++        "chain_digest": chain.digest,
++        "region_count": len(chain.regions),
++        "segment_corridor_indices": list(range(len(chain.regions))),
++        "segment_lengths_m": [float(value) for value in lengths],
++        "guide_length_m": float(sum(lengths)),
++        "seed_lengths_m": [float(value) for value in seed_lengths],
++        "portal_radius_m": [float(value) for value in portal_radii],
++        "negative_turn_indices": negative_turns,
++        "warnings": (
++            ["NEGATIVE_DOT_PRODUCT_PRESERVED"] if negative_turns else []),
++        "rounding": "PL_ONLY_NO_BEZIER",
++        "smoothness_claim": "NONE",
++        "is_executable_path": False,
++    }
++    quality.update(qp)
++    return quality
++
++
++def make_corridor_guide(chain, start, goal):
++    """Build the C2-A safe portal centreline for one validated chain.
++
++    The first version is deliberately a polyline: the QP only moves the
++    internal portal vertices inside ``P_j = C_{j-1} intersect C_j``.  Because
++    both endpoints of segment ``j`` lie in convex ``C_j``, the whole segment
++    lies in ``C_j`` without a new collision proof.  No quadratic fillet is
++    applied; ``quality["rounding"]`` therefore says ``PL_ONLY_NO_BEZIER`` and
++    no smoothness is claimed.  Negative turns are recorded but never deleted,
++    so a genuine U/hairpin is preserved.
++    """
++    if not isinstance(chain, CorridorChain):
++        raise VirtualAContractError(
++            "INVALID_CORRIDOR_CHAIN", "expected CorridorChain")
++    try:
++        start = (float(start[0]), float(start[1]))
++        goal = (float(goal[0]), float(goal[1]))
++    except (TypeError, ValueError, IndexError) as exc:
++        raise VirtualAContractError(
++            "INVALID_CORRIDOR_GUIDE",
++            "start and goal must be (x, y) pairs") from exc
++    for name, point in (("start", start), ("goal", goal)):
++        if not (math.isfinite(point[0]) and math.isfinite(point[1])):
++            raise VirtualAContractError(
++                "INVALID_CORRIDOR_GUIDE",
++                "{} must be finite".format(name))
++    regions = chain.regions
++    count = len(regions)
++    for name, region, point in (
++            ("start", regions[0], start), ("goal", regions[-1], goal)):
++        violation = _row_violation(point, region.A, region.b)
++        if violation > _GUIDE_PRIMAL_TOL_M:
++            raise VirtualAContractError(
++                "CORRIDOR_GUIDE_OUTSIDE",
++                "{} violates its endpoint corridor by {} m".format(
++                    name, violation))
++    centres = []
++    portal_radii = []
++    portal_rows = []
++    portal_limits = []
++    for index in range(1, count):
++        centre, rows, limits, radius = _portal_bundle(chain, index)
++        centres.append(centre)
++        portal_radii.append(radius)
++        portal_rows.append(rows)
++        portal_limits.append(limits)
++    centres_array = np.asarray(centres, dtype=float) if centres else \
++        np.zeros((0, 2), dtype=float)
++    seed_lengths = [
++        max(math.hypot(region.seed_end[0] - region.seed_start[0],
++                       region.seed_end[1] - region.seed_start[1]),
++            _GUIDE_MIN_SEED_LENGTH_M)
++        for region in regions]
++    l0 = max(math.hypot(goal[0] - start[0], goal[1] - start[1]), 1.0)
++    fallback_points = [start] + centres + [goal]
++    fallback_objective = None
++    if count > 1:
++        fallback_objective = _guide_qp_terms(
++            np.asarray(centres, dtype=float).reshape(2 * (count - 1)),
++            start, goal, centres_array, seed_lengths, l0)["value"]
++
++    qp = {
++        "qp_attempted": False,
++        "qp_used": False,
++        "qp_status": "NO_INTERNAL_PORTAL" if count == 1 else "NOT_ATTEMPTED",
++        "qp_iterations": 0,
++        "qp_objective": None,
++        "fallback_objective": fallback_objective,
++        "fallback_reason": "NO_INTERNAL_PORTAL" if count == 1 else "",
++        "primal_violation_m": 0.0,
++    }
++    points = fallback_points
++    source = "corridor_endpoint_polyline" if count == 1 else \
++        "corridor_chebyshev_polyline"
++    accepted = False
++    if count > 1:
++        initial = np.asarray(centres, dtype=float).reshape(2 * (count - 1))
++        matrix = np.zeros(
++            (sum(len(rows) for rows in portal_rows), 2 * (count - 1)),
++            dtype=float)
++        upper = np.zeros(matrix.shape[0], dtype=float)
++        offset = 0
++        for index, (rows, limits) in enumerate(
++                zip(portal_rows, portal_limits)):
++            width = len(rows)
++            matrix[offset:offset + width, 2 * index:2 * index + 2] = rows
++            upper[offset:offset + width] = limits
++            offset += width
++        initial_violation = float(np.max(
++            matrix @ initial - upper, initial=0.0))
++        qp["qp_attempted"] = True
++        failure = ""
++        result = None
++        if initial_violation > _GUIDE_PRIMAL_TOL_M:
++            failure = "INITIAL_PORTAL_INFEASIBLE"
++            qp["qp_status"] = failure
++        else:
++            qp["qp_status"] = "SLSQP_RUNNING"
++            try:
++                result = minimize(
++                    lambda vector: _guide_qp_terms(
++                        vector, start, goal, centres_array,
++                        seed_lengths, l0)["value"],
++                    initial,
++                    method="SLSQP",
++                    jac=lambda vector: _guide_qp_terms(
++                        vector, start, goal, centres_array,
++                        seed_lengths, l0)["gradient"],
++                    constraints=[{
++                        "type": "ineq",
++                        "fun": lambda vector: upper - matrix @ vector,
++                        "jac": lambda vector: -matrix,
++                    }],
++                    options={
++                        "maxiter": _GUIDE_QP_MAXITER,
++                        "ftol": _GUIDE_QP_FTOL,
++                        "disp": False,
++                    })
++            except Exception as exc:
++                failure = "{}: {}".format(type(exc).__name__, exc)
++                qp["qp_status"] = "SLSQP_EXCEPTION"
++        if result is not None:
++            qp["qp_status"] = str(result.message)
++            qp["qp_iterations"] = int(getattr(result, "nit", 0))
++            candidate = np.asarray(result.x, dtype=float)
++            if not result.success:
++                failure = str(result.message)
++            elif not np.all(np.isfinite(candidate)):
++                failure = "NONFINITE_QP_RESULT"
++                qp["qp_status"] = failure
++            else:
++                primal = float(np.max(
++                    matrix @ candidate - upper, initial=0.0))
++                if primal > _GUIDE_PRIMAL_TOL_M:
++                    failure = "PRIMAL_VIOLATION_{:.3e}_M".format(primal)
++                    qp["qp_status"] = "PRIMAL_VIOLATION"
++                else:
++                    candidate_points = [start] + [
++                        (float(candidate[2 * index]),
++                         float(candidate[2 * index + 1]))
++                        for index in range(count - 1)] + [goal]
++                    lengths = _guide_segment_lengths(candidate_points)
++                    if any(length <= _GUIDE_POINT_DEDUP_M
++                           for length in lengths):
++                        failure = "ZERO_LENGTH_QP_SEGMENT"
++                        qp["qp_status"] = failure
++                    elif _guide_region_violation(
++                            chain, candidate_points) > _GUIDE_PRIMAL_TOL_M:
++                        failure = "QP_GUIDE_LEAVES_ASSIGNED_REGION"
++                        qp["qp_status"] = failure
++                    else:
++                        points = candidate_points
++                        source = "corridor_qp_polyline"
++                        accepted = True
++                        qp["qp_used"] = True
++                        qp["qp_status"] = "SLSQP_SUCCESS"
++                        qp["qp_objective"] = float(result.fun)
++                        qp["primal_violation_m"] = primal
++                        qp["qp_terms"] = {
++                            "length": float(_guide_qp_terms(
++                                candidate, start, goal, centres_array,
++                                seed_lengths, l0)["length_term"]),
++                            "smoothness": float(_guide_qp_terms(
++                                candidate, start, goal, centres_array,
++                                seed_lengths, l0)["smoothness_term"]),
++                            "centre": float(_guide_qp_terms(
++                                candidate, start, goal, centres_array,
++                                seed_lengths, l0)["centre_term"]),
++                        }
++        if not accepted:
++            qp["fallback_reason"] = failure or "QP_NOT_ACCEPTED"
++        else:
++            qp["fallback_reason"] = None
++    lengths, violation = _guide_metrics(
++        chain, points, "CORRIDOR_GUIDE_DEGENERATE")
++    if violation > _GUIDE_PRIMAL_TOL_M:
++        if accepted:
++            points = fallback_points
++            source = "corridor_chebyshev_polyline"
++            accepted = False
++            qp["qp_used"] = False
++            qp["qp_status"] = "GUIDE_PRIMAL_VIOLATION"
++            qp["fallback_reason"] = "GUIDE_PRIMAL_VIOLATION_{:.3e}_M".format(
++                violation)
++            lengths, violation = _guide_metrics(
++                chain, points, "CORRIDOR_GUIDE_DEGENERATE")
++        if violation > _GUIDE_PRIMAL_TOL_M:
++            raise VirtualAContractError(
++                "CORRIDOR_GUIDE_DEGENERATE",
++                "guide violates assigned corridors by {} m".format(violation))
++    qp["primal_violation_m"] = float(violation)
++    quality = _guide_quality(
++        chain, points, source, portal_radii, qp)
++    return GuideRoute(
++        points=tuple(points),
++        source=source,
++        grid_sha256=chain.grid_sha256,
++        quality=quality)
++
++
++def allocate_corridors(chain, guide, intervals=8):
++    """Map one safe corridor centreline to fixed Hermite fractions.
++
++    Each guide segment ``[x_j, x_j+1]`` is assigned to corridor ``j``.  Its
++    normalized length gives the frozen corridor boundary ``tau_j``.  The
++    output interval ends are the sorted union of all ``tau_j`` cuts and all
++    ``k / intervals`` cuts; a Hermite interval may therefore contain several
++    corridors.  Two adjacent intervals with different indices meet at one
++    switch fraction which C2-B must constrain by both corridor halfspace
++    sets.  Zero-length cuts are removed together with their ownership, and
++    every corridor must still contribute a positive interval.
++    """
++    if not isinstance(chain, CorridorChain):
++        raise VirtualAContractError(
++            "INVALID_CORRIDOR_CHAIN", "expected CorridorChain")
++    if not isinstance(guide, GuideRoute):
++        raise VirtualAContractError(
++            "INVALID_GUIDE_ROUTE", "expected GuideRoute")
++    if chain.grid_sha256 != guide.grid_sha256:
++        raise VirtualAContractError(
++            "CORRIDOR_GRID_MISMATCH",
++            "guide grid_sha256 does not match the chain")
++    if (not isinstance(intervals, int) or isinstance(intervals, bool)
++            or intervals < 1):
++        raise VirtualAContractError(
++            "INVALID_CORRIDOR_ALLOCATION",
++            "intervals must be a positive integer")
++    points = guide.points
++    count = len(chain.regions)
++    if len(points) != count + 1:
++        raise VirtualAContractError(
++            "CORRIDOR_ALLOCATION_MISMATCH",
++            "guide has {} points for {} corridors; C2-A needs one segment "
++            "per corridor".format(len(points), count))
++    lengths, violation = _guide_metrics(
++        chain, points, "CORRIDOR_ALLOCATION_DEGENERATE")
++    if violation > _GUIDE_PRIMAL_TOL_M:
++        raise VirtualAContractError(
++            "CORRIDOR_ALLOCATION_MISMATCH",
++            "guide leaves an assigned corridor by {} m".format(violation))
++    total = math.fsum(lengths)
++    if total <= _GUIDE_POINT_DEDUP_M:
++        raise VirtualAContractError(
++            "CORRIDOR_ALLOCATION_DEGENERATE", "guide length is zero")
++    tau = [0.0]
++    running = 0.0
++    for length in lengths:
++        running += length
++        tau.append(running / total)
++    tau[-1] = 1.0
++    raw_cuts = [0.0, 1.0]
++    raw_cuts.extend(tau[1:-1])
++    raw_cuts.extend(
++        float(index) / float(intervals)
++        for index in range(1, intervals))
++    raw_cuts.sort()
++    cuts = []
++    for value in raw_cuts:
++        if not cuts or value - cuts[-1] > _ALLOCATION_ZERO_M:
++            cuts.append(value)
++    result = []
++    for left, right in zip(cuts, cuts[1:]):
++        if right - left <= _ALLOCATION_ZERO_M:
++            continue
++        middle = 0.5 * (left + right)
++        corridor_index = bisect.bisect_right(tau, middle) - 1
++        corridor_index = min(max(corridor_index, 0), count - 1)
++        result.append((float(left), float(right), int(corridor_index)))
++    if not result:
++        raise VirtualAContractError(
++            "CORRIDOR_ALLOCATION_DEGENERATE", "allocation is empty")
++    if abs(result[0][0]) > _ALLOCATION_ZERO_M or \
++            abs(result[-1][1] - 1.0) > _ALLOCATION_ZERO_M:
++        raise VirtualAContractError(
++            "CORRIDOR_ALLOCATION_DEGENERATE",
++            "allocation does not cover [0, 1]")
++    for previous, current in zip(result, result[1:]):
++        if abs(previous[1] - current[0]) > _ALLOCATION_ZERO_M:
++            raise VirtualAContractError(
++                "CORRIDOR_ALLOCATION_DEGENERATE",
++                "allocation has a gap or reversal")
++        if current[2] < previous[2]:
++            raise VirtualAContractError(
++                "CORRIDOR_ALLOCATION_DEGENERATE",
++                "allocation skips backward")
++    if {item[2] for item in result} != set(range(count)):
++        raise VirtualAContractError(
++            "CORRIDOR_ALLOCATION_DEGENERATE",
++            "allocation skipped a corridor")
++    return tuple(result)
++
++
+ CORRIDOR_DISPLAY_STATE = "CANDIDATE_REFERENCE_POINT_ONLY"
+ CORRIDOR_DISPLAYS_KEY = "corridor_displays"
+ 
+@@ -777,7 +1230,9 @@
+ __all__ = [
+     "CORRIDOR_DISPLAYS_KEY",
+     "CORRIDOR_DISPLAY_STATE",
++    "allocate_corridors",
+     "build_corridor_chain",
+     "audit_corridor_chain",
+     "corridor_display_fields",
++    "make_corridor_guide",
+ ]
+\ 文件尾没有换行符

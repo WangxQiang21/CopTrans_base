@@ -1,0 +1,514 @@
+{
+ "base": {
+  "branch": "feature/virtual-rigid-formation-a",
+  "branch_created": false,
+  "commit_created": false,
+  "head": "9a19fd3e22d33188b13795f695757c3e4a36909f",
+  "pre_c3_tree_reconstruction": "HEAD blobs + C2-A/C2-B/C2-B-rework patches in /tmp/c3_pre; sha256 equals evaluation/.../C3/.../start_state.log",
+  "pushed": false,
+  "uncommitted": true,
+  "worktree": "/home/wq/whut_thesis/expv3_multi_virtual_a"
+ },
+ "corridor_same_input_comparison": {
+  "false_publications": [],
+  "note": "C2 rows are the already delivered C2-B evidence files; C3 rows were rerun after the C3 edits. No C2 code was re-executed in C3.",
+  "rows": [
+   {
+    "c2": {
+     "attempt_count": 4,
+     "attempt_statuses": [
+      "SOLVER_SUCCESS_AUDITED",
+      "SOLVER_SUCCESS_AUDITED",
+      "SOLVER_SUCCESS_AUDITED",
+      "SOLVER_TIMEOUT"
+     ],
+     "evidence_file": "evaluation/virtual_a_corridor/C2B/20261117T135647Z/S1_corridor.json",
+     "evidence_sha256": "1dc1b66328790ecfd0dd7b0fd8c035eb8fbf9a5d6a593a12a205b335639aba73",
+     "executable": false,
+     "plan_present": false,
+     "reason": "CORRIDOR_AUDIT_WIDTH_LIMIT",
+     "search_rounds": [
+      {
+       "collision_first_failure": null,
+       "collision_passed": null,
+       "collision_reason": null,
+       "corridor_containment_passed": false,
+       "corridor_containment_reason": "CORRIDOR_AUDIT_WIDTH_LIMIT",
+       "dynamics_passed": null,
+       "dynamics_reason": null,
+       "geometry_reason": "",
+       "geometry_status": "GEOMETRY_FEASIBLE",
+       "round_index": 0,
+       "timing_reason": null,
+       "timing_status": null
+      }
+     ],
+     "status": "GEOMETRY_FAILED",
+     "wall_s": 36.175005197990686
+    },
+    "c3": {
+     "attempt_count": 4,
+     "attempt_statuses": [
+      "SOLVER_SUCCESS_AUDITED",
+      "SOLVER_SUCCESS_AUDITED",
+      "SOLVER_SUCCESS_AUDITED",
+      "SOLVER_SUCCESS_AUDITED"
+     ],
+     "evidence_file": "evaluation/virtual_a_corridor/C3/20261117T155212Z/corridor_cases/S1_corridor_c3.json",
+     "evidence_sha256": "53f05d293ba4e387ca03cf7c679549756b6bb6c5174c92b1e7e910e4490d7960",
+     "executable": false,
+     "first_failure_layer": "GEOMETRY",
+     "initial_count": 5,
+     "last_reason": "CORRIDOR_AUDIT_WIDTH_LIMIT",
+     "plan_present": false,
+     "reason": "CORRIDOR_AUDIT_WIDTH_LIMIT",
+     "recoveries": [],
+     "recovery_count": 0,
+     "rounds": [
+      {
+       "collision_first_failure": null,
+       "collision_passed": null,
+       "collision_reason": null,
+       "corridor_containment_passed": false,
+       "corridor_containment_reason": "CORRIDOR_AUDIT_WIDTH_LIMIT",
+       "dynamics_passed": null,
+       "dynamics_reason": null,
+       "geometry_attempts": 4,
+       "geometry_reason": "",
+       "geometry_status": "GEOMETRY_FEASIBLE",
+       "initial_count": 5,
+       "initial_mode": "route_guided",
+       "round_index": 0,
+       "route_count": 3,
+       "route_index": 0,
+       "timing_reason": null,
+       "timing_status": null
+      }
+     ],
+     "route_count": 3,
+     "status": "GEOMETRY_FAILED",
+     "wall_s": 35.25463307998143
+    },
+    "grid_sha256": "054cf5c77079536f9a098e33232732d6c181f0f624f07e3a446ebfab0266a10e",
+    "request_sha256": "d44f9efeb70f636a1e0f24dbc367e7869366ce344d0d88bba020d4ad355c8a1a",
+    "same_grid_sha256": true,
+    "same_guidance_mode": true,
+    "same_planner_config": true,
+    "same_request_sha256": true,
+    "scene": "S1"
+   },
+   {
+    "c2": {
+     "attempt_count": 2,
+     "attempt_statuses": [
+      "SOLVER_FAILED",
+      "SOLVER_TIMEOUT"
+     ],
+     "evidence_file": "evaluation/virtual_a_corridor/C2B/20261117T135647Z/S2_corridor.json",
+     "evidence_sha256": "beb673aba772727750e718cf9991fe78b2ba81778fe46ffd549389df66502139",
+     "executable": false,
+     "plan_present": false,
+     "reason": "SOFT_BUDGET_EXHAUSTED",
+     "search_rounds": [
+      {
+       "collision_first_failure": null,
+       "collision_passed": null,
+       "collision_reason": null,
+       "corridor_containment_passed": null,
+       "corridor_containment_reason": null,
+       "dynamics_passed": null,
+       "dynamics_reason": null,
+       "geometry_reason": "SOFT_BUDGET_EXHAUSTED",
+       "geometry_status": "BUDGET_EXHAUSTED",
+       "round_index": 0,
+       "timing_reason": null,
+       "timing_status": null
+      }
+     ],
+     "status": "BUDGET_EXHAUSTED",
+     "wall_s": 35.68573193997145
+    },
+    "c3": {
+     "attempt_count": 2,
+     "attempt_statuses": [
+      "SOLVER_FAILED",
+      "SOLVER_TIMEOUT"
+     ],
+     "evidence_file": "evaluation/virtual_a_corridor/C3/20261117T155212Z/corridor_cases/S2_corridor_c3.json",
+     "evidence_sha256": "03bf712549212c7ee0f229e8492fde720fbbf2b92cc80d44fb74035b808b9585",
+     "executable": false,
+     "first_failure_layer": "GEOMETRY",
+     "initial_count": 5,
+     "last_reason": "SOFT_BUDGET_EXHAUSTED",
+     "plan_present": false,
+     "reason": "SOFT_BUDGET_EXHAUSTED",
+     "recoveries": [],
+     "recovery_count": 0,
+     "rounds": [
+      {
+       "collision_first_failure": null,
+       "collision_passed": null,
+       "collision_reason": null,
+       "corridor_containment_passed": null,
+       "corridor_containment_reason": null,
+       "dynamics_passed": null,
+       "dynamics_reason": null,
+       "geometry_attempts": 2,
+       "geometry_reason": "SOFT_BUDGET_EXHAUSTED",
+       "geometry_status": "BUDGET_EXHAUSTED",
+       "initial_count": 5,
+       "initial_mode": "route_guided",
+       "round_index": 0,
+       "route_count": 3,
+       "route_index": 0,
+       "timing_reason": null,
+       "timing_status": null
+      }
+     ],
+     "route_count": 3,
+     "status": "BUDGET_EXHAUSTED",
+     "wall_s": 35.92473838315345
+    },
+    "grid_sha256": "55e3c5b82a99c74b96a550720fd7a467e76b40f48082c0212ca21574d3af8782",
+    "request_sha256": "9feb7332db51d4f347a21b347416b6e7ffa1619ad28bda41ef88ad57c3bb2ba2",
+    "same_grid_sha256": true,
+    "same_guidance_mode": true,
+    "same_planner_config": true,
+    "same_request_sha256": true,
+    "scene": "S2"
+   },
+   {
+    "c2": {
+     "attempt_count": 7,
+     "attempt_statuses": [
+      "SOLVER_FAILED",
+      "SOLVER_SUCCESS_AUDITED",
+      "SOLVER_SUCCESS_AUDITED",
+      "SOLVER_TIMEOUT",
+      "SOLVER_FAILED",
+      "SOLVER_SUCCESS_AUDITED",
+      "SOLVER_TIMEOUT"
+     ],
+     "evidence_file": "evaluation/virtual_a_corridor/C2B/20261117T135647Z/S3_corridor.json",
+     "evidence_sha256": "ea8004c210a3fcc9a3a03c7256c86a3f331fa2959fe81b85c10fd76b2df6ad6f",
+     "executable": false,
+     "plan_present": false,
+     "reason": "MAP_OBB_COLLISION",
+     "search_rounds": [
+      {
+       "collision_first_failure": {
+        "constraint": "COLLISION",
+        "other_vehicle_id": null,
+        "qf": [
+         4.10366700250394,
+         6.222767787956909e-07,
+         3.1625703640427426e-07
+        ],
+        "reason": "MAP_OBB_COLLISION",
+        "sample_index": 124,
+        "segment_index": 2,
+        "stage": "analytic_sweep",
+        "station": 4.103667002504015,
+        "time_s": 11.48564424435774,
+        "vehicle_id": 3
+       },
+       "collision_passed": false,
+       "collision_reason": "MAP_OBB_COLLISION",
+       "corridor_containment_passed": true,
+       "corridor_containment_reason": "CORRIDOR_CONTAINMENT_VERIFIED",
+       "dynamics_passed": true,
+       "dynamics_reason": null,
+       "geometry_reason": "",
+       "geometry_status": "GEOMETRY_FEASIBLE",
+       "round_index": 0,
+       "timing_reason": "",
+       "timing_status": "DYNAMIC_FEASIBLE"
+      },
+      {
+       "collision_first_failure": {
+        "constraint": "COLLISION",
+        "other_vehicle_id": null,
+        "qf": [
+         4.103667002503974,
+         8.050876135951318e-07,
+         4.254786558478398e-07
+        ],
+        "reason": "MAP_OBB_COLLISION",
+        "sample_index": 124,
+        "segment_index": 2,
+        "stage": "analytic_sweep",
+        "station": 4.103667002504101,
+        "time_s": 11.485644957830894,
+        "vehicle_id": 3
+       },
+       "collision_passed": false,
+       "collision_reason": "MAP_OBB_COLLISION",
+       "corridor_containment_passed": true,
+       "corridor_containment_reason": "CORRIDOR_CONTAINMENT_VERIFIED",
+       "dynamics_passed": true,
+       "dynamics_reason": null,
+       "geometry_reason": "",
+       "geometry_status": "GEOMETRY_FEASIBLE",
+       "round_index": 1,
+       "timing_reason": "",
+       "timing_status": "DYNAMIC_FEASIBLE"
+      }
+     ],
+     "status": "COLLISION_FAILED",
+     "wall_s": 64.9377599399304
+    },
+    "c3": {
+     "attempt_count": 7,
+     "attempt_statuses": [
+      "SOLVER_FAILED",
+      "SOLVER_SUCCESS_AUDITED",
+      "SOLVER_SUCCESS_AUDITED",
+      "SOLVER_TIMEOUT",
+      "SOLVER_FAILED",
+      "SOLVER_SUCCESS_AUDITED",
+      "SOLVER_SUCCESS_AUDITED"
+     ],
+     "evidence_file": "evaluation/virtual_a_corridor/C3/20261117T155212Z/corridor_cases/S3_corridor_c3.json",
+     "evidence_sha256": "ab07f7308078280e90e072163ab4c4bad9a1da6843ea50cec60442068df6c101",
+     "executable": false,
+     "first_failure_layer": "COLLISION",
+     "initial_count": 5,
+     "last_reason": "SOFT_BUDGET_EXHAUSTED",
+     "plan_present": false,
+     "reason": "SOFT_BUDGET_EXHAUSTED",
+     "recoveries": [
+      {
+       "action": "collision_local_block",
+       "first_failure_layer": "COLLISION",
+       "from_route_index": 0,
+       "reason": "MAP_OBB_COLLISION",
+       "recovery_index": 1,
+       "to_route_index": null,
+       "wall_time_s": 35.96800844790414
+      }
+     ],
+     "recovery_count": 1,
+     "rounds": [
+      {
+       "collision_first_failure": {
+        "constraint": "COLLISION",
+        "other_vehicle_id": null,
+        "qf": [
+         4.10366700250394,
+         6.222767787956905e-07,
+         3.1625703640427405e-07
+        ],
+        "reason": "MAP_OBB_COLLISION",
+        "sample_index": 124,
+        "segment_index": 2,
+        "stage": "analytic_sweep",
+        "station": 4.103667002504015,
+        "time_s": 11.48564424435774,
+        "vehicle_id": 3
+       },
+       "collision_passed": false,
+       "collision_reason": "MAP_OBB_COLLISION",
+       "corridor_containment_passed": true,
+       "corridor_containment_reason": "CORRIDOR_CONTAINMENT_VERIFIED",
+       "dynamics_passed": true,
+       "dynamics_reason": null,
+       "geometry_attempts": 4,
+       "geometry_reason": "",
+       "geometry_status": "GEOMETRY_FEASIBLE",
+       "initial_count": 5,
+       "initial_mode": "route_guided",
+       "round_index": 0,
+       "route_count": 1,
+       "route_index": 0,
+       "timing_reason": "",
+       "timing_status": "DYNAMIC_FEASIBLE"
+      },
+      {
+       "collision_first_failure": null,
+       "collision_passed": null,
+       "collision_reason": null,
+       "corridor_containment_passed": null,
+       "corridor_containment_reason": null,
+       "dynamics_passed": null,
+       "dynamics_reason": null,
+       "geometry_attempts": 3,
+       "geometry_reason": "",
+       "geometry_status": "GEOMETRY_FEASIBLE",
+       "initial_count": 5,
+       "initial_mode": "route_guided",
+       "round_index": 1,
+       "route_count": 1,
+       "route_index": 0,
+       "timing_reason": null,
+       "timing_status": null
+      }
+     ],
+     "route_count": 1,
+     "status": "BUDGET_EXHAUSTED",
+     "wall_s": 61.53326109005138
+    },
+    "grid_sha256": "d4ca88971203636b4dcc0285b99d092823069d210d8ac3e13f67be49609ba1c3",
+    "request_sha256": "18dc626d71fa5b6e5e023215c04b01ceae45f94c8846790d6352b9d6c0e9f075",
+    "same_grid_sha256": true,
+    "same_guidance_mode": true,
+    "same_planner_config": true,
+    "same_request_sha256": true,
+    "scene": "S3"
+   }
+  ],
+  "schema": "c3_c2_same_input_corridor_v1"
+ },
+ "corridor_supplementary_legacy_s3": {
+  "attempt_count": 11,
+  "checks": 12110,
+  "collision_audit_passed": true,
+  "dynamic_audit_passed": true,
+  "evidence_file": "corridor_cases/S3_legacy_c3.json",
+  "executable": true,
+  "first_failure_layer": "COLLISION",
+  "geometry_audit_passed": true,
+  "guidance_mode": "legacy_route",
+  "initial_count": 6,
+  "last_reason": "COLLISION_NUMERICAL_FAILURE",
+  "model_binding_ok": true,
+  "model_sha256": "f489cdb63036bd87223262e467c438b6b7c8fc2270bbdf8d1a4fd26bc21f9300",
+  "note": "Supplementary positive recovery run.  The first round fails collision numerically; the single endpoint-only recovery supplies the G2 no-route initial family, and the retimed plan passes all three independent audits.",
+  "path_length_m": 12.093485960786976,
+  "path_present": true,
+  "plan_model_sha256": "f489cdb63036bd87223262e467c438b6b7c8fc2270bbdf8d1a4fd26bc21f9300",
+  "plan_planning_context_sha256": "a4b806295148c1ade5f7fd62d3bf0df408b8ad36ce9716c8792735d98c1383a0",
+  "plan_present": true,
+  "plan_request_sha256": "18dc626d71fa5b6e5e023215c04b01ceae45f94c8846790d6352b9d6c0e9f075",
+  "recoveries": [
+   {
+    "action": "endpoint_only_initial",
+    "first_failure_layer": "COLLISION",
+    "from_route_index": 0,
+    "reason": "COLLISION_NUMERICAL_FAILURE",
+    "recovery_index": 1,
+    "to_route_index": null,
+    "wall_time_s": 17.562512630131096
+   }
+  ],
+  "recovery_count": 1,
+  "round_initial_counts": [
+   5,
+   6
+  ],
+  "round_initial_modes": [
+   "route_guided",
+   "endpoint_only"
+  ],
+  "route_count": 1,
+  "solver": "ipopt",
+  "status": "SUCCESS",
+  "wall_time_s": 49.8169319301378
+ },
+ "false_publications": [],
+ "frozen_scenes": {
+  "evidence": "test_logs/test_virtual_a_pipeline.log",
+  "outcome": "OK",
+  "scenes": [
+   "S1",
+   "S1_mirror",
+   "S2",
+   "S2_mirror",
+   "S3",
+   "S3_mirror"
+  ],
+  "test": "test_six_frozen_scenes_pass_all_three_audits_autonomously"
+ },
+ "generated_at_utc": "2026-11-17T17:02:27Z",
+ "not_implemented": [
+  "fixed-sigma failure adjacent-portal reallocation: corridor.py is outside the TASK_C3 allowed file set; the allocation-limit path fails closed as FIXED_ALLOCATION_LIMIT without relaxing audit",
+  "C-degenerate single seed split: not implemented; the contract's alternative action (select another already generated route) is implemented for corridor build/guide/allocation/chain-audit failure",
+  "corridor hard containment failure has no recovery action in the TASK_C3 list and fails closed without spending the recovery slot"
+ ],
+ "not_run": [
+  "ROS nodes, ROS master, RViz display and adapter publication",
+  "real vehicle / hardware",
+  "corridor mirror scenes under C3 (legacy mirrors are covered by the six frozen-scene test)",
+  "scipy corridor variants under C3"
+ ],
+ "prerequisite": {
+  "c2b_rework_evidence": "evaluation/virtual_a_corridor/C2B_REWORK_01/20261117T151325Z/",
+  "codex_accepted_claimed": false,
+  "user_order": "\u8fdb\u5165C3\u4efb\u52a1 (2026-11-17)"
+ },
+ "run_id": "20261117T155212Z",
+ "scheduling_caps": {
+  "budget_overshoot_possible": true,
+  "hard_real_time_guarantee": false,
+  "initial_values_max_per_solve": 6,
+  "recoveries_max_per_request": 1,
+  "request_soft_budget_s": 60.0,
+  "route_candidates_max": 3,
+  "route_generation_soft_budget_s": 8.0,
+  "single_solve_soft_budget_s": 30.0
+ },
+ "schema": "c3_scheduling_single_recovery_v1",
+ "source_hashes": {
+  "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/contracts.py": {
+   "current_sha256": "bf46feceb404022f023f6b50a41928b22e23a5ace963071f53e0800b434f1a51",
+   "new_in_c3": false,
+   "pre_c3_base_sha256": "43c69d3b723a795f704c7c570463446309e606924526915ee0f1470030524828",
+   "pre_c3_base_verified": true
+  },
+  "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/optimizer.py": {
+   "current_sha256": "25b6dc3cc3185435e30de7570a96eba2f5d9e5339999bd4c79f3ab6b4ef255be",
+   "new_in_c3": false,
+   "pre_c3_base_sha256": "2cac388a20d77d9b5bb27517be1ffee4306d17e8ea659614622e60b5f96d83ac",
+   "pre_c3_base_verified": true
+  },
+  "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/pipeline.py": {
+   "current_sha256": "7e825526653adb50824a11ac08bd030f8c3a74dd6cbf9f655d61f4d977bcb4b7",
+   "new_in_c3": false,
+   "pre_c3_base_sha256": "b1449431f980d0de3d9b42ec8eda7acc7ef8df55f59011ad383afe8125c1d377",
+   "pre_c3_base_verified": true
+  },
+  "tests/test_virtual_a_corridor_recovery.py": {
+   "current_sha256": "924ee5d49f8fb2ae6a755d0b2f9cdfddd3b9fc9de38a0dd7be3c4afb4c547332",
+   "new_in_c3": true,
+   "pre_c3_base_sha256": null,
+   "pre_c3_base_verified": false
+  },
+  "tests/test_virtual_a_pipeline.py": {
+   "current_sha256": "0620f9da5fad6cb602d7ffb690d70b14d2e0726c453651d7ba406899a4e4649e",
+   "new_in_c3": false,
+   "pre_c3_base_sha256": "a49e100e83677d130141209e48e9d7aa94725dab23de5e35a6f0cc33fc683915",
+   "pre_c3_base_verified": true
+  }
+ },
+ "stage": "C3",
+ "test_coverage_map": {
+  "audited_candidate_preserved_through_later_timeout": "test_timeout_preserves_only_a_previously_audited_candidate (existing test_virtual_a_optimizer.py SoftDeadlineTests)",
+  "endpoint_not_attached_to_route0": "test_corridor_endpoint_initials_are_not_pulled_to_route_zero; test_initial_slots_are_one_per_route_plus_endpoint_shapes",
+  "fake_solver_budget_boundary": "test_budget_exhaustion_between_route_generation_and_solve",
+  "fake_solver_success_audit_failure": "test_fake_solver_success_but_audit_rejection_spends_no_recovery",
+  "obb_failure_switches_route_once": "test_obb_failure_switches_to_one_untried_route_then_stops",
+  "one_real_success_and_one_real_failure": "test_real_success_and_real_failure_requests",
+  "recovery_fails_no_plan": "test_numerical_failure_spends_one_endpoint_only_recovery; test_obb_failure_switches_to_one_untried_route_then_stops",
+  "simulated_timeout_no_fallback": "test_simulated_timeout_never_starts_the_slsqp_fallback",
+  "single_box_left_right_and_open_dogleg_dedup": "test_open_grid_merges_slight_doglegs_into_one_candidate; test_single_box_keeps_both_obstacle_separated_sides"
+ },
+ "tests": {
+  "test_virtual_a_corridor_recovery.py": {
+   "log": "test_logs/test_virtual_a_corridor_recovery.log",
+   "outcome": "OK",
+   "test_count": 10,
+   "wall_s": 24.358
+  },
+  "test_virtual_a_optimizer.py": {
+   "log": "test_logs/test_virtual_a_optimizer.log",
+   "outcome": "OK",
+   "test_count": 29,
+   "wall_s": 69.726
+  },
+  "test_virtual_a_pipeline.py": {
+   "log": "test_logs/test_virtual_a_pipeline.log",
+   "outcome": "OK",
+   "test_count": 8,
+   "wall_s": 195.462
+  }
+ }
+}

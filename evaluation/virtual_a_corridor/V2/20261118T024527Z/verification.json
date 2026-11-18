@@ -1,0 +1,725 @@
+{
+  "checks": [
+    {
+      "check": "schema",
+      "detail": {
+        "schema": "virtual_a_corridor.v2.real_ros_scene.v1"
+      },
+      "passed": true
+    },
+    {
+      "check": "private ROS master",
+      "detail": {
+        "uri": "http://127.0.0.1:11585"
+      },
+      "passed": true
+    },
+    {
+      "check": "captured payload equals recorded /formation/planning_debug",
+      "detail": {
+        "same": true
+      },
+      "passed": true
+    },
+    {
+      "check": "captured payload equals recorded /formation/corridors",
+      "detail": {
+        "same": true
+      },
+      "passed": true
+    },
+    {
+      "check": "captured payload equals recorded /formation/guides",
+      "detail": {
+        "same": true
+      },
+      "passed": true
+    },
+    {
+      "check": "payload sha256 from raw recorded messages",
+      "detail": {
+        "recomputed": "3c4ebe3cfdbdf3ba272a0b83f505363c764d8267fbb39db7b8b087a3e7c18b68",
+        "recorded": "3c4ebe3cfdbdf3ba272a0b83f505363c764d8267fbb39db7b8b087a3e7c18b68"
+      },
+      "passed": true
+    },
+    {
+      "check": "payload sha256 from run_result documents",
+      "detail": {
+        "same": true
+      },
+      "passed": true
+    },
+    {
+      "check": "planning debug identity",
+      "detail": {
+        "backend": "virtual_rigid_a",
+        "formation_id": "synthetic_g4",
+        "generation": 1,
+        "grid_sha256": "ec821c01fb57986bbcb907a755e91b3f723a0213bc5375af84079eb343899fa9",
+        "model_sha256": "ea3463501c47cfa37c4f2331a968881f8a0c2d3c8a09f4d8c5febdcfd23b651f",
+        "plan_id": 92001,
+        "planning_context_sha256": "ec12268f5f66c8f54c3000afddd6ad6d47700ea3a31fcad713931bccbdaaeee3",
+        "state": "CANDIDATE_REFERENCE_POINT_ONLY"
+      },
+      "passed": true
+    },
+    {
+      "check": "planning debug has one used corridor route",
+      "detail": {
+        "routes": 1
+      },
+      "passed": true
+    },
+    {
+      "check": "route is algorithm-consumed current route",
+      "detail": {
+        "corridor_used": true,
+        "route_id": 0,
+        "route_source": "astar_primary",
+        "used_by_optimizer_present": false
+      },
+      "passed": true
+    },
+    {
+      "check": "chain digest is also chain sha256",
+      "detail": {
+        "chain_digest": "8775e3d1d5761b75ee8bd68d2b44d9c99168e96a1ea84e28bc55af0e538f3183",
+        "chain_sha256": "8775e3d1d5761b75ee8bd68d2b44d9c99168e96a1ea84e28bc55af0e538f3183"
+      },
+      "passed": true
+    },
+    {
+      "check": "corridor entry repeats document identity",
+      "detail": {
+        "same": true
+      },
+      "passed": true
+    },
+    {
+      "check": "guide label is PL_GUIDE",
+      "detail": {
+        "guide_is_executable_path": false,
+        "guide_label": "PL_GUIDE"
+      },
+      "passed": true
+    },
+    {
+      "check": "guide quality contract",
+      "detail": {
+        "chain_digest_matches": true,
+        "is_executable_path": false,
+        "region_count": 2,
+        "rounding": "PL_ONLY_NO_BEZIER",
+        "smoothness_claim": "NONE",
+        "stage": "C2_A",
+        "warnings": []
+      },
+      "passed": true
+    },
+    {
+      "check": "raw A* route point count",
+      "detail": {
+        "count": 246
+      },
+      "passed": true
+    },
+    {
+      "check": "guide point count",
+      "detail": {
+        "count": 3
+      },
+      "passed": true
+    },
+    {
+      "check": "A* route endpoints",
+      "detail": {
+        "first": [
+          3.500000000000001,
+          -6.06217782649107
+        ],
+        "last": [
+          3.500000000000001,
+          6.06217782649107
+        ]
+      },
+      "passed": true
+    },
+    {
+      "check": "guide endpoints equal chain endpoints",
+      "detail": {
+        "first": [
+          3.500000000000001,
+          -6.06217782649107
+        ],
+        "last": [
+          3.500000000000001,
+          6.06217782649107
+        ]
+      },
+      "passed": true
+    },
+    {
+      "check": "guide portal lies inside both corridor regions",
+      "detail": {
+        "portal": [
+          4.392290590167718,
+          3.7168851651942636
+        ],
+        "region0": true,
+        "region1": true
+      },
+      "passed": true
+    },
+    {
+      "check": "request fingerprint matches admission",
+      "detail": {
+        "job": "e6812ca7fead786a5ba5c84dd26664644fe212e773d4cc88ed3b46fce4675987",
+        "request": "e6812ca7fead786a5ba5c84dd26664644fe212e773d4cc88ed3b46fce4675987"
+      },
+      "passed": true
+    },
+    {
+      "check": "production envelope verifier",
+      "detail": {
+        "digest": "ea3463501c47cfa37c4f2331a968881f8a0c2d3c8a09f4d8c5febdcfd23b651f",
+        "duration_s": 39.602577282743304,
+        "message_digest": "ea3463501c47cfa37c4f2331a968881f8a0c2d3c8a09f4d8c5febdcfd23b651f",
+        "sample_count": 1982
+      },
+      "passed": true
+    },
+    {
+      "check": "guide layer clear marker",
+      "detail": {
+        "markers": [
+          [
+            "formation",
+            0,
+            3
+          ]
+        ]
+      },
+      "passed": true
+    },
+    {
+      "check": "guide layer has five markers",
+      "detail": {
+        "count": 5
+      },
+      "passed": true
+    },
+    {
+      "check": "A* line namespace and point count",
+      "detail": {
+        "count": 1,
+        "points": 246
+      },
+      "passed": true
+    },
+    {
+      "check": "centerline namespace and point count",
+      "detail": {
+        "count": 1,
+        "points": 3
+      },
+      "passed": true
+    },
+    {
+      "check": "A* marker coordinates vs actual route",
+      "detail": {
+        "actual": 0.0,
+        "error": 0.0,
+        "expected": 0.0,
+        "tolerance": 1e-09
+      },
+      "passed": true
+    },
+    {
+      "check": "centerline marker coordinates vs actual guide",
+      "detail": {
+        "actual": 0.0,
+        "error": 0.0,
+        "expected": 0.0,
+        "tolerance": 1e-09
+      },
+      "passed": true
+    },
+    {
+      "check": "guide marker z values",
+      "detail": {
+        "astar_ok": true,
+        "center_ok": true
+      },
+      "passed": true
+    },
+    {
+      "check": "guide line colors and widths",
+      "detail": {
+        "astar_color": [
+          1.0,
+          0.550000011920929,
+          0.0,
+          0.949999988079071
+        ],
+        "astar_scale": [
+          0.018,
+          0.0,
+          0.0
+        ],
+        "center_color": [
+          0.05000000074505806,
+          0.8199999928474426,
+          0.25,
+          0.949999988079071
+        ],
+        "center_scale": [
+          0.03,
+          0.0,
+          0.0
+        ]
+      },
+      "passed": true
+    },
+    {
+      "check": "guide labels",
+      "detail": {
+        "formation/guides/astar": "A* ROUTE | REFERENCE_ONLY",
+        "formation/guides/centerline": "PL_GUIDE | REFERENCE_ONLY"
+      },
+      "passed": true
+    },
+    {
+      "check": "guide labels carry no safety words",
+      "detail": {
+        "text": "A* ROUTE | REFERENCE_ONLY PL_GUIDE | REFERENCE_ONLY"
+      },
+      "passed": true
+    },
+    {
+      "check": "corridor layer clear marker",
+      "detail": {
+        "first": 3
+      },
+      "passed": true
+    },
+    {
+      "check": "corridor marker counts",
+      "detail": {
+        "edge": 2,
+        "fill": 2
+      },
+      "passed": true
+    },
+    {
+      "check": "corridor region 0 markers exist",
+      "detail": {
+        "edge": true,
+        "fill": true
+      },
+      "passed": true
+    },
+    {
+      "check": "corridor region 0 fill style",
+      "detail": {
+        "color": [
+          0.949999988079071,
+          0.23749999701976776,
+          0.23749999701976776,
+          0.15000000596046448
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "passed": true
+    },
+    {
+      "check": "corridor region 0 edge style",
+      "detail": {
+        "color": [
+          0.949999988079071,
+          0.23749999701976776,
+          0.23749999701976776,
+          0.949999988079071
+        ],
+        "scale": [
+          0.03,
+          0.0,
+          0.0
+        ]
+      },
+      "passed": true
+    },
+    {
+      "check": "corridor region 1 markers exist",
+      "detail": {
+        "edge": true,
+        "fill": true
+      },
+      "passed": true
+    },
+    {
+      "check": "corridor region 1 fill style",
+      "detail": {
+        "color": [
+          0.949999988079071,
+          0.23749999701976776,
+          0.23749999701976776,
+          0.15000000596046448
+        ],
+        "scale": [
+          1.0,
+          1.0,
+          1.0
+        ]
+      },
+      "passed": true
+    },
+    {
+      "check": "corridor region 1 edge style",
+      "detail": {
+        "color": [
+          0.949999988079071,
+          0.23749999701976776,
+          0.23749999701976776,
+          0.949999988079071
+        ],
+        "scale": [
+          0.03,
+          0.0,
+          0.0
+        ]
+      },
+      "passed": true
+    },
+    {
+      "check": "corridor fill vertices vs actual regions",
+      "detail": {
+        "actual": 0.0,
+        "error": 0.0,
+        "expected": 0.0,
+        "tolerance": 1e-09
+      },
+      "passed": true
+    },
+    {
+      "check": "corridor edge vertices vs actual regions",
+      "detail": {
+        "actual": 0.0,
+        "error": 0.0,
+        "expected": 0.0,
+        "tolerance": 1e-09
+      },
+      "passed": true
+    },
+    {
+      "check": "final marker identity",
+      "detail": {
+        "namespaces": [
+          "formation/synthetic_g4/links",
+          "formation/synthetic_g4/reference",
+          "formation/synthetic_g4/vehicle_1",
+          "formation/synthetic_g4/vehicle_2",
+          "formation/synthetic_g4/vehicle_3"
+        ]
+      },
+      "passed": true
+    },
+    {
+      "check": "marker OBB matches an actual status tick",
+      "detail": {
+        "captured_elapsed_s": 18.36651969,
+        "error_m": 0.0,
+        "status_elapsed_s": 18.166410685
+      },
+      "passed": true
+    },
+    {
+      "check": "final path marker vehicle 1",
+      "detail": {
+        "obb": true,
+        "path": true
+      },
+      "passed": true
+    },
+    {
+      "check": "final path is bold mode color vehicle 1",
+      "detail": {
+        "colors": [
+          [
+            0.1,
+            0.45,
+            1.0,
+            0.95
+          ]
+        ],
+        "scale": [
+          0.05,
+          0.0,
+          0.0
+        ]
+      },
+      "passed": true
+    },
+    {
+      "check": "final path marker vehicle 2",
+      "detail": {
+        "obb": true,
+        "path": true
+      },
+      "passed": true
+    },
+    {
+      "check": "final path is bold mode color vehicle 2",
+      "detail": {
+        "colors": [
+          [
+            0.1,
+            0.45,
+            1.0,
+            0.95
+          ]
+        ],
+        "scale": [
+          0.05,
+          0.0,
+          0.0
+        ]
+      },
+      "passed": true
+    },
+    {
+      "check": "final path marker vehicle 3",
+      "detail": {
+        "obb": true,
+        "path": true
+      },
+      "passed": true
+    },
+    {
+      "check": "final path is bold mode color vehicle 3",
+      "detail": {
+        "colors": [
+          [
+            0.1,
+            0.45,
+            1.0,
+            0.95
+          ]
+        ],
+        "scale": [
+          0.05,
+          0.0,
+          0.0
+        ]
+      },
+      "passed": true
+    },
+    {
+      "check": "final path coordinates vs analytic plan",
+      "detail": {
+        "actual": 8.881784197001252e-16,
+        "error": 8.881784197001252e-16,
+        "expected": 0.0,
+        "tolerance": 1e-09
+      },
+      "passed": true
+    },
+    {
+      "check": "final path mode colors",
+      "detail": {
+        "actual": 1.1920928966180355e-08,
+        "error": 1.1920928966180355e-08,
+        "expected": 0.0,
+        "tolerance": 1e-06
+      },
+      "passed": true
+    },
+    {
+      "check": "current OBB vs frame_at",
+      "detail": {
+        "actual": 0.0,
+        "error": 0.0,
+        "expected": 0.0,
+        "tolerance": 1e-09
+      },
+      "passed": true
+    },
+    {
+      "check": "capture status exists",
+      "detail": {
+        "present": true
+      },
+      "passed": true
+    },
+    {
+      "check": "capture status certification",
+      "detail": {
+        "audit_status": "FEASIBLE",
+        "certification": "FEASIBLE",
+        "executable": true,
+        "geometry_only": false,
+        "marker_count": 19,
+        "model_sha256": "ea3463501c47cfa37c4f2331a968881f8a0c2d3c8a09f4d8c5febdcfd23b651f",
+        "state": "PLAYING"
+      },
+      "passed": true
+    },
+    {
+      "check": "status marker namespaces equal final layer",
+      "detail": {
+        "final": [
+          "formation/synthetic_g4/links",
+          "formation/synthetic_g4/reference",
+          "formation/synthetic_g4/vehicle_1",
+          "formation/synthetic_g4/vehicle_2",
+          "formation/synthetic_g4/vehicle_3"
+        ],
+        "status": [
+          "formation/synthetic_g4/links",
+          "formation/synthetic_g4/reference",
+          "formation/synthetic_g4/vehicle_1",
+          "formation/synthetic_g4/vehicle_2",
+          "formation/synthetic_g4/vehicle_3"
+        ]
+      },
+      "passed": true
+    },
+    {
+      "check": "captured instant is not a published sample",
+      "detail": {
+        "nearest_sample_delta_s": 0.006519690000001077,
+        "non_sample_time": true,
+        "progress": 0.4637708187210357
+      },
+      "passed": true
+    },
+    {
+      "check": "live status frame vs authoritative frame_at",
+      "detail": {
+        "heading_error_rad": 0.0,
+        "position_error_m": 0.0,
+        "standard_m": 1e-07
+      },
+      "passed": true
+    },
+    {
+      "check": "unused route is candidate-only and default-off namespaces",
+      "detail": {
+        "labels": [
+          "A* ROUTE | CANDIDATE | REFERENCE_ONLY",
+          "PL_GUIDE | REFERENCE_ONLY | CANDIDATE"
+        ],
+        "namespaces": [
+          "formation/guides/astar_candidate",
+          "formation/guides/centerline_candidate"
+        ]
+      },
+      "passed": true
+    },
+    {
+      "check": "tampered guide is UNVALIDATED_GUIDE",
+      "detail": {
+        "color": [
+          1.0,
+          0.78,
+          0.0,
+          0.95
+        ],
+        "labels": [
+          "A* ROUTE | REFERENCE_ONLY",
+          "UNVALIDATED_GUIDE | PL_GUIDE | REFERENCE_ONLY"
+        ]
+      },
+      "passed": true
+    },
+    {
+      "check": "mismatched route identity is rejected",
+      "detail": {
+        "error": "guide route identity does not match its document"
+      },
+      "passed": true
+    },
+    {
+      "check": "screenshot exists and size matches",
+      "detail": {
+        "bytes": 104649,
+        "recorded_bytes": 104649,
+        "sha256": "61ddfbd47e3524052f1a94e61eedb84368658e877caa1aa16a17178f63fe2ad4"
+      },
+      "passed": true
+    },
+    {
+      "check": "screenshot hash recorded",
+      "detail": {
+        "sha256": "61ddfbd47e3524052f1a94e61eedb84368658e877caa1aa16a17178f63fe2ad4"
+      },
+      "passed": true
+    },
+    {
+      "check": "rviz final layer",
+      "detail": {
+        "name": "Final certified vehicle paths",
+        "topic": "/formation/markers"
+      },
+      "passed": true
+    },
+    {
+      "check": "rviz guide layer exists",
+      "detail": {
+        "present": true
+      },
+      "passed": true
+    },
+    {
+      "check": "rviz A* default hidden",
+      "detail": {
+        "formation/guides/astar": false
+      },
+      "passed": true
+    },
+    {
+      "check": "rviz centerline default visible",
+      "detail": {
+        "formation/guides/centerline": true
+      },
+      "passed": true
+    },
+    {
+      "check": "rviz candidate namespaces default hidden",
+      "detail": {
+        "astar_candidate": false,
+        "centerline_candidate": false
+      },
+      "passed": true
+    },
+    {
+      "check": "rviz corridor layer",
+      "detail": {
+        "name": "Corridor candidates (reference point only, low alpha)",
+        "present": true
+      },
+      "passed": true
+    }
+  ],
+  "markers_sha256": "dfd97484dca5edaaa63a59167e6e2b417e132281eafe453aa08c76451b34c631",
+  "max_errors_m": {
+    "astar_marker_vs_route": 0.0,
+    "centerline_marker_vs_guide": 0.0,
+    "corridor_edge_vs_regions": 0.0,
+    "corridor_fill_vs_regions": 0.0,
+    "current_obb_vs_frame_at": 0.0,
+    "final_path_mode_color": 1.1920928966180355e-08,
+    "final_path_vs_analytic_plan": 8.881784197001252e-16,
+    "live_status_vs_frame_at_heading_rad": 0.0,
+    "live_status_vs_frame_at_position": 0.0
+  },
+  "payload_sha256": "3c4ebe3cfdbdf3ba272a0b83f505363c764d8267fbb39db7b8b087a3e7c18b68",
+  "run": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_a_corridor/V2/20261118T024527Z",
+  "schema": "virtual_a_corridor.v2.display_verification.v1",
+  "screenshot_sha256": "61ddfbd47e3524052f1a94e61eedb84368658e877caa1aa16a17178f63fe2ad4",
+  "verified": true
+}

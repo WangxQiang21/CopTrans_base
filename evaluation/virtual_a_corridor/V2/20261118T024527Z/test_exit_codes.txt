@@ -1,0 +1,32 @@
+# V2 test and verifier exit codes
+test_virtual_a_corridor_display exit=0
+  ----------------------------------------------------------------------
+  Ran 30 tests in 17.053s
+  
+  OK
+test_virtual_a_playback exit=0
+  ----------------------------------------------------------------------
+  Ran 34 tests in 53.384s
+  
+  OK
+test_virtual_a_ros_adapter exit=0
+  ----------------------------------------------------------------------
+  Ran 60 tests in 15.078s
+  
+  OK
+test_formation_demo_assets exit=0
+  ----------------------------------------------------------------------
+  Ran 21 tests in 1.422s
+  
+  OK
+verify_v2_display exit=0
+  PASS rviz centerline default visible {'formation/guides/centerline': True}
+  PASS rviz candidate namespaces default hidden {'astar_candidate': False, 'centerline_candidate': False}
+  PASS rviz corridor layer {'present': True, 'name': 'Corridor candidates (reference point only, low alpha)'}
+  {"max_errors_m":{"astar_marker_vs_route":0.0,"centerline_marker_vs_guide":0.0,"corridor_edge_vs_regions":0.0,"corridor_fill_vs_regions":0.0,"current_obb_vs_frame_at":0.0,"final_path_mode_color":1.1920928966180355e-08,"final_path_vs_analytic_plan":8.881784197001252e-16,"live_status_vs_frame_at_heading_rad":0.0,"live_status_vs_frame_at_position":0.0},"ok":true,"payload_sha256":"3c4ebe3cfdbdf3ba272a0b83f505363c764d8267fbb39db7b8b087a3e7c18b68"}
+  checks: 68/68 passed
+verify_audits exit=0
+  checks=11 passed=11 failed=0
+  geometry passed=True scope=GEOMETRY checks=159
+  dynamics passed=True scope=DYNAMICS checks=913
+  collision passed=True scope=COLLISION checks=12116

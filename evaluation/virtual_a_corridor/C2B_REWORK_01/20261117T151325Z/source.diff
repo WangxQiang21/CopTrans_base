@@ -1,0 +1,349 @@
+--- a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/optimizer.py
++++ b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/optimizer.py
+@@ -623,16 +623,36 @@
+     return tuple(states)
+ 
+ 
++def _clearance_world_body(request, x, y, psi, kappa, offset):
++    """Map one local formation state plus vehicle offset to world body pose.
++
++    ``x, y, psi`` are the optimizer's start-local reference coordinates;
++    the clearance field and its nearest-obstacle directions are world-frame.
++    """
++    start = request.start_qf
++    start_x = float(start.x)
++    start_y = float(start.y)
++    start_psi = float(start.psi)
++    cosine = math.cos(start_psi)
++    sine = math.sin(start_psi)
++    world_x = start_x + cosine * x - sine * y
++    world_y = start_y + sine * x + cosine * y
++    world_psi = start_psi + psi
++    a, b = float(offset.x), float(offset.y)
++    center_x = world_x + math.cos(world_psi) * a - math.sin(world_psi) * b
++    center_y = world_y + math.sin(world_psi) * a + math.cos(world_psi) * b
++    theta = world_psi + math.atan2(a * kappa, 1.0 - b * kappa)
++    return center_x, center_y, theta
++
++
+ def _clearance_proxy_angles(field, request, states):
+     """Freeze one nearest-obstacle direction per collocation body centre."""
+     angles = []
+     for x, y, psi, kappa in states:
+         row = []
+         for offset in request.model.offsets:
+-            a, b = offset.x, offset.y
+-            center_x = x + math.cos(psi) * a - math.sin(psi) * b
+-            center_y = y + math.sin(psi) * a + math.cos(psi) * b
+-            theta = psi + math.atan2(a * kappa, 1.0 - b * kappa)
++            center_x, center_y, theta = _clearance_world_body(
++                request, x, y, psi, kappa, offset)
+             _, direction, _ = field.direction_at(center_x, center_y)
+             if direction is None or not math.isfinite(direction):
+                 direction = theta
+@@ -680,11 +700,9 @@
+     total = 0.0
+     row = proxy.angles[sample]
+     for index, offset in enumerate(request.model.offsets):
+-        a, b = offset.x, offset.y
+         shape = request.vehicle_shapes[offset.vehicle_id]
+-        center_x = x + math.cos(psi) * a - math.sin(psi) * b
+-        center_y = y + math.sin(psi) * a + math.cos(psi) * b
+-        theta = psi + math.atan2(a * kappa, 1.0 - b * kappa)
++        center_x, center_y, theta = _clearance_world_body(
++            request, x, y, psi, kappa, offset)
+         direction = row[index]
+         clearance = proxy.field.value_at(center_x, center_y)
+         support = (0.5 * shape.length_m * abs(math.cos(theta - direction))
+@@ -1100,6 +1118,12 @@
+         clearance_bounds = (
+             float(x_axis[0]), float(x_axis[-1]),
+             float(y_axis[0]), float(y_axis[-1]))
++        start = request.start_qf
++        start_x = float(start.x)
++        start_y = float(start.y)
++        start_psi = float(start.psi)
++        cos_start = math.cos(start_psi)
++        sin_start = math.sin(start_psi)
+     z = ca.MX.sym("z", 2 * n + 3)
+     S = z[0]
+     kappas = z[1:1 + n + 1]
+@@ -1172,18 +1196,23 @@
+                     + (sample_y - float(point[1])) ** 2)
+             if clearance_fn is not None:
+                 angles = clearance_proxy.angles[collocation_sample]
++                world_x = start_x + cos_start * sample_x \
++                    - sin_start * sample_y
++                world_y = start_y + sin_start * sample_x \
++                    + cos_start * sample_y
++                world_psi = start_psi + local_psi
+                 for index, offset in enumerate(request.model.offsets):
+                     a, b = offset.x, offset.y
+                     shape = request.vehicle_shapes[offset.vehicle_id]
+-                    center_x = sample_x + ca.cos(local_psi) * a \
+-                        - ca.sin(local_psi) * b
+-                    center_y = sample_y + ca.sin(local_psi) * a \
+-                        + ca.cos(local_psi) * b
++                    center_x = world_x + ca.cos(world_psi) * a \
++                        - ca.sin(world_psi) * b
++                    center_y = world_y + ca.sin(world_psi) * a \
++                        + ca.cos(world_psi) * b
+                     center_x = ca.fmin(ca.fmax(
+                         center_x, clearance_bounds[0]), clearance_bounds[1])
+                     center_y = ca.fmin(ca.fmax(
+                         center_y, clearance_bounds[2]), clearance_bounds[3])
+-                    theta = local_psi + ca.atan2(
++                    theta = world_psi + ca.atan2(
+                         a * kappa, 1.0 - b * kappa)
+                     clearance = clearance_fn(
+                         ca.vertcat(center_x, center_y))
+--- a/tests/test_virtual_a_corridor_optimizer.py
++++ b/tests/test_virtual_a_corridor_optimizer.py
+@@ -14,9 +14,15 @@
+ 
+ import numpy as np
+ 
++try:
++    import casadi
++except ImportError:  # reported as NOT_RUN in evidence, never silently faked
++    casadi = None
++
+ from fwis_v3_optimizer.continuous_geometry import ControlKnot
+ from fwis_v3_optimizer.formation import FormationPose
+ from fwis_v3_optimizer.formation_continuous_a.contracts import (
++    CachedClearanceField,
+     ConvexCorridor,
+     CorridorChain,
+     GuideRoute,
+@@ -37,12 +43,17 @@
+     VirtualAPath,
+ )
+ from fwis_v3_optimizer.formation_continuous_a.optimizer import (
++    _ClearanceProxy,
+     _build_casadi_nlp,
+     _build_corridor_constraint,
++    _clearance_proxy_angles,
++    _clearance_world_body,
+     _constraint_value_offsets,
+     _corridor_residual_diagnostic,
+     _gauss,
+     _numeric_constraint_vector,
++    _numeric_objective,
++    _proxy_numeric_penalty,
+     _search_packet,
+     solve_open_path_guided,
+ )
+@@ -408,6 +419,51 @@
+         (float(i) / 8.0, float(i + 1) / 8.0, index) for i in range(8))
+ 
+ 
++class _RecordingClearanceField:
++    """Record every world query; optionally return no obstacle direction."""
++
++    def __init__(self, direction=0.0):
++        self.direction = direction
++        self.queries = []
++
++    def direction_at(self, x, y):
++        self.queries.append((float(x), float(y)))
++        return 0.5, self.direction, 1.0
++
++    def value_at(self, x, y):
++        self.queries.append((float(x), float(y)))
++        return 0.5
++
++
++def _asymmetric_clearance_field():
++    values = tuple(
++        tuple(0.01 + 0.002 * column + 0.003 * row for column in range(36))
++        for row in range(32))
++    return CachedClearanceField(
++        origin_x=-2.0, origin_y=-8.0, resolution_m=0.5,
++        grid_sha256="1" * 64, values=values)
++
++
++def _proxy_for_field(field, sample_count=72):
++    angles = tuple(
++        tuple(0.1 * sample + 0.03 * vehicle for vehicle in range(3))
++        for sample in range(sample_count))
++    return _ClearanceProxy(
++        field=field, angles=angles, target_m=0.05, weight=5.0e4)
++
++
++def _legacy_local_clearance_queries(proxy, request, x, y, psi, kappa):
++    """The pre-rework local-frame formula, kept only to prove the bug."""
++    queries = []
++    for offset in request.model.offsets:
++        a, b = offset.x, offset.y
++        center_x = x + math.cos(psi) * a - math.sin(psi) * b
++        center_y = y + math.sin(psi) * a + math.cos(psi) * b
++        theta = psi + math.atan2(a * kappa, 1.0 - b * kappa)
++        queries.append((center_x, center_y, theta))
++    return tuple(queries)
++
++
+ def _rotated_box(angle, tx, ty, x0, y0, x1, y1):
+     cosine, sine = math.cos(angle), math.sin(angle)
+ 
+@@ -719,6 +775,160 @@
+         self.assertEqual(result.status, "INVALID_REQUEST")
+         self.assertEqual(result.reason, "CORRIDOR_GUIDE_AMBIGUOUS")
+ 
++    def test_clearance_body_centres_use_world_frame(self):
++        angle, tx, ty = 0.7, 3.0, -2.0
++        base = request_from_fixture("STRAIGHT_LINE")
++        request = request_from_fixture(
++            "STRAIGHT_LINE",
++            start_qf=FormationPose(tx, ty, angle),
++            start_headings={
++                key: value + angle
++                for key, value in base.start_headings.items()},
++            goal_qf=FormationPose(
++                tx + 8.0 * math.cos(angle),
++                ty + 8.0 * math.sin(angle), angle))
++        field = _RecordingClearanceField()
++        angles = _clearance_proxy_angles(
++            field, request, ((0.0, 0.0, 0.0, 0.0),))
++        cosine, sine = math.cos(angle), math.sin(angle)
++        expected = (
++            (tx + cosine, ty + sine),
++            (tx - sine, ty + cosine),
++            (tx + sine, ty - cosine))
++        self.assertEqual(len(field.queries), 3)
++        np.testing.assert_allclose(
++            np.asarray(field.queries), np.asarray(expected),
++            atol=1e-12, rtol=0.0)
++        self.assertEqual(angles, ((0.0, 0.0, 0.0),))
++
++        missing = _RecordingClearanceField(direction=None)
++        fallback = _clearance_proxy_angles(
++            missing, request, ((0.0, 0.0, 0.0, 0.2),))
++        expected_theta = (
++            angle + math.atan2(0.2, 1.0),
++            angle,
++            angle)
++        np.testing.assert_allclose(
++            np.asarray(fallback[0]), np.asarray(expected_theta),
++            atol=1e-12, rtol=0.0)
++
++    def test_numeric_and_casadi_clearance_objectives_agree_off_origin(self):
++        if casadi is None:
++            self.skipTest("casadi unavailable")
++        angle, tx, ty = 0.7, 3.0, -2.0
++        base = request_from_fixture("STRAIGHT_LINE")
++        goal_x = tx + math.cos(angle) * 8.0 - math.sin(angle) * 2.0
++        goal_y = ty + math.sin(angle) * 8.0 + math.cos(angle) * 2.0
++        request = request_from_fixture(
++            "STRAIGHT_LINE",
++            start_qf=FormationPose(tx, ty, angle),
++            start_headings={
++                key: value + angle
++                for key, value in base.start_headings.items()},
++            goal_qf=FormationPose(goal_x, goal_y, angle))
++        config = planner_config(
++            guidance_mode="corridor", solver="scipy", max_initials=1)
++        packet = _search_packet(request, config)
++        n = int(config.intervals)
++        collocation = int(config.collocation_points)
++        proxy = _proxy_for_field(
++            _asymmetric_clearance_field(), sample_count=n * collocation)
++        z = np.zeros(2 * n + 3, dtype=float)
++        z[0] = 8.0
++        z[1:1 + n + 1] = 0.04 * np.sin(0.3 * np.arange(n + 1))
++        z[1 + n + 1:] = 0.03 * np.cos(0.2 * np.arange(n + 1))
++
++        numeric = _numeric_objective(
++            z, request, config, packet, collocation,
++            clearance_proxy=proxy)
++        captured = {}
++
++        def fake_nlpsol(name, plugin, nlp, options=None):
++            captured["nlp"] = nlp
++            return object()
++
++        with mock.patch.object(casadi, "nlpsol", side_effect=fake_nlpsol):
++            _build_casadi_nlp(
++                request, config, packet, clearance_proxy=proxy)
++        objective = casadi.Function(
++            "rework_clearance_objective",
++            [captured["nlp"]["x"]], [captured["nlp"]["f"]])
++        casadi_value = float(objective(z))
++        tolerance = 1e-9 * max(1.0, abs(numeric))
++        self.assertLessEqual(abs(casadi_value - numeric), tolerance)
++
++        without_proxy = _numeric_objective(
++            z, request, config, packet, collocation)
++        self.assertGreater(abs(numeric - without_proxy), 1e-6)
++
++    def test_local_clearance_query_is_detectably_wrong(self):
++        angle, tx, ty = 0.7, 3.0, -2.0
++        base = request_from_fixture("STRAIGHT_LINE")
++        request = request_from_fixture(
++            "STRAIGHT_LINE",
++            start_qf=FormationPose(tx, ty, angle),
++            start_headings={
++                key: value + angle
++                for key, value in base.start_headings.items()},
++            goal_qf=FormationPose(
++                tx + 8.0 * math.cos(angle),
++                ty + 8.0 * math.sin(angle), angle))
++        proxy = _proxy_for_field(_asymmetric_clearance_field())
++        x, y, psi, kappa, sample = 4.0, 1.0, 0.6, 0.15, 0
++        correct = _proxy_numeric_penalty(
++            proxy, request, x, y, psi, kappa, sample)
++        legacy_queries = _legacy_local_clearance_queries(
++            proxy, request, x, y, psi, kappa)
++        row = proxy.angles[sample]
++        wrong = 0.0
++        for index, offset in enumerate(request.model.offsets):
++            shape = request.vehicle_shapes[offset.vehicle_id]
++            center_x, center_y, theta = legacy_queries[index]
++            clearance = proxy.field.value_at(center_x, center_y)
++            support = (
++                0.5 * shape.length_m * abs(math.cos(theta - row[index]))
++                + 0.5 * shape.width_m * abs(math.sin(theta - row[index])))
++            hinge = proxy.target_m + support - clearance
++            if hinge > 0.0:
++                wrong += hinge * hinge
++        self.assertGreater(abs(correct - wrong), 1e-3)
++
++        world = [
++            _clearance_world_body(request, x, y, psi, kappa, offset)
++            for offset in request.model.offsets]
++        separation = max(
++            math.hypot(legacy[0] - correct_body[0],
++                       legacy[1] - correct_body[1])
++            for legacy, correct_body in zip(legacy_queries, world))
++        self.assertGreater(separation, 1.0)
++
++    def test_origin_start_clearance_semantics_are_unchanged(self):
++        request = request_from_fixture("STRAIGHT_LINE")
++        proxy = _proxy_for_field(_asymmetric_clearance_field())
++        x, y, psi, kappa, sample = 1.5, -0.7, 0.35, 0.12, 3
++        legacy_queries = _legacy_local_clearance_queries(
++            proxy, request, x, y, psi, kappa)
++        for offset, expected in zip(request.model.offsets, legacy_queries):
++            np.testing.assert_allclose(
++                _clearance_world_body(
++                    request, x, y, psi, kappa, offset),
++                expected, atol=1e-12, rtol=0.0)
++        row = proxy.angles[sample]
++        expected_penalty = 0.0
++        for index, offset in enumerate(request.model.offsets):
++            shape = request.vehicle_shapes[offset.vehicle_id]
++            center_x, center_y, theta = legacy_queries[index]
++            clearance = proxy.field.value_at(center_x, center_y)
++            support = (
++                0.5 * shape.length_m * abs(math.cos(theta - row[index]))
++                + 0.5 * shape.width_m * abs(math.sin(theta - row[index])))
++            hinge = proxy.target_m + support - clearance
++            if hinge > 0.0:
++                expected_penalty += hinge * hinge
++        self.assertAlmostEqual(
++            _proxy_numeric_penalty(proxy, request, x, y, psi, kappa, sample),
++            expected_penalty, places=12)
++
+ 
+ if __name__ == "__main__":
+     unittest.main()
+\ 文件尾没有换行符

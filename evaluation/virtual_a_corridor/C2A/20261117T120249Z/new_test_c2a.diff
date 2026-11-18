@@ -1,0 +1,352 @@
+diff --git a/tests/test_virtual_a_corridor_optimizer.py b/tests/test_virtual_a_corridor_optimizer.py
+new file mode 100644
+index 0000000..ad4e71d
+--- /dev/null
++++ b/tests/test_virtual_a_corridor_optimizer.py
+@@ -0,0 +1,345 @@
++"""C2-A tests for the portal-centre QP, safe guide and sigma allocation.
++
++The corridors here are exact axis-aligned boxes so every expected halfspace,
++portal centre and normalized cut can be checked directly.  This is reference
++geometry only: no test claims a three-vehicle executable path.
++"""
++import json
++import math
++import unittest
++from unittest import mock
++
++from fwis_v3_optimizer.formation_continuous_a.contracts import (
++    ConvexCorridor,
++    CorridorChain,
++    GuideRoute,
++    VirtualAContractError,
++)
++from fwis_v3_optimizer.formation_continuous_a.corridor import (
++    _guide_qp_terms,
++    allocate_corridors,
++    make_corridor_guide,
++)
++
++
++def _box(x0, y0, x1, y1, seed_start, seed_end):
++    return ConvexCorridor(
++        seed_start=seed_start,
++        seed_end=seed_end,
++        A=((-1.0, 0.0), (1.0, 0.0), (0.0, -1.0), (0.0, 1.0)),
++        b=(-x0, x1, -y0, y1),
++        vertices=((x0, y0), (x1, y0), (x1, y1), (x0, y1)))
++
++
++def _segments_chain(seeds, padding=0.6):
++    regions = []
++    for start, end in zip(seeds, seeds[1:]):
++        low_x = min(start[0], end[0]) - padding
++        high_x = max(start[0], end[0]) + padding
++        low_y = min(start[1], end[1]) - padding
++        high_y = max(start[1], end[1]) + padding
++        regions.append(_box(
++            low_x, low_y, high_x, high_y, start, end))
++    return CorridorChain(
++        regions=tuple(regions), route_source="fixture",
++        grid_sha256="0" * 64)
++
++
++def _parallel_chain(count, padding=0.6):
++    return _segments_chain(
++        [(float(index), 0.0) for index in range(count + 1)], padding)
++
++
++def _row_violation(point, region):
++    return max(
++        0.0,
++        max(row[0] * point[0] + row[1] * point[1] - limit
++            for row, limit in zip(region.A, region.b)))
++
++
++def _assert_guide_safe(test, chain, guide):
++    points = guide.points
++    test.assertEqual(len(points), len(chain.regions) + 1)
++    test.assertEqual(guide.grid_sha256, chain.grid_sha256)
++    test.assertIsInstance(guide.quality, dict)
++    test.assertLessEqual(
++        float(guide.quality["primal_violation_m"]), 1e-8)
++    test.assertEqual(
++        guide.quality["segment_corridor_indices"],
++        list(range(len(chain.regions))))
++    for index, region in enumerate(chain.regions):
++        first = points[index]
++        second = points[index + 1]
++        for fraction in (0.0, 0.25, 0.5, 0.75, 1.0):
++            sample = (
++                first[0] + fraction * (second[0] - first[0]),
++                first[1] + fraction * (second[1] - first[1]))
++            test.assertLessEqual(
++                _row_violation(sample, region), 1e-8,
++                (index, fraction, sample))
++    json.dumps(guide.as_dict(), sort_keys=True)
++
++
++def _assert_allocation(test, chain, guide, intervals=8):
++    allocation = allocate_corridors(chain, guide, intervals)
++    test.assertIsInstance(allocation, tuple)
++    test.assertGreater(len(allocation), 0)
++    test.assertAlmostEqual(allocation[0][0], 0.0)
++    test.assertAlmostEqual(allocation[-1][1], 1.0)
++    seen = set()
++    previous = None
++    for left, right, corridor_index in allocation:
++        test.assertGreater(right, left)
++        test.assertLessEqual(right, 1.0)
++        test.assertGreaterEqual(left, 0.0)
++        test.assertIsInstance(corridor_index, int)
++        seen.add(corridor_index)
++        if previous is not None:
++            test.assertAlmostEqual(previous[1], left, places=15)
++            test.assertGreaterEqual(corridor_index, previous[2])
++        previous = (left, right, corridor_index)
++    test.assertEqual(seen, set(range(len(chain.regions))))
++
++    lengths = [
++        math.hypot(b[0] - a[0], b[1] - a[1])
++        for a, b in zip(guide.points, guide.points[1:])]
++    total = math.fsum(lengths)
++    tau = [0.0]
++    running = 0.0
++    for length in lengths:
++        running += length
++        tau.append(running / total)
++    tau[-1] = 1.0
++    for index in range(1, len(chain.regions)):
++        boundary = tau[index]
++        matching = [
++            item for item in allocation
++            if abs(item[1] - boundary) <= 1e-12 or
++            abs(item[0] - boundary) <= 1e-12]
++        test.assertTrue(matching, (index, boundary, allocation))
++        left = [item for item in allocation
++                if item[1] <= boundary + 1e-12][-1]
++        right = [item for item in allocation
++                 if item[0] >= boundary - 1e-12][0]
++        test.assertEqual(left[2], index - 1)
++        test.assertEqual(right[2], index)
++        vertex = guide.points[index]
++        test.assertLessEqual(
++            _row_violation(vertex, chain.regions[index - 1]), 1e-8)
++        test.assertLessEqual(
++            _row_violation(vertex, chain.regions[index]), 1e-8)
++    for left, right, corridor_index in allocation:
++        middle = 0.5 * (left + right)
++        test.assertGreaterEqual(middle, tau[corridor_index])
++        test.assertLessEqual(middle, tau[corridor_index + 1])
++    return allocation
++
++
++class GuideQpTests(unittest.TestCase):
++    def test_single_region_is_endpoint_polyline_and_eight_intervals(self):
++        chain = _parallel_chain(1)
++        guide = make_corridor_guide(chain, (0.0, 0.0), (1.0, 0.0))
++        self.assertEqual(guide.source, "corridor_endpoint_polyline")
++        self.assertFalse(guide.quality["qp_attempted"])
++        self.assertFalse(guide.quality["qp_used"])
++        self.assertEqual(guide.points[0], (0.0, 0.0))
++        self.assertEqual(guide.points[-1], (1.0, 0.0))
++        _assert_guide_safe(self, chain, guide)
++        allocation = _assert_allocation(self, chain, guide)
++        self.assertEqual(len(allocation), 8)
++        self.assertEqual({item[2] for item in allocation}, {0})
++
++    def test_three_unequal_regions_use_the_slsqp_portal_qp(self):
++        seeds = [(0.0, 0.0), (2.0, 0.0), (3.0, 1.0), (6.0, 0.0)]
++        chain = _segments_chain(seeds, padding=0.4)
++        guide = make_corridor_guide(chain, seeds[0], seeds[-1])
++        self.assertEqual(guide.source, "corridor_qp_polyline")
++        self.assertTrue(guide.quality["qp_attempted"])
++        self.assertTrue(guide.quality["qp_used"])
++        self.assertEqual(guide.quality["qp_status"], "SLSQP_SUCCESS")
++        self.assertLessEqual(
++            guide.quality["primal_violation_m"], 1e-8)
++        self.assertGreater(guide.quality["qp_iterations"], 0)
++        self.assertGreater(guide.quality["qp_objective"], 0.0)
++        terms = guide.quality["qp_terms"]
++        self.assertAlmostEqual(
++            guide.quality["qp_objective"],
++            terms["length"] + terms["smoothness"] + terms["centre"],
++            places=12)
++        seed_lengths = guide.quality["seed_lengths_m"]
++        self.assertGreater(max(seed_lengths) - min(seed_lengths), 1.0)
++        self.assertNotEqual(guide.points[1], (2.0, 0.0))
++        self.assertNotEqual(guide.points[2], (3.0, 0.5))
++        _assert_guide_safe(self, chain, guide)
++        _assert_allocation(self, chain, guide, 8)
++
++    def test_qp_analytic_gradient_matches_central_difference(self):
++        start = (0.0, 0.0)
++        goal = (4.0, 1.0)
++        centres = [[1.0, 0.2], [2.0, 0.8], [3.0, 0.1]]
++        seed_lengths = [2.0, 1.4, 3.2, 1.0]
++        l0 = math.hypot(goal[0] - start[0], goal[1] - start[1])
++        vector = [0.7, 0.2, 1.9, 0.7, 3.1, 0.4]
++        analytic = _guide_qp_terms(
++            vector, start, goal, centres, seed_lengths, l0)["gradient"]
++        step = 1e-6
++        error = 0.0
++        for index in range(len(vector)):
++            plus = list(vector)
++            minus = list(vector)
++            plus[index] += step
++            minus[index] -= step
++            numeric = (
++                _guide_qp_terms(
++                    plus, start, goal, centres, seed_lengths, l0)["value"]
++                - _guide_qp_terms(
++                    minus, start, goal, centres, seed_lengths, l0)["value"]
++            ) / (2.0 * step)
++            error = max(error, abs(numeric - analytic[index]))
++        self.assertLess(error, 1e-7)
++
++    def test_twelve_regions_allocate_all_corridors_against_eight(self):
++        chain = _parallel_chain(12)
++        guide = make_corridor_guide(chain, (0.0, 0.0), (12.0, 0.0))
++        self.assertEqual(guide.source, "corridor_qp_polyline")
++        self.assertTrue(guide.quality["qp_used"])
++        self.assertEqual(len(guide.points), 13)
++        _assert_guide_safe(self, chain, guide)
++        allocation = _assert_allocation(self, chain, guide, 8)
++        self.assertGreater(len(allocation), 8)
++        self.assertEqual(
++            [item[2] for item in allocation],
++            sorted(item[2] for item in allocation))
++
++    def test_qp_exception_keeps_the_checked_chebyshev_polyline(self):
++        chain = _parallel_chain(3)
++        with mock.patch(
++                "fwis_v3_optimizer.formation_continuous_a.corridor.minimize",
++                side_effect=RuntimeError("forced failure")):
++            guide = make_corridor_guide(
++                chain, (0.0, 0.0), (3.0, 0.0))
++        self.assertEqual(guide.source, "corridor_chebyshev_polyline")
++        self.assertFalse(guide.quality["qp_used"])
++        self.assertIn(
++            "RuntimeError: forced failure", guide.quality["fallback_reason"])
++        _assert_guide_safe(self, chain, guide)
++        _assert_allocation(self, chain, guide)
++
++    def test_endpoint_outside_first_corridor_is_rejected(self):
++        chain = _parallel_chain(2)
++        with self.assertRaises(VirtualAContractError) as raised:
++            make_corridor_guide(chain, (-1.0, 0.0), (2.0, 0.0))
++        self.assertEqual(
++            raised.exception.reason, "CORRIDOR_GUIDE_OUTSIDE")
++
++
++class AllocationTests(unittest.TestCase):
++    def test_guide_without_quality_keeps_the_old_serialization(self):
++        guide = GuideRoute(
++            points=((0.0, 0.0), (1.0, 0.0)), source="astar_primary",
++            grid_sha256="0" * 64)
++        payload = guide.as_dict()
++        self.assertEqual(
++            set(payload),
++            {"source", "grid_sha256", "points", "length_m",
++             "is_executable_path"})
++        self.assertNotIn("quality", payload)
++        same = GuideRoute(
++            points=((0.0, 0.0), (1.0, 0.0)), source="astar_primary",
++            grid_sha256="0" * 64)
++        self.assertEqual(guide, same)
++        self.assertEqual(hash(guide), hash(same))
++
++    def test_mismatched_guide_count_is_rejected(self):
++        chain = _parallel_chain(3)
++        guide = GuideRoute(
++            points=((0.0, 0.0), (3.0, 0.0)), source="short",
++            grid_sha256=chain.grid_sha256)
++        with self.assertRaises(VirtualAContractError) as raised:
++            allocate_corridors(chain, guide)
++        self.assertEqual(
++            raised.exception.reason, "CORRIDOR_ALLOCATION_MISMATCH")
++
++    def test_coincident_tau_and_hermite_cuts_do_not_skip_a_corridor(self):
++        chain = _parallel_chain(8)
++        guide = GuideRoute(
++            points=tuple((float(index), 0.0) for index in range(9)),
++            source="coincident_fixture", grid_sha256=chain.grid_sha256)
++        allocation = _assert_allocation(self, chain, guide, 8)
++        self.assertEqual(len(allocation), 8)
++        self.assertEqual(
++            [item[2] for item in allocation], list(range(8)))
++        for index, item in enumerate(allocation):
++            self.assertAlmostEqual(item[0], float(index) / 8.0, places=15)
++            self.assertAlmostEqual(item[1], float(index + 1) / 8.0, places=15)
++
++    def test_switch_points_are_at_guide_cumulative_boundaries(self):
++        seeds = [(0.0, 0.0), (1.0, 0.0), (3.0, 1.0), (4.0, 1.0)]
++        chain = _segments_chain(seeds, padding=0.4)
++        guide = make_corridor_guide(chain, seeds[0], seeds[-1])
++        allocation = _assert_allocation(self, chain, guide, 8)
++        transitions = [
++            (previous, current)
++            for previous, current in zip(allocation, allocation[1:])
++            if previous[2] != current[2]]
++        self.assertEqual(len(transitions), 2)
++        for previous, current in transitions:
++            self.assertAlmostEqual(previous[1], current[0], places=15)
++
++
++class TopologyTests(unittest.TestCase):
++    def test_negative_turn_is_warned_but_the_hairpin_vertex_survives(self):
++        seeds = [(0.0, 0.0), (2.0, 0.0), (2.1, 0.3), (1.7, 0.1)]
++        chain = _segments_chain(seeds, padding=0.4)
++        with mock.patch(
++                "fwis_v3_optimizer.formation_continuous_a.corridor.minimize",
++                side_effect=RuntimeError("forced fallback")):
++            guide = make_corridor_guide(chain, seeds[0], seeds[-1])
++        self.assertEqual(guide.source, "corridor_chebyshev_polyline")
++        self.assertEqual(len(guide.points), 4)
++        self.assertEqual(guide.quality["negative_turn_indices"], [2])
++        self.assertEqual(
++            guide.quality["warnings"],
++            ["NEGATIVE_DOT_PRODUCT_PRESERVED"])
++        self.assertEqual(
++            guide.quality["rounding"], "PL_ONLY_NO_BEZIER")
++
++    def _u_chain(self):
++        return CorridorChain(
++            regions=(
++                _box(-0.5, -0.5, 2.5, 0.5, (0.0, 0.0), (2.0, 0.0)),
++                _box(1.5, -0.5, 2.5, 2.5, (2.0, 0.0), (2.0, 2.0)),
++                _box(-0.5, 1.5, 2.5, 2.5, (2.0, 2.0), (0.0, 2.0)),
++            ),
++            route_source="u_fixture", grid_sha256="0" * 64)
++
++    def test_u_turn_vertices_are_not_deleted_or_shortcut(self):
++        chain = self._u_chain()
++        guide = make_corridor_guide(chain, (0.0, 0.0), (0.0, 2.0))
++        self.assertEqual(len(guide.points), 4)
++        self.assertGreater(guide.points[1][0], 0.5)
++        self.assertGreater(guide.points[2][0], 0.5)
++        self.assertAlmostEqual(guide.points[1][0], guide.points[2][0])
++        self.assertLess(guide.points[1][1], guide.points[2][1])
++        self.assertAlmostEqual(guide.points[-1][0], 0.0)
++        _assert_guide_safe(self, chain, guide)
++        allocation = _assert_allocation(self, chain, guide, 8)
++        self.assertEqual({item[2] for item in allocation}, {0, 1, 2})
++        self.assertTrue(guide.quality["negative_turn_indices"] in ([], [2]))
++
++    def test_sharp_corner_is_not_silently_rounded_or_called_smooth(self):
++        chain = self._u_chain()
++        guide = make_corridor_guide(chain, (0.0, 0.0), (0.0, 2.0))
++        self.assertEqual(
++            guide.quality["rounding"], "PL_ONLY_NO_BEZIER")
++        self.assertEqual(guide.quality["smoothness_claim"], "NONE")
++        self.assertEqual(
++            len(guide.points), len(chain.regions) + 1)
++        for first, second in zip(guide.points, guide.points[1:]):
++            self.assertGreater(
++                math.hypot(second[0] - first[0],
++                           second[1] - first[1]), 1e-8)
++
++
++if __name__ == "__main__":
++    unittest.main()
+\ No newline at end of file

@@ -1,0 +1,528 @@
+--- a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py
++++ b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py
+@@ -1467,28 +1467,25 @@
+ _REALLOCATION_MIN_OVERLAP_M = 1e-6
+ _REALLOCATION_COARSE_SAMPLES = 513
+ _REALLOCATION_BISECTION_STEPS = 64
+-# A width-limit failure can only occur this close to the assigned halfspace
+-# boundary.  The default corridor audit minimum interval width is 1e-5 m, and
+-# a failed bound needs ``point_residual + width/2 + epsilon > 0``; a larger
+-# negative residual would be an ordinary interior containment failure, not a
+-# fixed-sigma switch problem.  This tolerance never relaxes the audit itself.
+-_REALLOCATION_BOUNDARY_TOL_M = 1e-5
+ 
+ 
+ def reallocate_adjacent_portal_once(path, chain, allocation, containment):
+     """Return one deterministic adjacent-portal reallocation or ``None``.
+ 
+-    C3 rework 01 allows exactly one fixed-sigma recovery: when a hard
+-    continuous-containment failure is located at the switch between two
+-    adjacent corridors, move that single switch boundary to the midpoint of
+-    the connected path-parameter interval that lies inside *both* corridors'
+-    original halfspaces.  A width-limit failure may occur where the path
+-    leaves its assigned corridor just before the true two-corridor overlap;
+-    that is accepted only when the failure hugs or crosses the assigned
+-    halfspace boundary and the old switch itself lies in the overlap.  An
+-    interior containment failure that is not at the halfspace boundary is
+-    never treated as a fixed-sigma switch failure.  No other boundary,
+-    corridor order or allocation entry is changed.
++    C3 rework 02 allows exactly one fixed-sigma recovery only when the hard
++    continuous-containment failure is genuinely adjacent to an allocation
++    switch: the failure sigma must lie in one of the two allocation segments
++    directly on either side of that switch.  A point that merely hugs a
++    halfspace boundary in an earlier allocation segment is an interior
++    width failure, not a fixed-sigma switch failure, and is rejected.
++
++    When eligible, move that single switch boundary to the midpoint of the
++    connected path-parameter interval that lies inside *both* corridors'
++    original halfspaces.  The failure point itself must be in that common
++    feasible region, or within a local arc-length neighbourhood derived only
++    from the recorded audit ``width_m`` and ``min_width_m``.  The old switch
++    location alone is never sufficient.  No other boundary, corridor order or
++    allocation entry is changed.
+ 
+     This function is a candidate generator, not a certificate.  It checks the
+     two original halfspace sets directly on the real path model (never a
+@@ -1509,16 +1506,26 @@
+     first_failure = containment.get("first_failure")
+     if not isinstance(first_failure, MappingABC):
+         return None
++    failure_reason = str(
++        first_failure.get("reason") or containment.get("reason") or "")
++    if failure_reason != "CORRIDOR_AUDIT_WIDTH_LIMIT":
++        return None
+     if isinstance(first_failure.get("corridor_index"), bool):
+         return None
+     try:
+         failure_s = float(first_failure.get("s_m"))
+         failure_index = int(first_failure.get("corridor_index"))
+         failure_residual = float(first_failure.get("point_residual_m"))
++        failure_width = float(first_failure.get("width_m"))
++        min_width = float(containment.get("min_width_m"))
+     except (TypeError, ValueError):
+         return None
+     if not (math.isfinite(failure_s)
+-            and math.isfinite(failure_residual)):
++            and math.isfinite(failure_residual)
++            and math.isfinite(failure_width)
++            and math.isfinite(min_width)):
++        return None
++    if failure_width < 0.0 or min_width < 0.0:
+         return None
+     length = float(path.length_m)
+     if not math.isfinite(length) or length <= 0.0:
+@@ -1531,14 +1538,29 @@
+     if count < 2:
+         return None
+ 
++    # C3 rework 02: only a failure sigma in one of the two allocation
++    # segments directly adjacent to the switch is a fixed-sigma switch
++    # failure.  A width-limit point elsewhere in the same corridor is an
++    # interior failure and must not spend the single recovery.
++    failure_sigma = failure_s / length
++
++    def inside_pair(station, left_index, right_index):
++        qf = path.state_at_s(float(station)).qf
++        point = (float(qf.x), float(qf.y))
++        first_violation = _row_violation(
++            point, chain.regions[left_index].A,
++            chain.regions[left_index].b)
++        second_violation = _row_violation(
++            point, chain.regions[right_index].A,
++            chain.regions[right_index].b)
++        return (first_violation <= _REALLOCATION_HALFSPACE_TOL_M
++                and second_violation <= _REALLOCATION_HALFSPACE_TOL_M)
++
+     # A switch is a shared allocation boundary whose left/right corridor
+     # indices are adjacent.  Only switches adjacent to the failing corridor
+     # are eligible; the failing corridor itself selects the pair.  The
+-    # failure station does not have to be inside the adjacent halfspace: a
+-    # fixed-sigma width-limit failure can occur exactly where the path
+-    # leaves the assigned corridor, before the path reaches the real
+-    # C_j ∩ C_{j+1} overlap further on.  The switch itself must still lie
+-    # inside that non-degenerate overlap (checked below).
++    # failure sigma must be in one of the two segments that meet at that
++    # switch.  Point residuals alone cannot qualify a switch.
+     candidates = []
+     for position in range(1, len(allocation)):
+         left_entry = allocation[position - 1]
+@@ -1549,80 +1571,59 @@
+             continue
+         if failure_index not in (left_index, right_index):
+             continue
++        in_left = (float(left_entry[0]) - _ALLOCATION_ZERO_M
++                   <= failure_sigma
++                   <= float(left_entry[1]) + _ALLOCATION_ZERO_M)
++        in_right = (float(right_entry[0]) - _ALLOCATION_ZERO_M
++                    <= failure_sigma
++                    <= float(right_entry[1]) + _ALLOCATION_ZERO_M)
++        if not (in_left or in_right):
++            continue
+         candidates.append((position, left_index, right_index,
+-                           float(right_entry[0]),
+-                           float(left_entry[0]), float(right_entry[1])))
++                           float(right_entry[0])))
+     if not candidates:
+         return None
+ 
++    # The failure point must be in the two corridors' common feasible
++    # region, or within a local arc-length neighbourhood whose only size is
++    # the recorded audit resolution: max(width_m, min_width_m).  This is
++    # deliberately not a free distance constant.
++    local_radius = max(failure_width, min_width)
++
+     # Pick the nearest eligible switch.  The failure station itself is
+     # preferred as the probe when it already lies in both original
+-    # halfspaces.  Otherwise the failure must hug or cross the boundary of
+-    # its assigned corridor and the old switch must sit inside the real
+-    # two-corridor overlap; a generic interior containment failure is not
+-    # reclassified as a fixed-sigma problem.
++    # halfspaces.  Otherwise probe only within the local audit-resolution
++    # neighbourhood; an old switch that happens to lie in the overlap is not
++    # sufficient for a failure elsewhere in the corridor.
+     chosen = None
+-    for position, left_index, right_index, boundary_sigma, _pl, _pr \
++    for position, left_index, right_index, boundary_sigma \
+             in sorted(candidates, key=lambda item: (
+                 abs(item[3] * length - failure_s), item[0])):
+-        qf = path.state_at_s(float(failure_s)).qf
+-        point = (float(qf.x), float(qf.y))
+-        first_violation = _row_violation(
+-            point, chain.regions[left_index].A,
+-            chain.regions[left_index].b)
+-        second_violation = _row_violation(
+-            point, chain.regions[right_index].A,
+-            chain.regions[right_index].b)
+-        if first_violation <= _REALLOCATION_HALFSPACE_TOL_M \
+-                and second_violation <= _REALLOCATION_HALFSPACE_TOL_M:
++        if inside_pair(failure_s, left_index, right_index):
+             chosen = (position, left_index, right_index,
+                       boundary_sigma, float(failure_s))
+             break
+-        assignment_violation = max(
+-            (row[0] * point[0] + row[1] * point[1] - limit
+-             for row, limit in zip(
+-                 chain.regions[failure_index].A,
+-                 chain.regions[failure_index].b)),
+-            default=-math.inf)
+-        if assignment_violation < -_REALLOCATION_BOUNDARY_TOL_M:
+-            # The failure is not hugging or crossing the assigned
+-            # halfspace boundary; it is an interior containment failure,
+-            # not a fixed-sigma switch failure.
+-            continue
+-        boundary_station = float(boundary_sigma) * length
+-        if not 0.0 <= boundary_station <= length:
++        probes = sorted(set(
++            float(failure_s) + float(fraction) * local_radius
++            for fraction in (-1.0, -0.5, 0.0, 0.5, 1.0)))
++        inside_probes = [
++            station for station in probes
++            if 0.0 <= station <= length
++            and inside_pair(station, left_index, right_index)]
++        if not inside_probes:
+             continue
+-        boundary_state = path.state_at_s(boundary_station).qf
+-        boundary_point = (float(boundary_state.x), float(boundary_state.y))
+-        boundary_left = _row_violation(
+-            boundary_point, chain.regions[left_index].A,
+-            chain.regions[left_index].b)
+-        boundary_right = _row_violation(
+-            boundary_point, chain.regions[right_index].A,
+-            chain.regions[right_index].b)
+-        if boundary_left <= _REALLOCATION_HALFSPACE_TOL_M \
+-                and boundary_right <= _REALLOCATION_HALFSPACE_TOL_M:
+-            # The old switch is itself inside the real overlap.  Use it as
+-            # the probe so the deterministic candidate interval is the
+-            # overlap component that contains the fixed-sigma boundary.
+-            chosen = (position, left_index, right_index,
+-                      boundary_sigma, boundary_station)
+-            break
++        probe = min(
++            inside_probes,
++            key=lambda station: (abs(station - failure_s), station))
++        chosen = (position, left_index, right_index,
++                  boundary_sigma, float(probe))
++        break
+     if chosen is None:
+         return None
+     position, left_index, right_index, boundary_sigma, probe = chosen
+ 
+     def inside_chosen(station):
+-        qf = path.state_at_s(float(station)).qf
+-        point = (float(qf.x), float(qf.y))
+-        first_violation = _row_violation(
+-            point, chain.regions[left_index].A,
+-            chain.regions[left_index].b)
+-        second_violation = _row_violation(
+-            point, chain.regions[right_index].A,
+-            chain.regions[right_index].b)
+-        return (first_violation <= _REALLOCATION_HALFSPACE_TOL_M
+-                and second_violation <= _REALLOCATION_HALFSPACE_TOL_M)
++        return inside_pair(station, left_index, right_index)
+ 
+     # Find the connected inside-both component containing the probe.  The
+     # coarse stations are only a bracket for the two bisections; every
+--- a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/pipeline.py
++++ b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/pipeline.py
+@@ -1058,8 +1058,9 @@
+                         geometry.path, chain, corridor_allocation, containment)
+                     if new_allocation is None:
+                         reallocation_record["detail"] = (
+-                            "no non-degenerate adjacent-portal overlap "
+-                            "candidate under the original corridor halfspaces")
++                            "no eligible adjacent allocation segment with a "
++                            "non-degenerate local overlap; the fixed-sigma "
++                            "failure is not at a switch")
+                     else:
+                         old_allocation = tuple(corridor_allocation)
+                         new_allocation = tuple(new_allocation)
+--- a/tests/test_virtual_a_corridor_recovery.py
++++ b/tests/test_virtual_a_corridor_recovery.py
+@@ -110,16 +110,18 @@
+     return chain, allocation
+ 
+ 
+-def width_failure(s_m=4.0, corridor_index=0):
++def width_failure(s_m=4.0, corridor_index=0, width_m=9.68e-6,
++                  min_width_m=1e-5):
+     return {
+         "passed": False,
+         "reason": "CORRIDOR_AUDIT_WIDTH_LIMIT",
+         "detail": "test fixed-sigma width limit",
++        "min_width_m": float(min_width_m),
+         "first_failure": {
+             "reason": "CORRIDOR_AUDIT_WIDTH_LIMIT",
+             "s_m": float(s_m),
+             "corridor_index": int(corridor_index),
+-            "width_m": 9.68e-6,
++            "width_m": float(width_m),
+             "depth": 17,
+             "point_residual_m": -4.89e-6,
+             "bound_residual_m": 4.2e-8,
+@@ -566,34 +568,56 @@
+ class AdjacentPortalReallocationTests(unittest.TestCase):
+     def test_positive_candidate_moves_one_boundary_inside_true_overlap(self):
+         path = straight_path(8.0)
+-        chain, allocation = portal_chain_and_allocation()
+-        new = reallocate_adjacent_portal_once(
+-            path, chain, allocation, width_failure(4.0, 0))
+-        self.assertIsNotNone(new)
+-        self.assertEqual(len(new), len(allocation))
+-        self.assertEqual([entry[2] for entry in new], [0, 1])
+-        self.assertAlmostEqual(new[0][0], 0.0)
+-        self.assertAlmostEqual(new[1][1], 1.0)
+-        self.assertAlmostEqual(new[0][1], new[1][0])
+-        # The old switch is sigma 0.5 (s=4.0); the true overlap is s in
+-        # [4, 5], so the deterministic midpoint is strictly inside it.
+-        self.assertGreater(new[0][1], 0.5)
+-        self.assertLess(new[0][1], 5.0 / 8.0)
+-        self.assertEqual(
+-            validate_corridor_allocation(chain, new), tuple(new))
+-        qf = path.state_at_s(new[0][1] * path.length_m).qf
+-        point = (qf.x, qf.y)
+-        for region in chain.regions:
+-            violation = max(
+-                row[0] * point[0] + row[1] * point[1] - limit
+-                for row, limit in zip(region.A, region.b))
+-            self.assertLessEqual(violation, 1e-8)
++        cases = (
++            # Right-hand direct segment [0.5, 1.0], assigned corridor 1.
++            ("right", portal_chain_and_allocation(),
++             width_failure(4.1, 1), 4.1 / 8.0),
++            # Left-hand direct segment [0.0, 0.5], assigned corridor 0.
++            # The overlap is [3.5, 5.0], so the failure at s=3.7 is already
++            # inside both original halfspaces.
++            ("left", portal_chain_and_allocation(second_x0=3.5),
++             width_failure(3.7, 0), 3.7 / 8.0),
++        )
++        for side, (chain, allocation), containment, failure_sigma in cases:
++            with self.subTest(side=side):
++                new = reallocate_adjacent_portal_once(
++                    path, chain, allocation, containment)
++                self.assertIsNotNone(new)
++                self.assertEqual(len(new), len(allocation))
++                self.assertEqual(
++                    [entry[2] for entry in new],
++                    [entry[2] for entry in allocation])
++                self.assertAlmostEqual(new[0][0], 0.0)
++                self.assertAlmostEqual(new[-1][1], 1.0)
++                for index in range(len(new) - 1):
++                    self.assertAlmostEqual(
++                        new[index][1], new[index + 1][0])
++                # The old switch is sigma 0.5 (s=4.0).  The failure sigma
++                # lies in the directly adjacent segment on one side, and
++                # the old switch is inside the true overlap [4, 5] (right)
++                # or [3.5, 5] (left).  The deterministic midpoint moves the
++                # single boundary strictly inside that overlap.
++                self.assertGreater(new[0][1], 0.5)
++                self.assertLess(new[0][1], 5.0 / 8.0)
++                self.assertAlmostEqual(
++                    containment["first_failure"]["s_m"] / path.length_m,
++                    failure_sigma)
++                self.assertEqual(
++                    validate_corridor_allocation(chain, new), tuple(new))
++                qf = path.state_at_s(new[0][1] * path.length_m).qf
++                point = (qf.x, qf.y)
++                for region in chain.regions:
++                    violation = max(
++                        row[0] * point[0] + row[1] * point[1] - limit
++                        for row, limit in zip(region.A, region.b))
++                    self.assertLessEqual(violation, 1e-8)
+ 
+     def test_failure_far_from_switch_or_degenerate_overlap_returns_none(self):
+         path = straight_path(8.0)
+         chain, allocation = portal_chain_and_allocation()
+-        # s=1 m is inside corridor 0 only; the adjacent portal does not
+-        # contain the failure, so no recovery candidate exists.
++        # s=1 m is inside corridor 0, but the failure sigma 0.125 is not
++        # inside the local audit-resolution neighbourhood of the adjacent
++        # corridor's common region; no recovery candidate exists.
+         self.assertIsNone(reallocate_adjacent_portal_once(
+             path, chain, allocation, width_failure(1.0, 0)))
+         # Touching corridors share only the single point x=5: there is no
+@@ -603,6 +627,55 @@
+         self.assertIsNone(reallocate_adjacent_portal_once(
+             path, touching_chain, touching_allocation,
+             width_failure(5.0, 0)))
++        # C3 rework 02: the failure point is only 5e-6 m from corridor 0's
++        # y-boundary (the old boundary-proximity rule used 1e-5 m and would
++        # accept it), and the old portal at sigma 0.75 is legal: s=6.0 lies
++        # on the x=6 corner shared by both original halfspaces.  But sigma
++        # 4.99/8=0.62375 lies in the earlier segment [0.5, 0.625), not in
++        # either segment adjacent to the switch at sigma 0.75
++        # ([0.625, 0.75] or [0.75, 1.0]), so reallocation must be refused.
++        far_chain = CorridorChain(
++            regions=(
++                corridor_rectangle(
++                    -1.0, 6.0, -5e-6, 2.0, (0.0, 0.0), (4.0, 0.0)),
++                corridor_rectangle(
++                    4.0, 9.0, -2.0, 2.0, (4.0, 0.0), (8.0, 0.0))),
++            route_source="test_far_switch",
++            grid_sha256="a" * 64)
++        far_allocation = (
++            (0.0, 0.25, 0), (0.25, 0.5, 0), (0.5, 0.625, 0),
++            (0.625, 0.75, 0), (0.75, 1.0, 1))
++        self.assertEqual(
++            validate_corridor_allocation(far_chain, far_allocation),
++            tuple(far_allocation))
++        failure_point = path.state_at_s(4.99).qf
++        failure_violation = max(
++            row[0] * failure_point.x + row[1] * failure_point.y - limit
++            for row, limit in zip(
++                far_chain.regions[0].A, far_chain.regions[0].b))
++        self.assertGreaterEqual(failure_violation, -1e-5)
++        switch_point = path.state_at_s(6.0).qf
++        for region in far_chain.regions:
++            switch_violation = max(
++                row[0] * switch_point.x + row[1] * switch_point.y - limit
++                for row, limit in zip(region.A, region.b))
++            self.assertLessEqual(switch_violation, 1e-8)
++        self.assertIsNone(reallocate_adjacent_portal_once(
++            path, far_chain, far_allocation, width_failure(4.99, 0)))
++        # The failure is in the switch's left allocation segment but is
++        # outside the adjacent corridor by 1.0 m; the old switch lies in
++        # the overlap, yet the local width-derived neighbourhood has no
++        # common-region point, so this is not a fixed-sigma switch failure.
++        tight_chain = CorridorChain(
++            regions=(
++                corridor_rectangle(
++                    -1.0, 5.0, -2.0, 5e-6, (0.0, 0.0), (4.0, 0.0)),
++                corridor_rectangle(
++                    4.0, 9.0, -2.0, 2.0, (4.0, 0.0), (8.0, 0.0))),
++            route_source="test_tight_boundary",
++            grid_sha256="a" * 64)
++        self.assertIsNone(reallocate_adjacent_portal_once(
++            path, tight_chain, allocation, width_failure(3.0, 0)))
+         malformed = width_failure(4.0, 0)
+         malformed["first_failure"]["s_m"] = float("nan")
+         self.assertIsNone(reallocate_adjacent_portal_once(
+@@ -671,7 +744,9 @@
+         def fake_containment(_path, _chain, _allocation, **kwargs):
+             containment_calls.append(
+                 [list(entry) for entry in _allocation])
+-            return width_failure(4.0, 0)
++            # sigma 0.5125 lies in the right-hand allocation segment
++            # [0.5, 1.0] directly adjacent to the switch at 0.5.
++            return width_failure(4.1, 1)
+ 
+         with mock.patch.object(
+                 pipeline_module, "build_corridor_chain",
+@@ -703,7 +778,7 @@
+         self.assertAlmostEqual(recovery["old_boundary_sigma"], 0.5)
+         self.assertGreater(recovery["new_boundary_sigma"], 0.5)
+         self.assertLess(recovery["new_boundary_sigma"], 0.625)
+-        self.assertAlmostEqual(recovery["failure_sigma"], 0.5)
++        self.assertAlmostEqual(recovery["failure_sigma"], 0.5125)
+         self.assertEqual(
+             recovery["trigger_reason"], "CORRIDOR_AUDIT_WIDTH_LIMIT")
+         reallocation = result.search["reallocation"]
+@@ -734,6 +809,99 @@
+             corridor_rounds[-1]["allocation"],
+             reallocation["new_allocation"])
+ 
++    def test_pipeline_far_from_switch_failure_does_not_spend_recovery(self):
++        grid, request, planner, _chain, _fixture_allocation, guide, \
++            chain_audit = self._pipeline_fixture()
++        # S1-like far failure: sigma 0.62375 lies in the earlier
++        # corridor-0 segment [0.5, 0.625], while the real switch to
++        # corridor 1 is at sigma 0.75.  The failure point is only 5e-6 m
++        # from corridor 0's boundary and the old portal at sigma 0.75 is
++        # legal, so only the switch-adjacency rule can reject it.
++        far_chain = CorridorChain(
++            regions=(
++                corridor_rectangle(
++                    -1.0, 6.0, -5e-6, 2.0, (0.0, 0.0), (4.0, 0.0)),
++                corridor_rectangle(
++                    4.0, 9.0, -2.0, 2.0, (4.0, 0.0), (8.0, 0.0))),
++            route_source="test_far_switch",
++            grid_sha256="a" * 64)
++        far_allocation = (
++            (0.0, 0.25, 0), (0.25, 0.5, 0), (0.5, 0.625, 0),
++            (0.625, 0.75, 0), (0.75, 1.0, 1))
++        path = straight_path(8.0)
++        solve_calls = []
++        containment_calls = []
++
++        def fake_solve(_request, _config, *args, **kwargs):
++            route_guides = tuple(kwargs.get("route_guides", ()))
++            excluded = set(kwargs.get("excluded_initial_keys", ()))
++            cap = kwargs.get("max_new_initials")
++            guesses = [
++                guess for guess in make_initial_guesses(
++                    _request, _config, route_guides=route_guides)
++                if initial_guess_key(guess) not in excluded]
++            if len(solve_calls) == 0:
++                guesses = guesses[:4]
++            if cap is not None:
++                guesses = guesses[:int(cap)]
++            solve_calls.append([
++                initial_guess_key(guess) for guess in guesses])
++            return geometry_with_attempts(
++                _request, path, planner, guesses)
++
++        def fake_containment(_path, _chain, _allocation, **kwargs):
++            containment_calls.append(
++                [list(entry) for entry in _allocation])
++            return width_failure(4.99, 0)
++
++        with mock.patch.object(
++                pipeline_module, "build_corridor_chain",
++                return_value=far_chain), mock.patch.object(
++                pipeline_module, "audit_corridor_chain",
++                return_value=chain_audit), mock.patch.object(
++                pipeline_module, "make_corridor_guide",
++                return_value=guide), mock.patch.object(
++                pipeline_module, "allocate_corridors",
++                return_value=far_allocation), mock.patch.object(
++                pipeline_module, "audit_path_in_corridors",
++                side_effect=fake_containment), mock.patch.object(
++                pipeline_module, "solve_open_path_guided",
++                side_effect=fake_solve):
++            result = plan_virtual_a(
++                map_request(request, grid, planner=planner))
++        self.assertFalse(result.executable)
++        self.assertIsNone(result.plan)
++        self.assertIsNone(result.path)
++        self.assertEqual(result.status, "GEOMETRY_FAILED")
++        self.assertEqual(result.reason, "CORRIDOR_AUDIT_WIDTH_LIMIT")
++        self.assertEqual(len(solve_calls), 1)
++        self.assertEqual(len(containment_calls), 1)
++        self.assertEqual(
++            containment_calls[0],
++            [list(entry) for entry in far_allocation])
++        self.assertEqual(len(result.search["rounds"]), 1)
++        self.assertEqual(len(result.search["corridor"]["rounds"]), 1)
++        self.assertEqual(result.search["recovery_count"], 0)
++        self.assertEqual(result.search["recoveries"], [])
++        reallocation = result.search["reallocation"]
++        self.assertTrue(reallocation["attempted"])
++        self.assertFalse(reallocation["available"])
++        self.assertFalse(reallocation["consumed_recovery"])
++        self.assertEqual(
++            reallocation["status"],
++            "fixed_sigma_reallocation_unavailable")
++        self.assertEqual(
++            reallocation["detail"],
++            "no eligible adjacent allocation segment with a "
++            "non-degenerate local overlap; the fixed-sigma "
++            "failure is not at a switch")
++        self.assertIsNone(reallocation["new_allocation"])
++        self.assertAlmostEqual(reallocation["failure_sigma"], 0.62375)
++        self.assertEqual(reallocation["failure_corridor_index"], 0)
++        self.assertEqual(
++            [list(entry) for entry in far_allocation],
++            reallocation["old_allocation"])
++
+     def test_initial_pool_exhaustion_records_no_fake_recovery(self):
+         grid, request, planner, chain, allocation, guide, chain_audit = \
+             self._pipeline_fixture()
+@@ -823,7 +991,8 @@
+             containment_calls.append(
+                 [list(entry) for entry in _allocation])
+             if len(containment_calls) == 1:
+-                return width_failure(4.0, 0)
++                # sigma 0.5125 is switch-adjacent to the 0.5 boundary.
++                return width_failure(4.1, 1)
+             return {
+                 "passed": True,
+                 "reason": "CORRIDOR_CONTAINMENT_VERIFIED",

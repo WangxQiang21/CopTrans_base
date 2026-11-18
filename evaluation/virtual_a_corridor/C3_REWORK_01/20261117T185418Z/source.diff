@@ -1,0 +1,1353 @@
+--- a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/pipeline.py
++++ b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/pipeline.py
+@@ -22,6 +22,7 @@
+     CachedClearanceField,
+     DynamicAuditConfig,
+     GuideRoute,
++    MAX_INITIALS,
+     ObstacleContext,
+     RouteGuideConfig,
+     VirtualAContractError,
+@@ -44,8 +45,9 @@
+     build_corridor_chain,
+     corridor_effective_margin,
+     make_corridor_guide,
++    reallocate_adjacent_portal_once,
+ )
+-from .optimizer import solve_open_path_guided
++from .optimizer import initial_guess_key, solve_open_path_guided
+ from .route_processing import segment_is_free, simplify_route
+ from .timing import retime_path
+ 
+@@ -485,6 +487,8 @@
+     search = {
+         "routes": (), "rounds": [], "budget": {},
+         "route_count": 0, "initial_count": 0, "recovery_count": 0,
++        "initial_count_total": 0, "duplicate_initial_launch_count": 0,
++        "initial_keys": [], "reallocation": None,
+         "first_failure_layer": "", "last_reason": "",
+         "recoveries": [],
+     }
+@@ -514,6 +518,10 @@
+         "corridor"
+     corridor_enforcement = str(
+         planner_config.corridor_enforcement).strip().lower()
++    # C3 rework 01: one request-wide initial pool.  The configured cap may be
++    # stricter than six but can never exceed the contract's six.
++    initial_limit = min(MAX_INITIALS, int(planner_config.max_initials))
++    search["initial_limit"] = initial_limit
+     if corridor_mode:
+         timings.update({
+             "corridor_build_s": 0.0,
+@@ -583,6 +591,8 @@
+     tried_routes = set()
+     recovery_count = 0
+     endpoint_only = False
++    used_initial_keys = set()
++    reallocation_done = False
+     first_failure_layer = ""
+     obstacle_context = None
+     clearance_field = None
+@@ -614,6 +624,42 @@
+                 return index
+         return None
+ 
++    def remaining_initial_slots():
++        return max(0, initial_limit - len(used_initial_keys))
++
++    def absorb_attempt_initials(geometry):
++        """Count only distinct initials actually launched by this round.
++
++        ``AttemptRecord.initial`` is the InitialGuess that produced the
++        attempt.  An IPOPT-to-SLSQP fallback yields two attempts with the same
++        identity, so the set counts it once.  Initials constructed but never
++        launched before a timeout are not counted, because they have no
++        attempt record.
++        """
++        round_keys = set()
++        for attempt in geometry.attempts:
++            initial = getattr(attempt, "initial", None)
++            if initial is not None:
++                round_keys.add(initial_guess_key(initial))
++        duplicate = len(round_keys & used_initial_keys)
++        new_count = len(round_keys - used_initial_keys)
++        used_initial_keys.update(round_keys)
++        search["initial_count_total"] = len(used_initial_keys)
++        search["duplicate_initial_launch_count"] = int(
++            search.get("duplicate_initial_launch_count", 0)) + duplicate
++        search["initial_keys"] = sorted(
++            [list(key) for key in used_initial_keys], key=repr)
++        return new_count
++
++    def can_recover():
++        # The single C3 recovery consumes one recovery slot and at least one
++        # still-unused initial slot.  Once the adjacent-portal reallocation
++        # has been used, every later failure is final.
++        return (not reallocation_done
++                and recovery_count < MAX_RECOVERIES
++                and remaining() > 1.0
++                and remaining_initial_slots() > 0)
++
+     def record_failure(layer, reason):
+         nonlocal first_failure_layer
+         if not first_failure_layer:
+@@ -792,8 +838,7 @@
+                     "corridor_round_index": None,
+                 })
+                 next_index = untried_route_index()
+-                if recovery_count < MAX_RECOVERIES \
+-                        and next_index is not None and remaining() > 1.0:
++                if can_recover() and next_index is not None:
+                     route_switch(reason, next_index)
+                     continue
+                 return _empty_result(
+@@ -847,11 +892,15 @@
+             obstacle_context=obstacle_context,
+             geometry_audit_config=audit_config,
+             corridor_chain=solve_chain,
+-            corridor_allocation=solve_allocation)
++            corridor_allocation=solve_allocation,
++            excluded_initial_keys=tuple(used_initial_keys),
++            max_new_initials=remaining_initial_slots(),
++            stop_after_route_audit=bool(solve_routes))
+         timings["geometry_solve_s"] += time.monotonic() - solve_started
+         all_attempts.extend(geometry.attempts)
+         last_geometry_audit = geometry.audit
+         tried_routes.add(route_index)
++        new_initial_count = absorb_attempt_initials(geometry)
+         search["initial_count"] = int(geometry.initial_count)
+         round_record = {
+             "round_index": len(search["rounds"]),
+@@ -861,6 +910,7 @@
+             "route_index": int(route_index) if routes else None,
+             "route_count": len(routes),
+             "initial_count": int(geometry.initial_count),
++            "new_initial_count": int(new_initial_count),
+             "initial_mode": "endpoint_only" if endpoint_only
+             else "route_guided",
+             "corridor_round_index": corridor_round["round_index"]
+@@ -881,12 +931,11 @@
+                 # spend the next route's initial instead.  A timeout is not a
+                 # numerical failure and never falls back.
+                 next_index = untried_route_index()
+-                if not hold_request and recovery_count < MAX_RECOVERIES \
+-                        and next_index is not None and remaining() > 1.0:
++                if not hold_request and can_recover() \
++                        and next_index is not None:
+                     route_switch(geometry.reason, next_index)
+                     continue
+-                if not hold_request and recovery_count < MAX_RECOVERIES \
+-                        and not endpoint_only and remaining() > 1.0:
++                if not hold_request and can_recover() and not endpoint_only:
+                     endpoint_only_recovery(geometry.reason)
+                     continue
+             return _empty_result(
+@@ -929,11 +978,187 @@
+                 containment["passed"])
+             round_record["corridor_containment_reason"] = containment["reason"]
+             if not containment["passed"] and corridor_enforcement == "hard":
+-                # Containment is a geometry certificate layer.  TASK_C3 lists
+-                # no recovery action for it, so the request fails closed with
+-                # the concrete reason instead of spending the recovery slot.
++                # C3 rework 01: a hard fixed-sigma containment failure may
++                # spend the one recovery on a single adjacent-portal
++                # reallocation.  The candidate allocation is only a generator
++                # input; the next round must rerun the NLP, continuous
++                # containment and every downstream audit.
+                 search["rounds"].append(round_record)
+                 record_failure("GEOMETRY", containment["reason"])
++                first_failure = containment.get("first_failure")
++                failure_s = None
++                failure_sigma = None
++                failure_index = None
++                failure_residual = None
++                if isinstance(first_failure, dict) or hasattr(
++                        first_failure, "get"):
++                    try:
++                        failure_s = float(first_failure.get("s_m"))
++                        failure_sigma = failure_s / float(
++                            geometry.path.length_m)
++                        failure_index = int(
++                            first_failure.get("corridor_index"))
++                        failure_residual = float(
++                            first_failure.get("point_residual_m"))
++                    except (TypeError, ValueError, ZeroDivisionError):
++                        failure_s = failure_sigma = None
++                        failure_index = failure_residual = None
++                reallocation_record = {
++                    "attempted": False,
++                    "available": False,
++                    "status": "fixed_sigma_reallocation_unavailable",
++                    "reason": "fixed_sigma_reallocation_unavailable",
++                    "detail": "",
++                    "trigger_reason": containment["reason"],
++                    "failure_s_m": failure_s,
++                    "failure_sigma": failure_sigma,
++                    "failure_corridor_index": failure_index,
++                    "failure_point_residual_m": failure_residual,
++                    "old_allocation": [
++                        list(entry) for entry in corridor_allocation],
++                    "new_allocation": None,
++                    "old_boundary_sigma": None,
++                    "new_boundary_sigma": None,
++                    "adjacent_corridors": None,
++                    "consumed_recovery": False,
++                }
++                if not can_recover():
++                    if reallocation_done:
++                        reallocation_record["detail"] = (
++                            "a second fixed-sigma containment failure is "
++                            "final; no second recovery action is allowed")
++                        # Keep the applied reallocation as the authorising
++                        # evidence; this second failure is recorded in the
++                        # already-spent recovery event instead.
++                        search["recoveries"][0]["second_failure"] = {
++                            "reason": containment["reason"],
++                            "failure_s_m": failure_s,
++                            "failure_sigma": failure_sigma,
++                            "failure_corridor_index": failure_index,
++                            "failure_point_residual_m": failure_residual,
++                            "detail": reallocation_record["detail"],
++                        }
++                    elif remaining_initial_slots() <= 0:
++                        reallocation_record["detail"] = (
++                            "no unused initial slot remains for a reallocated "
++                            "solve")
++                    elif remaining() <= 1.0:
++                        reallocation_record["detail"] = (
++                            "soft request budget exhausted before a "
++                            "reallocated solve")
++                    else:
++                        reallocation_record["detail"] = (
++                            "the single recovery slot has already been spent")
++                    if not reallocation_done:
++                        search["reallocation"] = reallocation_record
++                else:
++                    reallocation_record["attempted"] = True
++                    search["reallocation"] = reallocation_record
++                    new_allocation = reallocate_adjacent_portal_once(
++                        geometry.path, chain, corridor_allocation, containment)
++                    if new_allocation is None:
++                        reallocation_record["detail"] = (
++                            "no non-degenerate adjacent-portal overlap "
++                            "candidate under the original corridor halfspaces")
++                    else:
++                        old_allocation = tuple(corridor_allocation)
++                        new_allocation = tuple(new_allocation)
++                        old_switches = {
++                            position: float(old_allocation[position][0])
++                            for position in range(1, len(old_allocation))
++                            if old_allocation[position - 1][2]
++                            != old_allocation[position][2]}
++                        new_switches = {
++                            position: float(new_allocation[position][0])
++                            for position in range(1, len(new_allocation))
++                            if new_allocation[position - 1][2]
++                            != new_allocation[position][2]}
++                        changed = [
++                            position for position in old_switches
++                            if position in new_switches
++                            and abs(old_switches[position]
++                                    - new_switches[position]) > 1e-15]
++                        structural_change_ok = (
++                            len(changed) == 1
++                            and all(
++                                tuple(old_allocation[index])
++                                == tuple(new_allocation[index])
++                                for index in range(len(old_allocation))
++                                if index not in (changed[0] - 1, changed[0])))
++                        if not structural_change_ok:
++                            reallocation_record["detail"] = (
++                                "candidate allocation changed more than one "
++                                "adjacent switch boundary")
++                        else:
++                            position = changed[0]
++                            left_index = int(old_allocation[position - 1][2])
++                            right_index = int(old_allocation[position][2])
++                            old_boundary = old_switches[position]
++                            new_boundary = new_switches[position]
++                            recovery_count += 1
++                            search["recovery_count"] = recovery_count
++                            search["recoveries"].append({
++                                "recovery_index": recovery_count,
++                                "action": "adjacent_portal_reallocation",
++                                "first_failure_layer": first_failure_layer,
++                                "reason": str(containment["reason"] or ""),
++                                "trigger_reason": str(
++                                    containment["reason"] or ""),
++                                "from_route_index": int(route_index),
++                                "to_route_index": None,
++                                "adjacent_corridors": [
++                                    left_index, right_index],
++                                "old_boundary_sigma": old_boundary,
++                                "new_boundary_sigma": new_boundary,
++                                "old_boundary_s_m": (
++                                    old_boundary * geometry.path.length_m),
++                                "new_boundary_s_m": (
++                                    new_boundary * geometry.path.length_m),
++                                "failure_sigma": failure_sigma,
++                                "failure_s_m": failure_s,
++                                "wall_time_s": time.monotonic() - started,
++                            })
++                            reallocation_done = True
++                            reallocation_record.update({
++                                "available": True,
++                                "status": "adjacent_portal_reallocation_"
++                                          "applied",
++                                "reason": "",
++                                "detail": (
++                                    "one adjacent switch boundary moved "
++                                    "inside the direct two-corridor "
++                                    "halfspace overlap"),
++                                "new_allocation": [
++                                    list(entry)
++                                    for entry in new_allocation],
++                                "old_boundary_sigma": old_boundary,
++                                "new_boundary_sigma": new_boundary,
++                                "adjacent_corridors": [
++                                    left_index, right_index],
++                                "consumed_recovery": True,
++                            })
++                            corridor_allocation = new_allocation
++                            previous_corridor_round = corridor_round
++                            corridor_round = dict(previous_corridor_round)
++                            corridor_round["round_index"] = len(
++                                search["rounds"])
++                            corridor_round["allocation"] = [
++                                list(entry) for entry in new_allocation]
++                            corridor_round["allocation_source"] = (
++                                "adjacent_portal_reallocation")
++                            corridor_round["previous_allocation"] = [
++                                list(entry) for entry in old_allocation]
++                            corridor_round["reallocation"] = {
++                                "old_boundary_sigma": old_boundary,
++                                "new_boundary_sigma": new_boundary,
++                                "adjacent_corridors": [
++                                    left_index, right_index],
++                                "trigger_reason": containment["reason"],
++                                "failure_sigma": failure_sigma,
++                            }
++                            search["corridor"]["rounds"].append(
++                                corridor_round)
++                            continue
+                 return _empty_result(
+                     map_request, "GEOMETRY_FAILED", containment["reason"],
+                     containment["detail"], "GEOMETRY", timings,
+@@ -1025,8 +1250,7 @@
+                     collision.metrics.get("margin")
+                     if isinstance(collision.metrics, dict) else None),
+             })
+-        if hold_request or recovery_count >= MAX_RECOVERIES \
+-                or remaining() <= 1.0:
++        if hold_request or not can_recover():
+             search["rounds"].append(round_record)
+             return collision_failure
+         next_index = untried_route_index()
+@@ -1040,7 +1264,7 @@
+             int(geometry_config.intervals))
+         if not target_context.blocked_points:
+             if collision.reason == "COLLISION_NUMERICAL_FAILURE" \
+-                    and not endpoint_only and remaining() > 1.0:
++                    and not endpoint_only and can_recover():
+                 # Numerical non-certification, not a located contact: spend
+                 # the single recovery on the remaining initial family once.
+                 # The G2 no-route sequence is a true endpoint-only set; in
+--- a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/optimizer.py
++++ b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/optimizer.py
+@@ -8,6 +8,7 @@
+ from dataclasses import dataclass
+ import inspect
+ import math
++import numbers
+ import time
+ 
+ import numpy as np
+@@ -809,6 +810,40 @@
+     return tuple(guesses)
+ 
+ 
++def initial_guess_key(guess):
++    """Return the stable, reconstructible identity of one initial guess.
++
++    C3 rework 01 requires a request-wide initial pool.  The identity uses only
++    fields already serialized by ``InitialGuess``/``_route_guess``/
++    ``_guess_for``: the source, the route source/grid digest/index and the
++    label for route initials, and the source, length multiplier, shape sign
++    and label for endpoint initials.  Object addresses, solver vectors and
++    float-array hashes are deliberately not used, so the same identity can be
++    rebuilt from recorded evidence.
++    """
++    source = str(getattr(guess, "source", ""))
++    label = str(getattr(guess, "label", ""))
++    metadata = getattr(guess, "metadata", None)
++    if not isinstance(metadata, dict):
++        metadata = {}
++    if source == "map_route_guide":
++        return (
++            source,
++            str(metadata.get("route_source", "")),
++            str(metadata.get("route_grid_sha256", "")),
++            int(metadata.get("route_index", -1)),
++            label,
++        )
++    if source == "automatic_endpoint_shape":
++        return (
++            source,
++            float(getattr(guess, "length_multiplier", 0.0)),
++            int(getattr(guess, "shape_sign", 0)),
++            label,
++        )
++    return (source, label)
++
++
+ def _numeric_constraint_vector(z, request, config, packet, collocation,
+                                corridor_constraint=None):
+     """Numeric constraints shared by the SciPy fallback and residual checks."""
+@@ -1650,7 +1685,10 @@
+                            obstacle_context=None,
+                            geometry_audit_config=None,
+                            corridor_chain=None,
+-                           corridor_allocation=None):
++                           corridor_allocation=None,
++                           excluded_initial_keys=(),
++                           max_new_initials=None,
++                           stop_after_route_audit=False):
+     """Solve and independently audit an endpoint-driven geometry candidate.
+ 
+     ``route_guides``/``obstacle_context`` are optional map-guidance inputs for
+@@ -1659,6 +1697,20 @@
+     config`` lets the G4 caller use the same audited numerical position budget
+     as its retimer; ``None`` retains the G2 default exactly.
+ 
++    ``excluded_initial_keys`` and ``max_new_initials`` are the C3 rework 01
++    request-wide initial-pool scheduler.  ``make_initial_guesses`` remains the
++    only initial constructor; this function only removes identities already
++    launched by earlier rounds and caps how many new identities this round may
++    start.  Both default to the historical unbounded behaviour.
++    ``stop_after_route_audit`` is the matching request-wide budget policy: in
++    a route-guided round, once the route's own initial has produced an
++    independently audited geometry, stop before spending the endpoint-shape
++    members of the same construction on a second geometry candidate.  They
++    remain unused identities for the single endpoint-only recovery after the
++    downstream audits decide whether one is needed.  If the route initial
++    fails, the remaining constructed endpoint shapes are still attempted, so
++    the historical five-initial numerical-failure round is unchanged.
++
+     With ``config.guidance_mode == 'corridor'`` the caller must also pass one
+     validated chain and its sigma allocation.  Reference-point halfspaces then
+     enter both the numeric and CasADi NLP and the corridor objective replaces
+@@ -1752,10 +1804,34 @@
+                 "corridor_allocation"),
+             wall_time_s=time.monotonic() - started,
+             request_sha256=fingerprint, config=config, branch=branch)
++    if max_new_initials is not None:
++        if isinstance(max_new_initials, bool) or not isinstance(
++                max_new_initials, numbers.Integral) \
++                or int(max_new_initials) < 0:
++            return _result(
++                "INVALID_REQUEST", request=request,
++                reason="INVALID_INITIAL_POOL",
++                detail="max_new_initials must be a nonnegative integer",
++                wall_time_s=time.monotonic() - started,
++                request_sha256=fingerprint, config=config, branch=branch)
++        max_new_initials = int(max_new_initials)
+     try:
+         guesses = make_initial_guesses(
+             request, config, route_guides=route_guides,
+             obstacle_context=obstacle_context)
++        excluded = set(excluded_initial_keys)
++        if max_new_initials is not None and max_new_initials <= 0:
++            guesses = ()
++        elif excluded or max_new_initials is not None:
++            filtered = []
++            for guess in guesses:
++                if initial_guess_key(guess) in excluded:
++                    continue
++                filtered.append(guess)
++                if max_new_initials is not None \
++                        and len(filtered) >= max_new_initials:
++                    break
++            guesses = tuple(filtered)
+         packet = _search_packet(request, config)
+     except VirtualAContractError as exc:
+         status = "INVALID_REQUEST" if exc.reason == "EMPTY_SEARCH_DOMAIN" else \
+@@ -1764,6 +1840,18 @@
+             status, request=request, reason=exc.reason, detail=exc.detail,
+             wall_time_s=time.monotonic() - started,
+             request_sha256=fingerprint, config=config, branch=branch)
++    if not guesses:
++        # The request-wide pool is exhausted.  Do not start any solver and do
++        # not fabricate an attempt: this is a fail-closed scheduling result.
++        return _result(
++            "NO_ACCEPTED_CANDIDATE", request=request,
++            reason="INITIAL_POOL_EXHAUSTED",
++            detail=(
++                "every automatic initial identity has already been launched "
++                "in this request; solver not started"),
++            wall_time_s=time.monotonic() - started,
++            request_sha256=fingerprint, config=config, branch=branch,
++            initial_count=0)
+     corridor_constraint = None
+     if corridor_mode:
+         try:
+@@ -2062,6 +2150,14 @@
+                                 "result": candidate_result,
+                                 "guess": guess,
+                             }
++                        if stop_after_route_audit and getattr(
++                                guess, "source", "") == "map_route_guide":
++                            # The route initial already has an independently
++                            # audited geometry.  Preserve the endpoint-shape
++                            # identities for the request-wide recovery rather
++                            # than spending them on another same-round
++                            # candidate before the downstream audits run.
++                            break
+                     else:
+                         attempts.append(_attempt_record(
+                             index, guess, candidate_result, audit,
+--- a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py
++++ b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py
+@@ -1463,6 +1463,233 @@
+     return result
+ 
+ 
++_REALLOCATION_HALFSPACE_TOL_M = 1e-8
++_REALLOCATION_MIN_OVERLAP_M = 1e-6
++_REALLOCATION_COARSE_SAMPLES = 513
++_REALLOCATION_BISECTION_STEPS = 64
++# A width-limit failure can only occur this close to the assigned halfspace
++# boundary.  The default corridor audit minimum interval width is 1e-5 m, and
++# a failed bound needs ``point_residual + width/2 + epsilon > 0``; a larger
++# negative residual would be an ordinary interior containment failure, not a
++# fixed-sigma switch problem.  This tolerance never relaxes the audit itself.
++_REALLOCATION_BOUNDARY_TOL_M = 1e-5
++
++
++def reallocate_adjacent_portal_once(path, chain, allocation, containment):
++    """Return one deterministic adjacent-portal reallocation or ``None``.
++
++    C3 rework 01 allows exactly one fixed-sigma recovery: when a hard
++    continuous-containment failure is located at the switch between two
++    adjacent corridors, move that single switch boundary to the midpoint of
++    the connected path-parameter interval that lies inside *both* corridors'
++    original halfspaces.  A width-limit failure may occur where the path
++    leaves its assigned corridor just before the true two-corridor overlap;
++    that is accepted only when the failure hugs or crosses the assigned
++    halfspace boundary and the old switch itself lies in the overlap.  An
++    interior containment failure that is not at the halfspace boundary is
++    never treated as a fixed-sigma switch failure.  No other boundary,
++    corridor order or allocation entry is changed.
++
++    This function is a candidate generator, not a certificate.  It checks the
++    two original halfspace sets directly on the real path model (never a
++    sparse collision approximation), then calls the existing
++    ``validate_corridor_allocation`` before returning.  The new allocation
++    must still pass the NLP, continuous containment and every downstream
++    geometry/dynamics/collision audit.  ``None`` means no legal candidate was
++    available and the caller must keep the original fail-closed result.
++    """
++    if not isinstance(path, VirtualAPath):
++        raise VirtualAContractError("INVALID_PATH", "expected VirtualAPath")
++    if not isinstance(chain, CorridorChain):
++        raise VirtualAContractError(
++            "INVALID_CORRIDOR_CHAIN", "expected CorridorChain")
++    allocation = validate_corridor_allocation(chain, allocation)
++    if not isinstance(containment, MappingABC) or containment.get("passed"):
++        return None
++    first_failure = containment.get("first_failure")
++    if not isinstance(first_failure, MappingABC):
++        return None
++    if isinstance(first_failure.get("corridor_index"), bool):
++        return None
++    try:
++        failure_s = float(first_failure.get("s_m"))
++        failure_index = int(first_failure.get("corridor_index"))
++        failure_residual = float(first_failure.get("point_residual_m"))
++    except (TypeError, ValueError):
++        return None
++    if not (math.isfinite(failure_s)
++            and math.isfinite(failure_residual)):
++        return None
++    length = float(path.length_m)
++    if not math.isfinite(length) or length <= 0.0:
++        return None
++    if failure_s < 0.0 or failure_s > length:
++        return None
++    if failure_index < 0 or failure_index >= len(chain.regions):
++        return None
++    count = len(chain.regions)
++    if count < 2:
++        return None
++
++    # A switch is a shared allocation boundary whose left/right corridor
++    # indices are adjacent.  Only switches adjacent to the failing corridor
++    # are eligible; the failing corridor itself selects the pair.  The
++    # failure station does not have to be inside the adjacent halfspace: a
++    # fixed-sigma width-limit failure can occur exactly where the path
++    # leaves the assigned corridor, before the path reaches the real
++    # C_j ∩ C_{j+1} overlap further on.  The switch itself must still lie
++    # inside that non-degenerate overlap (checked below).
++    candidates = []
++    for position in range(1, len(allocation)):
++        left_entry = allocation[position - 1]
++        right_entry = allocation[position]
++        left_index = int(left_entry[2])
++        right_index = int(right_entry[2])
++        if right_index != left_index + 1:
++            continue
++        if failure_index not in (left_index, right_index):
++            continue
++        candidates.append((position, left_index, right_index,
++                           float(right_entry[0]),
++                           float(left_entry[0]), float(right_entry[1])))
++    if not candidates:
++        return None
++
++    # Pick the nearest eligible switch.  The failure station itself is
++    # preferred as the probe when it already lies in both original
++    # halfspaces.  Otherwise the failure must hug or cross the boundary of
++    # its assigned corridor and the old switch must sit inside the real
++    # two-corridor overlap; a generic interior containment failure is not
++    # reclassified as a fixed-sigma problem.
++    chosen = None
++    for position, left_index, right_index, boundary_sigma, _pl, _pr \
++            in sorted(candidates, key=lambda item: (
++                abs(item[3] * length - failure_s), item[0])):
++        qf = path.state_at_s(float(failure_s)).qf
++        point = (float(qf.x), float(qf.y))
++        first_violation = _row_violation(
++            point, chain.regions[left_index].A,
++            chain.regions[left_index].b)
++        second_violation = _row_violation(
++            point, chain.regions[right_index].A,
++            chain.regions[right_index].b)
++        if first_violation <= _REALLOCATION_HALFSPACE_TOL_M \
++                and second_violation <= _REALLOCATION_HALFSPACE_TOL_M:
++            chosen = (position, left_index, right_index,
++                      boundary_sigma, float(failure_s))
++            break
++        assignment_violation = max(
++            (row[0] * point[0] + row[1] * point[1] - limit
++             for row, limit in zip(
++                 chain.regions[failure_index].A,
++                 chain.regions[failure_index].b)),
++            default=-math.inf)
++        if assignment_violation < -_REALLOCATION_BOUNDARY_TOL_M:
++            # The failure is not hugging or crossing the assigned
++            # halfspace boundary; it is an interior containment failure,
++            # not a fixed-sigma switch failure.
++            continue
++        boundary_station = float(boundary_sigma) * length
++        if not 0.0 <= boundary_station <= length:
++            continue
++        boundary_state = path.state_at_s(boundary_station).qf
++        boundary_point = (float(boundary_state.x), float(boundary_state.y))
++        boundary_left = _row_violation(
++            boundary_point, chain.regions[left_index].A,
++            chain.regions[left_index].b)
++        boundary_right = _row_violation(
++            boundary_point, chain.regions[right_index].A,
++            chain.regions[right_index].b)
++        if boundary_left <= _REALLOCATION_HALFSPACE_TOL_M \
++                and boundary_right <= _REALLOCATION_HALFSPACE_TOL_M:
++            # The old switch is itself inside the real overlap.  Use it as
++            # the probe so the deterministic candidate interval is the
++            # overlap component that contains the fixed-sigma boundary.
++            chosen = (position, left_index, right_index,
++                      boundary_sigma, boundary_station)
++            break
++    if chosen is None:
++        return None
++    position, left_index, right_index, boundary_sigma, probe = chosen
++
++    def inside_chosen(station):
++        qf = path.state_at_s(float(station)).qf
++        point = (float(qf.x), float(qf.y))
++        first_violation = _row_violation(
++            point, chain.regions[left_index].A,
++            chain.regions[left_index].b)
++        second_violation = _row_violation(
++            point, chain.regions[right_index].A,
++            chain.regions[right_index].b)
++        return (first_violation <= _REALLOCATION_HALFSPACE_TOL_M
++                and second_violation <= _REALLOCATION_HALFSPACE_TOL_M)
++
++    # Find the connected inside-both component containing the probe.  The
++    # coarse stations are only a bracket for the two bisections; every
++    # membership decision is a direct halfspace check on the real path.
++    coarse = [
++        float(index) * length / float(_REALLOCATION_COARSE_SAMPLES)
++        for index in range(_REALLOCATION_COARSE_SAMPLES + 1)]
++    stations = sorted(set(coarse + [float(probe)]))
++    probe_position = stations.index(float(probe))
++    inside_cache = {}
++
++    def cached_inside(station):
++        if station not in inside_cache:
++            inside_cache[station] = inside_chosen(station)
++        return inside_cache[station]
++
++    if not cached_inside(stations[probe_position]):
++        return None
++    left = probe_position
++    while left > 0 and cached_inside(stations[left - 1]):
++        left -= 1
++    right = probe_position
++    while right + 1 < len(stations) and cached_inside(stations[right + 1]):
++        right += 1
++
++    def refine(inside_station, outside_station):
++        for _ in range(_REALLOCATION_BISECTION_STEPS):
++            middle = 0.5 * (inside_station + outside_station)
++            if cached_inside(middle):
++                inside_station = middle
++            else:
++                outside_station = middle
++        return 0.5 * (inside_station + outside_station)
++
++    lower = 0.0 if left == 0 else refine(
++        stations[left], stations[left - 1])
++    upper = length if right == len(stations) - 1 else refine(
++        stations[right], stations[right + 1])
++    if upper - lower < _REALLOCATION_MIN_OVERLAP_M:
++        return None
++    new_station = 0.5 * (lower + upper)
++    if not (lower < new_station < upper):
++        return None
++    if not cached_inside(new_station):
++        # A coarse bracket can hide a narrow exit/re-entry gap.  The chosen
++        # boundary itself must lie on the path inside both original
++        # halfspaces, not merely between two inside samples.
++        return None
++    new_sigma = new_station / length
++    left_entry = allocation[position - 1]
++    right_entry = allocation[position]
++    if new_sigma - float(left_entry[0]) <= _ALLOCATION_ZERO_M \
++            or float(right_entry[1]) - new_sigma <= _ALLOCATION_ZERO_M:
++        return None
++    if abs(new_sigma - float(right_entry[0])) <= _ALLOCATION_ZERO_M:
++        return None
++    candidate = list(allocation)
++    candidate[position - 1] = (
++        float(left_entry[0]), float(new_sigma), int(left_index))
++    candidate[position] = (
++        float(new_sigma), float(right_entry[1]), int(right_index))
++    try:
++        return validate_corridor_allocation(chain, tuple(candidate))
++    except VirtualAContractError:
++        return None
++
++
+ CORRIDOR_DISPLAY_STATE = "CANDIDATE_REFERENCE_POINT_ONLY"
+ CORRIDOR_DISPLAYS_KEY = "corridor_displays"
+ 
+--- a/tests/test_virtual_a_corridor_recovery.py
++++ b/tests/test_virtual_a_corridor_recovery.py
+@@ -5,6 +5,7 @@
+ independent geometry/dynamics/collision certificates.  No ROS process is
+ started by this module.
+ """
++from dataclasses import replace
+ import math
+ import time
+ import unittest
+@@ -17,10 +18,19 @@
+ from fwis_v3_optimizer.formation_continuous_a import optimizer as optimizer_module
+ from fwis_v3_optimizer.formation_continuous_a import pipeline as pipeline_module
+ from fwis_v3_optimizer.formation_continuous_a.contracts import (
++    AttemptRecord,
++    ConvexCorridor,
++    CorridorChain,
++    GuideRoute,
+     PlannerConfig,
+     RouteGuideConfig,
+ )
++from fwis_v3_optimizer.formation_continuous_a.corridor import (
++    reallocate_adjacent_portal_once,
++    validate_corridor_allocation,
++)
+ from fwis_v3_optimizer.formation_continuous_a.optimizer import (
++    initial_guess_key,
+     make_initial_guesses,
+     solve_open_path_guided,
+ )
+@@ -34,6 +44,7 @@
+ )
+ 
+ from virtual_a_g4_support import (
++    PLANNER,
+     empty_grid,
+     geometry_result_for,
+     load_synthetic,
+@@ -74,6 +85,67 @@
+     }
+ 
+ 
++def corridor_rectangle(x0, x1, y0, y1, seed_start, seed_end):
++    return ConvexCorridor(
++        seed_start=seed_start,
++        seed_end=seed_end,
++        A=((1.0, 0.0), (-1.0, 0.0), (0.0, 1.0), (0.0, -1.0)),
++        b=(float(x1), float(-x0), float(y1), float(-y0)),
++        vertices=(
++            (float(x0), float(y0)), (float(x1), float(y0)),
++            (float(x1), float(y1)), (float(x0), float(y1))))
++
++
++def portal_chain_and_allocation(second_x0=4.0):
++    """Two overlapping corridors whose true overlap is x in [max,5]."""
++    chain = CorridorChain(
++        regions=(
++            corridor_rectangle(
++                -1.0, 5.0, -2.0, 2.0, (0.0, 0.0), (4.0, 0.0)),
++            corridor_rectangle(
++                second_x0, 9.0, -2.0, 2.0, (4.0, 0.0), (8.0, 0.0))),
++        route_source="test_corridor",
++        grid_sha256="a" * 64)
++    allocation = ((0.0, 0.5, 0), (0.5, 1.0, 1))
++    return chain, allocation
++
++
++def width_failure(s_m=4.0, corridor_index=0):
++    return {
++        "passed": False,
++        "reason": "CORRIDOR_AUDIT_WIDTH_LIMIT",
++        "detail": "test fixed-sigma width limit",
++        "first_failure": {
++            "reason": "CORRIDOR_AUDIT_WIDTH_LIMIT",
++            "s_m": float(s_m),
++            "corridor_index": int(corridor_index),
++            "width_m": 9.68e-6,
++            "depth": 17,
++            "point_residual_m": -4.89e-6,
++            "bound_residual_m": 4.2e-8,
++            "detail": "test fixed-sigma width limit",
++        },
++    }
++
++
++def geometry_with_attempts(request, path, planner, guesses):
++    base = geometry_result_for(path, request)
++    attempts = tuple(
++        AttemptRecord(
++            attempt_index=index,
++            initial_source=guess.source,
++            initial_label=guess.label,
++            solver="ipopt",
++            solver_status="Maximum_Iterations_Exceeded",
++            status="SOLVER_FAILED",
++            initial=guess)
++        for index, guess in enumerate(guesses))
++    return optimizer_module._result(
++        "GEOMETRY_FEASIBLE", request=request, path=path, audit=base.audit,
++        attempts=attempts, request_sha256=base.request_sha256,
++        config=planner)
++
++
+ class CandidateSchedulingTests(unittest.TestCase):
+     def test_open_grid_merges_slight_doglegs_into_one_candidate(self):
+         grid = empty_grid()
+@@ -269,7 +341,7 @@
+ 
+         def fake_failure(_request, _config, _packet, guess,
+                          wall_limit_s=None, **kwargs):
+-            calls.append(guess.source)
++            calls.append(initial_guess_key(guess))
+             return fake_solver_failure(None, None, None, None)
+ 
+         with mock.patch.object(
+@@ -278,21 +350,76 @@
+             result = plan_virtual_a(map_request(request, grid))
+         self.assertFalse(result.executable)
+         self.assertIsNone(result.plan)
++        self.assertIsNone(result.path)
+         self.assertEqual(result.status, "NO_ACCEPTED_CANDIDATE")
+         self.assertEqual(result.reason, "SOLVER_NOT_CONVERGED")
+         self.assertEqual(result.first_failure_layer, "GEOMETRY")
+         rounds = result.search["rounds"]
+         self.assertEqual([record["initial_mode"] for record in rounds],
+                          ["route_guided", "endpoint_only"])
++        # The whole request may launch at most six distinct initials.  The
++        # first route-guided round launches five; the endpoint-only recovery
++        # may launch only the one still-unused 2.6-length shape.
+         self.assertEqual([record["initial_count"] for record in rounds],
+-                         [5, 6])
+-        self.assertEqual(len(calls), 11)
++                         [5, 1])
++        self.assertEqual(
++            [record["new_initial_count"] for record in rounds], [5, 1])
++        self.assertEqual(len(calls), 6)
++        self.assertEqual(len(set(calls)), 6)
++        self.assertEqual(result.search["initial_count_total"], 6)
++        self.assertEqual(result.search["initial_limit"], 6)
++        self.assertEqual(
++            result.search["duplicate_initial_launch_count"], 0)
++        self.assertEqual(len(result.search["initial_keys"]), 6)
+         self.assertEqual(result.search["recovery_count"], 1)
+         recovery = result.search["recoveries"][0]
+         self.assertEqual(recovery["action"], "endpoint_only_initial")
+         self.assertEqual(recovery["reason"], "SOLVER_NOT_CONVERGED")
+         self.assertEqual(recovery["first_failure_layer"], "GEOMETRY")
+ 
++    def test_solver_auto_fallback_is_one_initial_and_no_fake_recovery(self):
++        grid = empty_grid()
++        request = moving_request()
++        ipopt_calls = []
++        slsqp_calls = []
++
++        def fake_ipopt(_request, _config, _packet, guess,
++                       wall_limit_s=None, **kwargs):
++            ipopt_calls.append(initial_guess_key(guess))
++            return fake_solver_failure(None, None, None, None)
++
++        def fake_slsqp(_request, _config, _packet, guess,
++                       wall_limit_s=None, **kwargs):
++            slsqp_calls.append(initial_guess_key(guess))
++            return fake_solver_failure(None, None, None, None)
++
++        planner = PlannerConfig(
++            max_initials=1, solver="auto", allow_scipy_fallback=True)
++        with mock.patch.object(
++                optimizer_module, "_solve_with_ipopt",
++                side_effect=fake_ipopt), mock.patch.object(
++                optimizer_module, "_solve_with_scipy",
++                side_effect=fake_slsqp):
++            result = plan_virtual_a(
++                map_request(request, grid, planner=planner))
++        self.assertFalse(result.executable)
++        self.assertIsNone(result.plan)
++        self.assertIsNone(result.path)
++        self.assertEqual(result.status, "NO_ACCEPTED_CANDIDATE")
++        self.assertEqual(result.reason, "SOLVER_NOT_CONVERGED")
++        # IPOPT -> SLSQP fallback yields two attempts for the same identity,
++        # but only one distinct initial and no recovery when the pool is
++        # exhausted.
++        self.assertEqual(len(result.attempts), 2)
++        self.assertEqual(
++            len({initial_guess_key(attempt.initial)
++                 for attempt in result.attempts}), 1)
++        self.assertEqual(len(ipopt_calls), 1)
++        self.assertEqual(ipopt_calls, slsqp_calls)
++        self.assertEqual(result.search["initial_count_total"], 1)
++        self.assertEqual(result.search["recovery_count"], 0)
++        self.assertEqual(result.search["recoveries"], [])
++
+     def test_obb_failure_switches_to_one_untried_route_then_stops(self):
+         grid = box_grid()
+         request = moving_request()
+@@ -372,6 +499,396 @@
+         self.assertEqual(result.first_failure_layer, "PLANNING")
+ 
+ 
++class RequestWideInitialSchedulingTests(unittest.TestCase):
++    def test_route_audit_stops_before_spending_endpoint_family(self):
++        grid = empty_grid()
++        request = moving_request()
++        guides = make_route_guides(
++            grid, request.start_qf, request.goal_qf, RouteGuideConfig())
++        path = straight_path(8.0)
++        passing_audit = geometry_result_for(path, request).audit
++        calls = []
++
++        def fake_success(_request, _config, _packet, guess,
++                         wall_limit_s=None, **kwargs):
++            calls.append(initial_guess_key(guess))
++            return {
++                "solver": "ipopt",
++                "z": np.asarray(guess.vector, dtype=float),
++                "objective": 1.0,
++                "solver_status": "Solve_Succeeded",
++                "success": True,
++                "iterations": 1,
++                "detail": "fake solver success",
++                "wall_time_s": 0.0,
++            }
++
++        def fake_candidate(_request, _guess, _result):
++            return path
++
++        def fake_audit(_request, _candidate, _config):
++            return passing_audit
++
++        config = PlannerConfig(max_initials=6)
++        with mock.patch.object(
++                optimizer_module, "_solve_with_ipopt",
++                side_effect=fake_success), mock.patch.object(
++                optimizer_module, "_candidate_path",
++                side_effect=fake_candidate), mock.patch.object(
++                optimizer_module, "audit_geometry",
++                side_effect=fake_audit):
++            stopped = solve_open_path_guided(
++                request, config, route_guides=guides,
++                stop_after_route_audit=True)
++            self.assertEqual(stopped.status, "GEOMETRY_FEASIBLE")
++            self.assertEqual(len(stopped.attempts), 1)
++            self.assertEqual(
++                stopped.attempts[0].initial_source, "map_route_guide")
++            # The route round constructed five identities, but only the
++            # route initial was launched; the endpoint family stayed unused.
++            self.assertEqual(stopped.initial_count, 5)
++            self.assertEqual(len(calls), 1)
++            stopped_keys = set(calls)
++
++            calls.clear()
++            ranked = solve_open_path_guided(
++                request, config, route_guides=guides,
++                stop_after_route_audit=False)
++            self.assertEqual(ranked.status, "GEOMETRY_FEASIBLE")
++            self.assertEqual(len(ranked.attempts), 5)
++            self.assertEqual(len(calls), 5)
++            self.assertFalse(stopped_keys & set(calls[1:]))
++            self.assertEqual(
++                {initial_guess_key(attempt.initial)
++                 for attempt in ranked.attempts}, set(calls))
++
++
++class AdjacentPortalReallocationTests(unittest.TestCase):
++    def test_positive_candidate_moves_one_boundary_inside_true_overlap(self):
++        path = straight_path(8.0)
++        chain, allocation = portal_chain_and_allocation()
++        new = reallocate_adjacent_portal_once(
++            path, chain, allocation, width_failure(4.0, 0))
++        self.assertIsNotNone(new)
++        self.assertEqual(len(new), len(allocation))
++        self.assertEqual([entry[2] for entry in new], [0, 1])
++        self.assertAlmostEqual(new[0][0], 0.0)
++        self.assertAlmostEqual(new[1][1], 1.0)
++        self.assertAlmostEqual(new[0][1], new[1][0])
++        # The old switch is sigma 0.5 (s=4.0); the true overlap is s in
++        # [4, 5], so the deterministic midpoint is strictly inside it.
++        self.assertGreater(new[0][1], 0.5)
++        self.assertLess(new[0][1], 5.0 / 8.0)
++        self.assertEqual(
++            validate_corridor_allocation(chain, new), tuple(new))
++        qf = path.state_at_s(new[0][1] * path.length_m).qf
++        point = (qf.x, qf.y)
++        for region in chain.regions:
++            violation = max(
++                row[0] * point[0] + row[1] * point[1] - limit
++                for row, limit in zip(region.A, region.b))
++            self.assertLessEqual(violation, 1e-8)
++
++    def test_failure_far_from_switch_or_degenerate_overlap_returns_none(self):
++        path = straight_path(8.0)
++        chain, allocation = portal_chain_and_allocation()
++        # s=1 m is inside corridor 0 only; the adjacent portal does not
++        # contain the failure, so no recovery candidate exists.
++        self.assertIsNone(reallocate_adjacent_portal_once(
++            path, chain, allocation, width_failure(1.0, 0)))
++        # Touching corridors share only the single point x=5: there is no
++        # non-degenerate overlap parameter interval.
++        touching_chain, touching_allocation = \
++            portal_chain_and_allocation(second_x0=5.0)
++        self.assertIsNone(reallocate_adjacent_portal_once(
++            path, touching_chain, touching_allocation,
++            width_failure(5.0, 0)))
++        malformed = width_failure(4.0, 0)
++        malformed["first_failure"]["s_m"] = float("nan")
++        self.assertIsNone(reallocate_adjacent_portal_once(
++            path, chain, allocation, malformed))
++
++    def _pipeline_fixture(self):
++        grid = empty_grid()
++        request = moving_request()
++        planner = replace(
++            PLANNER, guidance_mode="corridor",
++            corridor_enforcement="hard")
++        chain, allocation = portal_chain_and_allocation()
++        guide = GuideRoute(
++            points=((0.0, 0.0), (8.0, 0.0)),
++            source="test_corridor_guide",
++            grid_sha256=chain.grid_sha256)
++        chain_audit = {
++            "passed": True,
++            "reason": "CORRIDOR_CHAIN_VERIFIED",
++            "detail": "",
++            "grid_sha256": chain.grid_sha256,
++            "route_source": chain.route_source,
++            "region_count": len(chain.regions),
++            "regions": [],
++            "portals": [],
++            "min_region_area_m2": 1.0,
++            "max_seed_violation_m": 0.0,
++            "min_portal_radius_m": 0.5,
++            "min_portal_area_m2": 1.0,
++            "first_collision": None,
++            "thresholds": {},
++        }
++        return (grid, request, planner, chain, allocation, guide,
++                chain_audit)
++
++    def test_pipeline_reallocates_once_and_stops_on_second_failure(self):
++        grid, request, planner, chain, allocation, guide, chain_audit = \
++            self._pipeline_fixture()
++        path = straight_path(8.0)
++        solve_calls = []
++        containment_calls = []
++
++        def fake_solve(_request, _config, *args, **kwargs):
++            route_guides = tuple(kwargs.get("route_guides", ()))
++            excluded = set(kwargs.get("excluded_initial_keys", ()))
++            cap = kwargs.get("max_new_initials")
++            guesses = [
++                guess for guess in make_initial_guesses(
++                    _request, _config, route_guides=route_guides)
++                if initial_guess_key(guess) not in excluded]
++            if len(solve_calls) == 0:
++                # The first round launched four distinct initials; the
++                # fifth constructed shape remains for the reallocated round.
++                guesses = guesses[:4]
++            if cap is not None:
++                guesses = guesses[:int(cap)]
++            solve_calls.append({
++                "keys": [initial_guess_key(guess) for guess in guesses],
++                "excluded": excluded,
++                "max_new": cap,
++                "allocation": kwargs.get("corridor_allocation"),
++            })
++            return geometry_with_attempts(
++                _request, path, planner, guesses)
++
++        def fake_containment(_path, _chain, _allocation, **kwargs):
++            containment_calls.append(
++                [list(entry) for entry in _allocation])
++            return width_failure(4.0, 0)
++
++        with mock.patch.object(
++                pipeline_module, "build_corridor_chain",
++                return_value=chain), mock.patch.object(
++                pipeline_module, "audit_corridor_chain",
++                return_value=chain_audit), mock.patch.object(
++                pipeline_module, "make_corridor_guide",
++                return_value=guide), mock.patch.object(
++                pipeline_module, "allocate_corridors",
++                return_value=allocation), mock.patch.object(
++                pipeline_module, "audit_path_in_corridors",
++                side_effect=fake_containment), mock.patch.object(
++                pipeline_module, "solve_open_path_guided",
++                side_effect=fake_solve):
++            result = plan_virtual_a(
++                map_request(request, grid, planner=planner))
++        self.assertFalse(result.executable)
++        self.assertIsNone(result.plan)
++        self.assertIsNone(result.path)
++        self.assertEqual(result.status, "GEOMETRY_FAILED")
++        self.assertEqual(result.reason, "CORRIDOR_AUDIT_WIDTH_LIMIT")
++        self.assertEqual(len(solve_calls), 2)
++        self.assertEqual(len(containment_calls), 2)
++        self.assertEqual(result.search["recovery_count"], 1)
++        recovery = result.search["recoveries"][0]
++        self.assertEqual(
++            recovery["action"], "adjacent_portal_reallocation")
++        self.assertEqual(recovery["adjacent_corridors"], [0, 1])
++        self.assertAlmostEqual(recovery["old_boundary_sigma"], 0.5)
++        self.assertGreater(recovery["new_boundary_sigma"], 0.5)
++        self.assertLess(recovery["new_boundary_sigma"], 0.625)
++        self.assertAlmostEqual(recovery["failure_sigma"], 0.5)
++        self.assertEqual(
++            recovery["trigger_reason"], "CORRIDOR_AUDIT_WIDTH_LIMIT")
++        reallocation = result.search["reallocation"]
++        self.assertTrue(reallocation["available"])
++        self.assertEqual(
++            reallocation["status"],
++            "adjacent_portal_reallocation_applied")
++        # The recovery round receives the new allocation and only unused
++        # initial identities.
++        second = solve_calls[1]
++        self.assertEqual(second["max_new"], 2)
++        self.assertEqual(second["excluded"], set(solve_calls[0]["keys"]))
++        self.assertEqual(
++            [list(entry) for entry in second["allocation"]],
++            reallocation["new_allocation"])
++        self.assertEqual(
++            [record["new_initial_count"]
++             for record in result.search["rounds"]], [4, 1])
++        self.assertEqual(result.search["initial_count_total"], 5)
++        self.assertEqual(
++            result.search["duplicate_initial_launch_count"], 0)
++        corridor_rounds = result.search["corridor"]["rounds"]
++        self.assertEqual(len(corridor_rounds), 2)
++        self.assertEqual(
++            corridor_rounds[-1]["allocation_source"],
++            "adjacent_portal_reallocation")
++        self.assertEqual(
++            corridor_rounds[-1]["allocation"],
++            reallocation["new_allocation"])
++
++    def test_initial_pool_exhaustion_records_no_fake_recovery(self):
++        grid, request, planner, chain, allocation, guide, chain_audit = \
++            self._pipeline_fixture()
++        planner = replace(planner, max_initials=1)
++        path = straight_path(8.0)
++        solve_calls = []
++        containment_calls = []
++
++        def fake_solve(_request, _config, *args, **kwargs):
++            route_guides = tuple(kwargs.get("route_guides", ()))
++            cap = kwargs.get("max_new_initials")
++            guesses = list(make_initial_guesses(
++                _request, _config, route_guides=route_guides))
++            if cap is not None:
++                guesses = guesses[:int(cap)]
++            solve_calls.append([initial_guess_key(guess) for guess in guesses])
++            return geometry_with_attempts(
++                _request, path, planner, guesses)
++
++        def fake_containment(*_args, **_kwargs):
++            containment_calls.append(True)
++            return width_failure(4.0, 0)
++
++        with mock.patch.object(
++                pipeline_module, "build_corridor_chain",
++                return_value=chain), mock.patch.object(
++                pipeline_module, "audit_corridor_chain",
++                return_value=chain_audit), mock.patch.object(
++                pipeline_module, "make_corridor_guide",
++                return_value=guide), mock.patch.object(
++                pipeline_module, "allocate_corridors",
++                return_value=allocation), mock.patch.object(
++                pipeline_module, "audit_path_in_corridors",
++                side_effect=fake_containment), mock.patch.object(
++                pipeline_module, "solve_open_path_guided",
++                side_effect=fake_solve):
++            result = plan_virtual_a(
++                map_request(request, grid, planner=planner))
++        self.assertEqual(result.status, "GEOMETRY_FAILED")
++        self.assertEqual(result.reason, "CORRIDOR_AUDIT_WIDTH_LIMIT")
++        self.assertIsNone(result.path)
++        self.assertIsNone(result.plan)
++        self.assertEqual(len(solve_calls), 1)
++        self.assertEqual(len(containment_calls), 1)
++        self.assertEqual(result.search["initial_limit"], 1)
++        self.assertEqual(result.search["initial_count_total"], 1)
++        self.assertEqual(
++            result.search["duplicate_initial_launch_count"], 0)
++        self.assertEqual(result.search["recovery_count"], 0)
++        self.assertEqual(result.search["recoveries"], [])
++        reallocation = result.search["reallocation"]
++        self.assertFalse(reallocation["attempted"])
++        self.assertFalse(reallocation["available"])
++        self.assertFalse(reallocation["consumed_recovery"])
++        self.assertEqual(
++            reallocation["status"],
++            "fixed_sigma_reallocation_unavailable")
++        self.assertEqual(
++            reallocation["detail"],
++            "no unused initial slot remains for a reallocated solve")
++
++    def test_pipeline_reallocation_leaves_no_plan_when_obb_fails(self):
++        grid, request, planner, chain, allocation, guide, chain_audit = \
++            self._pipeline_fixture()
++        path = straight_path(8.0)
++        solve_calls = []
++        containment_calls = []
++
++        def fake_solve(_request, _config, *args, **kwargs):
++            route_guides = tuple(kwargs.get("route_guides", ()))
++            excluded = set(kwargs.get("excluded_initial_keys", ()))
++            cap = kwargs.get("max_new_initials")
++            guesses = [
++                guess for guess in make_initial_guesses(
++                    _request, _config, route_guides=route_guides)
++                if initial_guess_key(guess) not in excluded]
++            if len(solve_calls) == 0:
++                guesses = guesses[:4]
++            if cap is not None:
++                guesses = guesses[:int(cap)]
++            solve_calls.append([
++                initial_guess_key(guess) for guess in guesses])
++            return geometry_with_attempts(
++                _request, path, planner, guesses)
++
++        def fake_containment(_path, _chain, _allocation, **kwargs):
++            containment_calls.append(
++                [list(entry) for entry in _allocation])
++            if len(containment_calls) == 1:
++                return width_failure(4.0, 0)
++            return {
++                "passed": True,
++                "reason": "CORRIDOR_CONTAINMENT_VERIFIED",
++                "detail": "",
++                "first_failure": None,
++                "sample_count": 1,
++                "max_bound_residual_m": -0.1,
++            }
++
++        def fake_retime(*args, **kwargs):
++            return SimpleNamespace(
++                status="DYNAMIC_FEASIBLE", reason="", detail="",
++                T_s=1.0, plan=SimpleNamespace(kind="motion"),
++                geometry_audit=None)
++
++        def fake_dynamics(*args, **kwargs):
++            return SimpleNamespace(
++                passed=True, reason="", detail="", check_count=1,
++                metrics={})
++
++        def fake_collision(*args, **kwargs):
++            return SimpleNamespace(
++                passed=False,
++                reason="MAP_OBB_COLLISION",
++                first_failure="vehicle 2",
++                detail="forced OBB failure after reallocation",
++                location={"qf": [4.0, 0.0], "station": 4.0},
++                metrics={"margin": -0.2},
++                check_count=3)
++
++        with mock.patch.object(
++                pipeline_module, "build_corridor_chain",
++                return_value=chain), mock.patch.object(
++                pipeline_module, "audit_corridor_chain",
++                return_value=chain_audit), mock.patch.object(
++                pipeline_module, "make_corridor_guide",
++                return_value=guide), mock.patch.object(
++                pipeline_module, "allocate_corridors",
++                return_value=allocation), mock.patch.object(
++                pipeline_module, "audit_path_in_corridors",
++                side_effect=fake_containment), mock.patch.object(
++                pipeline_module, "retime_path",
++                side_effect=fake_retime), mock.patch.object(
++                pipeline_module, "audit_dynamics",
++                side_effect=fake_dynamics), mock.patch.object(
++                pipeline_module, "audit_collision",
++                side_effect=fake_collision), mock.patch.object(
++                pipeline_module, "solve_open_path_guided",
++                side_effect=fake_solve):
++            result = plan_virtual_a(
++                map_request(request, grid, planner=planner))
++        self.assertFalse(result.executable)
++        self.assertIsNone(result.plan)
++        self.assertIsNone(result.path)
++        self.assertEqual(result.status, "COLLISION_FAILED")
++        self.assertEqual(result.reason, "MAP_OBB_COLLISION")
++        self.assertEqual(len(solve_calls), 2)
++        self.assertEqual(len(containment_calls), 2)
++        self.assertEqual(result.search["recovery_count"], 1)
++        self.assertEqual(
++            result.search["recoveries"][0]["action"],
++            "adjacent_portal_reallocation")
++        self.assertEqual(result.search["initial_count_total"], 5)
++
++
+ class RealRequestTests(unittest.TestCase):
+     def test_real_success_and_real_failure_requests(self):
+         grid = empty_grid()
+--- a/tests/test_virtual_a_pipeline.py
++++ b/tests/test_virtual_a_pipeline.py
+@@ -170,6 +170,16 @@
+                     "GEOMETRY_FEASIBLE")
+                 self.assertTrue(
+                     result.search["rounds"][-1]["collision_passed"])
++                # C3 rework 01: the whole request shares one initial pool.
++                self.assertLessEqual(
++                    result.search["initial_count_total"],
++                    min(6, int(map_request_value.planner_config.max_initials)))
++                self.assertEqual(
++                    len(result.search["initial_keys"]),
++                    result.search["initial_count_total"])
++                self.assertEqual(
++                    result.search["duplicate_initial_launch_count"], 0)
++                self.assertLessEqual(result.search["recovery_count"], 1)
+ 
+     def test_circumcircle_blocked_door_is_solved_by_real_obb_audit(self):
+         grid, _metadata = load_synthetic("door_circumcircle")

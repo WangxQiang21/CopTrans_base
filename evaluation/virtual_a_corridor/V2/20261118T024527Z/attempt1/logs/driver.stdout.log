@@ -1,0 +1,14 @@
+[INFO] [1794970355.792158]: [v2 driver] request published
+[INFO] [1794970355.844115]: [v2 driver] envelope received; verifying
+Traceback (most recent call last):
+  File "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_a_corridor/V2/20261118T024527Z/v2_scene_driver.py", line 579, in <module>
+    main()
+  File "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_a_corridor/V2/20261118T024527Z/v2_scene_driver.py", line 566, in main
+    output = driver.run()
+  File "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_a_corridor/V2/20261118T024527Z/v2_scene_driver.py", line 528, in run
+    self.verify_envelope(request)
+  File "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_a_corridor/V2/20261118T024527Z/v2_scene_driver.py", line 345, in verify_envelope
+    job = self.current_job()
+  File "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_a_corridor/V2/20261118T024527Z/v2_scene_driver.py", line 339, in current_job
+    raise RuntimeError("no virtual job record for plan {}".format(
+RuntimeError: no virtual job record for plan 0

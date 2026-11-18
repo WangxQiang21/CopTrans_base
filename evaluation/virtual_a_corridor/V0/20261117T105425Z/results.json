@@ -1,0 +1,86 @@
+{
+  "stage": "V0",
+  "run": "evaluation/virtual_a_corridor/V0/20261117T105425Z",
+  "utc_date": "2026-11-17",
+  "overall": "PARTIAL_PASS_WITH_REAL_GUI_NOT_RUN",
+  "git": {
+    "base_commit": "9a19fd3e22d33188b13795f695757c3e4a36909f",
+    "current_commit": "9a19fd3e22d33188b13795f695757c3e4a36909f",
+    "committed": false,
+    "diffstat": "9 files changed, 907 insertions(+), 23 deletions(-) (V0+V1 combined worktree)"
+  },
+  "hud_parameters": {
+    "left": 900,
+    "top": 20,
+    "width": 360,
+    "height": 230,
+    "reference_view": "1280x720"
+  },
+  "checks": [
+    {
+      "id": "hud_unit",
+      "description": "compact labels, STATIC v=0.00, F retained, audit columns, identity gating, display switches",
+      "command": "python3 -m unittest -v tests.test_formation_hud",
+      "exit": 0,
+      "tests": 15,
+      "status": "PASS",
+      "log": "test_logs/test_formation_hud.log"
+    },
+    {
+      "id": "demo_assets",
+      "description": "launch args/params, RViz HUD+corridor layers, run_demo backend, package exec_depend",
+      "command": "python3 -m unittest -v tests.test_formation_demo_assets",
+      "exit": 0,
+      "tests": 21,
+      "status": "PASS",
+      "log": "test_logs/test_formation_demo_assets.log"
+    },
+    {
+      "id": "ros_adapter_regression",
+      "description": "playback node status/HUD/quality publication regression",
+      "command": "python3 -m unittest -v tests.test_virtual_a_ros_adapter",
+      "exit": 0,
+      "tests": 60,
+      "status": "PASS",
+      "log": "test_logs/test_virtual_a_ros_adapter.log"
+    },
+    {
+      "id": "jsk_package",
+      "description": "rospack find jsk_rviz_plugins",
+      "exit": 1,
+      "output": "package not found",
+      "status": "ABSENT",
+      "log": "jsk_rviz_plugin_check.log"
+    },
+    {
+      "id": "jsk_overlaytext_msg",
+      "description": "rosmsg show jsk_rviz_plugins/OverlayText",
+      "exit": 1,
+      "output": "unknown package jsk_rviz_plugins",
+      "status": "ABSENT",
+      "log": "jsk_rviz_plugin_check.log"
+    },
+    {
+      "id": "jsk_rviz_plugin_description",
+      "description": "rospack plugins --attrib=plugin rviz | grep overlay; ls /opt/ros/noetic/share/jsk_rviz_plugins",
+      "exit": 1,
+      "output": "no overlay plugin; share directory missing (ls exit 2)",
+      "status": "ABSENT",
+      "log": "jsk_rviz_plugin_check.log"
+    },
+    {
+      "id": "real_hud_gui",
+      "description": "real RViz OverlayText with run_demo virtual_rigid_a S1; screenshots start/play/fail",
+      "status": "NOT_RUN",
+      "reason": "ros-noetic-jsk-rviz-plugins not installed; node disables hud_pub when OverlayText import fails",
+      "install_candidate": "ros-noetic-jsk-rviz-plugins 2.1.10-1focal.20250521.014225"
+    }
+  ],
+  "notes": [
+    "Evidence was generated after V1 implementation in the same uncommitted V0+V1 worktree; source hashes match V1 run 20261117T105607Z.",
+    "Library defaults keep the historical long status text; the demo launch disables it and the Cargo reason.",
+    "The quality pipeline merge now requires full plan/formation/backend/model identity; legacy quality reports therefore no longer merge pipeline metrics by design.",
+    "No real /formation/hud message was published this round because OverlayText is unavailable.",
+    "No Git commit, branch or push; C2 not started; historical timing_continuous KeyError: dynamic_peaks untouched."
+  ]
+}

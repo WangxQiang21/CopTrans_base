@@ -1,0 +1,426 @@
+{
+ "acceptance": {
+  "all_targeted_tests_exit_zero": true,
+  "exhaustion_no_fake_recovery": true,
+  "false_publications_zero": true,
+  "head_unchanged_and_no_commit": true,
+  "initial_pool_tests_preserved": true,
+  "negative_unit_far_failure_returns_none": true,
+  "pipeline_negative_far_failure_spends_nothing": true,
+  "pipeline_positive_one_recovery_then_stop": true,
+  "pipeline_test_unmodified": true,
+  "positive_unit_switch_adjacent_reallocation": true,
+  "s1_exactly_one_solve_round": true,
+  "s1_failure_sigma_not_in_direct_adjacent_segments": true,
+  "s1_far_failure_no_recovery": true,
+  "s1_no_path_no_plan_not_executable": true,
+  "s1_reallocation_unavailable_and_not_consumed": true,
+  "s3_legacy_success_preserved": true,
+  "six_frozen_pipeline_scenes_preserved": true,
+  "solver_and_vehicle_limits_unmodified": true
+ },
+ "all_acceptance_true": true,
+ "branch": "feature/virtual-rigid-formation-a",
+ "codex_status": "AWAITING_EXTERNAL_REVIEW",
+ "contract": "plan/virtual_a_corridor_v01/CLAUDE_C3_REWORK_02.md",
+ "head": "9a19fd3e22d33188b13795f695757c3e4a36909f",
+ "initial_pool_exhaustion_replay": {
+  "false_publications": 0,
+  "initial_count_total": 1,
+  "initial_limit": 1,
+  "path_present": false,
+  "plan_present": false,
+  "reallocation": {
+   "adjacent_corridors": null,
+   "attempted": false,
+   "available": false,
+   "consumed_recovery": false,
+   "detail": "no unused initial slot remains for a reallocated solve",
+   "failure_corridor_index": 0,
+   "failure_point_residual_m": -4.893289648366661e-06,
+   "failure_s_m": 7.7577800095459395,
+   "failure_sigma": 0.7640891075134278,
+   "new_allocation": null,
+   "new_boundary_sigma": null,
+   "old_allocation": [
+    [
+     0.0,
+     0.125,
+     0
+    ],
+    [
+     0.125,
+     0.25,
+     0
+    ],
+    [
+     0.25,
+     0.375,
+     0
+    ],
+    [
+     0.375,
+     0.5,
+     0
+    ],
+    [
+     0.5,
+     0.625,
+     0
+    ],
+    [
+     0.625,
+     0.75,
+     0
+    ],
+    [
+     0.75,
+     0.875,
+     0
+    ],
+    [
+     0.875,
+     0.921342994303884,
+     0
+    ],
+    [
+     0.921342994303884,
+     1.0,
+     1
+    ]
+   ],
+   "old_boundary_sigma": null,
+   "reason": "fixed_sigma_reallocation_unavailable",
+   "status": "fixed_sigma_reallocation_unavailable",
+   "trigger_reason": "CORRIDOR_AUDIT_WIDTH_LIMIT"
+  },
+  "reason": "CORRIDOR_AUDIT_WIDTH_LIMIT",
+  "recovery_count": 0,
+  "status": "GEOMETRY_FAILED"
+ },
+ "not_run": [
+  "ROS",
+  "RViz",
+  "publication",
+  "C4",
+  "C5"
+ ],
+ "original_evidence": {
+  "c3_file_count": 28,
+  "c3_manifest_self_sha256": "bcce46dfd8ce9da9ce46ae18ca54f104a6008e2a670bcd5d3ab6815096a1a466",
+  "c3_manifest_verification_exit": 0,
+  "c3_rework_01_file_count": 27,
+  "c3_rework_01_manifest_self_sha256": "338e5d76e52937d1b2858986610f79f13216bf5b6ed4655feb1246d7997a3f69",
+  "c3_rework_01_manifest_verification_exit": 0,
+  "c3_rework_01_tree_digest": "e2dee6995302cb52c5b51c0a20dd02442ad5103f9893cd4d467dfea86fd5c43d",
+  "c3_tree_digest": "bb5558d4eda1083b07349d81f508eae483a982c283f25c9b2ae0214b2ee94640",
+  "read_only": true
+ },
+ "rework_01_baseline": "reconstructed by applying C3_REWORK_01 source.diff to the /tmp/c3_rework_pre snapshot; all six hashes reproduced exactly",
+ "rework_01_hashes": {
+  "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/contracts.py": "bf46feceb404022f023f6b50a41928b22e23a5ace963071f53e0800b434f1a51",
+  "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py": "f08d7701dcb94428854f370bd4393484af3fcca4ab97df1208d955e2fc9e1564",
+  "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/optimizer.py": "1c49b426e8b5065f6e67847e80a35a01e296ec7099a10fd13472f4c4c3ed06c2",
+  "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/pipeline.py": "9b33e1cabd11a23e40b511f4a1df71f6b52f3b89ccee0c0c98920dcfca02e4ec",
+  "tests/test_virtual_a_corridor_recovery.py": "bd9c4f93de50518b5268992153bcbb707ae886fac38aef2f39354fbcbd1865db",
+  "tests/test_virtual_a_pipeline.py": "e0e05632773e66d27ace9c4a933ffcbfda4c293a84ea4f0350f29531cbe6b079"
+ },
+ "run_id": "20261118T015640Z",
+ "s1_replay": {
+  "adjacent_switch": {
+   "left_corridor": 0,
+   "left_segment": [
+    0.875,
+    0.921342994303884
+   ],
+   "right_corridor": 1,
+   "right_segment": [
+    0.921342994303884,
+    1.0
+   ],
+   "switch_position": 8,
+   "switch_sigma": 0.921342994303884
+  },
+  "audit_min_width_m": 1e-05,
+  "collision_audit_passed": null,
+  "corridor_rounds": 1,
+  "duplicate_initial_launch_count": 0,
+  "dynamic_audit_passed": null,
+  "executable": false,
+  "failure_corridor_index": 0,
+  "failure_in_left_adjacent_segment": false,
+  "failure_in_right_adjacent_segment": false,
+  "failure_is_switch_adjacent": false,
+  "failure_point_residual_m": -4.893289648366661e-06,
+  "failure_s_m": 7.7577800095459395,
+  "failure_segment": [
+   0.75,
+   0.875,
+   0
+  ],
+  "failure_sigma": 0.7640891075134278,
+  "false_publications": 0,
+  "first_failure_width_m": 9.68263449241391e-06,
+  "geometry_audit_passed": true,
+  "geometry_rounds": 1,
+  "initial_count_total": 1,
+  "initial_limit": 6,
+  "path_present": false,
+  "plan_present": false,
+  "publication": "NOT_RUN",
+  "reallocation": {
+   "adjacent_corridors": null,
+   "attempted": true,
+   "available": false,
+   "consumed_recovery": false,
+   "detail": "no eligible adjacent allocation segment with a non-degenerate local overlap; the fixed-sigma failure is not at a switch",
+   "failure_corridor_index": 0,
+   "failure_point_residual_m": -4.893289648366661e-06,
+   "failure_s_m": 7.7577800095459395,
+   "failure_sigma": 0.7640891075134278,
+   "new_allocation": null,
+   "new_boundary_sigma": null,
+   "old_allocation": [
+    [
+     0.0,
+     0.125,
+     0
+    ],
+    [
+     0.125,
+     0.25,
+     0
+    ],
+    [
+     0.25,
+     0.375,
+     0
+    ],
+    [
+     0.375,
+     0.5,
+     0
+    ],
+    [
+     0.5,
+     0.625,
+     0
+    ],
+    [
+     0.625,
+     0.75,
+     0
+    ],
+    [
+     0.75,
+     0.875,
+     0
+    ],
+    [
+     0.875,
+     0.921342994303884,
+     0
+    ],
+    [
+     0.921342994303884,
+     1.0,
+     1
+    ]
+   ],
+   "old_boundary_sigma": null,
+   "reason": "fixed_sigma_reallocation_unavailable",
+   "status": "fixed_sigma_reallocation_unavailable",
+   "trigger_reason": "CORRIDOR_AUDIT_WIDTH_LIMIT"
+  },
+  "reason": "CORRIDOR_AUDIT_WIDTH_LIMIT",
+  "recoveries": [],
+  "recovery_count": 0,
+  "ros": "NOT_RUN",
+  "route_count": 3,
+  "scene": "S1",
+  "solver_attempts": 1,
+  "status": "GEOMETRY_FAILED"
+ },
+ "s3_legacy_replay": {
+  "collision_audit_passed": true,
+  "dynamic_audit_passed": true,
+  "executable": true,
+  "false_publications": 0,
+  "geometry_audit_passed": true,
+  "initial_count_total": 6,
+  "model_binding_ok": true,
+  "path_length_m": 12.093485960786976,
+  "recoveries": [
+   {
+    "action": "endpoint_only_initial",
+    "first_failure_layer": "COLLISION",
+    "from_route_index": 0,
+    "reason": "COLLISION_NUMERICAL_FAILURE",
+    "recovery_index": 1,
+    "to_route_index": null,
+    "wall_time_s": 5.304814351024106
+   }
+  ],
+  "recovery_count": 1,
+  "route_count": 1,
+  "status": "SUCCESS"
+ },
+ "source_diff_scope": {
+  "audit_thresholds_touched": false,
+  "corridor_construction_or_allocation_algorithm_touched": false,
+  "files": [
+   "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py",
+   "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/pipeline.py",
+   "tests/test_virtual_a_corridor_recovery.py"
+  ],
+  "nlp_model_touched": false,
+  "scope_note": "corridor.py changes only reallocate_adjacent_portal_once; pipeline.py changes only the unavailable detail string; the recovery test file changes only tests.",
+  "vehicle_limits_touched": false
+ },
+ "source_hashes": {
+  "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/contracts.py": "bf46feceb404022f023f6b50a41928b22e23a5ace963071f53e0800b434f1a51",
+  "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py": "80b2a4f299603e14b052335cfb884f3aec56f7409f4bb582347a33fd22c4a296",
+  "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/optimizer.py": "1c49b426e8b5065f6e67847e80a35a01e296ec7099a10fd13472f4c4c3ed06c2",
+  "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/pipeline.py": "60398f1c8a030f3c94f9c5790c3ea7dcad0cc2966e629721765af296321ca9f5",
+  "tests/test_virtual_a_corridor_recovery.py": "b3fcb3253e2d28b856ee37b8e710df264d44873a939aa21b9ff8f607a4ddc253",
+  "tests/test_virtual_a_pipeline.py": "e0e05632773e66d27ace9c4a933ffcbfda4c293a84ea4f0350f29531cbe6b079"
+ },
+ "tests": [
+  {
+   "command": "python3 -B -m unittest discover -s tests -p 'test_virtual_a_corridor_recovery.py' -v",
+   "duration_s": 15.838,
+   "end": "2026-11-18T02:06:39Z",
+   "exit": 0,
+   "log": "evaluation/virtual_a_corridor/C3_REWORK_02/20261118T015640Z/test_logs/test_virtual_a_corridor_recovery.log",
+   "ok": true,
+   "start": "2026-11-18T02:06:22Z",
+   "test_names": [
+    "test_failure_far_from_switch_or_degenerate_overlap_returns_none",
+    "test_initial_pool_exhaustion_records_no_fake_recovery",
+    "test_pipeline_far_from_switch_failure_does_not_spend_recovery",
+    "test_pipeline_reallocates_once_and_stops_on_second_failure",
+    "test_pipeline_reallocation_leaves_no_plan_when_obb_fails",
+    "test_positive_candidate_moves_one_boundary_inside_true_overlap",
+    "test_corridor_endpoint_initials_are_not_pulled_to_route_zero",
+    "test_initial_slots_are_one_per_route_plus_endpoint_shapes",
+    "test_open_grid_merges_slight_doglegs_into_one_candidate",
+    "test_single_box_keeps_both_obstacle_separated_sides",
+    "test_real_success_and_real_failure_requests",
+    "test_budget_exhaustion_between_route_generation_and_solve",
+    "test_fake_solver_success_but_audit_rejection_spends_no_recovery",
+    "test_numerical_failure_spends_one_endpoint_only_recovery",
+    "test_obb_failure_switches_to_one_untried_route_then_stops",
+    "test_simulated_timeout_never_starts_the_slsqp_fallback",
+    "test_solver_auto_fallback_is_one_initial_and_no_fake_recovery",
+    "test_route_audit_stops_before_spending_endpoint_family"
+   ],
+   "tests_run": 18
+  },
+  {
+   "command": "python3 -B -m unittest discover -s tests -p test_virtual_a_corridor_optimizer.py -v",
+   "duration_s": 5.757,
+   "end": "2026-11-18T01:57:10Z",
+   "exit": 0,
+   "log": "evaluation/virtual_a_corridor/C3_REWORK_02/20261118T015640Z/test_logs/test_virtual_a_corridor_optimizer.log",
+   "ok": true,
+   "start": "2026-11-18T01:57:04Z",
+   "test_names": [
+    "test_coincident_tau_and_hermite_cuts_do_not_skip_a_corridor",
+    "test_guide_without_quality_keeps_the_old_serialization",
+    "test_mismatched_guide_count_is_rejected",
+    "test_switch_points_are_at_guide_cumulative_boundaries",
+    "test_allocation_switch_uses_the_assigned_region",
+    "test_clearance_body_centres_use_world_frame",
+    "test_continuous_audit_rejects_an_exit_between_corridor_samples",
+    "test_corridor_inputs_are_rejected_outside_corridor_mode",
+    "test_corridor_solution_passes_solver_and_independent_audit",
+    "test_halfspace_residual_is_identical_in_numeric_and_casadi_nlp",
+    "test_legacy_config_encoding_and_corridor_opt_in",
+    "test_local_clearance_query_is_detectably_wrong",
+    "test_numeric_and_casadi_clearance_objectives_agree_off_origin",
+    "test_origin_start_clearance_semantics_are_unchanged",
+    "test_world_rotation_and_translation_reach_every_halfspace",
+    "test_endpoint_outside_first_corridor_is_rejected",
+    "test_qp_analytic_gradient_matches_central_difference",
+    "test_qp_exception_keeps_the_checked_chebyshev_polyline",
+    "test_single_region_is_endpoint_polyline_and_eight_intervals",
+    "test_three_unequal_regions_use_the_slsqp_portal_qp",
+    "test_twelve_regions_allocate_all_corridors_against_eight",
+    "test_negative_turn_is_warned_but_the_hairpin_vertex_survives",
+    "test_sharp_corner_is_not_silently_rounded_or_called_smooth",
+    "test_u_turn_vertices_are_not_deleted_or_shortcut"
+   ],
+   "tests_run": 24
+  },
+  {
+   "command": "python3 -B -m unittest discover -s tests -p test_virtual_a_pipeline.py -v",
+   "duration_s": 105.076,
+   "end": "2026-11-18T01:58:58Z",
+   "exit": 0,
+   "log": "evaluation/virtual_a_corridor/C3_REWORK_02/20261118T015640Z/test_logs/test_virtual_a_pipeline.log",
+   "ok": true,
+   "start": "2026-11-18T01:57:13Z",
+   "test_names": [
+    "test_circumcircle_blocked_door_is_solved_by_real_obb_audit",
+    "test_fake_solver_success_never_becomes_an_executable_candidate",
+    "test_no_motion_free_hold_passes_and_blocked_hold_fails",
+    "test_no_motion_hold_checks_map_when_start_cell_is_occupied",
+    "test_rejected_geometry_candidate_retains_evidence_but_no_plan",
+    "test_route_guides_are_finite_topology_hints_only",
+    "test_six_frozen_scenes_pass_all_three_audits_autonomously",
+    "test_total_budget_exhaustion_is_not_executable"
+   ],
+   "tests_run": 8
+  },
+  {
+   "command": "python3 -B -m unittest discover -s tests -p test_virtual_a_optimizer.py -v",
+   "duration_s": 65.676,
+   "end": "2026-11-18T02:00:07Z",
+   "exit": 0,
+   "log": "evaluation/virtual_a_corridor/C3_REWORK_02/20261118T015640Z/test_logs/test_virtual_a_optimizer.log",
+   "ok": true,
+   "start": "2026-11-18T01:59:02Z",
+   "test_names": [
+    "test_all_nonconverged_attempts_report_solver_not_converged",
+    "test_audit_rejection_survives_later_solver_failure",
+    "test_exact_hold_is_no_motion_but_near_or_turned_goal_is_not",
+    "test_explicit_ipopt_never_starts_the_slsqp_fallback",
+    "test_fake_solver_success_curvature_violation_is_not_feasible",
+    "test_fake_solver_success_wrong_endpoint_is_not_feasible",
+    "test_rotation_and_translation_equivalence",
+    "test_scipy_fallback_is_recorded_explicitly",
+    "test_six_endpoints_straight_and_clamped_straight_policy",
+    "test_small_budget_returns_budget_exhausted_without_path",
+    "test_solver_exception_maps_to_numerical_failure",
+    "test_missing_or_nonfinite_success_vector_never_reports_a_residual",
+    "test_real_ipopt_success_residual_is_finite_and_recomputable",
+    "test_real_slsqp_fallback_success_residual_is_finite_and_recomputable",
+    "test_residual_calculation_anomaly_fails_closed",
+    "test_default_config_is_the_frozen_fixture",
+    "test_initial_guess_uses_request_only_automatic_length",
+    "test_six_guesses_fixed_order_reconstructible_and_c2",
+    "test_solve_reads_no_reference_or_fixture_file",
+    "test_auto_exception_with_exhausted_budget_never_starts_slsqp",
+    "test_auto_ordinary_failure_with_budget_uses_real_slsqp_and_audit",
+    "test_auto_slsqp_timeout_is_recorded_without_audit",
+    "test_auto_timeout_after_audited_candidate_never_falls_back",
+    "test_auto_timeout_never_starts_slsqp_or_audits",
+    "test_ipopt_max_wall_time_is_effective_and_truthful",
+    "test_nan_planner_tolerance_cannot_enter_the_audit_conversion",
+    "test_slsqp_iteration_callback_stops_and_marks_timeout",
+    "test_timed_out_success_flag_never_reaches_the_audit",
+    "test_timeout_preserves_only_a_previously_audited_candidate"
+   ],
+   "tests_run": 29
+  }
+ ],
+ "unchanged_from_rework_01": {
+  "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/contracts.py": true,
+  "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py": false,
+  "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/optimizer.py": true,
+  "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/pipeline.py": false,
+  "tests/test_virtual_a_corridor_recovery.py": false,
+  "tests/test_virtual_a_pipeline.py": true
+ },
+ "workspace": "/home/wq/whut_thesis/expv3_multi_virtual_a"
+}

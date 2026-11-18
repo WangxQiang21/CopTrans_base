@@ -1,0 +1,349 @@
+{
+ "false_publications": [],
+ "note": "C2 rows are the already delivered C2-B evidence files; C3 rows were rerun after the C3 edits. No C2 code was re-executed in C3.",
+ "rows": [
+  {
+   "c2": {
+    "attempt_count": 4,
+    "attempt_statuses": [
+     "SOLVER_SUCCESS_AUDITED",
+     "SOLVER_SUCCESS_AUDITED",
+     "SOLVER_SUCCESS_AUDITED",
+     "SOLVER_TIMEOUT"
+    ],
+    "evidence_file": "evaluation/virtual_a_corridor/C2B/20261117T135647Z/S1_corridor.json",
+    "evidence_sha256": "1dc1b66328790ecfd0dd7b0fd8c035eb8fbf9a5d6a593a12a205b335639aba73",
+    "executable": false,
+    "plan_present": false,
+    "reason": "CORRIDOR_AUDIT_WIDTH_LIMIT",
+    "search_rounds": [
+     {
+      "collision_first_failure": null,
+      "collision_passed": null,
+      "collision_reason": null,
+      "corridor_containment_passed": false,
+      "corridor_containment_reason": "CORRIDOR_AUDIT_WIDTH_LIMIT",
+      "dynamics_passed": null,
+      "dynamics_reason": null,
+      "geometry_reason": "",
+      "geometry_status": "GEOMETRY_FEASIBLE",
+      "round_index": 0,
+      "timing_reason": null,
+      "timing_status": null
+     }
+    ],
+    "status": "GEOMETRY_FAILED",
+    "wall_s": 36.175005197990686
+   },
+   "c3": {
+    "attempt_count": 4,
+    "attempt_statuses": [
+     "SOLVER_SUCCESS_AUDITED",
+     "SOLVER_SUCCESS_AUDITED",
+     "SOLVER_SUCCESS_AUDITED",
+     "SOLVER_SUCCESS_AUDITED"
+    ],
+    "evidence_file": "evaluation/virtual_a_corridor/C3/20261117T155212Z/corridor_cases/S1_corridor_c3.json",
+    "evidence_sha256": "53f05d293ba4e387ca03cf7c679549756b6bb6c5174c92b1e7e910e4490d7960",
+    "executable": false,
+    "first_failure_layer": "GEOMETRY",
+    "initial_count": 5,
+    "last_reason": "CORRIDOR_AUDIT_WIDTH_LIMIT",
+    "plan_present": false,
+    "reason": "CORRIDOR_AUDIT_WIDTH_LIMIT",
+    "recoveries": [],
+    "recovery_count": 0,
+    "rounds": [
+     {
+      "collision_first_failure": null,
+      "collision_passed": null,
+      "collision_reason": null,
+      "corridor_containment_passed": false,
+      "corridor_containment_reason": "CORRIDOR_AUDIT_WIDTH_LIMIT",
+      "dynamics_passed": null,
+      "dynamics_reason": null,
+      "geometry_attempts": 4,
+      "geometry_reason": "",
+      "geometry_status": "GEOMETRY_FEASIBLE",
+      "initial_count": 5,
+      "initial_mode": "route_guided",
+      "round_index": 0,
+      "route_count": 3,
+      "route_index": 0,
+      "timing_reason": null,
+      "timing_status": null
+     }
+    ],
+    "route_count": 3,
+    "status": "GEOMETRY_FAILED",
+    "wall_s": 35.25463307998143
+   },
+   "grid_sha256": "054cf5c77079536f9a098e33232732d6c181f0f624f07e3a446ebfab0266a10e",
+   "request_sha256": "d44f9efeb70f636a1e0f24dbc367e7869366ce344d0d88bba020d4ad355c8a1a",
+   "same_grid_sha256": true,
+   "same_guidance_mode": true,
+   "same_planner_config": true,
+   "same_request_sha256": true,
+   "scene": "S1"
+  },
+  {
+   "c2": {
+    "attempt_count": 2,
+    "attempt_statuses": [
+     "SOLVER_FAILED",
+     "SOLVER_TIMEOUT"
+    ],
+    "evidence_file": "evaluation/virtual_a_corridor/C2B/20261117T135647Z/S2_corridor.json",
+    "evidence_sha256": "beb673aba772727750e718cf9991fe78b2ba81778fe46ffd549389df66502139",
+    "executable": false,
+    "plan_present": false,
+    "reason": "SOFT_BUDGET_EXHAUSTED",
+    "search_rounds": [
+     {
+      "collision_first_failure": null,
+      "collision_passed": null,
+      "collision_reason": null,
+      "corridor_containment_passed": null,
+      "corridor_containment_reason": null,
+      "dynamics_passed": null,
+      "dynamics_reason": null,
+      "geometry_reason": "SOFT_BUDGET_EXHAUSTED",
+      "geometry_status": "BUDGET_EXHAUSTED",
+      "round_index": 0,
+      "timing_reason": null,
+      "timing_status": null
+     }
+    ],
+    "status": "BUDGET_EXHAUSTED",
+    "wall_s": 35.68573193997145
+   },
+   "c3": {
+    "attempt_count": 2,
+    "attempt_statuses": [
+     "SOLVER_FAILED",
+     "SOLVER_TIMEOUT"
+    ],
+    "evidence_file": "evaluation/virtual_a_corridor/C3/20261117T155212Z/corridor_cases/S2_corridor_c3.json",
+    "evidence_sha256": "03bf712549212c7ee0f229e8492fde720fbbf2b92cc80d44fb74035b808b9585",
+    "executable": false,
+    "first_failure_layer": "GEOMETRY",
+    "initial_count": 5,
+    "last_reason": "SOFT_BUDGET_EXHAUSTED",
+    "plan_present": false,
+    "reason": "SOFT_BUDGET_EXHAUSTED",
+    "recoveries": [],
+    "recovery_count": 0,
+    "rounds": [
+     {
+      "collision_first_failure": null,
+      "collision_passed": null,
+      "collision_reason": null,
+      "corridor_containment_passed": null,
+      "corridor_containment_reason": null,
+      "dynamics_passed": null,
+      "dynamics_reason": null,
+      "geometry_attempts": 2,
+      "geometry_reason": "SOFT_BUDGET_EXHAUSTED",
+      "geometry_status": "BUDGET_EXHAUSTED",
+      "initial_count": 5,
+      "initial_mode": "route_guided",
+      "round_index": 0,
+      "route_count": 3,
+      "route_index": 0,
+      "timing_reason": null,
+      "timing_status": null
+     }
+    ],
+    "route_count": 3,
+    "status": "BUDGET_EXHAUSTED",
+    "wall_s": 35.92473838315345
+   },
+   "grid_sha256": "55e3c5b82a99c74b96a550720fd7a467e76b40f48082c0212ca21574d3af8782",
+   "request_sha256": "9feb7332db51d4f347a21b347416b6e7ffa1619ad28bda41ef88ad57c3bb2ba2",
+   "same_grid_sha256": true,
+   "same_guidance_mode": true,
+   "same_planner_config": true,
+   "same_request_sha256": true,
+   "scene": "S2"
+  },
+  {
+   "c2": {
+    "attempt_count": 7,
+    "attempt_statuses": [
+     "SOLVER_FAILED",
+     "SOLVER_SUCCESS_AUDITED",
+     "SOLVER_SUCCESS_AUDITED",
+     "SOLVER_TIMEOUT",
+     "SOLVER_FAILED",
+     "SOLVER_SUCCESS_AUDITED",
+     "SOLVER_TIMEOUT"
+    ],
+    "evidence_file": "evaluation/virtual_a_corridor/C2B/20261117T135647Z/S3_corridor.json",
+    "evidence_sha256": "ea8004c210a3fcc9a3a03c7256c86a3f331fa2959fe81b85c10fd76b2df6ad6f",
+    "executable": false,
+    "plan_present": false,
+    "reason": "MAP_OBB_COLLISION",
+    "search_rounds": [
+     {
+      "collision_first_failure": {
+       "constraint": "COLLISION",
+       "other_vehicle_id": null,
+       "qf": [
+        4.10366700250394,
+        6.222767787956909e-07,
+        3.1625703640427426e-07
+       ],
+       "reason": "MAP_OBB_COLLISION",
+       "sample_index": 124,
+       "segment_index": 2,
+       "stage": "analytic_sweep",
+       "station": 4.103667002504015,
+       "time_s": 11.48564424435774,
+       "vehicle_id": 3
+      },
+      "collision_passed": false,
+      "collision_reason": "MAP_OBB_COLLISION",
+      "corridor_containment_passed": true,
+      "corridor_containment_reason": "CORRIDOR_CONTAINMENT_VERIFIED",
+      "dynamics_passed": true,
+      "dynamics_reason": null,
+      "geometry_reason": "",
+      "geometry_status": "GEOMETRY_FEASIBLE",
+      "round_index": 0,
+      "timing_reason": "",
+      "timing_status": "DYNAMIC_FEASIBLE"
+     },
+     {
+      "collision_first_failure": {
+       "constraint": "COLLISION",
+       "other_vehicle_id": null,
+       "qf": [
+        4.103667002503974,
+        8.050876135951318e-07,
+        4.254786558478398e-07
+       ],
+       "reason": "MAP_OBB_COLLISION",
+       "sample_index": 124,
+       "segment_index": 2,
+       "stage": "analytic_sweep",
+       "station": 4.103667002504101,
+       "time_s": 11.485644957830894,
+       "vehicle_id": 3
+      },
+      "collision_passed": false,
+      "collision_reason": "MAP_OBB_COLLISION",
+      "corridor_containment_passed": true,
+      "corridor_containment_reason": "CORRIDOR_CONTAINMENT_VERIFIED",
+      "dynamics_passed": true,
+      "dynamics_reason": null,
+      "geometry_reason": "",
+      "geometry_status": "GEOMETRY_FEASIBLE",
+      "round_index": 1,
+      "timing_reason": "",
+      "timing_status": "DYNAMIC_FEASIBLE"
+     }
+    ],
+    "status": "COLLISION_FAILED",
+    "wall_s": 64.9377599399304
+   },
+   "c3": {
+    "attempt_count": 7,
+    "attempt_statuses": [
+     "SOLVER_FAILED",
+     "SOLVER_SUCCESS_AUDITED",
+     "SOLVER_SUCCESS_AUDITED",
+     "SOLVER_TIMEOUT",
+     "SOLVER_FAILED",
+     "SOLVER_SUCCESS_AUDITED",
+     "SOLVER_SUCCESS_AUDITED"
+    ],
+    "evidence_file": "evaluation/virtual_a_corridor/C3/20261117T155212Z/corridor_cases/S3_corridor_c3.json",
+    "evidence_sha256": "ab07f7308078280e90e072163ab4c4bad9a1da6843ea50cec60442068df6c101",
+    "executable": false,
+    "first_failure_layer": "COLLISION",
+    "initial_count": 5,
+    "last_reason": "SOFT_BUDGET_EXHAUSTED",
+    "plan_present": false,
+    "reason": "SOFT_BUDGET_EXHAUSTED",
+    "recoveries": [
+     {
+      "action": "collision_local_block",
+      "first_failure_layer": "COLLISION",
+      "from_route_index": 0,
+      "reason": "MAP_OBB_COLLISION",
+      "recovery_index": 1,
+      "to_route_index": null,
+      "wall_time_s": 35.96800844790414
+     }
+    ],
+    "recovery_count": 1,
+    "rounds": [
+     {
+      "collision_first_failure": {
+       "constraint": "COLLISION",
+       "other_vehicle_id": null,
+       "qf": [
+        4.10366700250394,
+        6.222767787956905e-07,
+        3.1625703640427405e-07
+       ],
+       "reason": "MAP_OBB_COLLISION",
+       "sample_index": 124,
+       "segment_index": 2,
+       "stage": "analytic_sweep",
+       "station": 4.103667002504015,
+       "time_s": 11.48564424435774,
+       "vehicle_id": 3
+      },
+      "collision_passed": false,
+      "collision_reason": "MAP_OBB_COLLISION",
+      "corridor_containment_passed": true,
+      "corridor_containment_reason": "CORRIDOR_CONTAINMENT_VERIFIED",
+      "dynamics_passed": true,
+      "dynamics_reason": null,
+      "geometry_attempts": 4,
+      "geometry_reason": "",
+      "geometry_status": "GEOMETRY_FEASIBLE",
+      "initial_count": 5,
+      "initial_mode": "route_guided",
+      "round_index": 0,
+      "route_count": 1,
+      "route_index": 0,
+      "timing_reason": "",
+      "timing_status": "DYNAMIC_FEASIBLE"
+     },
+     {
+      "collision_first_failure": null,
+      "collision_passed": null,
+      "collision_reason": null,
+      "corridor_containment_passed": null,
+      "corridor_containment_reason": null,
+      "dynamics_passed": null,
+      "dynamics_reason": null,
+      "geometry_attempts": 3,
+      "geometry_reason": "",
+      "geometry_status": "GEOMETRY_FEASIBLE",
+      "initial_count": 5,
+      "initial_mode": "route_guided",
+      "round_index": 1,
+      "route_count": 1,
+      "route_index": 0,
+      "timing_reason": null,
+      "timing_status": null
+     }
+    ],
+    "route_count": 1,
+    "status": "BUDGET_EXHAUSTED",
+    "wall_s": 61.53326109005138
+   },
+   "grid_sha256": "d4ca88971203636b4dcc0285b99d092823069d210d8ac3e13f67be49609ba1c3",
+   "request_sha256": "18dc626d71fa5b6e5e023215c04b01ceae45f94c8846790d6352b9d6c0e9f075",
+   "same_grid_sha256": true,
+   "same_guidance_mode": true,
+   "same_planner_config": true,
+   "same_request_sha256": true,
+   "scene": "S3"
+  }
+ ],
+ "schema": "c3_c2_same_input_corridor_v1"
+}

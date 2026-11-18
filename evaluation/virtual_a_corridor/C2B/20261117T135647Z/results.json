@@ -1,0 +1,3594 @@
+{
+ "corridor_case_count": 12,
+ "corridor_rejections": [
+  {
+   "path_present": false,
+   "plan_present": false,
+   "reason": "CORRIDOR_AUDIT_WIDTH_LIMIT",
+   "scene": "S1",
+   "status": "GEOMETRY_FAILED"
+  },
+  {
+   "path_present": false,
+   "plan_present": false,
+   "reason": "CORRIDOR_AUDIT_WIDTH_LIMIT",
+   "scene": "S1_mirror",
+   "status": "GEOMETRY_FAILED"
+  },
+  {
+   "path_present": false,
+   "plan_present": false,
+   "reason": "SOFT_BUDGET_EXHAUSTED",
+   "scene": "S2",
+   "status": "BUDGET_EXHAUSTED"
+  },
+  {
+   "path_present": false,
+   "plan_present": false,
+   "reason": "SOFT_BUDGET_EXHAUSTED",
+   "scene": "S2_mirror",
+   "status": "BUDGET_EXHAUSTED"
+  },
+  {
+   "path_present": false,
+   "plan_present": false,
+   "reason": "MAP_OBB_COLLISION",
+   "scene": "S3",
+   "status": "COLLISION_FAILED"
+  },
+  {
+   "path_present": false,
+   "plan_present": false,
+   "reason": "MAP_OBB_COLLISION",
+   "scene": "S3_mirror",
+   "status": "COLLISION_FAILED"
+  },
+  {
+   "path_present": false,
+   "plan_present": false,
+   "reason": "CORRIDOR_AUDIT_WIDTH_LIMIT",
+   "scene": "S1",
+   "status": "GEOMETRY_FAILED"
+  },
+  {
+   "path_present": false,
+   "plan_present": false,
+   "reason": "SOFT_BUDGET_EXHAUSTED",
+   "scene": "S2",
+   "status": "BUDGET_EXHAUSTED"
+  },
+  {
+   "path_present": false,
+   "plan_present": false,
+   "reason": "FIXED_ALLOCATION_LIMIT",
+   "scene": "S2_mirror",
+   "status": "NO_ACCEPTED_CANDIDATE"
+  },
+  {
+   "path_present": false,
+   "plan_present": false,
+   "reason": "MAP_OBB_COLLISION",
+   "scene": "S3",
+   "status": "COLLISION_FAILED"
+  }
+ ],
+ "corridor_successes": [
+  "door_circumcircle",
+  "door_circumcircle"
+ ],
+ "environment": {
+  "casadi": "3.7.2",
+  "file": "environment.txt",
+  "ipopt_plugin_available": true,
+  "numpy": "1.24.4",
+  "python": "3.8.10",
+  "scipy": "1.10.1"
+ },
+ "false_publications": [],
+ "generated_at_utc": "2026-11-17T14:57:50Z",
+ "git": {
+  "branch": "feature/virtual-rigid-formation-a",
+  "branch_created": false,
+  "commit_created": false,
+  "head": "9a19fd3e22d33188b13795f695757c3e4a36909f",
+  "pushed": false
+ },
+ "pipeline_cases": [
+  {
+   "attempts": [
+    {
+     "attempt_index": 0,
+     "corridor_residual_m": 9.985823834490759e-09,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 1,
+     "corridor_residual_m": 9.998511019126965e-09,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 2,
+     "corridor_residual_m": 9.998179506531812e-09,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 3,
+     "corridor_residual_m": null,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "SOFT_BUDGET_EXHAUSTED",
+     "solver": "ipopt",
+     "solver_status": "Maximum_WallTime_Exceeded",
+     "status": "SOLVER_TIMEOUT"
+    }
+   ],
+   "checks": 257,
+   "collision_audit_passed": null,
+   "corridor_rounds": [
+    {
+     "allocation": [
+      [
+       0.0,
+       0.125,
+       0
+      ],
+      [
+       0.125,
+       0.25,
+       0
+      ],
+      [
+       0.25,
+       0.375,
+       0
+      ],
+      [
+       0.375,
+       0.5,
+       0
+      ],
+      [
+       0.5,
+       0.625,
+       0
+      ],
+      [
+       0.625,
+       0.75,
+       0
+      ],
+      [
+       0.75,
+       0.875,
+       0
+      ],
+      [
+       0.875,
+       0.921342994303884,
+       0
+      ],
+      [
+       0.921342994303884,
+       1.0,
+       1
+      ]
+     ],
+     "chain_audit_passed": true,
+     "chain_digest": "32a321032905a0dbec5d59bded8c1530ed90a90999d001c30c263b5e48879c48",
+     "containment_max_bound_residual_m": 0.5905181559942699,
+     "containment_max_point_residual_m": 0.00028509796083397987,
+     "containment_passed": false,
+     "containment_reason": "CORRIDOR_AUDIT_WIDTH_LIMIT",
+     "containment_samples": 451,
+     "effective_margin_m": 1e-05,
+     "guide_points": [
+      [
+       0.0,
+       0.0
+      ],
+      [
+       8.362900170643947,
+       2.884361586713779
+      ],
+      [
+       8.819581504169413,
+       3.4858722492682084
+      ]
+     ],
+     "guide_source": "corridor_qp_polyline",
+     "region_count": 2,
+     "region_rows": [
+      42,
+      78
+     ],
+     "round_index": 0,
+     "route_source": "astar_primary"
+    }
+   ],
+   "detail": "interval width 9.682634438235027e-06 m cannot close the bound",
+   "dynamic_audit_passed": null,
+   "executable": false,
+   "feasible": false,
+   "geometry_audit_passed": true,
+   "grid_sha256": "054cf5c77079536f9a098e33232732d6c181f0f624f07e3a446ebfab0266a10e",
+   "guidance_mode": "corridor",
+   "kappa_peaks_per_vehicle": null,
+   "kappa_reference_peak": null,
+   "measured_wall_s": 36.19509353500325,
+   "metrics": {},
+   "path_length_m": null,
+   "path_present": false,
+   "plan_kind": null,
+   "plan_present": false,
+   "planning_context_sha256": "c4bbce6c7e1f4e82f96d6add5b36277a4d40e630495ef292db0b834d006f740f",
+   "reason": "CORRIDOR_AUDIT_WIDTH_LIMIT",
+   "request_sha256": "d44f9efeb70f636a1e0f24dbc367e7869366ce344d0d88bba020d4ad355c8a1a",
+   "scene": "S1",
+   "search_rounds": [
+    {
+     "collision_first_failure": null,
+     "collision_passed": null,
+     "collision_reason": null,
+     "corridor_containment_passed": false,
+     "corridor_containment_reason": "CORRIDOR_AUDIT_WIDTH_LIMIT",
+     "dynamics_passed": null,
+     "dynamics_reason": null,
+     "geometry_reason": "",
+     "geometry_status": "GEOMETRY_FEASIBLE",
+     "round_index": 0,
+     "timing_reason": null,
+     "timing_status": null
+    }
+   ],
+   "solver": "ipopt",
+   "status": "GEOMETRY_FAILED",
+   "wall_time_s": 36.175005197990686
+  },
+  {
+   "attempts": [
+    {
+     "attempt_index": 0,
+     "corridor_residual_m": 9.985823834490759e-09,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 1,
+     "corridor_residual_m": 9.998179506531812e-09,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 2,
+     "corridor_residual_m": 9.998511463216175e-09,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 3,
+     "corridor_residual_m": null,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "SOFT_BUDGET_EXHAUSTED",
+     "solver": "ipopt",
+     "solver_status": "Maximum_WallTime_Exceeded",
+     "status": "SOLVER_TIMEOUT"
+    }
+   ],
+   "checks": 257,
+   "collision_audit_passed": null,
+   "corridor_rounds": [
+    {
+     "allocation": [
+      [
+       0.0,
+       0.125,
+       0
+      ],
+      [
+       0.125,
+       0.25,
+       0
+      ],
+      [
+       0.25,
+       0.375,
+       0
+      ],
+      [
+       0.375,
+       0.5,
+       0
+      ],
+      [
+       0.5,
+       0.625,
+       0
+      ],
+      [
+       0.625,
+       0.75,
+       0
+      ],
+      [
+       0.75,
+       0.875,
+       0
+      ],
+      [
+       0.875,
+       0.9213429943038223,
+       0
+      ],
+      [
+       0.9213429943038223,
+       1.0,
+       1
+      ]
+     ],
+     "chain_audit_passed": true,
+     "chain_digest": "2fb2446d91480b0d492f122549aec6eaae5a62c061768880d007fa5132f68f85",
+     "containment_max_bound_residual_m": 0.5905181470113348,
+     "containment_max_point_residual_m": 0.00028509798337239545,
+     "containment_passed": false,
+     "containment_reason": "CORRIDOR_AUDIT_WIDTH_LIMIT",
+     "containment_samples": 451,
+     "effective_margin_m": 1e-05,
+     "guide_points": [
+      [
+       0.0,
+       0.0
+      ],
+      [
+       8.36290017064421,
+       -2.884361586712781
+      ],
+      [
+       8.819581504169413,
+       -3.4858722492682084
+      ]
+     ],
+     "guide_source": "corridor_qp_polyline",
+     "region_count": 2,
+     "region_rows": [
+      42,
+      78
+     ],
+     "round_index": 0,
+     "route_source": "astar_primary"
+    }
+   ],
+   "detail": "interval width 9.68263443645867e-06 m cannot close the bound",
+   "dynamic_audit_passed": null,
+   "executable": false,
+   "feasible": false,
+   "geometry_audit_passed": true,
+   "grid_sha256": "fb485abf73dd1e1953c43762dbee0f9f7ac26a94968766e817c6951135e7c595",
+   "guidance_mode": "corridor",
+   "kappa_peaks_per_vehicle": null,
+   "kappa_reference_peak": null,
+   "measured_wall_s": 35.67201907397248,
+   "metrics": {},
+   "path_length_m": null,
+   "path_present": false,
+   "plan_kind": null,
+   "plan_present": false,
+   "planning_context_sha256": "c4cd7295b2defb295fd5af2d3e4d9e4ce2f5b458a03d43ef4ba471d8680ff65a",
+   "reason": "CORRIDOR_AUDIT_WIDTH_LIMIT",
+   "request_sha256": "5c945f973aa02c47d42cd11707c55c392df533c8688ce027d11a4415b05c5ee0",
+   "scene": "S1_mirror",
+   "search_rounds": [
+    {
+     "collision_first_failure": null,
+     "collision_passed": null,
+     "collision_reason": null,
+     "corridor_containment_passed": false,
+     "corridor_containment_reason": "CORRIDOR_AUDIT_WIDTH_LIMIT",
+     "dynamics_passed": null,
+     "dynamics_reason": null,
+     "geometry_reason": "",
+     "geometry_status": "GEOMETRY_FEASIBLE",
+     "round_index": 0,
+     "timing_reason": null,
+     "timing_status": null
+    }
+   ],
+   "solver": "ipopt",
+   "status": "GEOMETRY_FAILED",
+   "wall_time_s": 35.65226677095052
+  },
+  {
+   "attempts": [
+    {
+     "attempt_index": 0,
+     "corridor_residual_m": 0.0,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "Maximum_Iterations_Exceeded",
+     "solver": "ipopt",
+     "solver_status": "Maximum_Iterations_Exceeded",
+     "status": "SOLVER_FAILED"
+    },
+    {
+     "attempt_index": 1,
+     "corridor_residual_m": null,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "SOFT_BUDGET_EXHAUSTED",
+     "solver": "ipopt",
+     "solver_status": "Maximum_WallTime_Exceeded",
+     "status": "SOLVER_TIMEOUT"
+    }
+   ],
+   "checks": 0,
+   "collision_audit_passed": null,
+   "corridor_rounds": [
+    {
+     "allocation": [
+      [
+       0.0,
+       0.125,
+       0
+      ],
+      [
+       0.125,
+       0.25,
+       0
+      ],
+      [
+       0.25,
+       0.375,
+       0
+      ],
+      [
+       0.375,
+       0.5,
+       0
+      ],
+      [
+       0.5,
+       0.625,
+       0
+      ],
+      [
+       0.625,
+       0.75,
+       0
+      ],
+      [
+       0.75,
+       0.875,
+       0
+      ],
+      [
+       0.875,
+       0.9904572867960737,
+       0
+      ],
+      [
+       0.9904572867960737,
+       1.0,
+       1
+      ]
+     ],
+     "chain_audit_passed": true,
+     "chain_digest": "0e1552637da62c1763fc0a535d87b758dea4bea3e504764c472270be62a0aa49",
+     "containment_max_bound_residual_m": null,
+     "containment_max_point_residual_m": null,
+     "containment_passed": null,
+     "containment_reason": null,
+     "containment_samples": null,
+     "effective_margin_m": 1e-05,
+     "guide_points": [
+      [
+       0.0,
+       0.0
+      ],
+      [
+       11.366326742047649,
+       0.018101928472965753
+      ],
+      [
+       11.474331036127456,
+       -8.326672684688674e-16
+      ]
+     ],
+     "guide_source": "corridor_qp_polyline",
+     "region_count": 2,
+     "region_rows": [
+      55,
+      91
+     ],
+     "round_index": 0,
+     "route_source": "astar_primary"
+    }
+   ],
+   "detail": "soft wall budget 30.0s exhausted before an audited candidate",
+   "dynamic_audit_passed": null,
+   "executable": false,
+   "feasible": false,
+   "geometry_audit_passed": null,
+   "grid_sha256": "55e3c5b82a99c74b96a550720fd7a467e76b40f48082c0212ca21574d3af8782",
+   "guidance_mode": "corridor",
+   "kappa_peaks_per_vehicle": null,
+   "kappa_reference_peak": null,
+   "measured_wall_s": 35.70175604196265,
+   "metrics": {},
+   "path_length_m": null,
+   "path_present": false,
+   "plan_kind": null,
+   "plan_present": false,
+   "planning_context_sha256": "497ecdb3e64ea643b29e39c3e9ca8f39c80e1842af9b365e8e152dc5abe723fc",
+   "reason": "SOFT_BUDGET_EXHAUSTED",
+   "request_sha256": "9feb7332db51d4f347a21b347416b6e7ffa1619ad28bda41ef88ad57c3bb2ba2",
+   "scene": "S2",
+   "search_rounds": [
+    {
+     "collision_first_failure": null,
+     "collision_passed": null,
+     "collision_reason": null,
+     "corridor_containment_passed": null,
+     "corridor_containment_reason": null,
+     "dynamics_passed": null,
+     "dynamics_reason": null,
+     "geometry_reason": "SOFT_BUDGET_EXHAUSTED",
+     "geometry_status": "BUDGET_EXHAUSTED",
+     "round_index": 0,
+     "timing_reason": null,
+     "timing_status": null
+    }
+   ],
+   "solver": "ipopt",
+   "status": "BUDGET_EXHAUSTED",
+   "wall_time_s": 35.68573193997145
+  },
+  {
+   "attempts": [
+    {
+     "attempt_index": 0,
+     "corridor_residual_m": 0.0,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "Maximum_Iterations_Exceeded",
+     "solver": "ipopt",
+     "solver_status": "Maximum_Iterations_Exceeded",
+     "status": "SOLVER_FAILED"
+    },
+    {
+     "attempt_index": 1,
+     "corridor_residual_m": null,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "SOFT_BUDGET_EXHAUSTED",
+     "solver": "ipopt",
+     "solver_status": "Maximum_WallTime_Exceeded",
+     "status": "SOLVER_TIMEOUT"
+    }
+   ],
+   "checks": 0,
+   "collision_audit_passed": null,
+   "corridor_rounds": [
+    {
+     "allocation": [
+      [
+       0.0,
+       0.125,
+       0
+      ],
+      [
+       0.125,
+       0.25,
+       0
+      ],
+      [
+       0.25,
+       0.375,
+       0
+      ],
+      [
+       0.375,
+       0.5,
+       0
+      ],
+      [
+       0.5,
+       0.625,
+       0
+      ],
+      [
+       0.625,
+       0.75,
+       0
+      ],
+      [
+       0.75,
+       0.875,
+       0
+      ],
+      [
+       0.875,
+       0.9904572867960737,
+       0
+      ],
+      [
+       0.9904572867960737,
+       1.0,
+       1
+      ]
+     ],
+     "chain_audit_passed": true,
+     "chain_digest": "7197d67c959370dc42f490d285a856e0eea3a77cab216d9368e2009db4568ac9",
+     "containment_max_bound_residual_m": null,
+     "containment_max_point_residual_m": null,
+     "containment_passed": null,
+     "containment_reason": null,
+     "containment_samples": null,
+     "effective_margin_m": 1e-05,
+     "guide_points": [
+      [
+       0.0,
+       0.0
+      ],
+      [
+       11.366326742047649,
+       -0.018101928472965774
+      ],
+      [
+       11.474331036127456,
+       8.326672684688674e-16
+      ]
+     ],
+     "guide_source": "corridor_qp_polyline",
+     "region_count": 2,
+     "region_rows": [
+      55,
+      91
+     ],
+     "round_index": 0,
+     "route_source": "astar_primary"
+    }
+   ],
+   "detail": "soft wall budget 30.0s exhausted before an audited candidate",
+   "dynamic_audit_passed": null,
+   "executable": false,
+   "feasible": false,
+   "geometry_audit_passed": null,
+   "grid_sha256": "e50be3838ff411edc4a8cfeda5d28b0cf0188db89a1a4dababf72bb514b4d57c",
+   "guidance_mode": "corridor",
+   "kappa_peaks_per_vehicle": null,
+   "kappa_reference_peak": null,
+   "measured_wall_s": 35.5684854760766,
+   "metrics": {},
+   "path_length_m": null,
+   "path_present": false,
+   "plan_kind": null,
+   "plan_present": false,
+   "planning_context_sha256": "5f0e40934ff6176966f2401b6bb69987de0406bcf04bb18612b985e7efcc8373",
+   "reason": "SOFT_BUDGET_EXHAUSTED",
+   "request_sha256": "244db57aa644b6a202477d22b1f45f53a462b52ae9ecb64b5fe36b5c58a3e6d0",
+   "scene": "S2_mirror",
+   "search_rounds": [
+    {
+     "collision_first_failure": null,
+     "collision_passed": null,
+     "collision_reason": null,
+     "corridor_containment_passed": null,
+     "corridor_containment_reason": null,
+     "dynamics_passed": null,
+     "dynamics_reason": null,
+     "geometry_reason": "SOFT_BUDGET_EXHAUSTED",
+     "geometry_status": "BUDGET_EXHAUSTED",
+     "round_index": 0,
+     "timing_reason": null,
+     "timing_status": null
+    }
+   ],
+   "solver": "ipopt",
+   "status": "BUDGET_EXHAUSTED",
+   "wall_time_s": 35.54995850601699
+  },
+  {
+   "attempts": [
+    {
+     "attempt_index": 0,
+     "corridor_residual_m": 0.0,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "Maximum_Iterations_Exceeded",
+     "solver": "ipopt",
+     "solver_status": "Maximum_Iterations_Exceeded",
+     "status": "SOLVER_FAILED"
+    },
+    {
+     "attempt_index": 1,
+     "corridor_residual_m": 0.0,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 2,
+     "corridor_residual_m": 0.0,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 3,
+     "corridor_residual_m": null,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "SOFT_BUDGET_EXHAUSTED",
+     "solver": "ipopt",
+     "solver_status": "Maximum_WallTime_Exceeded",
+     "status": "SOLVER_TIMEOUT"
+    },
+    {
+     "attempt_index": 0,
+     "corridor_residual_m": 0.0,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "Maximum_Iterations_Exceeded",
+     "solver": "ipopt",
+     "solver_status": "Maximum_Iterations_Exceeded",
+     "status": "SOLVER_FAILED"
+    },
+    {
+     "attempt_index": 1,
+     "corridor_residual_m": 0.0,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 2,
+     "corridor_residual_m": null,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "SOFT_BUDGET_EXHAUSTED",
+     "solver": "ipopt",
+     "solver_status": "Maximum_WallTime_Exceeded",
+     "status": "SOLVER_TIMEOUT"
+    }
+   ],
+   "checks": 3563,
+   "collision_audit_passed": false,
+   "corridor_rounds": [
+    {
+     "allocation": [
+      [
+       0.0,
+       0.125,
+       0
+      ],
+      [
+       0.125,
+       0.25,
+       0
+      ],
+      [
+       0.25,
+       0.375,
+       0
+      ],
+      [
+       0.375,
+       0.5,
+       0
+      ],
+      [
+       0.5,
+       0.625,
+       0
+      ],
+      [
+       0.625,
+       0.75,
+       0
+      ],
+      [
+       0.75,
+       0.875,
+       0
+      ],
+      [
+       0.875,
+       1.0,
+       0
+      ]
+     ],
+     "chain_audit_passed": true,
+     "chain_digest": "ad2b65564ab0a10f977c0cc4e38f0d268e389e36aaa1d021c40887209ad59c03",
+     "containment_max_bound_residual_m": 0.5421457799480119,
+     "containment_max_point_residual_m": -0.17499999000056982,
+     "containment_passed": true,
+     "containment_reason": "CORRIDOR_CONTAINMENT_VERIFIED",
+     "containment_samples": 120,
+     "effective_margin_m": 1e-05,
+     "guide_points": [
+      [
+       0.0,
+       0.0
+      ],
+      [
+       11.474331036127456,
+       -8.326672684688674e-16
+      ]
+     ],
+     "guide_source": "corridor_endpoint_polyline",
+     "region_count": 1,
+     "region_rows": [
+      5
+     ],
+     "round_index": 0,
+     "route_source": "astar_primary"
+    },
+    {
+     "allocation": [
+      [
+       0.0,
+       0.125,
+       0
+      ],
+      [
+       0.125,
+       0.25,
+       0
+      ],
+      [
+       0.25,
+       0.375,
+       0
+      ],
+      [
+       0.375,
+       0.5,
+       0
+      ],
+      [
+       0.5,
+       0.625,
+       0
+      ],
+      [
+       0.625,
+       0.75,
+       0
+      ],
+      [
+       0.75,
+       0.875,
+       0
+      ],
+      [
+       0.875,
+       1.0,
+       0
+      ]
+     ],
+     "chain_audit_passed": true,
+     "chain_digest": "ad2b65564ab0a10f977c0cc4e38f0d268e389e36aaa1d021c40887209ad59c03",
+     "containment_max_bound_residual_m": 0.5421457795023004,
+     "containment_max_point_residual_m": -0.17499999000069225,
+     "containment_passed": true,
+     "containment_reason": "CORRIDOR_CONTAINMENT_VERIFIED",
+     "containment_samples": 120,
+     "effective_margin_m": 1e-05,
+     "guide_points": [
+      [
+       0.0,
+       0.0
+      ],
+      [
+       11.474331036127456,
+       -8.326672684688674e-16
+      ]
+     ],
+     "guide_source": "corridor_endpoint_polyline",
+     "region_count": 1,
+     "region_rows": [
+      5
+     ],
+     "round_index": 1,
+     "route_source": "astar_primary"
+    }
+   ],
+   "detail": "analytic sweep failed: ",
+   "dynamic_audit_passed": true,
+   "executable": false,
+   "feasible": false,
+   "geometry_audit_passed": true,
+   "grid_sha256": "d4ca88971203636b4dcc0285b99d092823069d210d8ac3e13f67be49609ba1c3",
+   "guidance_mode": "corridor",
+   "kappa_peaks_per_vehicle": null,
+   "kappa_reference_peak": null,
+   "measured_wall_s": 64.94363124296069,
+   "metrics": {
+    "collision_checks": 2499
+   },
+   "path_length_m": null,
+   "path_present": false,
+   "plan_kind": null,
+   "plan_present": false,
+   "planning_context_sha256": "701ac76e095a7ae55038a2b0a36fbb03a51d4970231977f2060e43d8a6d72ea9",
+   "reason": "MAP_OBB_COLLISION",
+   "request_sha256": "18dc626d71fa5b6e5e023215c04b01ceae45f94c8846790d6352b9d6c0e9f075",
+   "scene": "S3",
+   "search_rounds": [
+    {
+     "collision_first_failure": {
+      "constraint": "COLLISION",
+      "other_vehicle_id": null,
+      "qf": [
+       4.10366700250394,
+       6.222767787956909e-07,
+       3.1625703640427426e-07
+      ],
+      "reason": "MAP_OBB_COLLISION",
+      "sample_index": 124,
+      "segment_index": 2,
+      "stage": "analytic_sweep",
+      "station": 4.103667002504015,
+      "time_s": 11.48564424435774,
+      "vehicle_id": 3
+     },
+     "collision_passed": false,
+     "collision_reason": "MAP_OBB_COLLISION",
+     "corridor_containment_passed": true,
+     "corridor_containment_reason": "CORRIDOR_CONTAINMENT_VERIFIED",
+     "dynamics_passed": true,
+     "dynamics_reason": null,
+     "geometry_reason": "",
+     "geometry_status": "GEOMETRY_FEASIBLE",
+     "round_index": 0,
+     "timing_reason": "",
+     "timing_status": "DYNAMIC_FEASIBLE"
+    },
+    {
+     "collision_first_failure": {
+      "constraint": "COLLISION",
+      "other_vehicle_id": null,
+      "qf": [
+       4.103667002503974,
+       8.050876135951318e-07,
+       4.254786558478398e-07
+      ],
+      "reason": "MAP_OBB_COLLISION",
+      "sample_index": 124,
+      "segment_index": 2,
+      "stage": "analytic_sweep",
+      "station": 4.103667002504101,
+      "time_s": 11.485644957830894,
+      "vehicle_id": 3
+     },
+     "collision_passed": false,
+     "collision_reason": "MAP_OBB_COLLISION",
+     "corridor_containment_passed": true,
+     "corridor_containment_reason": "CORRIDOR_CONTAINMENT_VERIFIED",
+     "dynamics_passed": true,
+     "dynamics_reason": null,
+     "geometry_reason": "",
+     "geometry_status": "GEOMETRY_FEASIBLE",
+     "round_index": 1,
+     "timing_reason": "",
+     "timing_status": "DYNAMIC_FEASIBLE"
+    }
+   ],
+   "solver": "ipopt",
+   "status": "COLLISION_FAILED",
+   "wall_time_s": 64.9377599399304
+  },
+  {
+   "attempts": [
+    {
+     "attempt_index": 0,
+     "corridor_residual_m": 0.0,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "Maximum_Iterations_Exceeded",
+     "solver": "ipopt",
+     "solver_status": "Maximum_Iterations_Exceeded",
+     "status": "SOLVER_FAILED"
+    },
+    {
+     "attempt_index": 1,
+     "corridor_residual_m": 0.0,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 2,
+     "corridor_residual_m": 0.0,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 3,
+     "corridor_residual_m": null,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "SOFT_BUDGET_EXHAUSTED",
+     "solver": "ipopt",
+     "solver_status": "Maximum_WallTime_Exceeded",
+     "status": "SOLVER_TIMEOUT"
+    },
+    {
+     "attempt_index": 0,
+     "corridor_residual_m": 0.0,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "Maximum_Iterations_Exceeded",
+     "solver": "ipopt",
+     "solver_status": "Maximum_Iterations_Exceeded",
+     "status": "SOLVER_FAILED"
+    },
+    {
+     "attempt_index": 1,
+     "corridor_residual_m": 0.0,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 2,
+     "corridor_residual_m": null,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "SOFT_BUDGET_EXHAUSTED",
+     "solver": "ipopt",
+     "solver_status": "Maximum_WallTime_Exceeded",
+     "status": "SOLVER_TIMEOUT"
+    }
+   ],
+   "checks": 3562,
+   "collision_audit_passed": false,
+   "corridor_rounds": [
+    {
+     "allocation": [
+      [
+       0.0,
+       0.125,
+       0
+      ],
+      [
+       0.125,
+       0.25,
+       0
+      ],
+      [
+       0.25,
+       0.375,
+       0
+      ],
+      [
+       0.375,
+       0.5,
+       0
+      ],
+      [
+       0.5,
+       0.625,
+       0
+      ],
+      [
+       0.625,
+       0.75,
+       0
+      ],
+      [
+       0.75,
+       0.875,
+       0
+      ],
+      [
+       0.875,
+       1.0,
+       0
+      ]
+     ],
+     "chain_audit_passed": true,
+     "chain_digest": "18964ba4e2f3ecd7b1a3d8c9e73dcbe92873dedb16bfc5cf9520e6a31e1ca456",
+     "containment_max_bound_residual_m": 0.542145779484551,
+     "containment_max_point_residual_m": -0.17499999000069716,
+     "containment_passed": true,
+     "containment_reason": "CORRIDOR_CONTAINMENT_VERIFIED",
+     "containment_samples": 120,
+     "effective_margin_m": 1e-05,
+     "guide_points": [
+      [
+       0.0,
+       0.0
+      ],
+      [
+       11.474331036127456,
+       8.326672684688674e-16
+      ]
+     ],
+     "guide_source": "corridor_endpoint_polyline",
+     "region_count": 1,
+     "region_rows": [
+      5
+     ],
+     "round_index": 0,
+     "route_source": "astar_primary"
+    },
+    {
+     "allocation": [
+      [
+       0.0,
+       0.125,
+       0
+      ],
+      [
+       0.125,
+       0.25,
+       0
+      ],
+      [
+       0.25,
+       0.375,
+       0
+      ],
+      [
+       0.375,
+       0.5,
+       0
+      ],
+      [
+       0.5,
+       0.625,
+       0
+      ],
+      [
+       0.625,
+       0.75,
+       0
+      ],
+      [
+       0.75,
+       0.875,
+       0
+      ],
+      [
+       0.875,
+       1.0,
+       0
+      ]
+     ],
+     "chain_audit_passed": true,
+     "chain_digest": "18964ba4e2f3ecd7b1a3d8c9e73dcbe92873dedb16bfc5cf9520e6a31e1ca456",
+     "containment_max_bound_residual_m": 0.5421457798827213,
+     "containment_max_point_residual_m": -0.1749999900005881,
+     "containment_passed": true,
+     "containment_reason": "CORRIDOR_CONTAINMENT_VERIFIED",
+     "containment_samples": 120,
+     "effective_margin_m": 1e-05,
+     "guide_points": [
+      [
+       0.0,
+       0.0
+      ],
+      [
+       11.474331036127456,
+       8.326672684688674e-16
+      ]
+     ],
+     "guide_source": "corridor_endpoint_polyline",
+     "region_count": 1,
+     "region_rows": [
+      5
+     ],
+     "round_index": 1,
+     "route_source": "astar_primary"
+    }
+   ],
+   "detail": "analytic sweep failed: ",
+   "dynamic_audit_passed": true,
+   "executable": false,
+   "feasible": false,
+   "geometry_audit_passed": true,
+   "grid_sha256": "84639455ed5a5b83b242fabd309875dcfd2676993ec8592674f323e022e3b741",
+   "guidance_mode": "corridor",
+   "kappa_peaks_per_vehicle": null,
+   "kappa_reference_peak": null,
+   "measured_wall_s": 65.1930868960917,
+   "metrics": {
+    "collision_checks": 2498
+   },
+   "path_length_m": null,
+   "path_present": false,
+   "plan_kind": null,
+   "plan_present": false,
+   "planning_context_sha256": "d5c8af183e7d991290a3ab50d985bc185333c55a91906b5253796215ac17012c",
+   "reason": "MAP_OBB_COLLISION",
+   "request_sha256": "fc364d2558e9ec35950838bcb924496f6f56e45ccefbd585dc49dc4db4caf7bb",
+   "scene": "S3_mirror",
+   "search_rounds": [
+    {
+     "collision_first_failure": {
+      "constraint": "COLLISION",
+      "other_vehicle_id": null,
+      "qf": [
+       4.1036670025039745,
+       -8.107781576495304e-07,
+       -4.284458838864795e-07
+      ],
+      "reason": "MAP_OBB_COLLISION",
+      "sample_index": 124,
+      "segment_index": 2,
+      "stage": "analytic_sweep",
+      "station": 4.103667002504104,
+      "time_s": 11.485644977423489,
+      "vehicle_id": 2
+     },
+     "collision_passed": false,
+     "collision_reason": "MAP_OBB_COLLISION",
+     "corridor_containment_passed": true,
+     "corridor_containment_reason": "CORRIDOR_CONTAINMENT_VERIFIED",
+     "dynamics_passed": true,
+     "dynamics_reason": null,
+     "geometry_reason": "",
+     "geometry_status": "GEOMETRY_FEASIBLE",
+     "round_index": 0,
+     "timing_reason": "",
+     "timing_status": "DYNAMIC_FEASIBLE"
+    },
+    {
+     "collision_first_failure": {
+      "constraint": "COLLISION",
+      "other_vehicle_id": null,
+      "qf": [
+       4.103667002503942,
+       -6.429514823112213e-07,
+       -3.269206563430009e-07
+      ],
+      "reason": "MAP_OBB_COLLISION",
+      "sample_index": 124,
+      "segment_index": 2,
+      "stage": "analytic_sweep",
+      "station": 4.103667002504023,
+      "time_s": 11.485644314941322,
+      "vehicle_id": 2
+     },
+     "collision_passed": false,
+     "collision_reason": "MAP_OBB_COLLISION",
+     "corridor_containment_passed": true,
+     "corridor_containment_reason": "CORRIDOR_CONTAINMENT_VERIFIED",
+     "dynamics_passed": true,
+     "dynamics_reason": null,
+     "geometry_reason": "",
+     "geometry_status": "GEOMETRY_FEASIBLE",
+     "round_index": 1,
+     "timing_reason": "",
+     "timing_status": "DYNAMIC_FEASIBLE"
+    }
+   ],
+   "solver": "ipopt",
+   "status": "COLLISION_FAILED",
+   "wall_time_s": 65.18722746998537
+  },
+  {
+   "attempts": [
+    {
+     "attempt_index": 0,
+     "corridor_residual_m": 0.0,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 1,
+     "corridor_residual_m": 0.0,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 2,
+     "corridor_residual_m": 0.0,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 3,
+     "corridor_residual_m": 0.0,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 4,
+     "corridor_residual_m": 0.0,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 5,
+     "corridor_residual_m": 0.0,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "Maximum_Iterations_Exceeded",
+     "solver": "ipopt",
+     "solver_status": "Maximum_Iterations_Exceeded",
+     "status": "SOLVER_FAILED"
+    }
+   ],
+   "checks": 7492,
+   "collision_audit_passed": true,
+   "corridor_rounds": [
+    {
+     "allocation": [
+      [
+       0.0,
+       0.125,
+       0
+      ],
+      [
+       0.125,
+       0.25,
+       0
+      ],
+      [
+       0.25,
+       0.375,
+       0
+      ],
+      [
+       0.375,
+       0.5,
+       0
+      ],
+      [
+       0.5,
+       0.625,
+       0
+      ],
+      [
+       0.625,
+       0.75,
+       0
+      ],
+      [
+       0.75,
+       0.875,
+       0
+      ],
+      [
+       0.875,
+       1.0,
+       0
+      ]
+     ],
+     "chain_audit_passed": true,
+     "chain_digest": "c2c44e3c93e0e8d622e779bc483435e7c6a12224202d49f6fc1c5f1f258ea08d",
+     "containment_max_bound_residual_m": -0.04374991031048494,
+     "containment_max_point_residual_m": -0.6999999899915036,
+     "containment_passed": true,
+     "containment_reason": "CORRIDOR_CONTAINMENT_VERIFIED",
+     "containment_samples": 8,
+     "effective_margin_m": 1e-05,
+     "guide_points": [
+      [
+       -1.5,
+       0.0
+      ],
+      [
+       9.0,
+       0.0
+      ]
+     ],
+     "guide_source": "corridor_endpoint_polyline",
+     "region_count": 1,
+     "region_rows": [
+      4
+     ],
+     "round_index": 0,
+     "route_source": "astar_primary"
+    }
+   ],
+   "detail": "geometry, dynamics and collision audits passed; continuous corridor containment certified",
+   "dynamic_audit_passed": true,
+   "executable": true,
+   "feasible": true,
+   "geometry_audit_passed": true,
+   "grid_sha256": "daec91e9550dccc2776492b038a6844961505715d1366a03ca106ab063d2f459",
+   "guidance_mode": "corridor",
+   "kappa_peaks_per_vehicle": {
+    "1": 5.249293190880748e-12,
+    "2": 3.4138323670665765e-12,
+    "3": 3.413832367089885e-12
+   },
+   "kappa_reference_peak": 3.413832367078231e-12,
+   "measured_wall_s": 43.62658732593991,
+   "metrics": {
+    "collision_checks": 6428,
+    "corridor_containment_certified": true,
+    "corridor_containment_max_bound_residual_m": -0.04374991031048494,
+    "corridor_containment_passed": true,
+    "corridor_containment_samples": 8,
+    "corridor_effective_margin_m": 1e-05,
+    "duration_s": 24.855468750038238,
+    "path_length_m": 10.500000000000004
+   },
+   "path_length_m": 10.500000000000004,
+   "path_present": true,
+   "plan_kind": "motion",
+   "plan_present": true,
+   "planning_context_sha256": "7edaaef16cabaaed59f9fe497055556f5b9404dafc60a8b729320136b48a2324",
+   "reason": "",
+   "request_sha256": "40d6b4cbeab947d4b4296e76ea9f2616fb1c60930c6478470015f1403cf92a4e",
+   "scene": "door_circumcircle",
+   "search_rounds": [
+    {
+     "collision_first_failure": null,
+     "collision_passed": true,
+     "collision_reason": null,
+     "corridor_containment_passed": true,
+     "corridor_containment_reason": "CORRIDOR_CONTAINMENT_VERIFIED",
+     "dynamics_passed": true,
+     "dynamics_reason": null,
+     "geometry_reason": "",
+     "geometry_status": "GEOMETRY_FEASIBLE",
+     "round_index": 0,
+     "timing_reason": "",
+     "timing_status": "DYNAMIC_FEASIBLE"
+    }
+   ],
+   "solver": "ipopt",
+   "status": "SUCCESS",
+   "wall_time_s": 43.62629880802706
+  },
+  {
+   "attempts": [
+    {
+     "attempt_index": 0,
+     "corridor_residual_m": 3.4173107676949144e-09,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "",
+     "solver": "scipy_slsqp",
+     "solver_status": "Optimization terminated successfully",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 1,
+     "corridor_residual_m": 8.605338663869588e-13,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "scipy_slsqp",
+     "solver_status": "Optimization terminated successfully",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 2,
+     "corridor_residual_m": 0.0,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "scipy_slsqp",
+     "solver_status": "Optimization terminated successfully",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 3,
+     "corridor_residual_m": 2.5997093366925128e-11,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "scipy_slsqp",
+     "solver_status": "Optimization terminated successfully",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 4,
+     "corridor_residual_m": 3.4779845670129816e-11,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "scipy_slsqp",
+     "solver_status": "Optimization terminated successfully",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 5,
+     "corridor_residual_m": 0.0,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "scipy_slsqp",
+     "solver_status": "Optimization terminated successfully",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    }
+   ],
+   "checks": 257,
+   "collision_audit_passed": null,
+   "corridor_rounds": [
+    {
+     "allocation": [
+      [
+       0.0,
+       0.125,
+       0
+      ],
+      [
+       0.125,
+       0.25,
+       0
+      ],
+      [
+       0.25,
+       0.375,
+       0
+      ],
+      [
+       0.375,
+       0.5,
+       0
+      ],
+      [
+       0.5,
+       0.625,
+       0
+      ],
+      [
+       0.625,
+       0.75,
+       0
+      ],
+      [
+       0.75,
+       0.875,
+       0
+      ],
+      [
+       0.875,
+       0.921342994303884,
+       0
+      ],
+      [
+       0.921342994303884,
+       1.0,
+       1
+      ]
+     ],
+     "chain_audit_passed": true,
+     "chain_digest": "32a321032905a0dbec5d59bded8c1530ed90a90999d001c30c263b5e48879c48",
+     "containment_max_bound_residual_m": 0.5905181510603907,
+     "containment_max_point_residual_m": 0.00028508499664292586,
+     "containment_passed": false,
+     "containment_reason": "CORRIDOR_AUDIT_WIDTH_LIMIT",
+     "containment_samples": 451,
+     "effective_margin_m": 1e-05,
+     "guide_points": [
+      [
+       0.0,
+       0.0
+      ],
+      [
+       8.362900170643947,
+       2.884361586713779
+      ],
+      [
+       8.819581504169413,
+       3.4858722492682084
+      ]
+     ],
+     "guide_source": "corridor_qp_polyline",
+     "region_count": 2,
+     "region_rows": [
+      42,
+      78
+     ],
+     "round_index": 0,
+     "route_source": "astar_primary"
+    }
+   ],
+   "detail": "interval width 9.682634426688708e-06 m cannot close the bound",
+   "dynamic_audit_passed": null,
+   "executable": false,
+   "feasible": false,
+   "geometry_audit_passed": true,
+   "grid_sha256": "054cf5c77079536f9a098e33232732d6c181f0f624f07e3a446ebfab0266a10e",
+   "guidance_mode": "corridor",
+   "kappa_peaks_per_vehicle": null,
+   "kappa_reference_peak": null,
+   "measured_wall_s": 17.406602221075445,
+   "metrics": {},
+   "path_length_m": null,
+   "path_present": false,
+   "plan_kind": null,
+   "plan_present": false,
+   "planning_context_sha256": "7a3e43abd8f2897621578973d3239df640e83d9cfb296c1a88896207c95e4806",
+   "reason": "CORRIDOR_AUDIT_WIDTH_LIMIT",
+   "request_sha256": "d44f9efeb70f636a1e0f24dbc367e7869366ce344d0d88bba020d4ad355c8a1a",
+   "scene": "S1",
+   "search_rounds": [
+    {
+     "collision_first_failure": null,
+     "collision_passed": null,
+     "collision_reason": null,
+     "corridor_containment_passed": false,
+     "corridor_containment_reason": "CORRIDOR_AUDIT_WIDTH_LIMIT",
+     "dynamics_passed": null,
+     "dynamics_reason": null,
+     "geometry_reason": "",
+     "geometry_status": "GEOMETRY_FEASIBLE",
+     "round_index": 0,
+     "timing_reason": null,
+     "timing_status": null
+    }
+   ],
+   "solver": "scipy",
+   "status": "GEOMETRY_FAILED",
+   "wall_time_s": 17.387587329023518
+  },
+  {
+   "attempts": [
+    {
+     "attempt_index": 0,
+     "corridor_residual_m": 0.0029469814353149243,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "Positive directional derivative for linesearch",
+     "solver": "scipy_slsqp",
+     "solver_status": "Positive directional derivative for linesearch",
+     "status": "SOLVER_FAILED"
+    },
+    {
+     "attempt_index": 1,
+     "corridor_residual_m": 0.004119243276463493,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "Positive directional derivative for linesearch",
+     "solver": "scipy_slsqp",
+     "solver_status": "Positive directional derivative for linesearch",
+     "status": "SOLVER_FAILED"
+    },
+    {
+     "attempt_index": 2,
+     "corridor_residual_m": 0.017697523828000362,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "Iteration limit reached",
+     "solver": "scipy_slsqp",
+     "solver_status": "Iteration limit reached",
+     "status": "SOLVER_FAILED"
+    },
+    {
+     "attempt_index": 3,
+     "corridor_residual_m": 0.007425375182663179,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "Positive directional derivative for linesearch",
+     "solver": "scipy_slsqp",
+     "solver_status": "Positive directional derivative for linesearch",
+     "status": "SOLVER_FAILED"
+    },
+    {
+     "attempt_index": 4,
+     "corridor_residual_m": 0.0017525467080161238,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "Positive directional derivative for linesearch",
+     "solver": "scipy_slsqp",
+     "solver_status": "Positive directional derivative for linesearch",
+     "status": "SOLVER_FAILED"
+    },
+    {
+     "attempt_index": 5,
+     "corridor_residual_m": null,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "SOFT_BUDGET_EXHAUSTED",
+     "solver": "scipy_slsqp",
+     "solver_status": "SLSQP_SOFT_DEADLINE",
+     "status": "SOLVER_TIMEOUT"
+    }
+   ],
+   "checks": 0,
+   "collision_audit_passed": null,
+   "corridor_rounds": [
+    {
+     "allocation": [
+      [
+       0.0,
+       0.125,
+       0
+      ],
+      [
+       0.125,
+       0.25,
+       0
+      ],
+      [
+       0.25,
+       0.375,
+       0
+      ],
+      [
+       0.375,
+       0.5,
+       0
+      ],
+      [
+       0.5,
+       0.625,
+       0
+      ],
+      [
+       0.625,
+       0.75,
+       0
+      ],
+      [
+       0.75,
+       0.875,
+       0
+      ],
+      [
+       0.875,
+       0.9904572867960737,
+       0
+      ],
+      [
+       0.9904572867960737,
+       1.0,
+       1
+      ]
+     ],
+     "chain_audit_passed": true,
+     "chain_digest": "0e1552637da62c1763fc0a535d87b758dea4bea3e504764c472270be62a0aa49",
+     "containment_max_bound_residual_m": null,
+     "containment_max_point_residual_m": null,
+     "containment_passed": null,
+     "containment_reason": null,
+     "containment_samples": null,
+     "effective_margin_m": 1e-05,
+     "guide_points": [
+      [
+       0.0,
+       0.0
+      ],
+      [
+       11.366326742047649,
+       0.018101928472965753
+      ],
+      [
+       11.474331036127456,
+       -8.326672684688674e-16
+      ]
+     ],
+     "guide_source": "corridor_qp_polyline",
+     "region_count": 2,
+     "region_rows": [
+      55,
+      91
+     ],
+     "round_index": 0,
+     "route_source": "astar_primary"
+    }
+   ],
+   "detail": "soft wall budget 40.0s exhausted before an audited candidate",
+   "dynamic_audit_passed": null,
+   "executable": false,
+   "feasible": false,
+   "geometry_audit_passed": null,
+   "grid_sha256": "55e3c5b82a99c74b96a550720fd7a467e76b40f48082c0212ca21574d3af8782",
+   "guidance_mode": "corridor",
+   "kappa_peaks_per_vehicle": null,
+   "kappa_reference_peak": null,
+   "measured_wall_s": 40.9699719339842,
+   "metrics": {},
+   "path_length_m": null,
+   "path_present": false,
+   "plan_kind": null,
+   "plan_present": false,
+   "planning_context_sha256": "f0f958e904c255b8e1ab9304913c991369e89e38a2dab8eb7d849f384a6e9ac1",
+   "reason": "SOFT_BUDGET_EXHAUSTED",
+   "request_sha256": "9feb7332db51d4f347a21b347416b6e7ffa1619ad28bda41ef88ad57c3bb2ba2",
+   "scene": "S2",
+   "search_rounds": [
+    {
+     "collision_first_failure": null,
+     "collision_passed": null,
+     "collision_reason": null,
+     "corridor_containment_passed": null,
+     "corridor_containment_reason": null,
+     "dynamics_passed": null,
+     "dynamics_reason": null,
+     "geometry_reason": "SOFT_BUDGET_EXHAUSTED",
+     "geometry_status": "BUDGET_EXHAUSTED",
+     "round_index": 0,
+     "timing_reason": null,
+     "timing_status": null
+    }
+   ],
+   "solver": "scipy",
+   "status": "BUDGET_EXHAUSTED",
+   "wall_time_s": 40.95383757806849
+  },
+  {
+   "attempts": [
+    {
+     "attempt_index": 0,
+     "corridor_residual_m": 0.018961443144475974,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "Positive directional derivative for linesearch",
+     "solver": "scipy_slsqp",
+     "solver_status": "Positive directional derivative for linesearch",
+     "status": "SOLVER_FAILED"
+    },
+    {
+     "attempt_index": 1,
+     "corridor_residual_m": 0.009901047079457118,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "Positive directional derivative for linesearch",
+     "solver": "scipy_slsqp",
+     "solver_status": "Positive directional derivative for linesearch",
+     "status": "SOLVER_FAILED"
+    },
+    {
+     "attempt_index": 2,
+     "corridor_residual_m": 0.004118509420194769,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "Positive directional derivative for linesearch",
+     "solver": "scipy_slsqp",
+     "solver_status": "Positive directional derivative for linesearch",
+     "status": "SOLVER_FAILED"
+    },
+    {
+     "attempt_index": 3,
+     "corridor_residual_m": 1.5873551875682033,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "Positive directional derivative for linesearch",
+     "solver": "scipy_slsqp",
+     "solver_status": "Positive directional derivative for linesearch",
+     "status": "SOLVER_FAILED"
+    },
+    {
+     "attempt_index": 4,
+     "corridor_residual_m": 0.00710066321731543,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "Positive directional derivative for linesearch",
+     "solver": "scipy_slsqp",
+     "solver_status": "Positive directional derivative for linesearch",
+     "status": "SOLVER_FAILED"
+    },
+    {
+     "attempt_index": 5,
+     "corridor_residual_m": 2.3580695498282633,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "Positive directional derivative for linesearch",
+     "solver": "scipy_slsqp",
+     "solver_status": "Positive directional derivative for linesearch",
+     "status": "SOLVER_FAILED"
+    }
+   ],
+   "checks": 0,
+   "collision_audit_passed": null,
+   "corridor_rounds": [
+    {
+     "allocation": [
+      [
+       0.0,
+       0.125,
+       0
+      ],
+      [
+       0.125,
+       0.25,
+       0
+      ],
+      [
+       0.25,
+       0.375,
+       0
+      ],
+      [
+       0.375,
+       0.5,
+       0
+      ],
+      [
+       0.5,
+       0.625,
+       0
+      ],
+      [
+       0.625,
+       0.75,
+       0
+      ],
+      [
+       0.75,
+       0.875,
+       0
+      ],
+      [
+       0.875,
+       0.9904572867960737,
+       0
+      ],
+      [
+       0.9904572867960737,
+       1.0,
+       1
+      ]
+     ],
+     "chain_audit_passed": true,
+     "chain_digest": "7197d67c959370dc42f490d285a856e0eea3a77cab216d9368e2009db4568ac9",
+     "containment_max_bound_residual_m": null,
+     "containment_max_point_residual_m": null,
+     "containment_passed": null,
+     "containment_reason": null,
+     "containment_samples": null,
+     "effective_margin_m": 1e-05,
+     "guide_points": [
+      [
+       0.0,
+       0.0
+      ],
+      [
+       11.366326742047649,
+       -0.018101928472965774
+      ],
+      [
+       11.474331036127456,
+       8.326672684688674e-16
+      ]
+     ],
+     "guide_source": "corridor_qp_polyline",
+     "region_count": 2,
+     "region_rows": [
+      55,
+      91
+     ],
+     "round_index": 0,
+     "route_source": "astar_primary"
+    }
+   ],
+   "detail": "fixed corridor allocation was not solvable to an audited candidate; no automatic allocation, interval, or audit relaxation is performed",
+   "dynamic_audit_passed": null,
+   "executable": false,
+   "feasible": false,
+   "geometry_audit_passed": null,
+   "grid_sha256": "e50be3838ff411edc4a8cfeda5d28b0cf0188db89a1a4dababf72bb514b4d57c",
+   "guidance_mode": "corridor",
+   "kappa_peaks_per_vehicle": null,
+   "kappa_reference_peak": null,
+   "measured_wall_s": 18.934534954023547,
+   "metrics": {},
+   "path_length_m": null,
+   "path_present": false,
+   "plan_kind": null,
+   "plan_present": false,
+   "planning_context_sha256": "cb1a52a2d02c914f027b59f9da37b1f8fc41f2f00d7cd4fe996f3545ad1f17f6",
+   "reason": "FIXED_ALLOCATION_LIMIT",
+   "request_sha256": "244db57aa644b6a202477d22b1f45f53a462b52ae9ecb64b5fe36b5c58a3e6d0",
+   "scene": "S2_mirror",
+   "search_rounds": [
+    {
+     "collision_first_failure": null,
+     "collision_passed": null,
+     "collision_reason": null,
+     "corridor_containment_passed": null,
+     "corridor_containment_reason": null,
+     "dynamics_passed": null,
+     "dynamics_reason": null,
+     "geometry_reason": "FIXED_ALLOCATION_LIMIT",
+     "geometry_status": "NO_ACCEPTED_CANDIDATE",
+     "round_index": 0,
+     "timing_reason": null,
+     "timing_status": null
+    }
+   ],
+   "solver": "scipy",
+   "status": "NO_ACCEPTED_CANDIDATE",
+   "wall_time_s": 18.91856919694692
+  },
+  {
+   "attempts": [
+    {
+     "attempt_index": 0,
+     "corridor_residual_m": 0.0,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "",
+     "solver": "scipy_slsqp",
+     "solver_status": "Optimization terminated successfully",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 1,
+     "corridor_residual_m": 0.0,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "scipy_slsqp",
+     "solver_status": "Optimization terminated successfully",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 2,
+     "corridor_residual_m": 0.0,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "scipy_slsqp",
+     "solver_status": "Optimization terminated successfully",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 3,
+     "corridor_residual_m": 0.0,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "scipy_slsqp",
+     "solver_status": "Optimization terminated successfully",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 4,
+     "corridor_residual_m": 0.0,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "scipy_slsqp",
+     "solver_status": "Optimization terminated successfully",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 5,
+     "corridor_residual_m": 0.0,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "scipy_slsqp",
+     "solver_status": "Optimization terminated successfully",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 0,
+     "corridor_residual_m": 0.0,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "",
+     "solver": "scipy_slsqp",
+     "solver_status": "Optimization terminated successfully",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 1,
+     "corridor_residual_m": 0.0,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "scipy_slsqp",
+     "solver_status": "Optimization terminated successfully",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 2,
+     "corridor_residual_m": 0.0,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "scipy_slsqp",
+     "solver_status": "Optimization terminated successfully",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 3,
+     "corridor_residual_m": 0.0,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "scipy_slsqp",
+     "solver_status": "Optimization terminated successfully",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 4,
+     "corridor_residual_m": 0.0,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "scipy_slsqp",
+     "solver_status": "Optimization terminated successfully",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 5,
+     "corridor_residual_m": 0.0,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "scipy_slsqp",
+     "solver_status": "Optimization terminated successfully",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 0,
+     "corridor_residual_m": 0.0,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "",
+     "solver": "scipy_slsqp",
+     "solver_status": "Optimization terminated successfully",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 1,
+     "corridor_residual_m": 0.0,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "scipy_slsqp",
+     "solver_status": "Optimization terminated successfully",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 2,
+     "corridor_residual_m": 0.0,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "scipy_slsqp",
+     "solver_status": "Optimization terminated successfully",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 3,
+     "corridor_residual_m": 0.0,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "scipy_slsqp",
+     "solver_status": "Optimization terminated successfully",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 4,
+     "corridor_residual_m": 0.0,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "scipy_slsqp",
+     "solver_status": "Optimization terminated successfully",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 5,
+     "corridor_residual_m": 0.0,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "scipy_slsqp",
+     "solver_status": "Optimization terminated successfully",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    }
+   ],
+   "checks": 3563,
+   "collision_audit_passed": false,
+   "corridor_rounds": [
+    {
+     "allocation": [
+      [
+       0.0,
+       0.125,
+       0
+      ],
+      [
+       0.125,
+       0.25,
+       0
+      ],
+      [
+       0.25,
+       0.375,
+       0
+      ],
+      [
+       0.375,
+       0.5,
+       0
+      ],
+      [
+       0.5,
+       0.625,
+       0
+      ],
+      [
+       0.625,
+       0.75,
+       0
+      ],
+      [
+       0.75,
+       0.875,
+       0
+      ],
+      [
+       0.875,
+       1.0,
+       0
+      ]
+     ],
+     "chain_audit_passed": true,
+     "chain_digest": "ad2b65564ab0a10f977c0cc4e38f0d268e389e36aaa1d021c40887209ad59c03",
+     "containment_max_bound_residual_m": 0.5421457690452356,
+     "containment_max_point_residual_m": -0.1749999900036116,
+     "containment_passed": true,
+     "containment_reason": "CORRIDOR_CONTAINMENT_VERIFIED",
+     "containment_samples": 120,
+     "effective_margin_m": 1e-05,
+     "guide_points": [
+      [
+       0.0,
+       0.0
+      ],
+      [
+       11.474331036127456,
+       -8.326672684688674e-16
+      ]
+     ],
+     "guide_source": "corridor_endpoint_polyline",
+     "region_count": 1,
+     "region_rows": [
+      5
+     ],
+     "round_index": 0,
+     "route_source": "astar_primary"
+    },
+    {
+     "allocation": [
+      [
+       0.0,
+       0.125,
+       0
+      ],
+      [
+       0.125,
+       0.25,
+       0
+      ],
+      [
+       0.25,
+       0.375,
+       0
+      ],
+      [
+       0.375,
+       0.5,
+       0
+      ],
+      [
+       0.5,
+       0.625,
+       0
+      ],
+      [
+       0.625,
+       0.75,
+       0
+      ],
+      [
+       0.75,
+       0.875,
+       0
+      ],
+      [
+       0.875,
+       1.0,
+       0
+      ]
+     ],
+     "chain_audit_passed": true,
+     "chain_digest": "ad2b65564ab0a10f977c0cc4e38f0d268e389e36aaa1d021c40887209ad59c03",
+     "containment_max_bound_residual_m": 0.5421576359251812,
+     "containment_max_point_residual_m": -0.17498790974364284,
+     "containment_passed": true,
+     "containment_reason": "CORRIDOR_CONTAINMENT_VERIFIED",
+     "containment_samples": 120,
+     "effective_margin_m": 1e-05,
+     "guide_points": [
+      [
+       0.0,
+       0.0
+      ],
+      [
+       11.474331036127456,
+       -8.326672684688674e-16
+      ]
+     ],
+     "guide_source": "corridor_endpoint_polyline",
+     "region_count": 1,
+     "region_rows": [
+      5
+     ],
+     "round_index": 1,
+     "route_source": "astar_primary"
+    },
+    {
+     "allocation": [
+      [
+       0.0,
+       0.125,
+       0
+      ],
+      [
+       0.125,
+       0.25,
+       0
+      ],
+      [
+       0.25,
+       0.375,
+       0
+      ],
+      [
+       0.375,
+       0.5,
+       0
+      ],
+      [
+       0.5,
+       0.625,
+       0
+      ],
+      [
+       0.625,
+       0.75,
+       0
+      ],
+      [
+       0.75,
+       0.875,
+       0
+      ],
+      [
+       0.875,
+       1.0,
+       0
+      ]
+     ],
+     "chain_audit_passed": true,
+     "chain_digest": "ad2b65564ab0a10f977c0cc4e38f0d268e389e36aaa1d021c40887209ad59c03",
+     "containment_max_bound_residual_m": 0.5421584727101282,
+     "containment_max_point_residual_m": -0.1749870880275662,
+     "containment_passed": true,
+     "containment_reason": "CORRIDOR_CONTAINMENT_VERIFIED",
+     "containment_samples": 120,
+     "effective_margin_m": 1e-05,
+     "guide_points": [
+      [
+       0.0,
+       0.0
+      ],
+      [
+       11.474331036127456,
+       -8.326672684688674e-16
+      ]
+     ],
+     "guide_source": "corridor_endpoint_polyline",
+     "region_count": 1,
+     "region_rows": [
+      5
+     ],
+     "round_index": 2,
+     "route_source": "astar_primary"
+    }
+   ],
+   "detail": "analytic sweep failed: ",
+   "dynamic_audit_passed": true,
+   "executable": false,
+   "feasible": false,
+   "geometry_audit_passed": true,
+   "grid_sha256": "d4ca88971203636b4dcc0285b99d092823069d210d8ac3e13f67be49609ba1c3",
+   "guidance_mode": "corridor",
+   "kappa_peaks_per_vehicle": null,
+   "kappa_reference_peak": null,
+   "measured_wall_s": 46.18264293705579,
+   "metrics": {
+    "collision_checks": 2499
+   },
+   "path_length_m": null,
+   "path_present": false,
+   "plan_kind": null,
+   "plan_present": false,
+   "planning_context_sha256": "cae939c111b924d551e30fc0a825ec440e0313b8e7c555f7f4f88825931e818e",
+   "reason": "MAP_OBB_COLLISION",
+   "request_sha256": "18dc626d71fa5b6e5e023215c04b01ceae45f94c8846790d6352b9d6c0e9f075",
+   "scene": "S3",
+   "search_rounds": [
+    {
+     "collision_first_failure": {
+      "constraint": "COLLISION",
+      "other_vehicle_id": null,
+      "qf": [
+       4.103667002499731,
+       4.530608323704451e-06,
+       2.579402510435156e-06
+      ],
+      "reason": "MAP_OBB_COLLISION",
+      "sample_index": 124,
+      "segment_index": 2,
+      "stage": "analytic_sweep",
+      "station": 4.103667002503917,
+      "time_s": 11.485658479894791,
+      "vehicle_id": 3
+     },
+     "collision_passed": false,
+     "collision_reason": "MAP_OBB_COLLISION",
+     "corridor_containment_passed": true,
+     "corridor_containment_reason": "CORRIDOR_CONTAINMENT_VERIFIED",
+     "dynamics_passed": true,
+     "dynamics_reason": null,
+     "geometry_reason": "",
+     "geometry_status": "GEOMETRY_FEASIBLE",
+     "round_index": 0,
+     "timing_reason": "",
+     "timing_status": "DYNAMIC_FEASIBLE"
+    },
+    {
+     "collision_first_failure": {
+      "constraint": "COLLISION",
+      "other_vehicle_id": null,
+      "qf": [
+       4.103667002497494,
+       -5.521695805355459e-06,
+       -3.324595674033516e-06
+      ],
+      "reason": "MAP_OBB_COLLISION",
+      "sample_index": 124,
+      "segment_index": 2,
+      "stage": "analytic_sweep",
+      "station": 4.103667002503917,
+      "time_s": 11.485662356854085,
+      "vehicle_id": 3
+     },
+     "collision_passed": false,
+     "collision_reason": "MAP_OBB_COLLISION",
+     "corridor_containment_passed": true,
+     "corridor_containment_reason": "CORRIDOR_CONTAINMENT_VERIFIED",
+     "dynamics_passed": true,
+     "dynamics_reason": null,
+     "geometry_reason": "",
+     "geometry_status": "GEOMETRY_FEASIBLE",
+     "round_index": 1,
+     "timing_reason": "",
+     "timing_status": "DYNAMIC_FEASIBLE"
+    },
+    {
+     "collision_first_failure": {
+      "constraint": "COLLISION",
+      "other_vehicle_id": null,
+      "qf": [
+       4.103667002496357,
+       -6.0161629063836255e-06,
+       -3.566454985503434e-06
+      ],
+      "reason": "MAP_OBB_COLLISION",
+      "sample_index": 124,
+      "segment_index": 2,
+      "stage": "analytic_sweep",
+      "station": 4.103667002503917,
+      "time_s": 11.48566398344095,
+      "vehicle_id": 3
+     },
+     "collision_passed": false,
+     "collision_reason": "MAP_OBB_COLLISION",
+     "corridor_containment_passed": true,
+     "corridor_containment_reason": "CORRIDOR_CONTAINMENT_VERIFIED",
+     "dynamics_passed": true,
+     "dynamics_reason": null,
+     "geometry_reason": "",
+     "geometry_status": "GEOMETRY_FEASIBLE",
+     "round_index": 2,
+     "timing_reason": "",
+     "timing_status": "DYNAMIC_FEASIBLE"
+    }
+   ],
+   "solver": "scipy",
+   "status": "COLLISION_FAILED",
+   "wall_time_s": 46.176749092992395
+  },
+  {
+   "attempts": [
+    {
+     "attempt_index": 0,
+     "corridor_residual_m": 0.0,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "",
+     "solver": "scipy_slsqp",
+     "solver_status": "Optimization terminated successfully",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 1,
+     "corridor_residual_m": 0.0,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "scipy_slsqp",
+     "solver_status": "Optimization terminated successfully",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 2,
+     "corridor_residual_m": 0.0,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "scipy_slsqp",
+     "solver_status": "Optimization terminated successfully",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 3,
+     "corridor_residual_m": 0.0,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "scipy_slsqp",
+     "solver_status": "Optimization terminated successfully",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 4,
+     "corridor_residual_m": 0.0,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "scipy_slsqp",
+     "solver_status": "Optimization terminated successfully",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 5,
+     "corridor_residual_m": 0.0,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "scipy_slsqp",
+     "solver_status": "Optimization terminated successfully",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    }
+   ],
+   "checks": 7492,
+   "collision_audit_passed": true,
+   "corridor_rounds": [
+    {
+     "allocation": [
+      [
+       0.0,
+       0.125,
+       0
+      ],
+      [
+       0.125,
+       0.25,
+       0
+      ],
+      [
+       0.25,
+       0.375,
+       0
+      ],
+      [
+       0.375,
+       0.5,
+       0
+      ],
+      [
+       0.5,
+       0.625,
+       0
+      ],
+      [
+       0.625,
+       0.75,
+       0
+      ],
+      [
+       0.75,
+       0.875,
+       0
+      ],
+      [
+       0.875,
+       1.0,
+       0
+      ]
+     ],
+     "chain_audit_passed": true,
+     "chain_digest": "c2c44e3c93e0e8d622e779bc483435e7c6a12224202d49f6fc1c5f1f258ea08d",
+     "containment_max_bound_residual_m": -0.04374122077033823,
+     "containment_max_point_residual_m": -0.6999913004513629,
+     "containment_passed": true,
+     "containment_reason": "CORRIDOR_CONTAINMENT_VERIFIED",
+     "containment_samples": 8,
+     "effective_margin_m": 1e-05,
+     "guide_points": [
+      [
+       -1.5,
+       0.0
+      ],
+      [
+       9.0,
+       0.0
+      ]
+     ],
+     "guide_source": "corridor_endpoint_polyline",
+     "region_count": 1,
+     "region_rows": [
+      4
+     ],
+     "round_index": 0,
+     "route_source": "astar_primary"
+    }
+   ],
+   "detail": "geometry, dynamics and collision audits passed; continuous corridor containment certified",
+   "dynamic_audit_passed": true,
+   "executable": true,
+   "feasible": true,
+   "geometry_audit_passed": true,
+   "grid_sha256": "daec91e9550dccc2776492b038a6844961505715d1366a03ca106ab063d2f459",
+   "guidance_mode": "corridor",
+   "kappa_peaks_per_vehicle": {
+    "1": 5.5214766224491e-06,
+    "2": 3.5771758870463294e-06,
+    "3": 3.5771502948547716e-06
+   },
+   "kappa_reference_peak": 3.577163090904777e-06,
+   "measured_wall_s": 15.600637299008667,
+   "metrics": {
+    "collision_checks": 6428,
+    "corridor_containment_certified": true,
+    "corridor_containment_max_bound_residual_m": -0.04374122077033823,
+    "corridor_containment_passed": true,
+    "corridor_containment_samples": 8,
+    "corridor_effective_margin_m": 1e-05,
+    "duration_s": 24.855505804298424,
+    "path_length_m": 10.5
+   },
+   "path_length_m": 10.5,
+   "path_present": true,
+   "plan_kind": "motion",
+   "plan_present": true,
+   "planning_context_sha256": "bc9463297fda4ecd4caaf387f18325d0f1659e4ddd7d0b52b242cbc1288739f2",
+   "reason": "",
+   "request_sha256": "40d6b4cbeab947d4b4296e76ea9f2616fb1c60930c6478470015f1403cf92a4e",
+   "scene": "door_circumcircle",
+   "search_rounds": [
+    {
+     "collision_first_failure": null,
+     "collision_passed": true,
+     "collision_reason": null,
+     "corridor_containment_passed": true,
+     "corridor_containment_reason": "CORRIDOR_CONTAINMENT_VERIFIED",
+     "dynamics_passed": true,
+     "dynamics_reason": null,
+     "geometry_reason": "",
+     "geometry_status": "GEOMETRY_FEASIBLE",
+     "round_index": 0,
+     "timing_reason": "",
+     "timing_status": "DYNAMIC_FEASIBLE"
+    }
+   ],
+   "solver": "scipy",
+   "status": "SUCCESS",
+   "wall_time_s": 15.600383212906308
+  },
+  {
+   "attempts": [
+    {
+     "attempt_index": 0,
+     "corridor_residual_m": null,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 1,
+     "corridor_residual_m": null,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 2,
+     "corridor_residual_m": null,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 3,
+     "corridor_residual_m": null,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 4,
+     "corridor_residual_m": null,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 5,
+     "corridor_residual_m": null,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    }
+   ],
+   "checks": 11282,
+   "collision_audit_passed": true,
+   "corridor_rounds": [],
+   "detail": "geometry, dynamics and collision audits passed",
+   "dynamic_audit_passed": true,
+   "executable": true,
+   "feasible": true,
+   "geometry_audit_passed": true,
+   "grid_sha256": "054cf5c77079536f9a098e33232732d6c181f0f624f07e3a446ebfab0266a10e",
+   "guidance_mode": "legacy_route",
+   "kappa_peaks_per_vehicle": null,
+   "kappa_reference_peak": null,
+   "measured_wall_s": 21.18037012196146,
+   "metrics": {
+    "collision_checks": 10190,
+    "duration_s": 30.685721470309115,
+    "path_length_m": 10.499568699915928
+   },
+   "path_length_m": 10.499568699915928,
+   "path_present": true,
+   "plan_kind": "motion",
+   "plan_present": true,
+   "planning_context_sha256": "80f625e28f50901991661a97f90e55364c8f4bd8f3fe0d8e7eb7ea7e79106282",
+   "reason": "",
+   "request_sha256": "d44f9efeb70f636a1e0f24dbc367e7869366ce344d0d88bba020d4ad355c8a1a",
+   "scene": "S1",
+   "search_rounds": [
+    {
+     "collision_first_failure": null,
+     "collision_passed": true,
+     "collision_reason": null,
+     "corridor_containment_passed": null,
+     "corridor_containment_reason": null,
+     "dynamics_passed": true,
+     "dynamics_reason": null,
+     "geometry_reason": "",
+     "geometry_status": "GEOMETRY_FEASIBLE",
+     "round_index": 0,
+     "timing_reason": "",
+     "timing_status": "DYNAMIC_FEASIBLE"
+    }
+   ],
+   "solver": "ipopt",
+   "status": "SUCCESS",
+   "wall_time_s": 21.180017488077283
+  },
+  {
+   "attempts": [
+    {
+     "attempt_index": 0,
+     "corridor_residual_m": null,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 1,
+     "corridor_residual_m": null,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 2,
+     "corridor_residual_m": null,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 3,
+     "corridor_residual_m": null,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 4,
+     "corridor_residual_m": null,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 5,
+     "corridor_residual_m": null,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    }
+   ],
+   "checks": 10496,
+   "collision_audit_passed": true,
+   "corridor_rounds": [],
+   "detail": "geometry, dynamics and collision audits passed",
+   "dynamic_audit_passed": true,
+   "executable": true,
+   "feasible": true,
+   "geometry_audit_passed": true,
+   "grid_sha256": "fb485abf73dd1e1953c43762dbee0f9f7ac26a94968766e817c6951135e7c595",
+   "guidance_mode": "legacy_route",
+   "kappa_peaks_per_vehicle": null,
+   "kappa_reference_peak": null,
+   "measured_wall_s": 21.43978038697969,
+   "metrics": {
+    "collision_checks": 9404,
+    "duration_s": 30.280657147093507,
+    "path_length_m": 10.493130409365772
+   },
+   "path_length_m": 10.493130409365772,
+   "path_present": true,
+   "plan_kind": "motion",
+   "plan_present": true,
+   "planning_context_sha256": "ddf6bf0e7b2397826a7a3d1887612a2b5a01cb93e19dbbb32f715bedfffca7c9",
+   "reason": "",
+   "request_sha256": "5c945f973aa02c47d42cd11707c55c392df533c8688ce027d11a4415b05c5ee0",
+   "scene": "S1_mirror",
+   "search_rounds": [
+    {
+     "collision_first_failure": null,
+     "collision_passed": true,
+     "collision_reason": null,
+     "corridor_containment_passed": null,
+     "corridor_containment_reason": null,
+     "dynamics_passed": true,
+     "dynamics_reason": null,
+     "geometry_reason": "",
+     "geometry_status": "GEOMETRY_FEASIBLE",
+     "round_index": 0,
+     "timing_reason": "",
+     "timing_status": "DYNAMIC_FEASIBLE"
+    }
+   ],
+   "solver": "ipopt",
+   "status": "SUCCESS",
+   "wall_time_s": 21.43944437603932
+  },
+  {
+   "attempts": [
+    {
+     "attempt_index": 0,
+     "corridor_residual_m": null,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 1,
+     "corridor_residual_m": null,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 2,
+     "corridor_residual_m": null,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 3,
+     "corridor_residual_m": null,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 4,
+     "corridor_residual_m": null,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 5,
+     "corridor_residual_m": null,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    }
+   ],
+   "checks": 16672,
+   "collision_audit_passed": true,
+   "corridor_rounds": [],
+   "detail": "geometry, dynamics and collision audits passed",
+   "dynamic_audit_passed": true,
+   "executable": true,
+   "feasible": true,
+   "geometry_audit_passed": true,
+   "grid_sha256": "55e3c5b82a99c74b96a550720fd7a467e76b40f48082c0212ca21574d3af8782",
+   "guidance_mode": "legacy_route",
+   "kappa_peaks_per_vehicle": null,
+   "kappa_reference_peak": null,
+   "measured_wall_s": 21.997812265064567,
+   "metrics": {
+    "collision_checks": 15548,
+    "duration_s": 37.35107761203644,
+    "path_length_m": 11.998777606015235
+   },
+   "path_length_m": 11.998777606015235,
+   "path_present": true,
+   "plan_kind": "motion",
+   "plan_present": true,
+   "planning_context_sha256": "69467fc5b42d2568c3d666da4de31343ee7b738fb13f2766dff6ac29d585cd5f",
+   "reason": "",
+   "request_sha256": "9feb7332db51d4f347a21b347416b6e7ffa1619ad28bda41ef88ad57c3bb2ba2",
+   "scene": "S2",
+   "search_rounds": [
+    {
+     "collision_first_failure": null,
+     "collision_passed": true,
+     "collision_reason": null,
+     "corridor_containment_passed": null,
+     "corridor_containment_reason": null,
+     "dynamics_passed": true,
+     "dynamics_reason": null,
+     "geometry_reason": "",
+     "geometry_status": "GEOMETRY_FEASIBLE",
+     "round_index": 0,
+     "timing_reason": "",
+     "timing_status": "DYNAMIC_FEASIBLE"
+    }
+   ],
+   "solver": "ipopt",
+   "status": "SUCCESS",
+   "wall_time_s": 21.99741451209411
+  },
+  {
+   "attempts": [
+    {
+     "attempt_index": 0,
+     "corridor_residual_m": null,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 1,
+     "corridor_residual_m": null,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 2,
+     "corridor_residual_m": null,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 3,
+     "corridor_residual_m": null,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 4,
+     "corridor_residual_m": null,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 5,
+     "corridor_residual_m": null,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    }
+   ],
+   "checks": 16488,
+   "collision_audit_passed": true,
+   "corridor_rounds": [],
+   "detail": "geometry, dynamics and collision audits passed",
+   "dynamic_audit_passed": true,
+   "executable": true,
+   "feasible": true,
+   "geometry_audit_passed": true,
+   "grid_sha256": "e50be3838ff411edc4a8cfeda5d28b0cf0188db89a1a4dababf72bb514b4d57c",
+   "guidance_mode": "legacy_route",
+   "kappa_peaks_per_vehicle": null,
+   "kappa_reference_peak": null,
+   "measured_wall_s": 22.671548306010664,
+   "metrics": {
+    "collision_checks": 15368,
+    "duration_s": 37.30236599028074,
+    "path_length_m": 11.994091545121192
+   },
+   "path_length_m": 11.994091545121192,
+   "path_present": true,
+   "plan_kind": "motion",
+   "plan_present": true,
+   "planning_context_sha256": "787df2c81cab95cd157eea89fda18e85e9070f5fdc81eb1b70c26b921667dc08",
+   "reason": "",
+   "request_sha256": "244db57aa644b6a202477d22b1f45f53a462b52ae9ecb64b5fe36b5c58a3e6d0",
+   "scene": "S2_mirror",
+   "search_rounds": [
+    {
+     "collision_first_failure": null,
+     "collision_passed": true,
+     "collision_reason": null,
+     "corridor_containment_passed": null,
+     "corridor_containment_reason": null,
+     "dynamics_passed": true,
+     "dynamics_reason": null,
+     "geometry_reason": "",
+     "geometry_status": "GEOMETRY_FEASIBLE",
+     "round_index": 0,
+     "timing_reason": "",
+     "timing_status": "DYNAMIC_FEASIBLE"
+    }
+   ],
+   "solver": "ipopt",
+   "status": "SUCCESS",
+   "wall_time_s": 22.671252663014457
+  },
+  {
+   "attempts": [
+    {
+     "attempt_index": 0,
+     "corridor_residual_m": null,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 1,
+     "corridor_residual_m": null,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 2,
+     "corridor_residual_m": null,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "CURVATURE_LIMIT",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDIT_REJECTED"
+    },
+    {
+     "attempt_index": 3,
+     "corridor_residual_m": null,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 4,
+     "corridor_residual_m": null,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 5,
+     "corridor_residual_m": null,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 0,
+     "corridor_residual_m": null,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 1,
+     "corridor_residual_m": null,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 2,
+     "corridor_residual_m": null,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 3,
+     "corridor_residual_m": null,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 4,
+     "corridor_residual_m": null,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 5,
+     "corridor_residual_m": null,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    }
+   ],
+   "checks": 12880,
+   "collision_audit_passed": true,
+   "corridor_rounds": [],
+   "detail": "geometry, dynamics and collision audits passed",
+   "dynamic_audit_passed": true,
+   "executable": true,
+   "feasible": true,
+   "geometry_audit_passed": true,
+   "grid_sha256": "d4ca88971203636b4dcc0285b99d092823069d210d8ac3e13f67be49609ba1c3",
+   "guidance_mode": "legacy_route",
+   "kappa_peaks_per_vehicle": null,
+   "kappa_reference_peak": null,
+   "measured_wall_s": 42.360733547015116,
+   "metrics": {
+    "collision_checks": 11792,
+    "duration_s": 37.060525939626,
+    "path_length_m": 11.859852594558857
+   },
+   "path_length_m": 11.859852594558857,
+   "path_present": true,
+   "plan_kind": "motion",
+   "plan_present": true,
+   "planning_context_sha256": "a4b806295148c1ade5f7fd62d3bf0df408b8ad36ce9716c8792735d98c1383a0",
+   "reason": "",
+   "request_sha256": "18dc626d71fa5b6e5e023215c04b01ceae45f94c8846790d6352b9d6c0e9f075",
+   "scene": "S3",
+   "search_rounds": [
+    {
+     "collision_first_failure": {
+      "constraint": "COLLISION_NUMERICAL_FAILURE"
+     },
+     "collision_passed": false,
+     "collision_reason": "COLLISION_NUMERICAL_FAILURE",
+     "corridor_containment_passed": null,
+     "corridor_containment_reason": null,
+     "dynamics_passed": true,
+     "dynamics_reason": null,
+     "geometry_reason": "",
+     "geometry_status": "GEOMETRY_FEASIBLE",
+     "round_index": 0,
+     "timing_reason": "",
+     "timing_status": "DYNAMIC_FEASIBLE"
+    },
+    {
+     "collision_first_failure": null,
+     "collision_passed": true,
+     "collision_reason": null,
+     "corridor_containment_passed": null,
+     "corridor_containment_reason": null,
+     "dynamics_passed": true,
+     "dynamics_reason": null,
+     "geometry_reason": "",
+     "geometry_status": "GEOMETRY_FEASIBLE",
+     "round_index": 1,
+     "timing_reason": "",
+     "timing_status": "DYNAMIC_FEASIBLE"
+    }
+   ],
+   "solver": "ipopt",
+   "status": "SUCCESS",
+   "wall_time_s": 42.36046877503395
+  },
+  {
+   "attempts": [
+    {
+     "attempt_index": 0,
+     "corridor_residual_m": null,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 1,
+     "corridor_residual_m": null,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 2,
+     "corridor_residual_m": null,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "CURVATURE_LIMIT",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDIT_REJECTED"
+    },
+    {
+     "attempt_index": 3,
+     "corridor_residual_m": null,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 4,
+     "corridor_residual_m": null,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 5,
+     "corridor_residual_m": null,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 0,
+     "corridor_residual_m": null,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 1,
+     "corridor_residual_m": null,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 2,
+     "corridor_residual_m": null,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 3,
+     "corridor_residual_m": null,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 4,
+     "corridor_residual_m": null,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 5,
+     "corridor_residual_m": null,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    }
+   ],
+   "checks": 12908,
+   "collision_audit_passed": true,
+   "corridor_rounds": [],
+   "detail": "geometry, dynamics and collision audits passed",
+   "dynamic_audit_passed": true,
+   "executable": true,
+   "feasible": true,
+   "geometry_audit_passed": true,
+   "grid_sha256": "84639455ed5a5b83b242fabd309875dcfd2676993ec8592674f323e022e3b741",
+   "guidance_mode": "legacy_route",
+   "kappa_peaks_per_vehicle": null,
+   "kappa_reference_peak": null,
+   "measured_wall_s": 41.919687417917885,
+   "metrics": {
+    "collision_checks": 11816,
+    "duration_s": 37.154067765273474,
+    "path_length_m": 11.86080514966635
+   },
+   "path_length_m": 11.86080514966635,
+   "path_present": true,
+   "plan_kind": "motion",
+   "plan_present": true,
+   "planning_context_sha256": "46cb268388af3d713729bc574ec1ce4ea6142b01bf0ee922f3bffbb7f2da99d6",
+   "reason": "",
+   "request_sha256": "fc364d2558e9ec35950838bcb924496f6f56e45ccefbd585dc49dc4db4caf7bb",
+   "scene": "S3_mirror",
+   "search_rounds": [
+    {
+     "collision_first_failure": {
+      "constraint": "COLLISION_NUMERICAL_FAILURE"
+     },
+     "collision_passed": false,
+     "collision_reason": "COLLISION_NUMERICAL_FAILURE",
+     "corridor_containment_passed": null,
+     "corridor_containment_reason": null,
+     "dynamics_passed": true,
+     "dynamics_reason": null,
+     "geometry_reason": "",
+     "geometry_status": "GEOMETRY_FEASIBLE",
+     "round_index": 0,
+     "timing_reason": "",
+     "timing_status": "DYNAMIC_FEASIBLE"
+    },
+    {
+     "collision_first_failure": null,
+     "collision_passed": true,
+     "collision_reason": null,
+     "corridor_containment_passed": null,
+     "corridor_containment_reason": null,
+     "dynamics_passed": true,
+     "dynamics_reason": null,
+     "geometry_reason": "",
+     "geometry_status": "GEOMETRY_FEASIBLE",
+     "round_index": 1,
+     "timing_reason": "",
+     "timing_status": "DYNAMIC_FEASIBLE"
+    }
+   ],
+   "solver": "ipopt",
+   "status": "SUCCESS",
+   "wall_time_s": 41.91943214391358
+  },
+  {
+   "attempts": [
+    {
+     "attempt_index": 0,
+     "corridor_residual_m": null,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 1,
+     "corridor_residual_m": null,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 2,
+     "corridor_residual_m": null,
+     "initial_source": "map_route_guide",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 3,
+     "corridor_residual_m": null,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 4,
+     "corridor_residual_m": null,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    },
+    {
+     "attempt_index": 5,
+     "corridor_residual_m": null,
+     "initial_source": "automatic_endpoint_shape",
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED"
+    }
+   ],
+   "checks": 8350,
+   "collision_audit_passed": true,
+   "corridor_rounds": [],
+   "detail": "geometry, dynamics and collision audits passed",
+   "dynamic_audit_passed": true,
+   "executable": true,
+   "feasible": true,
+   "geometry_audit_passed": true,
+   "grid_sha256": "daec91e9550dccc2776492b038a6844961505715d1366a03ca106ab063d2f459",
+   "guidance_mode": "legacy_route",
+   "kappa_peaks_per_vehicle": {
+    "1": 0.17563739945786686,
+    "2": 0.07780526632504245,
+    "3": 0.06732827724113659
+   },
+   "kappa_reference_peak": 0.07218861213244257,
+   "measured_wall_s": 22.281948018004186,
+   "metrics": {
+    "collision_checks": 7286,
+    "duration_s": 25.04937737869217,
+    "path_length_m": 10.500557699742512
+   },
+   "path_length_m": 10.500557699742512,
+   "path_present": true,
+   "plan_kind": "motion",
+   "plan_present": true,
+   "planning_context_sha256": "85af0001836c83e212674e5730187560c8c2711cd30d300228883e527588652f",
+   "reason": "",
+   "request_sha256": "40d6b4cbeab947d4b4296e76ea9f2616fb1c60930c6478470015f1403cf92a4e",
+   "scene": "door_circumcircle",
+   "search_rounds": [
+    {
+     "collision_first_failure": null,
+     "collision_passed": true,
+     "collision_reason": null,
+     "corridor_containment_passed": null,
+     "corridor_containment_reason": null,
+     "dynamics_passed": true,
+     "dynamics_reason": null,
+     "geometry_reason": "",
+     "geometry_status": "GEOMETRY_FEASIBLE",
+     "round_index": 0,
+     "timing_reason": "",
+     "timing_status": "DYNAMIC_FEASIBLE"
+    }
+   ],
+   "solver": "ipopt",
+   "status": "SUCCESS",
+   "wall_time_s": 22.28165237698704
+  }
+ ],
+ "pipeline_exit_codes": [
+  "door_circumcircle legacy_route door_circumcircle_legacy_route.json EXIT=0",
+  "S1 corridor S1_corridor.json EXIT=0",
+  "S1_mirror corridor S1_mirror_corridor.json EXIT=0",
+  "S2 corridor S2_corridor.json EXIT=0",
+  "S2_mirror corridor S2_mirror_corridor.json EXIT=0",
+  "S3 corridor S3_corridor.json EXIT=0",
+  "S3_mirror corridor S3_mirror_corridor.json EXIT=0",
+  "S1 legacy_route S1_legacy_route.json EXIT=0",
+  "S1_mirror legacy_route S1_mirror_legacy_route.json EXIT=0",
+  "S2 legacy_route S2_legacy_route.json EXIT=0",
+  "S2_mirror legacy_route S2_mirror_legacy_route.json EXIT=0",
+  "S3 legacy_route S3_legacy_route.json EXIT=0",
+  "S3_mirror legacy_route S3_mirror_legacy_route.json EXIT=0",
+  "door_circumcircle legacy_route door_circumcircle_legacy_route.json EXIT=0",
+  "door_circumcircle corridor door_circumcircle_corridor.json EXIT=0"
+ ],
+ "run_id": "20261117T135647Z",
+ "schema": "virtual_rigid_a.c2b.pipeline.v1",
+ "stage": "C2-B",
+ "tests": {
+  "c2b_module_verbose": {
+   "command": "PYTHONPATH=$PWD/catkin_ws/src/fwis_v3_optimizer/src:$PWD/tests:$PWD python3 -B -m unittest tests.test_virtual_a_corridor_optimizer -v",
+   "exit_code": [
+    "EXIT=0"
+   ],
+   "log_tail": [
+    "----------------------------------------------------------------------",
+    "Ran 20 tests in 5.664s",
+    "",
+    "OK"
+   ]
+  },
+  "targeted_suites": {
+   "command": "PYTHONPATH=$PWD/catkin_ws/src/fwis_v3_optimizer/src:$PWD/tests:$PWD python3 -B -m unittest tests.test_virtual_a_corridor_optimizer tests.test_virtual_a_corridor tests.test_virtual_a_optimizer tests.test_virtual_a_trajectory tests.test_virtual_a_pipeline",
+   "exit_code": [
+    "EXIT=0"
+   ],
+   "log_tail": [
+    "Ran 105 tests in 255.946s",
+    "",
+    "OK",
+    "c1_50x50_build_s=0.013817 audit_s=0.004632"
+   ]
+  }
+ }
+}

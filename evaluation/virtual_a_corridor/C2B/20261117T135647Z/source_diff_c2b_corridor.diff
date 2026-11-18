@@ -1,0 +1,384 @@
+--- a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py
++++ b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py
+@@ -4,8 +4,9 @@
+ ``B`` (the seed bounding box expanded by ``box_padding_m``, clipped to the map
+ with a 1e-8 m inset).  Every occupied closed cell intersecting ``B`` contributes
+ one halfspace whose unit normal is the exact seed/cell nearest-pair direction.
+-The corridor is ``B`` intersected with all halfspaces, stored with canonical
+-counter-clockwise vertices.
++The corridor is ``B`` intersected with all halfspaces, stored as the canonical
++counter-clockwise polygon together with that polygon's minimal edge
++halfspaces (an exact, equivalent replacement for the generating set).
+ 
+ This is reference-point geometry only.  ``d_safe`` is zero: a corridor says
+ nothing about the three-vehicle swept OBB safety, which remains with the
+@@ -16,6 +17,7 @@
+ """
+ import bisect
+ import math
++import numbers
+ from collections.abc import Mapping as MappingABC
+ 
+ import numpy as np
+@@ -28,6 +30,7 @@
+     VirtualAContractError,
+     grid_signature,
+ )
++from .geometry import VirtualAPath
+ from .route_processing import _box_corners, _segment_box_nearest_pair
+ 
+ 
+@@ -250,11 +253,16 @@
+     if violation > _SEED_VIOLATION_TOL_M:
+         raise _DegenerateSeed(
+             "seed violates a corridor halfspace by {} m".format(violation))
++    # The clipped polygon is exactly the intersection of every generated
++    # halfspace.  Store its minimal edge halfspaces rather than the whole
++    # O(occupied cells) generating set: both define the same region, but the
++    # NLP then replicates a handful of rows per sample instead of thousands.
++    edge_constraints = _edge_constraints(vertices)
+     return ConvexCorridor(
+         seed_start=start,
+         seed_end=end,
+-        A=tuple(axis for axis, _limit in constraints),
+-        b=tuple(limit for _axis, limit in constraints),
++        A=tuple(axis for axis, _limit in edge_constraints),
++        b=tuple(limit for _axis, limit in edge_constraints),
+         vertices=vertices)
+ 
+ 
+@@ -728,6 +736,101 @@
+     return centre, rows, limits, radius
+ 
+ 
++def corridor_min_portal_radius(chain):
++    """Minimum Chebyshev portal radius, or ``None`` for a one-region chain."""
++    if not isinstance(chain, CorridorChain):
++        raise VirtualAContractError(
++            "INVALID_CORRIDOR_CHAIN", "expected CorridorChain")
++    if not chain.regions:
++        raise VirtualAContractError(
++            "INVALID_CORRIDOR_CHAIN", "chain has no regions")
++    radii = []
++    for index in range(1, len(chain.regions)):
++        _centre, _rows, _limits, radius = _portal_bundle(chain, index)
++        radii.append(float(radius))
++    return None if not radii else min(radii)
++
++
++def corridor_effective_margin(chain, config):
++    """The NLP halfspace inset after the portal-radius safety cap."""
++    margin = float(config.corridor_margin_m)
++    fraction = float(config.corridor_margin_portal_fraction)
++    radius = corridor_min_portal_radius(chain)
++    if radius is not None:
++        margin = min(margin, fraction * radius)
++    if not math.isfinite(margin) or margin < 0.0:
++        raise VirtualAContractError(
++            "INVALID_CORRIDOR_MARGIN",
++            "effective margin must be finite and nonnegative")
++    return float(margin)
++
++
++def validate_corridor_allocation(chain, allocation):
++    """Validate one ``(sigma_a, sigma_b, corridor_index)`` allocation."""
++    if not isinstance(chain, CorridorChain):
++        raise VirtualAContractError(
++            "INVALID_CORRIDOR_CHAIN", "expected CorridorChain")
++    if not allocation:
++        raise VirtualAContractError(
++            "CORRIDOR_ALLOCATION_DEGENERATE", "allocation is empty")
++    result = []
++    previous = None
++    seen = set()
++    for entry in allocation:
++        if not isinstance(entry, (tuple, list)) or len(entry) != 3:
++            raise VirtualAContractError(
++                "CORRIDOR_ALLOCATION_DEGENERATE",
++                "allocation entries must be (a, b, corridor_index)")
++        try:
++            left = float(entry[0])
++            right = float(entry[1])
++        except (TypeError, ValueError) as exc:
++            raise VirtualAContractError(
++                "CORRIDOR_ALLOCATION_DEGENERATE",
++                "allocation bounds must be real") from exc
++        index = entry[2]
++        if isinstance(index, bool) or not isinstance(index, numbers.Integral):
++            raise VirtualAContractError(
++                "CORRIDOR_ALLOCATION_DEGENERATE",
++                "corridor_index must be an integer")
++        index = int(index)
++        if not (math.isfinite(left) and math.isfinite(right)):
++            raise VirtualAContractError(
++                "CORRIDOR_ALLOCATION_DEGENERATE",
++                "allocation bounds must be finite")
++        if left < -_ALLOCATION_ZERO_M or right > 1.0 + _ALLOCATION_ZERO_M \
++                or right - left <= _ALLOCATION_ZERO_M:
++            raise VirtualAContractError(
++                "CORRIDOR_ALLOCATION_DEGENERATE",
++                "allocation interval is not a positive subset of [0, 1]")
++        if index < 0 or index >= len(chain.regions):
++            raise VirtualAContractError(
++                "CORRIDOR_ALLOCATION_DEGENERATE",
++                "corridor_index {} leaves the chain".format(index))
++        if previous is not None:
++            if abs(previous[1] - left) > _ALLOCATION_ZERO_M:
++                raise VirtualAContractError(
++                    "CORRIDOR_ALLOCATION_DEGENERATE",
++                    "allocation has a gap or reversal")
++            if index < previous[2]:
++                raise VirtualAContractError(
++                    "CORRIDOR_ALLOCATION_DEGENERATE",
++                    "allocation skips backward")
++        result.append((left, right, index))
++        seen.add(index)
++        previous = (left, right, index)
++    if abs(result[0][0]) > _ALLOCATION_ZERO_M or \
++            abs(result[-1][1] - 1.0) > _ALLOCATION_ZERO_M:
++        raise VirtualAContractError(
++            "CORRIDOR_ALLOCATION_DEGENERATE",
++            "allocation does not cover [0, 1]")
++    if seen != set(range(len(chain.regions))):
++        raise VirtualAContractError(
++            "CORRIDOR_ALLOCATION_DEGENERATE",
++            "allocation skipped a corridor")
++    return tuple(result)
++
++
+ def _guide_region_violation(chain, points):
+     """Max halfspace violation of every guide segment in its assigned C."""
+     regions = chain.regions
+@@ -1149,6 +1252,217 @@
+     return tuple(result)
+ 
+ 
++def audit_path_in_corridors(
++        path, chain, allocation, *, position_budget_m=5e-8,
++        max_depth=20, max_intervals=20000, min_width_m=1e-5):
++    """Certify a continuous C2 path inside its assigned corridor chain.
++
++    Every allocation boundary and Hermite/profile boundary splits the path
++    parameter.  On each interval the midpoint is evaluated with the true path
++    model.  Because the reference point has unit speed, every point of the
++    interval is within half the arc-length width of the midpoint, so
++
++        n.p(s) <= n.p(mid) + width/2
++
++    for every unit outward normal.  An interval is certified only when this
++    worst-case upper bound, plus the independent position budget, stays below
++    the halfspace limit.  A failed bound is bisected; exceeding the depth,
++    width or total-interval limit returns ``passed=False``.  No collocation
++    point is treated as a certificate.
++    """
++    if not isinstance(path, VirtualAPath):
++        raise VirtualAContractError(
++            "INVALID_PATH", "expected VirtualAPath")
++    if not isinstance(chain, CorridorChain):
++        raise VirtualAContractError(
++            "INVALID_CORRIDOR_CHAIN", "expected CorridorChain")
++    allocation = validate_corridor_allocation(chain, allocation)
++    try:
++        budget = float(position_budget_m)
++        width_limit = float(min_width_m)
++    except (TypeError, ValueError) as exc:
++        raise VirtualAContractError(
++            "INVALID_CORRIDOR_AUDIT_CONFIG",
++            "position budget and width limit must be real") from exc
++    if not math.isfinite(budget) or budget < 0.0:
++        raise VirtualAContractError(
++            "INVALID_CORRIDOR_AUDIT_CONFIG",
++            "position_budget_m must be finite and nonnegative")
++    if not math.isfinite(width_limit) or width_limit <= 0.0:
++        raise VirtualAContractError(
++            "INVALID_CORRIDOR_AUDIT_CONFIG",
++            "min_width_m must be finite and positive")
++    for name, value, minimum in (
++            ("max_depth", max_depth, 0),
++            ("max_intervals", max_intervals, 1)):
++        if isinstance(value, bool) or not isinstance(value, numbers.Integral):
++            raise VirtualAContractError(
++                "INVALID_CORRIDOR_AUDIT_CONFIG",
++                "{} must be an integer".format(name))
++        if int(value) < minimum:
++            raise VirtualAContractError(
++                "INVALID_CORRIDOR_AUDIT_CONFIG",
++                "{} must be >= {}".format(name, minimum))
++    max_depth = int(max_depth)
++    max_intervals = int(max_intervals)
++    length = float(path.length_m)
++    if not math.isfinite(length) or length <= 0.0:
++        raise VirtualAContractError(
++            "INVALID_PATH", "corridor containment needs a positive path length")
++    path_budget = float(path.position_error_bound_m)
++    if not math.isfinite(path_budget) or path_budget < 0.0:
++        raise VirtualAContractError(
++            "INVALID_PATH", "path position error bound is not finite")
++    epsilon = budget + path_budget
++    guard = 1e-12
++    cuts = {0.0, length}
++    for left, right, _index in allocation:
++        cuts.add(float(left) * length)
++        cuts.add(float(right) * length)
++    intervals = int(getattr(path.profile, "segment_count", 0) or 0)
++    if intervals > 0:
++        for index in range(1, intervals):
++            cuts.add(length * float(index) / float(intervals))
++    try:
++        for s0, s1 in path.profile.domain_segments:
++            cuts.add(min(length, max(0.0, float(s0))))
++            cuts.add(min(length, max(0.0, float(s1))))
++    except (TypeError, ValueError) as exc:
++        raise VirtualAContractError(
++            "INVALID_PATH", "profile domain segments are malformed") from exc
++    cuts = sorted(cuts)
++    deduplicated = []
++    dedup_tolerance = max(1e-15, 1e-15 * length)
++    for value in cuts:
++        if not deduplicated or value - deduplicated[-1] > dedup_tolerance:
++            deduplicated.append(value)
++    if abs(deduplicated[-1] - length) > dedup_tolerance:
++        raise VirtualAContractError(
++            "INVALID_CORRIDOR_AUDIT",
++            "path parameter cuts do not cover the full length")
++    starts = [item[0] for item in allocation]
++    state = {
++        "samples": 0,
++        "max_depth_reached": 0,
++        "max_point_residual_m": -math.inf,
++        "max_bound_residual_m": -math.inf,
++        "first_failure": None,
++    }
++
++    def fail(reason, s, index, width, point_residual, bound_residual, depth,
++             detail):
++        if state["first_failure"] is None:
++            state["first_failure"] = {
++                "reason": reason,
++                "s_m": float(s),
++                "corridor_index": int(index),
++                "width_m": float(width),
++                "depth": int(depth),
++                "point_residual_m": float(point_residual),
++                "bound_residual_m": float(bound_residual),
++                "detail": str(detail),
++            }
++        return False
++
++    def check(s0, s1, region, index, depth):
++        width = float(s1) - float(s0)
++        if width <= dedup_tolerance:
++            return True
++        if state["samples"] >= max_intervals:
++            midpoint = 0.5 * (s0 + s1)
++            return fail(
++                "CORRIDOR_AUDIT_INTERVAL_LIMIT", midpoint, index, width,
++                math.inf, math.inf, depth,
++                "total interval budget {} exhausted".format(max_intervals))
++        midpoint = 0.5 * (float(s0) + float(s1))
++        qf = path.state_at_s(midpoint).qf
++        point_residual = max(
++            row[0] * qf.x + row[1] * qf.y - limit
++            for row, limit in zip(region.A, region.b))
++        bound_residual = point_residual + 0.5 * width + epsilon + guard
++        state["samples"] += 1
++        state["max_depth_reached"] = max(state["max_depth_reached"], depth)
++        state["max_point_residual_m"] = max(
++            state["max_point_residual_m"], point_residual)
++        state["max_bound_residual_m"] = max(
++            state["max_bound_residual_m"], bound_residual)
++        if bound_residual <= 0.0:
++            return True
++        if width <= width_limit:
++            if point_residual > 0.0:
++                return fail(
++                    "CORRIDOR_CONTAINMENT_VIOLATION", midpoint, index,
++                    width, point_residual, bound_residual, depth,
++                    "path point exceeds a corridor halfspace")
++            return fail(
++                "CORRIDOR_AUDIT_WIDTH_LIMIT", midpoint, index, width,
++                point_residual, bound_residual, depth,
++                "interval width {!r} m cannot close the bound".format(width))
++        if depth >= max_depth:
++            return fail(
++                "CORRIDOR_AUDIT_DEPTH_LIMIT", midpoint, index, width,
++                point_residual, bound_residual, depth,
++                "subdivision reached max_depth={}".format(max_depth))
++        split = midpoint
++        if not check(s0, split, region, index, depth + 1):
++            return False
++        return check(split, s1, region, index, depth + 1)
++
++    passed = True
++    for s0, s1 in zip(deduplicated, deduplicated[1:]):
++        if s1 - s0 <= dedup_tolerance:
++            continue
++        midpoint_sigma = 0.5 * (float(s0) + float(s1)) / length
++        index = min(
++            len(allocation) - 1,
++            max(0, bisect.bisect_right(starts, midpoint_sigma) - 1))
++        left, right, corridor_index = allocation[index]
++        if not (left - _ALLOCATION_ZERO_M <= midpoint_sigma
++                <= right + _ALLOCATION_ZERO_M):
++            fail(
++                "CORRIDOR_AUDIT_ALLOCATION_MISMATCH", 0.5 * (s0 + s1),
++                corridor_index, s1 - s0, math.inf, math.inf, 0,
++                "base interval is not covered by one allocation entry")
++            passed = False
++            break
++        if not check(s0, s1, chain.regions[corridor_index],
++                     corridor_index, 0):
++            passed = False
++            break
++    result = {
++        "audit": "continuous_path_in_corridors",
++        "method": "arc_length_midpoint_interval_bound",
++        "passed": bool(passed),
++        "reason": (
++            "CORRIDOR_CONTAINMENT_VERIFIED" if passed
++            else state["first_failure"]["reason"]),
++        "detail": (
++            "continuous path containment certified with epsilon={!r} m"
++            .format(epsilon) if passed else
++            state["first_failure"]["detail"]),
++        "position_budget_m": budget,
++        "path_position_error_bound_m": path_budget,
++        "epsilon_total_m": epsilon,
++        "min_width_m": width_limit,
++        "max_depth": max_depth,
++        "max_intervals": max_intervals,
++        "sample_count": state["samples"],
++        "max_depth_reached": state["max_depth_reached"],
++        "base_interval_count": len(deduplicated) - 1,
++        "allocation_count": len(allocation),
++        "corridor_count": len(chain.regions),
++        "max_point_residual_m": (
++            None if state["max_point_residual_m"] == -math.inf
++            else state["max_point_residual_m"]),
++        "max_bound_residual_m": (
++            None if state["max_bound_residual_m"] == -math.inf
++            else state["max_bound_residual_m"]),
++        "first_failure": state["first_failure"],
++        "is_three_vehicle_certificate": False,
++    }
++    return result
++
++
+ CORRIDOR_DISPLAY_STATE = "CANDIDATE_REFERENCE_POINT_ONLY"
+ CORRIDOR_DISPLAYS_KEY = "corridor_displays"
+ 
+@@ -1231,8 +1545,12 @@
+     "CORRIDOR_DISPLAYS_KEY",
+     "CORRIDOR_DISPLAY_STATE",
+     "allocate_corridors",
+-    "build_corridor_chain",
+     "audit_corridor_chain",
++    "audit_path_in_corridors",
++    "build_corridor_chain",
+     "corridor_display_fields",
++    "corridor_effective_margin",
++    "corridor_min_portal_radius",
+     "make_corridor_guide",
++    "validate_corridor_allocation",
+ ]
+\ 文件尾没有换行符

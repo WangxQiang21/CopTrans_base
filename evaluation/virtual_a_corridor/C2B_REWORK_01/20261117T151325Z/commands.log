@@ -1,0 +1,64 @@
+# C2-B rework 01 commands (UTC), actual run
+# Environment set once from the repository root:
+#   source /opt/ros/noetic/setup.bash
+#   source catkin_ws/devel/setup.bash
+#   export PYTHONDONTWRITEBYTECODE=1 OPENBLAS_NUM_THREADS=1
+#   export PYTHONPATH="$PWD/catkin_ws/src/fwis_v3_optimizer/src:$PWD/tests:$PWD:${PYTHONPATH:-}"
+# EV=evaluation/virtual_a_corridor/C2B_REWORK_01/20261117T151325Z
+
+2026-11-17T15:31:18Z start | 2026-11-17T15:31:18Z end | exit 0
+python3 -B "$EV/measure_clearance_rework.py" "$EV/clearance_measurements.json" > "$EV/measure_clearance_rework.stdout.log" 2>&1
+
+2026-11-17T15:31:22Z start | 2026-11-17T15:31:36Z end | exit 0 | measured wall 13.224 s
+python3 -B "$EV/run_curved_case.py" --solver scipy "$EV/curved_case_scipy.json" > "$EV/curved_case_scipy.stdout.log" 2>&1
+
+2026-11-17T15:31:39Z start | 2026-11-17T15:32:10Z end | exit 0 | measured wall 30.689 s
+python3 -B "$EV/run_curved_case.py" --solver ipopt "$EV/curved_case_ipopt.json" > "$EV/curved_case_ipopt.stdout.log" 2>&1
+
+2026-11-17T15:26:00Z start | 2026-11-17T15:26:06Z end | exit 0
+python3 -B -m unittest discover -s tests -p 'test_virtual_a_corridor_optimizer.py' -v > "$EV/test_logs/corridor_optimizer.log" 2>&1
+# Ran 24 tests in 5.765s ... OK
+
+2026-11-17T15:26:10Z start | 2026-11-17T15:27:17Z end | exit 0
+python3 -B -m unittest discover -s tests -p 'test_virtual_a_optimizer.py' -v > "$EV/test_logs/optimizer.log" 2>&1
+# Ran 29 tests in 65.795s ... OK
+
+2026-11-17T15:27:20Z start | 2026-11-17T15:27:21Z end | exit 0
+python3 -B -m unittest discover -s tests -p 'test_virtual_a_trajectory.py' -v > "$EV/test_logs/trajectory.log" 2>&1
+# Ran 23 tests in 0.458s ... OK
+
+2026-11-17T15:27:25Z start | 2026-11-17T15:30:36Z end | exit 0
+python3 -B -m unittest discover -s tests -p 'test_virtual_a_pipeline.py' -v > "$EV/test_logs/pipeline.log" 2>&1
+# Ran 8 tests in 190.497s ... OK
+# includes test_six_frozen_scenes_pass_all_three_audits_autonomously (legacy_route)
+
+2026-11-17T15:32:20Z start | 2026-11-17T15:32:20Z end | exit 0
+find evaluation/virtual_a_corridor/C2B/20261117T135647Z -type f | sort | xargs sha256sum > "$EV/original_c2b_manifest.sha256"
+# 74 files, all mtimes <= 2026-11-17T22:59:31+0800 (before rework start 23:13:25+0800)
+
+2026-11-17T15:32:20Z start | 2026-11-17T15:32:20Z end | exit 0
+find evaluation/virtual_a_corridor/C2B/20261117T135647Z -type f -newermt '2026-11-17 23:13:25' -print
+# empty output
+
+2026-11-17T15:32:20Z start | 2026-11-17T15:32:20Z end | exit 0
+sha256sum evaluation/virtual_a_corridor/C2B/20261117T135647Z/SUMMARY.md evaluation/virtual_a_corridor/C2B/20261117T135647Z/results.json
+# SUMMARY.md bf7f1b5db832b5351518d66b98ae61104e634523cfe645988d287be99457c208
+# results.json 1424f52b0053829f0b5d56d4ebf57d01afe36073226c13b2094c8f7ba9725fae
+# both equal the pre-rework values in start_state.log
+2026-11-17T15:32:40Z start | 2026-11-17T15:32:40Z end | exit 0
+{ git rev-parse HEAD; git status --short; sha256sum optimizer.py tests/test_virtual_a_corridor_optimizer.py C2B/SUMMARY.md C2B/results.json; } > "$EV/end_state.log"
+
+2026-11-17T15:32:46Z start | 2026-11-17T15:32:46Z end | exit 0
+sha256sum <source/test/evidence files> > "$EV/source_hashes.txt"
+
+2026-11-17T15:33:07Z start | 2026-11-17T15:33:07Z end | exit 0
+python3 - <<'PY' (inline assembly from test logs + clearance_measurements.json + curved_case_*.json)
+# writes "$EV/results.json"
+PY
+
+2026-11-17T15:34:14Z start | 2026-11-17T15:34:14Z end | exit 0
+find C2B -type f -newermt '2026-11-17 23:13:25'; find C2B -type f -printf mtime; sha256sum C2B/SUMMARY.md C2B/results.json > "$EV/original_c2b_verification.log"
+python3 -c 'numpy/scipy/casadi version + casadi.has_nlpsol("ipopt")' > "$EV/environment.txt"
+
+2026-11-17T15:34:22Z start | 2026-11-17T15:34:22Z end | exit 0
+sha256sum <all final source/test/evidence files> > "$EV/source_hashes.txt"

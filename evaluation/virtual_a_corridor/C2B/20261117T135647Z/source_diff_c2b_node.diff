@@ -1,0 +1,17 @@
+--- a/catkin_ws/src/fwis_v3_optimizer/scripts/formation_uniform_planner_node.py
++++ b/catkin_ws/src/fwis_v3_optimizer/scripts/formation_uniform_planner_node.py
+@@ -1881,9 +1881,14 @@
+         backend = str(rospy.get_param("~backend", PLAYBACK_PLAN_BACKEND))
+         hooks = None
+         if backend == "virtual_rigid_a":
++            from fwis_v3_optimizer.formation_continuous_a.contracts import (
++                PlannerConfig)
+             from fwis_v3_optimizer.formation_continuous_a.ros_adapter import (
+                 VirtualABackendHooks, VirtualABackendSettings)
+             settings = VirtualABackendSettings(
++                planner_config=PlannerConfig(
++                    guidance_mode=str(rospy.get_param(
++                        "~virtual_a_guidance_mode", "legacy_route"))),
+                 goal_policy=str(rospy.get_param(
+                     "~virtual_a_goal_policy", "free")),
+                 frame_id=str(rospy.get_param("~frame_id", "map")),

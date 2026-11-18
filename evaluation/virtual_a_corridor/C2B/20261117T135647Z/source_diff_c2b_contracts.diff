@@ -1,0 +1,253 @@
+--- a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/contracts.py
++++ b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/contracts.py
+@@ -773,9 +773,27 @@
+     ipopt_tolerance: float = 1e-8
+     scipy_tolerance: float = 1e-8
+     scipy_maxiter: int = 120
++    # C2-B corridor guidance.  The default legacy_route encoding below is the
++    # unchanged G4/G5 planner config; these fields are appended to as_dict()
++    # only when at least one differs from its default, so historical payloads
++    # and planning-context digests remain reproducible.
++    guidance_mode: str = "legacy_route"
++    corridor_enforcement: str = "hard"
++    corridor_margin_m: float = 1e-5
++    corridor_margin_portal_fraction: float = 0.25
++    corridor_kappa_weight: float = 0.01
++    corridor_guide_weight: float = 0.1
++    corridor_clearance_weight: float = 1.0
++    corridor_clearance_target_m: float = 0.05
++    corridor_quadrature_points: int = 9
++    corridor_audit_position_margin_m: float = 5e-8
++    corridor_audit_max_depth: int = 20
++    corridor_audit_max_intervals: int = 20000
++    corridor_audit_min_width_m: float = 1e-5
++    corridor_box_padding_m: float = 2.0
+ 
+     def as_dict(self):
+-        return {
++        encoded = {
+             "intervals": self.intervals,
+             "max_initials": self.max_initials,
+             "max_seconds": self.max_seconds,
+@@ -793,6 +811,49 @@
+             "scipy_tolerance": self.scipy_tolerance,
+             "scipy_maxiter": self.scipy_maxiter,
+         }
++        corridor = _planner_corridor_dict(self)
++        if corridor != _PLANNER_CORRIDOR_DEFAULTS:
++            encoded.update(corridor)
++        return encoded
++
++
++_PLANNER_CORRIDOR_DEFAULTS = {
++    "guidance_mode": "legacy_route",
++    "corridor_enforcement": "hard",
++    "corridor_margin_m": 1e-5,
++    "corridor_margin_portal_fraction": 0.25,
++    "corridor_kappa_weight": 0.01,
++    "corridor_guide_weight": 0.1,
++    "corridor_clearance_weight": 1.0,
++    "corridor_clearance_target_m": 0.05,
++    "corridor_quadrature_points": 9,
++    "corridor_audit_position_margin_m": 5e-8,
++    "corridor_audit_max_depth": 20,
++    "corridor_audit_max_intervals": 20000,
++    "corridor_audit_min_width_m": 1e-5,
++    "corridor_box_padding_m": 2.0,
++}
++
++
++def _planner_corridor_dict(config):
++    return {
++        "guidance_mode": config.guidance_mode,
++        "corridor_enforcement": config.corridor_enforcement,
++        "corridor_margin_m": config.corridor_margin_m,
++        "corridor_margin_portal_fraction":
++            config.corridor_margin_portal_fraction,
++        "corridor_kappa_weight": config.corridor_kappa_weight,
++        "corridor_guide_weight": config.corridor_guide_weight,
++        "corridor_clearance_weight": config.corridor_clearance_weight,
++        "corridor_clearance_target_m": config.corridor_clearance_target_m,
++        "corridor_quadrature_points": config.corridor_quadrature_points,
++        "corridor_audit_position_margin_m":
++            config.corridor_audit_position_margin_m,
++        "corridor_audit_max_depth": config.corridor_audit_max_depth,
++        "corridor_audit_max_intervals": config.corridor_audit_max_intervals,
++        "corridor_audit_min_width_m": config.corridor_audit_min_width_m,
++        "corridor_box_padding_m": config.corridor_box_padding_m,
++    }
+ 
+ 
+ def validate_planner_config(config):
+@@ -817,6 +878,49 @@
+             config.rigidity_tolerance_m, "config.rigidity_tolerance_m")
+         ipopt_tol = _finite(config.ipopt_tolerance, "config.ipopt_tolerance")
+         scipy_tol = _finite(config.scipy_tolerance, "config.scipy_tolerance")
++        corridor_margin = _finite(
++            config.corridor_margin_m, "config.corridor_margin_m")
++        portal_fraction = _finite(
++            config.corridor_margin_portal_fraction,
++            "config.corridor_margin_portal_fraction")
++        kappa_weight = _finite(
++            config.corridor_kappa_weight, "config.corridor_kappa_weight")
++        guide_weight = _finite(
++            config.corridor_guide_weight, "config.corridor_guide_weight")
++        clearance_weight = _finite(
++            config.corridor_clearance_weight,
++            "config.corridor_clearance_weight")
++        clearance_target = _finite(
++            config.corridor_clearance_target_m,
++            "config.corridor_clearance_target_m")
++        audit_position_margin = _finite(
++            config.corridor_audit_position_margin_m,
++            "config.corridor_audit_position_margin_m")
++        audit_min_width = _finite(
++            config.corridor_audit_min_width_m,
++            "config.corridor_audit_min_width_m")
++        box_padding = _finite(
++            config.corridor_box_padding_m, "config.corridor_box_padding_m")
++        quadrature = config.corridor_quadrature_points
++        audit_depth = config.corridor_audit_max_depth
++        audit_intervals = config.corridor_audit_max_intervals
++        if isinstance(quadrature, bool) or not isinstance(
++                quadrature, numbers.Integral):
++            raise VirtualAContractError(
++                "INVALID_CONFIG",
++                "corridor_quadrature_points must be an integer")
++        if isinstance(audit_depth, bool) or not isinstance(
++                audit_depth, numbers.Integral):
++            raise VirtualAContractError(
++                "INVALID_CONFIG", "corridor_audit_max_depth must be an integer")
++        if isinstance(audit_intervals, bool) or not isinstance(
++                audit_intervals, numbers.Integral):
++            raise VirtualAContractError(
++                "INVALID_CONFIG",
++                "corridor_audit_max_intervals must be an integer")
++        quadrature = int(quadrature)
++        audit_depth = int(audit_depth)
++        audit_intervals = int(audit_intervals)
+     except (TypeError, ValueError, VirtualAContractError) as exc:
+         return ValidationResult.fail("INVALID_CONFIG", str(exc))
+     if intervals < 2 or intervals > 64:
+@@ -856,6 +960,53 @@
+     if scipy_iterations < 1:
+         return ValidationResult.fail(
+             "INVALID_CONFIG", "scipy_maxiter must be >= 1")
++    guidance_mode = str(config.guidance_mode).strip().lower()
++    if guidance_mode not in ("legacy_route", "corridor"):
++        return ValidationResult.fail(
++            "INVALID_CONFIG",
++            "guidance_mode={!r} allowed=('legacy_route','corridor')".format(
++                config.guidance_mode))
++    enforcement = str(config.corridor_enforcement).strip().lower()
++    if enforcement not in ("hard", "soft"):
++        return ValidationResult.fail(
++            "INVALID_CONFIG",
++            "corridor_enforcement={!r} allowed=('hard','soft')".format(
++                config.corridor_enforcement))
++    if not (0.0 <= corridor_margin < 0.5):
++        return ValidationResult.fail(
++            "INVALID_CONFIG", "corridor_margin_m must be in [0, 0.5)")
++    if not (0.0 < portal_fraction <= 0.25):
++        return ValidationResult.fail(
++            "INVALID_CONFIG",
++            "corridor_margin_portal_fraction must be in (0, 0.25]")
++    for name, value in (
++            ("corridor_kappa_weight", kappa_weight),
++            ("corridor_guide_weight", guide_weight),
++            ("corridor_clearance_weight", clearance_weight),
++            ("corridor_clearance_target_m", clearance_target)):
++        if value < 0.0:
++            return ValidationResult.fail(
++                "INVALID_CONFIG", "{} must be nonnegative".format(name))
++    if quadrature < 3 or quadrature > 64:
++        return ValidationResult.fail(
++            "INVALID_CONFIG", "corridor_quadrature_points must be in [3, 64]")
++    if not (0.0 <= audit_position_margin < 0.1):
++        return ValidationResult.fail(
++            "INVALID_CONFIG",
++            "corridor_audit_position_margin_m must be in [0, 0.1)")
++    if audit_depth < 0 or audit_depth > 64:
++        return ValidationResult.fail(
++            "INVALID_CONFIG", "corridor_audit_max_depth must be in [0, 64]")
++    if audit_intervals < 1 or audit_intervals > 10_000_000:
++        return ValidationResult.fail(
++            "INVALID_CONFIG",
++            "corridor_audit_max_intervals must be in [1, 10000000]")
++    if not (0.0 < audit_min_width < 0.1):
++        return ValidationResult.fail(
++            "INVALID_CONFIG", "corridor_audit_min_width_m must be in (0, 0.1)")
++    if not (0.0 <= box_padding < 10.0):
++        return ValidationResult.fail(
++            "INVALID_CONFIG", "corridor_box_padding_m must be in [0, 10)")
+     solver = str(config.solver).lower()
+     if solver not in ("ipopt", "scipy", "slsqp", "auto"):
+         return ValidationResult.fail(
+@@ -871,7 +1022,20 @@
+         heading_tolerance_rad=heading_tol,
+         rigidity_tolerance_m=rigidity_tol,
+         ipopt_tolerance=ipopt_tol, scipy_tolerance=scipy_tol,
+-        scipy_maxiter=scipy_iterations)
++        scipy_maxiter=scipy_iterations, guidance_mode=guidance_mode,
++        corridor_enforcement=enforcement,
++        corridor_margin_m=corridor_margin,
++        corridor_margin_portal_fraction=portal_fraction,
++        corridor_kappa_weight=kappa_weight,
++        corridor_guide_weight=guide_weight,
++        corridor_clearance_weight=clearance_weight,
++        corridor_clearance_target_m=clearance_target,
++        corridor_quadrature_points=quadrature,
++        corridor_audit_position_margin_m=audit_position_margin,
++        corridor_audit_max_depth=audit_depth,
++        corridor_audit_max_intervals=audit_intervals,
++        corridor_audit_min_width_m=audit_min_width,
++        corridor_box_padding_m=box_padding)
+ 
+ 
+ def validate_geometry_audit_config(config):
+@@ -1170,6 +1334,7 @@
+     iterations: int = 0
+     objective: float = None
+     constraint_residual: float = None
++    corridor_residual_m: float = None
+     endpoint_error_m: float = None
+     heading_error_rad: float = None
+     wall_time_s: float = 0.0
+@@ -1187,7 +1352,7 @@
+         return self.audit
+ 
+     def as_dict(self):
+-        return {
++        payload = {
+             "attempt_index": self.attempt_index,
+             "initial_source": self.initial_source,
+             "initial_label": self.initial_label,
+@@ -1210,6 +1375,9 @@
+             "deadline_trigger_stage": self.deadline_trigger_stage,
+             "remaining_budget_s": self.remaining_budget_s,
+         }
++        if self.corridor_residual_m is not None:
++            payload["corridor_residual_m"] = self.corridor_residual_m
++        return payload
+ 
+ 
+ @dataclass(frozen=True)
+@@ -2561,8 +2729,16 @@
+ 
+ 
+ def planner_config_from_dict(payload):
+-    return PlannerConfig(**_exact_fields(payload, PlannerConfig,
+-                                         "planner_config"))
++    values = _check_payload_keys(
++        payload, PlannerConfig, "planner_config",
++        echoes=tuple(_PLANNER_CORRIDOR_DEFAULTS))
++    # Historical payloads omit every C2-B field; partial C2-B payloads fall
++    # back to the dataclass default for any omitted field.  Unknown keys still
++    # fail in _check_payload_keys.
++    values = {
++        key: value for key, value in values.items()
++        if key in PlannerConfig.__dataclass_fields__}
++    return PlannerConfig(**values)
+ 
+ 
+ def geometry_audit_config_from_dict(payload):

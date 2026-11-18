@@ -1,0 +1,295 @@
+{
+ "attempts": [
+  {
+   "attempt_index": 0,
+   "constraint_residual": 0.028595780734014697,
+   "corridor_residual_m": 0.0,
+   "detail": "Maximum_Iterations_Exceeded",
+   "initial_label": "route_guide=0;source=corridor_qp_polyline",
+   "initial_source": "map_route_guide",
+   "iterations": 120,
+   "objective": 6104.744113765323,
+   "rejection_reason": "Maximum_Iterations_Exceeded",
+   "solver": "ipopt",
+   "solver_status": "Maximum_Iterations_Exceeded",
+   "status": "SOLVER_FAILED",
+   "wall_time_s": 20.091010491130874
+  },
+  {
+   "attempt_index": 1,
+   "constraint_residual": null,
+   "corridor_residual_m": null,
+   "detail": "Maximum_WallTime_Exceeded",
+   "initial_label": "length_multiplier=1.2;shape=left",
+   "initial_source": "automatic_endpoint_shape",
+   "iterations": 76,
+   "objective": 1683.501467885547,
+   "rejection_reason": "SOFT_BUDGET_EXHAUSTED",
+   "solver": "ipopt",
+   "solver_status": "Maximum_WallTime_Exceeded",
+   "status": "SOLVER_TIMEOUT",
+   "wall_time_s": 13.399491739226505
+  }
+ ],
+ "budget": {
+  "hard_real_time_guarantee": false,
+  "max_recoveries": 1,
+  "planner_config": {
+   "allow_scipy_fallback": true,
+   "collocation_points": 9,
+   "corridor_audit_max_depth": 20,
+   "corridor_audit_max_intervals": 20000,
+   "corridor_audit_min_width_m": 1e-05,
+   "corridor_audit_position_margin_m": 5e-08,
+   "corridor_box_padding_m": 2.0,
+   "corridor_clearance_target_m": 0.05,
+   "corridor_clearance_weight": 1.0,
+   "corridor_enforcement": "hard",
+   "corridor_guide_weight": 0.1,
+   "corridor_kappa_weight": 0.01,
+   "corridor_margin_m": 1e-05,
+   "corridor_margin_portal_fraction": 0.25,
+   "corridor_quadrature_points": 9,
+   "curvature_margin": 0.02,
+   "eta_limit": 2.0,
+   "guidance_mode": "corridor",
+   "heading_tolerance_rad": 0.003490658503988659,
+   "intervals": 8,
+   "ipopt_tolerance": 1e-08,
+   "kappa_limit": 0.5524861878453039,
+   "max_initials": 6,
+   "max_iterations": 120,
+   "max_seconds": 30.0,
+   "position_tolerance_m": 0.005,
+   "rigidity_tolerance_m": 1e-06,
+   "scipy_maxiter": 120,
+   "scipy_tolerance": 1e-08,
+   "solver": "ipopt"
+  },
+  "planner_config_max_seconds": 30.0,
+  "route_config": {
+   "algorithm": "eight_neighbour_astar_distance_field",
+   "alternative_penalty": 2.0,
+   "blocked_radius_m": 0.15,
+   "clearance_cap_m": 2.0,
+   "clearance_weight": 2.0,
+   "guide_is_executable_path": false,
+   "max_expansions": 200000,
+   "max_routes": 3,
+   "max_seconds": 8.0
+  },
+  "total_soft_budget_s": 60.0
+ },
+ "checks": 0,
+ "collision_audit_passed": null,
+ "corridor_rounds": [
+  {
+   "allocation": [
+    [
+     0.0,
+     0.125,
+     0
+    ],
+    [
+     0.125,
+     0.25,
+     0
+    ],
+    [
+     0.25,
+     0.375,
+     0
+    ],
+    [
+     0.375,
+     0.5,
+     0
+    ],
+    [
+     0.5,
+     0.625,
+     0
+    ],
+    [
+     0.625,
+     0.75,
+     0
+    ],
+    [
+     0.75,
+     0.875,
+     0
+    ],
+    [
+     0.875,
+     0.9904572867960737,
+     0
+    ],
+    [
+     0.9904572867960737,
+     1.0,
+     1
+    ]
+   ],
+   "chain_audit_passed": true,
+   "chain_audit_reason": "CORRIDOR_CHAIN_VERIFIED",
+   "chain_digest": "0e1552637da62c1763fc0a535d87b758dea4bea3e504764c472270be62a0aa49",
+   "containment": null,
+   "effective_margin_m": 1e-05,
+   "guide_points": [
+    [
+     0.0,
+     0.0
+    ],
+    [
+     11.366326742047649,
+     0.018101928472965753
+    ],
+    [
+     11.474331036127456,
+     -8.326672684688674e-16
+    ]
+   ],
+   "guide_source": "corridor_qp_polyline",
+   "region_count": 2,
+   "round_index": 0,
+   "route_index": 0,
+   "route_source": "astar_primary"
+  }
+ ],
+ "detail": "soft wall budget 30.0s exhausted before an audited candidate",
+ "dynamic_audit_passed": null,
+ "executable": false,
+ "feasible": false,
+ "first_failure_layer": "GEOMETRY",
+ "geometry_audit_passed": null,
+ "grid_metadata_sha256": "55e3c5b82a99c74b96a550720fd7a467e76b40f48082c0212ca21574d3af8782",
+ "grid_sha256": "55e3c5b82a99c74b96a550720fd7a467e76b40f48082c0212ca21574d3af8782",
+ "guidance_mode": "corridor",
+ "initial_count": 5,
+ "last_reason": "SOFT_BUDGET_EXHAUSTED",
+ "measured_wall_s": 35.92473838315345,
+ "metrics": {},
+ "path_length_m": null,
+ "path_present": false,
+ "plan_present": false,
+ "planner_config": {
+  "allow_scipy_fallback": true,
+  "collocation_points": 9,
+  "corridor_audit_max_depth": 20,
+  "corridor_audit_max_intervals": 20000,
+  "corridor_audit_min_width_m": 1e-05,
+  "corridor_audit_position_margin_m": 5e-08,
+  "corridor_box_padding_m": 2.0,
+  "corridor_clearance_target_m": 0.05,
+  "corridor_clearance_weight": 1.0,
+  "corridor_enforcement": "hard",
+  "corridor_guide_weight": 0.1,
+  "corridor_kappa_weight": 0.01,
+  "corridor_margin_m": 1e-05,
+  "corridor_margin_portal_fraction": 0.25,
+  "corridor_quadrature_points": 9,
+  "curvature_margin": 0.02,
+  "eta_limit": 2.0,
+  "guidance_mode": "corridor",
+  "heading_tolerance_rad": 0.003490658503988659,
+  "intervals": 8,
+  "ipopt_tolerance": 1e-08,
+  "kappa_limit": 0.5524861878453039,
+  "max_initials": 6,
+  "max_iterations": 120,
+  "max_seconds": 30.0,
+  "position_tolerance_m": 0.005,
+  "rigidity_tolerance_m": 1e-06,
+  "scipy_maxiter": 120,
+  "scipy_tolerance": 1e-08,
+  "solver": "ipopt"
+ },
+ "planning_context_sha256": "497ecdb3e64ea643b29e39c3e9ca8f39c80e1842af9b365e8e152dc5abe723fc",
+ "reason": "SOFT_BUDGET_EXHAUSTED",
+ "recoveries": [],
+ "recovery_count": 0,
+ "request_sha256": "9feb7332db51d4f347a21b347416b6e7ffa1619ad28bda41ef88ad57c3bb2ba2",
+ "rounds": [
+  {
+   "collision_first_failure": null,
+   "collision_passed": null,
+   "collision_reason": null,
+   "corridor_containment_passed": null,
+   "corridor_containment_reason": null,
+   "dynamics_passed": null,
+   "dynamics_reason": null,
+   "geometry_attempts": 2,
+   "geometry_reason": "SOFT_BUDGET_EXHAUSTED",
+   "geometry_status": "BUDGET_EXHAUSTED",
+   "initial_count": 5,
+   "initial_mode": "route_guided",
+   "round_index": 0,
+   "route_count": 3,
+   "route_index": 0,
+   "timing_reason": null,
+   "timing_status": null
+  }
+ ],
+ "route_count": 3,
+ "routes": [
+  {
+   "goal": [
+    11.474331036127456,
+    -8.326672684688674e-16
+   ],
+   "grid_sha256": "55e3c5b82a99c74b96a550720fd7a467e76b40f48082c0212ca21574d3af8782",
+   "length_m": 12.608030227999718,
+   "point_count": 232,
+   "source": "astar_primary",
+   "start": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "goal": [
+    11.474331036127456,
+    -8.326672684688674e-16
+   ],
+   "grid_sha256": "55e3c5b82a99c74b96a550720fd7a467e76b40f48082c0212ca21574d3af8782",
+   "length_m": 12.690872940474332,
+   "point_count": 232,
+   "source": "astar_alternative_1",
+   "start": [
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "goal": [
+    11.474331036127456,
+    -8.326672684688674e-16
+   ],
+   "grid_sha256": "55e3c5b82a99c74b96a550720fd7a467e76b40f48082c0212ca21574d3af8782",
+   "length_m": 12.73229429671164,
+   "point_count": 232,
+   "source": "astar_alternative_2",
+   "start": [
+    0.0,
+    0.0
+   ]
+  }
+ ],
+ "scene": "S2",
+ "solver": "ipopt",
+ "status": "BUDGET_EXHAUSTED",
+ "timings": {
+  "collision_audit_s": 0.0,
+  "corridor_allocation_s": 6.0548074543476105e-05,
+  "corridor_build_s": 0.4694344860035926,
+  "corridor_containment_s": 0.0,
+  "corridor_guide_s": 0.002876610029488802,
+  "dynamics_audit_s": 0.0,
+  "geometry_solve_s": 34.96747817285359,
+  "result_assembly_s": 0.0,
+  "retime_s": 0.0,
+  "route_generation_s": 0.44165609893389046
+ },
+ "wall_time_s": 35.90753549197689
+}

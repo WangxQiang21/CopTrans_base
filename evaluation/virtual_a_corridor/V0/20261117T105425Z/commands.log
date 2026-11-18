@@ -1,0 +1,44 @@
+# V0 evidence commands, 2026-11-17 UTC
+# run: evaluation/virtual_a_corridor/V0/20261117T105425Z
+# Environment: source /opt/ros/noetic/setup.bash; no ROS master was started
+# for the V0 unit checks.  No user ROS session (port 11411) was touched.
+
+# --- plugin availability (output/exit in jsk_rviz_plugin_check.log) ---
+rospack find jsk_rviz_plugins
+# exit=1  [rospack] Error: package 'jsk_rviz_plugins' not found
+
+rosmsg show jsk_rviz_plugins/OverlayText
+# exit=1  Unable to load msg: unknown package jsk_rviz_plugins
+
+rospack plugins --attrib=plugin rviz | grep -i overlay
+# exit=1  no lines
+
+ls /opt/ros/noetic/share/jsk_rviz_plugins
+# exit=2  no such file or directory
+
+dpkg -l | grep -i jsk
+# no installed package (apt policy candidate:
+#   ros-noetic-jsk-rviz-plugins 2.1.10-1focal.20250521.014225)
+
+# --- targeted tests (run from repository root; no unittest discover) ---
+python3 -m unittest -v tests.test_formation_hud
+# exit=0, 15 tests OK        -> test_logs/test_formation_hud.log
+
+python3 -m unittest -v tests.test_formation_demo_assets
+# exit=0, 21 tests OK        -> test_logs/test_formation_demo_assets.log
+
+python3 -m unittest -v tests.test_virtual_a_ros_adapter
+# exit=0, 60 tests OK        -> test_logs/test_virtual_a_ros_adapter.log
+
+# --- real HUD GUI ---
+# NOT_RUN: OverlayText is unavailable, so formation_playback sets
+# hud_enabled=False and does not create /formation/hud.  No start/play/fail
+# screenshots exist.  A run_demo virtual_rigid_a S1 session should be repeated
+# after installing ros-noetic-jsk-rviz-plugins.
+
+# --- source/git evidence ---
+# source_hashes.txt is shared with V1 run 20261117T105607Z; hashes were
+# verified identical between the V0 test time and the V1 display run.
+# git_state.log / v0_v1_changes.patch are the uncommitted V0+V1 worktree:
+#   base=current=9a19fd3e22d33188b13795f695757c3e4a36909f
+#   9 files changed, 907 insertions(+), 23 deletions(-)

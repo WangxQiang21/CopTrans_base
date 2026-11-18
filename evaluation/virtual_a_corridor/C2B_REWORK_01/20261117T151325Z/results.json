@@ -1,0 +1,745 @@
+{
+ "branch": "feature/virtual-rigid-formation-a",
+ "clearance_measurements": {
+  "all_gates_passed": true,
+  "casadi_objective": 95.49606317619858,
+  "clearance_contribution": 92.73408536064564,
+  "gates": {
+   "body_centre_error_within_1e12": true,
+   "clearance_term_active": true,
+   "direction_semantics_exact": true,
+   "fallback_theta_within_1e12": true,
+   "negative_difference_detected": true,
+   "negative_separation_detected": true,
+   "numeric_casadi_within_1e9": true,
+   "origin_centre_regression_within_1e12": true,
+   "origin_penalty_regression_within_1e12": true
+  },
+  "hand_world_body_centres": [
+   [
+    3.7648421872844886,
+    -1.355782312762309
+   ],
+   [
+    2.355782312762309,
+    -1.2351578127155114
+   ],
+   [
+    3.644217687237691,
+    -2.7648421872844886
+   ]
+  ],
+  "json": "evaluation/virtual_a_corridor/C2B_REWORK_01/20261117T151325Z/clearance_measurements.json",
+  "max_fallback_theta_error_rad": 0.0,
+  "max_world_body_centre_error_m": 0.0,
+  "negative_control_penalty_difference": 0.24275048494066656,
+  "negative_control_query_separation_m": 2.0248525782228506,
+  "numeric_objective": 95.49606317619846,
+  "objective_absolute_difference": 1.1368683772161603e-13,
+  "objective_relative_difference": 1.190487167118649e-15,
+  "objective_tolerance": 9.549606317619847e-08,
+  "origin_regression_max_centre_error_m": 0.0,
+  "origin_regression_penalty_error": 0.0,
+  "stored_directions": [
+   0.25,
+   0.25,
+   0.25
+  ],
+  "world_body_centre_queries": [
+   [
+    3.7648421872844886,
+    -1.355782312762309
+   ],
+   [
+    2.355782312762309,
+    -1.2351578127155114
+   ],
+   [
+    3.644217687237691,
+    -2.7648421872844886
+   ]
+  ]
+ },
+ "commit_or_push": false,
+ "curved_positive": {
+  "ipopt": {
+   "acceptance_gates": {
+    "containment_verified": true,
+    "curvature_peak_at_least_0_05": true,
+    "endpoint_heading_within_0_2_deg": true,
+    "endpoint_position_within_0_005": true,
+    "executable": true,
+    "feasible": true,
+    "path_and_plan_present": true,
+    "rigidity_within_1e_6": true,
+    "status_success": true,
+    "three_audits_passed": true
+   },
+   "allocation": [
+    [
+     0.0,
+     0.125,
+     0
+    ],
+    [
+     0.125,
+     0.25,
+     0
+    ],
+    [
+     0.25,
+     0.375,
+     0
+    ],
+    [
+     0.375,
+     0.5,
+     0
+    ],
+    [
+     0.5,
+     0.625,
+     0
+    ],
+    [
+     0.625,
+     0.75,
+     0
+    ],
+    [
+     0.75,
+     0.875,
+     0
+    ],
+    [
+     0.875,
+     1.0,
+     0
+    ]
+   ],
+   "attempts": [
+    {
+     "attempt_index": 0,
+     "constraint_residual": 7.993605777301127e-14,
+     "corridor_residual_m": 0.0,
+     "detail": "Solve_Succeeded",
+     "initial_source": "map_route_guide",
+     "iterations": 20,
+     "objective": 2.7481447025733177,
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED",
+     "wall_time_s": 4.746720641851425
+    },
+    {
+     "attempt_index": 1,
+     "constraint_residual": 7.904787935331115e-14,
+     "corridor_residual_m": 0.0,
+     "detail": "Solve_Succeeded",
+     "initial_source": "automatic_endpoint_shape",
+     "iterations": 7,
+     "objective": 2.7479967356101125,
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED",
+     "wall_time_s": 3.3751755631528795
+    },
+    {
+     "attempt_index": 2,
+     "constraint_residual": 8.526512829121202e-14,
+     "corridor_residual_m": 0.0,
+     "detail": "Solve_Succeeded",
+     "initial_source": "automatic_endpoint_shape",
+     "iterations": 10,
+     "objective": 2.7479967356101183,
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED",
+     "wall_time_s": 3.5991329420357943
+    },
+    {
+     "attempt_index": 3,
+     "constraint_residual": 8.08242361927114e-14,
+     "corridor_residual_m": 0.0,
+     "detail": "Solve_Succeeded",
+     "initial_source": "automatic_endpoint_shape",
+     "iterations": 19,
+     "objective": 2.7479967356101143,
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED",
+     "wall_time_s": 4.330349156167358
+    },
+    {
+     "attempt_index": 4,
+     "constraint_residual": 7.72715225139109e-14,
+     "corridor_residual_m": 0.0,
+     "detail": "Solve_Succeeded",
+     "initial_source": "automatic_endpoint_shape",
+     "iterations": 14,
+     "objective": 2.74799673561011,
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED",
+     "wall_time_s": 3.9448975599370897
+    },
+    {
+     "attempt_index": 5,
+     "constraint_residual": 8.348877145181177e-14,
+     "corridor_residual_m": 0.0,
+     "detail": "Solve_Succeeded",
+     "initial_source": "automatic_endpoint_shape",
+     "iterations": 20,
+     "objective": 2.747996735610116,
+     "rejection_reason": "",
+     "solver": "ipopt",
+     "solver_status": "Solve_Succeeded",
+     "status": "SOLVER_SUCCESS_AUDITED",
+     "wall_time_s": 4.452844846993685
+    }
+   ],
+   "audit_check_counts": [
+    155,
+    909,
+    6482
+   ],
+   "case": "curved_lateral_translation",
+   "collision_audit_passed": true,
+   "corridor_chain": {
+    "chain_audit_passed": true,
+    "chain_audit_reason": "CORRIDOR_CHAIN_VERIFIED",
+    "chain_digest": "2040ca2b9c8df2c80dbe22966417df71558ad6dac810bfef1cf4d3f184037f28",
+    "effective_margin_m": 1e-05,
+    "region_count": 1,
+    "route_source": "astar_primary"
+   },
+   "corridor_containment": {
+    "allocation_count": 8,
+    "audit": "continuous_path_in_corridors",
+    "base_interval_count": 8,
+    "corridor_count": 1,
+    "detail": "continuous path containment certified with epsilon=7.482367481322804e-08 m",
+    "epsilon_total_m": 7.482367481322804e-08,
+    "first_failure": null,
+    "is_three_vehicle_certificate": false,
+    "max_bound_residual_m": -1.77275440070628,
+    "max_depth": 20,
+    "max_depth_reached": 0,
+    "max_intervals": 20000,
+    "max_point_residual_m": -2.2953818435328293,
+    "method": "arc_length_midpoint_interval_bound",
+    "min_width_m": 1e-05,
+    "passed": true,
+    "path_position_error_bound_m": 2.4823674813228034e-08,
+    "position_budget_m": 5e-08,
+    "reason": "CORRIDOR_CONTAINMENT_VERIFIED",
+    "sample_count": 8
+   },
+   "corridor_containment_reason": "CORRIDOR_CONTAINMENT_VERIFIED",
+   "curvature_peak_per_vehicle_inv_m": {
+    "1": 0.41289497993626006,
+    "2": 0.2489850275145103,
+    "3": 0.4959565261169894
+   },
+   "dynamics_audit_passed": true,
+   "endpoint": {
+    "psi": 0.6000000000000001,
+    "x": 7.473399972450462,
+    "y": 6.16781101687566
+   },
+   "endpoint_heading_error_deg": 0.0,
+   "endpoint_heading_error_rad": 0.0,
+   "endpoint_position_error_m": 1.1033017374700127e-10,
+   "executable": true,
+   "false_publication": false,
+   "feasible": true,
+   "geometry_audit_passed": true,
+   "goal_world": [
+    7.473399972487355,
+    6.167811016979639,
+    0.6
+   ],
+   "grid_sha256": "6844baec009c98c0f33f5adbc4cc4846821bd3d54cd8a4b67e2ac4e34621e8ba",
+   "grid_summary": {
+    "cell_count": 120000,
+    "height": 300,
+    "occupancy_sha256": "9a413b131ecf0ccfb02a837ddb33766d8604cc00da7937b79bd363b53c8d7d86",
+    "occupied_cells": 0,
+    "origin_x": -2.0,
+    "origin_y": -5.0,
+    "resolution_m": 0.05,
+    "width": 400
+   },
+   "guide": {
+    "grid_sha256": "6844baec009c98c0f33f5adbc4cc4846821bd3d54cd8a4b67e2ac4e34621e8ba",
+    "is_executable_path": false,
+    "length_m": 8.246211251235321,
+    "points": [
+     [
+      2.0,
+      0.0
+     ],
+     [
+      7.473399972487355,
+      6.167811016979639
+     ]
+    ],
+    "quality": {
+     "chain_digest": "2040ca2b9c8df2c80dbe22966417df71558ad6dac810bfef1cf4d3f184037f28",
+     "fallback_objective": null,
+     "fallback_reason": "NO_INTERNAL_PORTAL",
+     "guide_length_m": 8.246211251235321,
+     "is_executable_path": false,
+     "negative_turn_indices": [],
+     "portal_radius_m": [],
+     "primal_violation_m": 0.0,
+     "qp_attempted": false,
+     "qp_iterations": 0,
+     "qp_objective": null,
+     "qp_status": "NO_INTERNAL_PORTAL",
+     "qp_used": false,
+     "region_count": 1,
+     "rounding": "PL_ONLY_NO_BEZIER",
+     "seed_lengths_m": [
+      8.246211251235321
+     ],
+     "segment_corridor_indices": [
+      0
+     ],
+     "segment_lengths_m": [
+      8.246211251235321
+     ],
+     "smoothness_claim": "NONE",
+     "source": "corridor_endpoint_polyline",
+     "stage": "C2_A",
+     "warnings": []
+    },
+    "source": "corridor_endpoint_polyline"
+   },
+   "json": "evaluation/virtual_a_corridor/C2B_REWORK_01/20261117T151325Z/curved_case_ipopt.json",
+   "local_goal": [
+    8.0,
+    2.0,
+    0.0
+   ],
+   "max_pairwise_rigidity_error_m": 8.881784197001252e-16,
+   "measured_wall_time_s": 30.688954859040678,
+   "path_length_m": 8.362037888029986,
+   "path_present": true,
+   "plan_kind": "motion",
+   "plan_present": true,
+   "planning_context_sha256": "4a655e9f190d2282665b9387c4a101ca9af957ecec597dfd7be14c2d2281e461",
+   "publication_eligible_by_evidence_gate": true,
+   "reason": "",
+   "reference_curvature_peak_inv_m": 0.3315313763858695,
+   "request_payload_sha256": "70131778449ccd87ad3d8ea3751f1bf0ada61266478a54779e44d1105aaea4e5",
+   "request_sha256": "70131778449ccd87ad3d8ea3751f1bf0ada61266478a54779e44d1105aaea4e5",
+   "result_wall_time_s": 30.688634327845648,
+   "solver": "ipopt",
+   "start_world": [
+    2.0,
+    0.0,
+    0.6
+   ],
+   "status": "SUCCESS",
+   "trajectory_model_sha256": "481d9067e10ea0e13d61d0bfcc306a88c5328bb74845b0129cf9498cee328800"
+  },
+  "scipy": {
+   "acceptance_gates": {
+    "containment_verified": true,
+    "curvature_peak_at_least_0_05": true,
+    "endpoint_heading_within_0_2_deg": true,
+    "endpoint_position_within_0_005": true,
+    "executable": true,
+    "feasible": true,
+    "path_and_plan_present": true,
+    "rigidity_within_1e_6": true,
+    "status_success": true,
+    "three_audits_passed": true
+   },
+   "allocation": [
+    [
+     0.0,
+     0.125,
+     0
+    ],
+    [
+     0.125,
+     0.25,
+     0
+    ],
+    [
+     0.25,
+     0.375,
+     0
+    ],
+    [
+     0.375,
+     0.5,
+     0
+    ],
+    [
+     0.5,
+     0.625,
+     0
+    ],
+    [
+     0.625,
+     0.75,
+     0
+    ],
+    [
+     0.75,
+     0.875,
+     0
+    ],
+    [
+     0.875,
+     1.0,
+     0
+    ]
+   ],
+   "attempts": [
+    {
+     "attempt_index": 0,
+     "constraint_residual": 2.0590196214698153e-09,
+     "corridor_residual_m": 0.0,
+     "detail": "Optimization terminated successfully",
+     "initial_source": "map_route_guide",
+     "iterations": 22,
+     "objective": 2.74814470546518,
+     "rejection_reason": "",
+     "solver": "scipy_slsqp",
+     "solver_status": "Optimization terminated successfully",
+     "status": "SOLVER_SUCCESS_AUDITED",
+     "wall_time_s": 1.6799236880615354
+    },
+    {
+     "attempt_index": 1,
+     "constraint_residual": 7.314326921914471e-11,
+     "corridor_residual_m": 0.0,
+     "detail": "Optimization terminated successfully",
+     "initial_source": "automatic_endpoint_shape",
+     "iterations": 21,
+     "objective": 2.747996736267721,
+     "rejection_reason": "",
+     "solver": "scipy_slsqp",
+     "solver_status": "Optimization terminated successfully",
+     "status": "SOLVER_SUCCESS_AUDITED",
+     "wall_time_s": 1.5881055118516088
+    },
+    {
+     "attempt_index": 2,
+     "constraint_residual": 1.2925660541895923e-11,
+     "corridor_residual_m": 0.0,
+     "detail": "Optimization terminated successfully",
+     "initial_source": "automatic_endpoint_shape",
+     "iterations": 21,
+     "objective": 2.74799673564445,
+     "rejection_reason": "",
+     "solver": "scipy_slsqp",
+     "solver_status": "Optimization terminated successfully",
+     "status": "SOLVER_SUCCESS_AUDITED",
+     "wall_time_s": 1.562276789918542
+    },
+    {
+     "attempt_index": 3,
+     "constraint_residual": 1.3941114929139076e-10,
+     "corridor_residual_m": 0.0,
+     "detail": "Optimization terminated successfully",
+     "initial_source": "automatic_endpoint_shape",
+     "iterations": 25,
+     "objective": 2.747996737656041,
+     "rejection_reason": "",
+     "solver": "scipy_slsqp",
+     "solver_status": "Optimization terminated successfully",
+     "status": "SOLVER_SUCCESS_AUDITED",
+     "wall_time_s": 1.8801123220473528
+    },
+    {
+     "attempt_index": 4,
+     "constraint_residual": 1.8832491122111605e-10,
+     "corridor_residual_m": 0.0,
+     "detail": "Optimization terminated successfully",
+     "initial_source": "automatic_endpoint_shape",
+     "iterations": 22,
+     "objective": 2.747996736819532,
+     "rejection_reason": "",
+     "solver": "scipy_slsqp",
+     "solver_status": "Optimization terminated successfully",
+     "status": "SOLVER_SUCCESS_AUDITED",
+     "wall_time_s": 1.6531534329988062
+    },
+    {
+     "attempt_index": 5,
+     "constraint_residual": 3.721911667753375e-11,
+     "corridor_residual_m": 0.0,
+     "detail": "Optimization terminated successfully",
+     "initial_source": "automatic_endpoint_shape",
+     "iterations": 23,
+     "objective": 2.7479967356926815,
+     "rejection_reason": "",
+     "solver": "scipy_slsqp",
+     "solver_status": "Optimization terminated successfully",
+     "status": "SOLVER_SUCCESS_AUDITED",
+     "wall_time_s": 1.704054564004764
+    }
+   ],
+   "audit_check_counts": [
+    155,
+    909,
+    6482
+   ],
+   "case": "curved_lateral_translation",
+   "collision_audit_passed": true,
+   "corridor_chain": {
+    "chain_audit_passed": true,
+    "chain_audit_reason": "CORRIDOR_CHAIN_VERIFIED",
+    "chain_digest": "2040ca2b9c8df2c80dbe22966417df71558ad6dac810bfef1cf4d3f184037f28",
+    "effective_margin_m": 1e-05,
+    "region_count": 1,
+    "route_source": "astar_primary"
+   },
+   "corridor_containment": {
+    "allocation_count": 8,
+    "audit": "continuous_path_in_corridors",
+    "base_interval_count": 8,
+    "corridor_count": 1,
+    "detail": "continuous path containment certified with epsilon=7.482367321695975e-08 m",
+    "epsilon_total_m": 7.482367321695975e-08,
+    "first_failure": null,
+    "is_three_vehicle_certificate": false,
+    "max_bound_residual_m": -1.7727543999164703,
+    "max_depth": 20,
+    "max_depth_reached": 0,
+    "max_intervals": 20000,
+    "max_point_residual_m": -2.2953818445431358,
+    "method": "arc_length_midpoint_interval_bound",
+    "min_width_m": 1e-05,
+    "passed": true,
+    "path_position_error_bound_m": 2.4823673216959746e-08,
+    "position_budget_m": 5e-08,
+    "reason": "CORRIDOR_CONTAINMENT_VERIFIED",
+    "sample_count": 8
+   },
+   "corridor_containment_reason": "CORRIDOR_CONTAINMENT_VERIFIED",
+   "curvature_peak_per_vehicle_inv_m": {
+    "1": 0.4128951405204666,
+    "2": 0.2489850747959989,
+    "3": 0.49595671371661965
+   },
+   "dynamics_audit_passed": true,
+   "endpoint": {
+    "psi": 0.5999999999999479,
+    "x": 7.47339997244215,
+    "y": 6.1678110168650555
+   },
+   "endpoint_heading_error_deg": 2.976999181849852e-12,
+   "endpoint_heading_error_rad": 5.1958437552457326e-14,
+   "endpoint_position_error_m": 1.2317880286250293e-10,
+   "executable": true,
+   "false_publication": false,
+   "feasible": true,
+   "geometry_audit_passed": true,
+   "goal_world": [
+    7.473399972487355,
+    6.167811016979639,
+    0.6
+   ],
+   "grid_sha256": "6844baec009c98c0f33f5adbc4cc4846821bd3d54cd8a4b67e2ac4e34621e8ba",
+   "grid_summary": {
+    "cell_count": 120000,
+    "height": 300,
+    "occupancy_sha256": "9a413b131ecf0ccfb02a837ddb33766d8604cc00da7937b79bd363b53c8d7d86",
+    "occupied_cells": 0,
+    "origin_x": -2.0,
+    "origin_y": -5.0,
+    "resolution_m": 0.05,
+    "width": 400
+   },
+   "guide": {
+    "grid_sha256": "6844baec009c98c0f33f5adbc4cc4846821bd3d54cd8a4b67e2ac4e34621e8ba",
+    "is_executable_path": false,
+    "length_m": 8.246211251235321,
+    "points": [
+     [
+      2.0,
+      0.0
+     ],
+     [
+      7.473399972487355,
+      6.167811016979639
+     ]
+    ],
+    "quality": {
+     "chain_digest": "2040ca2b9c8df2c80dbe22966417df71558ad6dac810bfef1cf4d3f184037f28",
+     "fallback_objective": null,
+     "fallback_reason": "NO_INTERNAL_PORTAL",
+     "guide_length_m": 8.246211251235321,
+     "is_executable_path": false,
+     "negative_turn_indices": [],
+     "portal_radius_m": [],
+     "primal_violation_m": 0.0,
+     "qp_attempted": false,
+     "qp_iterations": 0,
+     "qp_objective": null,
+     "qp_status": "NO_INTERNAL_PORTAL",
+     "qp_used": false,
+     "region_count": 1,
+     "rounding": "PL_ONLY_NO_BEZIER",
+     "seed_lengths_m": [
+      8.246211251235321
+     ],
+     "segment_corridor_indices": [
+      0
+     ],
+     "segment_lengths_m": [
+      8.246211251235321
+     ],
+     "smoothness_claim": "NONE",
+     "source": "corridor_endpoint_polyline",
+     "stage": "C2_A",
+     "warnings": []
+    },
+    "source": "corridor_endpoint_polyline"
+   },
+   "json": "evaluation/virtual_a_corridor/C2B_REWORK_01/20261117T151325Z/curved_case_scipy.json",
+   "local_goal": [
+    8.0,
+    2.0,
+    0.0
+   ],
+   "max_pairwise_rigidity_error_m": 1.1102230246251565e-15,
+   "measured_wall_time_s": 13.22366139292717,
+   "path_length_m": 8.362037916831872,
+   "path_present": true,
+   "plan_kind": "motion",
+   "plan_present": true,
+   "planning_context_sha256": "09b6e74095d84d0db5d82b0bfbeaa1d46c202821a2b0b6a5bff7a20ef57d63b7",
+   "publication_eligible_by_evidence_gate": true,
+   "reason": "",
+   "reference_curvature_peak_inv_m": 0.33153146021481017,
+   "request_payload_sha256": "70131778449ccd87ad3d8ea3751f1bf0ada61266478a54779e44d1105aaea4e5",
+   "request_sha256": "70131778449ccd87ad3d8ea3751f1bf0ada61266478a54779e44d1105aaea4e5",
+   "result_wall_time_s": 13.223345568869263,
+   "solver": "scipy",
+   "start_world": [
+    2.0,
+    0.0,
+    0.6
+   ],
+   "status": "SUCCESS",
+   "trajectory_model_sha256": "7fedb428be40a00112a2a898949cafcfa7885f32e10e9d940dc2dd01da45b5ff"
+  }
+ },
+ "curved_positive_case_acceptance": {
+  "ipopt": {
+   "containment_verified": true,
+   "curvature_peak_at_least_0_05": true,
+   "endpoint_heading_within_0_2_deg": true,
+   "endpoint_position_within_0_005": true,
+   "executable": true,
+   "feasible": true,
+   "path_and_plan_present": true,
+   "rigidity_within_1e_6": true,
+   "status_success": true,
+   "three_audits_passed": true
+  },
+  "scipy": {
+   "containment_verified": true,
+   "curvature_peak_at_least_0_05": true,
+   "endpoint_heading_within_0_2_deg": true,
+   "endpoint_position_within_0_005": true,
+   "executable": true,
+   "feasible": true,
+   "path_and_plan_present": true,
+   "rigidity_within_1e_6": true,
+   "status_success": true,
+   "three_audits_passed": true
+  }
+ },
+ "false_publication_definition": "path/plan present without status SUCCESS/NO_MOTION + feasible + executable + three passing audits + CORRIDOR_CONTAINMENT_VERIFIED",
+ "false_publications_new_evidence": 0,
+ "head": "9a19fd3e22d33188b13795f695757c3e4a36909f",
+ "historical_c2b_evidence": {
+  "file_count": 74,
+  "files_newer_than_rework_start": 0,
+  "manifest": "evaluation/virtual_a_corridor/C2B_REWORK_01/20261117T151325Z/original_c2b_manifest.sha256",
+  "newest_mtime_local": "2026-11-17T22:59:31.596515358+0800",
+  "results_sha256_expected": "1424f52b0053829f0b5d56d4ebf57d01afe36073226c13b2094c8f7ba9725fae",
+  "rework_start_local": "2026-11-17T23:13:25+0800",
+  "summary_sha256_expected": "bf7f1b5db832b5351518d66b98ae61104e634523cfe645988d287be99457c208",
+  "verified_in_end_state": true
+ },
+ "historical_c2b_false_publications": 0,
+ "modified_files": [
+  "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/optimizer.py",
+  "tests/test_virtual_a_corridor_optimizer.py"
+ ],
+ "not_run": [
+  "ROS/RViz real startup and publication display (rework out of scope)",
+  "19-case C2-B long matrix rerun (only one curved positive required when only optimizer.py and its test change)",
+  "C3 recovery strategy (prohibited by task)"
+ ],
+ "rework": "C2B_REWORK_01",
+ "task": "plan/virtual_a_corridor_v01/CLAUDE_C2B_REWORK_01.md",
+ "tests": {
+  "corridor_optimizer": {
+   "duration_s": 5.765,
+   "exit_code": 0,
+   "log": "evaluation/virtual_a_corridor/C2B_REWORK_01/20261117T151325Z/test_logs/corridor_optimizer.log",
+   "new_rework_tests": [
+    "test_clearance_body_centres_use_world_frame",
+    "test_numeric_and_casadi_clearance_objectives_agree_off_origin",
+    "test_local_clearance_query_is_detectably_wrong",
+    "test_origin_start_clearance_semantics_are_unchanged"
+   ],
+   "pattern": "test_virtual_a_corridor_optimizer.py",
+   "result_line": "OK",
+   "tests_run": 24
+  },
+  "optimizer": {
+   "duration_s": 65.795,
+   "exit_code": 0,
+   "log": "evaluation/virtual_a_corridor/C2B_REWORK_01/20261117T151325Z/test_logs/optimizer.log",
+   "pattern": "test_virtual_a_optimizer.py",
+   "result_line": "OK",
+   "tests_run": 29
+  },
+  "pipeline": {
+   "duration_s": 190.497,
+   "exit_code": 0,
+   "legacy_regression_test": "test_six_frozen_scenes_pass_all_three_audits_autonomously",
+   "log": "evaluation/virtual_a_corridor/C2B_REWORK_01/20261117T151325Z/test_logs/pipeline.log",
+   "pattern": "test_virtual_a_pipeline.py",
+   "result_line": "OK",
+   "tests_run": 8
+  },
+  "trajectory": {
+   "duration_s": 0.458,
+   "exit_code": 0,
+   "log": "evaluation/virtual_a_corridor/C2B_REWORK_01/20261117T151325Z/test_logs/trajectory.log",
+   "pattern": "test_virtual_a_trajectory.py",
+   "result_line": "OK",
+   "tests_run": 23
+  }
+ },
+ "utc_run": "20261117T151325Z",
+ "world_frame_contract": {
+  "applied_in": [
+   "_clearance_proxy_angles (initial direction freezing)",
+   "_proxy_numeric_penalty (NumPy/SLSQP objective)",
+   "_build_casadi_nlp clearance objective (CasADi/IPOPT)"
+  ],
+  "p_F_world": "p0 + R(psi0) p_F_local",
+  "p_i_world": "p_F_world + R(psi_F_world) (a_i, b_i)",
+  "psi_F_world": "psi0 + psi_F_local",
+  "shared_helper_and_casadi_formula_identical": true,
+  "theta_i_world": "psi_F_world + atan2(a_i kappa, 1 - b_i kappa)"
+ }
+}

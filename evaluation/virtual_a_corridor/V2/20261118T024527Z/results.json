@@ -1,0 +1,653 @@
+{
+  "schema": "virtual_a_corridor.v2.results.v1",
+  "task": "TASK_V2 - A*, centerline and final three-vehicle path layers",
+  "generated_utc": "2026-11-18T03:29:47Z",
+  "run_directory": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_a_corridor/V2/20261118T024527Z",
+  "git": {
+    "branch": "feature/virtual-rigid-formation-a",
+    "current_head": "9a19fd3e22d33188b13795f695757c3e4a36909f",
+    "task_named_baseline": "23fd16227e75a68f03f3ac7483555063c8189313",
+    "baseline_is_ancestor": true,
+    "later_accepted_commits_on_head": {
+      "70a2336": "Add C0-A/C0-B collocation and audit-budget prerequisites",
+      "9a19fd3": "Add C1 exact LOS and separating-hyperplane corridor geometry"
+    },
+    "v2_changes_committed": false,
+    "commit_or_push_made": false,
+    "worktree_dirty": true,
+    "note": "HEAD contains later accepted C0-A/C0-B and C1 commits, not V2. All V2 source and test changes are uncommitted; the task-named baseline is an ancestor.",
+    "v2_only_patch": {
+      "path": "v2_source_changes.patch",
+      "sha256": "fc0afabd895706e57ce84e27518a3545aa2f31ddbd6406d4b631fb24a97c3ada",
+      "files": 5,
+      "insertions": 436,
+      "deletions": 19,
+      "basis": "reconstructed pre-V2 accepted state at /tmp/v2_pre_20261118; six C3_REWORK_02 hashes matched exactly (pre_v2_reconstruction.log)",
+      "test_file_separate": "tests/test_virtual_a_corridor_display.py (untracked before V2; full copy in this directory)"
+    },
+    "cumulative_worktree_diff_not_v2_only": {
+      "files": 13,
+      "insertions": 3860,
+      "deletions": 178
+    }
+  },
+  "scene": {
+    "kind": "synthetic_annulus_narrow_curve",
+    "radius_m": 7.0,
+    "half_width_m": 3.0,
+    "margin_m": 3.0,
+    "resolution_m": 0.05,
+    "grid_cells": 270400,
+    "origin_xy": [
+      -13.0,
+      -13.0
+    ],
+    "start": [
+      3.500000000000001,
+      -6.06217782649107,
+      0.5235987755982989
+    ],
+    "goal": [
+      3.500000000000001,
+      6.06217782649107,
+      2.617993877991494
+    ],
+    "vehicles": [
+      [
+        1,
+        1.0,
+        0.0
+      ],
+      [
+        2,
+        0.0,
+        1.0
+      ],
+      [
+        3,
+        0.0,
+        -1.0
+      ]
+    ],
+    "body_m": [
+      0.738,
+      0.5
+    ],
+    "source": "v2_scene_driver.py published only the OccupancyGrid, /initialpose and an ordinary FormationPlanRequest; every plan/route/guide/corridor/final marker was produced by the real planner and playback nodes."
+  },
+  "solver": {
+    "pipeline_status": "SUCCESS",
+    "planner_status": "FEASIBLE",
+    "executable": true,
+    "feasible": true,
+    "first_failure_layer": "",
+    "plan_id": 92001,
+    "formation_id": "synthetic_g4",
+    "backend": "virtual_rigid_a",
+    "generation": 1,
+    "T_end_s": 39.602577282743304,
+    "duration_s": 39.602577282743304,
+    "sample_count": 1982,
+    "path_length_S_m": 14.255361542330647,
+    "routes": 1,
+    "route_id": 0,
+    "route_source": "astar_primary",
+    "corridor_used": true,
+    "raw_route_points": 246,
+    "guide_points": 3,
+    "guide_label": "PL_GUIDE",
+    "regions": 2,
+    "region_halfspace_counts": [
+      11,
+      8
+    ],
+    "guide_quality": {
+      "stage": "C2_A",
+      "rounding": "PL_ONLY_NO_BEZIER",
+      "smoothness_claim": "NONE",
+      "is_executable_path": false,
+      "region_count": 2,
+      "segment_corridor_indices": [
+        0,
+        1
+      ],
+      "segment_lengths_m": [
+        9.81968713822653,
+        2.5092987395753643
+      ],
+      "guide_length_m": 12.328985877801895,
+      "seed_lengths_m": [
+        11.134457492283333,
+        1.4582053428613615
+      ],
+      "portal_radius_m": [
+        1.0476747820896977
+      ],
+      "negative_turn_indices": [],
+      "warnings": [],
+      "qp_used": true,
+      "qp_status": "SLSQP_SUCCESS",
+      "qp_attempted": true,
+      "fallback_reason": null,
+      "source": "corridor_qp_polyline"
+    },
+    "chain_digest": "8775e3d1d5761b75ee8bd68d2b44d9c99168e96a1ea84e28bc55af0e538f3183",
+    "chain_sha256": "8775e3d1d5761b75ee8bd68d2b44d9c99168e96a1ea84e28bc55af0e538f3183",
+    "model_sha256": "ea3463501c47cfa37c4f2331a968881f8a0c2d3c8a09f4d8c5febdcfd23b651f",
+    "request_sha256": "e6812ca7fead786a5ba5c84dd26664644fe212e773d4cc88ed3b46fce4675987",
+    "planning_context_sha256": "ec12268f5f66c8f54c3000afddd6ad6d47700ea3a31fcad713931bccbdaaeee3",
+    "grid_sha256": "ec821c01fb57986bbcb907a755e91b3f723a0213bc5375af84079eb343899fa9",
+    "evidence": "display_messages.jsonl final /formation/optimizer_status; plan envelope /formation/playback_plan independently rebuilt by verify_virtual_a_playback_plan",
+    "note": "The solver/audit code was not changed by V2. SUCCESS/FEASIBLE is the actual planner status from this run, not a display-side claim."
+  },
+  "geometry": {
+    "independent_audit": {
+      "scope": "GEOMETRY",
+      "passed": true,
+      "reason": null,
+      "check_count": 159,
+      "timing": {}
+    },
+    "max_display_coordinate_errors_m": {
+      "astar_marker_vs_route": 0.0,
+      "centerline_marker_vs_guide": 0.0,
+      "corridor_edge_vs_regions": 0.0,
+      "corridor_fill_vs_regions": 0.0,
+      "current_obb_vs_frame_at": 0.0,
+      "final_path_mode_color": 1.1920928966180355e-08,
+      "final_path_vs_analytic_plan": 8.881784197001252e-16,
+      "live_status_vs_frame_at_heading_rad": 0.0,
+      "live_status_vs_frame_at_position": 0.0
+    },
+    "coordinate_tolerance_m": 1e-09,
+    "color_tolerance": 1e-06,
+    "interpretation": "A* marker vs actual route = 0; centerline marker vs actual guide = 0; corridor fill/edge vs actual regions = 0; final paths vs analytic plan = 8.881784197001252e-16 m. Mode-color error 1.19e-08 is ROS float32 quantization only; all coordinate errors are within 1e-9 m.",
+    "bezier": "NOT_APPLICABLE: no Bezier implementation exists; guide quality is PL_ONLY_NO_BEZIER / smoothness_claim NONE and the guide is a PL polyline (3 points)."
+  },
+  "dynamics": {
+    "independent_audit": {
+      "scope": "DYNAMICS",
+      "passed": true,
+      "reason": null,
+      "check_count": 913,
+      "timing": {
+        "S_m": 14.255361542330647,
+        "T_s": 39.602577282743304,
+        "collision_checked": false,
+        "duration_origin": "model core selected duration",
+        "executable": false,
+        "kind": "motion",
+        "law": "virtual_rigid_a.timing.quintic_smoothstep.v1",
+        "model_sha256": "ea3463501c47cfa37c4f2331a968881f8a0c2d3c8a09f4d8c5febdcfd23b651f",
+        "retimer_selection_is_certificate": false,
+        "selection_hint": {
+          "T0_s": 1.0,
+          "interval_subdivisions_per_segment": 8,
+          "metrics_at_T0_s": {
+            "acceleration": {
+              "limit": 0.6,
+              "order": 2,
+              "required_duration_s": 21.762788627942154,
+              "segment_index": 1,
+              "upper_at_T0_s": 284.17138131869297,
+              "upper_bound_interval": [
+                3.341100361483745,
+                3.5638403855826617
+              ],
+              "vehicle_id": 3,
+              "wheel_index": 0
+            },
+            "jerk": {
+              "limit": 2.0,
+              "order": 3,
+              "required_duration_s": 13.122389270142675,
+              "segment_index": 2,
+              "upper_at_T0_s": 4519.274758903885,
+              "upper_bound_interval": [
+                4.009320433780495,
+                4.2320604578794105
+              ],
+              "vehicle_id": 3,
+              "wheel_index": 0
+            },
+            "lateral_acceleration": {
+              "limit": 0.6,
+              "order": 2,
+              "required_duration_s": 18.808621233202295,
+              "segment_index": 2,
+              "upper_at_T0_s": 212.2585396164409,
+              "upper_bound_interval": [
+                4.009320433780495,
+                4.2320604578794105
+              ],
+              "vehicle_id": 3,
+              "wheel_index": 0
+            },
+            "speed": {
+              "limit": 0.8,
+              "order": 1,
+              "required_duration_s": 39.21047255717159,
+              "segment_index": 2,
+              "upper_at_T0_s": 31.368378045737273,
+              "upper_bound_interval": [
+                4.677540506077244,
+                4.900280530176159
+              ],
+              "vehicle_id": 3,
+              "wheel_index": 0
+            },
+            "steer_acceleration": {
+              "limit": 1.5,
+              "order": 2,
+              "required_duration_s": 4.228332842917108,
+              "segment_index": 1,
+              "upper_at_T0_s": 26.818197945737207,
+              "upper_bound_interval": [
+                3.341100361483745,
+                3.5638403855826617
+              ],
+              "vehicle_id": 2,
+              "wheel_index": 0
+            },
+            "steer_rate": {
+              "limit": 0.8,
+              "order": 1,
+              "required_duration_s": 1.398557097696726,
+              "segment_index": 0,
+              "upper_at_T0_s": 1.118845678157381,
+              "upper_bound_interval": [
+                1.5591801686924145,
+                1.7819201927913308
+              ],
+              "vehicle_id": 2,
+              "wheel_index": 0
+            },
+            "wheel_speed": {
+              "limit": 1.0,
+              "order": 1,
+              "required_duration_s": 32.55645716439151,
+              "segment_index": 2,
+              "upper_at_T0_s": 32.55645716439151,
+              "upper_bound_interval": [
+                4.454800481978327,
+                4.677540506077244
+              ],
+              "vehicle_id": 3,
+              "wheel_index": 1
+            },
+            "yaw_acceleration": {
+              "limit": 0.8,
+              "order": 2,
+              "required_duration_s": 10.287246581385727,
+              "segment_index": 2,
+              "upper_at_T0_s": 84.66195378098587,
+              "upper_bound_interval": [
+                4.454800481978327,
+                4.677540506077244
+              ],
+              "vehicle_id": 1,
+              "wheel_index": 0
+            },
+            "yaw_jerk": {
+              "limit": 3.0,
+              "order": 3,
+              "required_duration_s": 8.012336921770341,
+              "segment_index": 0,
+              "upper_at_T0_s": 1543.1170309467334,
+              "upper_bound_interval": [
+                1.5591801686924145,
+                1.7819201927913308
+              ],
+              "vehicle_id": 1,
+              "wheel_index": 0
+            },
+            "yaw_rate": {
+              "limit": 0.8,
+              "order": 1,
+              "required_duration_s": 9.190464922292788,
+              "segment_index": 1,
+              "upper_at_T0_s": 7.3523719378342305,
+              "upper_bound_interval": [
+                2.895620313285913,
+                3.118360337384829
+              ],
+              "vehicle_id": 1,
+              "wheel_index": 0
+            }
+          },
+          "required_duration_s": 39.21047255717159,
+          "rescalings": 0,
+          "safety_factor": 1.01,
+          "selected_duration_s": 39.602577282743304,
+          "wheel_angle_bound_rad": 0.14337552561946,
+          "wheel_angle_limit_rad": 1.5707963267948966,
+          "worst": {
+            "order": 1,
+            "quantity": "speed",
+            "s0": 4.677540506077244,
+            "s1": 4.900280530176159,
+            "segment_index": 2,
+            "vehicle_id": 3,
+            "wheel_index": 0
+          }
+        }
+      }
+    },
+    "note": "The dynamics audit scope deliberately reports collision_checked=false and executable=false; executable/final feasibility is only the combined planner status after all three audits. At capture playback_status was executable=true, certification=FEASIBLE, audit_status=FEASIBLE, geometry_only=false.",
+    "live_frame_consistency": {
+      "captured_clamped_elapsed_s": 18.36651969,
+      "worst_position_error_m": 0.0,
+      "worst_heading_error_rad": 0.0,
+      "tolerance": 1e-07,
+      "non_sample_time": true,
+      "sample_fraction": 0.3259845000000608,
+      "nearest_sample_delta_s": 0.006519690000001077
+    }
+  },
+  "collision": {
+    "independent_audit": {
+      "scope": "COLLISION",
+      "passed": true,
+      "reason": null,
+      "check_count": 12116,
+      "timing": {
+        "S_m": 14.255361542330647,
+        "T_s": 39.602577282743304,
+        "collision_checked": true,
+        "kind": "motion",
+        "model_sha256": "ea3463501c47cfa37c4f2331a968881f8a0c2d3c8a09f4d8c5febdcfd23b651f",
+        "wall_time_s": 1.4641745458357036
+      }
+    },
+    "checker_statistics": {
+      "map_queries": 6042,
+      "obb_pair_queries": 6042,
+      "segments_checked": 8,
+      "states_checked": 2014,
+      "static_checks": 2,
+      "swept_checks": 1,
+      "swept_samples_checked": 2012
+    },
+    "margin": {
+      "baseline_half_length_m": 0.394,
+      "baseline_half_width_m": 0.275,
+      "baseline_margin_m": 0.05,
+      "checker_half_length_growth_lower_m": 4.354980109866346e-08,
+      "checker_half_length_m": 0.3940000435498011,
+      "checker_half_width_growth_lower_m": 4.354980109866346e-08,
+      "checker_half_width_m": 0.2750000435498011,
+      "checker_radius_upper_m": 0.48048002900187,
+      "closure_gap_m": 2.993599062309419e-17,
+      "contexts": {
+        "map_boundary": {
+          "actual_per_side_growth_lower_m": 4.354980109866346e-08,
+          "checker_padding_m": 0.0,
+          "covered": true,
+          "required_per_side_m": 4.354980106872747e-08
+        },
+        "motion_sweep": {
+          "actual_numerical_per_side_growth_lower_m": 4.354980109866346e-08,
+          "checker_padding_m": 0.01,
+          "covered": true,
+          "padding_role": "sampling-interval motion protection only; not counted in the numerical envelope and not subtracted from the margin",
+          "required_per_side_m": 4.354980106872747e-08
+        },
+        "no_motion_hold": {
+          "actual_per_side_growth_lower_m": 4.354980109866346e-08,
+          "checker_padding_m": 0.0,
+          "covered": true,
+          "required_per_side_m": 4.354980106872747e-08
+        },
+        "static_start_goal": {
+          "actual_per_side_growth_lower_m": 4.354980109866346e-08,
+          "checker_padding_m": 0.0,
+          "covered": true,
+          "required_per_side_m": 4.354980106872747e-08
+        },
+        "vehicle_vehicle": {
+          "actual_two_body_gap_reduction_lower_m": 8.709960218344913e-08,
+          "binding_pair": {
+            "first_vehicle_id": 1,
+            "pair_envelope_m": 8.709960213745495e-08,
+            "second_vehicle_id": 2
+          },
+          "checker_padding_m": 0.0,
+          "covered": true,
+          "required_pair_envelope_m": 8.709960213745495e-08
+        }
+      },
+      "formula": "e_i = eps_position + (|offset_i| + r_upper) * eps_psi + r_upper * eps_relative_heading, maximised over segments and vehicles; the legacy checker expands each body side by (margin - baseline)/2, so the required closure is (margin_used - baseline)/2 >= max_i e_i, equivalently margin_used >= baseline + 2*max_i e_i",
+      "margin_growth_lower_m": 8.709960218344913e-08,
+      "margin_minimum_required_m": 0.050000087099602145,
+      "margin_used_m": 0.050000087099602186,
+      "maximum_envelope_m": 4.354980106872747e-08,
+      "maximum_record": {
+        "envelope_m": 4.354980106872747e-08,
+        "eps_formation_heading_rad": 1.6001303931083336e-10,
+        "eps_position_m": 4.326485695674769e-08,
+        "eps_relative_heading_rad": 1e-10,
+        "inflated_body_radius_upper_m": 0.48048002900187,
+        "offset_hypot_float_m": 1.0,
+        "offset_m": 1.0000000000000004,
+        "per_side_required_m": 4.354980106872747e-08,
+        "vehicle_id": 1
+      },
+      "pair_closure_gap_m": 4.599418020348413e-17,
+      "pair_envelope_required_m": 8.709960213745495e-08,
+      "per_side_margin_m": 4.354980109866346e-08,
+      "per_side_required_m": 4.354980106872747e-08,
+      "radius_upper_m": 0.48048002900187,
+      "radius_upper_note": "radius_upper is an outward interval square root of the actual checker half extents (length+margin)/2 and (width+margin)/2 at the recorded margin; it is not the old fixed-point radius.  The margin is solved at this same expanded radius.",
+      "sweep_motion_padding_m": 0.01,
+      "unit_note": "The legacy FormationCollisionChecker uses half extents (shape_dimension + margin_m)/2.  A full-width margin increase delta therefore grows each side by only delta/2.  error_envelope reserves 2*max(e_i) of full-width margin so the actual per-side growth covers the numerical envelope.  Sweep motion padding is a separate sampling-interval protection and is never counted as numerical margin.",
+      "vehicles": [
+        {
+          "envelope_m": 4.354980106872747e-08,
+          "eps_formation_heading_rad": 1.6001303931083336e-10,
+          "eps_position_m": 4.326485695674769e-08,
+          "eps_relative_heading_rad": 1e-10,
+          "inflated_body_radius_upper_m": 0.48048002900187,
+          "offset_hypot_float_m": 1.0,
+          "offset_m": 1.0000000000000004,
+          "per_side_required_m": 4.354980106872747e-08,
+          "vehicle_id": 1
+        },
+        {
+          "envelope_m": 4.354980106872747e-08,
+          "eps_formation_heading_rad": 1.6001303931083336e-10,
+          "eps_position_m": 4.326485695674769e-08,
+          "eps_relative_heading_rad": 1e-10,
+          "inflated_body_radius_upper_m": 0.48048002900187,
+          "offset_hypot_float_m": 1.0,
+          "offset_m": 1.0000000000000004,
+          "per_side_required_m": 4.354980106872747e-08,
+          "vehicle_id": 2
+        },
+        {
+          "envelope_m": 4.354980106872747e-08,
+          "eps_formation_heading_rad": 1.6001303931083336e-10,
+          "eps_position_m": 4.326485695674769e-08,
+          "eps_relative_heading_rad": 1e-10,
+          "inflated_body_radius_upper_m": 0.48048002900187,
+          "offset_hypot_float_m": 1.0,
+          "offset_m": 1.0000000000000004,
+          "per_side_required_m": 4.354980106872747e-08,
+          "vehicle_id": 3
+        }
+      ]
+    },
+    "note": "Independent offline audit_collision rebuilt the authoritative grid (summary and digest equal the admitted grid), then checked 8 sweep segments / 2014 states / 2 static poses with 6042 map and 6042 OBB-pair queries, 12116 checks total. V2 did not change collision code."
+  },
+  "publication_display": {
+    "real_ros": true,
+    "ros_master_uri": "http://127.0.0.1:11585",
+    "plan_id": 92001,
+    "topics": {
+      "/formation/planning_debug": "latched CANDIDATE_REFERENCE_POINT_ONLY document",
+      "/formation/corridors": "2 fill + 2 edge markers + DELETEALL",
+      "/formation/guides": "A* line (246 points), A* text, centerline (3 points), centerline text + DELETEALL",
+      "/formation/markers": "19 final markers per existing build_markers contract",
+      "/formation/playback_status": "PLAYING at capture"
+    },
+    "payload_sha256": "3c4ebe3cfdbdf3ba272a0b83f505363c764d8267fbb39db7b8b087a3e7c18b68",
+    "markers_sha256": "dfd97484dca5edaaa63a59167e6e2b417e132281eafe453aa08c76451b34c631",
+    "progress": 0.4637708187210357,
+    "elapsed_s": 18.36651969,
+    "duration_s": 39.602577283,
+    "state": "PLAYING",
+    "non_sample_time": true,
+    "nearest_sample_delta_s": 0.006519690000001077,
+    "worst_position_error_m": 0.0,
+    "worst_heading_error_rad": 0.0,
+    "layers": {
+      "raw_astar_route": {
+        "namespace": "formation/guides/astar",
+        "default_visible": false,
+        "color": "orange (1.0,0.55,0.0,0.95)",
+        "width_m": 0.018,
+        "points": 246,
+        "label": "A* ROUTE | REFERENCE_ONLY"
+      },
+      "c2a_centerline": {
+        "namespace": "formation/guides/centerline",
+        "default_visible": true,
+        "color": "green (0.05,0.82,0.25,0.95)",
+        "width_m": 0.03,
+        "points": 3,
+        "label": "PL_GUIDE | REFERENCE_ONLY",
+        "quality": "PL_ONLY_NO_BEZIER"
+      },
+      "candidate_variants": {
+        "namespaces": [
+          "formation/guides/astar_candidate",
+          "formation/guides/centerline_candidate"
+        ],
+        "default_visible": false,
+        "behavior": "unit-tested only; the real run had one used route"
+      },
+      "corridors": {
+        "topic": "/formation/corridors",
+        "fill_alpha": 0.15,
+        "edge_alpha": 0.95,
+        "layer_name": "Corridor candidates (reference point only, low alpha)"
+      },
+      "final_paths": {
+        "topic": "/formation/markers",
+        "layer_name": "Final certified vehicle paths",
+        "path_points": 1982,
+        "mode_color": "MODE_COLORS mode A blue (0.10,0.45,1.00,0.95)",
+        "width_m": 0.05
+      }
+    },
+    "rviz_toggles": {
+      "final_layer": "Final certified vehicle paths",
+      "guide_layer": "A* route (default off) and C2-A centreline (reference only)",
+      "astar": false,
+      "centerline": true,
+      "astar_candidate": false,
+      "centerline_candidate": false,
+      "corridor_layer": "Corridor candidates (reference point only, low alpha)"
+    },
+    "screenshot": {
+      "path": "images/screenshot_mid_curve.png",
+      "bytes": 104649,
+      "size_px": [
+        1920,
+        1043
+      ],
+      "sha256": "61ddfbd47e3524052f1a94e61eedb84368658e877caa1aa16a17178f63fe2ad4",
+      "window_id": "155189262",
+      "annotated": {
+        "path": "images/screenshot_mid_curve_annotated.png",
+        "bytes": 144659,
+        "size_px": [
+          1920,
+          1191
+        ],
+        "sha256": "26eb75eed225477d5946caab3316b8fee4834e4b1a4d965c54f040ed89517a87"
+      }
+    },
+    "offline_display_verification": {
+      "result": "verification.json",
+      "checks": 68,
+      "passed": 68,
+      "schema": "virtual_a_corridor.v2.display_verification.v1",
+      "sha256": "837d50fc566bc1aa8deb865960438357e9c1ae3680ff4e11b1caa62f05bc6956"
+    },
+    "offline_audit_verification": {
+      "result": "audit_verification.json",
+      "checks": 11,
+      "passed": 11,
+      "schema": "virtual_a_corridor.v2.audit_verification.v1",
+      "sha256": "1dabebf251ccd9383ae91c0bc749f78a9133c6a4f0b93bd4c430f970b266db81"
+    }
+  },
+  "tests": {
+    "test_virtual_a_corridor_display": {
+      "tests": 30,
+      "result": "OK",
+      "exit": 0,
+      "log": "logs/test_virtual_a_corridor_display.log"
+    },
+    "test_virtual_a_playback": {
+      "tests": 34,
+      "result": "OK",
+      "exit": 0,
+      "log": "logs/test_virtual_a_playback.log"
+    },
+    "extra_test_virtual_a_ros_adapter": {
+      "tests": 60,
+      "result": "OK",
+      "exit": 0,
+      "log": "logs/test_virtual_a_ros_adapter.log"
+    },
+    "extra_test_formation_demo_assets": {
+      "tests": 21,
+      "result": "OK",
+      "exit": 0,
+      "log": "logs/test_formation_demo_assets.log"
+    },
+    "command_file": "commands.log"
+  },
+  "attempt_history": [
+    {
+      "attempt": "attempt1",
+      "failure": "Driver accepted the admission plan_id=0 empty envelope; real playback rejected the V2 payload because the PLANNING job record still had model_sha256=None.",
+      "fix": "Driver ignores other plan_ids/empty envelopes; playback fills only the missing PLANNING job model digest from the already-verified envelope for the same plan; positive and negative tests added."
+    },
+    {
+      "attempt": "attempt2",
+      "failure": "Guide/corridor accepted after the digest fix, but midpoint used playback_status['fraction'] (sample-local interpolation) and timed out.",
+      "fix": "Use clamped_elapsed_s / duration_s for curve progress."
+    },
+    {
+      "attempt": "attempt3",
+      "failure": "Same fraction error; midpoint not captured.",
+      "fix": "Final driver captures on progress and records /formation/markers latest-only."
+    }
+  ],
+  "known_nuances": [
+    "The captured /formation/markers array is the latest published 10 Hz tick (status tick 18.166410685 s), while the captured playback_status is a later tick (18.36651969 s). The final paths are static and identical; the verifier matches the marker OBB centers to a status tick and compares those OBBs to frame_at at that tick (error 0), while the captured live status is checked separately against the authoritative frame at 18.36651969 s (error 0).",
+    "commands.log now states the actual count: verify_v2_display.py produced 68 checks; the earlier draft said 76 and was corrected."
+  ],
+  "not_run_or_not_applicable": [
+    "Bezier sampling/analytic Bezier comparison: NOT_APPLICABLE, no Bezier implementation exists; the C2-A guide is a PL polyline with PL_ONLY_NO_BEZIER and smoothness_claim NONE.",
+    "Live multi-route candidate display and default-off candidate namespaces: not exercised in real ROS because this scene produced one used route; unit tests and the offline negative classification cover the candidate namespaces/labels.",
+    "Live optimization-failure lifecycle (stale success deletion): not re-run in this V2 real-ROS session; V1 single-identity/CLEARED lifecycle is unchanged apart from the missing-digest fix described in the attempt history; V3 owns lifecycle cleanup. Unit tests cover missing corridor round, invalid guide and CLEARED clearing both layers.",
+    "Layer toggles changing planning/playback/TF: not measured in real ROS; unit test test_layer_toggles_do_not_change_planning_playback_or_frames covers it.",
+    "A new collision solver/optimizer result: not run; V2 changed no solver/audit code. Collision was independently re-audited on the saved plan as recorded above."
+  ],
+  "artifact_hashes": {
+    "run_result.json": "d97bf55950f9561ab6a5bb0a3e71105c45d921628ad4fb75646c2ec8183e492f",
+    "display_messages.jsonl": "27360401086be41a32f7992733b9c058857947efabad49377ee691c7ddb9a503",
+    "verification.json": "837d50fc566bc1aa8deb865960438357e9c1ae3680ff4e11b1caa62f05bc6956",
+    "audit_verification.json": "1dabebf251ccd9383ae91c0bc749f78a9133c6a4f0b93bd4c430f970b266db81",
+    "v2_scene_driver.py": "89c7dc8b4e4b9c8e3def887da977b065c1effccea0c9c45e4de49432e7367e0e",
+    "verify_v2_display.py": "856e33fcb2bb53fdd3ec8b0308f67cbdeecafd983e07e92b380d554eed3f7e9e",
+    "verify_audits.py": "9ac85d7c1729c21e09a53e9a261435014da74ff16db84ed57f74bb9dfdd036dd",
+    "v2_source_changes.patch": "fc0afabd895706e57ce84e27518a3545aa2f31ddbd6406d4b631fb24a97c3ada",
+    "v2_display.rviz": "8bd1985b824a206d5b8be1d29b92e19b01cd9198521fd63729f1c189fcee90ed",
+    "images/screenshot_mid_curve.png": "61ddfbd47e3524052f1a94e61eedb84368658e877caa1aa16a17178f63fe2ad4",
+    "images/screenshot_mid_curve_annotated.png": "26eb75eed225477d5946caab3316b8fee4834e4b1a4d965c54f040ed89517a87"
+  }
+}

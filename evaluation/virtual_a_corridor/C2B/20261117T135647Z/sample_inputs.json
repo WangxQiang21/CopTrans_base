@@ -1,0 +1,682 @@
+{
+ "S1": {
+  "planner_config": {
+   "allow_scipy_fallback": true,
+   "collocation_points": 9,
+   "curvature_margin": 0.02,
+   "eta_limit": 2.0,
+   "heading_tolerance_rad": 0.003490658503988659,
+   "intervals": 8,
+   "ipopt_tolerance": 1e-08,
+   "kappa_limit": 0.5524861878453039,
+   "max_initials": 6,
+   "max_iterations": 120,
+   "max_seconds": 30.0,
+   "position_tolerance_m": 0.005,
+   "rigidity_tolerance_m": 1e-06,
+   "scipy_maxiter": 120,
+   "scipy_tolerance": 1e-08,
+   "solver": "ipopt"
+  },
+  "request": {
+   "formation_id": "G4_S1",
+   "goal_policy": "FREE",
+   "goal_qf": [
+    8.819581504169413,
+    3.4858722492682084,
+    1.5707963267948968
+   ],
+   "initial": {
+    "context_id": "",
+    "mode": "A",
+    "source": "offline_fixture",
+    "stationary": true,
+    "wheels_straight": true
+   },
+   "limits": {
+    "a_max": 0.6,
+    "jerk_max": 2.0,
+    "lateral_accel_max": 0.6,
+    "max_block_duration_s": 120.0,
+    "min_mode_dwell_s": 0.3,
+    "mode_setup_time": 0.15,
+    "mode_switch_duration": 0.3,
+    "r_min_ackermann": 0.81,
+    "steer_accel_max": 1.5,
+    "steer_angle_max": 1.5707963267948966,
+    "steer_rate_max": 0.8,
+    "track": 0.364,
+    "v_max": 0.8,
+    "wheel_speed_max": 1.0,
+    "wheelbase": 0.494,
+    "yaw_accel_max": 0.8,
+    "yaw_jerk_max": 3.0,
+    "yaw_rate_max": 0.8
+   },
+   "model": [
+    [
+     1,
+     1.0,
+     0.0
+    ],
+    [
+     2,
+     0.0,
+     1.0
+    ],
+    [
+     3,
+     0.0,
+     -1.0
+    ]
+   ],
+   "plan_id": 9001,
+   "schema": "virtual_rigid_a.g2.request.v1",
+   "start_headings": [
+    [
+     1,
+     0.0
+    ],
+    [
+     2,
+     0.0
+    ],
+    [
+     3,
+     0.0
+    ]
+   ],
+   "start_qf": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "vehicle_shapes": [
+    [
+     1,
+     0.738,
+     0.5
+    ],
+    [
+     2,
+     0.738,
+     0.5
+    ],
+    [
+     3,
+     0.738,
+     0.5
+    ]
+   ]
+  }
+ },
+ "S1_mirror": {
+  "planner_config": {
+   "allow_scipy_fallback": true,
+   "collocation_points": 9,
+   "curvature_margin": 0.02,
+   "eta_limit": 2.0,
+   "heading_tolerance_rad": 0.003490658503988659,
+   "intervals": 8,
+   "ipopt_tolerance": 1e-08,
+   "kappa_limit": 0.5524861878453039,
+   "max_initials": 6,
+   "max_iterations": 120,
+   "max_seconds": 30.0,
+   "position_tolerance_m": 0.005,
+   "rigidity_tolerance_m": 1e-06,
+   "scipy_maxiter": 120,
+   "scipy_tolerance": 1e-08,
+   "solver": "ipopt"
+  },
+  "request": {
+   "formation_id": "G4_S1_mirror",
+   "goal_policy": "FREE",
+   "goal_qf": [
+    8.819581504169413,
+    -3.4858722492682084,
+    -1.5707963267948968
+   ],
+   "initial": {
+    "context_id": "",
+    "mode": "A",
+    "source": "offline_fixture",
+    "stationary": true,
+    "wheels_straight": true
+   },
+   "limits": {
+    "a_max": 0.6,
+    "jerk_max": 2.0,
+    "lateral_accel_max": 0.6,
+    "max_block_duration_s": 120.0,
+    "min_mode_dwell_s": 0.3,
+    "mode_setup_time": 0.15,
+    "mode_switch_duration": 0.3,
+    "r_min_ackermann": 0.81,
+    "steer_accel_max": 1.5,
+    "steer_angle_max": 1.5707963267948966,
+    "steer_rate_max": 0.8,
+    "track": 0.364,
+    "v_max": 0.8,
+    "wheel_speed_max": 1.0,
+    "wheelbase": 0.494,
+    "yaw_accel_max": 0.8,
+    "yaw_jerk_max": 3.0,
+    "yaw_rate_max": 0.8
+   },
+   "model": [
+    [
+     1,
+     1.0,
+     0.0
+    ],
+    [
+     2,
+     0.0,
+     1.0
+    ],
+    [
+     3,
+     0.0,
+     -1.0
+    ]
+   ],
+   "plan_id": 9002,
+   "schema": "virtual_rigid_a.g2.request.v1",
+   "start_headings": [
+    [
+     1,
+     0.0
+    ],
+    [
+     2,
+     0.0
+    ],
+    [
+     3,
+     0.0
+    ]
+   ],
+   "start_qf": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "vehicle_shapes": [
+    [
+     1,
+     0.738,
+     0.5
+    ],
+    [
+     2,
+     0.738,
+     0.5
+    ],
+    [
+     3,
+     0.738,
+     0.5
+    ]
+   ]
+  }
+ },
+ "S2": {
+  "planner_config": {
+   "allow_scipy_fallback": true,
+   "collocation_points": 9,
+   "curvature_margin": 0.02,
+   "eta_limit": 2.0,
+   "heading_tolerance_rad": 0.003490658503988659,
+   "intervals": 8,
+   "ipopt_tolerance": 1e-08,
+   "kappa_limit": 0.5524861878453039,
+   "max_initials": 6,
+   "max_iterations": 120,
+   "max_seconds": 30.0,
+   "position_tolerance_m": 0.005,
+   "rigidity_tolerance_m": 1e-06,
+   "scipy_maxiter": 120,
+   "scipy_tolerance": 1e-08,
+   "solver": "ipopt"
+  },
+  "request": {
+   "formation_id": "G4_S2",
+   "goal_policy": "FREE",
+   "goal_qf": [
+    11.474331036127456,
+    -8.326672684688674e-16,
+    -2.7755575615628914e-17
+   ],
+   "initial": {
+    "context_id": "",
+    "mode": "A",
+    "source": "offline_fixture",
+    "stationary": true,
+    "wheels_straight": true
+   },
+   "limits": {
+    "a_max": 0.6,
+    "jerk_max": 2.0,
+    "lateral_accel_max": 0.6,
+    "max_block_duration_s": 120.0,
+    "min_mode_dwell_s": 0.3,
+    "mode_setup_time": 0.15,
+    "mode_switch_duration": 0.3,
+    "r_min_ackermann": 0.81,
+    "steer_accel_max": 1.5,
+    "steer_angle_max": 1.5707963267948966,
+    "steer_rate_max": 0.8,
+    "track": 0.364,
+    "v_max": 0.8,
+    "wheel_speed_max": 1.0,
+    "wheelbase": 0.494,
+    "yaw_accel_max": 0.8,
+    "yaw_jerk_max": 3.0,
+    "yaw_rate_max": 0.8
+   },
+   "model": [
+    [
+     1,
+     1.0,
+     0.0
+    ],
+    [
+     2,
+     0.0,
+     1.0
+    ],
+    [
+     3,
+     0.0,
+     -1.0
+    ]
+   ],
+   "plan_id": 9003,
+   "schema": "virtual_rigid_a.g2.request.v1",
+   "start_headings": [
+    [
+     1,
+     0.0
+    ],
+    [
+     2,
+     0.0
+    ],
+    [
+     3,
+     0.0
+    ]
+   ],
+   "start_qf": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "vehicle_shapes": [
+    [
+     1,
+     0.738,
+     0.5
+    ],
+    [
+     2,
+     0.738,
+     0.5
+    ],
+    [
+     3,
+     0.738,
+     0.5
+    ]
+   ]
+  }
+ },
+ "S2_mirror": {
+  "planner_config": {
+   "allow_scipy_fallback": true,
+   "collocation_points": 9,
+   "curvature_margin": 0.02,
+   "eta_limit": 2.0,
+   "heading_tolerance_rad": 0.003490658503988659,
+   "intervals": 8,
+   "ipopt_tolerance": 1e-08,
+   "kappa_limit": 0.5524861878453039,
+   "max_initials": 6,
+   "max_iterations": 120,
+   "max_seconds": 30.0,
+   "position_tolerance_m": 0.005,
+   "rigidity_tolerance_m": 1e-06,
+   "scipy_maxiter": 120,
+   "scipy_tolerance": 1e-08,
+   "solver": "ipopt"
+  },
+  "request": {
+   "formation_id": "G4_S2_mirror",
+   "goal_policy": "FREE",
+   "goal_qf": [
+    11.474331036127456,
+    8.326672684688674e-16,
+    2.7755575615628914e-17
+   ],
+   "initial": {
+    "context_id": "",
+    "mode": "A",
+    "source": "offline_fixture",
+    "stationary": true,
+    "wheels_straight": true
+   },
+   "limits": {
+    "a_max": 0.6,
+    "jerk_max": 2.0,
+    "lateral_accel_max": 0.6,
+    "max_block_duration_s": 120.0,
+    "min_mode_dwell_s": 0.3,
+    "mode_setup_time": 0.15,
+    "mode_switch_duration": 0.3,
+    "r_min_ackermann": 0.81,
+    "steer_accel_max": 1.5,
+    "steer_angle_max": 1.5707963267948966,
+    "steer_rate_max": 0.8,
+    "track": 0.364,
+    "v_max": 0.8,
+    "wheel_speed_max": 1.0,
+    "wheelbase": 0.494,
+    "yaw_accel_max": 0.8,
+    "yaw_jerk_max": 3.0,
+    "yaw_rate_max": 0.8
+   },
+   "model": [
+    [
+     1,
+     1.0,
+     0.0
+    ],
+    [
+     2,
+     0.0,
+     1.0
+    ],
+    [
+     3,
+     0.0,
+     -1.0
+    ]
+   ],
+   "plan_id": 9004,
+   "schema": "virtual_rigid_a.g2.request.v1",
+   "start_headings": [
+    [
+     1,
+     0.0
+    ],
+    [
+     2,
+     0.0
+    ],
+    [
+     3,
+     0.0
+    ]
+   ],
+   "start_qf": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "vehicle_shapes": [
+    [
+     1,
+     0.738,
+     0.5
+    ],
+    [
+     2,
+     0.738,
+     0.5
+    ],
+    [
+     3,
+     0.738,
+     0.5
+    ]
+   ]
+  }
+ },
+ "S3": {
+  "planner_config": {
+   "allow_scipy_fallback": true,
+   "collocation_points": 9,
+   "curvature_margin": 0.02,
+   "eta_limit": 2.0,
+   "heading_tolerance_rad": 0.003490658503988659,
+   "intervals": 8,
+   "ipopt_tolerance": 1e-08,
+   "kappa_limit": 0.5524861878453039,
+   "max_initials": 6,
+   "max_iterations": 120,
+   "max_seconds": 30.0,
+   "position_tolerance_m": 0.005,
+   "rigidity_tolerance_m": 1e-06,
+   "scipy_maxiter": 120,
+   "scipy_tolerance": 1e-08,
+   "solver": "ipopt"
+  },
+  "request": {
+   "formation_id": "G4_S3",
+   "goal_policy": "FREE",
+   "goal_qf": [
+    11.474331036127456,
+    -8.326672684688674e-16,
+    -2.7755575615628914e-17
+   ],
+   "initial": {
+    "context_id": "",
+    "mode": "A",
+    "source": "offline_fixture",
+    "stationary": true,
+    "wheels_straight": true
+   },
+   "limits": {
+    "a_max": 0.6,
+    "jerk_max": 2.0,
+    "lateral_accel_max": 0.6,
+    "max_block_duration_s": 120.0,
+    "min_mode_dwell_s": 0.3,
+    "mode_setup_time": 0.15,
+    "mode_switch_duration": 0.3,
+    "r_min_ackermann": 0.81,
+    "steer_accel_max": 1.5,
+    "steer_angle_max": 1.5707963267948966,
+    "steer_rate_max": 0.8,
+    "track": 0.364,
+    "v_max": 0.8,
+    "wheel_speed_max": 1.0,
+    "wheelbase": 0.494,
+    "yaw_accel_max": 0.8,
+    "yaw_jerk_max": 3.0,
+    "yaw_rate_max": 0.8
+   },
+   "model": [
+    [
+     1,
+     1.0,
+     0.0
+    ],
+    [
+     2,
+     0.0,
+     1.0
+    ],
+    [
+     3,
+     0.0,
+     -1.0
+    ]
+   ],
+   "plan_id": 9005,
+   "schema": "virtual_rigid_a.g2.request.v1",
+   "start_headings": [
+    [
+     1,
+     0.0
+    ],
+    [
+     2,
+     0.0
+    ],
+    [
+     3,
+     0.0
+    ]
+   ],
+   "start_qf": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "vehicle_shapes": [
+    [
+     1,
+     0.738,
+     0.5
+    ],
+    [
+     2,
+     0.738,
+     0.5
+    ],
+    [
+     3,
+     0.738,
+     0.5
+    ]
+   ]
+  }
+ },
+ "S3_mirror": {
+  "planner_config": {
+   "allow_scipy_fallback": true,
+   "collocation_points": 9,
+   "curvature_margin": 0.02,
+   "eta_limit": 2.0,
+   "heading_tolerance_rad": 0.003490658503988659,
+   "intervals": 8,
+   "ipopt_tolerance": 1e-08,
+   "kappa_limit": 0.5524861878453039,
+   "max_initials": 6,
+   "max_iterations": 120,
+   "max_seconds": 30.0,
+   "position_tolerance_m": 0.005,
+   "rigidity_tolerance_m": 1e-06,
+   "scipy_maxiter": 120,
+   "scipy_tolerance": 1e-08,
+   "solver": "ipopt"
+  },
+  "request": {
+   "formation_id": "G4_S3_mirror",
+   "goal_policy": "FREE",
+   "goal_qf": [
+    11.474331036127456,
+    8.326672684688674e-16,
+    2.7755575615628914e-17
+   ],
+   "initial": {
+    "context_id": "",
+    "mode": "A",
+    "source": "offline_fixture",
+    "stationary": true,
+    "wheels_straight": true
+   },
+   "limits": {
+    "a_max": 0.6,
+    "jerk_max": 2.0,
+    "lateral_accel_max": 0.6,
+    "max_block_duration_s": 120.0,
+    "min_mode_dwell_s": 0.3,
+    "mode_setup_time": 0.15,
+    "mode_switch_duration": 0.3,
+    "r_min_ackermann": 0.81,
+    "steer_accel_max": 1.5,
+    "steer_angle_max": 1.5707963267948966,
+    "steer_rate_max": 0.8,
+    "track": 0.364,
+    "v_max": 0.8,
+    "wheel_speed_max": 1.0,
+    "wheelbase": 0.494,
+    "yaw_accel_max": 0.8,
+    "yaw_jerk_max": 3.0,
+    "yaw_rate_max": 0.8
+   },
+   "model": [
+    [
+     1,
+     1.0,
+     0.0
+    ],
+    [
+     2,
+     0.0,
+     1.0
+    ],
+    [
+     3,
+     0.0,
+     -1.0
+    ]
+   ],
+   "plan_id": 9006,
+   "schema": "virtual_rigid_a.g2.request.v1",
+   "start_headings": [
+    [
+     1,
+     0.0
+    ],
+    [
+     2,
+     0.0
+    ],
+    [
+     3,
+     0.0
+    ]
+   ],
+   "start_qf": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "vehicle_shapes": [
+    [
+     1,
+     0.738,
+     0.5
+    ],
+    [
+     2,
+     0.738,
+     0.5
+    ],
+    [
+     3,
+     0.738,
+     0.5
+    ]
+   ]
+  }
+ },
+ "door_circumcircle": {
+  "goal_qf": {
+   "psi": 0.0,
+   "x": 9.0,
+   "y": 0.0
+  },
+  "map": "tests/fixtures/virtual_a/maps/synthetic/door_circumcircle/map.yaml",
+  "start_qf": {
+   "psi": 0.0,
+   "x": -1.5,
+   "y": 0.0
+  },
+  "synthetic": true
+ }
+}

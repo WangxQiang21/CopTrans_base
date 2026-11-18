@@ -1,0 +1,35 @@
+Type: jsk_rviz_plugins/OverlayText
+
+Publishers: 
+ * /formation_playback_hudcheck (http://wq-ubuntu:32865/)
+
+Subscribers: 
+ * /rviz_1794915632491566067 (http://wq-ubuntu:38223/)
+
+
+
+--------------------------------------------------------------------------------
+Node [/formation_playback_hudcheck]
+Publications: 
+ * /formation/corridors [visualization_msgs/MarkerArray]
+ * /formation/hud [jsk_rviz_plugins/OverlayText]
+ * /formation/markers [visualization_msgs/MarkerArray]
+ * /formation/playback_status [std_msgs/String]
+ * /rosout [rosgraph_msgs/Log]
+
+Subscriptions: 
+ * /formation/job_state [std_msgs/String]
+ * /formation/optimizer_status [std_msgs/String]
+ * /formation/plan_request [fwis_v3_msgs/FormationPlanRequest]
+ * /formation/planning_debug [std_msgs/String]
+ * /formation/playback_plan [fwis_v3_msgs/FormationPlaybackPlan]
+ * /formation/quality_report [std_msgs/String]
+
+Services: 
+ * /formation_playback_hudcheck/get_loggers
+ * /formation_playback_hudcheck/set_logger_level
+
+
+contacting node http://wq-ubuntu:32865/ ...
+Pid: 79295
+Connections:

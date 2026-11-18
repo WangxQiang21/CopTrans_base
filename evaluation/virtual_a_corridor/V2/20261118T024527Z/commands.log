@@ -1,0 +1,105 @@
+# V2 exact commands and exit codes
+# UTC run: 2026-11-18T02:45:27Z directory (activity 10:45-11:20 local, 02:45-03:20 UTC)
+# cwd: /home/wq/whut_thesis/expv3_multi_virtual_a
+# No branch, commit or push was created.
+
+# ---------------------------------------------------------------------------
+# Python / test environment (TASK_V2)
+# ---------------------------------------------------------------------------
+$ source /opt/ros/noetic/setup.bash
+$ source catkin_ws/devel/setup.bash
+$ export PYTHONDONTWRITEBYTECODE=1 OPENBLAS_NUM_THREADS=1
+$ export PYTHONPATH="$PWD/catkin_ws/src/fwis_v3_optimizer/src:$PWD/tests:$PWD:${PYTHONPATH:-}"
+
+# ---------------------------------------------------------------------------
+# Required targeted suites (logs in logs/, exit files in logs/)
+# ---------------------------------------------------------------------------
+$ python3 -B -m unittest discover -s tests -p 'test_virtual_a_corridor_display.py' -v > $RUN/logs/test_virtual_a_corridor_display.log 2>&1
+exit=0; "Ran 30 tests ... OK" (17.053 s)
+$ python3 -B -m unittest discover -s tests -p 'test_virtual_a_playback.py' -v > $RUN/logs/test_virtual_a_playback.log 2>&1
+exit=0; "Ran 34 tests ... OK" (53.384 s)
+
+# Extra targeted checks for files touched by V2
+$ python3 -B -m unittest discover -s tests -p 'test_virtual_a_ros_adapter.py' -v > $RUN/logs/test_virtual_a_ros_adapter.log 2>&1
+exit=0; "Ran 60 tests ... OK" (15.078 s)
+$ python3 -B -m unittest discover -s tests -p 'test_formation_demo_assets.py' -v > $RUN/logs/test_formation_demo_assets.log 2>&1
+exit=0; "Ran 21 tests ... OK" (1.422 s)
+
+# ---------------------------------------------------------------------------
+# Offline independent verification of the saved display payload
+# ---------------------------------------------------------------------------
+$ python3 -B $RUN/verify_v2_display.py > $RUN/logs/verify_v2_display.log 2>&1
+exit=0; 68 checks passed; output verification.json
+# Recomputes payload hash from display_messages.jsonl, rebuilds the plan with
+# verify_virtual_a_playback_plan, compares every layer coordinate, tests the
+# candidate/unvalidated/mismatched negative classifications and the RViz toggles.
+
+# Independent offline geometry, dynamics and collision audits of the saved plan
+$ python3 -B $RUN/verify_audits.py > $RUN/logs/verify_audits.log 2>&1
+exit=0; 11/11 checks passed; output audit_verification.json
+# Rebuilds the authoritative synthetic OccupancyGrid (summary and SHA-256 must
+# equal the admitted grid), rebuilds the plan with verify_virtual_a_playback_plan
+# and calls the production audit_geometry / audit_dynamics / audit_collision:
+#   geometry  passed  159 checks
+#   dynamics  passed  913 checks (collision_checked=false is the dynamics scope)
+#   collision passed 12116 checks (8 sweep segments, 2014 states, 2 static)
+
+# ---------------------------------------------------------------------------
+# Real ROS private session (own processes only; user master on 11411 untouched)
+# ---------------------------------------------------------------------------
+$ nohup bash -c "source $RUN/session_env.sh; exec roscore -p 11585" > $RUN/logs/roscore.stdout.log 2>&1 & echo $! > $RUN/pids/roscore.pid
+$ sleep 3
+$ bash -c "source $RUN/session_env.sh; rosparam list" > $RUN/logs/rosmaster_probe.log 2>&1
+exit=0
+
+$ nohup bash -c "source $RUN/session_env.sh; exec python3 catkin_ws/devel/lib/fwis_v3_playback/formation_playback.py __name:=formation_playback_v2 _backend:=virtual_rigid_a _rate:=5.0 _publish_tf:=true _transport_ui:=false _hud_enabled:=false _show_status_text:=false _show_cargo_reason:=false" > $RUN/logs/playback.stdout.log 2>&1 & echo $! > $RUN/pids/playback.pid
+$ sleep 1
+
+$ nohup bash -c "source $RUN/session_env.sh; exec python3 catkin_ws/devel/lib/fwis_v3_optimizer/formation_uniform_planner_node.py __name:=formation_uniform_planner _backend:=virtual_rigid_a _frame_id:=map _max_publication_samples:=200001 _virtual_a_guidance_mode:=corridor _virtual_a_goal_policy:=free _virtual_a_planning_budget_s:=120.0 _virtual_a_planning_timeout_s:=150.0 _job_state_heartbeat_s:=1.0" > $RUN/logs/planner.stdout.log 2>&1 & echo $! > $RUN/pids/planner.pid
+$ sleep 4
+
+$ nohup bash -c "source $RUN/session_env.sh; exec rviz -d $RUN/v2_display.rviz" > $RUN/logs/rviz.stdout.log 2>&1 & echo $! > $RUN/pids/rviz.pid
+$ sleep 8
+$ for w in $(xdotool search --pid $(cat $RUN/pids/rviz.pid) 2>/dev/null); do name=$(xdotool getwindowname $w 2>/dev/null); case "$name" in *RViz*) echo "RVWINDOW $w $name";; esac; done
+RVWINDOW 155189262 v2_display.rviz* - RViz
+
+$ bash -c "source $RUN/session_env.sh; rostopic info /formation/guides; rosnode list" > $RUN/logs/topic_probe.log 2>&1
+exit=0
+
+# Scene driver: publishes only the synthetic map/initial pose/ordinary request.
+# Every plan, route, guide, corridor and final marker comes from the two real nodes.
+$ python3 -B $RUN/v2_scene_driver.py --output $RUN/run_result.json --messages $RUN/display_messages.jsonl --screenshot $RUN/images/screenshot_mid_curve.png --rviz-window-id 155189262 --planning-timeout 120 --playback-timeout 120
+exit=0
+stdout: {"elapsed_s":18.36651969,"ok":true,"payload_sha256":"3c4ebe3cfdbdf3ba272a0b83f505363c764d8267fbb39db7b8b087a3e7c18b68","progress":0.4637708187210357}
+
+# ---------------------------------------------------------------------------
+# Screenshot annotation (original kept byte-identical)
+# ---------------------------------------------------------------------------
+$ python3 -B $RUN/annotate.py --input $RUN/images/screenshot_mid_curve.png --output $RUN/images/screenshot_mid_curve_annotated.png --line ...
+exit=0
+screenshot_mid_curve.png sha256 = 61ddfbd47e3524052f1a94e61eedb84368658e877caa1aa16a17178f63fe2ad4
+screenshot_mid_curve_annotated.png sha256 = 26eb75eed225477d5946caab3316b8fee4834e4b1a4d965c54f040ed89517a87
+
+# ---------------------------------------------------------------------------
+# Cleanup, only PIDs previously written by this run
+# ---------------------------------------------------------------------------
+$ # verified each /proc cmdline (rviz v2_display.rviz, planner corridor mode,
+  # playback __name:=formation_playback_v2, roscore -p 11585) before TERM.
+$ kill -TERM <rviz/planner/playback/roscore own PIDs>; <waited for exit>
+exit=0; all own PIDs gone; 127.0.0.1:11585 closed; 11411 user master untouched.
+# Full transcript: logs/cleanup.log
+
+# ---------------------------------------------------------------------------
+# Archived earlier attempts in this UTC run directory
+# ---------------------------------------------------------------------------
+attempt1: driver accepted the admission plan_id=0 empty envelope and raised
+          "no virtual job record for plan 0"; real playback also rejected the
+          V2 payload with "identity does not match the current admission"
+          because the PLANNING job record still had model_sha256=None.
+attempt2: after the playback missing-digest fix, the guide/corridor layer was
+          accepted; driver used playback_status["fraction"] (sample-local
+          interpolation) as curve progress and timed out at the midpoint.
+attempt3: same fraction error; guide layer was live but midpoint not captured.
+final:    progress = clamped_elapsed_s / duration_s; capture succeeded. The
+          /formation/markers topic is recorded latest-only (not every 10 Hz
+          array), keeping display_messages.jsonl at 2.2 MB.

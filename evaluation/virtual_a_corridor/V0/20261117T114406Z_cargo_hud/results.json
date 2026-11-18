@@ -1,0 +1,87 @@
+{
+  "stage": "V0_CARGO_HUD_ADDENDUM",
+  "run": "evaluation/virtual_a_corridor/V0/20261117T114406Z_cargo_hud",
+  "utc_date": "2026-11-17",
+  "overall": "PASS_TARGETED_TESTS_AND_PRIVATE_RVIZ_VISUAL_ADDENDUM",
+  "git": {
+    "base_commit": "9a19fd3e22d33188b13795f695757c3e4a36909f",
+    "current_commit": "9a19fd3e22d33188b13795f695757c3e4a36909f",
+    "committed": false,
+    "diffstat": "9 files changed, 923 insertions(+), 23 deletions(-); plus untracked tests and evidence",
+    "note": "This addendum is uncommitted together with the earlier V0/V1 work."
+  },
+  "request": "The white Cargo hold text also appears in the fixed top-right HUD.",
+  "implementation": {
+    "function": "hud_text(playback_status, job_state, quality, show_cargo_reason=True)",
+    "cargo_block_state": "STATIC",
+    "cargo_lines": ["Cargo", "STATIC / no executable trajectory"],
+    "reason_gate": "The existing ~show_cargo_reason switch; demo keeps it false.",
+    "hud_defaults": {
+      "left": 900,
+      "top": 20,
+      "width": 360,
+      "height": 270,
+      "text_size": 13.0,
+      "font": "DejaVu Sans Mono"
+    },
+    "height_reason": "Two cargo lines no longer fit the previous 230 px panel; 270 px shows all 12 lines.",
+    "vehicle_labels_identity_audits_unchanged": true,
+    "corridor_markers_unchanged": true
+  },
+  "jsk_rviz_plugins": {
+    "rospack_find_exit": 0,
+    "rosmsg_show_exit": 0,
+    "plugin_path": "/opt/ros/noetic/share/jsk_rviz_plugins"
+  },
+  "ros_visual_check": {
+    "master": "http://127.0.0.1:11585 (private)",
+    "user_session_11411_touched": false,
+    "playback_node": "formation_playback_hudcheck",
+    "backend": "virtual_rigid_a",
+    "show_cargo_reason": true,
+    "transport_ui": false,
+    "rviz_config": "catkin_ws/src/fwis_v3_demo/rviz/formation_demo.rviz",
+    "window": "1920x1043, upper-left 0,37",
+    "hud_message_height": 270,
+    "hud_text_lines": [
+      "FORMATION HUD | plan 92001",
+      "formation wedge_3 | virtual_rigid_a",
+      "job PLANNING | playback STATIC",
+      "audit AUDIT_PENDING (GEOMETRY_ONLY)",
+      "car1 | STATIC | v=0.00 m/s",
+      "car2 | STATIC | v=0.00 m/s",
+      "car3 | STATIC | v=0.00 m/s",
+      "Cargo | PLANNING",
+      "STATIC / no executable trajectory",
+      "AUDIT geometry=PENDING dynamics=PENDING",
+      "      collision=PENDING"
+    ],
+    "cargo_block_visible": true,
+    "all_lines_visible": true,
+    "corridor_regions_visible": 2,
+    "screenshot": "screenshot_hud_cargo.png"
+  },
+  "tests": [
+    {"module": "test_formation_hud", "tests": 16, "exit": 0, "status": "PASS"},
+    {"module": "test_formation_demo_assets", "tests": 21, "exit": 0, "status": "PASS"},
+    {"module": "test_formation_playback", "tests": 22, "exit": 0, "status": "PASS"},
+    {"module": "test_virtual_a_playback", "tests": 34, "exit": 0, "status": "PASS"}
+  ],
+  "not_run": [
+    {
+      "id": "formal_v0_full_acceptance",
+      "status": "NOT_RUN",
+      "reason": "This is a user-requested addendum; the original V0 evidence remains NOT_RUN and no new start/play/fail gate was performed."
+    },
+    {
+      "id": "autonomous_plan_to_corridor_display",
+      "status": "NOT_RUN",
+      "reason": "C2-B/V3 scope; the visual check publishes saved C1 JSON directly."
+    }
+  ],
+  "notes": [
+    "The white in-scene Cargo marker is retained; the HUD is an additional copy.",
+    "The direct fixture has no executable trajectory, so the screenshot reports job PLANNING and playback STATIC.",
+    "No Git branch, commit or push; no C2; the user session on 11411 was not touched."
+  ]
+}

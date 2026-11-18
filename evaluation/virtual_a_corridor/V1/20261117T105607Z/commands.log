@@ -1,0 +1,120 @@
+# V1 direct display fixture evidence, 2026-11-17 (UTC)
+# All ROS commands used ROS_MASTER_URI=http://127.0.0.1:11585 (private;
+# the user's demo session on 11411 was never contacted).
+# Run directory: evaluation/virtual_a_corridor/V1/20261117T105607Z
+
+# --- environment setup (each shell) ---
+source /opt/ros/noetic/setup.bash
+source catkin_ws/devel/setup.bash
+export ROS_MASTER_URI=http://127.0.0.1:11585
+export ROS_HOME=$PWD/evaluation/virtual_a_corridor/V1/20261117T105607Z/ros_home
+export ROS_LOG_DIR=$PWD/evaluation/virtual_a_corridor/V1/20261117T105607Z/ros_log
+
+# --- start private session (exit 0; see pids/ and ros_log/) ---
+roscore -p 11585                                   # pid 66215 was the bash
+                                                   # wrapper recorded in
+                                                   # pids/roscore.pid; the
+                                                   # rosmaster child pid 66288
+                                                   # is in ros_log master.log
+python3 catkin_ws/devel/lib/fwis_v3_playback/formation_playback.py \
+  __name:=formation_playback_v1 _backend:=virtual_rigid_a _hud_enabled:=false \
+  _rate:=10.0 _publish_tf:=false _transport_ui:=false   # exit 0, pid 66752
+python3 evaluation/virtual_a_corridor/V1/20261117T105607Z/record_corridors.py \
+  --output .../corridor_messages.jsonl --duration 300   # exit 0 at start,
+                                                        # pid 66753
+rviz -d evaluation/virtual_a_corridor/V1/20261117T105607Z/v1_display.rviz
+                                                    # exit 0, pid 66754,
+                                                    # window 155189265
+# Note: a first start attempt omitted the exported ROS environment for the
+# background jobs (playback ModuleNotFoundError: fwis_v3_msgs; RViz could not
+# reach a master; recorder exited).  No message was published; the session was
+# restarted with the environment above and the logs shown here are from the
+# successful session.
+
+# --- fixture 1: full audited C1 chain, plan 91001 generation 1 route 0 ---
+python3 evaluation/virtual_a_corridor/V1/20261117T105607Z/display_fixture.py \
+  --chain-json evaluation/virtual_a_corridor/C1/20261117T073007Z/sample_chain.json \
+  --plan-id 91001 --generation 1 --route-id 0
+# exit 0; output first_fixture.json
+# recorder messages 0 -> 2: startup DELETEALL, then 5-marker replacement
+# screenshot_first.png captured (exit 0)
+
+# --- fixture 2: C1 region 0 only, plan 91002 generation 2 route 3 ---
+python3 .../display_fixture.py \
+  --chain-json .../C1/20261117T073007Z/sample_chain.json \
+  --plan-id 91002 --generation 2 --route-id 3 --region-limit 1
+# exit 0; output second_fixture.json
+# recorder messages 2 -> 3: DELETEALL + 3 ADD (route_3 fill/edge only)
+# screenshot_second.png captured (exit 0)
+
+# --- fixture 3: matching CLEARED, plan 91002 generation 2 ---
+python3 .../display_fixture.py \
+  --chain-json .../sample_chain.json \
+  --plan-id 91002 --generation 2 --route-id 3 --clear \
+  --skip-request --skip-job
+# exit 0; output clear_fixture.json
+# recorder messages 3 -> 4: exactly one message containing one DELETEALL
+# screenshot_cleared.png captured (exit 0)
+
+# --- negative: stale plan 91001 generation 1, debug only ---
+python3 .../display_fixture.py \
+  --chain-json .../sample_chain.json \
+  --plan-id 91001 --generation 1 --route-id 0 --skip-request --skip-job
+# exit 0; output stale_plan_fixture.json
+# recorder stays at 4 messages
+# playback log: ignoring corridor payload for plan 91001: current job is plan 91002
+
+# --- negative: wrong generation 99 for current plan 91002, debug only ---
+python3 .../display_fixture.py \
+  --chain-json .../sample_chain.json \
+  --plan-id 91002 --generation 99 --route-id 3 --region-limit 1 \
+  --skip-request --skip-job
+# exit 0; output wrong_generation_fixture.json
+# recorder stays at 4 messages
+# playback log: ignoring corridor payload for plan 91002: identity does not match
+# the current admission
+
+# --- marker verification against C1 export (exit 0) ---
+python3 -I verify_corridor_markers.py > marker_verification_print.log
+# exact point equality for every fill/edge, fill scale (1,1,1), edge scale
+# (0.03,0,0), z 0.005/0.01, alpha 0.15/0.95, area rel.err <= 2.9e-16
+
+# --- annotation (exit 0, originals kept) ---
+python3 annotate.py --input screenshot_first.png --output screenshot_first_annotated.png \
+  --line "C1 chain digest d3e838f164a1a1bd32fa6d859da4ab0c5f302a3d0feccbfe13d84a10f6e6e801 (input_sample_chain.json)" \
+  --line "grid 97dd06c8c06614a5e9a961f7f643a4b08f30f95db6d3403ba10d1f88f4057734 | plan 91001 gen 1 route 0 | regions 2" \
+  --line "recorder msg 2: DELETEALL + 2x fill/edge | fill scale 1.0 z=0.005 a=0.15 | edge scale 0.03 z=0.01" \
+  --line "verify_corridor_markers.py: exact point equality with C1 export; area rel.err <= 3e-16"
+python3 annotate.py --input screenshot_second.png --output screenshot_second_annotated.png \
+  --line "chain digest 1093ccc5a1ff02e3d235229a558eeebf65fd508ce8714be6ffe175894bdacdf8 (C1 region 0 only)" \
+  --line "plan 91002 gen 2 route 3 | regions 1 | color from route_id 3 | replaces old route_0 layer" \
+  --line "recorder msg 3: one MarkerArray = DELETEALL + 3 ADD; no leftover ids | vertices exact" \
+  --line "fill scale 1.0 z=0.005 a=0.15 | edge scale 0.03 z=0.01 a=0.95"
+python3 annotate.py --input screenshot_cleared.png --output screenshot_cleared_annotated.png \
+  --line "matching CLEARED plan 91002 gen 2 -> recorder msg 4, one message, one DELETEALL, no ADD" \
+  --line "stale plan 91001 gen 1 and wrong generation 99 debug -> ignored, recorder stays 4 messages" \
+  --line "2026-11-17 private master 127.0.0.1:11585 | topic /formation/corridors | RViz v1_display.rviz" \
+  --line "state in payload is CANDIDATE_REFERENCE_POINT_ONLY (never FEASIBLE)"
+
+# --- cleanup (exit 0 overall; see cleanup.log) ---
+kill -INT <recorder/rviz/playback/roscore pids>
+# rviz/playback stopped; recorder survived SIGINT/SIGTERM inside rospy.sleep
+# and was SIGKILLed after its 4 messages were already flushed; the recorded
+# roscore pid was the bash wrapper and was terminated, the rosmaster child
+# (66288) was stopped separately.  A second recorder (66330) left by the
+# failed first startup was found during the final process audit and SIGKILLed;
+# it never wrote a corridor message.  Port 11585 verified free.
+# User session on port 11411 remained listening throughout and was not touched.
+
+# --- targeted tests (same worktree/source hashes as this run) ---
+# From repository root, exit 0 for:
+#   test_virtual_a_corridor_display (15), test_virtual_a_ros_adapter (60),
+#   test_virtual_a_receiver (15), test_virtual_a_playback (34),
+#   test_formation_playback (22), test_formation_hud (15),
+#   test_formation_demo_assets (21), test_virtual_a_corridor (25),
+#   test_formation_optimizer_node (23)
+# First test_virtual_a_pipeline invocation from repository root exited 1 with
+# ImportError: No module named 'virtual_a_g4_support' (test helper lives in
+# tests/).  Re-run from tests/: logs in test_logs/
+# test_virtual_a_pipeline.tests_dir.log (result recorded in SUMMARY.md).
+# No full unittest discover was run.

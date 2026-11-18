@@ -1,0 +1,50 @@
+UTC start: 2026-11-17T18:54:27Z
+run_id: 20261117T185418Z
+workdir: /home/wq/whut_thesis/expv3_multi_virtual_a
+branch: feature/virtual-rigid-formation-a
+HEAD: 9a19fd3e22d33188b13795f695757c3e4a36909f
+HEAD subject: Add C1 exact LOS and separating-hyperplane corridor geometry
+contract: plan/virtual_a_corridor_v01/CLAUDE_C3_REWORK_01.md
+prerequisite original C3 evidence: evaluation/virtual_a_corridor/C3/20261117T155212Z
+git status --porcelain (start):
+ M catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch
+ M catkin_ws/src/fwis_v3_demo/rviz/formation_demo.rviz
+ M catkin_ws/src/fwis_v3_optimizer/scripts/formation_uniform_planner_node.py
+ M catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/contracts.py
+ M catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py
+ M catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/optimizer.py
+ M catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/pipeline.py
+ M catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_playback.py
+ M catkin_ws/src/fwis_v3_playback/package.xml
+ M catkin_ws/src/fwis_v3_playback/scripts/formation_playback.py
+ M tests/test_formation_demo_assets.py
+ M tests/test_virtual_a_pipeline.py
+ M tests/test_virtual_a_ros_adapter.py
+?? evaluation/virtual_a_corridor/C2A/
+?? evaluation/virtual_a_corridor/C2B/
+?? evaluation/virtual_a_corridor/C2B_REWORK_01/
+?? evaluation/virtual_a_corridor/C3/
+?? evaluation/virtual_a_corridor/C3_REWORK_01/
+?? evaluation/virtual_a_corridor/V0/
+?? evaluation/virtual_a_corridor/V1/
+?? plan/virtual_a_corridor_v01/CLAUDE_C2B_REWORK_01.md
+?? plan/virtual_a_corridor_v01/CLAUDE_C3_REWORK_01.md
+?? tests/test_formation_hud.py
+?? tests/test_virtual_a_corridor_display.py
+?? tests/test_virtual_a_corridor_optimizer.py
+?? tests/test_virtual_a_corridor_recovery.py
+--- current source hashes at evidence start
+9b33e1cabd11a23e40b511f4a1df71f6b52f3b89ccee0c0c98920dcfca02e4ec  catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/pipeline.py
+1c49b426e8b5065f6e67847e80a35a01e296ec7099a10fd13472f4c4c3ed06c2  catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/optimizer.py
+bf46feceb404022f023f6b50a41928b22e23a5ace963071f53e0800b434f1a51  catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/contracts.py
+f08d7701dcb94428854f370bd4393484af3fcca4ab97df1208d955e2fc9e1564  catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py
+bd9c4f93de50518b5268992153bcbb707ae886fac38aef2f39354fbcbd1865db  tests/test_virtual_a_corridor_recovery.py
+e0e05632773e66d27ace9c4a933ffcbfda4c293a84ea4f0350f29531cbe6b079  tests/test_virtual_a_pipeline.py
+--- pre-rework snapshot hashes (/tmp/c3_rework_pre, flat)
+7e825526653adb50824a11ac08bd030f8c3a74dd6cbf9f655d61f4d977bcb4b7  pipeline.py
+25b6dc3cc3185435e30de7570a96eba2f5d9e5339999bd4c79f3ab6b4ef255be  optimizer.py
+bf46feceb404022f023f6b50a41928b22e23a5ace963071f53e0800b434f1a51  contracts.py
+1d9c043cacaf7468d6fda118f704070825216d6e63eaaf97af9794fb6f3f43f0  corridor.py
+924ee5d49f8fb2ae6a755d0b2f9cdfddd3b9fc9de38a0dd7be3c4afb4c547332  test_virtual_a_corridor_recovery.py
+0620f9da5fad6cb602d7ffb690d70b14d2e0726c453651d7ba406899a4e4649e  test_virtual_a_pipeline.py
+--- intermediate evidence run moved to /tmp/c3_rework_intermediate_20261117T183935Z (not part of deliverable)

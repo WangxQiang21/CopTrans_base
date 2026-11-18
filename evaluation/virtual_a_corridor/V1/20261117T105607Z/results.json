@@ -1,0 +1,134 @@
+{
+  "stage": "V1",
+  "run": "evaluation/virtual_a_corridor/V1/20261117T105607Z",
+  "utc_date": "2026-11-17",
+  "overall": "DIRECT_FIXTURE_DISPLAY_VERIFIED_AUTONOMOUS_AND_C1_ACCEPTED_GAPS",
+  "git": {
+    "base_commit": "9a19fd3e22d33188b13795f695757c3e4a36909f",
+    "current_commit": "9a19fd3e22d33188b13795f695757c3e4a36909f",
+    "committed": false,
+    "diffstat": "9 files changed, 907 insertions(+), 23 deletions(-); plus untracked tests and evidence"
+  },
+  "input": {
+    "source": "evaluation/virtual_a_corridor/C1/20261117T073007Z/sample_chain.json",
+    "copy": "input_sample_chain.json",
+    "sha256": "088a7cfe23174c50636fcf923e95760d14e744e164850a4df21c798f6752a734",
+    "chain_digest": "d3e838f164a1a1bd32fa6d859da4ab0c5f302a3d0feccbfe13d84a10f6e6e801",
+    "grid_sha256": "97dd06c8c06614a5e9a961f7f643a4b08f30f95db6d3403ba10d1f88f4057734",
+    "c1_codex_accepted_artifact": null,
+    "scope": "saved C1 JSON direct publication (task-allowed debug case); no autonomous plan-to-display"
+  },
+  "display_state": "CANDIDATE_REFERENCE_POINT_ONLY",
+  "used_by_optimizer": false,
+  "robot": {
+    "master": "http://127.0.0.1:11585 (private)",
+    "user_session_11411_touched": false,
+    "topic": "/formation/corridors",
+    "rviz": "v1_display.rviz",
+    "window_id": 155189265
+  },
+  "recorded_messages": [
+    {
+      "index": 1,
+      "event": "playback startup clear",
+      "marker_count": 1,
+      "actions": ["DELETEALL"]
+    },
+    {
+      "index": 2,
+      "event": "plan 91001 generation 1 route 0, full C1 chain",
+      "marker_count": 5,
+      "actions": ["DELETEALL", "ADD", "ADD", "ADD", "ADD"],
+      "fills": 2,
+      "edges": 2,
+      "namespaces": [
+        "formation/wedge_3/corridors/route_0/fill",
+        "formation/wedge_3/corridors/route_0/edge"
+      ],
+      "chain_digest": "d3e838f164a1a1bd32fa6d859da4ab0c5f302a3d0feccbfe13d84a10f6e6e801"
+    },
+    {
+      "index": 3,
+      "event": "plan 91002 generation 2 route 3, C1 region 0 only",
+      "marker_count": 3,
+      "actions": ["DELETEALL", "ADD", "ADD"],
+      "fills": 1,
+      "edges": 1,
+      "namespaces": [
+        "formation/wedge_3/corridors/route_3/fill",
+        "formation/wedge_3/corridors/route_3/edge"
+      ],
+      "chain_digest": "1093ccc5a1ff02e3d235229a558eeebf65fd508ce8714be6ffe175894bdacdf8"
+    },
+    {
+      "index": 4,
+      "event": "matching CLEARED plan 91002 generation 2",
+      "marker_count": 1,
+      "actions": ["DELETEALL"]
+    }
+  ],
+  "marker_verification": {
+    "script": "verify_corridor_markers.py",
+    "exit": 0,
+    "result": "marker_verification.json",
+    "vertices_exact_match": true,
+    "fill_scale": [1.0, 1.0, 1.0],
+    "edge_scale": [0.03, 0.0, 0.0],
+    "fill_z": 0.005,
+    "edge_z": 0.01,
+    "fill_alpha_float32": 0.15000000596046448,
+    "edge_alpha_float32": 0.949999988079071,
+    "relative_area_error": [2.912060445210686e-16, 0.0],
+    "unique_namespace_id_pairs": true,
+    "negative_cases": [
+      {"case": "stale plan 91001 generation 1", "recorded_message_delta": 0},
+      {"case": "wrong generation 99 for plan 91002", "recorded_message_delta": 0}
+    ]
+  },
+  "screenshots": {
+    "first": "screenshot_first.png",
+    "second": "screenshot_second.png",
+    "cleared": "screenshot_cleared.png",
+    "annotated": [
+      "screenshot_first_annotated.png",
+      "screenshot_second_annotated.png",
+      "screenshot_cleared_annotated.png"
+    ]
+  },
+  "tests": [
+    {"module": "test_virtual_a_corridor_display", "tests": 15, "exit": 0, "status": "PASS"},
+    {"module": "test_virtual_a_ros_adapter", "tests": 60, "exit": 0, "status": "PASS"},
+    {"module": "test_virtual_a_receiver", "tests": 15, "exit": 0, "status": "PASS"},
+    {"module": "test_virtual_a_playback", "tests": 34, "exit": 0, "status": "PASS"},
+    {"module": "test_formation_playback", "tests": 22, "exit": 0, "status": "PASS"},
+    {"module": "test_formation_hud", "tests": 15, "exit": 0, "status": "PASS"},
+    {"module": "test_formation_demo_assets", "tests": 21, "exit": 0, "status": "PASS"},
+    {"module": "test_virtual_a_corridor", "tests": 25, "exit": 0, "status": "PASS"},
+    {"module": "test_formation_optimizer_node", "tests": 23, "exit": 0, "status": "PASS"},
+    {"module": "test_virtual_a_pipeline", "tests": 8, "exit": 0, "status": "PASS", "note": "run from tests/; first repo-root invocation failed on helper import path"}
+  ],
+  "not_run": [
+    {
+      "id": "autonomous_plan_to_display",
+      "status": "NOT_RUN",
+      "reason": "C2-B/V3 scope; this run publishes saved C1 JSON directly"
+    },
+    {
+      "id": "c1_codex_acceptance",
+      "status": "MISSING",
+      "reason": "no independent ACCEPTED artifact found; input used as audited C1 output without claiming acceptance"
+    },
+    {
+      "id": "v0_real_hud_gui",
+      "status": "NOT_RUN",
+      "reason": "jsk_rviz_plugins absent; see evaluation/virtual_a_corridor/V0/20261117T105425Z"
+    }
+  ],
+  "notes": [
+    "Second fixture plan_request was rejected by playback as busy while job 91001 was PLANNING; display identity came from the matching /formation/job_state PLANNING record (existing playback path). The warning is kept in ros_log.",
+    "First startup attempt did not export ROS_MASTER_URI/ROS_HOME to background jobs (playback ModuleNotFoundError, RViz unreachable); no corridor message was published, session restarted per commands.log.",
+    "Fill scale was corrected to (1,1,1) after the superseded run 20261117T105033Z showed TRIANGLE_LIST points multiplied by the default 0.1 scale.",
+    "Recorder required SIGKILL after scenarios (rospy.sleep ignored INT/TERM); all 4 messages were already flushed. A second recorder left by the failed first startup was found and SIGKILLed in the final audit; it wrote no messages.",
+    "No Git commit/branch/push; no C2; kinematic/dynamic/continuous OBB audits and trajectory envelope unchanged."
+  ]
+}

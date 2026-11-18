@@ -1,0 +1,57 @@
+# Cargo HUD addendum — exact commands, 2026-11-17 UTC
+# All ROS commands used ROS_MASTER_URI=http://127.0.0.1:11585 (private).
+# The user's demo session on 11411 was never contacted.
+
+# --- plugin check (user had just installed jsk_rviz_plugins) ---
+rospack find jsk_rviz_plugins                     # exit 0
+rosmsg show jsk_rviz_plugins/OverlayText         # exit 0
+rospack plugins --attrib=plugin rviz | grep -i jsk
+# -> /opt/ros/noetic/share/jsk_rviz_plugins/plugin_description.xml
+
+# --- source edits ---
+# hud_text: append the white STATIC Cargo block; optional show_cargo_reason.
+# playback node: pass ~show_cargo_reason; default hud_height 270.
+# demo launch/rviz and asset tests: hud_height 270.
+
+# --- targeted tests (exit 0 for each; logs in test_logs/) ---
+source /opt/ros/noetic/setup.bash
+source catkin_ws/devel/setup.bash
+export PYTHONDONTWRITEBYTECODE=1 OPENBLAS_NUM_THREADS=1
+export PYTHONPATH="$PWD/catkin_ws/src/fwis_v3_optimizer/src:$PWD/tests:${PYTHONPATH:-}"
+python3 -B -m unittest -v tests.test_formation_hud          # 16, OK
+python3 -B -m unittest -v tests.test_formation_demo_assets  # 21, OK
+python3 -B -m unittest -v tests.test_formation_playback     # 22, OK
+python3 -B -m unittest -v tests.test_virtual_a_playback     # 34, OK
+
+# --- private live session (temporary /tmp/v1_visual_check_1794915160) ---
+export ROS_MASTER_URI=http://127.0.0.1:11585
+export ROS_HOME=/tmp/v1_visual_check_1794915160/ros_home
+export ROS_LOG_DIR=/tmp/v1_visual_check_1794915160/ros_log
+roscore -p 11585                                   # private; pid 76653 wrapper / 76684 master
+python3 catkin_ws/devel/lib/fwis_v3_playback/formation_playback.py \
+  __name:=formation_playback_hudcheck _backend:=virtual_rigid_a \
+  _hud_enabled:=true _rate:=10.0 _publish_tf:=false _transport_ui:=false \
+  _show_cargo_reason:=true                         # pid 79295
+rviz -d catkin_ws/src/fwis_v3_demo/rviz/formation_demo.rviz   # pid 79700
+# HUD display: left=900 top=20 width=360 height=270 (message and rviz config)
+
+# --- direct C1 fixture: plan 92001, generation 1, route 0, full chain ---
+python3 evaluation/virtual_a_corridor/V1/20261117T105607Z/display_fixture.py \
+  --chain-json evaluation/virtual_a_corridor/C1/20261117T073007Z/sample_chain.json \
+  --plan-id 92001 --generation 1 --route-id 0       # exit 0
+
+# --- capture ---
+timeout 3 rostopic echo -n 1 /formation/hud > hud_message.yaml
+DISPLAY=:1 import -window <rviz-window> screenshot_hud_cargo.png
+# window 1920x1043, absolute upper-left 0,37; full 12-line HUD visible
+# Cargo | PLANNING
+# STATIC / no executable trajectory
+
+# --- cleanup (only the private session) ---
+kill -INT 79295 79700
+kill -INT 76684
+kill -INT 76653
+# port 11585 verified free; user's 11411 rosmaster (pid 3039925) remained
+# listening throughout and was never touched.  See cleanup.log.
+
+# No Git branch, commit or push.

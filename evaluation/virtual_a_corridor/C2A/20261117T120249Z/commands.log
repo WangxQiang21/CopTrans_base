@@ -1,0 +1,161 @@
+# C2-A command log
+
+run_utc=2026-11-17T12:02:49Z
+root=/home/wq/whut_thesis/expv3_multi_virtual_a
+stage=C2_A
+
+Common environment for every Python/test command:
+
+```bash
+source /opt/ros/noetic/setup.bash
+source catkin_ws/devel/setup.bash
+export PYTHONDONTWRITEBYTECODE=1 OPENBLAS_NUM_THREADS=1
+export PYTHONPATH="$PWD/catkin_ws/src/fwis_v3_optimizer/src:$PWD/tests:${PYTHONPATH:-}"
+```
+
+## 1. C2-A new tests
+
+```bash
+python3 -B -m unittest discover -s tests -p 'test_virtual_a_corridor_optimizer.py' -v 2>&1 \
+  | tee evaluation/virtual_a_corridor/C2A/20261117T120249Z/test_logs/test_virtual_a_corridor_optimizer.log
+exit_code=0
+result=Ran 13 tests in 0.023s; OK
+```
+
+## 2. Regression tests
+
+```bash
+python3 -B -m unittest discover -s tests -p 'test_virtual_a_corridor.py' -v 2>&1 \
+  | tee evaluation/virtual_a_corridor/C2A/20261117T120249Z/test_logs/test_virtual_a_corridor_final.log
+exit_code=0
+result=Ran 25 tests in 0.628s; OK
+
+python3 -B -m unittest discover -s tests -p 'test_virtual_a_optimizer.py' -v 2>&1 \
+  | tee evaluation/virtual_a_corridor/C2A/20261117T120249Z/test_logs/test_virtual_a_optimizer_final.log
+exit_code=0
+result=Ran 29 tests in 73.172s; OK
+
+python3 -B -m unittest discover -s tests -p 'test_virtual_a_trajectory.py' -v 2>&1 \
+  | tee evaluation/virtual_a_corridor/C2A/20261117T120249Z/test_logs/test_virtual_a_trajectory_final.log
+exit_code=0
+result=Ran 23 tests in 0.510s; OK
+
+python3 -B -m unittest discover -s tests -p 'test_virtual_a_pipeline.py' -v 2>&1 \
+  | tee evaluation/virtual_a_corridor/C2A/20261117T120249Z/test_logs/test_virtual_a_pipeline_final.log
+exit_code=0
+result=Ran 8 tests in 206.107s; OK
+```
+
+No full `unittest discover` was executed.
+
+## 3. Sample guide/allocation
+
+```bash
+python3 -B evaluation/virtual_a_corridor/C2A/20261117T120249Z/sample_c2a.py \
+  > evaluation/virtual_a_corridor/C2A/20261117T120249Z/sample_c2a.json
+exit_code=0
+```
+
+Cases and key values are listed in `SUMMARY.md` section 4 and `results.json`.
+
+## 4. QP analytic-gradient check
+
+```bash
+python3 -B - <<'PY' > evaluation/virtual_a_corridor/C2A/20261117T120249Z/gradient_check.log
+# uses fwis_v3_optimizer.formation_continuous_a.corridor._guide_qp_terms
+# central difference step 1e-6 on the six-dimensional internal-vertex vector
+PY
+exit_code=0
+result=max_abs_gradient_error=5.292810634216e-11
+```
+
+## 5. Evidence capture
+
+```bash
+sha256sum \
+  catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py \
+  catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/contracts.py \
+  tests/test_virtual_a_corridor_optimizer.py \
+  evaluation/virtual_a_corridor/C2A/20261117T120249Z/sample_c2a.py \
+  evaluation/virtual_a_corridor/C2A/20261117T120249Z/sample_c2a.json \
+  plan/virtual_a_corridor_v01/TASK_C2.md
+git diff -- catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py \
+  catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/contracts.py | sha256sum
+git rev-parse HEAD
+git branch --show-current
+git status --short
+git diff --stat
+git diff --numstat -- \
+  catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/contracts.py \
+  catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py
+git diff --quiet HEAD -- <protected files listed in head_equality.txt>
+git diff --check -- \
+  catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py \
+  catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/contracts.py
+exit_code=0
+```
+
+Diff files were produced with:
+
+```bash
+git diff -- <contracts.py> > source_diff_c2a_contracts.diff
+git diff -- <corridor.py> > source_diff_c2a_corridor.diff
+git diff --no-index -- /dev/null tests/test_virtual_a_corridor_optimizer.py > new_test_c2a.diff
+# git diff --no-index returns 1 for a new file; the diff is intentional.
+```
+
+After discovering that `corridor.py` already contained V1 changes, the
+whole-worktree corridor diff was relabeled without changing its contents:
+
+```bash
+mv source_diff_c2a_corridor.diff source_diff_corridor_from_head_including_v1.diff
+```
+
+## 6. C2-A-only corridor diff (evidence relabel)
+
+`corridor.py` already contained uncommitted V1 display changes before C2-A.
+The whole-worktree corridor diff above is therefore not a C2-A-only diff. The
+pre-C2A baseline was reconstructed in `/tmp` from HEAD plus the corridor.py
+part of V1 `v0_v1_changes.patch`; its hash matches V1 `source_hashes.txt`.
+
+```bash
+PRE=/tmp/c2a_pre_v1_check/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py
+sha256sum "$PRE"
+# c1c9142129a3102144a796b0b7229abef7423d82c3dc2dbcbc4146a32b4ba715
+cp "$PRE" evaluation/virtual_a_corridor/C2A/20261117T120249Z/pre_c2a_v1_corridor.py
+sha256sum evaluation/virtual_a_corridor/C2A/20261117T120249Z/pre_c2a_v1_corridor.py
+# c1c9142129a3102144a796b0b7229abef7423d82c3dc2dbcbc4146a32b4ba715
+git diff --no-index --numstat /tmp/c2a_head_corridor.py "$PRE"
+# HEAD -> pre-C2A V1 delta: 86	1
+diff -u --label a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py \
+  --label b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py \
+  "$PRE" catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py \
+  > source_diff_c2a_corridor_only.diff
+git diff --no-index --numstat "$PRE" \
+  catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py
+# C2-A-only delta: 456	1
+sha256sum source_diff_c2a_corridor_only.diff
+# e04bf39682f564f30b2d4c70bff443ac1c99d501898b90772257e083d5c34cd1
+```
+
+The old name `source_diff_c2a_corridor.diff` previously held the whole-HEAD
+diff; it was renamed to `source_diff_corridor_from_head_including_v1.diff`,
+not deleted. A regenerated `git diff HEAD` of the final worktree is
+byte-identical to the renamed file (SHA-256 `9edd2eed...`):
+
+```bash
+git diff -- catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py \
+  > /tmp/c2a_whole_now.diff
+sha256sum /tmp/c2a_whole_now.diff
+# 9edd2eed1a0b8ac7c501d30e2eca03417052c6395667250fb7b7baeab3229c23
+cmp -s /tmp/c2a_whole_now.diff source_diff_corridor_from_head_including_v1.diff
+# cmp_exit=0
+```
+
+## 7. Operator note
+
+Three earlier launches of the final regression logs were started while the
+shell working directory was the evidence `test_logs/` directory. Their
+`source catkin_ws/...` step failed before Python started, so no test was run and
+no result was produced. The commands above were then run from the repository
+root; only logs with the `_final.log` suffix are the authoritative final runs.

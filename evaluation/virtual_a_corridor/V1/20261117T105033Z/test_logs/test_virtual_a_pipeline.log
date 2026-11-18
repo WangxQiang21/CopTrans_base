@@ -1,0 +1,18 @@
+test_virtual_a_pipeline (unittest.loader._FailedTest) ... ERROR
+
+======================================================================
+ERROR: test_virtual_a_pipeline (unittest.loader._FailedTest)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_virtual_a_pipeline
+Traceback (most recent call last):
+  File "/usr/lib/python3.8/unittest/loader.py", line 154, in loadTestsFromName
+    module = __import__(module_name)
+  File "/home/wq/whut_thesis/expv3_multi_virtual_a/tests/test_virtual_a_pipeline.py", line 23, in <module>
+    from virtual_a_g4_support import (
+ModuleNotFoundError: No module named 'virtual_a_g4_support'
+
+
+----------------------------------------------------------------------
+Ran 1 test in 0.000s
+
+FAILED (errors=1)

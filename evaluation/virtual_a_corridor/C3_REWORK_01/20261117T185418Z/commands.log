@@ -1,0 +1,81 @@
+# C3_REWORK_01 exact commands, UTC start/end, exit codes, measured wall time
+# Working directory for every command:
+#   /home/wq/whut_thesis/expv3_multi_virtual_a
+# No ROS node, roscore/master, RViz or publication process was started.
+# The ROS overlay was sourced only for its Python path; every run is pure
+# Python and no /clock, ROS master or DDS transport was used.
+
+# ---------------------------------------------------------------------------
+# 0. Environment used by every run
+# ---------------------------------------------------------------------------
+source /opt/ros/noetic/setup.bash 2>/dev/null
+source catkin_ws/devel/setup.bash 2>/dev/null
+export PYTHONDONTWRITEBYTECODE=1 OPENBLAS_NUM_THREADS=1
+export PYTHONPATH="$PWD/catkin_ws/src/fwis_v3_optimizer/src:$PWD/tests:$PWD:${PYTHONPATH:-}"
+EV=evaluation/virtual_a_corridor/C3_REWORK_01/20261117T185418Z
+
+# ---------------------------------------------------------------------------
+# 1. Required replays (contract section 7)
+#    Full stdout/stderr: replays/<case>.stdout.log
+#    Machine-readable evidence: replays/<case>.json
+# ---------------------------------------------------------------------------
+# S1 corridor fixed-sigma failure, default max_initials=6
+# start 2026-11-17T18:54:32Z | end 2026-11-17T18:55:15Z | exit 0 | measured wall 43.008 s
+timeout 240 python3 -B "$EV/run_replay.py" S1 \
+  --guidance-mode corridor --solver ipopt \
+  "$EV/replays/S1_corridor_reallocation.json" \
+  > "$EV/replays/S1_corridor_reallocation.stdout.log" 2>&1
+# EXIT=0
+
+# Whole-request initial exhaustion negative, configured max_initials=1
+# start 2026-11-17T18:55:15Z | end 2026-11-17T18:55:26Z | exit 0 | measured wall 10.606 s
+timeout 240 python3 -B "$EV/run_replay.py" S1 \
+  --guidance-mode corridor --solver ipopt --max-initials 1 \
+  "$EV/replays/initial_pool_exhaustion.json" \
+  > "$EV/replays/initial_pool_exhaustion.stdout.log" 2>&1
+# EXIT=0
+
+# Existing real success scene, legacy route guidance
+# start 2026-11-17T18:55:26Z | end 2026-11-17T18:56:00Z | exit 0 | measured wall 33.985 s
+timeout 240 python3 -B "$EV/run_replay.py" S3 \
+  --guidance-mode legacy_route --solver ipopt \
+  "$EV/replays/S3_legacy_success.json" \
+  > "$EV/replays/S3_legacy_success.stdout.log" 2>&1
+# EXIT=0
+
+# ---------------------------------------------------------------------------
+# 2. Four required targeted unittest commands (contract section 7)
+#    Full logs: test_logs/<pattern>.log
+#    Timestamps/exit codes: test_logs/run_meta.log
+# ---------------------------------------------------------------------------
+# start 2026-11-17T18:56:04Z | end 2026-11-17T18:56:19Z | exit 0 | wall 15.275 s
+timeout 900 python3 -B -m unittest discover -s tests \
+  -p 'test_virtual_a_corridor_recovery.py' -v \
+  > "$EV/test_logs/test_virtual_a_corridor_recovery.log" 2>&1
+# EXIT=0 (Ran 17 tests, OK)
+
+# start 2026-11-17T18:56:19Z | end 2026-11-17T18:56:25Z | exit 0 | wall 6.048 s
+timeout 900 python3 -B -m unittest discover -s tests \
+  -p 'test_virtual_a_corridor_optimizer.py' -v \
+  > "$EV/test_logs/test_virtual_a_corridor_optimizer.log" 2>&1
+# EXIT=0 (Ran 24 tests, OK)
+
+# start 2026-11-17T18:56:25Z | end 2026-11-17T18:57:30Z | exit 0 | wall 64.500 s
+timeout 900 python3 -B -m unittest discover -s tests \
+  -p 'test_virtual_a_optimizer.py' -v \
+  > "$EV/test_logs/test_virtual_a_optimizer.log" 2>&1
+# EXIT=0 (Ran 29 tests, OK)
+
+# start 2026-11-17T18:57:30Z | end 2026-11-17T18:59:15Z | exit 0 | wall 104.628 s
+timeout 900 python3 -B -m unittest discover -s tests \
+  -p 'test_virtual_a_pipeline.py' -v \
+  > "$EV/test_logs/test_virtual_a_pipeline.log" 2>&1
+# EXIT=0 (Ran 8 tests, OK)
+
+# ---------------------------------------------------------------------------
+# 3. Evidence assembly
+# ---------------------------------------------------------------------------
+python3 -B "$EV/assemble_results.py"
+# EXIT=0, all acceptance checks true
+(cd "$EV" && sha256sum -c manifest.sha256)
+# EXIT=0, see manifest_verification.log

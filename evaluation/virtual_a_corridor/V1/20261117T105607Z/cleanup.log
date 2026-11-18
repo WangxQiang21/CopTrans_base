@@ -1,0 +1,34 @@
+cleanup at 2026-11-17T10:58:35Z
+stop recorder pid=66753
+still alive: recorder 66753
+stop rviz pid=66754
+stopped: rviz 66754
+stop playback pid=66752
+stopped: playback 66752
+stop roscore pid=66215
+still alive: roscore 66215
+--- own pids after cleanup ---
+  66753 Sl   python3 /home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_a_corridor/V1/20261117T105607Z/record_corridors.py --output /home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_a_corridor/V1/20261117T105607Z/corridor_messages.jsonl --duration 300
+rviz 66754 dead
+playback 66752 dead
+  66215 S    /bin/bash -c source /home/wq/.claude/shell-snapshots/snapshot-bash-1794815825700-wvsxl5.sh 2>/dev/null || true && shopt -u extglob 2>/dev/null || true && { \builtin unalias -- 'which'; \builtin unset -f -- 'which'; } >/dev/null 2>&1 || true && { \builtin unalias -- 'unsetenv'; \builtin unset -f -- 'unsetenv'; } >/dev/null 2>&1 || true && eval 'ROOT=/home/wq/whut_thesis/expv3_multi_virtual_a; NEW="$ROOT/evaluation/virtual_a_corridor/V1/20261117T105607Z"; cd "$ROOT" && source /opt/ros/noetic/setup.bash && source catkin_ws/devel/setup.bash && export ROS_MASTER_URI=http://127.0.0.1:11585 ROS_HOME="$NEW/ros_home" ROS_LOG_DIR="$NEW/ros_log" && mkdir -p "$ROS_HOME" "$ROS_LOG_DIR" && nohup roscore -p 11585 > "$NEW/roscore.stdout.log" 2>&1 & echo $! > "$NEW/pids/roscore.pid"; for i in $(seq 1 40); do ROS_MASTER_URI=http://127.0.0.1:11585 timeout 1 rosparam list >/dev/null 2>&1 && break; sleep 0.25; done; echo "roscore=$(cat "$NEW/pids/roscore.pid")"; nohup python3 "$ROOT/catkin_ws/devel/lib/fwis_v3_playback/formation_playback.py" __name:=formation_playback_v1 _backend:=virtual_rigid_a _hud_enabled:=false _rate:=10.0 _publish_tf:=false _transport_ui:=false > "$NEW/playback.stdout.log" 2>&1 & echo $! > "$NEW/pids/playback.pid"; nohup python3 "$NEW/record_corridors.py" --output "$NEW/corridor_messages.jsonl" --duration 300 > "$NEW/recorder.stdout.log" 2>&1 & echo $! > "$NEW/pids/recorder.pid"; DISPLAY=:1 nohup rviz -d "$NEW/v1_display.rviz" > "$NEW/rviz.stdout.log" 2>&1 & echo $! > "$NEW/pids/rviz.pid"; sleep 6; echo "playback=$(cat "$NEW/pids/playback.pid") recorder=$(cat "$NEW/pids/recorder.pid") rviz=$(cat "$NEW/pids/rviz.pid")"; DISPLAY=:1 xdotool search --name '"'"'v1_display.rviz'"'"' > "$NEW/pids/rviz.window"; echo "window=$(cat "$NEW/pids/rviz.window")"; ROS_MASTER_URI=http://127.0.0.1:11585 rosparam list | grep -c formation; date -u +%H:%M:%SZ' < /dev/null && pwd -P >| /tmp/claude-b977-cwd
+--- rosmaster on 11585 ---
+66288 /usr/bin/python3 /opt/ros/noetic/bin/rosmaster --core -p 11585 -w 3 __log:=/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_a_corridor/V1/20261117T105607Z/ros_log/83a33120-e275-11f1-a57b-1b4c90db486b/master.log
+67990 /bin/bash -c source /home/wq/.claude/shell-snapshots/snapshot-bash-1794815825700-wvsxl5.sh 2>/dev/null || true && shopt -u extglob 2>/dev/null || true && { \builtin unalias -- 'which'; \builtin unset -f -- 'which'; } >/dev/null 2>&1 || true && { \builtin unalias -- 'unsetenv'; \builtin unset -f -- 'unsetenv'; } >/dev/null 2>&1 || true && eval 'wc -l corridor_messages.jsonl && { echo "cleanup at $(date -u +%Y-%m-%dT%H:%M:%SZ)"; for name in recorder rviz playback roscore; do pid=$(cat pids/$name.pid); echo "stop $name pid=$pid"; kill -INT "$pid" 2>/dev/null; for i in 1 2 3 4 5 6 7 8 9 10; do kill -0 "$pid" 2>/dev/null || break; sleep 0.3; done; if kill -0 "$pid" 2>/dev/null; then echo "still alive: $name $pid"; else echo "stopped: $name $pid"; fi; done; sleep 1; echo '"'"'--- own pids after cleanup ---'"'"'; for name in recorder rviz playback roscore; do pid=$(cat pids/$name.pid); ps -o pid,stat,cmd -p "$pid" --no-headers || echo "$name $pid dead"; done; echo '"'"'--- rosmaster on 11585 ---'"'"'; pgrep -af '"'"'rosmaster --core -p 11585'"'"' || echo '"'"'no rosmaster 11585'"'"'; echo '"'"'--- port 11585 ---'"'"'; ss -ltnp 2>/dev/null | grep 11585 || echo '"'"'11585 free'"'"'; echo '"'"'--- port 11411 (user session, must remain) ---'"'"'; ss -ltn 2>/dev/null | grep 11411 || echo '"'"'11411 not listening'"'"'; } | tee cleanup.log' < /dev/null && pwd -P >| /tmp/claude-17e9-cwd
+67992 /bin/bash -c source /home/wq/.claude/shell-snapshots/snapshot-bash-1794815825700-wvsxl5.sh 2>/dev/null || true && shopt -u extglob 2>/dev/null || true && { \builtin unalias -- 'which'; \builtin unset -f -- 'which'; } >/dev/null 2>&1 || true && { \builtin unalias -- 'unsetenv'; \builtin unset -f -- 'unsetenv'; } >/dev/null 2>&1 || true && eval 'wc -l corridor_messages.jsonl && { echo "cleanup at $(date -u +%Y-%m-%dT%H:%M:%SZ)"; for name in recorder rviz playback roscore; do pid=$(cat pids/$name.pid); echo "stop $name pid=$pid"; kill -INT "$pid" 2>/dev/null; for i in 1 2 3 4 5 6 7 8 9 10; do kill -0 "$pid" 2>/dev/null || break; sleep 0.3; done; if kill -0 "$pid" 2>/dev/null; then echo "still alive: $name $pid"; else echo "stopped: $name $pid"; fi; done; sleep 1; echo '"'"'--- own pids after cleanup ---'"'"'; for name in recorder rviz playback roscore; do pid=$(cat pids/$name.pid); ps -o pid,stat,cmd -p "$pid" --no-headers || echo "$name $pid dead"; done; echo '"'"'--- rosmaster on 11585 ---'"'"'; pgrep -af '"'"'rosmaster --core -p 11585'"'"' || echo '"'"'no rosmaster 11585'"'"'; echo '"'"'--- port 11585 ---'"'"'; ss -ltnp 2>/dev/null | grep 11585 || echo '"'"'11585 free'"'"'; echo '"'"'--- port 11411 (user session, must remain) ---'"'"'; ss -ltn 2>/dev/null | grep 11411 || echo '"'"'11411 not listening'"'"'; } | tee cleanup.log' < /dev/null && pwd -P >| /tmp/claude-17e9-cwd
+--- port 11585 ---
+LISTEN   0        128                   0.0.0.0:11585            0.0.0.0:*       users:(("rosmaster",pid=66288,fd=4))                                           
+--- port 11411 (user session, must remain) ---
+LISTEN  0       128               127.0.0.1:11411        0.0.0.0:*              
+forced recorder stop at 2026-11-17T10:58:59Z: SIGINT/SIGTERM left rospy sleep running; SIGKILL used; JSONL already 4 flushed messages
+--- final own-process check ---
+recorder pid 66753 dead
+rviz pid 66754 dead
+playback pid 66752 dead
+roscore pid 66215 dead
+--- port 11585 ---
+11585 free
+--- port 11411 (user session, untouched) ---
+LISTEN  0       128               127.0.0.1:11411        0.0.0.0:*              
+stray recorder 66330 from the failed first startup (pids file later overwritten by pid 66753) stopped at 2026-11-17T11:02:33Z
+SIGKILL used for stray recorder 66330 at 2026-11-17T11:02:40Z

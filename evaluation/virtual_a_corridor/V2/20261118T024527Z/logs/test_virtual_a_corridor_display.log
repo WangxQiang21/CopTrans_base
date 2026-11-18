@@ -1,0 +1,40 @@
+test_cleared_payload_only_deletes_the_matching_generation (test_virtual_a_corridor_display.CorridorAdmissionMatchTest) ... ok
+test_matching_admission_is_accepted (test_virtual_a_corridor_display.CorridorAdmissionMatchTest) ... ok
+test_wrong_plan_map_context_or_generation_is_ignored (test_virtual_a_corridor_display.CorridorAdmissionMatchTest) ... ok
+test_matching_cleared_payload_deletes_without_adding (test_virtual_a_corridor_display.CorridorCallbackTest) ... ok
+test_matching_payload_publishes_one_atomic_replacement (test_virtual_a_corridor_display.CorridorCallbackTest) ... ok
+test_stale_plan_from_an_old_job_record_is_ignored (test_virtual_a_corridor_display.CorridorCallbackTest) ... [formation playback] ignoring corridor payload for plan 16: current job is plan 17
+ok
+test_wrong_generation_never_touches_the_corridor_layer (test_virtual_a_corridor_display.CorridorCallbackTest) ... [formation playback] ignoring corridor payload for plan 17: identity does not match the current admission
+ok
+test_c1_chain_digest_and_export_identity_are_unchanged (test_virtual_a_corridor_display.CorridorDisplayExportTest) ... ok
+test_every_vertex_and_plane_is_copied_within_1e_9_m (test_virtual_a_corridor_display.CorridorDisplayExportTest) ... ok
+test_export_rejects_a_different_grid (test_virtual_a_corridor_display.CorridorDisplayExportTest) ... ok
+test_edges_are_closed_line_strips_at_the_display_height (test_virtual_a_corridor_display.CorridorMarkerTest) ... ok
+test_fan_triangulation_reproduces_the_audited_region_area (test_virtual_a_corridor_display.CorridorMarkerTest) ... ok
+test_non_convex_reversed_or_claimed_payloads_are_rejected (test_virtual_a_corridor_display.CorridorMarkerTest) ... ok
+test_replacement_deletes_the_old_layer_before_adding_smaller_one (test_virtual_a_corridor_display.CorridorMarkerTest) ... ok
+test_two_routes_get_deterministic_distinct_colors (test_virtual_a_corridor_display.CorridorMarkerTest) ... ok
+test_candidate_and_final_identity_do_not_mix (test_virtual_a_corridor_display.V2ActualCorridorLayersTest) ... ok
+test_corridor_markers_copy_actual_region_vertices_within_1e_9 (test_virtual_a_corridor_display.V2ActualCorridorLayersTest) ... ok
+test_export_copies_actual_route_guide_regions_and_chain_digest (test_virtual_a_corridor_display.V2ActualCorridorLayersTest) ... ok
+test_final_paths_keep_mode_colors_and_non_sample_frame_consistency (test_virtual_a_corridor_display.V2ActualCorridorLayersTest) ... ok
+test_guide_markers_copy_route_and_centreline_without_resampling (test_virtual_a_corridor_display.V2ActualCorridorLayersTest) ... ok
+test_layer_toggles_do_not_change_planning_playback_or_frames (test_virtual_a_corridor_display.V2ActualCorridorLayersTest) ... ok
+test_unvalidated_guide_and_fake_audit_never_get_safety_labels (test_virtual_a_corridor_display.V2ActualCorridorLayersTest) ... ok
+test_cleared_payload_deletes_both_layers (test_virtual_a_corridor_display.V2GuideCallbackTest) ... ok
+test_invalid_guide_clears_both_layers_without_stale_add (test_virtual_a_corridor_display.V2GuideCallbackTest) ... [formation playback] rejecting corridor/guide payload: raw_route_points needs at least two points
+ok
+test_missing_job_digest_is_filled_only_from_verified_envelope (test_virtual_a_corridor_display.V2GuideCallbackTest) ... ok
+test_other_plans_verified_digest_never_fills_job_identity (test_virtual_a_corridor_display.V2GuideCallbackTest) ... [formation playback] ignoring corridor payload for plan 1: identity does not match the current admission
+ok
+test_valid_payload_replaces_both_layers_once (test_virtual_a_corridor_display.V2GuideCallbackTest) ... ok
+test_wrong_generation_never_touches_either_layer (test_virtual_a_corridor_display.V2GuideCallbackTest) ... [formation playback] ignoring corridor payload for plan 1: identity does not match the current admission
+ok
+test_missing_corridor_round_clears_instead_of_reusing_old_geometry (test_virtual_a_corridor_display.V2PlannerDebugPublicationTest) ... ok
+test_planning_debug_carries_actual_route_guide_and_chain (test_virtual_a_corridor_display.V2PlannerDebugPublicationTest) ... ok
+
+----------------------------------------------------------------------
+Ran 30 tests in 17.053s
+
+OK

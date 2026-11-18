@@ -1,0 +1,573 @@
+{
+ "attempts": [
+  {
+   "attempt_index": 0,
+   "constraint_residual": 4.0453681447212095e-20,
+   "corridor_residual_m": 0.0,
+   "detail": "Maximum_Iterations_Exceeded",
+   "initial_source": "map_route_guide",
+   "iterations": 120,
+   "objective": 1.000055942883323,
+   "rejection_reason": "Maximum_Iterations_Exceeded",
+   "solver": "ipopt",
+   "solver_status": "Maximum_Iterations_Exceeded",
+   "status": "SOLVER_FAILED",
+   "wall_time_s": 15.888065716950223
+  },
+  {
+   "attempt_index": 1,
+   "constraint_residual": 1.7763568394002505e-15,
+   "corridor_residual_m": 0.0,
+   "detail": "Solve_Succeeded",
+   "initial_source": "automatic_endpoint_shape",
+   "iterations": 28,
+   "objective": 1.000061567000213,
+   "rejection_reason": "",
+   "solver": "ipopt",
+   "solver_status": "Solve_Succeeded",
+   "status": "SOLVER_SUCCESS_AUDITED",
+   "wall_time_s": 5.732542805955745
+  },
+  {
+   "attempt_index": 2,
+   "constraint_residual": 3.552713678800501e-15,
+   "corridor_residual_m": 0.0,
+   "detail": "Solve_Succeeded",
+   "initial_source": "automatic_endpoint_shape",
+   "iterations": 28,
+   "objective": 1.0000614708104274,
+   "rejection_reason": "",
+   "solver": "ipopt",
+   "solver_status": "Solve_Succeeded",
+   "status": "SOLVER_SUCCESS_AUDITED",
+   "wall_time_s": 5.670592749025673
+  },
+  {
+   "attempt_index": 3,
+   "constraint_residual": null,
+   "corridor_residual_m": null,
+   "detail": "Maximum_WallTime_Exceeded",
+   "initial_source": "automatic_endpoint_shape",
+   "iterations": 10,
+   "objective": 1.0202977362545493,
+   "rejection_reason": "SOFT_BUDGET_EXHAUSTED",
+   "solver": "ipopt",
+   "solver_status": "Maximum_WallTime_Exceeded",
+   "status": "SOLVER_TIMEOUT",
+   "wall_time_s": 3.7805785989621654
+  },
+  {
+   "attempt_index": 0,
+   "constraint_residual": 4.32155547944654e-19,
+   "corridor_residual_m": 0.0,
+   "detail": "Maximum_Iterations_Exceeded",
+   "initial_source": "map_route_guide",
+   "iterations": 120,
+   "objective": 1.0000298934600222,
+   "rejection_reason": "Maximum_Iterations_Exceeded",
+   "solver": "ipopt",
+   "solver_status": "Maximum_Iterations_Exceeded",
+   "status": "SOLVER_FAILED",
+   "wall_time_s": 15.353187102940865
+  },
+  {
+   "attempt_index": 1,
+   "constraint_residual": 1.7763568394002505e-15,
+   "corridor_residual_m": 0.0,
+   "detail": "Solve_Succeeded",
+   "initial_source": "automatic_endpoint_shape",
+   "iterations": 28,
+   "objective": 1.000061567000213,
+   "rejection_reason": "",
+   "solver": "ipopt",
+   "solver_status": "Solve_Succeeded",
+   "status": "SOLVER_SUCCESS_AUDITED",
+   "wall_time_s": 5.683262195088901
+  },
+  {
+   "attempt_index": 2,
+   "constraint_residual": null,
+   "corridor_residual_m": null,
+   "detail": "Maximum_WallTime_Exceeded",
+   "initial_source": "automatic_endpoint_shape",
+   "iterations": 14,
+   "objective": 1.000361188546117,
+   "rejection_reason": "SOFT_BUDGET_EXHAUSTED",
+   "solver": "ipopt",
+   "solver_status": "Maximum_WallTime_Exceeded",
+   "status": "SOLVER_TIMEOUT",
+   "wall_time_s": 4.159375670948066
+  }
+ ],
+ "checks": 3563,
+ "collision_audit_passed": false,
+ "corridor_rounds": [
+  {
+   "allocation": [
+    [
+     0.0,
+     0.125,
+     0
+    ],
+    [
+     0.125,
+     0.25,
+     0
+    ],
+    [
+     0.25,
+     0.375,
+     0
+    ],
+    [
+     0.375,
+     0.5,
+     0
+    ],
+    [
+     0.5,
+     0.625,
+     0
+    ],
+    [
+     0.625,
+     0.75,
+     0
+    ],
+    [
+     0.75,
+     0.875,
+     0
+    ],
+    [
+     0.875,
+     1.0,
+     0
+    ]
+   ],
+   "chain_audit_passed": true,
+   "chain_audit_reason": "CORRIDOR_CHAIN_VERIFIED",
+   "chain_digest": "ad2b65564ab0a10f977c0cc4e38f0d268e389e36aaa1d021c40887209ad59c03",
+   "containment": {
+    "allocation_count": 8,
+    "audit": "continuous_path_in_corridors",
+    "base_interval_count": 8,
+    "corridor_count": 1,
+    "detail": "continuous path containment certified with epsilon=8.223591386124542e-08 m",
+    "epsilon_total_m": 8.223591386124542e-08,
+    "first_failure": null,
+    "is_three_vehicle_certificate": false,
+    "max_bound_residual_m": 0.5421457799480119,
+    "max_depth": 20,
+    "max_depth_reached": 3,
+    "max_intervals": 20000,
+    "max_point_residual_m": -0.17499999000056982,
+    "method": "arc_length_midpoint_interval_bound",
+    "min_width_m": 1e-05,
+    "passed": true,
+    "path_position_error_bound_m": 3.223591386124541e-08,
+    "position_budget_m": 5e-08,
+    "reason": "CORRIDOR_CONTAINMENT_VERIFIED",
+    "sample_count": 120
+   },
+   "effective_margin_m": 1e-05,
+   "guide_points": [
+    [
+     0.0,
+     0.0
+    ],
+    [
+     11.474331036127456,
+     -8.326672684688674e-16
+    ]
+   ],
+   "guide_quality": {
+    "chain_digest": "ad2b65564ab0a10f977c0cc4e38f0d268e389e36aaa1d021c40887209ad59c03",
+    "fallback_objective": null,
+    "fallback_reason": "NO_INTERNAL_PORTAL",
+    "guide_length_m": 11.474331036127456,
+    "is_executable_path": false,
+    "negative_turn_indices": [],
+    "portal_radius_m": [],
+    "primal_violation_m": 0.0,
+    "qp_attempted": false,
+    "qp_iterations": 0,
+    "qp_objective": null,
+    "qp_status": "NO_INTERNAL_PORTAL",
+    "qp_used": false,
+    "region_count": 1,
+    "rounding": "PL_ONLY_NO_BEZIER",
+    "seed_lengths_m": [
+     11.474331036127456
+    ],
+    "segment_corridor_indices": [
+     0
+    ],
+    "segment_lengths_m": [
+     11.474331036127456
+    ],
+    "smoothness_claim": "NONE",
+    "source": "corridor_endpoint_polyline",
+    "stage": "C2_A",
+    "warnings": []
+   },
+   "guide_source": "corridor_endpoint_polyline",
+   "region_count": 1,
+   "region_rows": [
+    5
+   ],
+   "round_index": 0,
+   "route_source": "astar_primary"
+  },
+  {
+   "allocation": [
+    [
+     0.0,
+     0.125,
+     0
+    ],
+    [
+     0.125,
+     0.25,
+     0
+    ],
+    [
+     0.25,
+     0.375,
+     0
+    ],
+    [
+     0.375,
+     0.5,
+     0
+    ],
+    [
+     0.5,
+     0.625,
+     0
+    ],
+    [
+     0.625,
+     0.75,
+     0
+    ],
+    [
+     0.75,
+     0.875,
+     0
+    ],
+    [
+     0.875,
+     1.0,
+     0
+    ]
+   ],
+   "chain_audit_passed": true,
+   "chain_audit_reason": "CORRIDOR_CHAIN_VERIFIED",
+   "chain_digest": "ad2b65564ab0a10f977c0cc4e38f0d268e389e36aaa1d021c40887209ad59c03",
+   "containment": {
+    "allocation_count": 8,
+    "audit": "continuous_path_in_corridors",
+    "base_interval_count": 8,
+    "corridor_count": 1,
+    "detail": "continuous path containment certified with epsilon=8.223591397677735e-08 m",
+    "epsilon_total_m": 8.223591397677735e-08,
+    "first_failure": null,
+    "is_three_vehicle_certificate": false,
+    "max_bound_residual_m": 0.5421457795023004,
+    "max_depth": 20,
+    "max_depth_reached": 3,
+    "max_intervals": 20000,
+    "max_point_residual_m": -0.17499999000069225,
+    "method": "arc_length_midpoint_interval_bound",
+    "min_width_m": 1e-05,
+    "passed": true,
+    "path_position_error_bound_m": 3.223591397677736e-08,
+    "position_budget_m": 5e-08,
+    "reason": "CORRIDOR_CONTAINMENT_VERIFIED",
+    "sample_count": 120
+   },
+   "effective_margin_m": 1e-05,
+   "guide_points": [
+    [
+     0.0,
+     0.0
+    ],
+    [
+     11.474331036127456,
+     -8.326672684688674e-16
+    ]
+   ],
+   "guide_quality": {
+    "chain_digest": "ad2b65564ab0a10f977c0cc4e38f0d268e389e36aaa1d021c40887209ad59c03",
+    "fallback_objective": null,
+    "fallback_reason": "NO_INTERNAL_PORTAL",
+    "guide_length_m": 11.474331036127456,
+    "is_executable_path": false,
+    "negative_turn_indices": [],
+    "portal_radius_m": [],
+    "primal_violation_m": 0.0,
+    "qp_attempted": false,
+    "qp_iterations": 0,
+    "qp_objective": null,
+    "qp_status": "NO_INTERNAL_PORTAL",
+    "qp_used": false,
+    "region_count": 1,
+    "rounding": "PL_ONLY_NO_BEZIER",
+    "seed_lengths_m": [
+     11.474331036127456
+    ],
+    "segment_corridor_indices": [
+     0
+    ],
+    "segment_lengths_m": [
+     11.474331036127456
+    ],
+    "smoothness_claim": "NONE",
+    "source": "corridor_endpoint_polyline",
+    "stage": "C2_A",
+    "warnings": []
+   },
+   "guide_source": "corridor_endpoint_polyline",
+   "region_count": 1,
+   "region_rows": [
+    5
+   ],
+   "round_index": 1,
+   "route_source": "astar_primary"
+  }
+ ],
+ "detail": "analytic sweep failed: ",
+ "dynamic_audit_passed": true,
+ "executable": false,
+ "feasible": false,
+ "geometry_audit_passed": true,
+ "grid_sha256": "d4ca88971203636b4dcc0285b99d092823069d210d8ac3e13f67be49609ba1c3",
+ "guidance_mode": "corridor",
+ "measured_wall_s": 64.94363124296069,
+ "metrics": {
+  "collision_checks": 2499,
+  "collision_margin_m": {
+   "baseline_half_length_m": 0.394,
+   "baseline_half_width_m": 0.275,
+   "baseline_margin_m": 0.05,
+   "checker_half_length_growth_lower_m": 3.252084146421196e-08,
+   "checker_half_length_m": 0.3940000325208415,
+   "checker_half_width_growth_lower_m": 3.252084146421196e-08,
+   "checker_half_width_m": 0.2750000325208415,
+   "checker_radius_upper_m": 0.48048001364561266,
+   "closure_gap_m": 5.4012829356903775e-17,
+   "contexts": {
+    "map_boundary": {
+     "actual_per_side_growth_lower_m": 3.252084146421196e-08,
+     "checker_padding_m": 0.0,
+     "covered": true,
+     "required_per_side_m": 3.252084141019913e-08
+    },
+    "motion_sweep": {
+     "actual_numerical_per_side_growth_lower_m": 3.252084146421196e-08,
+     "checker_padding_m": 0.01,
+     "covered": true,
+     "padding_role": "sampling-interval motion protection only; not counted in the numerical envelope and not subtracted from the margin",
+     "required_per_side_m": 3.252084141019913e-08
+    },
+    "no_motion_hold": {
+     "actual_per_side_growth_lower_m": 3.252084146421196e-08,
+     "checker_padding_m": 0.0,
+     "covered": true,
+     "required_per_side_m": 3.252084141019913e-08
+    },
+    "static_start_goal": {
+     "actual_per_side_growth_lower_m": 3.252084146421196e-08,
+     "checker_padding_m": 0.0,
+     "covered": true,
+     "required_per_side_m": 3.252084141019913e-08
+    },
+    "vehicle_vehicle": {
+     "actual_two_body_gap_reduction_lower_m": 6.504168291454614e-08,
+     "binding_pair": {
+      "first_vehicle_id": 1,
+      "pair_envelope_m": 6.504168282039828e-08,
+      "second_vehicle_id": 2
+     },
+     "checker_padding_m": 0.0,
+     "covered": true,
+     "required_pair_envelope_m": 6.504168282039828e-08
+    }
+   },
+   "formula": "e_i = eps_position + (|offset_i| + r_upper) * eps_psi + r_upper * eps_relative_heading, maximised over segments and vehicles; the legacy checker expands each body side by (margin - baseline)/2, so the required closure is (margin_used - baseline)/2 >= max_i e_i, equivalently margin_used >= baseline + 2*max_i e_i",
+   "margin_growth_lower_m": 6.504168291454614e-08,
+   "margin_minimum_required_m": 0.05000006504168283,
+   "margin_used_m": 0.05000006504168292,
+   "maximum_envelope_m": 3.252084141019913e-08,
+   "maximum_record": {
+    "envelope_m": 3.252084141019913e-08,
+    "eps_formation_heading_rad": 1.6000177636569656e-10,
+    "eps_position_m": 3.223591397677736e-08,
+    "eps_relative_heading_rad": 1e-10,
+    "inflated_body_radius_upper_m": 0.48048001364561266,
+    "offset_hypot_float_m": 1.0,
+    "offset_m": 1.0000000000000004,
+    "per_side_required_m": 3.252084141019913e-08,
+    "vehicle_id": 1
+   },
+   "pair_closure_gap_m": 9.414785767110329e-17,
+   "pair_envelope_required_m": 6.504168282039828e-08,
+   "per_side_margin_m": 3.252084146421196e-08,
+   "per_side_required_m": 3.252084141019913e-08,
+   "radius_upper_m": 0.48048001364561266,
+   "radius_upper_note": "radius_upper is an outward interval square root of the actual checker half extents (length+margin)/2 and (width+margin)/2 at the recorded margin; it is not the old fixed-point radius.  The margin is solved at this same expanded radius.",
+   "sweep_motion_padding_m": 0.01,
+   "unit_note": "The legacy FormationCollisionChecker uses half extents (shape_dimension + margin_m)/2.  A full-width margin increase delta therefore grows each side by only delta/2.  error_envelope reserves 2*max(e_i) of full-width margin so the actual per-side growth covers the numerical envelope.  Sweep motion padding is a separate sampling-interval protection and is never counted as numerical margin.",
+   "vehicles": [
+    {
+     "envelope_m": 3.252084141019913e-08,
+     "eps_formation_heading_rad": 1.6000177636569656e-10,
+     "eps_position_m": 3.223591397677736e-08,
+     "eps_relative_heading_rad": 1e-10,
+     "inflated_body_radius_upper_m": 0.48048001364561266,
+     "offset_hypot_float_m": 1.0,
+     "offset_m": 1.0000000000000004,
+     "per_side_required_m": 3.252084141019913e-08,
+     "vehicle_id": 1
+    },
+    {
+     "envelope_m": 3.252084141019913e-08,
+     "eps_formation_heading_rad": 1.6000177636569656e-10,
+     "eps_position_m": 3.223591397677736e-08,
+     "eps_relative_heading_rad": 1e-10,
+     "inflated_body_radius_upper_m": 0.48048001364561266,
+     "offset_hypot_float_m": 1.0,
+     "offset_m": 1.0000000000000004,
+     "per_side_required_m": 3.252084141019913e-08,
+     "vehicle_id": 2
+    },
+    {
+     "envelope_m": 3.252084141019913e-08,
+     "eps_formation_heading_rad": 1.6000177636569656e-10,
+     "eps_position_m": 3.223591397677736e-08,
+     "eps_relative_heading_rad": 1e-10,
+     "inflated_body_radius_upper_m": 0.48048001364561266,
+     "offset_hypot_float_m": 1.0,
+     "offset_m": 1.0000000000000004,
+     "per_side_required_m": 3.252084141019913e-08,
+     "vehicle_id": 3
+    }
+   ]
+  }
+ },
+ "path_length_m": null,
+ "path_present": false,
+ "plan_kind": null,
+ "plan_present": false,
+ "planner_config": {
+  "allow_scipy_fallback": true,
+  "collocation_points": 9,
+  "corridor_audit_max_depth": 20,
+  "corridor_audit_max_intervals": 20000,
+  "corridor_audit_min_width_m": 1e-05,
+  "corridor_audit_position_margin_m": 5e-08,
+  "corridor_box_padding_m": 2.0,
+  "corridor_clearance_target_m": 0.05,
+  "corridor_clearance_weight": 1.0,
+  "corridor_enforcement": "hard",
+  "corridor_guide_weight": 0.1,
+  "corridor_kappa_weight": 0.01,
+  "corridor_margin_m": 1e-05,
+  "corridor_margin_portal_fraction": 0.25,
+  "corridor_quadrature_points": 9,
+  "curvature_margin": 0.02,
+  "eta_limit": 2.0,
+  "guidance_mode": "corridor",
+  "heading_tolerance_rad": 0.003490658503988659,
+  "intervals": 8,
+  "ipopt_tolerance": 1e-08,
+  "kappa_limit": 0.5524861878453039,
+  "max_initials": 6,
+  "max_iterations": 120,
+  "max_seconds": 30.0,
+  "position_tolerance_m": 0.005,
+  "rigidity_tolerance_m": 1e-06,
+  "scipy_maxiter": 120,
+  "scipy_tolerance": 1e-08,
+  "solver": "ipopt"
+ },
+ "planning_context_sha256": "701ac76e095a7ae55038a2b0a36fbb03a51d4970231977f2060e43d8a6d72ea9",
+ "reason": "MAP_OBB_COLLISION",
+ "request_sha256": "18dc626d71fa5b6e5e023215c04b01ceae45f94c8846790d6352b9d6c0e9f075",
+ "scene": "S3",
+ "search_rounds": [
+  {
+   "collision_first_failure": {
+    "constraint": "COLLISION",
+    "other_vehicle_id": null,
+    "qf": [
+     4.10366700250394,
+     6.222767787956909e-07,
+     3.1625703640427426e-07
+    ],
+    "reason": "MAP_OBB_COLLISION",
+    "sample_index": 124,
+    "segment_index": 2,
+    "stage": "analytic_sweep",
+    "station": 4.103667002504015,
+    "time_s": 11.48564424435774,
+    "vehicle_id": 3
+   },
+   "collision_passed": false,
+   "collision_reason": "MAP_OBB_COLLISION",
+   "corridor_containment_passed": true,
+   "corridor_containment_reason": "CORRIDOR_CONTAINMENT_VERIFIED",
+   "dynamics_passed": true,
+   "dynamics_reason": null,
+   "geometry_reason": "",
+   "geometry_status": "GEOMETRY_FEASIBLE",
+   "round_index": 0,
+   "timing_reason": "",
+   "timing_status": "DYNAMIC_FEASIBLE"
+  },
+  {
+   "collision_first_failure": {
+    "constraint": "COLLISION",
+    "other_vehicle_id": null,
+    "qf": [
+     4.103667002503974,
+     8.050876135951318e-07,
+     4.254786558478398e-07
+    ],
+    "reason": "MAP_OBB_COLLISION",
+    "sample_index": 124,
+    "segment_index": 2,
+    "stage": "analytic_sweep",
+    "station": 4.103667002504101,
+    "time_s": 11.485644957830894,
+    "vehicle_id": 3
+   },
+   "collision_passed": false,
+   "collision_reason": "MAP_OBB_COLLISION",
+   "corridor_containment_passed": true,
+   "corridor_containment_reason": "CORRIDOR_CONTAINMENT_VERIFIED",
+   "dynamics_passed": true,
+   "dynamics_reason": null,
+   "geometry_reason": "",
+   "geometry_status": "GEOMETRY_FEASIBLE",
+   "round_index": 1,
+   "timing_reason": "",
+   "timing_status": "DYNAMIC_FEASIBLE"
+  }
+ ],
+ "status": "COLLISION_FAILED",
+ "timings": {
+  "collision_audit_s": 0.4990109120262787,
+  "corridor_allocation_s": 5.2241841331124306e-05,
+  "corridor_build_s": 0.035559092881157994,
+  "corridor_containment_s": 0.014395082020200789,
+  "corridor_guide_s": 0.00016741210129112005,
+  "dynamics_audit_s": 2.0652098739519715,
+  "geometry_solve_s": 60.12695243686903,
+  "result_assembly_s": 0.0,
+  "retime_s": 0.7674393099732697,
+  "route_generation_s": 1.423445408931002
+ },
+ "wall_time_s": 64.9377599399304
+}

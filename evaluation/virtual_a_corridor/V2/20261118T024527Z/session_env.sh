@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+export ROS_MASTER_URI=http://127.0.0.1:11585
+export ROS_HOME=/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_a_corridor/V2/20261118T024527Z/ros_home
+export ROS_LOG_DIR=/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_a_corridor/V2/20261118T024527Z/ros_log
+source /opt/ros/noetic/setup.bash
+source /home/wq/whut_thesis/expv3_multi_virtual_a/catkin_ws/devel/setup.bash
+export PYTHONDONTWRITEBYTECODE=1
+export OPENBLAS_NUM_THREADS=1
+export PYTHONPATH="/home/wq/whut_thesis/expv3_multi_virtual_a/catkin_ws/src/fwis_v3_optimizer/src:/home/wq/whut_thesis/expv3_multi_virtual_a/tests:/home/wq/whut_thesis/expv3_multi_virtual_a:${PYTHONPATH:-}"

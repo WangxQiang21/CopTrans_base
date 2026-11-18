@@ -1,0 +1,39 @@
+generated_utc=2026-11-17T14:21:35Z
+HEAD=9a19fd3e22d33188b13795f695757c3e4a36909f
+branch=feature/virtual-rigid-formation-a
+
+## git status --short
+ M catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch
+ M catkin_ws/src/fwis_v3_demo/rviz/formation_demo.rviz
+ M catkin_ws/src/fwis_v3_optimizer/scripts/formation_uniform_planner_node.py
+ M catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/contracts.py
+ M catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py
+ M catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/optimizer.py
+ M catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/pipeline.py
+ M catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_playback.py
+ M catkin_ws/src/fwis_v3_playback/package.xml
+ M catkin_ws/src/fwis_v3_playback/scripts/formation_playback.py
+ M tests/test_formation_demo_assets.py
+ M tests/test_virtual_a_ros_adapter.py
+?? evaluation/virtual_a_corridor/C2A/
+?? evaluation/virtual_a_corridor/C2B/
+?? evaluation/virtual_a_corridor/V0/
+?? evaluation/virtual_a_corridor/V1/
+?? tests/test_formation_hud.py
+?? tests/test_virtual_a_corridor_display.py
+?? tests/test_virtual_a_corridor_optimizer.py
+
+## git diff --stat HEAD
+ .../src/fwis_v3_demo/launch/formation_demo.launch  |  22 +
+ .../src/fwis_v3_demo/rviz/formation_demo.rviz      |  26 +
+ .../scripts/formation_uniform_planner_node.py      |  82 ++
+ .../formation_continuous_a/contracts.py            | 204 ++++-
+ .../formation_continuous_a/corridor.py             | 870 ++++++++++++++++++++-
+ .../formation_continuous_a/optimizer.py            | 493 ++++++++++--
+ .../formation_continuous_a/pipeline.py             | 183 ++++-
+ .../src/fwis_v3_optimizer/formation_playback.py    | 417 +++++++++-
+ catkin_ws/src/fwis_v3_playback/package.xml         |   3 +
+ .../fwis_v3_playback/scripts/formation_playback.py | 203 ++++-
+ tests/test_formation_demo_assets.py                |  46 ++
+ tests/test_virtual_a_ros_adapter.py                |  69 ++
+ 12 files changed, 2518 insertions(+), 100 deletions(-)

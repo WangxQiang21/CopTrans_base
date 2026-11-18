@@ -1,0 +1,22 @@
+# V2 private ROS session cleanup 2026-11-18T03:19:41Z
+rviz pid=266547 verified: rviz -d /home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_a_corridor/V2/20261118T024527Z/v2_display.rviz
+sent TERM to rviz pid=266547
+rviz pid=266547 exited after 200ms
+planner pid=266472 verified: python3 catkin_ws/devel/lib/fwis_v3_optimizer/formation_uniform_planner_node.py __name:=formation_uniform_planner _backend:=virtual_rigid_a _frame_id:=map _max_publication_samples:=200001 _virtual_a_guidance_mode:=corridor _virtual_a_goal_policy:=free _virtual_a_planning_budget_s:=120.0 _virtual_a_planning_timeout_s:=150.0 _job_state_heartbeat_s:=1.0
+sent TERM to planner pid=266472
+planner pid=266472 exited after 900ms
+playback pid=266426 verified: python3 catkin_ws/devel/lib/fwis_v3_playback/formation_playback.py __name:=formation_playback_v2 _backend:=virtual_rigid_a _rate:=5.0 _publish_tf:=true _transport_ui:=false _hud_enabled:=false _show_status_text:=false _show_cargo_reason:=false
+sent TERM to playback pid=266426
+playback pid=266426 exited after 800ms
+roscore pid=266320 verified: /usr/bin/python3 /opt/ros/noetic/bin/roscore -p 11585
+sent TERM to roscore pid=266320
+roscore pid=266320 exited after 800ms
+--- remaining session processes
+rviz pid=266547 gone
+planner pid=266472 gone
+playback pid=266426 gone
+roscore pid=266320 gone
+--- port check
+LISTEN   0        128                 127.0.0.1:11411            0.0.0.0:*       users:(("rosmaster",pid=3039925,fd=4))                                         
+--- driver check
+--- done

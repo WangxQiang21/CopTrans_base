@@ -1,0 +1,55 @@
+# C2-B evidence commands (run from repo root /home/wq/whut_thesis/expv3_multi_virtual_a)
+# generated 2026-11-17T14:21:35Z
+
+## Unit tests (targeted multi-module)
+export PYTHONPATH="$PWD/catkin_ws/src/fwis_v3_optimizer/src:$PWD/tests:$PWD"
+python3 -B -m unittest tests.test_virtual_a_corridor_optimizer tests.test_virtual_a_corridor tests.test_virtual_a_optimizer tests.test_virtual_a_trajectory tests.test_virtual_a_pipeline
+EXIT=0
+
+## TASK_C2-listed module commands (each single-module discover)
+python3 -B -m unittest discover -s tests -p test_virtual_a_corridor_optimizer.py -v
+python3 -B -m unittest discover -s tests -p test_virtual_a_corridor_optimizer.py -v EXIT=0
+python3 -B -m unittest discover -s tests -p test_virtual_a_optimizer.py -v
+python3 -B -m unittest discover -s tests -p test_virtual_a_optimizer.py -v EXIT=0
+python3 -B -m unittest discover -s tests -p test_virtual_a_trajectory.py -v
+python3 -B -m unittest discover -s tests -p test_virtual_a_trajectory.py -v EXIT=0
+python3 -B -m unittest discover -s tests -p test_virtual_a_pipeline.py -v
+python3 -B -m unittest discover -s tests -p test_virtual_a_pipeline.py -v EXIT=0
+
+## Pipeline cases (run from evaluation/virtual_a_corridor/C2B/20261117T135647Z)
+bash run_all_cases.sh   # killed at S1_mirror; completed cases recorded in pipeline_exit_codes.log
+bash run_remaining_cases.sh
+bash run_scipy_cases.sh
+
+## Exit codes
+door_circumcircle legacy_route door_circumcircle_legacy_route.json EXIT=0
+S1 corridor S1_corridor.json EXIT=0
+S1_mirror corridor S1_mirror_corridor.json EXIT=0
+S2 corridor S2_corridor.json EXIT=0
+S2_mirror corridor S2_mirror_corridor.json EXIT=0
+S3 corridor S3_corridor.json EXIT=0
+S3_mirror corridor S3_mirror_corridor.json EXIT=0
+S1 legacy_route S1_legacy_route.json EXIT=0
+S1_mirror legacy_route S1_mirror_legacy_route.json EXIT=0
+S2 legacy_route S2_legacy_route.json EXIT=0
+S2_mirror legacy_route S2_mirror_legacy_route.json EXIT=0
+S3 legacy_route S3_legacy_route.json EXIT=0
+S3_mirror legacy_route S3_mirror_legacy_route.json EXIT=0
+door_circumcircle legacy_route door_circumcircle_legacy_route.json EXIT=0
+door_circumcircle corridor door_circumcircle_corridor.json EXIT=0
+
+door_circumcircle corridor/scipy door_circumcircle_corridor_scipy.json EXIT=0
+S1 corridor/scipy S1_corridor_scipy.json EXIT=0
+S3 corridor/scipy S3_corridor_scipy.json EXIT=0
+
+## Additional scipy cases (S2 / S2_mirror added after the first pass)
+python3 -B run_pipeline_case.py S2 corridor S2_corridor_scipy.json --solver scipy --max-seconds 40
+python3 -B run_pipeline_case.py S2_mirror corridor S2_mirror_corridor_scipy.json --solver scipy --max-seconds 40
+
+## Additional exit codes
+S2 corridor/scipy S2_corridor_scipy.json EXIT=0
+S2_mirror corridor/scipy S2_mirror_corridor_scipy.json EXIT=0
+
+## Evidence metadata maintenance (2026-11-17, after adding S2/S2_mirror scipy cases)
+# source_hashes.txt regenerated for run_scipy_cases.sh, assemble_results.py
+# (stale hash replaced by the file that actually produced results.json) and SUMMARY.md.

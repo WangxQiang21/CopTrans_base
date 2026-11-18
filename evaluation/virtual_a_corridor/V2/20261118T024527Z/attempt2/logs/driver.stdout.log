@@ -1,0 +1,13 @@
+[INFO] [1794970785.872018]: [v2 driver] request published
+[INFO] [1794970800.716911]: [v2 driver] envelope received; verifying
+[INFO] [1794970802.379458]: [v2 driver] envelope verified; waiting for midpoint
+Traceback (most recent call last):
+  File "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_a_corridor/V2/20261118T024527Z/v2_scene_driver.py", line 583, in <module>
+    main()
+  File "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_a_corridor/V2/20261118T024527Z/v2_scene_driver.py", line 570, in main
+    output = driver.run()
+  File "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_a_corridor/V2/20261118T024527Z/v2_scene_driver.py", line 534, in run
+    status_entry = self.wait_midpoint(self.args.playback_timeout)
+  File "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_a_corridor/V2/20261118T024527Z/v2_scene_driver.py", line 398, in wait_midpoint
+    raise RuntimeError(
+RuntimeError: playback did not reach the narrow-curve midpoint within 120.0 s

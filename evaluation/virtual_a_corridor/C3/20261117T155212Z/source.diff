@@ -1,0 +1,1306 @@
+--- a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/pipeline.py
++++ b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/pipeline.py
+@@ -46,12 +46,14 @@
+     make_corridor_guide,
+ )
+ from .optimizer import solve_open_path_guided
+-from .route_processing import simplify_route
++from .route_processing import segment_is_free, simplify_route
+ from .timing import retime_path
+ 
+ 
+ G4_TOTAL_SOFT_BUDGET_S = 60.0
+-MAX_COLLISION_RETRIES = 2
++# C3: one type-directed recovery replaces the historical two collision
++# retries.  No stacked loop outside the single planning loop.
++MAX_RECOVERIES = 1
+ G4_ROUTE_CLEARANCE_WEIGHT = 2.0
+ ROUTE_NEIGHBOURS = (
+     (-1, -1, math.sqrt(2.0)), (-1, 0, 1.0), (-1, 1, math.sqrt(2.0)),
+@@ -231,6 +233,22 @@
+     return tuple(points)
+ 
+ 
++def _routes_shortcut_equivalent(grid, first, second):
++    """First-version route-diversity screen, not a homotopy classification.
++
++    Two simplified guides are treated as the same candidate when every pair
++    of their vertices is exactly mutually visible.  Each pair then admits a
++    two-point shortcut inside the same free region, so the difference is only
++    a slight dogleg.  A blocked cross pair means the guides are separated by
++    obstacles (for example the two sides of one box) and both are retained.
++    This screen can merge non-equivalent routes in principle; it makes no
++    completeness claim and only schedules initial values.
++    """
++    return all(
++        segment_is_free(grid, first_point, second_point)
++        for first_point in first for second_point in second)
++
++
+ def make_route_guides(grid, start_qf, goal_qf, config=None, *,
+                       blocked_points=()):
+     """Return up to ``max_routes`` finite A* F-point guides.
+@@ -239,6 +257,11 @@
+     clearance cost and deterministic eight-neighbour moves.  It is a topology
+     hint only: it contains no vehicle path, curvature reference or known-good
+     solution.
++
++    C3 candidate scheduling: each A* route is screened by its greedy
++    simplification, and an exact start-goal line-of-sight route joins the
++    same bounded capacity when it is distinct.  The screen merges slight
++    doglegs, keeps obstacle-separated sides, and adds no extra A* search.
+     """
+     if config is None:
+         config = RouteGuideConfig()
+@@ -256,7 +279,7 @@
+     base_cost = clearance
+     penalty = np.zeros_like(clearance, dtype=float)
+     deadline = time.monotonic() + max(0.0, float(config.max_seconds))
+-    routes = []
++    kept = []
+     seen = set()
+     for index in range(int(config.max_routes)):
+         if time.monotonic() >= deadline:
+@@ -272,11 +295,15 @@
+             break
+         seen.add(signature)
+         points = _route_points_from_cells(grid, cells, start, goal)
+-        routes.append(GuideRoute(
++        candidate = GuideRoute(
+             points=points,
+             source="astar_primary" if index == 0 else
+             "astar_alternative_{}".format(index),
+-            grid_sha256=digest))
++            grid_sha256=digest)
++        shape = simplify_route(grid, candidate).points
++        if not any(_routes_shortcut_equivalent(grid, shape, other)
++                   for _, other in kept):
++            kept.append((candidate, shape))
+         # Penalise a small band around the previous guide so the next search
+         # explores a genuinely different topology.  This is not an executable
+         # path and never enters the final certificate.
+@@ -286,7 +313,18 @@
+             x0, x1 = max(0, ix - 2), min(
+                 grid.occ.shape[1], ix + 3)
+             penalty[y0:y1, x0:x1] += float(config.alternative_penalty)
+-    return tuple(routes)
++    if not blocked and math.hypot(goal[0] - start[0], goal[1] - start[1]) > 0.0 \
++            and segment_is_free(grid, start, goal):
++        # An exact C1 line-of-sight is only a topology candidate, never a
++        # three-vehicle certificate.  A collision local-block regeneration
++        # deliberately omits it so the real blocked position stays in charge.
++        direct = GuideRoute(
++            points=(start, goal), source="open_direct_los",
++            grid_sha256=digest)
++        if not any(_routes_shortcut_equivalent(
++                grid, direct.points, other) for _, other in kept):
++            kept.append((direct, direct.points))
++    return tuple(guide for guide, _ in kept[:int(config.max_routes)])
+ 
+ 
+ # ---------------------------------------------------------------------------
+@@ -355,8 +393,14 @@
+     }.get(status, "NO_ACCEPTED_CANDIDATE")
+ 
+ 
+-def _collision_retry_context(report, plan, grid_sha256, route, intervals,
+-                            retry_index=1):
++def _collision_retry_context(report, plan, grid_sha256, route, intervals):
++    """Build one geometric local block from the real collision position.
++
++    This is an explicitly heuristic recovery input: only the audited
++    collision location enters, and the regenerated guide plus every existing
++    audit remain authoritative.  An empty ``blocked_points`` means the audit
++    reported no usable position and the caller must not recover.
++    """
+     location = dict(getattr(report, "location", {}) or {})
+     qf = location.get("qf")
+     blocked = []
+@@ -405,17 +449,14 @@
+             })
+         except Exception:
+             targets = []
+-    geometric_target = bool(blocked) and station is not None
+-    relaxed = (not geometric_target) or int(retry_index) >= 2
+     return ObstacleContext(
+         grid_sha256=grid_sha256,
+         node_targets=tuple(targets),
+-        source="collision_audit_retry_relaxed_guidance" if relaxed
+-        else "collision_audit_retry",
++        source="collision_recovery_local_block_heuristic",
+         collision_station=float(station) if station is not None else None,
+         collision_reason=str(getattr(report, "reason", "") or ""),
+         blocked_points=tuple(blocked),
+-        route_weight_scale=0.02 if relaxed else 1.0)
++        route_weight_scale=1.0)
+ 
+ 
+ def _report_checks(report):
+@@ -441,7 +482,12 @@
+         "collision_audit_s": 0.0,
+         "result_assembly_s": 0.0,
+     }
+-    search = {"routes": (), "rounds": [], "budget": {}}
++    search = {
++        "routes": (), "rounds": [], "budget": {},
++        "route_count": 0, "initial_count": 0, "recovery_count": 0,
++        "first_failure_layer": "", "last_reason": "",
++        "recoveries": [],
++    }
+ 
+     if not isinstance(map_request, VirtualAMapRequest):
+         return _empty_result(
+@@ -510,7 +556,7 @@
+     hold_request = request.start_qf == request.goal_qf
+     search["budget"] = {
+         "total_soft_budget_s": G4_TOTAL_SOFT_BUDGET_S,
+-        "max_collision_retries": MAX_COLLISION_RETRIES,
++        "max_recoveries": MAX_RECOVERIES,
+         "planner_config_max_seconds": float(planner_config.max_seconds),
+         "route_config": replace(
+             RouteGuideConfig(),
+@@ -533,35 +579,98 @@
+         geometry_config = planner_config
+ 
+     routes = ()
++    route_index = 0
++    tried_routes = set()
++    recovery_count = 0
++    endpoint_only = False
++    first_failure_layer = ""
+     obstacle_context = None
+     clearance_field = None
+     chain = None
+     corridor_guide = None
+     corridor_allocation = None
+     corridor_round = None
++    corridor_route_index = None
+     containment = None
+-    collision_retries = 0
+     all_attempts = []
+     last_geometry_audit = None
+     last_dynamic_audit = None
+     last_collision_audit = None
++
++    def budget_stop(stage):
++        record_failure("PLANNING", "SOFT_BUDGET_EXHAUSTED")
++        return _empty_result(
++            map_request, "BUDGET_EXHAUSTED", "SOFT_BUDGET_EXHAUSTED",
++            "soft request budget exhausted before " + str(stage),
++            "PLANNING", timings, time.monotonic() - started, search,
++            attempts=all_attempts, routes=tuple(routes),
++            geometry_audit=last_geometry_audit,
++            dynamic_audit=last_dynamic_audit,
++            collision_audit=last_collision_audit)
++
++    def untried_route_index():
++        for index in range(len(routes)):
++            if index not in tried_routes:
++                return index
++        return None
++
++    def record_failure(layer, reason):
++        nonlocal first_failure_layer
++        if not first_failure_layer:
++            first_failure_layer = str(layer)
++            search["first_failure_layer"] = first_failure_layer
++        search["last_reason"] = str(reason or "")
++
++    def route_switch(reason, next_index):
++        # C3: the single recovery action.  It consumes the only recovery slot
++        # and only selects an already generated route; it never starts a new
++        # A* search or a stacked planning loop.
++        nonlocal route_index, corridor_route_index, recovery_count
++        recovery_count += 1
++        search["recovery_count"] = recovery_count
++        search["recoveries"].append({
++            "recovery_index": recovery_count,
++            "action": "route_switch",
++            "first_failure_layer": first_failure_layer,
++            "reason": str(reason or ""),
++            "from_route_index": int(route_index),
++            "to_route_index": int(next_index),
++            "wall_time_s": time.monotonic() - started,
++        })
++        tried_routes.add(route_index)
++        route_index = int(next_index)
++        corridor_route_index = None
++
++    def endpoint_only_recovery(reason):
++        # C3: numerical failure after every initial of this round has been
++        # tried may spend the same single recovery on the true endpoint-only
++        # family when no untried route remains.  In corridor mode only the
++        # high-weight guide is dropped; the hard halfspaces remain in force.
++        nonlocal recovery_count, endpoint_only
++        recovery_count += 1
++        search["recovery_count"] = recovery_count
++        search["recoveries"].append({
++            "recovery_index": recovery_count,
++            "action": "endpoint_only_initial",
++            "first_failure_layer": first_failure_layer,
++            "reason": str(reason or ""),
++            "from_route_index": int(route_index),
++            "to_route_index": None,
++            "wall_time_s": time.monotonic() - started,
++        })
++        endpoint_only = True
++
+     while True:
+-        round_started = time.monotonic()
++        containment = None
+         if remaining() <= 0.0:
+-            return _empty_result(
+-                map_request, "BUDGET_EXHAUSTED", "SOFT_BUDGET_EXHAUSTED",
+-                "no route/solve budget remained", "PLANNING", timings,
+-                time.monotonic() - started, search,
+-                attempts=all_attempts, routes=tuple(routes),
+-                geometry_audit=last_geometry_audit,
+-                dynamic_audit=last_dynamic_audit,
+-                collision_audit=last_collision_audit)
++            return budget_stop("route generation/solve")
+         if not routes and not hold_request:
+             route_started = time.monotonic()
+             if clearance_field is None:
+                 try:
+                     clearance_field = _cached_clearance_field(grid)
+                 except Exception as exc:
++                    record_failure("PLANNING", "CLEARANCE_FIELD_FAILED")
+                     return _empty_result(
+                         map_request, "INVALID_REQUEST",
+                         "CLEARANCE_FIELD_FAILED",
+@@ -578,6 +687,7 @@
+                     blocked_points=tuple(
+                         getattr(obstacle_context, "blocked_points", ())))
+             except Exception as exc:
++                record_failure("PLANNING", "ROUTE_GENERATION_FAILED")
+                 return _empty_result(
+                     map_request, "INVALID_REQUEST", "ROUTE_GENERATION_FAILED",
+                     "{}: {}".format(type(exc).__name__, exc), "PLANNING",
+@@ -604,6 +714,7 @@
+                 "grid_sha256": route.grid_sha256,
+             } for route in routes)
+             if not routes:
++                record_failure("PLANNING", "NO_ROUTE_GUIDE")
+                 return _empty_result(
+                     map_request, "NO_ACCEPTED_CANDIDATE",
+                     "NO_ROUTE_GUIDE",
+@@ -613,35 +724,33 @@
+                     geometry_audit=last_geometry_audit,
+                     dynamic_audit=last_dynamic_audit,
+                     collision_audit=last_collision_audit)
+-            if corridor_mode:
+-                build_started = time.monotonic()
+-                try:
+-                    simplified = simplify_route(grid, routes[0])
+-                    chain = build_corridor_chain(
+-                        grid, simplified,
+-                        box_padding_m=float(
+-                            planner_config.corridor_box_padding_m))
+-                except VirtualAContractError as exc:
+-                    return _empty_result(
+-                        map_request, "NO_ACCEPTED_CANDIDATE",
+-                        "CORRIDOR_BUILD_FAILED", exc.detail,
+-                        "PLANNING", timings, time.monotonic() - started,
+-                        search, attempts=all_attempts,
+-                        geometry_audit=last_geometry_audit,
+-                        dynamic_audit=last_dynamic_audit,
+-                        collision_audit=last_collision_audit)
++            route_index = 0
++            tried_routes = set()
++            endpoint_only = False
++            corridor_route_index = None
++            search["route_count"] = len(routes)
++        if remaining() <= 0.0:
++            return budget_stop("corridor build/solve")
++        if corridor_mode and not hold_request \
++                and corridor_route_index != route_index:
++            route = routes[route_index]
++            route_failure = None
++            build_started = time.monotonic()
++            try:
++                simplified = simplify_route(grid, route)
++                chain = build_corridor_chain(
++                    grid, simplified,
++                    box_padding_m=float(
++                        planner_config.corridor_box_padding_m))
++            except VirtualAContractError as exc:
++                route_failure = ("CORRIDOR_BUILD_FAILED", exc.detail)
++            timings["corridor_build_s"] += time.monotonic() - build_started
++            if route_failure is None:
+                 chain_audit = audit_corridor_chain(grid, chain)
+-                timings["corridor_build_s"] += \
+-                    time.monotonic() - build_started
+                 if not chain_audit["passed"]:
+-                    return _empty_result(
+-                        map_request, "NO_ACCEPTED_CANDIDATE",
+-                        chain_audit["reason"], chain_audit["detail"],
+-                        "PLANNING", timings, time.monotonic() - started,
+-                        search, attempts=all_attempts,
+-                        geometry_audit=last_geometry_audit,
+-                        dynamic_audit=last_dynamic_audit,
+-                        collision_audit=last_collision_audit)
++                    route_failure = (
++                        chain_audit["reason"], chain_audit["detail"])
++            if route_failure is None:
+                 guide_started = time.monotonic()
+                 try:
+                     corridor_guide = make_corridor_guide(
+@@ -651,59 +760,87 @@
+                         (float(request.goal_qf.x),
+                          float(request.goal_qf.y)))
+                 except VirtualAContractError as exc:
+-                    return _empty_result(
+-                        map_request, "NO_ACCEPTED_CANDIDATE",
+-                        "CORRIDOR_GUIDE_FAILED", exc.detail,
+-                        "PLANNING", timings, time.monotonic() - started,
+-                        search, attempts=all_attempts,
+-                        geometry_audit=last_geometry_audit,
+-                        dynamic_audit=last_dynamic_audit,
+-                        collision_audit=last_collision_audit)
++                    route_failure = ("CORRIDOR_GUIDE_FAILED", exc.detail)
+                 timings["corridor_guide_s"] += \
+                     time.monotonic() - guide_started
++            if route_failure is None:
+                 allocation_started = time.monotonic()
+                 try:
+                     corridor_allocation = allocate_corridors(
+                         chain, corridor_guide,
+                         intervals=int(planner_config.intervals))
+                 except VirtualAContractError as exc:
+-                    return _empty_result(
+-                        map_request, "NO_ACCEPTED_CANDIDATE",
+-                        "CORRIDOR_ALLOCATION_FAILED", exc.detail,
+-                        "PLANNING", timings, time.monotonic() - started,
+-                        search, attempts=all_attempts,
+-                        geometry_audit=last_geometry_audit,
+-                        dynamic_audit=last_dynamic_audit,
+-                        collision_audit=last_collision_audit)
++                    route_failure = (
++                        "CORRIDOR_ALLOCATION_FAILED", exc.detail)
+                 timings["corridor_allocation_s"] += \
+                     time.monotonic() - allocation_started
+-                corridor_round = {
++            if route_failure is not None:
++                # A degenerate C-side corridor is not a solver failure: the
++                # single recovery may select another already generated route,
++                # never relax the allocation, intervals or audit.
++                reason, detail = route_failure
++                record_failure("PLANNING", reason)
++                tried_routes.add(route_index)
++                search["rounds"].append({
+                     "round_index": len(search["rounds"]),
+-                    "route_source": routes[0].source,
+-                    "simplified_route": simplified.as_dict(),
+-                    "chain": chain.as_dict(),
+-                    "chain_digest": chain.digest,
+-                    "chain_audit": chain_audit,
+-                    "guide": corridor_guide.as_dict(),
+-                    "allocation": [
+-                        list(entry) for entry in corridor_allocation],
+-                    "effective_margin_m": corridor_effective_margin(
+-                        chain, planner_config),
+-                }
+-                search["corridor"]["rounds"].append(corridor_round)
++                    "geometry_status": reason,
++                    "geometry_reason": reason,
++                    "geometry_attempts": 0,
++                    "route_index": int(route_index),
++                    "route_count": len(routes),
++                    "initial_count": 0,
++                    "corridor_round_index": None,
++                })
++                next_index = untried_route_index()
++                if recovery_count < MAX_RECOVERIES \
++                        and next_index is not None and remaining() > 1.0:
++                    route_switch(reason, next_index)
++                    continue
++                return _empty_result(
++                    map_request, "NO_ACCEPTED_CANDIDATE", reason, detail,
++                    "PLANNING", timings, time.monotonic() - started, search,
++                    attempts=all_attempts, routes=tuple(routes),
++                    geometry_audit=last_geometry_audit,
++                    dynamic_audit=last_dynamic_audit,
++                    collision_audit=last_collision_audit)
++            corridor_route_index = route_index
++            corridor_round = {
++                "round_index": len(search["rounds"]),
++                "route_index": int(route_index),
++                "route_source": route.source,
++                "simplified_route": simplified.as_dict(),
++                "chain": chain.as_dict(),
++                "chain_digest": chain.digest,
++                "chain_audit": chain_audit,
++                "guide": corridor_guide.as_dict(),
++                "allocation": [
++                    list(entry) for entry in corridor_allocation],
++                "effective_margin_m": corridor_effective_margin(
++                    chain, planner_config),
++            }
++            search["corridor"]["rounds"].append(corridor_round)
+         if not isinstance(geometry_config, type(planner_config)):
+             geometry_config = planner_config
+         geometry_config = replace(
+             planner_config,
+             max_seconds=min(float(planner_config.max_seconds), remaining()))
+         if corridor_mode and not hold_request:
+-            solve_routes = (corridor_guide,)
++            # The endpoint-only recovery keeps the corridor halfspaces but
++            # drops the corridor guide as a high-weight route target.
++            solve_routes = () if endpoint_only else (corridor_guide,)
+             solve_chain = chain
+             solve_allocation = corridor_allocation
+         else:
+-            solve_routes = routes
++            # C3 schedules one route per round so the single recovery can
++            # select a genuinely untried route instead of reseeding a route
++            # that the solver already attempted.  The endpoint-only recovery
++            # uses the historical no-route G2 initial family instead.
++            solve_routes = (routes[route_index],) \
++                if not hold_request and routes and not endpoint_only else ()
+             solve_chain = None
+             solve_allocation = None
++        if remaining() <= 0.0:
++            return budget_stop("geometry solve")
+         solve_started = time.monotonic()
+         geometry = solve_open_path_guided(
+             request, geometry_config, route_guides=solve_routes,
+@@ -714,20 +851,44 @@
+         timings["geometry_solve_s"] += time.monotonic() - solve_started
+         all_attempts.extend(geometry.attempts)
+         last_geometry_audit = geometry.audit
++        tried_routes.add(route_index)
++        search["initial_count"] = int(geometry.initial_count)
+         round_record = {
+             "round_index": len(search["rounds"]),
+             "geometry_status": geometry.status,
+             "geometry_reason": geometry.reason,
+             "geometry_attempts": len(geometry.attempts),
++            "route_index": int(route_index) if routes else None,
+             "route_count": len(routes),
++            "initial_count": int(geometry.initial_count),
++            "initial_mode": "endpoint_only" if endpoint_only
++            else "route_guided",
+             "corridor_round_index": corridor_round["round_index"]
+-            if corridor_round is not None else None,
++            if corridor_mode and not hold_request
++            and corridor_round is not None else None,
+             "obstacle_context": obstacle_context.as_dict()
+             if obstacle_context is not None else None,
+         }
+         if geometry.status not in ("GEOMETRY_FEASIBLE", "NO_MOTION"):
+             search["rounds"].append(round_record)
+             status = _timing_status_for_geometry(geometry.status)
++            record_failure(
++                "GEOMETRY", geometry.reason or "NO_ACCEPTED_CANDIDATE")
++            if geometry.reason in (
++                    "SOLVER_NOT_CONVERGED", "ALL_ATTEMPTS_NUMERICAL_FAILURE"):
++                # Numerical non-convergence: the solver already scheduled and
++                # exhausted this round's initial values; the one recovery may
++                # spend the next route's initial instead.  A timeout is not a
++                # numerical failure and never falls back.
++                next_index = untried_route_index()
++                if not hold_request and recovery_count < MAX_RECOVERIES \
++                        and next_index is not None and remaining() > 1.0:
++                    route_switch(geometry.reason, next_index)
++                    continue
++                if not hold_request and recovery_count < MAX_RECOVERIES \
++                        and not endpoint_only and remaining() > 1.0:
++                    endpoint_only_recovery(geometry.reason)
++                    continue
+             return _empty_result(
+                 map_request, status,
+                 geometry.reason or "NO_ACCEPTED_CANDIDATE",
+@@ -737,6 +898,9 @@
+                 attempts=all_attempts, routes=tuple(routes),
+                 geometry_audit=geometry.audit)
+         if corridor_mode and not hold_request:
++            if remaining() <= 0.0:
++                search["rounds"].append(round_record)
++                return budget_stop("corridor containment audit")
+             containment_started = time.monotonic()
+             try:
+                 containment = audit_path_in_corridors(
+@@ -751,6 +915,7 @@
+             except VirtualAContractError as exc:
+                 timings["corridor_containment_s"] += \
+                     time.monotonic() - containment_started
++                record_failure("GEOMETRY", "CORRIDOR_AUDIT_INPUT_FAILED")
+                 return _empty_result(
+                     map_request, "GEOMETRY_FAILED",
+                     "CORRIDOR_AUDIT_INPUT_FAILED", exc.detail, "GEOMETRY",
+@@ -764,7 +929,11 @@
+                 containment["passed"])
+             round_record["corridor_containment_reason"] = containment["reason"]
+             if not containment["passed"] and corridor_enforcement == "hard":
++                # Containment is a geometry certificate layer.  TASK_C3 lists
++                # no recovery action for it, so the request fails closed with
++                # the concrete reason instead of spending the recovery slot.
+                 search["rounds"].append(round_record)
++                record_failure("GEOMETRY", containment["reason"])
+                 return _empty_result(
+                     map_request, "GEOMETRY_FAILED", containment["reason"],
+                     containment["detail"], "GEOMETRY", timings,
+@@ -773,6 +942,9 @@
+                     attempts=all_attempts, routes=tuple(routes),
+                     geometry_audit=geometry.audit)
+         path = geometry.path
++        if remaining() <= 0.0:
++            search["rounds"].append(round_record)
++            return budget_stop("retime")
+         retime_started = time.monotonic()
+         timing = retime_path(
+             request, path, timing_config, planning_context=context)
+@@ -784,6 +956,7 @@
+         if timing.status not in ("DYNAMIC_FEASIBLE", "NO_MOTION"):
+             search["rounds"].append(round_record)
+             layer = _failure_layer_for_timing(timing.status)
++            record_failure(layer, timing.reason or "TIMING_REJECTED")
+             status = "GEOMETRY_FAILED" if layer == "GEOMETRY" else \
+                 ("DYNAMICS_FAILED" if layer == "DYNAMICS" else
+                  "NO_ACCEPTED_CANDIDATE")
+@@ -795,6 +968,9 @@
+                 attempts=all_attempts, routes=tuple(routes),
+                 geometry_audit=last_geometry_audit)
+         plan = timing.plan
++        if remaining() <= 0.0:
++            search["rounds"].append(round_record)
++            return budget_stop("dynamics audit")
+         dynamics_started = time.monotonic()
+         dynamics = audit_dynamics(
+             request, plan, dynamic_config,
+@@ -805,6 +981,8 @@
+         round_record["dynamics_reason"] = dynamics.reason
+         if not dynamics.passed:
+             search["rounds"].append(round_record)
++            record_failure(
++                "DYNAMICS", dynamics.reason or "DYNAMIC_AUDIT_REJECTED")
+             return _empty_result(
+                 map_request, "DYNAMICS_FAILED",
+                 dynamics.reason or "DYNAMIC_AUDIT_REJECTED",
+@@ -815,6 +993,9 @@
+                 attempts=all_attempts, routes=tuple(routes),
+                 geometry_audit=last_geometry_audit,
+                 dynamic_audit=dynamics)
++        if remaining() <= 0.0:
++            search["rounds"].append(round_record)
++            return budget_stop("collision audit")
+         collision_started = time.monotonic()
+         collision = audit_collision(
+             request, plan, grid, collision_config)
+@@ -826,37 +1007,70 @@
+         if collision.passed:
+             search["rounds"].append(round_record)
+             break
+-        if hold_request or collision_retries >= MAX_COLLISION_RETRIES \
++        record_failure(
++            "COLLISION", collision.reason or "COLLISION_AUDIT_REJECTED")
++        collision_failure = _empty_result(
++            map_request, "COLLISION_FAILED",
++            collision.reason or "COLLISION_AUDIT_REJECTED",
++            collision.detail or "real three-vehicle sweep rejected plan",
++            "COLLISION", timings, time.monotonic() - started, search,
++            checks=_report_checks(last_geometry_audit) +
++            _report_checks(dynamics) + _report_checks(collision),
++            attempts=all_attempts, routes=tuple(routes),
++            geometry_audit=last_geometry_audit,
++            dynamic_audit=dynamics, collision_audit=collision,
++            metrics={
++                "collision_checks": _report_checks(collision),
++                "collision_margin_m": (
++                    collision.metrics.get("margin")
++                    if isinstance(collision.metrics, dict) else None),
++            })
++        if hold_request or recovery_count >= MAX_RECOVERIES \
+                 or remaining() <= 1.0:
+             search["rounds"].append(round_record)
+-            return _empty_result(
+-                map_request, "COLLISION_FAILED",
+-                collision.reason or "COLLISION_AUDIT_REJECTED",
+-                collision.detail or "real three-vehicle sweep rejected plan",
+-                "COLLISION", timings, time.monotonic() - started, search,
+-                checks=_report_checks(last_geometry_audit) +
+-                _report_checks(dynamics) + _report_checks(collision),
+-                attempts=all_attempts, routes=tuple(routes),
+-                geometry_audit=last_geometry_audit,
+-                dynamic_audit=dynamics, collision_audit=collision,
+-                metrics={
+-                    "collision_checks": _report_checks(collision),
+-                    "collision_margin_m": (
+-                        collision.metrics.get("margin")
+-                        if isinstance(collision.metrics, dict) else None),
+-                })
+-        collision_retries += 1
+-        try:
+-            obstacle_context = _collision_retry_context(
+-                collision, plan, digest, routes[0],
+-                int(geometry_config.intervals),
+-                retry_index=collision_retries)
+-        except Exception:
+-            obstacle_context = ObstacleContext(
+-                grid_sha256=digest, source="collision_audit_retry")
++            return collision_failure
++        next_index = untried_route_index()
++        if next_index is not None:
++            # OBB failure: prefer one already generated, still untried route.
++            route_switch(collision.reason, next_index)
++            search["rounds"].append(round_record)
++            continue
++        target_context = _collision_retry_context(
++            collision, plan, digest, routes[route_index],
++            int(geometry_config.intervals))
++        if not target_context.blocked_points:
++            if collision.reason == "COLLISION_NUMERICAL_FAILURE" \
++                    and not endpoint_only and remaining() > 1.0:
++                # Numerical non-certification, not a located contact: spend
++                # the single recovery on the remaining initial family once.
++                # The G2 no-route sequence is a true endpoint-only set; in
++                # corridor mode the hard halfspaces still apply.
++                endpoint_only_recovery(collision.reason)
++                search["rounds"].append(round_record)
++                continue
++            search["rounds"].append(round_record)
++            return collision_failure
++        # No untried route remains: one explicitly heuristic local block,
++        # derived only from the real collision position.  The regenerated
++        # guide and every audit remain authoritative.
++        recovery_count += 1
++        search["recovery_count"] = recovery_count
++        search["recoveries"].append({
++            "recovery_index": recovery_count,
++            "action": "collision_local_block",
++            "first_failure_layer": first_failure_layer,
++            "reason": str(collision.reason or ""),
++            "from_route_index": int(route_index),
++            "to_route_index": None,
++            "wall_time_s": time.monotonic() - started,
++        })
++        obstacle_context = target_context
+         # A new topological guide is regenerated with the failed formation
+         # centre as a blocked disk on the next loop iteration.
+         routes = ()
++        tried_routes = set()
++        route_index = 0
++        corridor_route_index = None
+         search["rounds"].append(round_record)
+ 
+     # Every layer passed: publish the exact plan that was audited.  No field
+@@ -866,6 +1080,7 @@
+         plan_context_sha = plan.planning_context_sha256()
+         request_sha = plan.request_sha256
+     except Exception as exc:
++        record_failure("MODEL", "MODEL_BINDING_FAILURE")
+         return _empty_result(
+             map_request, "NUMERICAL_FAILURE", "MODEL_BINDING_FAILURE",
+             "{}: {}".format(type(exc).__name__, exc), "MODEL", timings,
+@@ -874,6 +1089,7 @@
+             dynamic_audit=last_dynamic_audit,
+             collision_audit=last_collision_audit)
+     if plan_context_sha != context_sha:
++        record_failure("MODEL", "CONTEXT_BINDING_FAILURE")
+         return _empty_result(
+             map_request, "NUMERICAL_FAILURE", "CONTEXT_BINDING_FAILURE",
+             "plan and request planning-context digests differ", "MODEL",
+@@ -936,6 +1152,7 @@
+             },
+             checks=checks)
+     except VirtualAContractError as exc:
++        record_failure("MODEL", "RESULT_ASSEMBLY_FAILURE")
+         return _empty_result(
+             map_request, "NUMERICAL_FAILURE", "RESULT_ASSEMBLY_FAILURE",
+             str(exc), "MODEL", timings, time.monotonic() - started, search,
+@@ -954,7 +1171,7 @@
+ __all__ = [
+     "G4_ROUTE_CLEARANCE_WEIGHT",
+     "G4_TOTAL_SOFT_BUDGET_S",
+-    "MAX_COLLISION_RETRIES",
++    "MAX_RECOVERIES",
+     "make_route_guides",
+     "plan_virtual_a",
+ ]
+\ 文件尾没有换行符
+--- a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/optimizer.py
++++ b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/optimizer.py
+@@ -56,6 +56,12 @@
+ # while remaining soft enough for a collision retry to relax the guide.
+ ROUTE_GUIDANCE_WEIGHT = 5.0e5
+ ROUTE_CURVATURE_WEIGHT = 100.0
++# C3 scheduling: with at least one valid route, every initial slot may be
++# used at most once per distinct route, at least one slot is a true
++# endpoint-only shape, and the remaining slots draw from at most this many
++# distinct default length/curvature shapes (both signs each).  No route
++# topology keeps the historical G2 automatic sequence unchanged.
++C3_ENDPOINT_SHAPES = 2
+ # The cached clearance proxy is a soft body-footprint penalty, not an audit.
+ # It is normalised over all collocation samples and vehicles, so a typical
+ # hinge of a few centimetres contributes only a few tens of objective units
+@@ -736,8 +742,13 @@
+                          obstacle_context=None):
+     """Return at most ``max_initials`` automatic, reconstructible initials.
+ 
+-    Route-guided initials are prepended when supplied.  With no routes the
+-    function is byte-for-byte the G2 automatic sequence.
++    With no route topology the function is byte-for-byte the G2 automatic
++    sequence.  With routes, C3 schedules at most one guide initial per
++    distinct route, always retains at least one true endpoint-only initial
++    when a slot is available, and fills the remaining slots from at most
++    ``C3_ENDPOINT_SHAPES`` distinct default length shapes with one initial
++    per (length, direction) pair.  A route initial is never replaced by an
++    endpoint shape merely to reach ``max_initials``.
+     """
+     request_ok = validate_virtual_a_request(request)
+     if not request_ok.passed:
+@@ -756,18 +767,44 @@
+             "S_lower={!r} >= S_upper={!r}".format(
+                 packet["S_lower"], packet["S_upper"]),
+             S_lower=packet["S_lower"], S_upper=packet["S_upper"])
++    max_initials = min(MAX_INITIALS, int(config.max_initials))
+     guesses = []
++    seen_routes = set()
+     for index, guide in enumerate(route_guides):
++        # At most one initial per distinct valid route; a caller that repeats
++        # the same guide must not consume another slot.
++        points = tuple(guide.points)
++        if points in seen_routes:
++            continue
++        seen_routes.add(points)
+         guesses.append(_route_guess(
+             request, config, packet, guide, index,
+             obstacle_context=obstacle_context))
+-        if len(guesses) >= min(MAX_INITIALS, int(config.max_initials)):
++        if len(guesses) >= max_initials:
+             return tuple(guesses)
+-    for multiplier in DEFAULT_INITIAL_LENGTH_MULTIPLIERS:
++    if not route_guides:
++        # No route candidate at all: keep the historical G2 automatic
++        # sequence (three length shapes, both directions).
++        for multiplier in DEFAULT_INITIAL_LENGTH_MULTIPLIERS:
++            for sign in (1, -1):
++                guesses.append(_guess_for(
++                    request, config, packet, multiplier, sign))
++                if len(guesses) >= max_initials:
++                    return tuple(guesses)
++        return tuple(guesses)
++    if max_initials <= len(guesses):
++        # The route initial is the only slot; no endpoint-only initial fits.
++        return tuple(guesses)
++    seen_endpoint = set()
++    for multiplier in DEFAULT_INITIAL_LENGTH_MULTIPLIERS[:C3_ENDPOINT_SHAPES]:
+         for sign in (1, -1):
++            key = (float(multiplier), int(sign))
++            if key in seen_endpoint:
++                continue
++            seen_endpoint.add(key)
+             guesses.append(_guess_for(
+                 request, config, packet, multiplier, sign))
+-            if len(guesses) >= min(MAX_INITIALS, int(config.max_initials)):
++            if len(guesses) >= max_initials:
+                 return tuple(guesses)
+     return tuple(guesses)
+ 
+@@ -1570,7 +1607,7 @@
+ def _result(status, request=None, path=None, audit=None, attempts=(),
+             wall_time_s=0.0, request_sha256="", reason="", detail="",
+             config=None, solver_used="", branch=None, deadline=False,
+-            deadline_summary=None):
++            deadline_summary=None, initial_count=0):
+     summary = request_summary(request) if isinstance(
+         request, VirtualARequest) else {
+             "type": type(request).__name__ if request is not None else None,
+@@ -1589,7 +1626,8 @@
+         solver_used=solver_used,
+         goal_heading_branch_rad=branch,
+         deadline_exhausted=bool(deadline),
+-        deadline_summary=dict(deadline_summary or {}))
++        deadline_summary=dict(deadline_summary or {}),
++        initial_count=int(initial_count))
+ 
+ 
+ def _audit_config(config, geometry_audit_config=None):
+@@ -1735,7 +1773,8 @@
+             return _result(
+                 "INVALID_REQUEST", request=request, reason=exc.reason,
+                 detail=exc.detail, wall_time_s=time.monotonic() - started,
+-                request_sha256=fingerprint, config=config, branch=branch)
++                request_sha256=fingerprint, config=config, branch=branch,
++                initial_count=len(guesses))
+     solver_choice = str(config.solver).lower()
+     attempts = []
+     best = None
+@@ -2059,7 +2098,8 @@
+                    if deadline_exhausted else "")),
+             config=config, solver_used=best["result"]["solver"],
+             branch=branch, deadline=deadline_exhausted,
+-            deadline_summary=deadline_info)
++            deadline_summary=deadline_info,
++            initial_count=len(guesses))
+     audit_rejections = [
+         attempt for attempt in attempts
+         if attempt.status == "SOLVER_SUCCESS_AUDIT_REJECTED"]
+@@ -2113,7 +2153,8 @@
+         status, request=request, attempts=attempts, wall_time_s=wall,
+         request_sha256=fingerprint, reason=reason, detail=detail,
+         config=config, solver_used=solver_used, branch=branch,
+-        deadline=deadline_exhausted, deadline_summary=deadline_info)
++        deadline=deadline_exhausted, deadline_summary=deadline_info,
++        initial_count=len(guesses))
+ 
+ 
+ def solve_open_path(request, config, **kwargs):
+--- a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/contracts.py
++++ b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/contracts.py
+@@ -1398,6 +1398,8 @@
+     goal_heading_branch_rad: float = None
+     deadline_exhausted: bool = False
+     deadline_summary: dict = field(default_factory=dict)
++    # C3 record only: number of initial guesses this solve was scheduled with.
++    initial_count: int = 0
+ 
+     def __post_init__(self):
+         if self.status not in GEOMETRY_STATUSES:
+@@ -1433,6 +1435,7 @@
+             "wall_time_s": self.wall_time_s,
+             "deadline_exhausted": self.deadline_exhausted,
+             "deadline_summary": self.deadline_summary,
++            "initial_count": self.initial_count,
+             "path": path_summary,
+             "audit": self.audit.as_dict() if hasattr(
+                 self.audit, "as_dict") else None,
+--- a/tests/test_virtual_a_pipeline.py
++++ b/tests/test_virtual_a_pipeline.py
+@@ -80,10 +80,24 @@
+         self.assertLessEqual(len(result.routes), 3)
+         self.assertEqual(
+             result.search["budget"]["total_soft_budget_s"], 60.0)
+-        self.assertEqual(
+-            result.search["budget"]["max_collision_retries"], 2)
++        self.assertEqual(result.search["budget"]["max_recoveries"], 1)
+         self.assertFalse(
+             result.search["budget"]["hard_real_time_guarantee"])
++        # C3 scheduling caps and evidence fields.  A successful recovery is
++        # allowed (S3 needs exactly one endpoint-only recovery), but the
++        # scheduling caps and the recorded first-failure layer must hold.
++        self.assertLessEqual(result.search["route_count"], 3)
++        self.assertLessEqual(result.search["initial_count"], 6)
++        self.assertLessEqual(result.search["recovery_count"], 1)
++        self.assertEqual(
++            len(result.search["recoveries"]),
++            result.search["recovery_count"])
++        self.assertIn("first_failure_layer", result.search)
++        self.assertIn("last_reason", result.search)
++        if result.search["recovery_count"]:
++            self.assertTrue(result.search["recoveries"])
++            self.assertTrue(result.search["first_failure_layer"])
++            self.assertTrue(result.search["last_reason"])
+ 
+     def test_route_guides_are_finite_topology_hints_only(self):
+         map_request_value, metadata, _payload = scene_map_request("S2")
+--- /dev/null
++++ b/tests/test_virtual_a_corridor_recovery.py
+@@ -0,0 +1,406 @@
++"""C3 candidate scheduling and single-recovery tests.
++
++Every test uses the real G4 request/map/audit types.  Solver-level doubles
++count calls and only replace solver iterates; they never bypass the
++independent geometry/dynamics/collision certificates.  No ROS process is
++started by this module.
++"""
++import math
++import time
++import unittest
++from types import SimpleNamespace
++from unittest import mock
++
++import numpy as np
++
++from fwis_v3_optimizer.formation import FormationPose
++from fwis_v3_optimizer.formation_continuous_a import optimizer as optimizer_module
++from fwis_v3_optimizer.formation_continuous_a import pipeline as pipeline_module
++from fwis_v3_optimizer.formation_continuous_a.contracts import (
++    PlannerConfig,
++    RouteGuideConfig,
++)
++from fwis_v3_optimizer.formation_continuous_a.optimizer import (
++    make_initial_guesses,
++    solve_open_path_guided,
++)
++from fwis_v3_optimizer.formation_continuous_a.pipeline import (
++    make_route_guides,
++    plan_virtual_a,
++)
++from fwis_v3_optimizer.formation_continuous_a.route_processing import (
++    segment_is_free,
++    simplify_route,
++)
++
++from virtual_a_g4_support import (
++    empty_grid,
++    geometry_result_for,
++    load_synthetic,
++    make_request,
++    map_request,
++    retime,
++    straight_path,
++)
++
++
++def box_grid():
++    """One solid box between start and goal; both sides are traversable."""
++    grid = empty_grid()
++    x0 = int(math.floor((3.5 - grid.ox) / grid.res))
++    x1 = int(math.ceil((4.5 - grid.ox) / grid.res))
++    y0 = int(math.floor((-1.0 - grid.oy) / grid.res))
++    y1 = int(math.ceil((1.0 - grid.oy) / grid.res))
++    grid.occ[y0:y1, x0:x1] = True
++    return grid
++
++
++def moving_request():
++    return make_request(
++        FormationPose(0.0, 0.0, 0.0), FormationPose(8.0, 0.0, 0.0))
++
++
++def fake_solver_failure(_request, _config, _packet, _guess,
++                        wall_limit_s=None, **kwargs):
++    return {
++        "solver": "ipopt",
++        "z": None,
++        "objective": None,
++        "solver_status": "Maximum_Iterations_Exceeded",
++        "success": False,
++        "iterations": 120,
++        "detail": "fake iteration limit",
++        "wall_time_s": 0.0,
++    }
++
++
++class CandidateSchedulingTests(unittest.TestCase):
++    def test_open_grid_merges_slight_doglegs_into_one_candidate(self):
++        grid = empty_grid()
++        request = moving_request()
++        guides = make_route_guides(
++            grid, request.start_qf, request.goal_qf, RouteGuideConfig())
++        self.assertEqual([guide.source for guide in guides],
++                         ["astar_primary"])
++        for guide in guides:
++            self.assertEqual(guide.start,
++                             (request.start_qf.x, request.start_qf.y))
++            self.assertEqual(guide.goal,
++                             (request.goal_qf.x, request.goal_qf.y))
++            self.assertLessEqual(len(guides), 3)
++
++    def test_single_box_keeps_both_obstacle_separated_sides(self):
++        grid = box_grid()
++        request = moving_request()
++        guides = make_route_guides(
++            grid, request.start_qf, request.goal_qf, RouteGuideConfig())
++        self.assertGreaterEqual(len(guides), 2)
++        self.assertLessEqual(len(guides), 3)
++        self.assertNotIn("open_direct_los",
++                         [guide.source for guide in guides])
++        above = [guide for guide in guides
++                 if max(point[1] for point in guide.points) > 0.9]
++        below = [guide for guide in guides
++                 if min(point[1] for point in guide.points) < -0.9]
++        self.assertTrue(above)
++        self.assertTrue(below)
++        above_shape = simplify_route(grid, above[0]).points
++        below_shape = simplify_route(grid, below[0]).points
++        # The two sides are separated by the box: at least one cross pair is
++        # blocked, so the shortcut-equivalence screen must retain both.
++        self.assertTrue(any(
++            not segment_is_free(grid, first, second)
++            for first in above_shape for second in below_shape))
++
++    def test_initial_slots_are_one_per_route_plus_endpoint_shapes(self):
++        grid = box_grid()
++        request = moving_request()
++        guides = make_route_guides(
++            grid, request.start_qf, request.goal_qf, RouteGuideConfig())
++        # A repeated guide must not consume another slot.  Three is the
++        # contract maximum, so repeat one of the generated guides.
++        duplicated = guides[:2] + guides[:1]
++        guesses = make_initial_guesses(
++            request, PlannerConfig(max_initials=6),
++            route_guides=duplicated)
++        self.assertLessEqual(len(guesses), 6)
++        route_guesses = [
++            guess for guess in guesses
++            if guess.source == "map_route_guide"]
++        endpoint_guesses = [
++            guess for guess in guesses
++            if guess.source == "automatic_endpoint_shape"]
++        self.assertEqual(
++            [guess.metadata["route_index"] for guess in route_guesses],
++            [0, 1])
++        self.assertGreaterEqual(len(endpoint_guesses), 1)
++        shapes = {(guess.metadata["length_multiplier"],
++                   guess.metadata["shape_sign"])
++                  for guess in endpoint_guesses}
++        self.assertEqual(len(shapes), len(endpoint_guesses))
++        self.assertLessEqual(
++            len({multiplier for multiplier, _ in shapes}), 2)
++        self.assertTrue(
++            {multiplier for multiplier, _ in shapes} <= {1.2, 1.8})
++        self.assertEqual(guesses[0].source, "map_route_guide")
++        self.assertEqual(guesses[1].source, "map_route_guide")
++        self.assertEqual(guesses[2].source, "automatic_endpoint_shape")
++        for guess in endpoint_guesses:
++            # A true endpoint-only initial carries no route target at all;
++            # the route-guided initial is the only route-attached slot.
++            self.assertNotIn("route_index", guess.metadata)
++            self.assertNotIn("route_source", guess.metadata)
++            self.assertNotIn("route_grid_sha256", guess.metadata)
++
++    def test_corridor_endpoint_initials_are_not_pulled_to_route_zero(self):
++        grid = empty_grid()
++        request = moving_request()
++        guides = make_route_guides(
++            grid, request.start_qf, request.goal_qf, RouteGuideConfig())
++        calls = []
++
++        def recording_failure(_request, _config, _packet, guess,
++                              wall_limit_s=None, **kwargs):
++            calls.append({
++                "source": guess.source,
++                "route_index": guess.metadata.get("route_index"),
++                "route_guidance": "route_points" in kwargs,
++            })
++            return fake_solver_failure(None, None, None, None)
++
++        config = PlannerConfig(guidance_mode="corridor", max_initials=3)
++        with mock.patch.object(
++                optimizer_module, "_solve_with_ipopt",
++                side_effect=recording_failure), mock.patch.object(
++                optimizer_module, "_build_corridor_constraint",
++                return_value=object()):
++            result = solve_open_path_guided(
++                request, config, route_guides=guides,
++                corridor_chain=object(), corridor_allocation=object())
++        self.assertIsNone(result.path)
++        self.assertTrue(calls)
++        self.assertEqual(calls[0]["source"], "map_route_guide")
++        self.assertTrue(calls[0]["route_guidance"])
++        for call in calls[1:]:
++            self.assertEqual(call["source"], "automatic_endpoint_shape")
++            self.assertFalse(call["route_guidance"])
++        self.assertEqual(result.initial_count, len(calls))
++
++
++class RecoverySchedulingTests(unittest.TestCase):
++    def test_fake_solver_success_but_audit_rejection_spends_no_recovery(self):
++        grid = box_grid()
++        request = moving_request()
++
++        def fake_success(_request, _config, _packet, guess,
++                         wall_limit_s=None, **kwargs):
++            values = np.asarray(guess.vector, dtype=float).copy()
++            values[1:] = values[1:] * 1.1
++            return {
++                "solver": "ipopt",
++                "z": values,
++                "objective": 1.0,
++                "solver_status": "Solve_Succeeded",
++                "success": True,
++                "iterations": 1,
++                "detail": "fake success",
++                "wall_time_s": 0.0,
++            }
++
++        with mock.patch.object(
++                optimizer_module, "_solve_with_ipopt",
++                side_effect=fake_success):
++            result = plan_virtual_a(map_request(request, grid))
++        self.assertFalse(result.executable)
++        self.assertIsNone(result.plan)
++        self.assertIsNone(result.path)
++        self.assertEqual(result.status, "NO_ACCEPTED_CANDIDATE")
++        self.assertEqual(result.reason, "AUDIT_REJECTED")
++        self.assertEqual(result.first_failure_layer, "GEOMETRY")
++        self.assertEqual(result.search["recovery_count"], 0)
++        self.assertEqual(result.search["recoveries"], [])
++        self.assertEqual(result.search["initial_count"], 5)
++        self.assertTrue(result.attempts)
++        self.assertTrue(all(
++            attempt.status == "SOLVER_SUCCESS_AUDIT_REJECTED"
++            for attempt in result.attempts))
++        self.assertEqual(result.search["route_count"], 3)
++
++    def test_simulated_timeout_never_starts_the_slsqp_fallback(self):
++        grid = box_grid()
++        request = moving_request()
++
++        def fake_timeout(_request, _config, _packet, _guess,
++                         wall_limit_s=None, **kwargs):
++            return {
++                "solver": "ipopt",
++                "z": None,
++                "objective": None,
++                "solver_status": "Maximum_WallTime_Exceeded",
++                "success": False,
++                "iterations": 1,
++                "detail": "forced timeout",
++                "wall_time_s": 0.01,
++                "soft_deadline_triggered": True,
++                "deadline_trigger_stage": "ipopt_max_wall_time",
++                "remaining_budget_s": 1e-9,
++            }
++
++        with mock.patch.object(
++                optimizer_module, "_solve_with_ipopt",
++                side_effect=fake_timeout), mock.patch.object(
++                optimizer_module, "_solve_with_scipy",
++                side_effect=AssertionError("fallback must not start")):
++            result = plan_virtual_a(map_request(request, grid))
++        self.assertFalse(result.executable)
++        self.assertIsNone(result.plan)
++        self.assertEqual(result.status, "BUDGET_EXHAUSTED")
++        self.assertEqual(result.reason, "SOFT_BUDGET_EXHAUSTED")
++        self.assertEqual(result.first_failure_layer, "GEOMETRY")
++        self.assertEqual(result.search["recovery_count"], 0)
++        self.assertEqual([attempt.status for attempt in result.attempts],
++                         ["SOLVER_TIMEOUT"])
++        self.assertEqual(result.attempts[0].solver, "ipopt")
++
++    def test_numerical_failure_spends_one_endpoint_only_recovery(self):
++        grid = empty_grid()
++        request = moving_request()
++        calls = []
++
++        def fake_failure(_request, _config, _packet, guess,
++                         wall_limit_s=None, **kwargs):
++            calls.append(guess.source)
++            return fake_solver_failure(None, None, None, None)
++
++        with mock.patch.object(
++                optimizer_module, "_solve_with_ipopt",
++                side_effect=fake_failure):
++            result = plan_virtual_a(map_request(request, grid))
++        self.assertFalse(result.executable)
++        self.assertIsNone(result.plan)
++        self.assertEqual(result.status, "NO_ACCEPTED_CANDIDATE")
++        self.assertEqual(result.reason, "SOLVER_NOT_CONVERGED")
++        self.assertEqual(result.first_failure_layer, "GEOMETRY")
++        rounds = result.search["rounds"]
++        self.assertEqual([record["initial_mode"] for record in rounds],
++                         ["route_guided", "endpoint_only"])
++        self.assertEqual([record["initial_count"] for record in rounds],
++                         [5, 6])
++        self.assertEqual(len(calls), 11)
++        self.assertEqual(result.search["recovery_count"], 1)
++        recovery = result.search["recoveries"][0]
++        self.assertEqual(recovery["action"], "endpoint_only_initial")
++        self.assertEqual(recovery["reason"], "SOLVER_NOT_CONVERGED")
++        self.assertEqual(recovery["first_failure_layer"], "GEOMETRY")
++
++    def test_obb_failure_switches_to_one_untried_route_then_stops(self):
++        grid = box_grid()
++        request = moving_request()
++        path = straight_path(8.0)
++        request, _timing, _context = retime(path, grid)
++        geometry = geometry_result_for(path, request)
++        solve_calls = []
++
++        def injected_geometry(*args, **kwargs):
++            solve_calls.append(kwargs.get("route_guides"))
++            return geometry
++
++        def forced_collision(*args, **kwargs):
++            return SimpleNamespace(
++                passed=False,
++                reason="MAP_OBB_COLLISION",
++                first_failure="vehicle 2",
++                detail="forced collision at the audited station",
++                location={"qf": [4.0, 0.0], "station": 4.0},
++                metrics={"margin": -0.2},
++                check_count=3)
++
++        with mock.patch.object(
++                pipeline_module, "solve_open_path_guided",
++                side_effect=injected_geometry), mock.patch.object(
++                pipeline_module, "audit_collision",
++                side_effect=forced_collision):
++            result = plan_virtual_a(map_request(request, grid))
++        self.assertFalse(result.executable)
++        self.assertIsNone(result.plan)
++        self.assertIsNone(result.path)
++        self.assertEqual(result.status, "COLLISION_FAILED")
++        self.assertEqual(result.reason, "MAP_OBB_COLLISION")
++        self.assertEqual(result.first_failure_layer, "COLLISION")
++        self.assertEqual(len(solve_calls), 2)
++        self.assertEqual(result.search["recovery_count"], 1)
++        recovery = result.search["recoveries"][0]
++        self.assertEqual(recovery["action"], "route_switch")
++        self.assertEqual(recovery["reason"], "MAP_OBB_COLLISION")
++        self.assertEqual(recovery["from_route_index"], 0)
++        self.assertEqual(recovery["to_route_index"], 1)
++        self.assertEqual(len(result.search["rounds"]), 2)
++        self.assertEqual(result.search["route_count"], 3)
++
++    def test_budget_exhaustion_between_route_generation_and_solve(self):
++        grid = empty_grid()
++        request = moving_request()
++        guides = make_route_guides(
++            grid, request.start_qf, request.goal_qf, RouteGuideConfig())
++        solver_calls = []
++
++        def slow_generation(*args, **kwargs):
++            time.sleep(0.3)
++            return guides
++
++        def counting_solver(*args, **kwargs):
++            solver_calls.append(1)
++            raise AssertionError("the solver must not start")
++
++        with mock.patch.object(
++                pipeline_module, "G4_TOTAL_SOFT_BUDGET_S", 0.2), \
++                mock.patch.object(
++                    pipeline_module, "make_route_guides",
++                    side_effect=slow_generation), \
++                mock.patch.object(
++                    optimizer_module, "_solve_with_ipopt",
++                    side_effect=counting_solver), \
++                mock.patch.object(
++                    optimizer_module, "_solve_with_scipy",
++                    side_effect=counting_solver):
++            result = plan_virtual_a(map_request(request, grid))
++        self.assertEqual(solver_calls, [])
++        self.assertFalse(result.executable)
++        self.assertIsNone(result.plan)
++        self.assertEqual(result.status, "BUDGET_EXHAUSTED")
++        self.assertEqual(result.reason, "SOFT_BUDGET_EXHAUSTED")
++        self.assertEqual(result.first_failure_layer, "PLANNING")
++
++
++class RealRequestTests(unittest.TestCase):
++    def test_real_success_and_real_failure_requests(self):
++        grid = empty_grid()
++        request = moving_request()
++        success = plan_virtual_a(map_request(request, grid))
++        self.assertEqual(success.status, "SUCCESS", success.as_dict())
++        self.assertTrue(success.executable)
++        self.assertIsNotNone(success.plan)
++        self.assertIsNotNone(success.path)
++        for report in (success.geometry_audit, success.dynamic_audit,
++                       success.collision_audit):
++            self.assertIsNotNone(report)
++            self.assertTrue(report.passed, report.as_dict())
++        self.assertEqual(success.search["recovery_count"], 0)
++        self.assertEqual(success.search["route_count"], 1)
++        self.assertLessEqual(success.search["initial_count"], 6)
++
++        blocked_grid, _metadata = load_synthetic("blocked_start")
++        hold = make_request(
++            FormationPose(0.0, 0.0, 0.0), FormationPose(0.0, 0.0, 0.0))
++        failure = plan_virtual_a(map_request(hold, blocked_grid))
++        self.assertFalse(failure.executable)
++        self.assertIsNone(failure.plan)
++        self.assertIsNone(failure.path)
++        self.assertEqual(failure.status, "COLLISION_FAILED")
++        self.assertEqual(failure.reason, "MAP_OBB_COLLISION")
++        self.assertEqual(failure.first_failure_layer, "COLLISION")
++        self.assertFalse(failure.collision_audit.passed)
++
++
++if __name__ == "__main__":
++    unittest.main()
+\ 文件尾没有换行符

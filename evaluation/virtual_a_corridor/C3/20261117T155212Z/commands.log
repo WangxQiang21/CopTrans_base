@@ -1,0 +1,146 @@
+# C3 exact commands, UTC start/end, exit codes and measured wall time
+# Working directory for every command:
+#   /home/wq/whut_thesis/expv3_multi_virtual_a
+# No ROS node, roscore/master or display process was started.
+# ROS overlay was sourced only when present; all cases are pure Python.
+
+# ---------------------------------------------------------------------------
+# 0. Environment used by every run
+# ---------------------------------------------------------------------------
+source /opt/ros/noetic/setup.bash 2>/dev/null
+source catkin_ws/devel/setup.bash 2>/dev/null
+export PYTHONDONTWRITEBYTECODE=1 OPENBLAS_NUM_THREADS=1
+export PYTHONPATH="$PWD/catkin_ws/src/fwis_v3_optimizer/src:$PWD/tests:$PWD:${PYTHONPATH:-}"
+
+# ---------------------------------------------------------------------------
+# 1. Pre-C3 baseline reconstruction and C3-only diff (R = /tmp/c3_pre)
+#    Start/end of the reconstruction were not stamped; exit code 0 by
+#    inspection and all six hashes equal start_state.log (see results.json).
+# ---------------------------------------------------------------------------
+R=/tmp/c3_pre; rm -rf "$R"; mkdir -p "$R"
+P=catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a
+git archive HEAD "$P/pipeline.py" "$P/optimizer.py" "$P/contracts.py" \
+  tests/test_virtual_a_pipeline.py tests/test_virtual_a_optimizer.py \
+  tests/virtual_a_g4_support.py | tar -x -C "$R"
+cd "$R"
+for d in \
+  /home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_a_corridor/C2A/20261117T120249Z/new_test_c2a.diff \
+  /home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_a_corridor/C2A/20261117T120249Z/source_diff_c2a_contracts.diff \
+  /home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_a_corridor/C2B/20261117T135647Z/source_diff_c2b_contracts.diff \
+  /home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_a_corridor/C2B/20261117T135647Z/source_diff_c2b_optimizer.diff \
+  /home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_a_corridor/C2B/20261117T135647Z/source_diff_c2b_pipeline.diff \
+  /home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_a_corridor/C2B/20261117T135647Z/source_diff_c2b_tests.diff \
+  /home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_a_corridor/C2B_REWORK_01/20261117T151325Z/source.diff; do
+  patch -p1 --no-backup-if-mismatch < "$d" || exit 1
+done
+sha256sum "$P/pipeline.py" "$P/optimizer.py" "$P/contracts.py" \
+  tests/test_virtual_a_pipeline.py tests/test_virtual_a_optimizer.py \
+  tests/virtual_a_g4_support.py
+# exit 0 (all patches applied; the six printed hashes equal start_state.log)
+
+# ---------------------------------------------------------------------------
+# 2. C2-vs-C3 corridor cases with identical frozen inputs
+#    Harness defaults: solver=ipopt, guidance_mode=corridor.
+#    C2 rows are the delivered C2-B evidence files; C2 code was NOT re-run.
+# ---------------------------------------------------------------------------
+EV=evaluation/virtual_a_corridor/C3/20261117T155212Z
+
+# S1
+# start 2026-11-17T16:45:04Z | exit 0 | measured wall 35.255 s
+timeout 180 python3 -B "$EV/run_corridor_case.py" S1 \
+  "$EV/corridor_cases/S1_corridor_c3.json" \
+  > "$EV/corridor_cases/S1_corridor_c3.stdout.log" 2>&1
+# EXIT=0
+
+# S2 and S3
+# S2 start 2026-11-17T16:45:49Z | exit 0 | measured wall 35.925 s
+# S3 start 2026-11-17T16:46:26Z | exit 0 | measured wall 61.533 s
+for s in S2 S3; do
+  date -u +%Y-%m-%dT%H:%M:%SZ
+  timeout 180 python3 -B "$EV/run_corridor_case.py" "$s" \
+    "$EV/corridor_cases/${s}_corridor_c3.json" \
+    > "$EV/corridor_cases/${s}_corridor_c3.stdout.log" 2>&1
+  echo "$s EXIT=$?"
+done
+# EXIT=0 for both cases
+
+# ---------------------------------------------------------------------------
+# 3. Supplementary positive recovery run (legacy guidance, final code)
+# ---------------------------------------------------------------------------
+# First run: 2026-11-17T16:53:15Z - 16:54:06Z, exit 0, wall 50.0685 s.
+# It produced SUCCESS with one endpoint-only recovery.  The harness was then
+# extended to serialize the plan/context/model binding digests, and the case
+# was rerun; the recorded evidence file is from the rerun below.
+# start 2026-11-17T16:59:40Z | end 2026-11-17T17:00:30Z | exit 0
+# wall_time_s reported by the planner: 49.8169 s
+start=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+python3 -B "$EV/run_corridor_case.py" S3 \
+  "$EV/corridor_cases/S3_legacy_c3.json" \
+  --solver ipopt --guidance-mode legacy_route \
+  > "$EV/corridor_cases/S3_legacy_c3.stdout.log" 2>&1
+rc=$?
+end=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+echo "$start | $end | exit $rc"
+
+# ---------------------------------------------------------------------------
+# 4. Required targeted test commands (logs and metadata in test_logs/)
+# ---------------------------------------------------------------------------
+meta="$EV/test_logs/run_meta.log"
+: > "$meta"
+for pattern in test_virtual_a_corridor_recovery test_virtual_a_optimizer \
+               test_virtual_a_pipeline; do
+  log="$EV/test_logs/${pattern}.log"
+  start=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+  timeout 560 python3 -B -m unittest discover -s tests -p "${pattern}.py" -v \
+    > "$log" 2>&1
+  code=$?
+  end=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+  tail -3 "$log" | tr '\n' ' ' >> "$meta"
+  printf '\n%s start | %s end | exit %d | python3 -B -m unittest discover -s tests -p %s.py -v | log %s\n' \
+    "$start" "$end" "$code" "$pattern" "${pattern}.log" >> "$meta"
+done
+# Per-run record:
+# 2026-11-17T16:48:03Z - 16:48:27Z exit 0 | 10 tests in 24.358 s | OK
+# 2026-11-17T16:48:27Z - 16:49:37Z exit 0 | 29 tests in 69.726 s | OK
+# 2026-11-17T16:49:37Z - 16:52:53Z exit 0 | 8 tests in 195.462 s | OK
+# Whole background loop exit 0.
+
+# ---------------------------------------------------------------------------
+# 5. Evidence assembly (parses logs only; does not run the planner)
+# ---------------------------------------------------------------------------
+python3 -B assemble_results.py > assemble_results.stdout.log 2>&1
+# exit 0, generates results.json
+
+# ---------------------------------------------------------------------------
+# 6. Source diff / diffstat / environment / git state
+# ---------------------------------------------------------------------------
+PRE=/tmp/c3_pre
+REL=catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a
+{
+  for f in pipeline.py optimizer.py contracts.py; do
+    diff -u --label "a/$REL/$f" --label "b/$REL/$f" \
+      "$PRE/$REL/$f" "$REL/$f"
+  done
+  diff -u --label "a/tests/test_virtual_a_pipeline.py" \
+    --label "b/tests/test_virtual_a_pipeline.py" \
+    "$PRE/tests/test_virtual_a_pipeline.py" tests/test_virtual_a_pipeline.py
+  diff -u --label "/dev/null" \
+    --label "b/tests/test_virtual_a_corridor_recovery.py" \
+    /dev/null tests/test_virtual_a_corridor_recovery.py
+} > "$EV/source.diff"
+# source.diff: 1306 lines, 5 files, exit 0 (diff returns 1 when files differ;
+# the redirect command itself exited 0)
+
+{
+  python3 --version
+  python3 -c 'import numpy, scipy, casadi; print("numpy", numpy.__version__); print("scipy", scipy.__version__); print("casadi", casadi.__version__); print("casadi_has_nlpsol_ipopt", bool(casadi.has_nlpsol("ipopt")))'
+  uname -a
+} > "$EV/environment.txt"
+
+{
+  echo "HEAD $(git rev-parse HEAD)"
+  echo "branch $(git rev-parse --abbrev-ref HEAD)"
+  echo "--- status --short ---"
+  git status --short
+} > "$EV/git_state_final_pre_evidence.log"
+# exit 0 for both blocks
