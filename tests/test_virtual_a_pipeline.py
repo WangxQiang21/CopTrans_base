@@ -80,10 +80,24 @@ class G4PipelineTests(unittest.TestCase):
         self.assertLessEqual(len(result.routes), 3)
         self.assertEqual(
             result.search["budget"]["total_soft_budget_s"], 60.0)
-        self.assertEqual(
-            result.search["budget"]["max_collision_retries"], 2)
+        self.assertEqual(result.search["budget"]["max_recoveries"], 1)
         self.assertFalse(
             result.search["budget"]["hard_real_time_guarantee"])
+        # C3 scheduling caps and evidence fields.  A successful recovery is
+        # allowed (S3 needs exactly one endpoint-only recovery), but the
+        # scheduling caps and the recorded first-failure layer must hold.
+        self.assertLessEqual(result.search["route_count"], 3)
+        self.assertLessEqual(result.search["initial_count"], 6)
+        self.assertLessEqual(result.search["recovery_count"], 1)
+        self.assertEqual(
+            len(result.search["recoveries"]),
+            result.search["recovery_count"])
+        self.assertIn("first_failure_layer", result.search)
+        self.assertIn("last_reason", result.search)
+        if result.search["recovery_count"]:
+            self.assertTrue(result.search["recoveries"])
+            self.assertTrue(result.search["first_failure_layer"])
+            self.assertTrue(result.search["last_reason"])
 
     def test_route_guides_are_finite_topology_hints_only(self):
         map_request_value, metadata, _payload = scene_map_request("S2")
@@ -156,6 +170,16 @@ class G4PipelineTests(unittest.TestCase):
                     "GEOMETRY_FEASIBLE")
                 self.assertTrue(
                     result.search["rounds"][-1]["collision_passed"])
+                # C3 rework 01: the whole request shares one initial pool.
+                self.assertLessEqual(
+                    result.search["initial_count_total"],
+                    min(6, int(map_request_value.planner_config.max_initials)))
+                self.assertEqual(
+                    len(result.search["initial_keys"]),
+                    result.search["initial_count_total"])
+                self.assertEqual(
+                    result.search["duplicate_initial_launch_count"], 0)
+                self.assertLessEqual(result.search["recovery_count"], 1)
 
     def test_circumcircle_blocked_door_is_solved_by_real_obb_audit(self):
         grid, _metadata = load_synthetic("door_circumcircle")

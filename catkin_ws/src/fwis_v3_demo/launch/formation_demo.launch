@@ -45,6 +45,14 @@
   <arg name="require_cargo_heading" default="false"/>
   <arg name="playback_rate" default="25.0"/>
   <arg name="playback_publish_tf" default="true"/>
+  <!-- Fixed pixel panel for a standard 1280x720 render viewport.  These are
+       render pixels, not window pixels: the RViz side panels reduce the 3D
+       viewport, so a resized window is configured explicitly, never inferred. -->
+  <arg name="hud" default="true"/>
+  <arg name="hud_left" default="900"/>
+  <arg name="hud_top" default="20"/>
+  <arg name="hud_width" default="360"/>
+  <arg name="hud_height" default="270"/>
   <!-- FR05 autonomous uniform planner budgets.  These are search/audit
        budgets, not certified timing limits; T_end always comes from FR02.
        The defaults are the frozen FR04 contract: 10000 expansions / 30 s and
@@ -68,6 +76,7 @@
        STRAIGHT publishes explicit all-fixed headings equal to the cargo goal
        heading.  The uniform_v02 and legacy paths ignore this argument. -->
   <arg name="virtual_a_goal_policy" default="free"/>
+  <arg name="virtual_a_guidance_mode" default="legacy_route"/>
   <arg name="virtual_a_planning_budget_s" default="60.0"/>
   <arg name="virtual_a_planning_timeout_s" default="75.0"/>
 
@@ -103,6 +112,9 @@
            value="$(arg playback_start_timeout_s)"/>
     <param name="playback_finish_grace_s"
            value="$(arg playback_finish_grace_s)"/>
+    <param if="$(eval arg('backend') == 'virtual_rigid_a')"
+           name="virtual_a_guidance_mode"
+           value="$(arg virtual_a_guidance_mode)"/>
     <param if="$(eval arg('backend') == 'virtual_rigid_a')"
            name="virtual_a_goal_policy" value="$(arg virtual_a_goal_policy)"/>
     <param if="$(eval arg('backend') == 'virtual_rigid_a')"
@@ -141,6 +153,16 @@
     <!-- legacy subscribes /formation/timed_trajectory; uniform_v02 subscribes
          the atomic /formation/playback_plan plus /formation/job_state. -->
     <param name="backend" value="$(arg backend)"/>
+    <!-- The fixed-corner HUD replaces the long map-anchored status block and
+         the Cargo failure reason in the interactive demo.  Library defaults
+         keep the historical full display for old callers. -->
+    <param name="show_status_text" value="false"/>
+    <param name="show_cargo_reason" value="false"/>
+    <param name="hud_enabled" value="$(arg hud)"/>
+    <param name="hud_left" value="$(arg hud_left)"/>
+    <param name="hud_top" value="$(arg hud_top)"/>
+    <param name="hud_width" value="$(arg hud_width)"/>
+    <param name="hud_height" value="$(arg hud_height)"/>
     <rosparam command="load" file="$(arg transport_config)"/>
   </node>
 

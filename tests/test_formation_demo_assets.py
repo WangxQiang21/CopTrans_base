@@ -150,6 +150,36 @@ class FormationLaunchTest(unittest.TestCase):
         self.assertIn("scripts/formation_playback.py", cmake)
         self.assertIn("scripts/playback.py", cmake)
 
+    def test_launch_configures_the_fixed_corner_hud(self):
+        root = ElementTree.parse(LAUNCH).getroot()
+        args = {arg.get("name"): arg.get("default")
+                for arg in root.findall("arg")}
+        self.assertEqual(args["hud"], "true")
+        self.assertEqual(args["hud_left"], "900")
+        self.assertEqual(args["hud_top"], "20")
+        self.assertEqual(args["hud_width"], "360")
+        self.assertEqual(args["hud_height"], "270")
+        node = next(node for node in root.findall("node")
+                    if node.get("name") == "formation_playback")
+        params = {param.get("name"): param.get("value")
+                  for param in node.findall("param")}
+        for name, source in (
+                ("hud_enabled", "hud"),
+                ("hud_left", "hud_left"),
+                ("hud_top", "hud_top"),
+                ("hud_width", "hud_width"),
+                ("hud_height", "hud_height")):
+            self.assertEqual(params[name], "$(arg {})".format(source))
+        self.assertEqual(params["show_status_text"], "false")
+        self.assertEqual(params["show_cargo_reason"], "false")
+
+    def test_playback_package_declares_the_hud_runtime_dependency(self):
+        package = ElementTree.parse(
+            ROOT / "catkin_ws/src/fwis_v3_playback/package.xml").getroot()
+        dependencies = {
+            element.text for element in package.findall("exec_depend")}
+        self.assertIn("jsk_rviz_plugins", dependencies)
+
     def test_launch_starts_one_interactive_goal_bridge(self):
         root = ElementTree.parse(LAUNCH).getroot()
         args = {arg.get("name"): arg.get("default")
@@ -234,6 +264,22 @@ class FormationRvizTest(unittest.TestCase):
         for topic in ("/plan/markers", "/plan/mode_strip",
                       "/robot/heading_marker", "/plan/timed_trajectory"):
             self.assertNotIn(topic, text)
+
+    def test_demo_rviz_has_the_hud_and_corridor_layers(self):
+        displays = self.document["Visualization Manager"]["Displays"]
+        hud = next(item for item in displays
+                   if item.get("Class") == "jsk_rviz_plugin/OverlayText")
+        self.assertEqual(hud["Topic"], "/formation/hud")
+        self.assertEqual(hud["left"], 900)
+        self.assertEqual(hud["top"], 20)
+        self.assertEqual(hud["width"], 360)
+        self.assertEqual(hud["height"], 270)
+        self.assertTrue(hud["Overtake Position Properties"])
+        corridor = next(
+            item for item in displays
+            if item.get("Class") == "rviz/MarkerArray"
+            and item.get("Marker Topic") == "/formation/corridors")
+        self.assertTrue(corridor["Enabled"])
 
     def test_demo_rviz_exposes_goal_and_initial_pose_tools(self):
         manager = self.document["Visualization Manager"]

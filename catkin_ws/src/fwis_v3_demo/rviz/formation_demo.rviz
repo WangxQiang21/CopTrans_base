@@ -15,9 +15,46 @@ Visualization Manager:
       Value: true
     - Class: rviz/MarkerArray
       Enabled: true
-      Name: Formation vehicles, mode bands, status
+      Name: Final certified vehicle paths
       Marker Topic: /formation/markers
       Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /formation/guides
+      Name: A* route (default off) and C2-A centreline (reference only)
+      Namespaces:
+        formation/guides/astar: false
+        formation/guides/astar_candidate: false
+        formation/guides/centerline: true
+        formation/guides/centerline_candidate: false
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Name: Corridor candidates (reference point only, low alpha)
+      Marker Topic: /formation/corridors
+      Value: true
+    - Align Bottom: false
+      Background Alpha: 0.55
+      Background Color: 0; 0; 0
+      Class: jsk_rviz_plugin/OverlayText
+      Enabled: true
+      Foreground Alpha: 0.95
+      Foreground Color: 255; 255; 255
+      Invert Shadow: false
+      Name: Formation HUD
+      Overtake BG Color Properties: true
+      Overtake FG Color Properties: true
+      Overtake Position Properties: true
+      Topic: /formation/hud
+      Value: true
+      font: DejaVu Sans Mono
+      height: 270
+      left: 900
+      line width: 2
+      text size: 13
+      top: 20
+      width: 360
     - Class: rviz/TF
       Enabled: true
       Name: Formation TF

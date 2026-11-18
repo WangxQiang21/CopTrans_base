@@ -8,6 +8,7 @@ translation/heading and a generic clamped cubic-spline C2 projection.
 from dataclasses import dataclass
 import inspect
 import math
+import numbers
 import time
 
 import numpy as np
@@ -15,6 +16,7 @@ import numpy as np
 from ..continuous_geometry import ControlKnot
 from ..formation import FormationPose
 from .contracts import (
+    CorridorChain,
     DEFAULT_INITIAL_LENGTH_MULTIPLIERS,
     GEOMETRY_STATUSES,
     GeometryAuditConfig,
@@ -35,6 +37,11 @@ from .contracts import (
     validate_planner_config,
     validate_virtual_a_request,
 )
+from .corridor import (
+    corridor_effective_margin,
+    corridor_min_portal_radius,
+    validate_corridor_allocation,
+)
 from .geometry import C2CurvatureProfile, VirtualAPath
 from .audit import audit_geometry
 
@@ -50,6 +57,12 @@ SOLVER_SKIP = "not_run"
 # while remaining soft enough for a collision retry to relax the guide.
 ROUTE_GUIDANCE_WEIGHT = 5.0e5
 ROUTE_CURVATURE_WEIGHT = 100.0
+# C3 scheduling: with at least one valid route, every initial slot may be
+# used at most once per distinct route, at least one slot is a true
+# endpoint-only shape, and the remaining slots draw from at most this many
+# distinct default length/curvature shapes (both signs each).  No route
+# topology keeps the historical G2 automatic sequence unchanged.
+C3_ENDPOINT_SHAPES = 2
 # The cached clearance proxy is a soft body-footprint penalty, not an audit.
 # It is normalised over all collocation samples and vehicles, so a typical
 # hinge of a few centimetres contributes only a few tens of objective units
@@ -81,22 +94,33 @@ def _coeffs(h, k0, k1, eta0, eta1):
     )
 
 
-def _piece_position_samples(h, coeffs, psi0, q_values, sin, cos):
+def _piece_position_samples(h, coeffs, psi0, q_values, sin, cos,
+                            quadrature_count=None):
     """Prefix-integral positions inside one cubic curvature piece.
 
     For each ``q`` in ``q_values`` the displacement is
     ``h q sum_l w_l e(psi0 + h q xi_l [c0 + ...])``, i.e. the Gauss
     quadrature of the prefix integral from the piece start.  It is never the
     cumulative full-weight sum of the whole piece.  ``sin``/``cos`` let the
-    same routine serve ``math`` and CasADi scalars; the Gauss order is the
-    number of collocation values, so production uses the cached 9-point rule.
-    Segment endpoints are integrated separately with the full Gauss rule.
+    same routine serve ``math`` and CasADi scalars.
+
+    The historical callers integrate every collocation value with an equally
+    sized Gauss rule.  Corridor constraints instead sample an arbitrary
+    allocation-driven set of ``q`` values and must keep their mandated
+    9-point rule, hence the optional ``quadrature_count``.  ``q == 0`` is the
+    exact piece start and needs no quadrature.
     """
     c0, c1, c2, c3 = coeffs
-    nodes, weights = _gauss(len(q_values))
+    count = len(q_values) if quadrature_count is None else int(
+        quadrature_count)
+    nodes, weights = _gauss(count)
     displacements = []
     headings = []
     for q in q_values:
+        if q == 0:
+            displacements.append((0.0, 0.0))
+            headings.append(psi0)
+            continue
         dx = 0.0
         dy = 0.0
         for node, weight in zip(nodes, weights):
@@ -358,6 +382,16 @@ def _route_guess(request, config, packet, guide, route_index,
             kappas, S_guess / n, packet["eta_limit"])
     except VirtualAContractError:
         raise
+    corridor_mode = _guidance_mode(config) == "corridor"
+    if corridor_mode:
+        node_count = n + 1
+        collocation_count = n * int(config.collocation_points)
+        route_position_weight = float(config.corridor_guide_weight) * \
+            node_count / (node_count + collocation_count)
+    else:
+        route_position_weight = ROUTE_GUIDANCE_WEIGHT * (
+            float(getattr(obstacle_context, "route_weight_scale", 1.0))
+            if obstacle_context is not None else 1.0)
     metadata = {
         "endpoint_local_dx_m": packet["dx"],
         "endpoint_local_dy_m": packet["dy"],
@@ -374,9 +408,10 @@ def _route_guess(request, config, packet, guide, route_index,
         "route_length_m": route_length,
         "route_point_count": len(guide.points),
         "route_heading_smoothing": "node_circumcircle_three_point",
-        "route_position_weight": float(ROUTE_GUIDANCE_WEIGHT) * (
-            float(getattr(obstacle_context, "route_weight_scale", 1.0))
-            if obstacle_context is not None else 1.0),
+        "route_position_weight": float(route_position_weight),
+        "route_position_rule": (
+            "corridor_guide_mean_normalised_by_L0_squared"
+            if corridor_mode else "legacy_route_weight"),
         "route_weight_scale": float(getattr(
             obstacle_context, "route_weight_scale", 1.0))
         if obstacle_context is not None else 1.0,
@@ -425,6 +460,106 @@ def _guess_route_guidance(guess, request, route_guides, n, collocation=None,
         collocation_points = _route_fraction_points(
             guide, request, collocation_fractions)
     return local, curvature, collocation_points
+
+
+def _guidance_mode(config):
+    return str(config.guidance_mode).strip().lower()
+
+
+def _corridor_margin_rule(config):
+    return str(config.corridor_enforcement).strip().lower()
+
+
+@dataclass(frozen=True)
+class _CorridorConstraint:
+    """Precomputed start-local corridor samples, one entry per piece.
+
+    Each group holds ``(q, rows, limits)`` where ``q`` is the fractional
+    position inside Hermite piece ``j``.  ``rows`` are the rotated unit outward
+    normals and ``limits`` already include the effective margin.  The mapping
+    from allocation sigma to ``(j, q)`` is independent of the decision S.
+    """
+
+    margin_m: float
+    portal_margin_fraction: float
+    allocation: tuple
+    groups: tuple
+    sample_count: int
+    region_count: int
+    min_portal_radius_m: object
+    quadrature_points: int
+    enforcement: str
+
+    def as_dict(self):
+        return {
+            "role": "reference_point_convex_halfspaces",
+            "enforcement": self.enforcement,
+            "margin_m": float(self.margin_m),
+            "portal_margin_fraction": float(self.portal_margin_fraction),
+            "min_portal_radius_m": self.min_portal_radius_m,
+            "quadrature_points": int(self.quadrature_points),
+            "sample_count": int(self.sample_count),
+            "allocation_count": len(self.allocation),
+            "region_count": int(self.region_count),
+            "is_three_vehicle_certificate": False,
+        }
+
+
+def _build_corridor_constraint(chain, allocation, request, config):
+    """Rotate both corridor halfspace sets into the request start frame."""
+    if not isinstance(chain, CorridorChain):
+        raise VirtualAContractError(
+            "INVALID_CORRIDOR_CHAIN", "expected CorridorChain")
+    allocation = validate_corridor_allocation(chain, allocation)
+    n = int(config.intervals)
+    quadrature = int(config.corridor_quadrature_points)
+    nodes, _weights = _gauss(quadrature)
+    start = request.start_qf
+    cosine, sine = math.cos(start.psi), math.sin(start.psi)
+    margin = corridor_effective_margin(chain, config)
+    groups = [[] for _ in range(n)]
+    sample_count = 0
+    for left, right, corridor_index in allocation:
+        sigmas = [left]
+        sigmas.extend(left + (right - left) * float(node) for node in nodes)
+        sigmas.append(right)
+        region = chain.regions[corridor_index]
+        local_rows = tuple(
+            (float(row[0] * cosine + row[1] * sine),
+             float(-row[0] * sine + row[1] * cosine))
+            for row in region.A)
+        local_limits = tuple(
+            float(limit) - margin
+            - (float(row[0]) * start.x + float(row[1]) * start.y)
+            for row, limit in zip(region.A, region.b))
+        for sigma in sigmas:
+            if sigma <= 0.0:
+                piece, q = 0, 0.0
+            elif sigma >= 1.0:
+                piece, q = n - 1, 1.0
+            else:
+                scaled = float(sigma) * n
+                piece = int(math.floor(scaled))
+                q = scaled - piece
+                if piece >= n:
+                    piece, q = n - 1, 1.0
+                if q < 0.0:
+                    piece, q = max(0, piece - 1), 1.0
+                elif q > 1.0:
+                    piece, q = min(n - 1, piece + 1), 0.0
+            groups[piece].append((float(q), local_rows, local_limits))
+            sample_count += 1
+    return _CorridorConstraint(
+        margin_m=float(margin),
+        portal_margin_fraction=float(
+            config.corridor_margin_portal_fraction),
+        allocation=allocation,
+        groups=tuple(tuple(group) for group in groups),
+        sample_count=int(sample_count),
+        region_count=len(chain.regions),
+        min_portal_radius_m=corridor_min_portal_radius(chain),
+        quadrature_points=quadrature,
+        enforcement=_corridor_margin_rule(config))
 
 
 @dataclass(frozen=True)
@@ -495,16 +630,36 @@ def _collocation_states(vector, packet, collocation):
     return tuple(states)
 
 
+def _clearance_world_body(request, x, y, psi, kappa, offset):
+    """Map one local formation state plus vehicle offset to world body pose.
+
+    ``x, y, psi`` are the optimizer's start-local reference coordinates;
+    the clearance field and its nearest-obstacle directions are world-frame.
+    """
+    start = request.start_qf
+    start_x = float(start.x)
+    start_y = float(start.y)
+    start_psi = float(start.psi)
+    cosine = math.cos(start_psi)
+    sine = math.sin(start_psi)
+    world_x = start_x + cosine * x - sine * y
+    world_y = start_y + sine * x + cosine * y
+    world_psi = start_psi + psi
+    a, b = float(offset.x), float(offset.y)
+    center_x = world_x + math.cos(world_psi) * a - math.sin(world_psi) * b
+    center_y = world_y + math.sin(world_psi) * a + math.cos(world_psi) * b
+    theta = world_psi + math.atan2(a * kappa, 1.0 - b * kappa)
+    return center_x, center_y, theta
+
+
 def _clearance_proxy_angles(field, request, states):
     """Freeze one nearest-obstacle direction per collocation body centre."""
     angles = []
     for x, y, psi, kappa in states:
         row = []
         for offset in request.model.offsets:
-            a, b = offset.x, offset.y
-            center_x = x + math.cos(psi) * a - math.sin(psi) * b
-            center_y = y + math.sin(psi) * a + math.cos(psi) * b
-            theta = psi + math.atan2(a * kappa, 1.0 - b * kappa)
+            center_x, center_y, theta = _clearance_world_body(
+                request, x, y, psi, kappa, offset)
             _, direction, _ = field.direction_at(center_x, center_y)
             if direction is None or not math.isfinite(direction):
                 direction = theta
@@ -536,22 +691,25 @@ def _clearance_proxy(guess, request, packet, config, obstacle_context):
         raise VirtualAContractError(
             "CLEARANCE_PROXY_FAILURE",
             "clearance proxy sample count mismatch")
+    corridor_mode = _guidance_mode(config) == "corridor"
     return _ClearanceProxy(
         field=field,
         angles=angles,
-        target_m=float(CLEARANCE_PROXY_TARGET_M),
-        weight=float(CLEARANCE_PROXY_WEIGHT))
+        target_m=float(
+            config.corridor_clearance_target_m
+            if corridor_mode else CLEARANCE_PROXY_TARGET_M),
+        weight=float(
+            config.corridor_clearance_weight
+            if corridor_mode else CLEARANCE_PROXY_WEIGHT))
 
 
 def _proxy_numeric_penalty(proxy, request, x, y, psi, kappa, sample):
     total = 0.0
     row = proxy.angles[sample]
     for index, offset in enumerate(request.model.offsets):
-        a, b = offset.x, offset.y
         shape = request.vehicle_shapes[offset.vehicle_id]
-        center_x = x + math.cos(psi) * a - math.sin(psi) * b
-        center_y = y + math.sin(psi) * a + math.cos(psi) * b
-        theta = psi + math.atan2(a * kappa, 1.0 - b * kappa)
+        center_x, center_y, theta = _clearance_world_body(
+            request, x, y, psi, kappa, offset)
         direction = row[index]
         clearance = proxy.field.value_at(center_x, center_y)
         support = (0.5 * shape.length_m * abs(math.cos(theta - direction))
@@ -585,8 +743,13 @@ def make_initial_guesses(request, config, *, route_guides=(),
                          obstacle_context=None):
     """Return at most ``max_initials`` automatic, reconstructible initials.
 
-    Route-guided initials are prepended when supplied.  With no routes the
-    function is byte-for-byte the G2 automatic sequence.
+    With no route topology the function is byte-for-byte the G2 automatic
+    sequence.  With routes, C3 schedules at most one guide initial per
+    distinct route, always retains at least one true endpoint-only initial
+    when a slot is available, and fills the remaining slots from at most
+    ``C3_ENDPOINT_SHAPES`` distinct default length shapes with one initial
+    per (length, direction) pair.  A route initial is never replaced by an
+    endpoint shape merely to reach ``max_initials``.
     """
     request_ok = validate_virtual_a_request(request)
     if not request_ok.passed:
@@ -605,23 +768,84 @@ def make_initial_guesses(request, config, *, route_guides=(),
             "S_lower={!r} >= S_upper={!r}".format(
                 packet["S_lower"], packet["S_upper"]),
             S_lower=packet["S_lower"], S_upper=packet["S_upper"])
+    max_initials = min(MAX_INITIALS, int(config.max_initials))
     guesses = []
+    seen_routes = set()
     for index, guide in enumerate(route_guides):
+        # At most one initial per distinct valid route; a caller that repeats
+        # the same guide must not consume another slot.
+        points = tuple(guide.points)
+        if points in seen_routes:
+            continue
+        seen_routes.add(points)
         guesses.append(_route_guess(
             request, config, packet, guide, index,
             obstacle_context=obstacle_context))
-        if len(guesses) >= min(MAX_INITIALS, int(config.max_initials)):
+        if len(guesses) >= max_initials:
             return tuple(guesses)
-    for multiplier in DEFAULT_INITIAL_LENGTH_MULTIPLIERS:
+    if not route_guides:
+        # No route candidate at all: keep the historical G2 automatic
+        # sequence (three length shapes, both directions).
+        for multiplier in DEFAULT_INITIAL_LENGTH_MULTIPLIERS:
+            for sign in (1, -1):
+                guesses.append(_guess_for(
+                    request, config, packet, multiplier, sign))
+                if len(guesses) >= max_initials:
+                    return tuple(guesses)
+        return tuple(guesses)
+    if max_initials <= len(guesses):
+        # The route initial is the only slot; no endpoint-only initial fits.
+        return tuple(guesses)
+    seen_endpoint = set()
+    for multiplier in DEFAULT_INITIAL_LENGTH_MULTIPLIERS[:C3_ENDPOINT_SHAPES]:
         for sign in (1, -1):
+            key = (float(multiplier), int(sign))
+            if key in seen_endpoint:
+                continue
+            seen_endpoint.add(key)
             guesses.append(_guess_for(
                 request, config, packet, multiplier, sign))
-            if len(guesses) >= min(MAX_INITIALS, int(config.max_initials)):
+            if len(guesses) >= max_initials:
                 return tuple(guesses)
     return tuple(guesses)
 
 
-def _numeric_constraint_vector(z, request, config, packet, collocation):
+def initial_guess_key(guess):
+    """Return the stable, reconstructible identity of one initial guess.
+
+    C3 rework 01 requires a request-wide initial pool.  The identity uses only
+    fields already serialized by ``InitialGuess``/``_route_guess``/
+    ``_guess_for``: the source, the route source/grid digest/index and the
+    label for route initials, and the source, length multiplier, shape sign
+    and label for endpoint initials.  Object addresses, solver vectors and
+    float-array hashes are deliberately not used, so the same identity can be
+    rebuilt from recorded evidence.
+    """
+    source = str(getattr(guess, "source", ""))
+    label = str(getattr(guess, "label", ""))
+    metadata = getattr(guess, "metadata", None)
+    if not isinstance(metadata, dict):
+        metadata = {}
+    if source == "map_route_guide":
+        return (
+            source,
+            str(metadata.get("route_source", "")),
+            str(metadata.get("route_grid_sha256", "")),
+            int(metadata.get("route_index", -1)),
+            label,
+        )
+    if source == "automatic_endpoint_shape":
+        return (
+            source,
+            float(getattr(guess, "length_multiplier", 0.0)),
+            int(getattr(guess, "shape_sign", 0)),
+            label,
+        )
+    return (source, label)
+
+
+def _numeric_constraint_vector(z, request, config, packet, collocation,
+                               corridor_constraint=None):
     """Numeric constraints shared by the SciPy fallback and residual checks."""
     n = packet["intervals"]
     S = float(z[0])
@@ -631,6 +855,7 @@ def _numeric_constraint_vector(z, request, config, packet, collocation):
         return np.full(1, 1e12)
     h = S / n
     values = []
+    corridor_values = []
     for j in range(1, n):
         c0l, c1l, c2l, c3l = _coeffs(h, kappas[j - 1], kappas[j],
                                      etas[j - 1], etas[j])
@@ -646,6 +871,17 @@ def _numeric_constraint_vector(z, request, config, packet, collocation):
     for j in range(n):
         c0, c1, c2, c3 = _coeffs(h, kappas[j], kappas[j + 1],
                                  etas[j], etas[j + 1])
+        if corridor_constraint is not None:
+            for q, rows, limits in corridor_constraint.groups[j]:
+                shifts, _headings = _piece_position_samples(
+                    h, (c0, c1, c2, c3), psi, [q], math.sin, math.cos,
+                    quadrature_count=corridor_constraint.quadrature_points)
+                dx, dy = shifts[0]
+                sample_x = x + dx
+                sample_y = y + dy
+                for row, limit in zip(rows, limits):
+                    corridor_values.append(
+                        row[0] * sample_x + row[1] * sample_y - limit)
         for q, weight in zip(nodes, weights):
             local_psi = psi + h * q * (
                 c0 + q * (c1 / 2.0 + q * (c2 / 3.0 + q * c3 / 4.0)))
@@ -674,7 +910,24 @@ def _numeric_constraint_vector(z, request, config, packet, collocation):
                 else:
                     values.append(
                         (kappa * D + a * eta) / math.pow(D, 1.5))
+    values.extend(corridor_values)
     return np.asarray(values, dtype=float)
+
+
+def _constraint_value_offsets(request, config, packet, corridor_constraint):
+    """Return (equality_end, signed_end, corridor_end) slices."""
+    n = int(packet["intervals"])
+    equality_end = (n - 1) + 3 + (
+        2 if coerce_goal_policy(request.goal_policy).value == "STRAIGHT"
+        else 0)
+    signed_end = equality_end + n * (
+        int(config.collocation_points) + 2) * len(request.model.offsets)
+    corridor_end = signed_end
+    if corridor_constraint is not None:
+        corridor_end += sum(
+            len(limits) for group in corridor_constraint.groups
+            for _q, _rows, limits in group)
+    return equality_end, signed_end, corridor_end
 
 
 def _numeric_objective(z, request, config, packet, collocation,
@@ -691,6 +944,7 @@ def _numeric_objective(z, request, config, packet, collocation,
     nodes, weights = _gauss(collocation)
     eta_integral = 0.0
     u_integral = 0.0
+    kappa_integral = 0.0
     x = 0.0
     y = 0.0
     psi = 0.0
@@ -705,8 +959,10 @@ def _numeric_objective(z, request, config, packet, collocation,
             h, (c0, c1, c2, c3), psi, nodes, math.sin, math.cos)
         for q, weight, (dx, dy), local_psi in zip(
                 nodes, weights, displacements, headings):
+            kappa = c0 + q * (c1 + q * (c2 + q * c3))
             eta = (c1 + q * (2.0 * c2 + 3.0 * q * c3)) / h
             u = (2.0 * c2 + 6.0 * c3 * q) / (h * h)
+            kappa_integral += h * weight * kappa * kappa
             eta_integral += h * weight * eta * eta
             u_integral += h * weight * u * u
             sample_x = x + dx
@@ -718,7 +974,6 @@ def _numeric_objective(z, request, config, packet, collocation,
                 delta_y = sample_y - float(point[1])
                 collocation_penalty += delta_x * delta_x + delta_y * delta_y
             if clearance_proxy is not None:
-                kappa = c0 + q * (c1 + q * (c2 + q * c3))
                 clearance_penalty += _proxy_numeric_penalty(
                     clearance_proxy, request, sample_x, sample_y, local_psi,
                     kappa, sample)
@@ -731,19 +986,24 @@ def _numeric_objective(z, request, config, packet, collocation,
         psi += h * (c0 + c1 / 2.0 + c2 / 3.0 + c3 / 4.0)
         node_positions.append((x, y))
     l0 = packet["l0"]
+    corridor_mode = _guidance_mode(config) == "corridor"
     objective = (S / l0 + 0.02 * l0 ** 3 * eta_integral
                  + 0.002 * l0 ** 5 * u_integral)
+    if corridor_mode:
+        objective += float(config.corridor_kappa_weight) * l0 * kappa_integral
+    guide_normalizer = 1.0 if not corridor_mode else l0 * l0
     if route_points is not None and route_weight > 0.0:
         penalty = 0.0
         for j, point in enumerate(route_points):
             dx = node_positions[j][0] - float(point[0])
             dy = node_positions[j][1] - float(point[1])
             penalty += dx * dx + dy * dy
-        objective += float(route_weight) * penalty / len(route_points)
+        objective += float(route_weight) * penalty / (
+            len(route_points) * guide_normalizer)
     if route_collocation_points is not None \
             and route_collocation_weight > 0.0:
-        objective += float(route_collocation_weight) * collocation_penalty / \
-            len(route_collocation_points)
+        objective += float(route_collocation_weight) * collocation_penalty / (
+            len(route_collocation_points) * guide_normalizer)
     if route_kappas is not None and route_curvature_weight > 0.0:
         curvature_penalty = 0.0
         for j in range(n + 1):
@@ -754,14 +1014,16 @@ def _numeric_objective(z, request, config, packet, collocation,
     if clearance_proxy is not None and clearance_proxy.weight > 0.0:
         normalizer = max(
             1, clearance_proxy.sample_count * clearance_proxy.vehicle_count)
-        objective += float(clearance_proxy.weight) * clearance_penalty / \
-            normalizer
+        objective += float(clearance_proxy.weight) * clearance_penalty / (
+            normalizer * guide_normalizer)
     return objective
 
 
-def _constraint_residual(z, request, config, packet):
+def _constraint_residual(z, request, config, packet,
+                         corridor_constraint=None):
     values = _numeric_constraint_vector(
-        z, request, config, packet, int(config.collocation_points))
+        z, request, config, packet, int(config.collocation_points),
+        corridor_constraint=corridor_constraint)
     # Curvature values are appended without a lower bound; remove them by
     # using the same count as the NLP.  Retain equality and signed-C checks by
     # checking the numeric profile against bounds explicitly.
@@ -792,10 +1054,19 @@ def _constraint_residual(z, request, config, packet):
                 else:
                     c = (kappa * D + a * eta) / math.pow(D, 1.5)
                     residual = max(residual, max(0.0, abs(c) - cmax))
+    _equality_end, signed_end, corridor_end = _constraint_value_offsets(
+        request, config, packet, corridor_constraint)
+    if corridor_end > signed_end:
+        corridor_values = np.asarray(values[signed_end:corridor_end],
+                                     dtype=float)
+        if corridor_values.size:
+            residual = max(
+                residual, float(np.max(np.maximum(0.0, corridor_values))))
     return residual
 
 
-def _constraint_residual_diagnostic(z, request, config, packet):
+def _constraint_residual_diagnostic(z, request, config, packet,
+                                    corridor_constraint=None):
     """Return ``(residual, error)`` without letting diagnostics escape.
 
     A residual is recorded only for an available, finite decision vector of
@@ -818,7 +1089,9 @@ def _constraint_residual_diagnostic(z, request, config, packet):
     if not np.all(np.isfinite(vector)):
         return None, "decision vector contains non-finite values"
     try:
-        residual = float(_constraint_residual(vector, request, config, packet))
+        residual = float(_constraint_residual(
+            vector, request, config, packet,
+            corridor_constraint=corridor_constraint))
     except Exception as exc:
         return None, "constraint residual computation failed: {}: {}".format(
             type(exc).__name__, exc)
@@ -829,13 +1102,58 @@ def _constraint_residual_diagnostic(z, request, config, packet):
     return residual, ""
 
 
-def _attach_failure_residual(result, request, config, packet):
-    """Attach a best-effort residual to a failed attempt, never raising."""
+def _corridor_residual_diagnostic(z, request, config, packet,
+                                  corridor_constraint):
+    """Maximum corridor halfspace excess of one decision vector."""
+    if corridor_constraint is None:
+        return None, ""
+    if z is None:
+        return None, "no decision vector"
+    try:
+        vector = np.asarray(z, dtype=float).reshape(-1)
+    except (TypeError, ValueError) as exc:
+        return None, "decision vector conversion failed: {}: {}".format(
+            type(exc).__name__, exc)
+    expected_size = 2 * int(packet["intervals"]) + 3
+    if vector.size != expected_size:
+        return None, "decision vector has {} values; expected {}".format(
+            vector.size, expected_size)
+    if not np.all(np.isfinite(vector)):
+        return None, "decision vector contains non-finite values"
+    try:
+        values = _numeric_constraint_vector(
+            vector, request, config, packet,
+            int(config.collocation_points),
+            corridor_constraint=corridor_constraint)
+        _equality_end, signed_end, corridor_end = _constraint_value_offsets(
+            request, config, packet, corridor_constraint)
+        corridor_values = np.asarray(values[signed_end:corridor_end],
+                                     dtype=float)
+        residual = float(np.max(np.maximum(0.0, corridor_values))) \
+            if corridor_values.size else 0.0
+    except Exception as exc:
+        return None, "corridor residual computation failed: {}: {}".format(
+            type(exc).__name__, exc)
+    if not math.isfinite(residual) or residual < 0.0:
+        return None, "corridor residual is invalid: {!r}".format(residual)
+    return residual, ""
+
+
+def _attach_failure_residual(result, request, config, packet,
+                             corridor_constraint=None):
+    """Attach best-effort residuals to a failed attempt, never raising."""
     if result.get("z") is None:
         return
     residual, error = _constraint_residual_diagnostic(
-        result["z"], request, config, packet)
+        result["z"], request, config, packet,
+        corridor_constraint=corridor_constraint)
     result["constraint_residual"] = residual
+    if corridor_constraint is not None:
+        corridor_residual, corridor_error = _corridor_residual_diagnostic(
+            result["z"], request, config, packet, corridor_constraint)
+        result["corridor_residual_m"] = corridor_residual
+        if corridor_error and not error:
+            error = corridor_error
     if error:
         prefix = str(result.get("detail", "")).rstrip("; ")
         result["detail"] = (
@@ -849,7 +1167,8 @@ def _build_casadi_nlp(request, config, packet, wall_limit_s=None,
                       route_kappas=None, route_curvature_weight=0.0,
                       route_collocation_points=None,
                       route_collocation_weight=0.0,
-                      clearance_proxy=None):
+                      clearance_proxy=None,
+                      corridor_constraint=None):
     import casadi as ca
     n = packet["intervals"]
     clearance_fn = None
@@ -871,6 +1190,12 @@ def _build_casadi_nlp(request, config, packet, wall_limit_s=None,
         clearance_bounds = (
             float(x_axis[0]), float(x_axis[-1]),
             float(y_axis[0]), float(y_axis[-1]))
+        start = request.start_qf
+        start_x = float(start.x)
+        start_y = float(start.y)
+        start_psi = float(start.psi)
+        cos_start = math.cos(start_psi)
+        sin_start = math.sin(start_psi)
     z = ca.MX.sym("z", 2 * n + 3)
     S = z[0]
     kappas = z[1:1 + n + 1]
@@ -901,21 +1226,36 @@ def _build_casadi_nlp(request, config, packet, wall_limit_s=None,
     psi = 0.0
     eta_integral = 0.0
     u_integral = 0.0
+    kappa_integral = 0.0
     piece_coefficients = []
     node_positions = [(0.0, 0.0)]
     collocation_route_penalty = 0.0
     clearance_proxy_penalty = 0.0
     collocation_sample = 0
+    corridor_constraints = []
     for j in range(n):
         c0, c1, c2, c3 = coeffs(
             kappas[j], kappas[j + 1], etas[j], etas[j + 1])
         piece_coefficients.append((c0, c1, c2, c3))
         displacements, headings = _piece_position_samples(
             h, (c0, c1, c2, c3), psi, nodes, ca.sin, ca.cos)
+        if corridor_constraint is not None:
+            for q, rows, limits in corridor_constraint.groups[j]:
+                shifts, _headings = _piece_position_samples(
+                    h, (c0, c1, c2, c3), psi, [q], ca.sin, ca.cos,
+                    quadrature_count=corridor_constraint.quadrature_points)
+                dx, dy = shifts[0]
+                sample_x = x + dx
+                sample_y = y + dy
+                for row, limit in zip(rows, limits):
+                    corridor_constraints.append(
+                        row[0] * sample_x + row[1] * sample_y - limit)
         for q, weight, (dx, dy), local_psi in zip(
                 nodes, weights, displacements, headings):
+            kappa = c0 + q * (c1 + q * (c2 + q * c3))
             eta = (c1 + q * (2.0 * c2 + 3.0 * q * c3)) / h
             u = (2.0 * c2 + 6.0 * c3 * q) / (h * h)
+            kappa_integral += h * weight * kappa * kappa
             eta_integral += h * weight * eta * eta
             u_integral += h * weight * u * u
             sample_x = x + dx
@@ -927,20 +1267,24 @@ def _build_casadi_nlp(request, config, packet, wall_limit_s=None,
                     (sample_x - float(point[0])) ** 2
                     + (sample_y - float(point[1])) ** 2)
             if clearance_fn is not None:
-                kappa = c0 + q * (c1 + q * (c2 + q * c3))
                 angles = clearance_proxy.angles[collocation_sample]
+                world_x = start_x + cos_start * sample_x \
+                    - sin_start * sample_y
+                world_y = start_y + sin_start * sample_x \
+                    + cos_start * sample_y
+                world_psi = start_psi + local_psi
                 for index, offset in enumerate(request.model.offsets):
                     a, b = offset.x, offset.y
                     shape = request.vehicle_shapes[offset.vehicle_id]
-                    center_x = sample_x + ca.cos(local_psi) * a \
-                        - ca.sin(local_psi) * b
-                    center_y = sample_y + ca.sin(local_psi) * a \
-                        + ca.cos(local_psi) * b
+                    center_x = world_x + ca.cos(world_psi) * a \
+                        - ca.sin(world_psi) * b
+                    center_y = world_y + ca.sin(world_psi) * a \
+                        + ca.cos(world_psi) * b
                     center_x = ca.fmin(ca.fmax(
                         center_x, clearance_bounds[0]), clearance_bounds[1])
                     center_y = ca.fmin(ca.fmax(
                         center_y, clearance_bounds[2]), clearance_bounds[3])
-                    theta = local_psi + ca.atan2(
+                    theta = world_psi + ca.atan2(
                         a * kappa, 1.0 - b * kappa)
                     clearance = clearance_fn(
                         ca.vertcat(center_x, center_y))
@@ -983,21 +1327,31 @@ def _build_casadi_nlp(request, config, packet, wall_limit_s=None,
                 constraints.append(c)
                 lower.append(-cmax)
                 upper.append(cmax)
+    for value in corridor_constraints:
+        constraints.append(value)
+        lower.append(-np.inf)
+        upper.append(0.0)
     l0 = packet["l0"]
+    corridor_mode = _guidance_mode(config) == "corridor"
     objective = (S / l0 + 0.02 * l0 ** 3 * eta_integral
                  + 0.002 * l0 ** 5 * u_integral)
+    if corridor_mode:
+        objective = objective + float(
+            config.corridor_kappa_weight) * l0 * kappa_integral
+    guide_normalizer = 1.0 if not corridor_mode else l0 * l0
     if route_points is not None and route_weight > 0.0:
         route_penalty = 0.0
         for (node_x, node_y), point in zip(node_positions, route_points):
             dx = node_x - float(point[0])
             dy = node_y - float(point[1])
             route_penalty += dx * dx + dy * dy
-        objective = objective + float(route_weight) * route_penalty / len(
-            route_points)
+        objective = objective + float(route_weight) * route_penalty / (
+            len(route_points) * guide_normalizer)
     if route_collocation_points is not None \
             and route_collocation_weight > 0.0:
         objective = objective + float(route_collocation_weight) * (
-            collocation_route_penalty / len(route_collocation_points))
+            collocation_route_penalty / (
+                len(route_collocation_points) * guide_normalizer))
     if route_kappas is not None and route_curvature_weight > 0.0:
         curvature_penalty = 0.0
         for j in range(n + 1):
@@ -1009,7 +1363,7 @@ def _build_casadi_nlp(request, config, packet, wall_limit_s=None,
         normalizer = max(
             1, clearance_proxy.sample_count * clearance_proxy.vehicle_count)
         objective = objective + float(clearance_proxy.weight) * (
-            clearance_proxy_penalty / normalizer)
+            clearance_proxy_penalty / (normalizer * guide_normalizer))
     nlp = {"x": z, "f": objective, "g": ca.vertcat(*constraints)}
     options = {
         "ipopt": {
@@ -1043,7 +1397,8 @@ def _solve_with_ipopt(request, config, packet, guess, wall_limit_s=None,
                       route_kappas=None, route_curvature_weight=0.0,
                       route_collocation_points=None,
                       route_collocation_weight=0.0,
-                      clearance_proxy=None):
+                      clearance_proxy=None,
+                      corridor_constraint=None):
     import casadi as ca
     started = time.monotonic()
     solver, lower_x, upper_x, lower_g, upper_g = _build_casadi_nlp(
@@ -1052,7 +1407,8 @@ def _solve_with_ipopt(request, config, packet, guess, wall_limit_s=None,
         route_kappas=route_kappas, route_curvature_weight=route_curvature_weight,
         route_collocation_points=route_collocation_points,
         route_collocation_weight=route_collocation_weight,
-        clearance_proxy=clearance_proxy)
+        clearance_proxy=clearance_proxy,
+        corridor_constraint=corridor_constraint)
     values = solver(
         x0=guess.vector, lbx=lower_x, ubx=upper_x,
         lbg=lower_g, ubg=upper_g)
@@ -1092,7 +1448,8 @@ def _solve_with_scipy(request, config, packet, guess, wall_limit_s=None,
                       route_kappas=None, route_curvature_weight=0.0,
                       route_collocation_points=None,
                       route_collocation_weight=0.0,
-                      clearance_proxy=None):
+                      clearance_proxy=None,
+                      corridor_constraint=None):
     from scipy.optimize import minimize
     started = time.monotonic()
     deadline = None if wall_limit_s is None else (
@@ -1111,8 +1468,8 @@ def _solve_with_scipy(request, config, packet, guess, wall_limit_s=None,
     upper_x = np.asarray(
         [packet["S_upper"], 0.0] + [config.kappa_limit] * n + [0.0]
         + [config.eta_limit] * n, dtype=float)
-    equality_count = (n - 1) + 3 + (2 if coerce_goal_policy(
-        request.goal_policy).value == "STRAIGHT" else 0)
+    equality_count, signed_end, _corridor_end = _constraint_value_offsets(
+        request, config, packet, corridor_constraint)
 
     def objective(vector):
         return _numeric_objective(
@@ -1127,16 +1484,20 @@ def _solve_with_scipy(request, config, packet, guess, wall_limit_s=None,
     def equality(vector):
         values = _numeric_constraint_vector(
             vector, request, config, packet,
-            int(config.collocation_points))
+            int(config.collocation_points),
+            corridor_constraint=corridor_constraint)
         return values[:equality_count]
 
     def inequality(vector):
         values = _numeric_constraint_vector(
             vector, request, config, packet,
-            int(config.collocation_points))
+            int(config.collocation_points),
+            corridor_constraint=corridor_constraint)
         cmax = packet["cmax"] * (1.0 - config.curvature_margin)
-        signed = values[equality_count:]
-        return np.concatenate((cmax - signed, cmax + signed))
+        signed = values[equality_count:signed_end]
+        corridor_values = values[signed_end:]
+        return np.concatenate((
+            cmax - signed, cmax + signed, -corridor_values))
 
     try:
         result = minimize(
@@ -1262,6 +1623,7 @@ def _attempt_record(index, guess, result, audit, rejection, status,
         iterations=int(result["iterations"]),
         objective=result["objective"],
         constraint_residual=result.get("constraint_residual"),
+        corridor_residual_m=result.get("corridor_residual_m"),
         endpoint_error_m=endpoint_error,
         heading_error_rad=heading_error,
         wall_time_s=float(result["wall_time_s"]),
@@ -1280,7 +1642,7 @@ def _attempt_record(index, guess, result, audit, rejection, status,
 def _result(status, request=None, path=None, audit=None, attempts=(),
             wall_time_s=0.0, request_sha256="", reason="", detail="",
             config=None, solver_used="", branch=None, deadline=False,
-            deadline_summary=None):
+            deadline_summary=None, initial_count=0):
     summary = request_summary(request) if isinstance(
         request, VirtualARequest) else {
             "type": type(request).__name__ if request is not None else None,
@@ -1299,7 +1661,8 @@ def _result(status, request=None, path=None, audit=None, attempts=(),
         solver_used=solver_used,
         goal_heading_branch_rad=branch,
         deadline_exhausted=bool(deadline),
-        deadline_summary=dict(deadline_summary or {}))
+        deadline_summary=dict(deadline_summary or {}),
+        initial_count=int(initial_count))
 
 
 def _audit_config(config, geometry_audit_config=None):
@@ -1320,7 +1683,12 @@ def _audit_config(config, geometry_audit_config=None):
 
 def solve_open_path_guided(request, config, *, route_guides=(),
                            obstacle_context=None,
-                           geometry_audit_config=None):
+                           geometry_audit_config=None,
+                           corridor_chain=None,
+                           corridor_allocation=None,
+                           excluded_initial_keys=(),
+                           max_new_initials=None,
+                           stop_after_route_audit=False):
     """Solve and independently audit an endpoint-driven geometry candidate.
 
     ``route_guides``/``obstacle_context`` are optional map-guidance inputs for
@@ -1328,6 +1696,26 @@ def solve_open_path_guided(request, config, *, route_guides=(),
     three-vehicle curvature constraints remain unchanged.  ``geometry_audit_
     config`` lets the G4 caller use the same audited numerical position budget
     as its retimer; ``None`` retains the G2 default exactly.
+
+    ``excluded_initial_keys`` and ``max_new_initials`` are the C3 rework 01
+    request-wide initial-pool scheduler.  ``make_initial_guesses`` remains the
+    only initial constructor; this function only removes identities already
+    launched by earlier rounds and caps how many new identities this round may
+    start.  Both default to the historical unbounded behaviour.
+    ``stop_after_route_audit`` is the matching request-wide budget policy: in
+    a route-guided round, once the route's own initial has produced an
+    independently audited geometry, stop before spending the endpoint-shape
+    members of the same construction on a second geometry candidate.  They
+    remain unused identities for the single endpoint-only recovery after the
+    downstream audits decide whether one is needed.  If the route initial
+    fails, the remaining constructed endpoint shapes are still attempted, so
+    the historical five-initial numerical-failure round is unchanged.
+
+    With ``config.guidance_mode == 'corridor'`` the caller must also pass one
+    validated chain and its sigma allocation.  Reference-point halfspaces then
+    enter both the numeric and CasADi NLP and the corridor objective replaces
+    the legacy route weights.  In legacy mode these two arguments must be
+    omitted, preserving the historical call path byte for byte.
     """
     started = time.monotonic()
     validation = validate_virtual_a_request(request)
@@ -1359,6 +1747,29 @@ def solve_open_path_guided(request, config, *, route_guides=(),
             detail=exc.detail, wall_time_s=time.monotonic() - started,
             request_sha256=validation.metrics["request_sha256"], config=config,
             branch=validation.metrics.get("goal_heading_branch_rad"))
+    corridor_mode = _guidance_mode(config) == "corridor"
+    if not corridor_mode and (corridor_chain is not None
+                              or corridor_allocation is not None):
+        return _result(
+            "INVALID_REQUEST", request=request,
+            reason="CORRIDOR_INPUTS_IN_LEGACY_MODE",
+            detail=(
+                "guidance_mode=legacy_route must not receive corridor inputs"),
+            wall_time_s=time.monotonic() - started,
+            request_sha256=validation.metrics["request_sha256"],
+            config=config,
+            branch=validation.metrics.get("goal_heading_branch_rad"))
+    if corridor_mode and len(route_guides) > 1:
+        return _result(
+            "INVALID_REQUEST", request=request,
+            reason="CORRIDOR_GUIDE_AMBIGUOUS",
+            detail=(
+                "guidance_mode=corridor accepts at most one corridor guide; "
+                "got {}".format(len(route_guides))),
+            wall_time_s=time.monotonic() - started,
+            request_sha256=validation.metrics["request_sha256"],
+            config=config,
+            branch=validation.metrics.get("goal_heading_branch_rad"))
     fingerprint = validation.metrics["request_sha256"]
     branch = validation.metrics.get("goal_heading_branch_rad")
     if request.start_qf == request.goal_qf:
@@ -1383,10 +1794,44 @@ def solve_open_path_guided(request, config, *, route_guides=(),
             reason="" if audit.passed else audit.reason,
             detail="exact identical start/goal", config=config,
             solver_used=SOLVER_SKIP, branch=branch)
+    if corridor_mode and (corridor_chain is None
+                          or corridor_allocation is None):
+        return _result(
+            "INVALID_REQUEST", request=request,
+            reason="CORRIDOR_INPUTS_REQUIRED",
+            detail=(
+                "guidance_mode=corridor requires corridor_chain and "
+                "corridor_allocation"),
+            wall_time_s=time.monotonic() - started,
+            request_sha256=fingerprint, config=config, branch=branch)
+    if max_new_initials is not None:
+        if isinstance(max_new_initials, bool) or not isinstance(
+                max_new_initials, numbers.Integral) \
+                or int(max_new_initials) < 0:
+            return _result(
+                "INVALID_REQUEST", request=request,
+                reason="INVALID_INITIAL_POOL",
+                detail="max_new_initials must be a nonnegative integer",
+                wall_time_s=time.monotonic() - started,
+                request_sha256=fingerprint, config=config, branch=branch)
+        max_new_initials = int(max_new_initials)
     try:
         guesses = make_initial_guesses(
             request, config, route_guides=route_guides,
             obstacle_context=obstacle_context)
+        excluded = set(excluded_initial_keys)
+        if max_new_initials is not None and max_new_initials <= 0:
+            guesses = ()
+        elif excluded or max_new_initials is not None:
+            filtered = []
+            for guess in guesses:
+                if initial_guess_key(guess) in excluded:
+                    continue
+                filtered.append(guess)
+                if max_new_initials is not None \
+                        and len(filtered) >= max_new_initials:
+                    break
+            guesses = tuple(filtered)
         packet = _search_packet(request, config)
     except VirtualAContractError as exc:
         status = "INVALID_REQUEST" if exc.reason == "EMPTY_SEARCH_DOMAIN" else \
@@ -1395,6 +1840,29 @@ def solve_open_path_guided(request, config, *, route_guides=(),
             status, request=request, reason=exc.reason, detail=exc.detail,
             wall_time_s=time.monotonic() - started,
             request_sha256=fingerprint, config=config, branch=branch)
+    if not guesses:
+        # The request-wide pool is exhausted.  Do not start any solver and do
+        # not fabricate an attempt: this is a fail-closed scheduling result.
+        return _result(
+            "NO_ACCEPTED_CANDIDATE", request=request,
+            reason="INITIAL_POOL_EXHAUSTED",
+            detail=(
+                "every automatic initial identity has already been launched "
+                "in this request; solver not started"),
+            wall_time_s=time.monotonic() - started,
+            request_sha256=fingerprint, config=config, branch=branch,
+            initial_count=0)
+    corridor_constraint = None
+    if corridor_mode:
+        try:
+            corridor_constraint = _build_corridor_constraint(
+                corridor_chain, corridor_allocation, request, config)
+        except VirtualAContractError as exc:
+            return _result(
+                "INVALID_REQUEST", request=request, reason=exc.reason,
+                detail=exc.detail, wall_time_s=time.monotonic() - started,
+                request_sha256=fingerprint, config=config, branch=branch,
+                initial_count=len(guesses))
     solver_choice = str(config.solver).lower()
     attempts = []
     best = None
@@ -1435,22 +1903,43 @@ def solve_open_path_guided(request, config, *, route_guides=(),
             mark_deadline("initial_boundary")
             break
         attempt_started = time.monotonic()
-        guidance = _guess_route_guidance(
-            guess, request, route_guides, packet["intervals"],
-            collocation=int(config.collocation_points),
-            obstacle_context=obstacle_context)
+        # The corridor guide is an initial value and a weak preference for the
+        # route-derived initial only.  Automatic endpoint initials must not be
+        # pulled back onto the legacy route 0 topology; their feasibility comes
+        # from the hard corridor halfspaces.
+        guidance = None
+        if not corridor_mode or getattr(guess, "source", "") == \
+                "map_route_guide":
+            guidance = _guess_route_guidance(
+                guess, request, route_guides, packet["intervals"],
+                collocation=int(config.collocation_points),
+                obstacle_context=obstacle_context)
         route_points = guidance[0] if guidance is not None else None
         route_kappas = guidance[1] if guidance is not None else None
         route_collocation_points = guidance[2] \
             if guidance is not None else None
-        route_scale = float(getattr(
-            obstacle_context, "route_weight_scale", 1.0))
-        route_weight = ROUTE_GUIDANCE_WEIGHT * route_scale \
-            if guidance is not None else 0.0
-        route_collocation_weight = ROUTE_GUIDANCE_WEIGHT * route_scale \
-            if guidance is not None else 0.0
-        route_curvature_weight = ROUTE_CURVATURE_WEIGHT \
-            if guidance is not None else 0.0
+        if guidance is None:
+            route_weight = 0.0
+            route_collocation_weight = 0.0
+            route_curvature_weight = 0.0
+        elif corridor_mode:
+            # mean(||p-guide||^2 / L0^2) over node and collocation samples,
+            # split into the two exact separate means the objective applies.
+            node_count = int(packet["intervals"]) + 1
+            collocation_count = int(packet["intervals"]) * int(
+                config.collocation_points)
+            total_count = node_count + collocation_count
+            guide_weight = float(config.corridor_guide_weight)
+            route_weight = guide_weight * node_count / total_count
+            route_collocation_weight = guide_weight * collocation_count / \
+                total_count
+            route_curvature_weight = 0.0
+        else:
+            route_scale = float(getattr(
+                obstacle_context, "route_weight_scale", 1.0))
+            route_weight = ROUTE_GUIDANCE_WEIGHT * route_scale
+            route_collocation_weight = ROUTE_GUIDANCE_WEIGHT * route_scale
+            route_curvature_weight = ROUTE_CURVATURE_WEIGHT
         try:
             clearance_proxy = _clearance_proxy(
                 guess, request, packet, config, obstacle_context)
@@ -1482,6 +1971,8 @@ def solve_open_path_guided(request, config, *, route_guides=(),
             })
         if clearance_proxy is not None:
             solver_kwargs["clearance_proxy"] = clearance_proxy
+        if corridor_constraint is not None:
+            solver_kwargs["corridor_constraint"] = corridor_constraint
         use_scipy = solver_choice in ("scipy", "slsqp")
         primary = None
         if not use_scipy:
@@ -1530,7 +2021,9 @@ def solve_open_path_guided(request, config, *, route_guides=(),
         if not primary["success"]:
             # Record the primary failure before any fallback, so a successful
             # fallback cannot erase the original failure from history.
-            _attach_failure_residual(primary, request, config, packet)
+            _attach_failure_residual(
+                primary, request, config, packet,
+                corridor_constraint=corridor_constraint)
             attempts.append(_attempt_record(
                 index, guess, primary, None, primary["solver_status"],
                 "SOLVER_FAILED"))
@@ -1571,7 +2064,8 @@ def solve_open_path_guided(request, config, *, route_guides=(),
                     break
                 if not fallback["success"]:
                     _attach_failure_residual(
-                        fallback, request, config, packet)
+                        fallback, request, config, packet,
+                        corridor_constraint=corridor_constraint)
                     attempts.append(_attempt_record(
                         index, guess, fallback, None,
                         fallback["solver_status"], "SOLVER_FAILED"))
@@ -1594,19 +2088,40 @@ def solve_open_path_guided(request, config, *, route_guides=(),
             # calculation failure, is fail-closed: it is recorded as a rejected
             # attempt and is never audited or published as a success.
             residual, residual_error = _constraint_residual_diagnostic(
-                candidate_result.get("z"), request, config, packet)
+                candidate_result.get("z"), request, config, packet,
+                corridor_constraint=corridor_constraint)
             candidate_result["constraint_residual"] = residual
-            if residual_error:
+            corridor_rejection = ""
+            if corridor_constraint is not None:
+                corridor_residual, corridor_error = \
+                    _corridor_residual_diagnostic(
+                        candidate_result.get("z"), request, config, packet,
+                        corridor_constraint)
+                candidate_result["corridor_residual_m"] = corridor_residual
+                if corridor_error:
+                    corridor_rejection = \
+                        "CONSTRAINT_RESIDUAL_FAILURE: " + corridor_error
+                elif corridor_residual > 1e-8:
+                    corridor_rejection = (
+                        "CORRIDOR_HALFSPACE_RESIDUAL: {:.6e} m exceeds "
+                        "1e-8 m".format(corridor_residual))
+            if residual_error or corridor_rejection:
+                rejection = (
+                    "CONSTRAINT_RESIDUAL_FAILURE: " + residual_error
+                    if residual_error else corridor_rejection)
+                detail_rejection = (
+                    "constraint residual unavailable: " + residual_error
+                    if residual_error else corridor_rejection)
+                rejection_status = (
+                    "CONSTRAINT_RESIDUAL_FAILURE" if residual_error else
+                    "CORRIDOR_HALFSPACE_RESIDUAL")
                 prefix = str(candidate_result.get("detail", "")).rstrip("; ")
                 candidate_result["detail"] = (
-                    "{}; constraint residual unavailable: {}".format(
-                        prefix, residual_error) if prefix else
-                    "constraint residual unavailable: {}".format(
-                        residual_error))
+                    "{}; {}".format(prefix, detail_rejection)
+                    if prefix else detail_rejection)
                 attempts.append(_attempt_record(
                     index, guess, candidate_result, None,
-                    "CONSTRAINT_RESIDUAL_FAILURE: " + residual_error,
-                    "CONSTRAINT_RESIDUAL_FAILURE"))
+                    rejection, rejection_status))
             else:
                 try:
                     candidate = _candidate_path(
@@ -1635,6 +2150,14 @@ def solve_open_path_guided(request, config, *, route_guides=(),
                                 "result": candidate_result,
                                 "guess": guess,
                             }
+                        if stop_after_route_audit and getattr(
+                                guess, "source", "") == "map_route_guide":
+                            # The route initial already has an independently
+                            # audited geometry.  Preserve the endpoint-shape
+                            # identities for the request-wide recovery rather
+                            # than spending them on another same-round
+                            # candidate before the downstream audits run.
+                            break
                     else:
                         attempts.append(_attempt_record(
                             index, guess, candidate_result, audit,
@@ -1671,7 +2194,8 @@ def solve_open_path_guided(request, config, *, route_guides=(),
                    if deadline_exhausted else "")),
             config=config, solver_used=best["result"]["solver"],
             branch=branch, deadline=deadline_exhausted,
-            deadline_summary=deadline_info)
+            deadline_summary=deadline_info,
+            initial_count=len(guesses))
     audit_rejections = [
         attempt for attempt in attempts
         if attempt.status == "SOLVER_SUCCESS_AUDIT_REJECTED"]
@@ -1703,6 +2227,16 @@ def solve_open_path_guided(request, config, *, route_guides=(),
         status = "NO_ACCEPTED_CANDIDATE"
         reason = "SOLVER_NOT_CONVERGED"
         detail = "every initial failed to converge and no audit was reached"
+        if corridor_mode:
+            # The corridor allocation and the eight-piece discretisation are
+            # fixed for the request.  Reporting the solver failure as an
+            # allocation limit documents that no automatic N increase, segment
+            # change, or audit relaxation is performed.
+            reason = "FIXED_ALLOCATION_LIMIT"
+            detail = (
+                "fixed corridor allocation was not solvable to an audited "
+                "candidate; no automatic allocation, interval, or audit "
+                "relaxation is performed")
     elif attempts:
         status = "NO_ACCEPTED_CANDIDATE"
         reason = attempts[-1].rejection_reason or "NO_AUDITED_CANDIDATE"
@@ -1715,7 +2249,8 @@ def solve_open_path_guided(request, config, *, route_guides=(),
         status, request=request, attempts=attempts, wall_time_s=wall,
         request_sha256=fingerprint, reason=reason, detail=detail,
         config=config, solver_used=solver_used, branch=branch,
-        deadline=deadline_exhausted, deadline_summary=deadline_info)
+        deadline=deadline_exhausted, deadline_summary=deadline_info,
+        initial_count=len(guesses))
 
 
 def solve_open_path(request, config, **kwargs):

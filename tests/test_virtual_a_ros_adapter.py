@@ -735,6 +735,7 @@ class _NodeHarness(unittest.TestCase):
     def setUp(self):
         _PipelineCases.build()
         self.events = []
+        self.planning_debug = []
         import formation_uniform_planner_node
         self.module = formation_uniform_planner_node
 
@@ -788,6 +789,8 @@ class _NodeHarness(unittest.TestCase):
             self.events.append(("status", document))
         node._publish_quality = lambda document: \
             self.events.append(("quality", document))
+        node.planning_debug_pub = SimpleNamespace(
+            publish=self.planning_debug.append)
 
         def base_status(node_state, status, reason, detail, **kwargs):
             document = {
@@ -1096,6 +1099,60 @@ class JobDocumentTest(_NodeHarness):
             self.assertNotIn(key, document)
 
 
+class CorridorDebugPublicationTest(_NodeHarness):
+    """V1: only display fields from the current admission reach the topic."""
+
+    def _display(self, **overrides):
+        display = {
+            "state": "CANDIDATE_REFERENCE_POINT_ONLY",
+            "plan_id": self.PLAN_ID,
+            "formation_id": self.FORMATION,
+            "backend": "virtual_rigid_a",
+            "generation": 0,
+            "grid_sha256": "c" * 64,
+            "planning_context_sha256": "b" * 64,
+            "model_sha256": None,
+            "chain_digest": "d" * 64,
+            "regions": [{"region_id": 0, "vertices": [[0, 0], [1, 0], [1, 1]]}],
+        }
+        display.update(overrides)
+        return display
+
+    def _result(self, displays):
+        return SimpleNamespace(
+            search={"corridor_displays": displays},
+            grid_sha256="c" * 64,
+            planning_context_sha256="b" * 64,
+            model_sha256=None)
+
+    def _publish(self, node, result):
+        node._publish_corridor_debug(
+            0, self.PLAN_ID,
+            SimpleNamespace(formation_id=self.FORMATION), result)
+        return json.loads(self.planning_debug[-1].data)
+
+    def test_matching_display_fields_are_published(self):
+        node = self._node(backend_hooks=VirtualABackendHooks())
+        document = self._publish(node, self._result([self._display()]))
+        self.assertEqual(document["state"],
+                         "CANDIDATE_REFERENCE_POINT_ONLY")
+        self.assertEqual(document["plan_id"], self.PLAN_ID)
+        self.assertEqual(len(document["corridors"]), 1)
+
+    def test_stale_or_malformed_display_is_replaced_by_an_empty_layer(self):
+        node = self._node(backend_hooks=VirtualABackendHooks())
+        for display in (
+                self._display(plan_id=self.PLAN_ID + 1),
+                self._display(grid_sha256="e" * 64),
+                self._display(state="FEASIBLE"),
+                {"state": "CANDIDATE_REFERENCE_POINT_ONLY"}):
+            with self.subTest(display=display):
+                document = self._publish(
+                    node, self._result([display]))
+                self.assertEqual(document["state"], "CLEARED")
+                self.assertEqual(document["corridors"], [])
+
+
 class VirtualEnvelopePublicationTest(unittest.TestCase):
     """The real plan is enveloped with the admitted identity, not guessed."""
 
@@ -1109,6 +1166,7 @@ class VirtualEnvelopePublicationTest(unittest.TestCase):
     def test_success_envelope_reuses_the_admitted_identity(self):
         published = []
         failures = []
+        planning_debug = []
         node = UniformPlannerNode.__new__(UniformPlannerNode)
         hooks = VirtualABackendHooks(self.case["settings"])
         node._backend_hooks = hooks
@@ -1128,6 +1186,8 @@ class VirtualEnvelopePublicationTest(unittest.TestCase):
         stamps = iter([(1000, 0), (1000, 10000000)])
         node._now = lambda: next(stamps)
         node.playback_plan_pub = SimpleNamespace(publish=published.append)
+        node.planning_debug_pub = SimpleNamespace(
+            publish=planning_debug.append)
         node._publish_status = lambda document: None
         node._publish_quality = lambda document: None
         node._base_status = lambda *args, **kwargs: dict(kwargs)
@@ -1153,6 +1213,15 @@ class VirtualEnvelopePublicationTest(unittest.TestCase):
         self.assertEqual(
             stamp, (int(envelope.trajectory.header.stamp.secs),
                     int(envelope.trajectory.header.stamp.nsecs)))
+        # C1 chains are not written to result.search until C2-B, so this
+        # result must publish an explicit empty corridor generation rather
+        # than leaving an older display latched.
+        self.assertEqual(len(planning_debug), 1)
+        cleared = json.loads(planning_debug[0].data)
+        self.assertEqual(cleared["state"], "CLEARED")
+        self.assertEqual(cleared["plan_id"], self.request.plan_id)
+        self.assertEqual(cleared["generation"], 0)
+        self.assertEqual(cleared["corridors"], [])
 
 
 if __name__ == "__main__":

@@ -81,6 +81,7 @@ QUALITY_TOPIC = "/formation/quality_report"
 PLAYBACK_PLAN_TOPIC = "/formation/playback_plan"
 PLAYBACK_STATUS_TOPIC = "/formation/playback_status"
 JOB_STATE_TOPIC = "/formation/job_state"
+PLANNING_DEBUG_TOPIC = "/formation/planning_debug"
 
 IDLE = "IDLE"
 PLANNING = "PLANNING"
@@ -475,6 +476,8 @@ class UniformPlannerNode(object):
         self.playback_plan_pub = rospy.Publisher(
             PLAYBACK_PLAN_TOPIC, FormationPlaybackPlan, queue_size=1,
             latch=True)
+        self.planning_debug_pub = rospy.Publisher(
+            PLANNING_DEBUG_TOPIC, String, queue_size=1, latch=True)
         rospy.Subscriber(MAP_TOPIC, OccupancyGrid, self.on_map, queue_size=1)
         rospy.Subscriber(REQUEST_TOPIC, FormationPlanRequest,
                          self.on_request, queue_size=1)
@@ -596,11 +599,128 @@ class UniformPlannerNode(object):
         self._last_quality = document
         self.quality_pub.publish(String(data=_json(document)))
 
+    def _publish_planning_debug(self, document):
+        self.planning_debug_pub.publish(String(data=_json(document)))
+
+    def _clear_planning_debug(self, plan_id, generation, formation_id):
+        # Replace the latched diagnostic with an explicit empty generation.
+        # Playback also clears on the existing admit/fail/clear callbacks; this
+        # payload prevents a restarted or late subscriber from redrawing a
+        # corridor chain that no longer belongs to the current admission.
+        self._publish_planning_debug({
+            "state": "CLEARED",
+            "plan_id": plan_id,
+            "formation_id": formation_id,
+            "backend": self.backend,
+            "generation": int(generation),
+            "grid_sha256": None,
+            "planning_context_sha256": None,
+            "model_sha256": None,
+            "corridors": [],
+        })
+
+    @staticmethod
+    def _display_from_corridor_round(identity, result):
+        """Build the V2 display from the actual C2 round the solver used."""
+        from fwis_v3_optimizer.formation_continuous_a.corridor import (
+            corridor_chain_from_payload,
+            corridor_display_fields,
+        )
+        corridor = result.search.get("corridor")
+        rounds = (corridor.get("rounds")
+                  if isinstance(corridor, dict) else None)
+        if not isinstance(rounds, (list, tuple)) or not rounds:
+            return None
+        current = rounds[-1]
+        if not isinstance(current, dict):
+            return None
+        route_index = current.get("route_index")
+        routes = getattr(result, "routes", ())
+        if (not isinstance(route_index, int) or isinstance(route_index, bool)
+                or route_index < 0 or route_index >= len(routes)):
+            return None
+        raw_route = routes[route_index]
+        guide = current.get("guide")
+        if not isinstance(guide, dict):
+            return None
+        if (raw_route.grid_sha256 != result.grid_sha256
+                or guide.get("grid_sha256") != result.grid_sha256):
+            return None
+        chain = corridor_chain_from_payload(current.get("chain"))
+        identity = dict(identity)
+        identity["route_id"] = int(route_index)
+        return corridor_display_fields(
+            chain, identity,
+            raw_route_points=raw_route.points,
+            guide_points=guide.get("points"),
+            guide_quality=guide.get("quality"),
+            guide_source=guide.get("source"),
+            corridor_used=True)
+
+    def _publish_corridor_debug(self, generation, plan_id, snapshot, result):
+        from fwis_v3_optimizer.formation_continuous_a.corridor import (
+            CORRIDOR_DISPLAYS_KEY,
+            CORRIDOR_DISPLAY_STATE,
+        )
+        identity = {
+            "state": CORRIDOR_DISPLAY_STATE,
+            "plan_id": int(plan_id),
+            "formation_id": snapshot.formation_id,
+            "backend": self.backend,
+            "generation": int(generation),
+            "grid_sha256": result.grid_sha256,
+            "planning_context_sha256": result.planning_context_sha256,
+            "model_sha256": (result.model_sha256 or None),
+        }
+        try:
+            display = self._display_from_corridor_round(identity, result)
+        except (KeyError, TypeError, ValueError) as exc:
+            rospy.logerr(
+                "[uniform planner] cannot export the actual C2 corridor "
+                "round: %s: %s; no corridor/guide layer is published",
+                type(exc).__name__, exc)
+            self._clear_planning_debug(
+                plan_id, generation, snapshot.formation_id)
+            return
+        displays = ([] if display is None else [display])
+        if not displays:
+            # V1 callers may still supply pre-built display fields.  The C2
+            # pipeline itself stores the chain in ``corridor.rounds``.
+            displays = result.search.get(CORRIDOR_DISPLAYS_KEY)
+        if not isinstance(displays, (list, tuple)) or not displays:
+            self._clear_planning_debug(
+                plan_id, generation, snapshot.formation_id)
+            return
+        # C2-B writes only corridor_display_fields() output here.  Refuse to
+        # publish anything that is not display-only or that carries a stale
+        # admission identity: playback would otherwise show a chain from
+        # another plan, map or generation.
+        for display in displays:
+            mismatched = (
+                None if not isinstance(display, dict)
+                else [key for key, value in identity.items()
+                      if display.get(key) != value])
+            if mismatched is not None and not mismatched and \
+                    display.get("chain_digest") is not None and \
+                    display.get("regions"):
+                continue
+            rospy.logerr(
+                "[uniform planner] refusing result.search[%s] display with "
+                "mismatched fields %s; no corridor layer is published",
+                CORRIDOR_DISPLAYS_KEY, mismatched)
+            self._clear_planning_debug(
+                plan_id, generation, snapshot.formation_id)
+            return
+        document = dict(identity)
+        document["corridors"] = list(displays)
+        self._publish_planning_debug(document)
+
     def _job_document(self, reason="", detail=""):
         document = {
             "schema": JOB_SCHEMA,
             "state": self._state,
             "backend": self.backend,
+            "generation": int(self._generation),
             "plan_id": self._state_plan,
             "formation_id": self._active_formation_id,
             "model_sha256": self._active_model_sha256,
@@ -1145,6 +1265,8 @@ class UniformPlannerNode(object):
         # A just-admitted request has no executable result yet.  Clear the
         # latched display without pretending plan_id=0 belongs to this job.
         self._publish_no_envelope(0, "", "ADMITTED_PLANNING")
+        self._clear_planning_debug(
+            plan_id, generation, snapshot.formation_id)
         rospy.loginfo(
             "[uniform planner] plan %s admitted for virtual_rigid_a: "
             "start=(%.3f, %.3f, %.3f) goal=(%.3f, %.3f, %.3f) "
@@ -1249,6 +1371,8 @@ class UniformPlannerNode(object):
             plan_id=plan_id, formation_id=snapshot.formation_id,
             feasible=False, executable=False, published=False, extra=extra))
         self._publish_no_envelope(plan_id, snapshot.formation_id, reason)
+        self._clear_planning_debug(
+            plan_id, self._generation, snapshot.formation_id)
         self._publish_job_state(reason, detail)
 
     def _finish_virtual_success(self, generation, plan_id, snapshot, result,
@@ -1373,6 +1497,8 @@ class UniformPlannerNode(object):
             "plan", status_word, result.reason, result.detail,
             plan_id=plan_id, formation_id=snapshot.formation_id,
             feasible=True, executable=True, published=True, extra=extra))
+        self._publish_corridor_debug(
+            generation, plan_id, snapshot, result)
         rospy.loginfo(
             "[uniform planner] virtual plan %s published: T_end=%.3f s "
             "model_sha256=%s samples=%d wall=%.3f s "
@@ -1404,6 +1530,9 @@ class UniformPlannerNode(object):
                 extra={"admitted": True, "wall_time_s": wall}))
             self._publish_no_envelope(plan_id, snapshot.formation_id,
                                       "INTERNAL_ERROR")
+            if getattr(self, "_backend_hooks", None) is not None:
+                self._clear_planning_debug(
+                    plan_id, self._generation, snapshot.formation_id)
             self._publish_job_state("INTERNAL_ERROR", detail)
 
     def _publish_no_envelope(self, plan_id, formation_id, reason):
@@ -1804,9 +1933,14 @@ def main():
         backend = str(rospy.get_param("~backend", PLAYBACK_PLAN_BACKEND))
         hooks = None
         if backend == "virtual_rigid_a":
+            from fwis_v3_optimizer.formation_continuous_a.contracts import (
+                PlannerConfig)
             from fwis_v3_optimizer.formation_continuous_a.ros_adapter import (
                 VirtualABackendHooks, VirtualABackendSettings)
             settings = VirtualABackendSettings(
+                planner_config=PlannerConfig(
+                    guidance_mode=str(rospy.get_param(
+                        "~virtual_a_guidance_mode", "legacy_route"))),
                 goal_policy=str(rospy.get_param(
                     "~virtual_a_goal_policy", "free")),
                 frame_id=str(rospy.get_param("~frame_id", "map")),

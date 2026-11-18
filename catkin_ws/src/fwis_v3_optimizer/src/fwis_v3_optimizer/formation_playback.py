@@ -20,6 +20,13 @@ import json
 import math
 from typing import Mapping, Optional, Tuple
 
+from .formation_continuous_a.contracts import (
+    COLLISION_SCOPE,
+    DYNAMICS_SCOPE,
+    GEOMETRY_SCOPE,
+)
+from .formation_continuous_a.corridor import CORRIDOR_DISPLAY_STATE
+
 
 ACKERMANN = 0
 OBLIQUE = 1
@@ -1792,6 +1799,10 @@ class PlaybackMarkerOptions:
     status_text_size_m: float = 0.20
     text_height_m: float = 0.35
     arrow_head_length_m: float = 0.08
+    # The long map-anchored status block is useful in the legacy demo but
+    # obscures the fixed-corner HUD on a 1280x720 render viewport.  Both
+    # switches default to the historical full display.
+    show_status_text: bool = True
 
     def __post_init__(self):
         for name in (
@@ -1801,6 +1812,9 @@ class PlaybackMarkerOptions:
                 "arrow_head_length_m"):
             object.__setattr__(self, name, _positive(
                 getattr(self, name), "PlaybackMarkerOptions." + name))
+        if not isinstance(self.show_status_text, bool):
+            raise PlaybackValidationError(
+                "PlaybackMarkerOptions.show_status_text must be a bool")
 
 
 @dataclass(frozen=True)
@@ -1938,6 +1952,190 @@ def _metrics_text(status):
     return " ".join(parts)
 
 
+def quality_identity_matches(playback_status, quality):
+    """Whether a quality report belongs to exactly this displayed model.
+
+    The planner's quality reports can arrive before or after the plan they
+    describe, and their metrics are copied into the status label.  A report
+    with the same plan number but another formation, backend, model digest or
+    planning context is stale for this display.  Legacy trajectories without a
+    bound model never accept a quality block.
+    """
+    if not isinstance(playback_status, Mapping) or not isinstance(
+            quality, Mapping):
+        return False
+    plan_id = playback_status.get("plan_id")
+    formation_id = playback_status.get("formation_id")
+    backend = playback_status.get("backend")
+    model_sha256 = playback_status.get("model_sha256")
+    if (not isinstance(plan_id, int) or isinstance(plan_id, bool) or
+            not isinstance(formation_id, str) or not formation_id or
+            backend not in (PLAYBACK_PLAN_BACKEND,
+                            VIRTUAL_PLAYBACK_BACKEND) or
+            not isinstance(model_sha256, str) or not model_sha256):
+        return False
+    if (quality.get("plan_id") != plan_id or
+            quality.get("formation_id") != formation_id or
+            quality.get("backend") != backend or
+            quality.get("model_sha256") != model_sha256):
+        return False
+    if backend == VIRTUAL_PLAYBACK_BACKEND:
+        request_sha = playback_status.get("request_sha256")
+        context_sha = playback_status.get("planning_context_sha256")
+        if (not isinstance(request_sha, str) or not request_sha or
+                not isinstance(context_sha, str) or not context_sha):
+            return False
+        if (quality.get("request_sha256") != request_sha or
+                quality.get("planning_context_sha256") != context_sha):
+            return False
+    return True
+
+
+def _audit_columns(playback_status, quality):
+    """Three independent audit columns from a matching three-layer report.
+
+    ``PASS`` is written only when the report identity matches this playback
+    and the layer's own scope and ``passed`` flag are present.  An IPOPT
+    success or a planning-stage message can never populate these columns.
+    """
+    columns = {
+        "geometry": "UNKNOWN",
+        "dynamics": "UNKNOWN",
+        "collision": "UNKNOWN",
+    }
+    if not quality_identity_matches(playback_status, quality):
+        return columns
+    virtual_result = quality.get("virtual_result")
+    if not isinstance(virtual_result, Mapping):
+        return columns
+    audits = virtual_result.get("audits")
+    if not isinstance(audits, Mapping):
+        return columns
+    for key, scope in (
+            ("geometry", GEOMETRY_SCOPE),
+            ("dynamics", DYNAMICS_SCOPE),
+            ("collision", COLLISION_SCOPE)):
+        report = audits.get(key)
+        if not isinstance(report, Mapping):
+            columns[key] = "PENDING"
+            continue
+        if report.get("scope") != scope:
+            continue
+        passed = report.get("passed")
+        if passed is True:
+            columns[key] = "PASS"
+        elif passed is False:
+            columns[key] = "FAIL"
+        else:
+            columns[key] = "PENDING"
+    return columns
+
+
+def _hud_vehicle_line(vehicle, static=False):
+    if not isinstance(vehicle, Mapping):
+        raise PlaybackValidationError("HUD vehicle entry must be an object")
+    vehicle_id = vehicle.get("vehicle_id")
+    if not isinstance(vehicle_id, int) or isinstance(vehicle_id, bool):
+        raise PlaybackValidationError("HUD vehicle_id must be an integer")
+    if static:
+        mode = "STATIC"
+        speed = 0.0
+    else:
+        mode = vehicle.get("mode_name")
+        if mode not in MODE_NAMES.values():
+            raise PlaybackValidationError(
+                "HUD mode_name must be A, O or S")
+        speed = _finite(vehicle.get("center_speed_mps"),
+                        "HUD center_speed_mps")
+    if abs(speed) < 0.005:
+        speed = 0.0
+    return "car{} | {} | v={:.2f} m/s".format(vehicle_id, mode, speed)
+
+
+def hud_text(playback_status, job_state, quality, show_cargo_reason=True):
+    """Fixed-corner HUD text for the current playback sample and audit state.
+
+    ``playback_status`` is the strict playback document produced by
+    :func:`status_document`.  Its ``audit_status``/``certification`` already
+    came from :func:`_status_label`, so this formatter reuses that identity
+    decision rather than introducing a second certification rule.  The
+    quality block is used only for the three audit columns and only after
+    :func:`quality_identity_matches` accepts its full identity.
+
+    A STATIC hold repeats the white Cargo label in the fixed corner.  The
+    optional reason follows the existing :func:`build_hold_markers` switch so
+    the HUD and the map label show the same text in the interactive demo.
+    """
+    if not isinstance(playback_status, Mapping):
+        raise PlaybackValidationError("HUD playback_status must be an object")
+    if not isinstance(job_state, str):
+        raise PlaybackValidationError("HUD job_state must be a string")
+    if quality is not None and not isinstance(quality, Mapping):
+        raise PlaybackValidationError("HUD quality must be an object or null")
+    if not isinstance(show_cargo_reason, bool):
+        raise PlaybackValidationError(
+            "HUD show_cargo_reason must be a bool")
+    plan_id = playback_status.get("plan_id")
+    formation_id = playback_status.get("formation_id")
+    backend = playback_status.get("backend")
+    state = playback_status.get("state", "UNKNOWN")
+    lines = [
+        "FORMATION HUD | plan {}".format(
+            "-" if plan_id is None else plan_id),
+        "formation {} | {}".format(
+            "-" if not formation_id else formation_id,
+            "-" if not backend else backend),
+        "job {} | playback {}".format(job_state or "UNKNOWN", state),
+    ]
+    duration = playback_status.get("duration_s")
+    elapsed = playback_status.get("elapsed_s")
+    if isinstance(duration, (int, float)) and not isinstance(duration, bool):
+        lines.append("T_end {:.2f} s | elapsed {:.2f} s".format(
+            float(duration),
+            float(elapsed) if isinstance(elapsed, (int, float)) and
+            not isinstance(elapsed, bool) else 0.0))
+
+    certification = playback_status.get("certification") or "AUDIT_PENDING"
+    if playback_status.get("executable") is True:
+        lines.append("audit {}".format(certification))
+    else:
+        lines.append("audit {} (GEOMETRY_ONLY)".format(certification))
+
+    vehicles = playback_status.get("vehicles")
+    if isinstance(vehicles, (list, tuple)) and vehicles:
+        for vehicle in sorted(
+                vehicles,
+                key=lambda item: (item.get("vehicle_id")
+                                  if isinstance(item, Mapping) else -1)):
+            lines.append(_hud_vehicle_line(
+                vehicle, static=(state == "STATIC")))
+    else:
+        lines.append("STATIC | v=0.00 m/s")
+
+    if state == "STATIC":
+        cargo_text = "Cargo"
+        reason = playback_status.get("reason")
+        if show_cargo_reason and reason:
+            cargo_text += " | " + str(reason)
+        lines.append(cargo_text)
+        lines.append("STATIC / no executable trajectory")
+
+    columns = _audit_columns(playback_status, quality)
+    if (quality is None and plan_id is not None and
+            columns["geometry"] == "UNKNOWN" and
+            columns["dynamics"] == "UNKNOWN" and
+            columns["collision"] == "UNKNOWN" and
+            job_state in ("PLANNING", "PLAYING")):
+        # No report has arrived for this plan yet.  A received but
+        # mismatching report stays UNKNOWN: its stages do not describe this
+        # playback.
+        columns = {key: "PENDING" for key in columns}
+    lines.append("AUDIT geometry={} dynamics={}".format(
+        columns["geometry"], columns["dynamics"]))
+    lines.append("      collision={}".format(columns["collision"]))
+    return "\n".join(lines)
+
+
 def build_markers(trajectory, frame, options=None, status=None):
     """Plan the full marker array for one playback frame.
 
@@ -2010,11 +2208,15 @@ def build_markers(trajectory, frame, options=None, status=None):
             points=tuple(history),
             color=DIM_WHITE,
             scale=(options.history_width_m, 0.0, 0.0))
-        # Mode/control label at the current body.
+        # Concise body label: physical vehicle id, mode and centre speed.
+        speed = state.center_speed_mps
+        if abs(speed) < 0.005:
+            speed = 0.0
         add(namespace, "TEXT_VIEW_FACING",
             position=(state.center_x, state.center_y,
                       options.text_height_m),
-            text=_mode_text(state),
+            text="car{} | {} | v={:.2f} m/s".format(
+                state.vehicle_id, state.mode_name, speed),
             color=mode_color,
             scale=(0.0, 0.0, options.text_size_m))
 
@@ -2068,12 +2270,13 @@ def build_markers(trajectory, frame, options=None, status=None):
             trajectory.plan_id, frame.state, label,
             trajectory.duration, audit_state, detail,
             _metrics_text(status)))
-    add(shared_namespace(formation_id, "status"), "TEXT_VIEW_FACING",
-        position=(frame.formation_x, frame.formation_y,
-                  3.4 * options.text_height_m),
-        text=status_text,
-        color=status_color,
-        scale=(0.0, 0.0, options.status_text_size_m))
+    if options.show_status_text:
+        add(shared_namespace(formation_id, "status"), "TEXT_VIEW_FACING",
+            position=(frame.formation_x, frame.formation_y,
+                      3.4 * options.text_height_m),
+            text=status_text,
+            color=status_color,
+            scale=(0.0, 0.0, options.status_text_size_m))
 
     namespaces = tuple(sorted({marker.namespace for marker in markers}))
     return tuple(markers), namespaces, audit_state, executable
@@ -2086,12 +2289,360 @@ def clear_marker_specs(frame_id="map"):
         action="DELETEALL"),)
 
 
-def build_hold_markers(formation_id, qf, vehicles, reason, frame_id="map"):
+CORRIDOR_FILL_Z_M = 0.005
+CORRIDOR_EDGE_Z_M = 0.01
+CORRIDOR_FILL_ALPHA = 0.15
+CORRIDOR_EDGE_ALPHA = 0.95
+_CORRIDOR_HUE_STEP = 0.6180339887498949
+
+
+def corridor_display_matches(document, job):
+    """Whether one planning-debug payload belongs to the current admission.
+
+    The planner publishes corridor geometry after the admission job report.
+    A payload from another plan, formation, generation, grid or planning
+    context must never reach the display, even when the chains are valid.
+    ``CLEARED`` payloads carry no geometry hashes; they may only delete, so
+    plan/formation/backend/generation identity is sufficient for them.
+    """
+    if not isinstance(document, Mapping) or not isinstance(job, Mapping):
+        return False
+    state = document.get("state")
+    if state not in (CORRIDOR_DISPLAY_STATE, CLEARED):
+        return False
+    if job.get("backend") != VIRTUAL_PLAYBACK_BACKEND:
+        return False
+    for name in ("plan_id", "formation_id", "backend", "generation"):
+        if document.get(name) != job.get(name):
+            return False
+    if state == CLEARED:
+        return True
+    for name in ("grid_sha256", "planning_context_sha256", "model_sha256"):
+        if document.get(name) != job.get(name):
+            return False
+    corridors = document.get("corridors")
+    if not isinstance(corridors, (list, tuple)) or not corridors:
+        return False
+    for corridor in corridors:
+        if not isinstance(corridor, Mapping):
+            return False
+        if corridor.get("state") != CORRIDOR_DISPLAY_STATE:
+            return False
+        for name in ("plan_id", "formation_id", "backend", "generation",
+                     "grid_sha256", "planning_context_sha256",
+                     "model_sha256"):
+            if corridor.get(name) != document.get(name):
+                return False
+        regions = corridor.get("regions")
+        if not isinstance(regions, (list, tuple)) or not regions:
+            return False
+    return True
+
+
+def _corridor_region(region):
+    """Validate one display polygon and return (region_id, 2-D vertices)."""
+    if not isinstance(region, Mapping):
+        raise PlaybackValidationError("corridor region must be a mapping")
+    region_id = region.get("region_id")
+    if (not isinstance(region_id, int) or isinstance(region_id, bool) or
+            region_id < 0):
+        raise PlaybackValidationError(
+            "corridor region_id must be a non-negative integer")
+    vertices = region.get("vertices")
+    if not isinstance(vertices, (list, tuple)) or len(vertices) < 3:
+        raise PlaybackValidationError(
+            "corridor region needs at least three vertices")
+    points = []
+    for vertex in vertices:
+        if not isinstance(vertex, (list, tuple)) or len(vertex) != 2:
+            raise PlaybackValidationError(
+                "corridor vertex must be a coordinate pair")
+        x, y = float(vertex[0]), float(vertex[1])
+        if not (math.isfinite(x) and math.isfinite(y)):
+            raise PlaybackValidationError("corridor vertex is not finite")
+        points.append((x, y))
+    twice_area = sum(
+        x0 * y1 - x1 * y0
+        for (x0, y0), (x1, y1) in zip(points, points[1:] + points[:1]))
+    if not twice_area > 0.0:
+        raise PlaybackValidationError(
+            "corridor vertices must be counter-clockwise")
+    scale = max(1.0, max(
+        (bx - ax) ** 2 + (by - ay) ** 2
+        for (ax, ay), (bx, by) in zip(points, points[1:] + points[:1])))
+    for index in range(len(points)):
+        ax, ay = points[index]
+        bx, by = points[(index + 1) % len(points)]
+        cx, cy = points[(index + 2) % len(points)]
+        cross = (bx - ax) * (cy - by) - (by - ay) * (cx - bx)
+        if cross < -1e-12 * scale:
+            raise PlaybackValidationError(
+                "corridor vertices must form a convex polygon")
+    return region_id, points
+
+
+def _corridor_color(route_id):
+    """Deterministic distinct color per route; no per-frame randomness."""
+    hue = (route_id * _CORRIDOR_HUE_STEP) % 1.0
+    sector = int(hue * 6.0) % 6
+    offset = hue * 6.0 - int(hue * 6.0)
+    saturation, value = 0.75, 0.95
+    p = value * (1.0 - saturation)
+    q = value * (1.0 - saturation * offset)
+    t = value * (1.0 - saturation * (1.0 - offset))
+    return (
+        (value, t, p), (q, value, p), (p, value, t),
+        (p, q, value), (t, p, value), (value, p, q))[sector]
+
+
+def build_corridor_markers(document, frame_id="map"):
+    """Draw the original chain: fan triangles plus closed polygon edges.
+
+    The vertices are copied from the payload without refitting or enlarging
+    them.  Every returned array starts with its own DELETEALL marker, so a
+    replacement cannot leave stale route/region ids visible.  The payload is
+    a candidate reference-point corridor only; this function never emits an
+    execution or three-vehicle safety claim.
+    """
+    if (not isinstance(document, Mapping) or
+            document.get("state") != CORRIDOR_DISPLAY_STATE):
+        raise PlaybackValidationError(
+            "corridor display state must be {!r}".format(
+                CORRIDOR_DISPLAY_STATE))
+    if document.get("used_by_optimizer"):
+        raise PlaybackValidationError(
+            "V1 corridor display cannot carry used_by_optimizer")
+    formation_id = _text(document.get("formation_id"), "formation_id")
+    corridors = document.get("corridors")
+    if not isinstance(corridors, (list, tuple)) or not corridors:
+        raise PlaybackValidationError(
+            "corridor display needs at least one route")
+    markers = list(clear_marker_specs(frame_id))
+    for corridor in corridors:
+        if not isinstance(corridor, Mapping):
+            raise PlaybackValidationError("corridor route must be a mapping")
+        route_id = corridor.get("route_id")
+        if (not isinstance(route_id, int) or isinstance(route_id, bool) or
+                route_id < 0):
+            raise PlaybackValidationError(
+                "corridor route_id must be a non-negative integer")
+        regions = corridor.get("regions")
+        if not isinstance(regions, (list, tuple)) or not regions:
+            raise PlaybackValidationError(
+                "corridor route needs at least one region")
+        red, green, blue = _corridor_color(route_id)
+        fill_namespace = "formation/{}/corridors/route_{}/fill".format(
+            formation_id, route_id)
+        edge_namespace = "formation/{}/corridors/route_{}/edge".format(
+            formation_id, route_id)
+        for region in regions:
+            region_id, points = _corridor_region(region)
+            triangles = []
+            for index in range(1, len(points) - 1):
+                for x, y in (points[0], points[index], points[index + 1]):
+                    triangles.append((x, y, CORRIDOR_FILL_Z_M))
+            markers.append(_marker(
+                fill_namespace, region_id, "TRIANGLE_LIST", frame_id,
+                points=tuple(triangles),
+                color=(red, green, blue, CORRIDOR_FILL_ALPHA),
+                # RViz scales triangle-list points by Marker.scale; the
+                # default 0.1 would shrink every corridor to 10% at the
+                # origin instead of drawing the audited vertices.
+                scale=(1.0, 1.0, 1.0)))
+            edge = tuple(
+                (x, y, CORRIDOR_EDGE_Z_M) for x, y in points)
+            edge += ((points[0][0], points[0][1], CORRIDOR_EDGE_Z_M),)
+            markers.append(_marker(
+                edge_namespace, region_id, "LINE_STRIP", frame_id,
+                points=edge,
+                color=(red, green, blue, CORRIDOR_EDGE_ALPHA),
+                scale=(0.03, 0.0, 0.0)))
+    return tuple(markers)
+
+
+GUIDE_ASTAR_NAMESPACE = "formation/guides/astar"
+GUIDE_CENTERLINE_NAMESPACE = "formation/guides/centerline"
+GUIDE_ASTAR_CANDIDATE_NAMESPACE = "formation/guides/astar_candidate"
+GUIDE_CENTERLINE_CANDIDATE_NAMESPACE = (
+    "formation/guides/centerline_candidate")
+GUIDE_Z_M = 0.012
+GUIDE_ASTAR_WIDTH_M = 0.018
+GUIDE_CENTERLINE_WIDTH_M = 0.03
+GUIDE_ASTAR_COLOR = (1.0, 0.55, 0.0, 0.95)
+GUIDE_CENTERLINE_COLOR = (0.05, 0.82, 0.25, 0.95)
+GUIDE_UNVALIDATED_COLOR = (1.0, 0.78, 0.0, 0.95)
+
+
+def _guide_polyline(points, name):
+    """Copy an actual route/guide polyline without resampling it."""
+    if not isinstance(points, (list, tuple)) or len(points) < 2:
+        raise PlaybackValidationError(
+            "{} needs at least two points".format(name))
+    copied = []
+    for point in points:
+        if not isinstance(point, (list, tuple)) or len(point) != 2:
+            raise PlaybackValidationError(
+                "{} point must be a coordinate pair".format(name))
+        x, y = float(point[0]), float(point[1])
+        if not (math.isfinite(x) and math.isfinite(y)):
+            raise PlaybackValidationError(
+                "{} point is not finite".format(name))
+        copied.append((x, y, GUIDE_Z_M))
+    return tuple(copied)
+
+
+def guide_quality_valid(quality, chain_sha256, region_count):
+    """Whether the C2-A quality report fully describes this guide.
+
+    This is a display classification only.  The C2-A guide is an executable
+    planning primitive, but this layer remains a reference polyline: it is
+    never labelled as a smooth three-vehicle path.
+    """
+    if not isinstance(quality, Mapping):
+        return False
+    if quality.get("stage") != "C2_A":
+        return False
+    if quality.get("chain_digest") != chain_sha256:
+        return False
+    if quality.get("is_executable_path") is not False:
+        return False
+    if quality.get("rounding") != "PL_ONLY_NO_BEZIER":
+        return False
+    if quality.get("smoothness_claim") != "NONE":
+        return False
+    if (not isinstance(region_count, int) or isinstance(region_count, bool)
+            or region_count < 1):
+        return False
+    if quality.get("region_count") != region_count:
+        return False
+    if quality.get("segment_corridor_indices") != list(
+            range(region_count)):
+        return False
+    warnings = quality.get("warnings")
+    if not isinstance(warnings, list) or warnings:
+        return False
+    return True
+
+
+def _guide_free_text(markers, namespace, marker_id, point, text, color,
+                     frame_id):
+    markers.append(_marker(
+        namespace, marker_id, "TEXT_VIEW_FACING", frame_id,
+        position=(point[0], point[1], 0.45),
+        text=text, color=color, scale=(0.0, 0.0, 0.22)))
+
+
+def build_guide_markers(document, frame_id="map"):
+    """Draw the actual A* route and C2-A centreline of the used chain.
+
+    The two lines copy the planner's reported points verbatim; no Bezier,
+    smoothing, or interpolation is fabricated here.  The only labels this
+    function can produce are ``PL_GUIDE`` (reference polyline),
+    ``UNVALIDATED_GUIDE`` and ``REFERENCE_ONLY``/``CANDIDATE``.  It never
+    upgrades the guide to a safety certificate.
+    """
+    if (not isinstance(document, Mapping) or
+            document.get("state") != CORRIDOR_DISPLAY_STATE):
+        raise PlaybackValidationError(
+            "guide display state must be {!r}".format(
+                CORRIDOR_DISPLAY_STATE))
+    if document.get("used_by_optimizer"):
+        raise PlaybackValidationError(
+            "V2 guide display cannot carry used_by_optimizer")
+    _text(document.get("formation_id"), "formation_id")
+    corridors = document.get("corridors")
+    if not isinstance(corridors, (list, tuple)) or not corridors:
+        raise PlaybackValidationError(
+            "guide display needs at least one route")
+    v2_keys = ("raw_route_points", "guide_points", "guide_quality",
+               "chain_sha256", "corridor_used")
+    if not any(isinstance(corridor, Mapping)
+               and any(key in corridor for key in v2_keys)
+               for corridor in corridors):
+        # V1 payloads carry only corridor regions.  Clearing is the correct
+        # guide layer for them; stale guides from an earlier V2 plan must not
+        # survive.
+        return tuple(clear_marker_specs(frame_id))
+    markers = list(clear_marker_specs(frame_id))
+    for corridor in corridors:
+        if not isinstance(corridor, Mapping):
+            raise PlaybackValidationError("guide route must be a mapping")
+        for name in ("plan_id", "formation_id", "backend", "generation",
+                     "grid_sha256", "planning_context_sha256",
+                     "model_sha256"):
+            if corridor.get(name) != document.get(name):
+                raise PlaybackValidationError(
+                    "guide route identity does not match its document")
+        route_id = corridor.get("route_id")
+        if (not isinstance(route_id, int) or isinstance(route_id, bool)
+                or route_id < 0):
+            raise PlaybackValidationError(
+                "guide route_id must be a non-negative integer")
+        chain_sha256 = corridor.get("chain_sha256")
+        if (not isinstance(chain_sha256, str)
+                or len(chain_sha256) != 64
+                or any(character not in "0123456789abcdef"
+                       for character in chain_sha256)):
+            raise PlaybackValidationError(
+                "guide chain_sha256 must be a lowercase SHA-256")
+        corridor_used = corridor.get("corridor_used")
+        if not isinstance(corridor_used, bool):
+            raise PlaybackValidationError(
+                "guide corridor_used must be a bool")
+        raw_route = _guide_polyline(
+            corridor.get("raw_route_points"), "raw_route_points")
+        guide = _guide_polyline(
+            corridor.get("guide_points"), "guide_points")
+        regions = corridor.get("regions")
+        if not isinstance(regions, (list, tuple)) or not regions:
+            raise PlaybackValidationError(
+                "guide route needs at least one corridor region")
+        route_suffix = "" if corridor_used else " | CANDIDATE"
+        astar_namespace = (
+            GUIDE_ASTAR_NAMESPACE if corridor_used
+            else GUIDE_ASTAR_CANDIDATE_NAMESPACE)
+        centerline_namespace = (
+            GUIDE_CENTERLINE_NAMESPACE if corridor_used
+            else GUIDE_CENTERLINE_CANDIDATE_NAMESPACE)
+        line_id = 2 * route_id
+        text_id = line_id + 1
+        markers.append(_marker(
+            astar_namespace, line_id, "LINE_STRIP", frame_id,
+            points=raw_route, color=GUIDE_ASTAR_COLOR,
+            scale=(GUIDE_ASTAR_WIDTH_M, 0.0, 0.0)))
+        _guide_free_text(
+            markers, astar_namespace, text_id, raw_route[0],
+            "A* ROUTE{} | REFERENCE_ONLY".format(route_suffix),
+            GUIDE_ASTAR_COLOR, frame_id)
+        validated = guide_quality_valid(
+            corridor.get("guide_quality"), chain_sha256, len(regions))
+        color = (GUIDE_CENTERLINE_COLOR if validated
+                 else GUIDE_UNVALIDATED_COLOR)
+        label = ("PL_GUIDE | REFERENCE_ONLY" if validated else
+                 "UNVALIDATED_GUIDE | PL_GUIDE | REFERENCE_ONLY")
+        markers.append(_marker(
+            centerline_namespace, line_id, "LINE_STRIP", frame_id,
+            points=guide, color=color,
+            scale=(GUIDE_CENTERLINE_WIDTH_M, 0.0, 0.0)))
+        _guide_free_text(
+            markers, centerline_namespace, text_id, guide[len(guide) // 2],
+            label + route_suffix, color, frame_id)
+    return tuple(markers)
+
+
+def build_hold_markers(formation_id, qf, vehicles, reason, frame_id="map",
+                       show_cargo_reason=True):
     """Static bodies and cargo reference only; never an executable path.
 
     ``vehicles`` contains (PlaybackVehicleSpec, x, y, body_heading) tuples.
     Caller must clear obsolete path markers before showing this static state.
+    The compact labelling used by the normal HUD also reports the static speed
+    as exactly zero; there is no model, so no wheel or mode confirmation is
+    invented.  The historical cargo reason remains the default display.
     """
+    if not isinstance(show_cargo_reason, bool):
+        raise PlaybackValidationError(
+            "build_hold_markers.show_cargo_reason must be a bool")
     markers = []
     color = (0.65, 0.75, 0.85, 1.0)
     for spec, x, y, theta in vehicles:
@@ -2104,7 +2655,8 @@ def build_hold_markers(formation_id, qf, vehicles, reason, frame_id="map"):
                                     y + 0.5 * math.sin(theta), 0.04)),
             color=color, scale=(0.025, 0.06, 0.08)))
         markers.append(_marker(ns, len(markers) + 1, "TEXT_VIEW_FACING", frame_id,
-            position=(x, y, 0.4), text="car{}".format(spec.vehicle_id),
+            position=(x, y, 0.4),
+            text="car{} | STATIC | v=0.00 m/s".format(spec.vehicle_id),
             color=color, scale=(0.0, 0.0, 0.18)))
     x, y, yaw = qf
     ns = shared_namespace(formation_id, "cargo")
@@ -2114,8 +2666,12 @@ def build_hold_markers(formation_id, qf, vehicles, reason, frame_id="map"):
         points=((x, y, 0.06), (x + 0.7 * math.cos(yaw),
                                 y + 0.7 * math.sin(yaw), 0.06)),
         color=WHITE, scale=(0.035, 0.08, 0.12)))
+    cargo_text = "Cargo"
+    if show_cargo_reason:
+        cargo_text += " | " + reason
+    cargo_text += "\nSTATIC / no executable trajectory"
     markers.append(_marker(ns, len(markers) + 1, "TEXT_VIEW_FACING", frame_id,
-        position=(x, y, 0.85), text="Cargo | {}\nSTATIC / no executable trajectory".format(reason),
+        position=(x, y, 0.85), text=cargo_text,
         color=WHITE, scale=(0.0, 0.0, 0.20)))
     return tuple(markers)
 
@@ -2126,7 +2682,8 @@ def status_document(trajectory=None, frame=None, status=None, *,
                     terminal_center_error_m=None,
                     terminal_heading_error_rad=None,
                     model_sha256=None, backend=None,
-                    semantic_version=None):
+                    semantic_version=None,
+                    request_sha256=None, planning_context_sha256=None):
     """Strict-JSON playback status for smoke tests and RViz-side inspection."""
     if cleared:
         return {
@@ -2138,6 +2695,8 @@ def status_document(trajectory=None, frame=None, status=None, *,
             "formation_id": None,
             "backend": backend,
             "model_sha256": model_sha256,
+            "request_sha256": request_sha256,
+            "planning_context_sha256": planning_context_sha256,
             "semantic_version": semantic_version,
             "time_source": TIME_SOURCE,
             "marker_count": 0,
@@ -2158,6 +2717,8 @@ def status_document(trajectory=None, frame=None, status=None, *,
                              else trajectory.formation_id),
             "backend": backend,
             "model_sha256": model_sha256,
+            "request_sha256": request_sha256,
+            "planning_context_sha256": planning_context_sha256,
             "semantic_version": semantic_version,
             "time_source": TIME_SOURCE,
             "marker_count": 0,
@@ -2192,6 +2753,8 @@ def status_document(trajectory=None, frame=None, status=None, *,
         "formation_id": trajectory.formation_id,
         "backend": backend,
         "model_sha256": model_sha256,
+        "request_sha256": request_sha256,
+        "planning_context_sha256": planning_context_sha256,
         "semantic_version": semantic_version,
         "time_source": TIME_SOURCE,
         "trajectory_stamp": {

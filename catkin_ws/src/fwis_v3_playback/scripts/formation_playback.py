@@ -33,10 +33,15 @@ from fwis_v3_optimizer.formation_playback import (
     VIRTUAL_MODEL_VERSION,
     PlaybackMarkerOptions,
     PlaybackValidationError,
+    build_corridor_markers,
+    build_guide_markers,
     build_markers,
     clear_marker_specs,
+    corridor_display_matches,
     fields_from_timed_message,
     frame_at,
+    hud_text,
+    quality_identity_matches,
     status_document,
     terminal_errors,
     tf_frame_prefix,
@@ -47,6 +52,12 @@ from fwis_v3_optimizer.formation_playback import (
     PlaybackVehicleSpec,
     build_hold_markers,
 )
+try:
+    from jsk_rviz_plugins.msg import OverlayText
+except ImportError as _hud_import_error:
+    OverlayText = None
+else:
+    _hud_import_error = None
 from fwis_v3_optimizer.formation_continuous_a.contracts import (
     INITIAL_HEADING_TOLERANCE_RAD,
     geometry_audit_config_from_dict,
@@ -55,6 +66,10 @@ from fwis_v3_optimizer.formation_continuous_a.contracts import (
 from fwis_v3_optimizer.transport_contract import load_contract
 
 MARKER_TOPIC = "/formation/markers"
+HUD_TOPIC = "/formation/hud"
+CORRIDOR_TOPIC = "/formation/corridors"
+GUIDES_TOPIC = "/formation/guides"
+PLANNING_DEBUG_TOPIC = "/formation/planning_debug"
 STATUS_TOPIC = "/formation/playback_status"
 TRAJECTORY_TOPIC = "/formation/timed_trajectory"
 PLAYBACK_PLAN_TOPIC = "/formation/playback_plan"
@@ -83,6 +98,19 @@ def fields_from_message(message):
 
 
 class FormationPlaybackNode:
+
+    # Defaults used by the ROS-independent test harness, which constructs the
+    # instance with __new__.  __init__ overwrites every mutable display field.
+    show_cargo_reason = True
+    hud_pub = None
+    _job_state = "IDLE"
+    _job_state_plan = None
+    _last_hud_publish = None
+    _last_hud_signature = None
+    _virtual_jobs = {}
+    quality_report = None
+    corridor_pub = None
+    guide_pub = None
 
     def __init__(self):
         self._lock = threading.RLock()
@@ -128,7 +156,11 @@ class FormationPlaybackNode:
                 rospy.get_param("~status_text_size", 0.20)),
             text_height_m=float(rospy.get_param("~text_height", 0.35)),
             arrow_head_length_m=float(
-                rospy.get_param("~arrow_head_length", 0.08)))
+                rospy.get_param("~arrow_head_length", 0.08)),
+            show_status_text=bool(
+                rospy.get_param("~show_status_text", True)))
+        self.show_cargo_reason = bool(
+            rospy.get_param("~show_cargo_reason", True))
         self.backend = str(rospy.get_param("~backend", "legacy"))
         if self.backend not in (
                 "legacy", PLAYBACK_PLAN_BACKEND, VIRTUAL_PLAYBACK_BACKEND):
@@ -149,10 +181,42 @@ class FormationPlaybackNode:
         self.quality_report = None
         self._last_state = None
         self._tf_prefix = None
+        self.hud_enabled = bool(rospy.get_param("~hud_enabled", True))
+        self.hud_left = int(rospy.get_param("~hud_left", 900))
+        self.hud_top = int(rospy.get_param("~hud_top", 20))
+        self.hud_width = int(rospy.get_param("~hud_width", 360))
+        self.hud_height = int(rospy.get_param("~hud_height", 270))
+        if (self.hud_left < 0 or self.hud_top < 0 or
+                self.hud_width <= 0 or self.hud_height <= 0):
+            raise ValueError(
+                "~hud_left/~hud_top must be non-negative and "
+                "~hud_width/~hud_height must be positive")
+        self.hud_pub = None
+        self._last_hud_publish = None
+        self._last_hud_signature = None
+        if self.hud_enabled and OverlayText is None:
+            self.hud_enabled = False
+            rospy.logwarn(
+                "[formation playback] HUD requested but "
+                "jsk_rviz_plugins.msg.OverlayText is unavailable (%s). "
+                "Install ros-noetic-jsk-rviz-plugins for ROS Noetic, then "
+                "restart; the marker display and playback status continue "
+                "without the HUD. Real HUD GUI verification is NOT_RUN.",
+                _hud_import_error)
         self.marker_pub = rospy.Publisher(
             MARKER_TOPIC, MarkerArray, queue_size=1)
+        self.corridor_pub = None
+        self.guide_pub = None
+        if self.backend == VIRTUAL_PLAYBACK_BACKEND:
+            self.corridor_pub = rospy.Publisher(
+                CORRIDOR_TOPIC, MarkerArray, queue_size=1)
+            self.guide_pub = rospy.Publisher(
+                GUIDES_TOPIC, MarkerArray, queue_size=1)
         self.status_pub = rospy.Publisher(
             STATUS_TOPIC, String, queue_size=1, latch=True)
+        if self.hud_enabled:
+            self.hud_pub = rospy.Publisher(
+                HUD_TOPIC, OverlayText, queue_size=1, latch=True)
         self.tf_broadcaster = (TransformBroadcaster()
                                if self.publish_tf else None)
         if self.backend in (PLAYBACK_PLAN_BACKEND, VIRTUAL_PLAYBACK_BACKEND):
@@ -175,12 +239,27 @@ class FormationPlaybackNode:
             # optional transport preview UI is disabled.
             rospy.Subscriber("/formation/plan_request", FormationPlanRequest,
                              self.on_request, queue_size=1)
+        if self.backend == VIRTUAL_PLAYBACK_BACKEND:
+            rospy.Subscriber(
+                PLANNING_DEBUG_TOPIC, String, self.on_planning_debug,
+                queue_size=1)
         if self.transport_ui:
             rospy.Subscriber("/formation/display_pose", PoseStamped,
                              self.on_preview, queue_size=1)
             rospy.Subscriber("/formation/status", String,
                              self.on_frontend_status, queue_size=1)
         self.timer = rospy.Timer(rospy.Duration(1.0 / rate), self.tick)
+        if self.hud_pub is not None:
+            self._publish_hud(
+                status_document(
+                    cleared=True, frame_id=self.frame_id,
+                    backend=self.backend),
+                quality=None, force=True)
+        if self.corridor_pub is not None:
+            # RViz keeps lifetime-zero markers across a node restart; start
+            # from empty corridor and guide layers instead of a stale chain.
+            self._clear_corridors()
+            self._clear_guides()
         rospy.loginfo(
             "[formation playback] common-clock display ready; "
             "GEOMETRY_ONLY is shown until an independent FEASIBLE status "
@@ -611,6 +690,82 @@ class FormationPlaybackNode:
             self.quality_report = report
 
     @synchronized
+    def on_planning_debug(self, message):
+        document = self._parse_json(message, "planning_debug")
+        if document is None:
+            return
+        plan_id = document.get("plan_id")
+        if plan_id != self._job_state_plan:
+            rospy.logwarn(
+                "[formation playback] ignoring corridor payload for plan %s: "
+                "current job is plan %s", plan_id, self._job_state_plan)
+            return
+        job = (self._virtual_jobs.get(plan_id)
+               if isinstance(plan_id, int) else None)
+        if isinstance(job, dict) and job.get("model_sha256") is None:
+            # The planner freezes its active model digest immediately before
+            # publishing the envelope, so the PLANNING job record may still
+            # carry the admission-time None until the next heartbeat.  This
+            # receiver has already verified the envelope for the same plan;
+            # only that missing field is supplied, never a reported digest.
+            trajectory = getattr(self, "trajectory", None)
+            verified = getattr(self, "_playback_model_sha256", None)
+            if (trajectory is not None and
+                    trajectory.plan_id == plan_id and
+                    isinstance(verified, str) and verified):
+                job = dict(job)
+                job["model_sha256"] = verified
+        if not corridor_display_matches(document, job):
+            rospy.logwarn(
+                "[formation playback] ignoring corridor payload for plan %s: "
+                "identity does not match the current admission", plan_id)
+            return
+        if document.get("state") == CLEARED:
+            self._clear_corridors()
+            self._clear_guides()
+            return
+        if self._job_state not in ("PLANNING", "PLAYING"):
+            rospy.logwarn(
+                "[formation playback] ignoring corridor payload for plan %s "
+                "while job state is %s", plan_id, self._job_state)
+            return
+        try:
+            specs = build_corridor_markers(document, self.frame_id)
+            guide_specs = build_guide_markers(document, self.frame_id)
+        except (TypeError, ValueError) as exc:
+            rospy.logerr(
+                "[formation playback] rejecting corridor/guide payload: %s",
+                exc)
+            self._clear_corridors()
+            self._clear_guides()
+            return
+        stamp = rospy.Time.now()
+        self.corridor_pub.publish(self._marker_array(specs, stamp))
+        if self.guide_pub is not None:
+            self.guide_pub.publish(
+                self._marker_array(guide_specs, stamp))
+        rospy.loginfo(
+            "[formation playback] corridor/guide display plan=%s "
+            "generation=%s routes=%d regions=%d "
+            "state=CANDIDATE_REFERENCE_POINT_ONLY",
+            plan_id, document.get("generation"),
+            len(document["corridors"]),
+            sum(len(corridor["regions"])
+                for corridor in document["corridors"]))
+
+    def _clear_corridors(self):
+        if self.corridor_pub is None:
+            return
+        self.corridor_pub.publish(self._marker_array(
+            clear_marker_specs(self.frame_id), rospy.Time.now()))
+
+    def _clear_guides(self):
+        if self.guide_pub is None:
+            return
+        self.guide_pub.publish(self._marker_array(
+            clear_marker_specs(self.frame_id), rospy.Time.now()))
+
+    @synchronized
     def on_request(self, message):
         self._record_raw_request(message)
         if (self.backend in (PLAYBACK_PLAN_BACKEND, VIRTUAL_PLAYBACK_BACKEND)
@@ -648,6 +803,8 @@ class FormationPlaybackNode:
             for v in message.vehicles))
         self.trajectory = None
         self._clear_markers_pending = False
+        self._clear_corridors()
+        self._clear_guides()
         self._publish_hold(clear=True)
 
     @synchronized
@@ -692,8 +849,9 @@ class FormationPlaybackNode:
         if frontend.get("reason"):
             prefix = "WAITING" if frontend["reason"] == "MAP_UNAVAILABLE" else "FAILED"
             reason = "{}: {}".format(prefix, frontend["reason"])
-        specs = build_hold_markers(formation_id, qf, vehicles,
-                                   reason, self.frame_id)
+        specs = build_hold_markers(
+            formation_id, qf, vehicles, reason, self.frame_id,
+            self.show_cargo_reason)
         if clear:
             # A DELETEALL sent as its own marker message can be dropped by the
             # queue_size=1 publisher when the static hold follows immediately,
@@ -708,11 +866,48 @@ class FormationPlaybackNode:
             vehicles=tuple(SimpleNamespace(vehicle_id=v.vehicle_id,
                 center_x=x, center_y=y, theta=theta)
                 for v, x, y, theta in vehicles)), stamp)
-        self.status_pub.publish(String(data=json.dumps({
+        document = {
             "schema": "formation_playback/v1", "state": "STATIC",
             "plan_id": self._active_plan, "formation_id": formation_id,
+            "backend": self.backend,
+            "model_sha256": self._playback_model_sha256,
+            "request_sha256": None,
+            "planning_context_sha256": None,
+            "vehicles": [
+                {"vehicle_id": v.vehicle_id} for v, _x, _y, _t in vehicles],
             "reason": reason, "executable": False,
-            "trajectory_published": False, "cleared": True})))
+            "trajectory_published": False, "cleared": True}
+        self.status_pub.publish(String(data=json.dumps(document)))
+        self._publish_hud(document, quality=None, force=True)
+
+    def _publish_hud(self, document, quality=None, force=False):
+        """Publish the fixed-corner overlay at 10 Hz or on a state change."""
+        if self.hud_pub is None:
+            return
+        now = rospy.Time.now()
+        signature = (
+            document.get("plan_id"), document.get("state"), self._job_state)
+        changed = signature != self._last_hud_signature
+        if (not force and not changed and
+                self._last_hud_publish is not None and
+                (now - self._last_hud_publish).to_sec() < 0.095):
+            return
+        message = OverlayText()
+        message.action = OverlayText.ADD
+        message.width = self.hud_width
+        message.height = self.hud_height
+        message.left = self.hud_left
+        message.top = self.hud_top
+        message.bg_color = ColorRGBA(0.0, 0.0, 0.0, 0.55)
+        message.line_width = 2
+        message.text_size = 13.0
+        message.font = "DejaVu Sans Mono"
+        message.fg_color = ColorRGBA(1.0, 1.0, 1.0, 0.95)
+        message.text = hud_text(
+            document, self._job_state, quality, self.show_cargo_reason)
+        self.hud_pub.publish(message)
+        self._last_hud_publish = now
+        self._last_hud_signature = signature
 
     @staticmethod
     def _parse_json(message, label):
@@ -769,11 +964,23 @@ class FormationPlaybackNode:
             return None
         # The optimizer status is deliberately compact; the independent
         # evaluation metrics live in the latched quality report.  Merge that
-        # report's pipeline block (without changing any certification field)
-        # so the RViz status text can show constraint metrics.
+        # report's pipeline block only when its full identity matches this
+        # playback: a quality block for an older plan/formation/backend/model
+        # (or for another virtual request/planning context) must not leak into
+        # the displayed metrics.
         quality = self.quality_report
-        if (isinstance(quality, dict) and
-                quality.get("plan_id") == self.trajectory.plan_id and
+        identity = {
+            "plan_id": self.trajectory.plan_id,
+            "formation_id": self.trajectory.formation_id,
+            "backend": audit_backend,
+            "model_sha256": digest,
+        }
+        if digest is not None and audit_backend == VIRTUAL_PLAYBACK_BACKEND:
+            job = self._virtual_jobs.get(self.trajectory.plan_id, {})
+            identity["request_sha256"] = job.get("request_sha256")
+            identity["planning_context_sha256"] = job.get(
+                "planning_context_sha256")
+        if (quality_identity_matches(identity, quality) and
                 isinstance(quality.get("pipeline"), dict)):
             merged = dict(report)
             merged.setdefault("pipeline", quality["pipeline"])
@@ -805,6 +1012,12 @@ class FormationPlaybackNode:
         center_error = heading_error = None
         if frame.terminal:
             center_error, heading_error = terminal_errors(trajectory, frame)
+        request_sha = context_sha = None
+        if (self._playback_model_sha256 is not None and
+                self.backend == VIRTUAL_PLAYBACK_BACKEND):
+            job = self._virtual_jobs.get(trajectory.plan_id, {})
+            request_sha = job.get("request_sha256")
+            context_sha = job.get("planning_context_sha256")
         document = status_document(
             trajectory, frame, status, marker_count=len(markers),
             namespaces=namespaces,
@@ -812,7 +1025,9 @@ class FormationPlaybackNode:
             terminal_heading_error_rad=heading_error,
             model_sha256=self._playback_model_sha256,
             backend=self.backend,
-            semantic_version=self._playback_semantic_version)
+            semantic_version=self._playback_semantic_version,
+            request_sha256=request_sha,
+            planning_context_sha256=context_sha)
         try:
             payload = json.dumps(
                 document, sort_keys=True, allow_nan=False)
@@ -827,6 +1042,7 @@ class FormationPlaybackNode:
             }, sort_keys=True)
         self.marker_pub.publish(self._marker_array(publish_markers, now))
         self.status_pub.publish(String(data=payload))
+        self._publish_hud(document, quality=self.quality_report)
         if self.publish_tf:
             self._broadcast_tf(frame, now)
         if frame.state != self._last_state:
@@ -909,6 +1125,9 @@ class FormationPlaybackNode:
             semantic_version=self._playback_semantic_version)
         self.status_pub.publish(String(data=json.dumps(
             document, sort_keys=True, allow_nan=False)))
+        self._publish_hud(document, quality=None, force=True)
+        self._clear_corridors()
+        self._clear_guides()
         rospy.loginfo("[formation playback] cleared: %s", reason)
         if self.transport_ui and freeze and self.hold is not None:
             self._publish_hold(clear=True, stamp=now)
