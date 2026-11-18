@@ -1,0 +1,91 @@
+{
+  "formula": "guard = 1e-10*(full_panels+local_panels+8) + S*angle_bound(n, pi+S*kappa_limit)",
+  "budget_m": 1e-07,
+  "rows": [
+    {
+      "S_m": 18.625827150743923,
+      "intervals": 8,
+      "panels_per_segment": 118,
+      "simpson_panels": 480,
+      "guard_m": 5.178060984640765e-08,
+      "guard_within_budget": true
+    },
+    {
+      "S_m": 18.625827150743923,
+      "intervals": 16,
+      "panels_per_segment": 60,
+      "simpson_panels": 496,
+      "guard_m": 5.487067601846716e-08,
+      "guard_within_budget": true
+    },
+    {
+      "S_m": 21.701601208480245,
+      "intervals": 8,
+      "panels_per_segment": 136,
+      "simpson_panels": 552,
+      "guard_m": 5.9472878056465704e-08,
+      "guard_within_budget": true
+    },
+    {
+      "S_m": 21.701601208480245,
+      "intervals": 16,
+      "panels_per_segment": 68,
+      "simpson_panels": 560,
+      "guard_m": 6.200900615314413e-08,
+      "guard_within_budget": true
+    },
+    {
+      "S_m": 38.58949144353568,
+      "intervals": 8,
+      "panels_per_segment": 242,
+      "simpson_panels": 976,
+      "guard_m": 1.045760640012593e-07,
+      "guard_within_budget": false
+    },
+    {
+      "S_m": 38.58949144353568,
+      "intervals": 16,
+      "panels_per_segment": 122,
+      "simpson_panels": 992,
+      "guard_m": 1.0926322331674215e-07,
+      "guard_within_budget": false
+    },
+    {
+      "S_m": 45.74442520707356,
+      "intervals": 8,
+      "panels_per_segment": 286,
+      "simpson_panels": 1152,
+      "guard_m": 1.2332149822978477e-07,
+      "guard_within_budget": false
+    },
+    {
+      "S_m": 45.74442520707356,
+      "intervals": 16,
+      "panels_per_segment": 144,
+      "simpson_panels": 1168,
+      "guard_m": 1.2858105224635065e-07,
+      "guard_within_budget": false
+    },
+    {
+      "S_m": 48.436298605912526,
+      "intervals": 8,
+      "panels_per_segment": 304,
+      "simpson_panels": 1224,
+      "guard_m": 1.3095246658783149e-07,
+      "guard_within_budget": false
+    },
+    {
+      "S_m": 48.436298605912526,
+      "intervals": 16,
+      "panels_per_segment": 152,
+      "simpson_panels": 1232,
+      "guard_m": 1.356273704763045e-07,
+      "guard_within_budget": false
+    }
+  ],
+  "max_guard_feasible_S_m": {
+    "8": 36.8,
+    "16": 35.2
+  },
+  "note": "guard is independent of the curvature profile apart from a negligible angle term; measured production values: 600003 guard 5.947e-8 (S=21.7016, n=8); 600004 branch+S50 candidate S=48.436 raised total_panels 107008"
+}

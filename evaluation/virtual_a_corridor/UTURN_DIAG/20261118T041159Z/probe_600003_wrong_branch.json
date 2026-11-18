@@ -1,0 +1,336 @@
+{
+  "allocation": [
+    [
+      0.0,
+      0.125,
+      0
+    ],
+    [
+      0.125,
+      0.25,
+      0
+    ],
+    [
+      0.25,
+      0.375,
+      0
+    ],
+    [
+      0.375,
+      0.4402988583708083,
+      0
+    ],
+    [
+      0.4402988583708083,
+      0.5,
+      1
+    ],
+    [
+      0.5,
+      0.625,
+      1
+    ],
+    [
+      0.625,
+      0.7030197879509296,
+      1
+    ],
+    [
+      0.7030197879509296,
+      0.75,
+      2
+    ],
+    [
+      0.75,
+      0.875,
+      2
+    ],
+    [
+      0.875,
+      1.0,
+      2
+    ]
+  ],
+  "applied_branch": {
+    "branch_multiple": 1,
+    "guide_turn_rad": -2.2863427019777744,
+    "original_target_rad": -3.126,
+    "relaxed_s_upper_m": null,
+    "shifted_target_rad": 3.1571853071795863
+  },
+  "branch_multiple": 0,
+  "branch_shifted_target_deg": -179.10660675789532,
+  "branch_shifted_target_rad": -3.126,
+  "chain_audit_passed": true,
+  "endpoint_target_deg": -179.10660675789532,
+  "endpoint_target_rad": -3.126,
+  "goal": [
+    10.153,
+    2.076,
+    -3.126
+  ],
+  "guide_length_m": 18.62582715074392,
+  "guide_turn_deg": -130.99778734386345,
+  "guide_turn_rad": -2.2863427019777744,
+  "mode": "solve-branch",
+  "packet": {
+    "S_lower_m": 10.018651056903819,
+    "S_upper_m": 40.055953170711454,
+    "distance_m": 10.018651056903819,
+    "dx_m": -0.6879999999999988,
+    "dy_m": -9.995,
+    "heading_change_rad": -3.126
+  },
+  "plan_id": 600003,
+  "portal_radius_m": [
+    0.8321443167841966,
+    1.160944115583019
+  ],
+  "result": {
+    "attempts": [
+      {
+        "attempt_index": 0,
+        "constraint_residual": 4.968868284472274,
+        "corridor_residual_m": 9.999830297147128e-09,
+        "deadline_trigger_stage": "",
+        "detail": "Infeasible_Problem_Detected",
+        "endpoint_error_m": null,
+        "heading_error_rad": null,
+        "initial": {
+          "S": 18.625827150743923,
+          "etas": [
+            0.0,
+            0.023273025217871217,
+            -0.09309210087148505,
+            -0.14129979987159427,
+            0.1112477023319651,
+            0.048846938209711685,
+            0.008259501871486295,
+            0.05597228477802823,
+            0.0
+          ],
+          "kappas": [
+            0.0,
+            1.4075164147859766e-16,
+            -1.4075164147859766e-16,
+            -0.3805839926494849,
+            -0.42454747919797514,
+            -0.1069877060951303,
+            -0.18016501917669273,
+            -3.51879103696494e-17,
+            0.0
+          ],
+          "label": "route_guide=0;source=corridor_qp_polyline",
+          "length_multiplier": 1.859115268607836,
+          "metadata": {
+            "S_search_lower_m": 10.018651056903819,
+            "S_search_upper_m": 40.055953170711454,
+            "clearance_proxy": {
+              "clearance_field": {
+                "downsample": 4,
+                "field_sha256": "eb1f4a5ac8593aaf0864457679c15ac9938dad4c46f365ddb59f541a460ef60e",
+                "grid_sha256": "55da861b9ac5cde6fdc6434d391b3f396b6064311c51e4217b17bf4bf2e2c457",
+                "height": 82,
+                "is_collision_certificate": false,
+                "origin_x": -8.328548000000003,
+                "origin_y": -5.541520062500001,
+                "resolution_m": 0.2594865,
+                "role": "smooth_nlp_collision_guidance_only",
+                "width": 123
+              },
+              "is_collision_certificate": false,
+              "orientation_source": "Gauss_collocation_local_psi_and_actual_theta_i",
+              "role": "smooth_nlp_body_footprint_guidance_only",
+              "sample_count": 72,
+              "target_m": 0.05,
+              "vehicle_count": 3,
+              "weight": 1.0
+            },
+            "endpoint_distance_m": 10.018651056903819,
+            "endpoint_local_dx_m": -0.6879999999999988,
+            "endpoint_local_dy_m": -9.995,
+            "heading_change_rad": 3.1571853071795863,
+            "intervals": 8,
+            "length_multiplier": 1.859115268607836,
+            "obstacle_context": {
+              "blocked_points": [],
+              "clearance_field": {
+                "downsample": 4,
+                "field_sha256": "eb1f4a5ac8593aaf0864457679c15ac9938dad4c46f365ddb59f541a460ef60e",
+                "grid_sha256": "55da861b9ac5cde6fdc6434d391b3f396b6064311c51e4217b17bf4bf2e2c457",
+                "height": 82,
+                "is_collision_certificate": false,
+                "origin_x": -8.328548000000003,
+                "origin_y": -5.541520062500001,
+                "resolution_m": 0.2594865,
+                "role": "smooth_nlp_collision_guidance_only",
+                "width": 123
+              },
+              "collision_reason": "",
+              "collision_station": null,
+              "grid_sha256": "55da861b9ac5cde6fdc6434d391b3f396b6064311c51e4217b17bf4bf2e2c457",
+              "node_targets": [],
+              "route_weight_scale": 1.0,
+              "source": "planning_clearance_field"
+            },
+            "projection": "clamped_cubic_spline_C2_eta0_etaN_zero",
+            "route_grid_sha256": "55da861b9ac5cde6fdc6434d391b3f396b6064311c51e4217b17bf4bf2e2c457",
+            "route_heading_smoothing": "node_circumcircle_three_point",
+            "route_index": 0,
+            "route_length_m": 18.625827150743923,
+            "route_point_count": 4,
+            "route_position_rule": "corridor_guide_mean_normalised_by_L0_squared",
+            "route_position_weight": 0.011111111111111112,
+            "route_source": "corridor_qp_polyline",
+            "route_weight_scale": 1.0,
+            "shape_sign": 0
+          },
+          "node_s": [
+            0.0,
+            2.3282283938429904,
+            4.656456787685981,
+            6.984685181528971,
+            9.312913575371962,
+            11.641141969214953,
+            13.969370363057942,
+            16.297598756900932,
+            18.625827150743923
+          ],
+          "shape_sign": 0,
+          "source": "map_route_guide"
+        },
+        "initial_label": "route_guide=0;source=corridor_qp_polyline",
+        "initial_source": "map_route_guide",
+        "iterations": 109,
+        "objective": 62.385238907142025,
+        "rejection_reason": "Infeasible_Problem_Detected",
+        "remaining_budget_s": 29.984388219891116,
+        "soft_deadline_triggered": false,
+        "solver": "ipopt",
+        "solver_status": "Infeasible_Problem_Detected",
+        "status": "SOLVER_FAILED",
+        "wall_time_s": 16.615717411972582
+      },
+      {
+        "attempt_index": 1,
+        "constraint_residual": null,
+        "deadline_trigger_stage": "ipopt_max_wall_time",
+        "detail": "Maximum_WallTime_Exceeded",
+        "endpoint_error_m": null,
+        "heading_error_rad": null,
+        "initial": {
+          "S": 12.022381268284581,
+          "etas": [
+            0.0,
+            0.09453719356171936,
+            0.09186371736141592,
+            0.05233969755100767,
+            0.015125302028162192,
+            -0.01787104362773356,
+            -0.020473468524570156,
+            -0.17226362291749744,
+            0.0
+          ],
+          "kappas": [
+            0.0,
+            0.08786161152372689,
+            0.23544455729047123,
+            0.34550713334960304,
+            0.39391347313718206,
+            0.39308062878261346,
+            0.3554256524153019,
+            0.2568126774713074,
+            0.0
+          ],
+          "label": "length_multiplier=1.2;shape=left",
+          "length_multiplier": 1.2,
+          "metadata": {
+            "S_search_lower_m": 10.018651056903819,
+            "S_search_upper_m": 40.055953170711454,
+            "approximate_lateral_need": -293.19362855019006,
+            "clearance_proxy": {
+              "clearance_field": {
+                "downsample": 4,
+                "field_sha256": "eb1f4a5ac8593aaf0864457679c15ac9938dad4c46f365ddb59f541a460ef60e",
+                "grid_sha256": "55da861b9ac5cde6fdc6434d391b3f396b6064311c51e4217b17bf4bf2e2c457",
+                "height": 82,
+                "is_collision_certificate": false,
+                "origin_x": -8.328548000000003,
+                "origin_y": -5.541520062500001,
+                "resolution_m": 0.2594865,
+                "role": "smooth_nlp_collision_guidance_only",
+                "width": 123
+              },
+              "is_collision_certificate": false,
+              "orientation_source": "Gauss_collocation_local_psi_and_actual_theta_i",
+              "role": "smooth_nlp_body_footprint_guidance_only",
+              "sample_count": 72,
+              "target_m": 0.05,
+              "vehicle_count": 3,
+              "weight": 1.0
+            },
+            "correction_coefficient": 20.0,
+            "endpoint_distance_m": 10.018651056903819,
+            "endpoint_local_dx_m": -0.6879999999999988,
+            "endpoint_local_dy_m": -9.995,
+            "heading_change_rad": 3.1571853071795863,
+            "initial_terminal_eta": 0.0,
+            "initial_terminal_kappa": 0.0,
+            "intervals": 8,
+            "length_multiplier": 1.2,
+            "projection": "clamped_cubic_spline_C2_eta0_etaN_zero",
+            "shape_sign": 1
+          },
+          "node_s": [
+            0.0,
+            1.5027976585355727,
+            3.0055953170711454,
+            4.508392975606718,
+            6.011190634142291,
+            7.513988292677864,
+            9.016785951213436,
+            10.51958360974901,
+            12.022381268284581
+          ],
+          "shape_sign": 1,
+          "source": "automatic_endpoint_shape"
+        },
+        "initial_label": "length_multiplier=1.2;shape=left",
+        "initial_source": "automatic_endpoint_shape",
+        "iterations": 109,
+        "objective": 387.6778025643851,
+        "rejection_reason": "SOFT_BUDGET_EXHAUSTED",
+        "remaining_budget_s": 12.736477434867993,
+        "soft_deadline_triggered": true,
+        "solver": "ipopt",
+        "solver_status": "Maximum_WallTime_Exceeded",
+        "status": "SOLVER_TIMEOUT",
+        "wall_time_s": 15.970372952986509
+      }
+    ],
+    "detail": "soft wall budget 30.0s exhausted before an audited candidate",
+    "first_failure_layer": "GEOMETRY",
+    "plan": null,
+    "plan_id": 600003,
+    "reason": "SOFT_BUDGET_EXHAUSTED",
+    "status": "BUDGET_EXHAUSTED",
+    "wall_time_s": 39.01293399208225
+  },
+  "route_length_m": 22.568538337774633,
+  "seed_lengths_m": [
+    8.203713870768803,
+    6.010348179226153,
+    4.708662500938953
+  ],
+  "segment_lengths_m": [
+    8.200930430684553,
+    4.893394623242105,
+    5.531502096817263
+  ],
+  "simplified_length_m": 18.922724550933907,
+  "start": [
+    10.841,
+    12.071,
+    0.0
+  ]
+}

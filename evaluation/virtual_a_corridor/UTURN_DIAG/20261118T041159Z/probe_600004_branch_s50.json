@@ -1,0 +1,434 @@
+{
+  "allocation": [
+    [
+      0.0,
+      0.125,
+      0
+    ],
+    [
+      0.125,
+      0.25,
+      0
+    ],
+    [
+      0.25,
+      0.375,
+      0
+    ],
+    [
+      0.375,
+      0.4763721593704666,
+      0
+    ],
+    [
+      0.4763721593704666,
+      0.5,
+      1
+    ],
+    [
+      0.5,
+      0.6120471514082826,
+      1
+    ],
+    [
+      0.6120471514082826,
+      0.625,
+      2
+    ],
+    [
+      0.625,
+      0.75,
+      2
+    ],
+    [
+      0.75,
+      0.875,
+      2
+    ],
+    [
+      0.875,
+      1.0,
+      2
+    ]
+  ],
+  "applied_branch": {
+    "branch_multiple": -1,
+    "guide_turn_rad": -2.9514347248932595,
+    "original_target_rad": 3.1239999999999997,
+    "relaxed_s_upper_m": 50.0,
+    "shifted_target_rad": -3.1591853071795866
+  },
+  "branch_multiple": -1,
+  "branch_shifted_target_deg": -181.00798480113085,
+  "branch_shifted_target_rad": -3.1591853071795866,
+  "chain_audit_passed": true,
+  "endpoint_target_deg": 178.99201519886915,
+  "endpoint_target_rad": 3.1239999999999997,
+  "goal": [
+    -2.49,
+    2.309,
+    3.102
+  ],
+  "guide_length_m": 45.74442520707356,
+  "guide_turn_deg": -169.104753244739,
+  "guide_turn_rad": -2.9514347248932595,
+  "mode": "solve-branch",
+  "packet": {
+    "S_lower_m": 9.529830481178559,
+    "S_upper_m": 38.58949144353568,
+    "distance_m": 9.529830481178559,
+    "dx_m": 1.342872549588537,
+    "dy_m": -9.434742302551859,
+    "heading_change_rad": 3.1239999999999997
+  },
+  "plan_id": 600004,
+  "portal_radius_m": [
+    0.8076407692946859,
+    1.1542212702373589
+  ],
+  "result": {
+    "attempts": [
+      {
+        "attempt_index": 0,
+        "constraint_residual": 2.688960165642129e-13,
+        "corridor_residual_m": 0.0,
+        "deadline_trigger_stage": "",
+        "detail": "Solve_Succeeded; candidate construction: VirtualAContractError: BOUND_UNCONFIRMED: Simpson refinement would exceed 200000 subintervals [('total_panels', 107008)]",
+        "endpoint_error_m": null,
+        "heading_error_rad": null,
+        "initial": {
+          "S": 45.74442520707356,
+          "etas": [
+            0.0,
+            -0.0008786913485447953,
+            0.0035147653941791784,
+            -0.037386604728504115,
+            -0.01674762317381736,
+            0.041895580198378024,
+            0.011944579073959918,
+            -0.0029861447684899796,
+            0.0
+          ],
+          "kappas": [
+            0.0,
+            0.0,
+            -4.750678634376294e-18,
+            -0.04613751181855541,
+            -0.31026018533226735,
+            -0.16522839063278807,
+            -3.56300897578222e-18,
+            3.56300897578222e-18,
+            0.0
+          ],
+          "label": "route_guide=0;source=corridor_qp_polyline",
+          "length_multiplier": 4.800130002041372,
+          "metadata": {
+            "S_search_lower_m": 9.529830481178559,
+            "S_search_upper_m": 50.0,
+            "clearance_proxy": {
+              "clearance_field": {
+                "downsample": 4,
+                "field_sha256": "eb1f4a5ac8593aaf0864457679c15ac9938dad4c46f365ddb59f541a460ef60e",
+                "grid_sha256": "55da861b9ac5cde6fdc6434d391b3f396b6064311c51e4217b17bf4bf2e2c457",
+                "height": 82,
+                "is_collision_certificate": false,
+                "origin_x": -8.328548000000003,
+                "origin_y": -5.541520062500001,
+                "resolution_m": 0.2594865,
+                "role": "smooth_nlp_collision_guidance_only",
+                "width": 123
+              },
+              "is_collision_certificate": false,
+              "orientation_source": "Gauss_collocation_local_psi_and_actual_theta_i",
+              "role": "smooth_nlp_body_footprint_guidance_only",
+              "sample_count": 72,
+              "target_m": 0.05,
+              "vehicle_count": 3,
+              "weight": 1.0
+            },
+            "endpoint_distance_m": 9.529830481178559,
+            "endpoint_local_dx_m": 1.342872549588537,
+            "endpoint_local_dy_m": -9.434742302551859,
+            "heading_change_rad": -3.1591853071795866,
+            "intervals": 8,
+            "length_multiplier": 4.800130002041372,
+            "obstacle_context": {
+              "blocked_points": [],
+              "clearance_field": {
+                "downsample": 4,
+                "field_sha256": "eb1f4a5ac8593aaf0864457679c15ac9938dad4c46f365ddb59f541a460ef60e",
+                "grid_sha256": "55da861b9ac5cde6fdc6434d391b3f396b6064311c51e4217b17bf4bf2e2c457",
+                "height": 82,
+                "is_collision_certificate": false,
+                "origin_x": -8.328548000000003,
+                "origin_y": -5.541520062500001,
+                "resolution_m": 0.2594865,
+                "role": "smooth_nlp_collision_guidance_only",
+                "width": 123
+              },
+              "collision_reason": "",
+              "collision_station": null,
+              "grid_sha256": "55da861b9ac5cde6fdc6434d391b3f396b6064311c51e4217b17bf4bf2e2c457",
+              "node_targets": [],
+              "route_weight_scale": 1.0,
+              "source": "planning_clearance_field"
+            },
+            "projection": "clamped_cubic_spline_C2_eta0_etaN_zero",
+            "route_grid_sha256": "55da861b9ac5cde6fdc6434d391b3f396b6064311c51e4217b17bf4bf2e2c457",
+            "route_heading_smoothing": "node_circumcircle_three_point",
+            "route_index": 0,
+            "route_length_m": 45.74442520707356,
+            "route_point_count": 4,
+            "route_position_rule": "corridor_guide_mean_normalised_by_L0_squared",
+            "route_position_weight": 0.011111111111111112,
+            "route_source": "corridor_qp_polyline",
+            "route_weight_scale": 1.0,
+            "shape_sign": 0
+          },
+          "node_s": [
+            0.0,
+            5.718053150884195,
+            11.43610630176839,
+            17.154159452652586,
+            22.87221260353678,
+            28.590265754420976,
+            34.30831890530517,
+            40.026372056189366,
+            45.74442520707356
+          ],
+          "shape_sign": 0,
+          "source": "map_route_guide"
+        },
+        "initial_label": "route_guide=0;source=corridor_qp_polyline",
+        "initial_source": "map_route_guide",
+        "iterations": 24,
+        "objective": 5.312217291541982,
+        "rejection_reason": "CANDIDATE_CONSTRUCTION_FAILURE: VirtualAContractError: BOUND_UNCONFIRMED: Simpson refinement would exceed 200000 subintervals [('total_panels', 107008)]",
+        "remaining_budget_s": 29.985570349963382,
+        "soft_deadline_triggered": false,
+        "solver": "ipopt",
+        "solver_status": "Solve_Succeeded",
+        "status": "CANDIDATE_CONSTRUCTION_FAILURE",
+        "wall_time_s": 6.708256504964083
+      },
+      {
+        "attempt_index": 1,
+        "constraint_residual": 5.583422613142375e-11,
+        "corridor_residual_m": 0.0,
+        "deadline_trigger_stage": "",
+        "detail": "Solve_Succeeded; candidate construction: VirtualAContractError: BOUND_UNCONFIRMED: Simpson refinement would exceed 200000 subintervals [('total_panels', 107008)]",
+        "endpoint_error_m": null,
+        "heading_error_rad": null,
+        "initial": {
+          "S": 11.435796577414271,
+          "etas": [
+            0.0,
+            -0.013226205171751357,
+            -0.07966010183714163,
+            -0.13206750052047167,
+            -0.12915548924545878,
+            -0.050539568026307616,
+            0.041476311463302676,
+            0.2795029135281796,
+            0.0
+          ],
+          "kappas": [
+            0.0,
+            0.0017511887807973908,
+            -0.06316606197028453,
+            -0.21930948380493537,
+            -0.4143810996191099,
+            -0.5524861878453039,
+            -0.5524861878453039,
+            -0.36433465094751855,
+            -0.0
+          ],
+          "label": "length_multiplier=1.2;shape=left",
+          "length_multiplier": 1.2,
+          "metadata": {
+            "S_search_lower_m": 9.529830481178559,
+            "S_search_upper_m": 50.0,
+            "approximate_lateral_need": 61.41180478257451,
+            "clearance_proxy": {
+              "clearance_field": {
+                "downsample": 4,
+                "field_sha256": "eb1f4a5ac8593aaf0864457679c15ac9938dad4c46f365ddb59f541a460ef60e",
+                "grid_sha256": "55da861b9ac5cde6fdc6434d391b3f396b6064311c51e4217b17bf4bf2e2c457",
+                "height": 82,
+                "is_collision_certificate": false,
+                "origin_x": -8.328548000000003,
+                "origin_y": -5.541520062500001,
+                "resolution_m": 0.2594865,
+                "role": "smooth_nlp_collision_guidance_only",
+                "width": 123
+              },
+              "is_collision_certificate": false,
+              "orientation_source": "Gauss_collocation_local_psi_and_actual_theta_i",
+              "role": "smooth_nlp_body_footprint_guidance_only",
+              "sample_count": 72,
+              "target_m": 0.05,
+              "vehicle_count": 3,
+              "weight": 1.0
+            },
+            "correction_coefficient": 20.0,
+            "endpoint_distance_m": 9.529830481178559,
+            "endpoint_local_dx_m": 1.342872549588537,
+            "endpoint_local_dy_m": -9.434742302551859,
+            "heading_change_rad": -3.1591853071795866,
+            "initial_terminal_eta": 0.0,
+            "initial_terminal_kappa": -0.0,
+            "intervals": 8,
+            "length_multiplier": 1.2,
+            "projection": "clamped_cubic_spline_C2_eta0_etaN_zero",
+            "shape_sign": 1
+          },
+          "node_s": [
+            0.0,
+            1.4294745721767839,
+            2.8589491443535677,
+            4.288423716530351,
+            5.7178982887071355,
+            7.1473728608839195,
+            8.576847433060703,
+            10.006322005237488,
+            11.435796577414271
+          ],
+          "shape_sign": 1,
+          "source": "automatic_endpoint_shape"
+        },
+        "initial_label": "length_multiplier=1.2;shape=left",
+        "initial_source": "automatic_endpoint_shape",
+        "iterations": 78,
+        "objective": 5.309750145569656,
+        "rejection_reason": "CANDIDATE_CONSTRUCTION_FAILURE: VirtualAContractError: BOUND_UNCONFIRMED: Simpson refinement would exceed 200000 subintervals [('total_panels', 107008)]",
+        "remaining_budget_s": 22.628604169934988,
+        "soft_deadline_triggered": false,
+        "solver": "ipopt",
+        "solver_status": "Solve_Succeeded",
+        "status": "CANDIDATE_CONSTRUCTION_FAILURE",
+        "wall_time_s": 12.88622952485457
+      },
+      {
+        "attempt_index": 2,
+        "constraint_residual": 3.233102674471411e-11,
+        "corridor_residual_m": 0.0,
+        "deadline_trigger_stage": "",
+        "detail": "Solve_Succeeded; candidate construction: VirtualAContractError: BOUND_UNCONFIRMED: Simpson refinement would exceed 200000 subintervals [('total_panels', 107008)]",
+        "endpoint_error_m": null,
+        "heading_error_rad": null,
+        "initial": {
+          "S": 11.435796577414271,
+          "etas": [
+            0.0,
+            -0.1045215165800253,
+            -0.10158689792222758,
+            -0.05790676607052816,
+            -0.016763589241965235,
+            0.01974060140167126,
+            0.022648890033291635,
+            0.19053847981433278,
+            0.0
+          ],
+          "kappas": [
+            0.0,
+            -0.0923970543224777,
+            -0.24761976274404798,
+            -0.36341393753443807,
+            -0.4143810996191099,
+            -0.41355062425139316,
+            -0.373951886684617,
+            -0.2701864078442435,
+            0.0
+          ],
+          "label": "length_multiplier=1.2;shape=right",
+          "length_multiplier": 1.2,
+          "metadata": {
+            "S_search_lower_m": 9.529830481178559,
+            "S_search_upper_m": 50.0,
+            "approximate_lateral_need": 61.41180478257451,
+            "clearance_proxy": {
+              "clearance_field": {
+                "downsample": 4,
+                "field_sha256": "eb1f4a5ac8593aaf0864457679c15ac9938dad4c46f365ddb59f541a460ef60e",
+                "grid_sha256": "55da861b9ac5cde6fdc6434d391b3f396b6064311c51e4217b17bf4bf2e2c457",
+                "height": 82,
+                "is_collision_certificate": false,
+                "origin_x": -8.328548000000003,
+                "origin_y": -5.541520062500001,
+                "resolution_m": 0.2594865,
+                "role": "smooth_nlp_collision_guidance_only",
+                "width": 123
+              },
+              "is_collision_certificate": false,
+              "orientation_source": "Gauss_collocation_local_psi_and_actual_theta_i",
+              "role": "smooth_nlp_body_footprint_guidance_only",
+              "sample_count": 72,
+              "target_m": 0.05,
+              "vehicle_count": 3,
+              "weight": 1.0
+            },
+            "correction_coefficient": -20.0,
+            "endpoint_distance_m": 9.529830481178559,
+            "endpoint_local_dx_m": 1.342872549588537,
+            "endpoint_local_dy_m": -9.434742302551859,
+            "heading_change_rad": -3.1591853071795866,
+            "initial_terminal_eta": 0.0,
+            "initial_terminal_kappa": 0.0,
+            "intervals": 8,
+            "length_multiplier": 1.2,
+            "projection": "clamped_cubic_spline_C2_eta0_etaN_zero",
+            "shape_sign": -1
+          },
+          "node_s": [
+            0.0,
+            1.4294745721767839,
+            2.8589491443535677,
+            4.288423716530351,
+            5.7178982887071355,
+            7.1473728608839195,
+            8.576847433060703,
+            10.006322005237488,
+            11.435796577414271
+          ],
+          "shape_sign": -1,
+          "source": "automatic_endpoint_shape"
+        },
+        "initial_label": "length_multiplier=1.2;shape=right",
+        "initial_source": "automatic_endpoint_shape",
+        "iterations": 57,
+        "objective": 5.309750424627955,
+        "rejection_reason": "CANDIDATE_CONSTRUCTION_FAILURE: VirtualAContractError: BOUND_UNCONFIRMED: Simpson refinement would exceed 200000 subintervals [('total_panels', 107008)]",
+        "remaining_budget_s": 9.088286401005462,
+        "soft_deadline_triggered": false,
+        "solver": "ipopt",
+        "solver_status": "Solve_Succeeded",
+        "status": "CANDIDATE_CONSTRUCTION_FAILURE",
+        "wall_time_s": 10.356027452042326
+      }
+    ],
+    "detail": "soft wall budget 30.0s exhausted before an audited candidate",
+    "first_failure_layer": "GEOMETRY",
+    "plan": null,
+    "plan_id": 600004,
+    "reason": "SOFT_BUDGET_EXHAUSTED",
+    "status": "BUDGET_EXHAUSTED",
+    "wall_time_s": 38.77738288906403
+  },
+  "route_length_m": 49.36505902032905,
+  "seed_lengths_m": [
+    21.82074395908901,
+    6.585668195925852,
+    17.594542466100755
+  ],
+  "segment_lengths_m": [
+    21.791370615054436,
+    6.206374525744173,
+    17.74668006627495
+  ],
+  "simplified_length_m": 46.00095462111562,
+  "start": [
+    -3.625,
+    11.771,
+    -0.022
+  ]
+}
