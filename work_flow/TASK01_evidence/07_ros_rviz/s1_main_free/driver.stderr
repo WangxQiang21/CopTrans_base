@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "tests/ros_virtual_a_smoke.py", line 1943, in <module>
+    sys.exit(main())
+  File "tests/ros_virtual_a_smoke.py", line 1915, in main
+    result = scenario_main(
+  File "tests/ros_virtual_a_smoke.py", line 1746, in scenario_main
+    first = run_verified_plan(
+  File "tests/ros_virtual_a_smoke.py", line 1384, in run_verified_plan
+    request, job, message = drive_goal(
+  File "tests/ros_virtual_a_smoke.py", line 1237, in drive_goal
+    message = session.wait_envelope(plan_id, planning_timeout)
+  File "tests/ros_virtual_a_smoke.py", line 416, in wait_envelope
+    raise SmokeError(
+__main__.SmokeError: timeout waiting for executable envelope plan 600000

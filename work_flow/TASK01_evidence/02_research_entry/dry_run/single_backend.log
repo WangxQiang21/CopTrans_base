@@ -1,0 +1,7 @@
+[expv3] 地图比例 0.5，中心点固定；栅格尺寸保持不变。
+[expv3] run_contract backend=mode_path_v2 direction=bidirectional_costed_candidates vehicle_m=0.738x0.5 coarse_goal_tol_m=0.16 yaw_rad=0.14 map_scale=0.5
+[expv3] timing_policy=mode_switch_only mode_switch_s=0.3
+[expv3] speed_contract target_v_mps=2.0 lateral_a_max_mps2=2.0 spin_omega_max=0.8 translation_omega_max=2.5 reverse_preference=late_soft
+[expv3] map_dir=/home/wq/whut_thesis/expv3_multi_virtual_a/maps/map04-p12-maze-env1 map_sha256=883d36ceb5f3a143c9d95815aed81cb1fc437f24f81fe8e09b09b66c28a22d09
+[expv3] planning_source_sha256=c5f10e021e83fb347d42840cea5325f32e4053876708a0ae4b1680e7db2c22c5
+roslaunch fwis_v3_demo demo.launch map_dir:=/tmp/expv3-map-scale.0WFf0n/map04-p12-maze-env1 planning_backend:=mode_path_v2 scene:=manual_map auto_goal:=true

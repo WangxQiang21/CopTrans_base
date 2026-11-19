@@ -1,0 +1,38 @@
+[E19] repeat 1/1 kind=group expectation=statistical
+    status=GROUP_COMPLETE reason= feasible=True passed=True
+summary: /tmp/tmpuck3ilou/summary.json
+all_pass: True (1/1)
+[E11] repeat 1/2 kind=request_invalid expectation=must_fail
+    status=INVALID reason=INVALID_REQUEST feasible=False passed=True
+[E11] repeat 2/2 kind=request_invalid expectation=must_fail
+    status=INVALID reason=INVALID_REQUEST feasible=False passed=True
+[E13] repeat 1/2 kind=evaluator expectation=must_fail
+    status=REJECTED reason=KINEMATIC_INFEASIBLE feasible=False passed=True
+[E13] repeat 2/2 kind=evaluator expectation=must_fail
+    status=REJECTED reason=KINEMATIC_INFEASIBLE feasible=False passed=True
+[E18] repeat 1/2 kind=node expectation=scenario_pass
+    status=SCENARIO_CLEARED reason= feasible=None passed=True
+[E18] repeat 2/2 kind=node expectation=scenario_pass
+    status=SCENARIO_CLEARED reason= feasible=None passed=True
+summary: /tmp/tmpt73c928v/summary.json
+all_pass: True (3/3)
+FR04 F01_hold status=NO_MOTION reason=OK search_wall=0.000013s pipeline_wall=0.007360s T_end=0.0 expansions=0 candidates=0 terminal_audits=0
+FR04 F02_forward status=SUCCESS reason=OK search_wall=1.059578s pipeline_wall=1.212593s T_end=9.368306005450883 expansions=3 candidates=429 terminal_audits=1
+FR04 F03_reverse status=SUCCESS reason=OK search_wall=1.048351s pipeline_wall=1.200021s T_end=9.368306005450883 expansions=3 candidates=429 terminal_audits=1
+FR04 F04_lateral status=SUCCESS reason=OK search_wall=2.639360s pipeline_wall=2.797511s T_end=13.19985989637642 expansions=9 candidates=1302 terminal_audits=1
+FR04 F05_diagonal status=SUCCESS reason=OK search_wall=1.945436s pipeline_wall=2.196969s T_end=18.551871641156414 expansions=6 candidates=869 terminal_audits=1
+FR04 F06_in_place_positive_90 status=SUCCESS reason=OK search_wall=8.116916s pipeline_wall=8.474973s T_end=30.44149705334398 expansions=27 candidates=4367 terminal_audits=3
+FR04 F07_in_place_negative_90 status=SUCCESS reason=OK search_wall=8.068817s pipeline_wall=8.413854s T_end=30.44149705334398 expansions=27 candidates=4390 terminal_audits=3
+FR04 F08_translate_and_rotate status=SUCCESS reason=OK search_wall=9.467965s pipeline_wall=9.976795s T_end=39.80980305879486 expansions=31 candidates=5208 terminal_audits=3
+FR04 F09_enclosed_obstacle status=NO_SOLUTION reason=NO_SOLUTION search_wall=0.028815s pipeline_wall=0.032525s T_end=None expansions=1 candidates=143 terminal_audits=0
+FR04 F10_out_of_bounds status=REQUEST_REJECTED reason=GOAL_CENTER_OUT_OF_BOUNDS search_wall=-1.000000s pipeline_wall=0.002118s T_end=None expansions=-1 candidates=-1 terminal_audits=0
+FR04 F11_budget_exhausted status=BUDGET_EXHAUSTED reason=EXPANSION_BUDGET_EXHAUSTED search_wall=0.288471s pipeline_wall=0.291554s T_end=None expansions=1 candidates=143 terminal_audits=0
+FR04 F12_final_reaudit status=SUCCESS reason=OK search_wall=1.010153s pipeline_wall=1.160811s T_end=9.368306005450883 expansions=3 candidates=429 terminal_audits=1
+FR04 F13_tolerant_goal_free_headings status=SUCCESS reason=OK search_wall=1.086943s pipeline_wall=1.242542s T_end=9.668306005450882 expansions=3 candidates=555 terminal_audits=1
+FR04 F14_tolerant_hold status=NO_MOTION reason=OK search_wall=0.000011s pipeline_wall=0.007361s T_end=0.0 expansions=0 candidates=0 terminal_audits=0
+FR04 F15_wrong_rebuild status=AUDIT_REJECTED reason=PLAN_START_MISMATCH search_wall=1.019694s pipeline_wall=1.023664s T_end=None expansions=3 candidates=429 terminal_audits=1
+FR04 F16_plan_id_mismatch status=AUDIT_REJECTED reason=PLAN_IDENTITY_MISMATCH search_wall=1.027400s pipeline_wall=1.050627s T_end=None expansions=3 candidates=429 terminal_audits=1
+FR04 F17_same_endpoints_other_path status=AUDIT_REJECTED reason=PLAN_EDGE_SEQUENCE_MISMATCH search_wall=1.019362s pipeline_wall=1.023349s T_end=None expansions=3 candidates=429 terminal_audits=1
+FR04 F18_timing_limit_mismatch status=AUDIT_REJECTED reason=PLAN_IDENTITY_MISMATCH search_wall=1.027453s pipeline_wall=1.031467s T_end=None expansions=3 candidates=429 terminal_audits=1
+FR04 F19_same_count_other_controls status=AUDIT_REJECTED reason=PLAN_EDGE_SEQUENCE_MISMATCH search_wall=1.022341s pipeline_wall=1.026311s T_end=None expansions=3 candidates=429 terminal_audits=1
+c1_50x50_build_s=0.014301 audit_s=0.004620

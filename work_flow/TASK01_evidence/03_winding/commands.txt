@@ -1,0 +1,32 @@
+# Step 3 evidence commands (2026-11-19)
+# Environment for every group:
+source catkin_ws/devel/setup.bash
+export PYTHONPATH=$PWD/tests:$PWD/catkin_ws/src/fwis_v3_optimizer/src:$PYTHONPATH
+g1 python3 -m unittest tests.test_virtual_a_corridor_display tests.test_formation_hud
+g2 python3 -m unittest tests.test_virtual_a_receiver tests.test_virtual_a_playback
+g3 python3 -m unittest tests.test_formation_demo_assets
+g4 python3 -m unittest tests.test_virtual_a_corridor_optimizer tests.test_virtual_a_optimizer
+g5 python3 -m unittest tests.test_virtual_a_pipeline tests.test_virtual_a_corridor_recovery
+g6 python3 -m unittest tests.test_virtual_a_geometry tests.test_virtual_a_profile
+g7 python3 -m unittest tests.test_virtual_a_integration_bounds tests.test_virtual_a_audit_evaluation_guard tests.test_virtual_a_audit tests.test_virtual_a_trajectory
+g8 python3 -m unittest tests.test_virtual_a_ros_adapter   # supplemental (adapter/node-main contract)
+
+# Offline winding probe on the Step 0 runtime-scaled map (no ROS), frozen
+# Step 0 config: corridor / 8 intervals / 6 initials / 30 s.
+python3 work_flow/TASK01_evidence/03_winding/probe_winding.py \
+  --map-yaml /tmp/expv3-task01-map.sax8HJ/map05-p12-parking-row-env2/map.yaml \
+  --plan 600003 --plan 600004 \
+  --output work_flow/TASK01_evidence/03_winding/winding_600003_600004.json
+
+# Supplemental: same 600004 request with max_seconds=90.  The pipeline-wide
+# G4 soft budget remains 60 s, so this only proves the request-wide soft budget
+# (not the per-config number) is what blocks a second round; it does not change
+# the frozen 30 s primary evidence.
+python3 work_flow/TASK01_evidence/03_winding/probe_winding.py \
+  --map-yaml /tmp/expv3-task01-map.sax8HJ/map05-p12-parking-row-env2/map.yaml \
+  --plan 600004 --max-seconds 90 \
+  --output work_flow/TASK01_evidence/03_winding/winding_600004_90s.json
+
+# Static checks:
+python3 -m py_compile <changed python files>
+git --no-pager diff --check

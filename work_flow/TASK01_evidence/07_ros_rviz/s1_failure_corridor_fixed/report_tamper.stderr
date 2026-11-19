@@ -1,0 +1,21 @@
+Traceback (most recent call last):
+  File "tests/ros_virtual_a_smoke.py", line 1698, in tamper_experiment
+    status = session.wait_playback(
+  File "tests/ros_virtual_a_smoke.py", line 436, in wait_playback
+    raise SmokeError("timeout waiting for {}".format(description))
+__main__.SmokeError: timeout waiting for rejection/clear for tampered_time
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "tests/ros_virtual_a_smoke.py", line 1943, in <module>
+    sys.exit(main())
+  File "tests/ros_virtual_a_smoke.py", line 1921, in main
+    result = scenario_tamper(session, checks, args, evidence_dir)
+  File "tests/ros_virtual_a_smoke.py", line 1813, in scenario_tamper
+    return tamper_experiment(session, checks, document, evidence_dir)
+  File "tests/ros_virtual_a_smoke.py", line 1704, in tamper_experiment
+    note(checks, "tamper_" + name, False, str(exc))
+  File "tests/ros_virtual_a_smoke.py", line 160, in note
+    raise SmokeError("{}: {}".format(name, detail))
+__main__.SmokeError: tamper_tampered_time: timeout waiting for rejection/clear for tampered_time

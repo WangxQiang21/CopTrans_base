@@ -1,0 +1,59 @@
+{
+ "code_root": "/home/wq/whut_thesis/expv3_multi_virtual_a",
+ "collision_audit_passed": null,
+ "corridor_enforcement": "hard",
+ "corridor_rounds": [
+  {
+   "containment": {
+    "allocation_count": 9,
+    "audit": "continuous_path_in_corridors",
+    "base_interval_count": 9,
+    "corridor_count": 2,
+    "detail": "interval width 9.68263449241391e-06 m cannot close the bound",
+    "epsilon_total_m": 5.6406431201597326e-08,
+    "first_failure": {
+     "bound_residual_m": 4.435030596203895e-09,
+     "corridor_index": 0,
+     "depth": 17,
+     "detail": "interval width 9.68263449241391e-06 m cannot close the bound",
+     "point_residual_m": -4.893289646812349e-06,
+     "reason": "CORRIDOR_AUDIT_WIDTH_LIMIT",
+     "s_m": 7.757780009545941,
+     "width_m": 9.68263449241391e-06
+    },
+    "is_three_vehicle_certificate": false,
+    "max_bound_residual_m": 0.5905181239654163,
+    "max_depth": 20,
+    "max_depth_reached": 17,
+    "max_intervals": 20000,
+    "max_point_residual_m": 0.0002850972699712795,
+    "method": "arc_length_midpoint_interval_bound",
+    "min_width_m": 1e-05,
+    "passed": false,
+    "path_position_error_bound_m": 6.4064312015973285e-09,
+    "position_budget_m": 5e-08,
+    "reason": "CORRIDOR_AUDIT_WIDTH_LIMIT",
+    "sample_count": 451
+   },
+   "effective_margin_m": 1e-05,
+   "round_index": 0,
+   "route_index": 0
+  }
+ ],
+ "detail": "interval width 9.68263449241391e-06 m cannot close the bound",
+ "dynamic_audit_passed": null,
+ "executable": false,
+ "first_failure_layer": "GEOMETRY",
+ "full_report_sha256": "cfb7071393ff53746ff638f3f5bab929b22f7d7bef07b8a16f1a20cb7b0e4c07",
+ "geometry_audit_passed": true,
+ "grid_sha256": "054cf5c77079536f9a098e33232732d6c181f0f624f07e3a446ebfab0266a10e",
+ "guidance_mode": "corridor",
+ "path_length_m": null,
+ "reason": "CORRIDOR_AUDIT_WIDTH_LIMIT",
+ "recoveries": [],
+ "round_count": 1,
+ "scene_dir": "/home/wq/whut_thesis/expv3_multi_virtual_a/evaluation/virtual_formation_a/G4/20261116T081458Z/scenes/inputs/S1",
+ "schema": "task01_corridor_repro.v1",
+ "status": "GEOMETRY_FAILED",
+ "wall_time_s": 11.294064327143133
+}

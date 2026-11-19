@@ -1,0 +1,12 @@
+# Step 2 evidence commands (rebuilt 2026-11-19, after all test edits)
+# Environment for every group:
+source catkin_ws/devel/setup.bash
+export PYTHONPATH=$PWD/tests:$PWD/catkin_ws/src/fwis_v3_optimizer/src:$PYTHONPATH
+g1 python3 -m unittest tests.test_virtual_a_corridor_display tests.test_formation_hud
+g2 python3 -m unittest tests.test_virtual_a_receiver tests.test_virtual_a_playback
+g3 python3 -m unittest tests.test_formation_demo_assets
+g4 python3 -m unittest tests.test_virtual_a_corridor_optimizer tests.test_virtual_a_optimizer
+g5 python3 -m unittest tests.test_virtual_a_pipeline tests.test_virtual_a_corridor_recovery
+g6 python3 -m unittest tests.test_virtual_a_geometry tests.test_virtual_a_profile
+g7 python3 -m unittest tests.test_virtual_a_integration_bounds tests.test_virtual_a_audit_evaluation_guard tests.test_virtual_a_audit tests.test_virtual_a_trajectory
+g8 python3 -m unittest tests.test_virtual_a_ros_adapter   # supplemental (adapter/node-main contract)

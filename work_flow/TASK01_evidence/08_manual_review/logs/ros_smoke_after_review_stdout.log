@@ -1,0 +1,42 @@
+errors:
+  marker_status_feasible: status text='plan 424242 | HOLD_END | FEASIBLE\nT_end=5.889 s | FEASIBLE / independent audit and transactional publication\nno independent metrics reported'
+ros_formation_smoke: FAIL (39 checks, /tmp/task01_review_smoke_summary.json)
+  [ok] private_master_port: port 11399 is private and free
+  [ok] one_optimizer_and_playback_running: optimizer pid=610287 playback pid=610288
+  [ok] optimizer_feasible_published: status=FEASIBLE reason='OK' T_end=None publication_version=1
+  [ok] map_ready: map_ready=True map_signature=51b19b67924b217cb178c44b502044679306cccdf92ff19e6f14b79d3e0dcc53
+  [ok] quality_independent_audit: independent_audit=True event=plan_seed
+  [ok] quality_collision_certificate: collision_certificate=True
+  [ok] trajectory_identity: plan=424242 formation=smoke_wedge frame=map
+  [ok] trajectory_common_time_grid: 296 shared samples, first=(0, 0) last=(5, 888671874), strictly increasing=True
+  [ok] trajectory_finite_modes: all vehicle samples finite; modes in A/O/S
+  [ok] trajectory_vehicle_ids: vehicles=[1, 2, 3] trajectories=[1, 2, 3]
+  [ok] trajectory_offsets: offsets={1: (0.0, 0.0), 2: (0.0, 1.2), 3: (0.0, -1.2)}
+  [ok] trajectory_rigid_endpoints: start_error=0 goal_error=0 formation_error=0
+  [ok] playback_accepted_plan: state=PLAYING formation=smoke_wedge vehicles=[1, 2, 3]
+  [ok] playback_common_clock: 6 PLAYING samples, elapsed 0.479->0.642 s, wall span 0.162 s, stamp=(1795056520, 663290262)
+  [ok] playback_rigid_centers: rigidity_error=0 heading_error=0 movement={1: 0.015396270009026767, 2: 0.015396270009026767, 3: 0.015396270009026767}
+  [ok] playback_terminal_hold: state=HOLD_END clamped=5.888672 duration=5.888672 center_error=0.0 heading_error=0.0
+  [ok] playback_terminal_message_match: terminal frame matches final common-time sample, error=0
+  [ok] marker_frame: 17 markers on frame map
+  [ok] marker_vehicle_namespaces: namespaces=['formation/smoke_wedge/links', 'formation/smoke_wedge/reference', 'formation/smoke_wedge/status', 'formation/smoke_wedge/vehicle_1', 'formation/smoke_wedge/vehicle_2', 'formation/smoke_wedge/vehicle_3']
+  [ok] marker_unique_ids: 17 markers, 17 unique ids
+  [ok] marker_obb_and_heading: types=[] obb_max_error=4.440892098500626e-16 heading_max_error=0.0
+  [ok] marker_history_contains_all_shared_samples: traveled history contains all shared samples; errors=[]
+  [ok] marker_intervehicle_links: pairwise links connect the terminal vehicle centers; errors=[0.0, 0.0, 0.0]
+  [ok] marker_reference_point: formation reference sphere/trail/F label at final formation pose
+  [FAIL] marker_status_feasible: status text='plan 424242 | HOLD_END | FEASIBLE\nT_end=5.889 s | FEASIBLE / independent audit and transactional publication\nno independent metrics reported'
+  [ok] marker_status_namespaces: playback status recorded 6 namespaces
+  [ok] path_topics_contain_all_shared_samples: three nav_msgs/Path topics carry every common-time sample; errors=[]
+  [ok] tf_expected_unique_frames: expected=['formation_smoke_wedge_reference', 'formation_smoke_wedge_vehicle_1_base_link', 'formation_smoke_wedge_vehicle_2_base_link', 'formation_smoke_wedge_vehicle_3_base_link'] observed_formation=['formation_smoke_wedge_reference', 'formation_smoke_wedge_vehicle_1_base_link', 'formation_smoke_wedge_vehicle_2_base_link', 'formation_smoke_wedge_vehicle_3_base_link']
+  [ok] tf_body_frames_match_terminal: formation TF translations match terminal centers; errors=[0.0, 0.0, 0.0]
+  [ok] invalid_request_rejected: status=INVALID reason=INVALID_REQUEST field=None
+  [ok] invalid_request_clears_trajectory: clear message plan_id=0 vehicles=0 trajectories=0
+  [ok] invalid_request_clears_before_seed: clear arrived after the invalid request
+  [ok] playback_cleared_status: state=CLEARED marker_count=0 reason='empty trajectory clears previous markers'
+  [ok] invalid_request_clears_markers: DELETEALL ns='formation' id=0
+  [ok] geometry_only_label: state=PLAYING certification=GEOMETRY_ONLY audit_status=AUDIT_PENDING
+  [ok] geometry_only_marker_label: status marker text='plan 777001 | PLAYING | GEOMETRY_ONLY\nT_end=0.600 s | AUDIT_PENDING / no status report\nno independent metrics reported'
+  [ok] empty_trajectory_cleanup: empty trajectory cleared every marker
+  [ok] child_processes_stopped: exit codes={'formation_playback': 0, 'formation_optimizer': 0, 'roscore': 0}
+  [ok] master_port_released: port 11399 closed

@@ -1,0 +1,408 @@
+[
+  {
+    "attempts": [
+      {
+        "attempt_index": 0,
+        "endpoint_error_m": 4.362303564826995e-11,
+        "guide_turn_rad": -3.126,
+        "heading_base_rad": -3.126,
+        "heading_error_rad": 4.424460797736174e-12,
+        "initial_label": "route_guide=0;source=corridor_qp_polyline",
+        "initial_source": "map_route_guide",
+        "iterations": 41,
+        "rejection_reason": "",
+        "solver_status": "Solve_Succeeded",
+        "status": "SOLVER_SUCCESS_AUDITED",
+        "winding_k": 0
+      }
+    ],
+    "corridor_guide": {
+      "length_m": 18.62582715074392,
+      "point_count": 4,
+      "source": "corridor_qp_polyline"
+    },
+    "detail": "geometry, dynamics and collision audits passed; continuous corridor containment certified",
+    "first_failure_layer": "",
+    "plan": {
+      "duration_s": 63.64682553904238,
+      "kind": "motion",
+      "length_m": 21.701601208480245
+    },
+    "plan_id": 600003,
+    "reason": "",
+    "recoveries": [],
+    "reproduction": {
+      "config": {
+        "allow_scipy_fallback": true,
+        "collocation_points": 9,
+        "corridor_audit_max_depth": 20,
+        "corridor_audit_max_intervals": 20000,
+        "corridor_audit_min_width_m": 1e-05,
+        "corridor_audit_position_margin_m": 5e-08,
+        "corridor_box_padding_m": 2.0,
+        "corridor_clearance_target_m": 0.05,
+        "corridor_clearance_weight": 1.0,
+        "corridor_enforcement": "hard",
+        "corridor_guide_weight": 0.1,
+        "corridor_kappa_weight": 0.01,
+        "corridor_margin_m": 1e-05,
+        "corridor_margin_portal_fraction": 0.25,
+        "corridor_quadrature_points": 9,
+        "curvature_margin": 0.02,
+        "eta_limit": 2.0,
+        "guidance_mode": "corridor",
+        "heading_tolerance_rad": 0.003490658503988659,
+        "intervals": 8,
+        "ipopt_tolerance": 1e-08,
+        "kappa_limit": 0.5524861878453039,
+        "max_initials": 6,
+        "max_iterations": 120,
+        "max_seconds": 30.0,
+        "position_tolerance_m": 0.005,
+        "rigidity_tolerance_m": 1e-06,
+        "scipy_maxiter": 120,
+        "scipy_tolerance": 1e-08,
+        "solver": "ipopt"
+      },
+      "context_sha256": null,
+      "goal": [
+        10.153,
+        2.076,
+        -3.126
+      ],
+      "grid_sha256": "55da861b9ac5cde6fdc6434d391b3f396b6064311c51e4217b17bf4bf2e2c457",
+      "map_metadata": {
+        "format": "ROS occupancy grid PGM/YAML",
+        "free_thresh": 0.196,
+        "grid": {
+          "cell_count": 159414,
+          "height": 326,
+          "occupancy_sha256": "e5f91759835d6b0a2fbad3bc46da8fe21b4153c4680a90b1082c51529bcf0a7a",
+          "occupied_cells": 37838,
+          "origin_x": -8.360983812500002,
+          "origin_y": -5.573955875000001,
+          "resolution_m": 0.064871625,
+          "width": 489
+        },
+        "grid_sha256": "55da861b9ac5cde6fdc6434d391b3f396b6064311c51e4217b17bf4bf2e2c457",
+        "image_path": "/tmp/expv3-task01-map.sax8HJ/map05-p12-parking-row-env2/map.pgm",
+        "image_sha256": "0856ad0af795b09e17e01e41bbf7c0f819170f53c93c6df718ed8342749ba718",
+        "image_size": [
+          326,
+          489
+        ],
+        "maxval": 255,
+        "negate": false,
+        "occupied_thresh": 0.65,
+        "origin": [
+          -8.360983812500002,
+          -5.573955875000001,
+          0.0
+        ],
+        "resolution_m": 0.064871625,
+        "schema": "virtual_rigid_a.g4.map.v1",
+        "unknown_cells_are": "occupied",
+        "yaml_path": "/tmp/expv3-task01-map.sax8HJ/map05-p12-parking-row-env2/map.yaml",
+        "yaml_sha256": "e4ee76a19885a1af81363a4713301d76e7338344eba76553bb6fa057f31345e0"
+      },
+      "map_yaml": "/tmp/expv3-task01-map.sax8HJ/map05-p12-parking-row-env2/map.yaml",
+      "max_seconds": 30.0,
+      "request_sha256": "bc748779a86f3f1ed096ac33c595d50732f252f189395ee59102e46e43bc852b",
+      "start": [
+        10.841,
+        12.071,
+        0.0
+      ]
+    },
+    "request_sha256": "bc748779a86f3f1ed096ac33c595d50732f252f189395ee59102e46e43bc852b",
+    "rounds": [
+      {
+        "geometry_reason": "",
+        "geometry_status": "GEOMETRY_FEASIBLE",
+        "guide_length_m": 18.62582715074392,
+        "guide_turn_rad": -3.126,
+        "heading_base_rad": -3.126,
+        "initial_count": 5,
+        "initial_mode": "route_guided",
+        "new_initial_count": 1,
+        "round_index": 0,
+        "route_index": 0,
+        "unwrapped_heading_rad": -3.126,
+        "winding_candidate_rank": 0,
+        "winding_k": 0
+      }
+    ],
+    "routes": [
+      {
+        "length_m": 22.568538337774633,
+        "point_count": 322,
+        "source": "astar_primary"
+      },
+      {
+        "length_m": 23.454480665327363,
+        "point_count": 334,
+        "source": "astar_alternative_1"
+      },
+      {
+        "length_m": 24.9891392428801,
+        "point_count": 356,
+        "source": "astar_alternative_2"
+      }
+    ],
+    "status": "SUCCESS",
+    "wall_time_s": 18.486591838067397,
+    "winding": {
+      "candidates": [
+        {
+          "base_heading_rad": -3.126,
+          "candidate_rank": 0,
+          "guide_turn_rad": -3.126,
+          "source": "corridor_qp_polyline",
+          "unwrapped_heading_rad": -3.126,
+          "winding_k": 0
+        },
+        {
+          "base_heading_rad": -3.126,
+          "candidate_rank": 1,
+          "guide_turn_rad": -3.126,
+          "source": "corridor_qp_polyline",
+          "unwrapped_heading_rad": -9.409185307179586,
+          "winding_k": -1
+        },
+        {
+          "base_heading_rad": -3.126,
+          "candidate_rank": 2,
+          "guide_turn_rad": -3.126,
+          "source": "corridor_qp_polyline",
+          "unwrapped_heading_rad": 3.1571853071795863,
+          "winding_k": 1
+        }
+      ],
+      "guide_length_m": 18.62582715074392,
+      "selected": {
+        "base_heading_rad": -3.126,
+        "candidate_rank": 0,
+        "guide_turn_rad": -3.126,
+        "source": "corridor_qp_polyline",
+        "unwrapped_heading_rad": -3.126,
+        "winding_k": 0
+      },
+      "selected_rank": 0
+    }
+  },
+  {
+    "attempts": [
+      {
+        "attempt_index": 0,
+        "endpoint_error_m": null,
+        "guide_turn_rad": -3.1591853071795875,
+        "heading_base_rad": 3.1239999999999997,
+        "heading_error_rad": null,
+        "initial_label": "route_guide=0;source=corridor_qp_polyline",
+        "initial_source": "map_route_guide",
+        "iterations": 60,
+        "rejection_reason": "Infeasible_Problem_Detected",
+        "solver_status": "Infeasible_Problem_Detected",
+        "status": "SOLVER_FAILED",
+        "winding_k": -1
+      },
+      {
+        "attempt_index": 1,
+        "endpoint_error_m": null,
+        "guide_turn_rad": -3.1591853071795875,
+        "heading_base_rad": 3.1239999999999997,
+        "heading_error_rad": null,
+        "initial_label": "length_multiplier=1.2;shape=left",
+        "initial_source": "automatic_endpoint_shape",
+        "iterations": 107,
+        "rejection_reason": "Infeasible_Problem_Detected",
+        "solver_status": "Infeasible_Problem_Detected",
+        "status": "SOLVER_FAILED",
+        "winding_k": -1
+      },
+      {
+        "attempt_index": 2,
+        "endpoint_error_m": null,
+        "guide_turn_rad": -3.1591853071795875,
+        "heading_base_rad": 3.1239999999999997,
+        "heading_error_rad": null,
+        "initial_label": "length_multiplier=1.2;shape=right",
+        "initial_source": "automatic_endpoint_shape",
+        "iterations": 6,
+        "rejection_reason": "SOFT_BUDGET_EXHAUSTED",
+        "solver_status": "Maximum_WallTime_Exceeded",
+        "status": "SOLVER_TIMEOUT",
+        "winding_k": -1
+      }
+    ],
+    "corridor_guide": {
+      "length_m": 45.74442520707356,
+      "point_count": 4,
+      "source": "corridor_qp_polyline"
+    },
+    "detail": "soft wall budget 30.0s exhausted before an audited candidate",
+    "first_failure_layer": "GEOMETRY",
+    "plan": null,
+    "plan_id": 600004,
+    "reason": "SOFT_BUDGET_EXHAUSTED",
+    "recoveries": [],
+    "reproduction": {
+      "config": {
+        "allow_scipy_fallback": true,
+        "collocation_points": 9,
+        "corridor_audit_max_depth": 20,
+        "corridor_audit_max_intervals": 20000,
+        "corridor_audit_min_width_m": 1e-05,
+        "corridor_audit_position_margin_m": 5e-08,
+        "corridor_box_padding_m": 2.0,
+        "corridor_clearance_target_m": 0.05,
+        "corridor_clearance_weight": 1.0,
+        "corridor_enforcement": "hard",
+        "corridor_guide_weight": 0.1,
+        "corridor_kappa_weight": 0.01,
+        "corridor_margin_m": 1e-05,
+        "corridor_margin_portal_fraction": 0.25,
+        "corridor_quadrature_points": 9,
+        "curvature_margin": 0.02,
+        "eta_limit": 2.0,
+        "guidance_mode": "corridor",
+        "heading_tolerance_rad": 0.003490658503988659,
+        "intervals": 8,
+        "ipopt_tolerance": 1e-08,
+        "kappa_limit": 0.5524861878453039,
+        "max_initials": 6,
+        "max_iterations": 120,
+        "max_seconds": 30.0,
+        "position_tolerance_m": 0.005,
+        "rigidity_tolerance_m": 1e-06,
+        "scipy_maxiter": 120,
+        "scipy_tolerance": 1e-08,
+        "solver": "ipopt"
+      },
+      "context_sha256": null,
+      "goal": [
+        -2.49,
+        2.309,
+        3.102
+      ],
+      "grid_sha256": "55da861b9ac5cde6fdc6434d391b3f396b6064311c51e4217b17bf4bf2e2c457",
+      "map_metadata": {
+        "format": "ROS occupancy grid PGM/YAML",
+        "free_thresh": 0.196,
+        "grid": {
+          "cell_count": 159414,
+          "height": 326,
+          "occupancy_sha256": "e5f91759835d6b0a2fbad3bc46da8fe21b4153c4680a90b1082c51529bcf0a7a",
+          "occupied_cells": 37838,
+          "origin_x": -8.360983812500002,
+          "origin_y": -5.573955875000001,
+          "resolution_m": 0.064871625,
+          "width": 489
+        },
+        "grid_sha256": "55da861b9ac5cde6fdc6434d391b3f396b6064311c51e4217b17bf4bf2e2c457",
+        "image_path": "/tmp/expv3-task01-map.sax8HJ/map05-p12-parking-row-env2/map.pgm",
+        "image_sha256": "0856ad0af795b09e17e01e41bbf7c0f819170f53c93c6df718ed8342749ba718",
+        "image_size": [
+          326,
+          489
+        ],
+        "maxval": 255,
+        "negate": false,
+        "occupied_thresh": 0.65,
+        "origin": [
+          -8.360983812500002,
+          -5.573955875000001,
+          0.0
+        ],
+        "resolution_m": 0.064871625,
+        "schema": "virtual_rigid_a.g4.map.v1",
+        "unknown_cells_are": "occupied",
+        "yaml_path": "/tmp/expv3-task01-map.sax8HJ/map05-p12-parking-row-env2/map.yaml",
+        "yaml_sha256": "e4ee76a19885a1af81363a4713301d76e7338344eba76553bb6fa057f31345e0"
+      },
+      "map_yaml": "/tmp/expv3-task01-map.sax8HJ/map05-p12-parking-row-env2/map.yaml",
+      "max_seconds": 30.0,
+      "request_sha256": "141decf7345d632e0376308ca3be7d9febed4c04cc006a366f78ea430307e718",
+      "start": [
+        -3.625,
+        11.771,
+        -0.022
+      ]
+    },
+    "request_sha256": "141decf7345d632e0376308ca3be7d9febed4c04cc006a366f78ea430307e718",
+    "rounds": [
+      {
+        "geometry_reason": "SOFT_BUDGET_EXHAUSTED",
+        "geometry_status": "BUDGET_EXHAUSTED",
+        "guide_length_m": 45.74442520707356,
+        "guide_turn_rad": -3.1591853071795875,
+        "heading_base_rad": 3.1239999999999997,
+        "initial_count": 5,
+        "initial_mode": "route_guided",
+        "new_initial_count": 3,
+        "round_index": 0,
+        "route_index": 0,
+        "unwrapped_heading_rad": -3.1591853071795866,
+        "winding_candidate_rank": 0,
+        "winding_k": -1
+      }
+    ],
+    "routes": [
+      {
+        "length_m": 49.36505902032905,
+        "point_count": 739,
+        "source": "astar_primary"
+      },
+      {
+        "length_m": 50.19725993410542,
+        "point_count": 751,
+        "source": "astar_alternative_1"
+      },
+      {
+        "length_m": 51.64017617977,
+        "point_count": 772,
+        "source": "astar_alternative_2"
+      }
+    ],
+    "status": "BUDGET_EXHAUSTED",
+    "wall_time_s": 41.10336840315722,
+    "winding": {
+      "candidates": [
+        {
+          "base_heading_rad": 3.1239999999999997,
+          "candidate_rank": 0,
+          "guide_turn_rad": -3.1591853071795875,
+          "source": "corridor_qp_polyline",
+          "unwrapped_heading_rad": -3.1591853071795866,
+          "winding_k": -1
+        },
+        {
+          "base_heading_rad": 3.1239999999999997,
+          "candidate_rank": 1,
+          "guide_turn_rad": -3.1591853071795875,
+          "source": "corridor_qp_polyline",
+          "unwrapped_heading_rad": 3.1239999999999997,
+          "winding_k": 0
+        },
+        {
+          "base_heading_rad": 3.1239999999999997,
+          "candidate_rank": 2,
+          "guide_turn_rad": -3.1591853071795875,
+          "source": "corridor_qp_polyline",
+          "unwrapped_heading_rad": -9.442370614359174,
+          "winding_k": -2
+        }
+      ],
+      "guide_length_m": 45.74442520707356,
+      "selected": {
+        "base_heading_rad": 3.1239999999999997,
+        "candidate_rank": 0,
+        "guide_turn_rad": -3.1591853071795875,
+        "source": "corridor_qp_polyline",
+        "unwrapped_heading_rad": -3.1591853071795866,
+        "winding_k": -1
+      },
+      "selected_rank": 0
+    }
+  }
+]

@@ -1,0 +1,63 @@
+[rospy.client][INFO] 2026-11-19 03:01:22,812: init_node, name[/formation_goal_bridge], pid[510903]
+[xmlrpc][INFO] 2026-11-19 03:01:22,812: XML-RPC server binding to 0.0.0.0:0
+[xmlrpc][INFO] 2026-11-19 03:01:22,813: Started XML-RPC server [http://wq-ubuntu:36335/]
+[rospy.init][INFO] 2026-11-19 03:01:22,813: ROS Slave URI: [http://wq-ubuntu:36335/]
+[rospy.impl.masterslave][INFO] 2026-11-19 03:01:22,813: _ready: http://wq-ubuntu:36335/
+[rospy.registration][INFO] 2026-11-19 03:01:22,814: Registering with master node http://127.0.0.1:11633
+[xmlrpc][INFO] 2026-11-19 03:01:22,814: xml rpc node: starting XML-RPC server
+[rospy.init][INFO] 2026-11-19 03:01:22,913: registered with master
+[rospy.rosout][INFO] 2026-11-19 03:01:22,914: initializing /rosout core topic
+[rospy.rosout][INFO] 2026-11-19 03:01:22,918: connected to core topic /rosout
+[rospy.simtime][INFO] 2026-11-19 03:01:22,919: /use_sim_time is not set, will not subscribe to simulated time [/clock] topic
+[rospy.internal][INFO] 2026-11-19 03:01:22,936: topic[/tf] adding connection to [http://wq-ubuntu:35839/], count 0
+[rospy.internal][INFO] 2026-11-19 03:01:22,936: topic[/tf_static] adding connection to [http://wq-ubuntu:41403/], count 0
+[rospy.internal][INFO] 2026-11-19 03:01:22,941: topic[/start_pose] adding connection to [http://wq-ubuntu:41403/], count 0
+[rospy.internal][INFO] 2026-11-19 03:01:22,942: topic[/map] adding connection to [http://wq-ubuntu:41403/], count 0
+[rospy.internal][INFO] 2026-11-19 03:01:22,951: topic impl's ref count is zero, deleting topic /map...
+[rospy.internal][INFO] 2026-11-19 03:01:22,951: topic[/map] removing connection to http://wq-ubuntu:41403/
+[rospy.internal][INFO] 2026-11-19 03:01:22,954: topic[/formation/display_pose] adding connection to [/formation_playback], count 0
+[rospy.internal][INFO] 2026-11-19 03:01:22,955: topic[/formation/plan_request] adding connection to [/formation_playback], count 0
+[rospy.internal][INFO] 2026-11-19 03:01:23,003: topic[/formation/plan_request] adding connection to [/formation_uniform_planner], count 1
+[rospy.internal][INFO] 2026-11-19 03:01:23,055: topic[/formation/optimizer_status] adding connection to [http://wq-ubuntu:42023/], count 0
+[rospy.internal][INFO] 2026-11-19 03:01:23,055: topic[/formation/job_state] adding connection to [http://wq-ubuntu:42023/], count 0
+[rosout][INFO] 2026-11-19 03:01:23,063: [formation goal bridge] ready: formation=cargo_wedge offsets=((1.0, 0.0), (0.0, 1.0), (0.0, -1.0)), start=(10.000, 3.600, 0.000), goal topic=/move_base_simple/goal
+[rospy.internal][INFO] 2026-11-19 03:01:23,153: topic[/rosout] adding connection to [/rosout], count 0
+[rospy.internal][INFO] 2026-11-19 03:01:23,555: topic[/initialpose] adding connection to [http://wq-ubuntu:36909/], count 0
+[rospy.internal][INFO] 2026-11-19 03:01:23,834: topic[/initialpose] removing connection to http://wq-ubuntu:36909/
+[rospy.internal][INFO] 2026-11-19 03:01:23,858: topic[/initialpose] adding connection to [http://wq-ubuntu:36909/], count 0
+[rospy.internal][INFO] 2026-11-19 03:01:23,859: topic[/move_base_simple/goal] adding connection to [http://wq-ubuntu:36909/], count 0
+[rospy.internal][INFO] 2026-11-19 03:01:29,111: topic[/formation/plan_request] adding connection to [/task01_map05_ready_511102_1795028488976], count 2
+[rospy.internal][INFO] 2026-11-19 03:01:29,361: topic[/formation/plan_request] removing connection to /task01_map05_ready_511102_1795028488976
+[rospy.internal][INFO] 2026-11-19 03:02:04,393: topic[/formation/plan_request] adding connection to [/map05_full_goal_511671_1795028524256], count 2
+[rospy.internal][INFO] 2026-11-19 03:02:04,430: topic[/initialpose] adding connection to [http://wq-ubuntu:39377/], count 1
+[rosout][INFO] 2026-11-19 03:02:04,695: [formation goal bridge] 2D Pose Estimate recorded; new experiment policy=cargo_heading headings={1: 0.0, 2: 0.0, 3: 0.0}
+[rospy.internal][INFO] 2026-11-19 03:02:04,896: topic[/initialpose] removing connection to http://wq-ubuntu:39377/
+[rospy.internal][INFO] 2026-11-19 03:02:04,934: topic[/move_base_simple/goal] adding connection to [http://wq-ubuntu:39377/], count 1
+[rosout][INFO] 2026-11-19 03:02:05,200: [formation goal bridge] plan 600000: start=(0.000, 0.000, 0.000) goal=(5.000, 0.000, 0.000) vehicles=3
+[rosout][INFO] 2026-11-19 03:02:05,201: [formation goal bridge] plan 600000 virtual_a_goal_policy=free goal_headings={1: 0.0, 2: 0.0, 3: 0.0}
+[rosout][INFO] 2026-11-19 03:02:05,203: [formation goal bridge] start from manual start; body headings {1: 0.0, 2: 0.0, 3: 0.0}
+[rospy.internal][INFO] 2026-11-19 03:02:05,300: topic[/move_base_simple/goal] removing connection to http://wq-ubuntu:39377/
+[rosout][WARNING] 2026-11-19 03:02:12,968: [formation goal bridge] plan 600000 status=REJECTED reason=NO_ROUTE_GUIDE
+[rospy.internal][INFO] 2026-11-19 03:04:05,381: topic[/formation/plan_request] removing connection to /map05_full_goal_511671_1795028524256
+[rospy.internal][INFO] 2026-11-19 03:07:40,607: topic[/formation/plan_request] adding connection to [/rostopic_513053_1795028860472], count 2
+[rospy.internal][INFO] 2026-11-19 03:07:40,971: topic[/formation/plan_request] removing connection to /rostopic_513053_1795028860472
+[rospy.internal][INFO] 2026-11-19 03:08:36,777: topic[/formation/plan_request] adding connection to [/map05_full_goal_513403_1795028916638], count 2
+[rospy.internal][INFO] 2026-11-19 03:08:36,831: topic[/initialpose] adding connection to [http://wq-ubuntu:36489/], count 1
+[rosout][INFO] 2026-11-19 03:08:37,071: [formation goal bridge] 2D Pose Estimate recorded; new experiment policy=cargo_heading headings={1: 0.0, 2: 0.0, 3: 0.0}
+[rospy.internal][INFO] 2026-11-19 03:08:37,272: topic[/initialpose] removing connection to http://wq-ubuntu:36489/
+[rospy.internal][INFO] 2026-11-19 03:08:37,331: topic[/formation/plan_request] removing connection to /map05_full_goal_513403_1795028916638
+[rospy.core][INFO] 2026-11-19 03:09:04,562: signal_shutdown [signal-2]
+[rospy.internal][INFO] 2026-11-19 03:09:04,566: topic[/rosout] removing connection to /rosout
+[rospy.internal][INFO] 2026-11-19 03:09:04,566: topic[/formation/display_pose] removing connection to /formation_playback
+[rospy.internal][INFO] 2026-11-19 03:09:04,566: topic[/formation/plan_request] removing connection to /formation_playback
+[rospy.internal][INFO] 2026-11-19 03:09:04,566: topic[/formation/plan_request] removing connection to /formation_uniform_planner
+[rospy.internal][INFO] 2026-11-19 03:09:04,567: topic[/tf] removing connection to http://wq-ubuntu:35839/
+[rospy.internal][INFO] 2026-11-19 03:09:04,567: topic[/tf_static] removing connection to http://wq-ubuntu:41403/
+[rospy.internal][INFO] 2026-11-19 03:09:04,567: topic[/move_base_simple/goal] removing connection to http://wq-ubuntu:36909/
+[rospy.internal][INFO] 2026-11-19 03:09:04,567: topic[/initialpose] removing connection to http://wq-ubuntu:36909/
+[rospy.internal][INFO] 2026-11-19 03:09:04,567: topic[/initialpose] removing connection to http://wq-ubuntu:36909/
+[rospy.internal][INFO] 2026-11-19 03:09:04,568: topic[/start_pose] removing connection to http://wq-ubuntu:41403/
+[rospy.internal][INFO] 2026-11-19 03:09:04,568: topic[/formation/optimizer_status] removing connection to http://wq-ubuntu:42023/
+[rospy.internal][INFO] 2026-11-19 03:09:04,568: topic[/formation/job_state] removing connection to http://wq-ubuntu:42023/
+[rospy.impl.masterslave][INFO] 2026-11-19 03:09:04,568: signal-2
+[rospy.core][INFO] 2026-11-19 03:09:05,163: signal_shutdown [atexit]

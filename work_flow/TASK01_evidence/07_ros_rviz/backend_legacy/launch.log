@@ -1,0 +1,127 @@
+[expv3] 地图比例 3.75，中心点固定；栅格尺寸保持不变。
+[expv3] 编队发布后端 legacy（同一时刻只启动这一个发布后端）
+[expv3] 货物中心楔形编队，车体航向独立（新实验按配置策略初始化）；地图绝对比例 3.75
+[expv3] 构建 ROS overlay...
+[expv3] 启动 Demo：map_dir:=/tmp/expv3-map-scale.7o0Mz7/map16-s09-underground-garage backend:=legacy scene:=manual_map auto_goal:=true rviz_config:=/tmp/expv3-map-scale.7o0Mz7/formation.rviz rviz:=true
+[INFO] [1795029244.990192]: [v3 auto goal] sent center goal (2.725, -11.688, 1.571)
+[33m[WARN] [1795029246.941830019]: [formation planner] geometry search failed: FORMATION_BUDGET_EXHAUSTED geometry search exhausted its expansion, wall-clock, or candidate budget[0m
+[0m[INFO] [1795029244.057232180]: [formation planner] S4 geometry-only front end ready[0m
+[INFO] [1795029244.461004]: [formation playback] common-clock display ready; GEOMETRY_ONLY is shown until an independent FEASIBLE status is received
+[INFO] [1795029244.993540]: [formation playback] cleared: empty trajectory clears previous markers
+[INFO] [1795029244.488957]: [formation goal bridge] ready: formation=cargo_wedge offsets=((1.0, 0.0), (0.0, 1.0), (0.0, -1.0)), start=(10.000, 3.600, 0.000), goal topic=/move_base_simple/goal
+[INFO] [1795029244.990933]: [formation goal bridge] plan 600000: start=(30.250, -5.312, 3.142) goal=(2.725, -11.688, 1.571) vehicles=3
+[INFO] [1795029244.992519]: [formation goal bridge] start from manual start; body headings {1: 3.14159, 2: 3.14159, 3: 3.14159}
+[INFO] [1795029244.373727]: [fwis_map_publisher] /map published: 700x500, res=0.075 m
+[INFO] [1795029244.375249]: [fwis_map_publisher] start pose latched at (30.25, -5.31, 3.14 rad)
+[INFO] [1795029244.418863]: [formation optimizer] S9 independent evaluator ready; only FEASIBLE trajectories are published on /formation/timed_trajectory
+[INFO] [1795029244.992892]: [formation optimizer] state=REQUEST_VALIDATED status=VALIDATED plan_id=600000 published=False reason=OK
+[31m[rviz-7] escalating to SIGTERM[0m
+... logging to /home/wq/whut_thesis/expv3_multi_virtual_a/work_flow/TASK01_evidence/07_ros_rviz/backend_legacy/nodes_raw/3ef1cff4-e37a-11f1-a57b-1b4c90db486b/roslaunch-wq-ubuntu-518377.log
+Checking log directory for disk usage. This may take a while.
+Press Ctrl-C to interrupt
+Done checking log file disk usage. Usage is <1GB.
+]2;/home/wq/whut_thesis/expv3_multi_virtual_a/catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch
+[1mstarted roslaunch server http://wq-ubuntu:42015/[0m
+
+SUMMARY
+========
+
+PARAMETERS
+ * /formation_auto_goal/map_dir: /tmp/expv3-map-sc...
+ * /formation_goal_bridge/admission_backend: legacy
+ * /formation_goal_bridge/allow_reverse: True
+ * /formation_goal_bridge/body_length_m: 0.738
+ * /formation_goal_bridge/body_width_m: 0.5
+ * /formation_goal_bridge/formation_id: cargo_wedge
+ * /formation_goal_bridge/frame_id: map
+ * /formation_goal_bridge/goal_heading_free: True
+ * /formation_goal_bridge/initial_heading_policy: cargo_heading
+ * /formation_goal_bridge/initial_plan_id: 600000
+ * /formation_goal_bridge/job_state_timeout_s: 3.0
+ * /formation_goal_bridge/map_timeout_s: 8.0
+ * /formation_goal_bridge/offsets: [[1.0, 0.0], [0.0...
+ * /formation_goal_bridge/playback_tf_timeout_s: 0.5
+ * /formation_goal_bridge/start_theta: 0.0
+ * /formation_goal_bridge/start_x: 10.0
+ * /formation_goal_bridge/start_y: 3.6
+ * /formation_goal_bridge/vehicle_ids: [1, 2, 3]
+ * /formation_goal_bridge/virtual_a_goal_policy: free
+ * /formation_optimizer/collision_margin: 0.05
+ * /formation_optimizer/enable_nlp: True
+ * /formation_optimizer/kinematic_limits/require_cargo_heading: False
+ * /formation_optimizer/max_candidates: 4
+ * /formation_optimizer/optimizer_time_limit: 1.0
+ * /formation_optimizer/planning_dt: 0.02
+ * /formation_optimizer/publication_dt: 0.02
+ * /formation_optimizer/require_collision_precheck: True
+ * /formation_optimizer/start_on_publication: True
+ * /formation_optimizer/sweep_spacing: 0.01
+ * /formation_planner/formation/cost/clearance: 0.25
+ * /formation_planner/formation/cost/risk_horizon_m: 0.5
+ * /formation_planner/formation/cost/rotation: 0.5
+ * /formation_planner/formation/cost/switch: 0.2
+ * /formation_planner/formation/cost/translation: 1.0
+ * /formation_planner/formation/search/goal_xy_tol_m: 0.16
+ * /formation_planner/formation/search/goal_yaw_tol_rad: 0.16
+ * /formation_planner/formation/search/max_candidates: 4
+ * /formation_planner/formation/search/max_corner_step_m: 0.05
+ * /formation_planner/formation/search/max_expansions: 50000
+ * /formation_planner/formation/search/max_wall_time_s: 8.0
+ * /formation_planner/formation/search/rotation_step_rad: 0.17453292519943295
+ * /formation_planner/formation/search/translation_step_m: 0.5
+ * /formation_planner/formation/search/xy_res: 0.2
+ * /formation_planner/formation/search/yaw_res: 0.17453292519943295
+ * /formation_playback/allow_reverse: True
+ * /formation_playback/backend: legacy
+ * /formation_playback/body_length_m: 0.738
+ * /formation_playback/body_width_m: 0.5
+ * /formation_playback/formation_id: cargo_wedge
+ * /formation_playback/frame_id: map
+ * /formation_playback/goal_heading_free: True
+ * /formation_playback/hud_enabled: True
+ * /formation_playback/hud_height: 270
+ * /formation_playback/hud_left: 900
+ * /formation_playback/hud_top: 20
+ * /formation_playback/hud_width: 360
+ * /formation_playback/initial_heading_policy: cargo_heading
+ * /formation_playback/offsets: [[1.0, 0.0], [0.0...
+ * /formation_playback/publish_tf: True
+ * /formation_playback/rate: 25.0
+ * /formation_playback/show_cargo_reason: False
+ * /formation_playback/show_status_text: False
+ * /formation_playback/transport_ui: True
+ * /formation_playback/vehicle_ids: [1, 2, 3]
+ * /fwis_map_publisher/map_dir: /tmp/expv3-map-sc...
+ * /rosdistro: noetic
+ * /rosversion: 1.17.4
+
+NODES
+  /
+    formation_auto_goal (fwis_v3_demo/auto_goal.py)
+    formation_goal_bridge (fwis_v3_demo/formation_goal_bridge.py)
+    formation_optimizer (fwis_v3_optimizer/formation_optimizer_node.py)
+    formation_planner (fwis_v3_planner/formation_planner_node)
+    formation_playback (fwis_v3_playback/formation_playback.py)
+    fwis_map_publisher (fwis_map_server/map_publisher.py)
+    rviz (rviz/rviz)
+
+[1mROS_MASTER_URI=http://127.0.0.1:11633[0m
+]2;/home/wq/whut_thesis/expv3_multi_virtual_a/catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch http://127.0.0.1:11633
+[1mprocess[fwis_map_publisher-1]: started with pid [518391][0m
+[1mprocess[formation_planner-2]: started with pid [518392][0m
+[1mprocess[formation_optimizer-3]: started with pid [518393][0m
+[1mprocess[formation_playback-4]: started with pid [518394][0m
+[1mprocess[formation_goal_bridge-5]: started with pid [518400][0m
+[1mprocess[formation_auto_goal-6]: started with pid [518401][0m
+[1mprocess[rviz-7]: started with pid [518402][0m
+[1m[formation_auto_goal-6] process has finished cleanly
+log file: /home/wq/whut_thesis/expv3_multi_virtual_a/work_flow/TASK01_evidence/07_ros_rviz/backend_legacy/nodes_raw/3ef1cff4-e37a-11f1-a57b-1b4c90db486b/formation_auto_goal-6*.log[0m
+[rviz-7] killing on exit
+[formation_goal_bridge-5] killing on exit
+[formation_playback-4] killing on exit
+[formation_planner-2] killing on exit
+[formation_optimizer-3] killing on exit
+[fwis_map_publisher-1] killing on exit
+shutting down processing monitor...
+... shutting down processing monitor complete
+[1mdone[0m

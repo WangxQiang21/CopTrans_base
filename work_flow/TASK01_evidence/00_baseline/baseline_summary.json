@@ -1,0 +1,126 @@
+{
+  "HEAD": "77805cd46849ebadc374187f9b00fce0f7151f84",
+  "casadi": "3.7.2",
+  "command": "PYTHONPATH=catkin_ws/src/fwis_v3_optimizer/src python3 evaluation/virtual_a_corridor/UTURN_DIAG/20261118T041159Z/repro_u_turn.py --map-yaml /tmp/expv3-task01-map.sax8HJ/map05-p12-parking-row-env2/map.yaml --plan 600003 --plan 600004 --output work_flow/TASK01_evidence/00_baseline/repro_u_turn.json",
+  "datetime_utc": "2026-11-18T14:37:58.915760+00:00",
+  "dirty_state": [
+    "?? work_flow/"
+  ],
+  "historical_map_identical": true,
+  "map_pgm_sha256": "0856ad0af795b09e17e01e41bbf7c0f819170f53c93c6df718ed8342749ba718",
+  "map_yaml_sha256": "e4ee76a19885a1af81363a4713301d76e7338344eba76553bb6fa057f31345e0",
+  "note": "Baseline only; not new implementation acceptance. Missing per-experiment values are UNAVAILABLE.",
+  "plans": [
+    {
+      "attempts": [
+        {
+          "attempt_index": 0,
+          "constraint_residual": 5.650946377500077e-10,
+          "detail": "Solve_Succeeded",
+          "initial_label": "route_guide=0;source=corridor_qp_polyline",
+          "iterations": 41,
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 9.032802163157612
+        }
+      ],
+      "backend": "virtual_rigid_a",
+      "enforcement": "hard",
+      "first_failure_layer": "UNAVAILABLE",
+      "formation_id": "cargo_wedge",
+      "generation": "UNAVAILABLE",
+      "goal": [
+        10.153,
+        2.076,
+        -3.126
+      ],
+      "grid_sha256": "55da861b9ac5cde6fdc6434d391b3f396b6064311c51e4217b17bf4bf2e2c457",
+      "guidance_mode": "corridor",
+      "map_scale": 2.625,
+      "map_yaml": "/tmp/expv3-task01-map.sax8HJ/map05-p12-parking-row-env2/map.yaml",
+      "plan": {
+        "duration_s": 63.64682553904238,
+        "kind": "motion",
+        "length_m": 21.701601208480245
+      },
+      "plan_id": 600003,
+      "planning_context_sha256": null,
+      "reason": "",
+      "request_sha256": "bc748779a86f3f1ed096ac33c595d50732f252f189395ee59102e46e43bc852b",
+      "route_count": 3,
+      "s_search": {
+        "S_lower_m": 10.018651056903819,
+        "S_upper_m": 40.055953170711454,
+        "distance_m": 10.018651056903819,
+        "formula": "upper = min(60, max(12, 3*distance + 10))"
+      },
+      "start": [
+        10.841,
+        12.071,
+        0.0
+      ],
+      "status": "SUCCESS",
+      "wall_time_s": 18.970130009111017
+    },
+    {
+      "attempts": [
+        {
+          "attempt_index": 0,
+          "constraint_residual": 5.137967827479242,
+          "detail": "Infeasible_Problem_Detected",
+          "initial_label": "route_guide=0;source=corridor_qp_polyline",
+          "iterations": 68,
+          "solver_status": "Infeasible_Problem_Detected",
+          "status": "SOLVER_FAILED",
+          "wall_time_s": 11.62707009515725
+        },
+        {
+          "attempt_index": 1,
+          "constraint_residual": 26.560533950425338,
+          "detail": "Maximum_Iterations_Exceeded",
+          "initial_label": "length_multiplier=1.2;shape=left",
+          "iterations": 120,
+          "solver_status": "Maximum_Iterations_Exceeded",
+          "status": "SOLVER_FAILED",
+          "wall_time_s": 17.78374492516741
+        }
+      ],
+      "backend": "virtual_rigid_a",
+      "enforcement": "hard",
+      "first_failure_layer": "GEOMETRY",
+      "formation_id": "cargo_wedge",
+      "generation": "UNAVAILABLE",
+      "goal": [
+        -2.49,
+        2.309,
+        3.102
+      ],
+      "grid_sha256": "55da861b9ac5cde6fdc6434d391b3f396b6064311c51e4217b17bf4bf2e2c457",
+      "guidance_mode": "corridor",
+      "map_scale": 2.625,
+      "map_yaml": "/tmp/expv3-task01-map.sax8HJ/map05-p12-parking-row-env2/map.yaml",
+      "plan": null,
+      "plan_id": 600004,
+      "planning_context_sha256": null,
+      "reason": "SOFT_BUDGET_EXHAUSTED",
+      "request_sha256": "141decf7345d632e0376308ca3be7d9febed4c04cc006a366f78ea430307e718",
+      "route_count": 3,
+      "s_search": {
+        "S_lower_m": 9.529830481178559,
+        "S_upper_m": 38.58949144353568,
+        "distance_m": 9.529830481178559,
+        "formula": "upper = min(60, max(12, 3*distance + 10))"
+      },
+      "start": [
+        -3.625,
+        11.771,
+        -0.022
+      ],
+      "status": "BUDGET_EXHAUSTED",
+      "wall_time_s": 37.797198195010424
+    }
+  ],
+  "python": "3.8.10",
+  "ros": "noetic setup present; rospy import available in recorded Python environment",
+  "schema": "task01_experiment/v1"
+}

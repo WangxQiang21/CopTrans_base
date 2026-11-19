@@ -1,0 +1,69 @@
+........................................E.........................................................................................................................................................................................................................................................................................................usage: python3 -m unittest [-h] [--cases-file CASES_FILE] --output-dir
+                           OUTPUT_DIR [--repeats REPEATS]
+                           [--ids IDS [IDS ...]]
+                           [--ablation {no_oblique,no_spin,no_spin_no_oblique,none}]
+                           [--enable-nlp] [--ros-summary ROS_SUMMARY]
+python3 -m unittest: error: --repeats must be at least 3 for the S10 contract
+.[E19] repeat 1/1 kind=group expectation=statistical
+    status=GROUP_COMPLETE reason= feasible=True passed=True
+summary: /tmp/tmpu3iimihx/summary.json
+all_pass: True (1/1)
+.[E11] repeat 1/2 kind=request_invalid expectation=must_fail
+    status=INVALID reason=INVALID_REQUEST feasible=False passed=True
+[E11] repeat 2/2 kind=request_invalid expectation=must_fail
+    status=INVALID reason=INVALID_REQUEST feasible=False passed=True
+[E13] repeat 1/2 kind=evaluator expectation=must_fail
+    status=REJECTED reason=KINEMATIC_INFEASIBLE feasible=False passed=True
+[E13] repeat 2/2 kind=evaluator expectation=must_fail
+    status=REJECTED reason=KINEMATIC_INFEASIBLE feasible=False passed=True
+[E18] repeat 1/2 kind=node expectation=scenario_pass
+    status=SCENARIO_CLEARED reason= feasible=None passed=True
+[E18] repeat 2/2 kind=node expectation=scenario_pass
+    status=SCENARIO_CLEARED reason= feasible=None passed=True
+summary: /tmp/tmp1ocfmafh/summary.json
+all_pass: True (3/3)
+.....................................................................................................................................................FR04 F01_hold status=NO_MOTION reason=OK search_wall=0.000013s pipeline_wall=0.007157s T_end=0.0 expansions=0 candidates=0 terminal_audits=0
+.FR04 F02_forward status=SUCCESS reason=OK search_wall=1.020676s pipeline_wall=1.170239s T_end=9.368306005450883 expansions=3 candidates=429 terminal_audits=1
+.FR04 F03_reverse status=SUCCESS reason=OK search_wall=1.043851s pipeline_wall=1.196988s T_end=9.368306005450883 expansions=3 candidates=429 terminal_audits=1
+.FR04 F04_lateral status=SUCCESS reason=OK search_wall=2.712569s pipeline_wall=2.868677s T_end=13.19985989637642 expansions=9 candidates=1302 terminal_audits=1
+.FR04 F05_diagonal status=SUCCESS reason=OK search_wall=1.963512s pipeline_wall=2.214005s T_end=18.551871641156414 expansions=6 candidates=869 terminal_audits=1
+.FR04 F06_in_place_positive_90 status=SUCCESS reason=OK search_wall=8.208812s pipeline_wall=8.572974s T_end=30.44149705334398 expansions=27 candidates=4367 terminal_audits=3
+.FR04 F07_in_place_negative_90 status=SUCCESS reason=OK search_wall=8.454618s pipeline_wall=8.832161s T_end=30.44149705334398 expansions=27 candidates=4390 terminal_audits=3
+.FR04 F08_translate_and_rotate status=SUCCESS reason=OK search_wall=10.533537s pipeline_wall=11.174783s T_end=39.80980305879486 expansions=31 candidates=5208 terminal_audits=3
+.FR04 F09_enclosed_obstacle status=NO_SOLUTION reason=NO_SOLUTION search_wall=0.038057s pipeline_wall=0.042011s T_end=None expansions=1 candidates=143 terminal_audits=0
+.FR04 F10_out_of_bounds status=REQUEST_REJECTED reason=GOAL_CENTER_OUT_OF_BOUNDS search_wall=-1.000000s pipeline_wall=0.003210s T_end=None expansions=-1 candidates=-1 terminal_audits=0
+.FR04 F11_budget_exhausted status=BUDGET_EXHAUSTED reason=EXPANSION_BUDGET_EXHAUSTED search_wall=0.382270s pipeline_wall=0.386173s T_end=None expansions=1 candidates=143 terminal_audits=0
+.FR04 F12_final_reaudit status=SUCCESS reason=OK search_wall=1.355577s pipeline_wall=1.540581s T_end=9.368306005450883 expansions=3 candidates=429 terminal_audits=1
+.FR04 F13_tolerant_goal_free_headings status=SUCCESS reason=OK search_wall=1.122196s pipeline_wall=1.278363s T_end=9.668306005450882 expansions=3 candidates=555 terminal_audits=1
+.FR04 F14_tolerant_hold status=NO_MOTION reason=OK search_wall=0.000011s pipeline_wall=0.007256s T_end=0.0 expansions=0 candidates=0 terminal_audits=0
+.FR04 F15_wrong_rebuild status=AUDIT_REJECTED reason=PLAN_START_MISMATCH search_wall=1.024135s pipeline_wall=1.028069s T_end=None expansions=3 candidates=429 terminal_audits=1
+.FR04 F16_plan_id_mismatch status=AUDIT_REJECTED reason=PLAN_IDENTITY_MISMATCH search_wall=1.022693s pipeline_wall=1.046279s T_end=None expansions=3 candidates=429 terminal_audits=1
+.FR04 F17_same_endpoints_other_path status=AUDIT_REJECTED reason=PLAN_EDGE_SEQUENCE_MISMATCH search_wall=1.058831s pipeline_wall=1.062958s T_end=None expansions=3 candidates=429 terminal_audits=1
+.FR04 F18_timing_limit_mismatch status=AUDIT_REJECTED reason=PLAN_IDENTITY_MISMATCH search_wall=1.029441s pipeline_wall=1.033517s T_end=None expansions=3 candidates=429 terminal_audits=1
+.FR04 F19_same_count_other_controls status=AUDIT_REJECTED reason=PLAN_EDGE_SEQUENCE_MISMATCH search_wall=1.037739s pipeline_wall=1.042010s T_end=None expansions=3 candidates=429 terminal_audits=1
+............................................................................................................................................................................................/opt/ros/noetic/lib/python3/dist-packages/rospy/core.py:205: DeprecationWarning: The 'warn' method is deprecated, use 'warning' instead
+  logfunc(msg, *args, **kwargs)
+[formation playback] ignoring planning payload for plan 16: current job is plan 17
+.[formation playback] ignoring planning payload for plan 17: identity does not match the current admission
+................................[formation playback] rejecting guide payload: raw_route_points needs at least two points
+..............................................................................................................................................................................................................................[uniform planner] PROGRESS_DISPLAY_ERROR plan 9002 generation 0 layer=corridors: ValueError: no actual corridor display exists for this round; planning and audits continue
+[uniform planner] PROGRESS_DISPLAY_ERROR plan 9002 generation 0 layer=corridors: ValueError: no actual corridor display exists for this round; planning and audits continue
+[uniform planner] PROGRESS_DISPLAY_ERROR plan 9002 generation 0 layer=corridors: ValueError: no actual corridor display exists for this round; planning and audits continue
+[uniform planner] PROGRESS_DISPLAY_ERROR plan 9002 generation 0 layer=corridors: ValueError: no actual corridor display exists for this round; planning and audits continue
+[uniform planner] PROGRESS_DISPLAY_ERROR plan 9002 generation 0 layer=corridors: ValueError: no actual corridor display exists for this round; planning and audits continue
+...........................................................[uniform planner] PROGRESS_DISPLAY_ERROR plan 9003 generation 0 layer=corridors: ValueError: no actual corridor display exists for this round; planning and audits continue
+.............................................
+======================================================================
+ERROR: test_short_translation_has_finite_acceleration_and_zero_end_speed (test_continuous_retiming.ContinuousRetiming)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/wq/whut_thesis/expv3_multi_virtual_a/tests/test_continuous_retiming.py", line 271, in test_short_translation_has_finite_acceleration_and_zero_end_speed
+    self.assertLessEqual(timed.phases[0]["dynamic_peaks"]["acceleration"],
+KeyError: 'dynamic_peaks'
+
+----------------------------------------------------------------------
+Ran 1054 tests in 557.418s
+
+FAILED (errors=1)
+c1_50x50_build_s=0.014920 audit_s=0.004708
+REGRESSION_EXIT=1

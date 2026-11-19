@@ -1,0 +1,1050 @@
+{
+  "schema": "ros_formation_smoke/v1",
+  "started_at": "2026-11-19T02:53:54Z",
+  "finished_at": "2026-11-19T02:54:05Z",
+  "duration_s": 10.801,
+  "pass": false,
+  "port": 11399,
+  "scenario": {
+    "plan_id": 424242,
+    "formation_id": "smoke_wedge",
+    "vehicle_ids": [
+      1,
+      2,
+      3
+    ],
+    "offsets": [
+      [
+        0.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.2
+      ],
+      [
+        0.0,
+        -1.2
+      ]
+    ],
+    "goal": [
+      2.5,
+      0.0,
+      0.0
+    ],
+    "map": {
+      "width": 320,
+      "height": 240,
+      "resolution": 0.05,
+      "origin": [
+        -8.0,
+        -6.0
+      ],
+      "obstacles": []
+    },
+    "enable_nlp": false
+  },
+  "environment": {
+    "python": "/usr/bin/python3",
+    "python_version": "3.8.10",
+    "ros_master_uri": "http://127.0.0.1:11399",
+    "ros_distro": "noetic",
+    "ros_pythonpath_entries": [
+      "/tmp/task01_head_smoke/catkin_ws/devel/lib/python3/dist-packages",
+      "/opt/ros/noetic/lib/python3/dist-packages"
+    ]
+  },
+  "checks": {
+    "private_master_port": {
+      "ok": true,
+      "detail": "port 11399 is private and free"
+    },
+    "one_optimizer_and_playback_running": {
+      "ok": true,
+      "detail": "optimizer pid=613620 playback pid=613621"
+    },
+    "optimizer_feasible_published": {
+      "ok": true,
+      "detail": "status=FEASIBLE reason='OK' T_end=None publication_version=1"
+    },
+    "map_ready": {
+      "ok": true,
+      "detail": "map_ready=True map_signature=51b19b67924b217cb178c44b502044679306cccdf92ff19e6f14b79d3e0dcc53"
+    },
+    "quality_independent_audit": {
+      "ok": true,
+      "detail": "independent_audit=True event=plan_seed"
+    },
+    "quality_collision_certificate": {
+      "ok": true,
+      "detail": "collision_certificate=True"
+    },
+    "trajectory_identity": {
+      "ok": true,
+      "detail": "plan=424242 formation=smoke_wedge frame=map"
+    },
+    "trajectory_common_time_grid": {
+      "ok": true,
+      "detail": "296 shared samples, first=(0, 0) last=(5, 888671874), strictly increasing=True"
+    },
+    "trajectory_finite_modes": {
+      "ok": true,
+      "detail": "all vehicle samples finite; modes in A/O/S"
+    },
+    "trajectory_vehicle_ids": {
+      "ok": true,
+      "detail": "vehicles=[1, 2, 3] trajectories=[1, 2, 3]"
+    },
+    "trajectory_offsets": {
+      "ok": true,
+      "detail": "offsets={1: (0.0, 0.0), 2: (0.0, 1.2), 3: (0.0, -1.2)}"
+    },
+    "trajectory_rigid_endpoints": {
+      "ok": true,
+      "detail": "start_error=0 goal_error=0 formation_error=0"
+    },
+    "playback_accepted_plan": {
+      "ok": true,
+      "detail": "state=PLAYING formation=smoke_wedge vehicles=[1, 2, 3]"
+    },
+    "playback_common_clock": {
+      "ok": true,
+      "detail": "6 PLAYING samples, elapsed 0.481->0.642 s, wall span 0.159 s, stamp=(1795056836, 676509141)"
+    },
+    "playback_rigid_centers": {
+      "ok": true,
+      "detail": "rigidity_error=0 heading_error=0 movement={1: 0.015310061243878898, 2: 0.015310061243878898, 3: 0.015310061243878898}"
+    },
+    "playback_terminal_hold": {
+      "ok": true,
+      "detail": "state=HOLD_END clamped=5.888672 duration=5.888672 center_error=0.0 heading_error=0.0"
+    },
+    "playback_terminal_message_match": {
+      "ok": true,
+      "detail": "terminal frame matches final common-time sample, error=0"
+    },
+    "marker_frame": {
+      "ok": true,
+      "detail": "20 markers on frame map"
+    },
+    "marker_vehicle_namespaces": {
+      "ok": true,
+      "detail": "namespaces=['formation/smoke_wedge/links', 'formation/smoke_wedge/reference', 'formation/smoke_wedge/status', 'formation/smoke_wedge/vehicle_1', 'formation/smoke_wedge/vehicle_2', 'formation/smoke_wedge/vehicle_3']"
+    },
+    "marker_unique_ids": {
+      "ok": true,
+      "detail": "20 markers, 20 unique ids"
+    },
+    "marker_obb_and_heading": {
+      "ok": true,
+      "detail": "types=[] obb_max_error=4.440892098500626e-16 heading_max_error=0.0"
+    },
+    "marker_mode_color_bands": {
+      "ok": true,
+      "detail": "every full-path color matches its A/O/S mode; errors=[]"
+    },
+    "marker_history_and_paths": {
+      "ok": true,
+      "detail": "full path and traveled history contain all shared samples; errors=[]"
+    },
+    "marker_intervehicle_links": {
+      "ok": true,
+      "detail": "pairwise links connect the terminal vehicle centers; errors=[0.0, 0.0, 0.0]"
+    },
+    "marker_reference_point": {
+      "ok": true,
+      "detail": "formation reference sphere/trail/F label at final formation pose"
+    },
+    "marker_status_feasible": {
+      "ok": false,
+      "detail": "status text='plan 424242 | HOLD_END | FEASIBLE\\nT_end=5.889 s | FEASIBLE / independent audit and transactional publication\\nno independent metrics reported'"
+    },
+    "marker_status_namespaces": {
+      "ok": true,
+      "detail": "playback status recorded 6 namespaces"
+    },
+    "tf_expected_unique_frames": {
+      "ok": true,
+      "detail": "expected=['formation_smoke_wedge_reference', 'formation_smoke_wedge_vehicle_1_base_link', 'formation_smoke_wedge_vehicle_2_base_link', 'formation_smoke_wedge_vehicle_3_base_link'] observed_formation=['formation_smoke_wedge_reference', 'formation_smoke_wedge_vehicle_1_base_link', 'formation_smoke_wedge_vehicle_2_base_link', 'formation_smoke_wedge_vehicle_3_base_link']"
+    },
+    "tf_body_frames_match_terminal": {
+      "ok": true,
+      "detail": "formation TF translations match terminal centers; errors=[3.444747616043742e-07, 3.444747616043742e-07, 3.444747616043742e-07]"
+    },
+    "invalid_request_rejected": {
+      "ok": true,
+      "detail": "status=INVALID reason=INVALID_REQUEST field=None"
+    },
+    "invalid_request_clears_trajectory": {
+      "ok": true,
+      "detail": "clear message plan_id=0 vehicles=0 trajectories=0"
+    },
+    "invalid_request_clears_before_seed": {
+      "ok": true,
+      "detail": "clear arrived after the invalid request"
+    },
+    "playback_cleared_status": {
+      "ok": true,
+      "detail": "state=CLEARED marker_count=0 reason='empty trajectory clears previous markers'"
+    },
+    "invalid_request_clears_markers": {
+      "ok": true,
+      "detail": "DELETEALL ns='formation' id=0"
+    },
+    "geometry_only_label": {
+      "ok": true,
+      "detail": "state=PLAYING certification=GEOMETRY_ONLY audit_status=AUDIT_PENDING"
+    },
+    "geometry_only_marker_label": {
+      "ok": true,
+      "detail": "status marker text='plan 777001 | PLAYING | GEOMETRY_ONLY\\nT_end=0.600 s | AUDIT_PENDING / no status report\\nno independent metrics reported'"
+    },
+    "empty_trajectory_cleanup": {
+      "ok": true,
+      "detail": "empty trajectory cleared every marker"
+    },
+    "child_processes_stopped": {
+      "ok": true,
+      "detail": "exit codes={'formation_playback': 0, 'formation_optimizer': 0, 'roscore': 0}"
+    },
+    "master_port_released": {
+      "ok": true,
+      "detail": "port 11399 closed"
+    }
+  },
+  "observed": {
+    "optimizer_status": {
+      "detail": "independent S9 evaluation passed and the current plan_id was published through the transaction gate",
+      "duration": 5.888671874999999,
+      "executable": true,
+      "feasible": true,
+      "formation_id": "smoke_wedge",
+      "hold_contract": null,
+      "map_frame_id": "map",
+      "map_ready": true,
+      "map_signature": "51b19b67924b217cb178c44b502044679306cccdf92ff19e6f14b79d3e0dcc53",
+      "no_motion": false,
+      "node_state": "FEASIBLE_PUBLISHED",
+      "plan_id": 424242,
+      "planning_started": true,
+      "publication_version": 1,
+      "published_plan_id": 424242,
+      "reason": "OK",
+      "request_map_signature": "51b19b67924b217cb178c44b502044679306cccdf92ff19e6f14b79d3e0dcc53",
+      "requests_seen": 1,
+      "schema": "formation_optimizer_status/v1",
+      "seeds_seen": 1,
+      "selected_candidate_id": 1,
+      "status": "FEASIBLE",
+      "trajectory_published": true
+    },
+    "quality_report": {
+      "collision_certificate": true,
+      "detail": "independent S9 evaluation passed and the current plan_id was published through the transaction gate",
+      "duration": 5.888671874999999,
+      "event": "plan_seed",
+      "executable": true,
+      "failure": null,
+      "feasible": true,
+      "formation_id": "smoke_wedge",
+      "hold_contract": null,
+      "independent_audit": true,
+      "map_frame_id": "map",
+      "map_ready": true,
+      "map_signature": "51b19b67924b217cb178c44b502044679306cccdf92ff19e6f14b79d3e0dcc53",
+      "no_motion": false,
+      "pipeline": {
+        "T_end": 5.888671874999999,
+        "build": {
+          "certification": "GEOMETRY_VALID",
+          "detail": "GEOMETRY_BUILT_KINEMATIC_CANDIDATE_NOT_EXECUTABLE; map_version_checked=False; skipped_zero_primitives=0",
+          "executable": false,
+          "map_version_checked": false,
+          "plans": 2,
+          "reason": "OK",
+          "rejections": [],
+          "schema": "formation_plan_build/v1",
+          "success": true,
+          "terminal_max_xy_m": 0.0,
+          "terminal_max_yaw_rad": 0.0,
+          "trajectory_published": false
+        },
+        "candidate_count": 2,
+        "candidates": [
+          {
+            "candidate_id": 1,
+            "certification": "KINEMATIC_VALID",
+            "duration": 5.888671874999999,
+            "optimization": null,
+            "origin": "s6_seed",
+            "source_candidate_id": 1,
+            "timing_audit_passed": true
+          },
+          {
+            "candidate_id": 2,
+            "certification": "KINEMATIC_VALID",
+            "duration": 5.888671874999999,
+            "optimization": null,
+            "origin": "s6_seed",
+            "source_candidate_id": 2,
+            "timing_audit_passed": true
+          }
+        ],
+        "collision_certificate": true,
+        "detail": "independent S9 evaluation selected the feasible candidate with the least common T_end; publication still requires the node transaction gate",
+        "executable": true,
+        "hold_contract": null,
+        "independent_audit": true,
+        "master": {
+          "candidates": [
+            {
+              "audit_detail": "KINEMATIC_ONLY_UNCERTIFIED_SAFETY",
+              "audit_reason": "OK",
+              "blocks": 1,
+              "candidate_id": 1,
+              "certification": "KINEMATIC_VALID",
+              "collision_prechecked": true,
+              "collision_success": true,
+              "executable": false,
+              "formation_id": "smoke_wedge",
+              "mode_switches": 0,
+              "plan_id": 424242,
+              "schema": "formation_candidate/v1",
+              "score": 2.5,
+              "source": "s6_seed",
+              "total_parameter_length": 2.5,
+              "trajectory_published": false
+            },
+            {
+              "audit_detail": "KINEMATIC_ONLY_UNCERTIFIED_SAFETY",
+              "audit_reason": "OK",
+              "blocks": 1,
+              "candidate_id": 2,
+              "certification": "KINEMATIC_VALID",
+              "collision_prechecked": true,
+              "collision_success": true,
+              "executable": false,
+              "formation_id": "smoke_wedge",
+              "mode_switches": 0,
+              "plan_id": 424242,
+              "schema": "formation_candidate/v1",
+              "score": 2.6,
+              "source": "s6_seed",
+              "total_parameter_length": 2.5,
+              "trajectory_published": false
+            }
+          ],
+          "certification": "KINEMATIC_VALID",
+          "considered": 2,
+          "detail": "KINEMATIC_ONLY_UNCERTIFIED_SAFETY",
+          "duplicates": 0,
+          "executable": false,
+          "independent_timing_audit": false,
+          "reason": "OK",
+          "rejections": [],
+          "schema": "formation_master_result/v1",
+          "selected_candidate_id": 1,
+          "status": "KINEMATIC_VALID",
+          "trajectory_published": false
+        },
+        "no_motion": false,
+        "reason": "OK",
+        "rejections": [],
+        "schema": "formation_pipeline_result/v1",
+        "selected_candidate_id": 1,
+        "selection": {
+          "T_end": 5.888671874999999,
+          "candidate_count": 2,
+          "evaluations": [
+            {
+              "certification": "FEASIBLE",
+              "checks": 30199,
+              "collision_certificate": true,
+              "detail": "independent request/trajectory/rigidity/collision/kinematics/timing/publication audit passed",
+              "executable": true,
+              "failure": null,
+              "feasible": true,
+              "formation_id": "smoke_wedge",
+              "independent_audit": true,
+              "metrics": {
+                "certification": "FEASIBLE",
+                "checks": 30199,
+                "collision_certificate": true,
+                "direction_change_count": 0,
+                "duration_s": 5.888671874999999,
+                "dynamic_peak_ratio": 0.9950248756218907,
+                "independent_audit": true,
+                "map_signature": "51b19b67924b217cb178c44b502044679306cccdf92ff19e6f14b79d3e0dcc53",
+                "map_version_checked": true,
+                "max_rigidity_error_m": 4.440892098500626e-15,
+                "minimum_intervehicle_clearance_m": 0.7,
+                "minimum_mode_dwell_s": 5.888671874999999,
+                "minimum_obstacle_clearance_m": 4.55,
+                "mode_switch_count": 0,
+                "peak_A_curvature_1pm": 0.0,
+                "peak_O_phi_rad": 0.0,
+                "plan_checks": 4,
+                "plan_max_rigidity_error_m": 0.0,
+                "publication_dt_s": 0.02,
+                "publication_sample_count": 590,
+                "sample_count": 296,
+                "sample_peaks": {
+                  "acceleration": 0.41623080700272713,
+                  "jerk": 0.7345801567587864,
+                  "lateral_acceleration": 0.0,
+                  "speed": 0.7960016065514746,
+                  "wheel_speed": 0.7960016065514746,
+                  "yaw_acceleration": 0.0,
+                  "yaw_jerk": 0.0,
+                  "yaw_rate": 0.0
+                },
+                "stationary_phase_count": 0,
+                "vehicle_count": 3,
+                "vehicle_peaks": {
+                  "1": {
+                    "acceleration": 0.4162408217795635,
+                    "jerk": 0.7345801567587864,
+                    "lateral_acceleration": 0.0,
+                    "speed": 0.7960199004975126,
+                    "wheel_speed": 0.7960199004975126,
+                    "yaw_acceleration": 0.0,
+                    "yaw_jerk": 0.0,
+                    "yaw_rate": 0.0
+                  },
+                  "2": {
+                    "acceleration": 0.4162408217795635,
+                    "jerk": 0.7345801567587864,
+                    "lateral_acceleration": 0.0,
+                    "speed": 0.7960199004975126,
+                    "wheel_speed": 0.7960199004975126,
+                    "yaw_acceleration": 0.0,
+                    "yaw_jerk": 0.0,
+                    "yaw_rate": 0.0
+                  },
+                  "3": {
+                    "acceleration": 0.4162408217795635,
+                    "jerk": 0.7345801567587864,
+                    "lateral_acceleration": 0.0,
+                    "speed": 0.7960199004975126,
+                    "wheel_speed": 0.7960199004975126,
+                    "yaw_acceleration": 0.0,
+                    "yaw_jerk": 0.0,
+                    "yaw_rate": 0.0
+                  }
+                }
+              },
+              "plan_id": 424242,
+              "reason": "OK",
+              "schema": "formation_evaluation/v1",
+              "status": "FEASIBLE",
+              "trajectory_published": false
+            },
+            {
+              "certification": "FEASIBLE",
+              "checks": 30199,
+              "collision_certificate": true,
+              "detail": "independent request/trajectory/rigidity/collision/kinematics/timing/publication audit passed",
+              "executable": true,
+              "failure": null,
+              "feasible": true,
+              "formation_id": "smoke_wedge",
+              "independent_audit": true,
+              "metrics": {
+                "certification": "FEASIBLE",
+                "checks": 30199,
+                "collision_certificate": true,
+                "direction_change_count": 0,
+                "duration_s": 5.888671874999999,
+                "dynamic_peak_ratio": 0.9950248756218907,
+                "independent_audit": true,
+                "map_signature": "51b19b67924b217cb178c44b502044679306cccdf92ff19e6f14b79d3e0dcc53",
+                "map_version_checked": true,
+                "max_rigidity_error_m": 4.440892098500626e-15,
+                "minimum_intervehicle_clearance_m": 0.7,
+                "minimum_mode_dwell_s": 5.888671874999999,
+                "minimum_obstacle_clearance_m": 4.55,
+                "mode_switch_count": 0,
+                "peak_A_curvature_1pm": 0.0,
+                "peak_O_phi_rad": 0.0,
+                "plan_checks": 4,
+                "plan_max_rigidity_error_m": 0.0,
+                "publication_dt_s": 0.02,
+                "publication_sample_count": 590,
+                "sample_count": 296,
+                "sample_peaks": {
+                  "acceleration": 0.41623080700272713,
+                  "jerk": 0.7345801567587864,
+                  "lateral_acceleration": 0.0,
+                  "speed": 0.7960016065514746,
+                  "wheel_speed": 0.7960016065514746,
+                  "yaw_acceleration": 0.0,
+                  "yaw_jerk": 0.0,
+                  "yaw_rate": 0.0
+                },
+                "stationary_phase_count": 0,
+                "vehicle_count": 3,
+                "vehicle_peaks": {
+                  "1": {
+                    "acceleration": 0.4162408217795635,
+                    "jerk": 0.7345801567587864,
+                    "lateral_acceleration": 0.0,
+                    "speed": 0.7960199004975126,
+                    "wheel_speed": 0.7960199004975126,
+                    "yaw_acceleration": 0.0,
+                    "yaw_jerk": 0.0,
+                    "yaw_rate": 0.0
+                  },
+                  "2": {
+                    "acceleration": 0.4162408217795635,
+                    "jerk": 0.7345801567587864,
+                    "lateral_acceleration": 0.0,
+                    "speed": 0.7960199004975126,
+                    "wheel_speed": 0.7960199004975126,
+                    "yaw_acceleration": 0.0,
+                    "yaw_jerk": 0.0,
+                    "yaw_rate": 0.0
+                  },
+                  "3": {
+                    "acceleration": 0.4162408217795635,
+                    "jerk": 0.7345801567587864,
+                    "lateral_acceleration": 0.0,
+                    "speed": 0.7960199004975126,
+                    "wheel_speed": 0.7960199004975126,
+                    "yaw_acceleration": 0.0,
+                    "yaw_jerk": 0.0,
+                    "yaw_rate": 0.0
+                  }
+                }
+              },
+              "plan_id": 424242,
+              "reason": "OK",
+              "schema": "formation_evaluation/v1",
+              "status": "FEASIBLE",
+              "trajectory_published": false
+            }
+          ],
+          "executable": true,
+          "feasible_count": 2,
+          "rejections": [],
+          "schema": "formation_selection/v1",
+          "selected_candidate_id": 1,
+          "status": "FEASIBLE",
+          "trajectory_published": false
+        },
+        "status": "FEASIBLE",
+        "timings_s": {
+          "audit_s": 0.3683896539732814,
+          "build_s": 0.003799386089667678,
+          "master_s": 0.033858465030789375,
+          "nlp_s": 0.0,
+          "retiming_s": 0.04453236609697342,
+          "selection_s": 0.3683896539732814,
+          "total_s": 0.4506938529666513
+        },
+        "trajectory_published": false
+      },
+      "plan_id": 424242,
+      "planning_started": true,
+      "publication": {
+        "clear": false,
+        "detail": "FEASIBLE independent evaluation for the current request",
+        "plan_id": 424242,
+        "publish": true,
+        "reason": "OK",
+        "status": "PUBLISH",
+        "trajectory_published": true
+      },
+      "publication_version": 1,
+      "published_plan_id": 424242,
+      "reason": "OK",
+      "request": {
+        "detail": "",
+        "executable": false,
+        "field": "",
+        "reason": "",
+        "schema": "fwis_v3/formation_status",
+        "search_started": false,
+        "trajectory_published": false,
+        "valid": true,
+        "vehicle_id": null
+      },
+      "request_map_signature": "51b19b67924b217cb178c44b502044679306cccdf92ff19e6f14b79d3e0dcc53",
+      "requests_seen": 1,
+      "schema": "formation_quality_report/v1",
+      "seed": {
+        "formation_id": "smoke_wedge",
+        "header_stamp": [
+          1795056836,
+          676084280
+        ],
+        "map_signature": "51b19b67924b217cb178c44b502044679306cccdf92ff19e6f14b79d3e0dcc53",
+        "plan_id": 424242,
+        "primitive_count": 1
+      },
+      "seeds_seen": 1,
+      "selected_candidate_id": 1,
+      "selection": {
+        "T_end": 5.888671874999999,
+        "candidate_count": 2,
+        "evaluations": [
+          {
+            "certification": "FEASIBLE",
+            "checks": 30199,
+            "collision_certificate": true,
+            "detail": "independent request/trajectory/rigidity/collision/kinematics/timing/publication audit passed",
+            "executable": true,
+            "failure": null,
+            "feasible": true,
+            "formation_id": "smoke_wedge",
+            "independent_audit": true,
+            "metrics": {
+              "certification": "FEASIBLE",
+              "checks": 30199,
+              "collision_certificate": true,
+              "direction_change_count": 0,
+              "duration_s": 5.888671874999999,
+              "dynamic_peak_ratio": 0.9950248756218907,
+              "independent_audit": true,
+              "map_signature": "51b19b67924b217cb178c44b502044679306cccdf92ff19e6f14b79d3e0dcc53",
+              "map_version_checked": true,
+              "max_rigidity_error_m": 4.440892098500626e-15,
+              "minimum_intervehicle_clearance_m": 0.7,
+              "minimum_mode_dwell_s": 5.888671874999999,
+              "minimum_obstacle_clearance_m": 4.55,
+              "mode_switch_count": 0,
+              "peak_A_curvature_1pm": 0.0,
+              "peak_O_phi_rad": 0.0,
+              "plan_checks": 4,
+              "plan_max_rigidity_error_m": 0.0,
+              "publication_dt_s": 0.02,
+              "publication_sample_count": 590,
+              "sample_count": 296,
+              "sample_peaks": {
+                "acceleration": 0.41623080700272713,
+                "jerk": 0.7345801567587864,
+                "lateral_acceleration": 0.0,
+                "speed": 0.7960016065514746,
+                "wheel_speed": 0.7960016065514746,
+                "yaw_acceleration": 0.0,
+                "yaw_jerk": 0.0,
+                "yaw_rate": 0.0
+              },
+              "stationary_phase_count": 0,
+              "vehicle_count": 3,
+              "vehicle_peaks": {
+                "1": {
+                  "acceleration": 0.4162408217795635,
+                  "jerk": 0.7345801567587864,
+                  "lateral_acceleration": 0.0,
+                  "speed": 0.7960199004975126,
+                  "wheel_speed": 0.7960199004975126,
+                  "yaw_acceleration": 0.0,
+                  "yaw_jerk": 0.0,
+                  "yaw_rate": 0.0
+                },
+                "2": {
+                  "acceleration": 0.4162408217795635,
+                  "jerk": 0.7345801567587864,
+                  "lateral_acceleration": 0.0,
+                  "speed": 0.7960199004975126,
+                  "wheel_speed": 0.7960199004975126,
+                  "yaw_acceleration": 0.0,
+                  "yaw_jerk": 0.0,
+                  "yaw_rate": 0.0
+                },
+                "3": {
+                  "acceleration": 0.4162408217795635,
+                  "jerk": 0.7345801567587864,
+                  "lateral_acceleration": 0.0,
+                  "speed": 0.7960199004975126,
+                  "wheel_speed": 0.7960199004975126,
+                  "yaw_acceleration": 0.0,
+                  "yaw_jerk": 0.0,
+                  "yaw_rate": 0.0
+                }
+              }
+            },
+            "plan_id": 424242,
+            "reason": "OK",
+            "schema": "formation_evaluation/v1",
+            "status": "FEASIBLE",
+            "trajectory_published": false
+          },
+          {
+            "certification": "FEASIBLE",
+            "checks": 30199,
+            "collision_certificate": true,
+            "detail": "independent request/trajectory/rigidity/collision/kinematics/timing/publication audit passed",
+            "executable": true,
+            "failure": null,
+            "feasible": true,
+            "formation_id": "smoke_wedge",
+            "independent_audit": true,
+            "metrics": {
+              "certification": "FEASIBLE",
+              "checks": 30199,
+              "collision_certificate": true,
+              "direction_change_count": 0,
+              "duration_s": 5.888671874999999,
+              "dynamic_peak_ratio": 0.9950248756218907,
+              "independent_audit": true,
+              "map_signature": "51b19b67924b217cb178c44b502044679306cccdf92ff19e6f14b79d3e0dcc53",
+              "map_version_checked": true,
+              "max_rigidity_error_m": 4.440892098500626e-15,
+              "minimum_intervehicle_clearance_m": 0.7,
+              "minimum_mode_dwell_s": 5.888671874999999,
+              "minimum_obstacle_clearance_m": 4.55,
+              "mode_switch_count": 0,
+              "peak_A_curvature_1pm": 0.0,
+              "peak_O_phi_rad": 0.0,
+              "plan_checks": 4,
+              "plan_max_rigidity_error_m": 0.0,
+              "publication_dt_s": 0.02,
+              "publication_sample_count": 590,
+              "sample_count": 296,
+              "sample_peaks": {
+                "acceleration": 0.41623080700272713,
+                "jerk": 0.7345801567587864,
+                "lateral_acceleration": 0.0,
+                "speed": 0.7960016065514746,
+                "wheel_speed": 0.7960016065514746,
+                "yaw_acceleration": 0.0,
+                "yaw_jerk": 0.0,
+                "yaw_rate": 0.0
+              },
+              "stationary_phase_count": 0,
+              "vehicle_count": 3,
+              "vehicle_peaks": {
+                "1": {
+                  "acceleration": 0.4162408217795635,
+                  "jerk": 0.7345801567587864,
+                  "lateral_acceleration": 0.0,
+                  "speed": 0.7960199004975126,
+                  "wheel_speed": 0.7960199004975126,
+                  "yaw_acceleration": 0.0,
+                  "yaw_jerk": 0.0,
+                  "yaw_rate": 0.0
+                },
+                "2": {
+                  "acceleration": 0.4162408217795635,
+                  "jerk": 0.7345801567587864,
+                  "lateral_acceleration": 0.0,
+                  "speed": 0.7960199004975126,
+                  "wheel_speed": 0.7960199004975126,
+                  "yaw_acceleration": 0.0,
+                  "yaw_jerk": 0.0,
+                  "yaw_rate": 0.0
+                },
+                "3": {
+                  "acceleration": 0.4162408217795635,
+                  "jerk": 0.7345801567587864,
+                  "lateral_acceleration": 0.0,
+                  "speed": 0.7960199004975126,
+                  "wheel_speed": 0.7960199004975126,
+                  "yaw_acceleration": 0.0,
+                  "yaw_jerk": 0.0,
+                  "yaw_rate": 0.0
+                }
+              }
+            },
+            "plan_id": 424242,
+            "reason": "OK",
+            "schema": "formation_evaluation/v1",
+            "status": "FEASIBLE",
+            "trajectory_published": false
+          }
+        ],
+        "executable": true,
+        "feasible_count": 2,
+        "rejections": [],
+        "schema": "formation_selection/v1",
+        "selected_candidate_id": 1,
+        "status": "FEASIBLE",
+        "trajectory_published": false
+      },
+      "status": "FEASIBLE",
+      "trajectory_published": true
+    },
+    "trajectory": {
+      "plan_id": 424242,
+      "formation_id": "smoke_wedge",
+      "stamp": [
+        1795056836,
+        676509141
+      ],
+      "vehicle_ids": [
+        1,
+        2,
+        3
+      ],
+      "sample_count": 296,
+      "duration_s": 5.888671874,
+      "frame_id": "map"
+    },
+    "playback_samples": [
+      {
+        "elapsed_s": 0.480521441,
+        "clamped_elapsed_s": 0.480521441,
+        "state": "PLAYING",
+        "vehicles": [
+          {
+            "vehicle_id": 1,
+            "center": [
+              0.011979185609742456,
+              0.0
+            ],
+            "theta": 0.0,
+            "mode": 0
+          },
+          {
+            "vehicle_id": 2,
+            "center": [
+              0.011979185609742456,
+              1.2
+            ],
+            "theta": 0.0,
+            "mode": 0
+          },
+          {
+            "vehicle_id": 3,
+            "center": [
+              0.011979185609742456,
+              -1.2
+            ],
+            "theta": 0.0,
+            "mode": 0
+          }
+        ]
+      },
+      {
+        "elapsed_s": 0.485930682,
+        "clamped_elapsed_s": 0.485930682,
+        "state": "PLAYING",
+        "vehicles": [
+          {
+            "vehicle_id": 1,
+            "center": [
+              0.012378760157151015,
+              0.0
+            ],
+            "theta": 0.0,
+            "mode": 0
+          },
+          {
+            "vehicle_id": 2,
+            "center": [
+              0.012378760157151015,
+              1.2
+            ],
+            "theta": 0.0,
+            "mode": 0
+          },
+          {
+            "vehicle_id": 3,
+            "center": [
+              0.012378760157151015,
+              -1.2
+            ],
+            "theta": 0.0,
+            "mode": 0
+          }
+        ]
+      },
+      {
+        "elapsed_s": 0.521603585,
+        "clamped_elapsed_s": 0.521603585,
+        "state": "PLAYING",
+        "vehicles": [
+          {
+            "vehicle_id": 1,
+            "center": [
+              0.01515424683821287,
+              0.0
+            ],
+            "theta": 0.0,
+            "mode": 0
+          },
+          {
+            "vehicle_id": 2,
+            "center": [
+              0.01515424683821287,
+              1.2
+            ],
+            "theta": 0.0,
+            "mode": 0
+          },
+          {
+            "vehicle_id": 3,
+            "center": [
+              0.01515424683821287,
+              -1.2
+            ],
+            "theta": 0.0,
+            "mode": 0
+          }
+        ]
+      },
+      {
+        "elapsed_s": 0.561560154,
+        "clamped_elapsed_s": 0.561560154,
+        "state": "PLAYING",
+        "vehicles": [
+          {
+            "vehicle_id": 1,
+            "center": [
+              0.018704786057502285,
+              0.0
+            ],
+            "theta": 0.0,
+            "mode": 0
+          },
+          {
+            "vehicle_id": 2,
+            "center": [
+              0.018704786057502285,
+              1.2
+            ],
+            "theta": 0.0,
+            "mode": 0
+          },
+          {
+            "vehicle_id": 3,
+            "center": [
+              0.018704786057502285,
+              -1.2
+            ],
+            "theta": 0.0,
+            "mode": 0
+          }
+        ]
+      }
+    ],
+    "terminal": {
+      "state": "HOLD_END",
+      "clamped_elapsed_s": 5.888671874,
+      "duration_s": 5.888671874,
+      "terminal_center_error_m": 0.0,
+      "terminal_heading_error_rad": 0.0
+    },
+    "marker_namespaces": [
+      "formation/smoke_wedge/links",
+      "formation/smoke_wedge/reference",
+      "formation/smoke_wedge/status",
+      "formation/smoke_wedge/vehicle_1",
+      "formation/smoke_wedge/vehicle_2",
+      "formation/smoke_wedge/vehicle_3"
+    ],
+    "marker_count": 20,
+    "tf_frames": [
+      "formation_smoke_wedge_reference",
+      "formation_smoke_wedge_vehicle_1_base_link",
+      "formation_smoke_wedge_vehicle_2_base_link",
+      "formation_smoke_wedge_vehicle_3_base_link"
+    ],
+    "invalid_cleanup": {
+      "optimizer_status": {
+        "detail": "expected a finite number, got nan",
+        "executable": false,
+        "feasible": false,
+        "formation_id": null,
+        "map_frame_id": "map",
+        "map_ready": true,
+        "map_signature": "51b19b67924b217cb178c44b502044679306cccdf92ff19e6f14b79d3e0dcc53",
+        "node_state": "REQUEST_REJECTED",
+        "plan_id": null,
+        "publication_version": 2,
+        "published_plan_id": null,
+        "reason": "INVALID_REQUEST",
+        "request": {
+          "detail": "expected a finite number, got nan",
+          "executable": false,
+          "field": "vehicles[0].start_center.x",
+          "reason": "INVALID_REQUEST",
+          "schema": "fwis_v3/formation_status",
+          "search_started": false,
+          "trajectory_published": false,
+          "valid": false,
+          "vehicle_id": 1
+        },
+        "request_formation_id": "smoke_wedge",
+        "request_map_signature": null,
+        "request_plan_id": 424243,
+        "requests_seen": 2,
+        "schema": "formation_optimizer_status/v1",
+        "seeds_seen": 1,
+        "status": "INVALID",
+        "trajectory_published": false,
+        "valid": false
+      },
+      "playback_status": {
+        "backend": "legacy",
+        "cleared": true,
+        "executable": false,
+        "formation_id": null,
+        "frame_id": "map",
+        "geometry_only": true,
+        "marker_count": 0,
+        "marker_namespaces": [],
+        "model_sha256": null,
+        "plan_id": null,
+        "planning_context_sha256": null,
+        "reason": "empty trajectory clears previous markers",
+        "request_sha256": null,
+        "schema": "formation_playback/v1",
+        "semantic_version": null,
+        "state": "CLEARED",
+        "time_source": "header_stamp_common_clock"
+      },
+      "marker_action": "DELETEALL"
+    }
+  },
+  "errors": [
+    {
+      "check": "marker_status_feasible",
+      "detail": "status text='plan 424242 | HOLD_END | FEASIBLE\\nT_end=5.889 s | FEASIBLE / independent audit and transactional publication\\nno independent metrics reported'"
+    }
+  ],
+  "processes": [
+    {
+      "pid": 613590,
+      "running": false,
+      "exit_code": 0,
+      "log": "/tmp/task01_head_smoke_logs/roscore.txt"
+    },
+    {
+      "pid": 613620,
+      "running": false,
+      "exit_code": 0,
+      "log": "/tmp/task01_head_smoke_logs/formation_optimizer.txt"
+    },
+    {
+      "pid": 613621,
+      "running": false,
+      "exit_code": 0,
+      "log": "/tmp/task01_head_smoke_logs/formation_playback.txt"
+    }
+  ],
+  "cleanup": {
+    "stopped": true,
+    "port_released": true,
+    "exit_codes": {
+      "formation_playback": 0,
+      "formation_optimizer": 0,
+      "roscore": 0
+    }
+  },
+  "logs": {
+    "roscore": {
+      "path": "/tmp/task01_head_smoke_logs/roscore.txt",
+      "exit_code": 0
+    },
+    "formation_optimizer": {
+      "path": "/tmp/task01_head_smoke_logs/formation_optimizer.txt",
+      "exit_code": 0
+    },
+    "formation_playback": {
+      "path": "/tmp/task01_head_smoke_logs/formation_playback.txt",
+      "exit_code": 0
+    }
+  }
+}

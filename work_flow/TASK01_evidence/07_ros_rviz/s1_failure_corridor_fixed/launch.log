@@ -1,0 +1,203 @@
+[expv3] 地图比例 1.0，中心点固定；栅格尺寸保持不变。
+[expv3] 编队发布后端 virtual_rigid_a（同一时刻只启动这一个发布后端）
+[expv3] 货物中心楔形编队，车体航向独立（新实验按配置策略初始化）；地图绝对比例 1.0
+[expv3] 构建 ROS overlay...
+[expv3] 启动 Demo：backend:=virtual_rigid_a auto_goal:=false rviz:=true virtual_a_goal_policy:=straight map_dir:=/tmp/expv3-map-scale.NYEbpW/S1 virtual_a_guidance_mode:=corridor virtual_a_corridor_enforcement:=hard scene:=manual_map rviz_config:=/tmp/expv3-map-scale.NYEbpW/formation.rviz
+[WARN] [1795027337.439595]: [formation goal bridge] plan 600001 status=REJECTED reason=NO_ROUTE_GUIDE
+[INFO] [1795027260.727257]: [formation goal bridge] ready: formation=cargo_wedge offsets=((1.0, 0.0), (0.0, 1.0), (0.0, -1.0)), start=(10.000, 3.600, 0.000), goal topic=/move_base_simple/goal
+[INFO] [1795027311.059816]: [formation goal bridge] 2D Pose Estimate recorded; new experiment policy=cargo_heading headings={1: 0.0, 2: 0.0, 3: 0.0}
+[INFO] [1795027311.563405]: [formation goal bridge] plan 600000: start=(0.000, 0.000, 0.000) goal=(5.000, 0.000, 0.000) vehicles=3
+[INFO] [1795027311.564744]: [formation goal bridge] plan 600000 virtual_a_goal_policy=straight goal_headings={1: 0.0, 2: 0.0, 3: 0.0}
+[INFO] [1795027311.565664]: [formation goal bridge] start from manual start; body headings {1: 0.0, 2: 0.0, 3: 0.0}
+[INFO] [1795027321.862603]: [formation goal bridge] plan 600000 FEASIBLE and published
+[INFO] [1795027333.699930]: [formation goal bridge] plan 600000 FEASIBLE and published
+[INFO] [1795027337.344606]: [formation goal bridge] plan 600001: start=(5.000, 0.000, 0.000) goal=(10.000, 0.000, 0.000) vehicles=3
+[INFO] [1795027337.346185]: [formation goal bridge] plan 600001 virtual_a_goal_policy=straight goal_headings={1: 0.0, 2: 0.0, 3: 0.0}
+[INFO] [1795027337.347366]: [formation goal bridge] start from current playback; body headings {1: 0.0, 2: 0.0, 3: 0.0}
+[INFO] [1795027340.517849]: [formation goal bridge] 2D Pose Estimate recorded; new experiment policy=cargo_heading headings={1: 0.0, 2: 0.0, 3: 0.0}
+[INFO] [1795027341.021466]: [formation goal bridge] plan 600002: start=(0.000, 0.000, 0.000) goal=(5.000, 0.000, 0.000) vehicles=3
+[INFO] [1795027341.023120]: [formation goal bridge] plan 600002 virtual_a_goal_policy=straight goal_headings={1: 0.0, 2: 0.0, 3: 0.0}
+[INFO] [1795027341.024071]: [formation goal bridge] start from manual start; body headings {1: 0.0, 2: 0.0, 3: 0.0}
+[INFO] [1795027351.189468]: [formation goal bridge] plan 600002 FEASIBLE and published
+[INFO] [1795027362.982563]: [formation goal bridge] plan 600002 FEASIBLE and published
+[INFO] [1795027260.544936]: [fwis_map_publisher] /map published: 409x302, res=0.050 m
+[ERROR] [1795027311.582522]: [formation playback] rejecting playback plan 0: no raw /formation/plan_request is retained for plan 0; the virtual envelope cannot be accepted
+[WARN] [1795027311.585726]: [formation playback] ignoring planning payload for plan 600000: current job is plan None
+[WARN] [1795027322.601098]: [formation playback] ignoring audit status for plan 600000: identity differs from the verified envelope (model_sha256/formation_id/backend)
+[ERROR] [1795027337.441330]: [formation playback] rejecting playback plan 600001: unsupported certification ''; expected 'virtual_a_geometry_dynamics_collision/v1'
+[ERROR] [1795027341.039344]: [formation playback] rejecting playback plan 0: no raw /formation/plan_request is retained for plan 0; the virtual envelope cannot be accepted
+[WARN] [1795027341.042528]: [formation playback] ignoring planning payload for plan 600002: current job is plan 600001
+[WARN] [1795027351.943935]: [formation playback] ignoring audit status for plan 600002: identity differs from the verified envelope (model_sha256/formation_id/backend)
+[ERROR] [1795027410.283157]: [formation playback] rejecting playback plan 600002: unsupported playback semantic_version 'virtual_rigid_a.playback.v0'; expected 'virtual_rigid_a.playback.v1'
+[ERROR] [1795027410.785114]: [formation playback] rejecting playback plan 600002: unsupported model_version 'virtual_rigid_a.timed.v0'; expected 'virtual_rigid_a.timed.v1'
+[ERROR] [1795027411.269337]: [formation playback] rejecting playback plan 600002: model_sha256 mismatch: message=113a9a441edd7a655e8bcd08bb1347895ab8f1f6e7c219b9a3aa1ab2e4109fdd transmitted-bytes=013a9a441edd7a655e8bcd08bb1347895ab8f1f6e7c219b9a3aa1ab2e4109fdd
+[ERROR] [1795027412.453025]: [formation playback] rejecting playback plan 600002: vehicle 1 sample 296 x=3.5026089081831677 differs from the model 3.5016089081831678 by 0.001 > 1e-09
+[ERROR] [1795027413.647337]: [formation playback] rejecting playback plan 600002: vehicle 1 sample 296 theta=0.001 differs from the model 0 by 0.001 > 1e-09
+[ERROR] [1795027414.805800]: [formation playback] rejecting playback plan 600002: vehicle 1 sample 296 center speed=0.79307902085593951 differs from the model 0.79207902085593951 by 0.001 > 1e-09
+[ERROR] [1795027692.574758]: [formation playback] rejecting playback plan 600002: formation_poses[296].x=2.5024009870970683 differs from the model 2.5016089081831678 by 0.000792079 > 1e-09
+[INFO] [1795027260.673253]: [formation playback] common-clock display ready; GEOMETRY_ONLY is shown until an independent FEASIBLE status is received
+[INFO] [1795027311.584084]: [formation playback] cleared: invalid playback plan: no raw /formation/plan_request is retained for plan 0; the virtual envelope cannot be accepted
+[INFO] [1795027311.610923]: [formation playback] planning display plan=600000 generation=1 stage=ASTAR_SEARCH/1 layers=identity-only
+[INFO] [1795027311.878894]: [formation playback] planning display plan=600000 generation=1 stage=CORRIDOR_BUILD/2 layers=astar
+[INFO] [1795027312.049925]: [formation playback] planning display plan=600000 generation=1 stage=NLP_SOLVE/4 layers=astar,corridors
+[INFO] [1795027319.489866]: [formation playback] planning display plan=600000 generation=1 stage=GEOMETRY_AUDIT/5 layers=astar,candidates,corridors
+[INFO] [1795027319.864906]: [formation playback] planning display plan=600000 generation=1 stage=GEOMETRY_AUDIT/5 layers=astar,candidates,corridors
+[INFO] [1795027319.876736]: [formation playback] planning display plan=600000 generation=1 stage=DYNAMICS_AUDIT/6 layers=astar,candidates,corridors
+[INFO] [1795027320.505697]: [formation playback] planning display plan=600000 generation=1 stage=DYNAMICS_AUDIT/6 layers=astar,candidates,corridors
+[INFO] [1795027320.518135]: [formation playback] planning display plan=600000 generation=1 stage=OBB_COLLISION_AUDIT/7 layers=astar,candidates,corridors
+[INFO] [1795027320.945565]: [formation playback] planning display plan=600000 generation=1 stage=OBB_COLLISION_AUDIT/7 layers=astar,candidates,corridors
+[INFO] [1795027322.599406]: [formation playback] accepted virtual_rigid_a plan 600000 formation cargo_wedge model_sha256=ef5b988f49f9d6cd7503ec9430650ec369058e2fc907fab00e05c6180377d29d: 3 vehicles, 593 shared samples, T_end=11.835938 s
+[INFO] [1795027322.609135]: [formation playback] plan=600000 state=PLAYING elapsed=0.799018 clamped=0.799018 fraction=0.950907 executable=False
+[INFO] [1795027322.623452]: [formation playback] planning display plan=600000 generation=1 stage=PUBLISHED/8 layers=astar,candidates,corridors
+[INFO] [1795027333.695684]: [formation playback] plan=600000 state=HOLD_END elapsed=11.870675 clamped=11.835938 fraction=0.000000 executable=True
+[INFO] [1795027337.367651]: [formation playback] cleared: new experiment 600001 admitted
+[INFO] [1795027337.370791]: [formation playback] planning display plan=600001 generation=2 stage=REQUEST_ADMITTED/0 layers=identity-only
+[INFO] [1795027337.395917]: [formation playback] planning display plan=600001 generation=2 stage=ASTAR_SEARCH/1 layers=identity-only
+[INFO] [1795027337.438538]: [formation playback] planning display plan=600001 generation=2 stage=FAILED/1 layers=identity-only
+[INFO] [1795027337.442281]: [formation playback] cleared: invalid playback plan: unsupported certification ''; expected 'virtual_a_geometry_dynamics_collision/v1'
+[INFO] [1795027337.443288]: [formation playback] planning display plan=600001 generation=2 stage=FAILED/1 layers=candidates
+[INFO] [1795027341.041193]: [formation playback] cleared: invalid playback plan: no raw /formation/plan_request is retained for plan 0; the virtual envelope cannot be accepted
+[INFO] [1795027341.071494]: [formation playback] planning display plan=600002 generation=3 stage=ASTAR_SEARCH/1 layers=identity-only
+[INFO] [1795027341.341044]: [formation playback] planning display plan=600002 generation=3 stage=CORRIDOR_BUILD/2 layers=astar
+[INFO] [1795027341.515176]: [formation playback] planning display plan=600002 generation=3 stage=NLP_SOLVE/4 layers=astar,corridors
+[INFO] [1795027348.806457]: [formation playback] planning display plan=600002 generation=3 stage=NLP_SOLVE/4 layers=astar,candidates,corridors
+[INFO] [1795027348.819615]: [formation playback] planning display plan=600002 generation=3 stage=GEOMETRY_AUDIT/5 layers=astar,candidates,corridors
+[INFO] [1795027349.218552]: [formation playback] planning display plan=600002 generation=3 stage=GEOMETRY_AUDIT/5 layers=astar,candidates,corridors
+[INFO] [1795027349.229800]: [formation playback] planning display plan=600002 generation=3 stage=DYNAMICS_AUDIT/6 layers=astar,candidates,corridors
+[INFO] [1795027349.854473]: [formation playback] planning display plan=600002 generation=3 stage=DYNAMICS_AUDIT/6 layers=astar,candidates,corridors
+[INFO] [1795027349.865880]: [formation playback] planning display plan=600002 generation=3 stage=OBB_COLLISION_AUDIT/7 layers=astar,candidates,corridors
+[INFO] [1795027350.265572]: [formation playback] planning display plan=600002 generation=3 stage=OBB_COLLISION_AUDIT/7 layers=astar,candidates,corridors
+[INFO] [1795027351.172861]: [formation playback] planning display plan=600002 generation=3 stage=PUBLISHED/8 layers=astar,candidates,corridors
+[INFO] [1795027351.941618]: [formation playback] accepted virtual_rigid_a plan 600002 formation cargo_wedge model_sha256=013a9a441edd7a655e8bcd08bb1347895ab8f1f6e7c219b9a3aa1ab2e4109fdd: 3 vehicles, 593 shared samples, T_end=11.835938 s
+[INFO] [1795027351.955854]: [formation playback] plan=600002 state=PLAYING elapsed=0.813674 clamped=0.813674 fraction=0.683723 executable=False
+[INFO] [1795027362.980288]: [formation playback] plan=600002 state=HOLD_END elapsed=11.837299 clamped=11.835938 fraction=0.000000 executable=True
+[INFO] [1795027410.284694]: [formation playback] cleared: invalid playback plan: unsupported playback semantic_version 'virtual_rigid_a.playback.v0'; expected 'virtual_rigid_a.playback.v1'
+[INFO] [1795027410.786417]: [formation playback] cleared: invalid playback plan: unsupported model_version 'virtual_rigid_a.timed.v0'; expected 'virtual_rigid_a.timed.v1'
+[INFO] [1795027411.270747]: [formation playback] cleared: invalid playback plan: model_sha256 mismatch: message=113a9a441edd7a655e8bcd08bb1347895ab8f1f6e7c219b9a3aa1ab2e4109fdd transmitted-bytes=013a9a441edd7a655e8bcd08bb1347895ab8f1f6e7c219b9a3aa1ab2e4109fdd
+[INFO] [1795027412.454459]: [formation playback] cleared: invalid playback plan: vehicle 1 sample 296 x=3.5026089081831677 differs from the model 3.5016089081831678 by 0.001 > 1e-09
+[INFO] [1795027413.648847]: [formation playback] cleared: invalid playback plan: vehicle 1 sample 296 theta=0.001 differs from the model 0 by 0.001 > 1e-09
+[INFO] [1795027414.807430]: [formation playback] cleared: invalid playback plan: vehicle 1 sample 296 center speed=0.79307902085593951 differs from the model 0.79207902085593951 by 0.001 > 1e-09
+[INFO] [1795027416.022185]: [formation playback] accepted virtual_rigid_a plan 600002 formation cargo_wedge model_sha256=013a9a441edd7a655e8bcd08bb1347895ab8f1f6e7c219b9a3aa1ab2e4109fdd: 3 vehicles, 593 shared samples, T_end=11.835938 s
+[INFO] [1795027416.035823]: [formation playback] plan=600002 state=HOLD_END elapsed=64.894069 clamped=11.835938 fraction=0.000000 executable=True
+[INFO] [1795027614.661593]: [formation playback] accepted virtual_rigid_a plan 600002 formation cargo_wedge model_sha256=013a9a441edd7a655e8bcd08bb1347895ab8f1f6e7c219b9a3aa1ab2e4109fdd: 3 vehicles, 593 shared samples, T_end=11.835938 s
+[INFO] [1795027614.672186]: [formation playback] plan=600002 state=HOLD_END elapsed=263.533288 clamped=11.835938 fraction=0.000000 executable=True
+[INFO] [1795027692.576441]: [formation playback] cleared: invalid playback plan: formation_poses[296].x=2.5024009870970683 differs from the model 2.5016089081831678 by 0.000792079 > 1e-09
+[INFO] [1795027694.413255]: [formation playback] accepted virtual_rigid_a plan 600002 formation cargo_wedge model_sha256=013a9a441edd7a655e8bcd08bb1347895ab8f1f6e7c219b9a3aa1ab2e4109fdd: 3 vehicles, 593 shared samples, T_end=11.835938 s
+[INFO] [1795027694.423216]: [formation playback] plan=600002 state=HOLD_END elapsed=343.284960 clamped=11.835938 fraction=0.000000 executable=True
+[WARN] [1795027311.581936]: [uniform planner] plan 0 has no executable envelope (ADMITTED_PLANNING)
+[WARN] [1795027337.361839]: [uniform planner] plan 0 has no executable envelope (ADMITTED_PLANNING)
+[ERROR] [1795027337.437762]: [uniform planner] virtual plan 600001 not executable: status=NO_ACCEPTED_CANDIDATE reason=NO_ROUTE_GUIDE layer=PLANNING wall=0.072s
+[WARN] [1795027337.439982]: [uniform planner] plan 600001 has no executable envelope (NO_ROUTE_GUIDE)
+[WARN] [1795027341.039416]: [uniform planner] plan 0 has no executable envelope (ADMITTED_PLANNING)
+[INFO] [1795027260.697307]: [uniform planner] virtual_rigid_a validated planner config: guidance_mode=corridor corridor_enforcement=hard as_dict={'intervals': 8, 'max_initials': 6, 'max_seconds': 30.0, 'max_iterations': 120, 'solver': 'ipopt', 'allow_scipy_fallback': True, 'collocation_points': 9, 'curvature_margin': 0.02, 'eta_limit': 2.0, 'kappa_limit': 0.5524861878453039, 'position_tolerance_m': 0.005, 'heading_tolerance_rad': 0.003490658503988659, 'rigidity_tolerance_m': 1e-06, 'ipopt_tolerance': 1e-08, 'scipy_tolerance': 1e-08, 'scipy_maxiter': 120, 'guidance_mode': 'corridor', 'corridor_enforcement': 'hard', 'corridor_margin_m': 1e-05, 'corridor_margin_portal_fraction': 0.25, 'corridor_kappa_weight': 0.01, 'corridor_guide_weight': 0.1, 'corridor_clearance_weight': 1.0, 'corridor_clearance_target_m': 0.05, 'corridor_quadrature_points': 9, 'corridor_audit_position_margin_m': 5e-08, 'corridor_audit_max_depth': 20, 'corridor_audit_max_intervals': 20000, 'corridor_audit_min_width_m': 1e-05, 'corridor_box_padding_m': 2.0}
+[INFO] [1795027260.720306]: [uniform planner] autonomous V0.2 planner ready; backend=virtual_rigid_a budget=10000 expansions / 30.0 s
+[INFO] [1795027260.724715]: [uniform planner] exact map 409x302 res=0.050 origin=(-6.80, -4.80) signature=74143528b109222a
+[INFO] [1795027311.060102]: [uniform planner] explicit virtual experiment reset recorded at F=(0, 0, 0); this is a declared A-straight stationary initial state, not a physical wheel measurement
+[INFO] [1795027311.583134]: [uniform planner] plan 600000 admitted for virtual_rigid_a: start=(0.000, 0.000, 0.000) goal=(5.000, 0.000, 0.000) initial=rviz_reset/virtual-a-reset-None-1 policy=STRAIGHT
+[INFO] [1795027321.854469]: [uniform planner] virtual plan 600000 published: T_end=11.836 s model_sha256=ef5b988f49f9d6cd7503ec9430650ec369058e2fc907fab00e05c6180377d29d samples=593 wall=9.333 s verification_to_stamp_delay=0.8575 s
+[INFO] [1795027322.609152]: [uniform planner] plan 600000 playback confirmed
+[INFO] [1795027333.697029]: [uniform planner] plan 600000 terminal record virtual-a-terminal-600000-2 compatible=True: all vehicles stopped, parallel and wheel-straight at T
+[INFO] [1795027333.699575]: [uniform planner] plan 600000 HOLD_END; busy released
+[INFO] [1795027337.363349]: [uniform planner] plan 600001 admitted for virtual_rigid_a: start=(5.000, 0.000, 0.000) goal=(10.000, 0.000, 0.000) initial=verified_terminal/virtual-a-terminal-600000-2 policy=STRAIGHT
+[INFO] [1795027340.518712]: [uniform planner] explicit virtual experiment reset recorded at F=(0, 0, 0); this is a declared A-straight stationary initial state, not a physical wheel measurement
+[INFO] [1795027341.040870]: [uniform planner] plan 600002 admitted for virtual_rigid_a: start=(0.000, 0.000, 0.000) goal=(5.000, 0.000, 0.000) initial=rviz_reset/virtual-a-reset-600001-3 policy=STRAIGHT
+[INFO] [1795027351.178126]: [uniform planner] virtual plan 600002 published: T_end=11.836 s model_sha256=013a9a441edd7a655e8bcd08bb1347895ab8f1f6e7c219b9a3aa1ab2e4109fdd samples=593 wall=9.208 s verification_to_stamp_delay=0.8514 s
+[INFO] [1795027351.956001]: [uniform planner] plan 600002 playback confirmed
+[INFO] [1795027362.980513]: [uniform planner] plan 600002 terminal record virtual-a-terminal-600002-4 compatible=True: all vehicles stopped, parallel and wheel-straight at T
+[INFO] [1795027362.982107]: [uniform planner] plan 600002 HOLD_END; busy released
+[31m[rviz-5] escalating to SIGTERM[0m
+... logging to /home/wq/whut_thesis/expv3_multi_virtual_a/work_flow/TASK01_evidence/07_ros_rviz/s1_failure_corridor_fixed/nodes_raw/3ef1cff4-e37a-11f1-a57b-1b4c90db486b/roslaunch-wq-ubuntu-502920.log
+Checking log directory for disk usage. This may take a while.
+Press Ctrl-C to interrupt
+Done checking log file disk usage. Usage is <1GB.
+]2;/home/wq/whut_thesis/expv3_multi_virtual_a/catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch
+[1mstarted roslaunch server http://wq-ubuntu:40083/[0m
+
+SUMMARY
+========
+
+PARAMETERS
+ * /formation_goal_bridge/admission_backend: virtual_rigid_a
+ * /formation_goal_bridge/allow_reverse: True
+ * /formation_goal_bridge/body_length_m: 0.738
+ * /formation_goal_bridge/body_width_m: 0.5
+ * /formation_goal_bridge/formation_id: cargo_wedge
+ * /formation_goal_bridge/frame_id: map
+ * /formation_goal_bridge/goal_heading_free: True
+ * /formation_goal_bridge/initial_heading_policy: cargo_heading
+ * /formation_goal_bridge/initial_plan_id: 600000
+ * /formation_goal_bridge/job_state_timeout_s: 3.0
+ * /formation_goal_bridge/map_timeout_s: 8.0
+ * /formation_goal_bridge/offsets: [[1.0, 0.0], [0.0...
+ * /formation_goal_bridge/playback_tf_timeout_s: 0.5
+ * /formation_goal_bridge/start_theta: 0.0
+ * /formation_goal_bridge/start_x: 10.0
+ * /formation_goal_bridge/start_y: 3.6
+ * /formation_goal_bridge/vehicle_ids: [1, 2, 3]
+ * /formation_goal_bridge/virtual_a_goal_policy: straight
+ * /formation_playback/allow_reverse: True
+ * /formation_playback/backend: virtual_rigid_a
+ * /formation_playback/body_length_m: 0.738
+ * /formation_playback/body_width_m: 0.5
+ * /formation_playback/formation_id: cargo_wedge
+ * /formation_playback/frame_id: map
+ * /formation_playback/goal_heading_free: True
+ * /formation_playback/hud_enabled: True
+ * /formation_playback/hud_height: 270
+ * /formation_playback/hud_left: 900
+ * /formation_playback/hud_top: 20
+ * /formation_playback/hud_width: 360
+ * /formation_playback/initial_heading_policy: cargo_heading
+ * /formation_playback/offsets: [[1.0, 0.0], [0.0...
+ * /formation_playback/publish_tf: True
+ * /formation_playback/rate: 25.0
+ * /formation_playback/show_cargo_reason: False
+ * /formation_playback/show_status_text: False
+ * /formation_playback/transport_ui: True
+ * /formation_playback/vehicle_ids: [1, 2, 3]
+ * /formation_uniform_planner/backend: virtual_rigid_a
+ * /formation_uniform_planner/collision_margin: 0.05
+ * /formation_uniform_planner/frame_id: map
+ * /formation_uniform_planner/goal_heading_tol: 0.017453292519943295
+ * /formation_uniform_planner/goal_psi_tol: 0.017453292519943295
+ * /formation_uniform_planner/goal_xy_tol: 0.02
+ * /formation_uniform_planner/max_expansions: 10000
+ * /formation_uniform_planner/max_publication_samples: 200001
+ * /formation_uniform_planner/max_seconds: 30.0
+ * /formation_uniform_planner/playback_finish_grace_s: 3.0
+ * /formation_uniform_planner/playback_start_timeout_s: 5.0
+ * /formation_uniform_planner/publication_dt: 0.02
+ * /formation_uniform_planner/sweep_spacing: 0.01
+ * /formation_uniform_planner/translation_step: 1.0
+ * /formation_uniform_planner/virtual_a_corridor_enforcement: hard
+ * /formation_uniform_planner/virtual_a_goal_policy: straight
+ * /formation_uniform_planner/virtual_a_guidance_mode: corridor
+ * /formation_uniform_planner/virtual_a_planning_budget_s: 60.0
+ * /formation_uniform_planner/virtual_a_planning_timeout_s: 75.0
+ * /fwis_map_publisher/map_dir: /tmp/expv3-map-sc...
+ * /rosdistro: noetic
+ * /rosversion: 1.17.4
+
+NODES
+  /
+    formation_goal_bridge (fwis_v3_demo/formation_goal_bridge.py)
+    formation_playback (fwis_v3_playback/formation_playback.py)
+    formation_uniform_planner (fwis_v3_optimizer/formation_uniform_planner_node.py)
+    fwis_map_publisher (fwis_map_server/map_publisher.py)
+    rviz (rviz/rviz)
+
+[1mROS_MASTER_URI=http://127.0.0.1:11633[0m
+]2;/home/wq/whut_thesis/expv3_multi_virtual_a/catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch http://127.0.0.1:11633
+[1mprocess[fwis_map_publisher-1]: started with pid [502937][0m
+[1mprocess[formation_uniform_planner-2]: started with pid [502938][0m
+[1mprocess[formation_playback-3]: started with pid [502939][0m
+[1mprocess[formation_goal_bridge-4]: started with pid [502940][0m
+[1mprocess[rviz-5]: started with pid [502941][0m
+[rviz-5] killing on exit
+[formation_goal_bridge-4] killing on exit
+[formation_playback-3] killing on exit
+[formation_uniform_planner-2] killing on exit
+[fwis_map_publisher-1] killing on exit
+shutting down processing monitor...
+... shutting down processing monitor complete
+[1mdone[0m

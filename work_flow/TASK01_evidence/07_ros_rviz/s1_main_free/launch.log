@@ -1,0 +1,126 @@
+[expv3] 地图比例 1.0，中心点固定；栅格尺寸保持不变。
+[expv3] 编队发布后端 virtual_rigid_a（同一时刻只启动这一个发布后端）
+[expv3] 货物中心楔形编队，车体航向独立（新实验按配置策略初始化）；地图绝对比例 1.0
+[expv3] 构建 ROS overlay...
+[expv3] 启动 Demo：backend:=virtual_rigid_a auto_goal:=false rviz:=true virtual_a_goal_policy:=free map_dir:=/tmp/expv3-map-scale.jJvXhk/S1 virtual_a_guidance_mode:=corridor virtual_a_corridor_enforcement:=hard scene:=manual_map rviz_config:=/tmp/expv3-map-scale.jJvXhk/formation.rviz
+[WARN] [1795025229.972276]: [formation goal bridge] plan 600000 status=REJECTED reason=CORRIDOR_AUDIT_WIDTH_LIMIT
+[INFO] [1795025209.495600]: [formation goal bridge] ready: formation=cargo_wedge offsets=((1.0, 0.0), (0.0, 1.0), (0.0, -1.0)), start=(10.000, 3.600, 0.000), goal topic=/move_base_simple/goal
+[INFO] [1795025218.704386]: [formation goal bridge] 2D Pose Estimate recorded; new experiment policy=cargo_heading headings={1: 0.0, 2: 0.0, 3: 0.0}
+[INFO] [1795025219.208120]: [formation goal bridge] plan 600000: start=(0.000, 0.000, 0.000) goal=(8.820, 3.486, 1.571) vehicles=3
+[INFO] [1795025219.209559]: [formation goal bridge] plan 600000 virtual_a_goal_policy=free goal_headings={1: 1.570796, 2: 1.570796, 3: 1.570796}
+[INFO] [1795025219.210531]: [formation goal bridge] start from manual start; body headings {1: 0.0, 2: 0.0, 3: 0.0}
+[WARN] [1795025219.229084]: [uniform planner] plan 0 has no executable envelope (ADMITTED_PLANNING)
+[ERROR] [1795025229.959091]: [uniform planner] virtual plan 600000 not executable: status=GEOMETRY_FAILED reason=CORRIDOR_AUDIT_WIDTH_LIMIT layer=GEOMETRY wall=10.727s
+[WARN] [1795025229.968930]: [uniform planner] plan 600000 has no executable envelope (CORRIDOR_AUDIT_WIDTH_LIMIT)
+[WARN] [1795025219.230887]: [formation playback] ignoring planning payload for plan 600000: current job is plan None
+[INFO] [1795025209.391131]: [uniform planner] virtual_rigid_a validated planner config: guidance_mode=corridor corridor_enforcement=hard as_dict={'intervals': 8, 'max_initials': 6, 'max_seconds': 30.0, 'max_iterations': 120, 'solver': 'ipopt', 'allow_scipy_fallback': True, 'collocation_points': 9, 'curvature_margin': 0.02, 'eta_limit': 2.0, 'kappa_limit': 0.5524861878453039, 'position_tolerance_m': 0.005, 'heading_tolerance_rad': 0.003490658503988659, 'rigidity_tolerance_m': 1e-06, 'ipopt_tolerance': 1e-08, 'scipy_tolerance': 1e-08, 'scipy_maxiter': 120, 'guidance_mode': 'corridor', 'corridor_enforcement': 'hard', 'corridor_margin_m': 1e-05, 'corridor_margin_portal_fraction': 0.25, 'corridor_kappa_weight': 0.01, 'corridor_guide_weight': 0.1, 'corridor_clearance_weight': 1.0, 'corridor_clearance_target_m': 0.05, 'corridor_quadrature_points': 9, 'corridor_audit_position_margin_m': 5e-08, 'corridor_audit_max_depth': 20, 'corridor_audit_max_intervals': 20000, 'corridor_audit_min_width_m': 1e-05, 'corridor_box_padding_m': 2.0}
+[INFO] [1795025209.412003]: [uniform planner] autonomous V0.2 planner ready; backend=virtual_rigid_a budget=10000 expansions / 30.0 s
+[INFO] [1795025209.422758]: [uniform planner] exact map 409x302 res=0.050 origin=(-6.80, -4.80) signature=74143528b109222a
+[INFO] [1795025218.705075]: [uniform planner] explicit virtual experiment reset recorded at F=(0, 0, 0); this is a declared A-straight stationary initial state, not a physical wheel measurement
+[INFO] [1795025219.230363]: [uniform planner] plan 600000 admitted for virtual_rigid_a: start=(0.000, 0.000, 0.000) goal=(8.820, 3.486, 1.571) initial=rviz_reset/virtual-a-reset-None-1 policy=FREE
+[INFO] [1795025209.399014]: [formation playback] common-clock display ready; GEOMETRY_ONLY is shown until an independent FEASIBLE status is received
+[INFO] [1795025219.263584]: [formation playback] planning display plan=600000 generation=1 stage=ASTAR_SEARCH/1 layers=identity-only
+[INFO] [1795025219.904675]: [formation playback] planning display plan=600000 generation=1 stage=CORRIDOR_BUILD/2 layers=astar
+[INFO] [1795025221.266434]: [formation playback] planning display plan=600000 generation=1 stage=PORTAL_GUIDE/3 layers=astar
+[INFO] [1795025221.277473]: [formation playback] planning display plan=600000 generation=1 stage=NLP_SOLVE/4 layers=astar,corridors
+[INFO] [1795025229.876846]: [formation playback] planning display plan=600000 generation=1 stage=NLP_SOLVE/4 layers=astar,candidates,corridors
+[INFO] [1795025229.915317]: [formation playback] planning display plan=600000 generation=1 stage=GEOMETRY_AUDIT/5 layers=astar,candidates,corridors
+[INFO] [1795025229.973209]: [formation playback] planning display plan=600000 generation=1 stage=FAILED/5 layers=astar,candidates,corridors
+[INFO] [1795025229.990514]: [formation playback] planning display plan=600000 generation=1 stage=FAILED/5 layers=astar,candidates,corridors
+[INFO] [1795025209.228393]: [fwis_map_publisher] /map published: 409x302, res=0.050 m
+[31m[rviz-5] escalating to SIGTERM[0m
+... logging to work_flow/TASK01_evidence/07_ros_rviz/s1_main_free/nodes_raw/3ef1cff4-e37a-11f1-a57b-1b4c90db486b/roslaunch-wq-ubuntu-489076.log
+Checking log directory for disk usage. This may take a while.
+Press Ctrl-C to interrupt
+Done checking log file disk usage. Usage is <1GB.
+]2;/home/wq/whut_thesis/expv3_multi_virtual_a/catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch
+[1mstarted roslaunch server http://wq-ubuntu:35359/[0m
+
+SUMMARY
+========
+
+PARAMETERS
+ * /formation_goal_bridge/admission_backend: virtual_rigid_a
+ * /formation_goal_bridge/allow_reverse: True
+ * /formation_goal_bridge/body_length_m: 0.738
+ * /formation_goal_bridge/body_width_m: 0.5
+ * /formation_goal_bridge/formation_id: cargo_wedge
+ * /formation_goal_bridge/frame_id: map
+ * /formation_goal_bridge/goal_heading_free: True
+ * /formation_goal_bridge/initial_heading_policy: cargo_heading
+ * /formation_goal_bridge/initial_plan_id: 600000
+ * /formation_goal_bridge/job_state_timeout_s: 3.0
+ * /formation_goal_bridge/map_timeout_s: 8.0
+ * /formation_goal_bridge/offsets: [[1.0, 0.0], [0.0...
+ * /formation_goal_bridge/playback_tf_timeout_s: 0.5
+ * /formation_goal_bridge/start_theta: 0.0
+ * /formation_goal_bridge/start_x: 10.0
+ * /formation_goal_bridge/start_y: 3.6
+ * /formation_goal_bridge/vehicle_ids: [1, 2, 3]
+ * /formation_goal_bridge/virtual_a_goal_policy: free
+ * /formation_playback/allow_reverse: True
+ * /formation_playback/backend: virtual_rigid_a
+ * /formation_playback/body_length_m: 0.738
+ * /formation_playback/body_width_m: 0.5
+ * /formation_playback/formation_id: cargo_wedge
+ * /formation_playback/frame_id: map
+ * /formation_playback/goal_heading_free: True
+ * /formation_playback/hud_enabled: True
+ * /formation_playback/hud_height: 270
+ * /formation_playback/hud_left: 900
+ * /formation_playback/hud_top: 20
+ * /formation_playback/hud_width: 360
+ * /formation_playback/initial_heading_policy: cargo_heading
+ * /formation_playback/offsets: [[1.0, 0.0], [0.0...
+ * /formation_playback/publish_tf: True
+ * /formation_playback/rate: 25.0
+ * /formation_playback/show_cargo_reason: False
+ * /formation_playback/show_status_text: False
+ * /formation_playback/transport_ui: True
+ * /formation_playback/vehicle_ids: [1, 2, 3]
+ * /formation_uniform_planner/backend: virtual_rigid_a
+ * /formation_uniform_planner/collision_margin: 0.05
+ * /formation_uniform_planner/frame_id: map
+ * /formation_uniform_planner/goal_heading_tol: 0.017453292519943295
+ * /formation_uniform_planner/goal_psi_tol: 0.017453292519943295
+ * /formation_uniform_planner/goal_xy_tol: 0.02
+ * /formation_uniform_planner/max_expansions: 10000
+ * /formation_uniform_planner/max_publication_samples: 200001
+ * /formation_uniform_planner/max_seconds: 30.0
+ * /formation_uniform_planner/playback_finish_grace_s: 3.0
+ * /formation_uniform_planner/playback_start_timeout_s: 5.0
+ * /formation_uniform_planner/publication_dt: 0.02
+ * /formation_uniform_planner/sweep_spacing: 0.01
+ * /formation_uniform_planner/translation_step: 1.0
+ * /formation_uniform_planner/virtual_a_corridor_enforcement: hard
+ * /formation_uniform_planner/virtual_a_goal_policy: free
+ * /formation_uniform_planner/virtual_a_guidance_mode: corridor
+ * /formation_uniform_planner/virtual_a_planning_budget_s: 60.0
+ * /formation_uniform_planner/virtual_a_planning_timeout_s: 75.0
+ * /fwis_map_publisher/map_dir: /tmp/expv3-map-sc...
+ * /rosdistro: noetic
+ * /rosversion: 1.17.4
+
+NODES
+  /
+    formation_goal_bridge (fwis_v3_demo/formation_goal_bridge.py)
+    formation_playback (fwis_v3_playback/formation_playback.py)
+    formation_uniform_planner (fwis_v3_optimizer/formation_uniform_planner_node.py)
+    fwis_map_publisher (fwis_map_server/map_publisher.py)
+    rviz (rviz/rviz)
+
+[1mROS_MASTER_URI=http://127.0.0.1:11633[0m
+]2;/home/wq/whut_thesis/expv3_multi_virtual_a/catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch http://127.0.0.1:11633
+[1mprocess[fwis_map_publisher-1]: started with pid [489091][0m
+[1mprocess[formation_uniform_planner-2]: started with pid [489092][0m
+[1mprocess[formation_playback-3]: started with pid [489093][0m
+[1mprocess[formation_goal_bridge-4]: started with pid [489094][0m
+[1mprocess[rviz-5]: started with pid [489095][0m
+[rviz-5] killing on exit
+[formation_goal_bridge-4] killing on exit
+[formation_playback-3] killing on exit
+[formation_uniform_planner-2] killing on exit
+[fwis_map_publisher-1] killing on exit
+shutting down processing monitor...
+... shutting down processing monitor complete
+[1mdone[0m

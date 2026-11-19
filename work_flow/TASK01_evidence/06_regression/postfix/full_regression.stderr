@@ -1,0 +1,30 @@
+........................................E........................................................................................................................................................................................................................................................................................................usage: python3 -m unittest [-h] [--cases-file CASES_FILE] --output-dir
+                           OUTPUT_DIR [--repeats REPEATS]
+                           [--ids IDS [IDS ...]]
+                           [--ablation {no_oblique,no_spin,no_spin_no_oblique,none}]
+                           [--enable-nlp] [--ros-summary ROS_SUMMARY]
+python3 -m unittest: error: --repeats must be at least 3 for the S10 contract
+...................................................................................................................................................................................................................................................................................................................................................................../opt/ros/noetic/lib/python3/dist-packages/rospy/core.py:205: DeprecationWarning: The 'warn' method is deprecated, use 'warning' instead
+  logfunc(msg, *args, **kwargs)
+[formation playback] ignoring planning payload for plan 16: current job is plan 17
+.[formation playback] ignoring planning payload for plan 17: identity does not match the current admission
+................................[formation playback] rejecting guide payload: raw_route_points needs at least two points
+...........................................................................................................................................................................................................................[uniform planner] PROGRESS_DISPLAY_ERROR plan 9002 generation 0 layer=corridors: ValueError: no actual corridor display exists for this round; planning and audits continue
+[uniform planner] PROGRESS_DISPLAY_ERROR plan 9002 generation 0 layer=corridors: ValueError: no actual corridor display exists for this round; planning and audits continue
+[uniform planner] PROGRESS_DISPLAY_ERROR plan 9002 generation 0 layer=corridors: ValueError: no actual corridor display exists for this round; planning and audits continue
+[uniform planner] PROGRESS_DISPLAY_ERROR plan 9002 generation 0 layer=corridors: ValueError: no actual corridor display exists for this round; planning and audits continue
+[uniform planner] PROGRESS_DISPLAY_ERROR plan 9002 generation 0 layer=corridors: ValueError: no actual corridor display exists for this round; planning and audits continue
+...........................................................[uniform planner] PROGRESS_DISPLAY_ERROR plan 9003 generation 0 layer=corridors: ValueError: no actual corridor display exists for this round; planning and audits continue
+.............................................
+======================================================================
+ERROR: test_short_translation_has_finite_acceleration_and_zero_end_speed (test_continuous_retiming.ContinuousRetiming)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/wq/whut_thesis/expv3_multi_virtual_a/tests/test_continuous_retiming.py", line 271, in test_short_translation_has_finite_acceleration_and_zero_end_speed
+    self.assertLessEqual(timed.phases[0]["dynamic_peaks"]["acceleration"],
+KeyError: 'dynamic_peaks'
+
+----------------------------------------------------------------------
+Ran 1050 tests in 550.550s
+
+FAILED (errors=1)

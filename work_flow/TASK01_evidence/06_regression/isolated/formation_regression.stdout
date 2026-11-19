@@ -1,0 +1,18 @@
+[E19] repeat 1/1 kind=group expectation=statistical
+    status=GROUP_COMPLETE reason= feasible=True passed=True
+summary: /tmp/tmpr0y5c14v/summary.json
+all_pass: True (1/1)
+[E11] repeat 1/2 kind=request_invalid expectation=must_fail
+    status=INVALID reason=INVALID_REQUEST feasible=False passed=True
+[E11] repeat 2/2 kind=request_invalid expectation=must_fail
+    status=INVALID reason=INVALID_REQUEST feasible=False passed=True
+[E13] repeat 1/2 kind=evaluator expectation=must_fail
+    status=REJECTED reason=KINEMATIC_INFEASIBLE feasible=False passed=True
+[E13] repeat 2/2 kind=evaluator expectation=must_fail
+    status=REJECTED reason=KINEMATIC_INFEASIBLE feasible=False passed=True
+[E18] repeat 1/2 kind=node expectation=scenario_pass
+    status=SCENARIO_CLEARED reason= feasible=None passed=True
+[E18] repeat 2/2 kind=node expectation=scenario_pass
+    status=SCENARIO_CLEARED reason= feasible=None passed=True
+summary: /tmp/tmp1ugxly4l/summary.json
+all_pass: True (3/3)

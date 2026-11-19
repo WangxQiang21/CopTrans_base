@@ -1,0 +1,116 @@
+[expv3] 地图比例 3.75，中心点固定；栅格尺寸保持不变。
+[expv3] 编队发布后端 uniform_v02（同一时刻只启动这一个发布后端）
+[expv3] 货物中心楔形编队，车体航向独立（新实验按配置策略初始化）；地图绝对比例 3.75
+[expv3] 构建 ROS overlay...
+[expv3] 启动 Demo：map_dir:=/tmp/expv3-map-scale.gVUCAo/map16-s09-underground-garage backend:=uniform_v02 scene:=manual_map auto_goal:=true rviz_config:=/tmp/expv3-map-scale.gVUCAo/formation.rviz rviz:=true
+[INFO] [1795029161.437598]: [v3 auto goal] sent center goal (2.725, -11.688, 1.571)
+[WARN] [1795029192.373580]: [formation goal bridge] plan 600000 status=REJECTED reason=TIME_BUDGET_EXHAUSTED
+[INFO] [1795029160.915916]: [formation goal bridge] ready: formation=cargo_wedge offsets=((1.0, 0.0), (0.0, 1.0), (0.0, -1.0)), start=(10.000, 3.600, 0.000), goal topic=/move_base_simple/goal
+[INFO] [1795029161.438330]: [formation goal bridge] plan 600000: start=(30.250, -5.312, 3.142) goal=(2.725, -11.688, 1.571) vehicles=3
+[INFO] [1795029161.440127]: [formation goal bridge] start from manual start; body headings {1: 3.14159, 2: 3.14159, 3: 3.14159}
+[ERROR] [1795029192.371199]: [uniform planner] plan 600000 not executable: status=BUDGET_EXHAUSTED reason=TIME_BUDGET_EXHAUSTED layer=budget wall=30.926s
+[WARN] [1795029192.373143]: [uniform planner] plan 600000 has no executable envelope (TIME_BUDGET_EXHAUSTED)
+[INFO] [1795029160.875309]: [uniform planner] autonomous V0.2 planner ready; backend=uniform_v02 budget=10000 expansions / 30.0 s
+[INFO] [1795029160.892636]: [uniform planner] exact map 700x500 res=0.075 origin=(-19.25, -13.75) signature=294597335ad0f73d
+[INFO] [1795029161.443489]: [uniform planner] plan 600000 admitted from cargo_wedge: start=(30.250, -5.312, 3.142) goal=(2.725, -11.688, 1.571) free_headings=True reverse=True
+[INFO] [1795029160.770622]: [fwis_map_publisher] /map published: 700x500, res=0.075 m
+[INFO] [1795029160.771806]: [fwis_map_publisher] start pose latched at (30.25, -5.31, 3.14 rad)
+[ERROR] [1795029192.388959]: [formation playback] rejecting playback plan 600000: model_sha256 must be 64 hex digits
+[INFO] [1795029160.875753]: [formation playback] common-clock display ready; GEOMETRY_ONLY is shown until an independent FEASIBLE status is received
+[INFO] [1795029192.390141]: [formation playback] cleared: invalid playback plan: model_sha256 must be 64 hex digits
+[31m[rviz-6] escalating to SIGTERM[0m
+... logging to /home/wq/whut_thesis/expv3_multi_virtual_a/work_flow/TASK01_evidence/07_ros_rviz/backend_uniform_v02/nodes_raw/3ef1cff4-e37a-11f1-a57b-1b4c90db486b/roslaunch-wq-ubuntu-516775.log
+Checking log directory for disk usage. This may take a while.
+Press Ctrl-C to interrupt
+Done checking log file disk usage. Usage is <1GB.
+]2;/home/wq/whut_thesis/expv3_multi_virtual_a/catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch
+[1mstarted roslaunch server http://wq-ubuntu:38601/[0m
+
+SUMMARY
+========
+
+PARAMETERS
+ * /formation_auto_goal/map_dir: /tmp/expv3-map-sc...
+ * /formation_goal_bridge/admission_backend: uniform_v02
+ * /formation_goal_bridge/allow_reverse: True
+ * /formation_goal_bridge/body_length_m: 0.738
+ * /formation_goal_bridge/body_width_m: 0.5
+ * /formation_goal_bridge/formation_id: cargo_wedge
+ * /formation_goal_bridge/frame_id: map
+ * /formation_goal_bridge/goal_heading_free: True
+ * /formation_goal_bridge/initial_heading_policy: cargo_heading
+ * /formation_goal_bridge/initial_plan_id: 600000
+ * /formation_goal_bridge/job_state_timeout_s: 3.0
+ * /formation_goal_bridge/map_timeout_s: 8.0
+ * /formation_goal_bridge/offsets: [[1.0, 0.0], [0.0...
+ * /formation_goal_bridge/playback_tf_timeout_s: 0.5
+ * /formation_goal_bridge/start_theta: 0.0
+ * /formation_goal_bridge/start_x: 10.0
+ * /formation_goal_bridge/start_y: 3.6
+ * /formation_goal_bridge/vehicle_ids: [1, 2, 3]
+ * /formation_goal_bridge/virtual_a_goal_policy: free
+ * /formation_playback/allow_reverse: True
+ * /formation_playback/backend: uniform_v02
+ * /formation_playback/body_length_m: 0.738
+ * /formation_playback/body_width_m: 0.5
+ * /formation_playback/formation_id: cargo_wedge
+ * /formation_playback/frame_id: map
+ * /formation_playback/goal_heading_free: True
+ * /formation_playback/hud_enabled: True
+ * /formation_playback/hud_height: 270
+ * /formation_playback/hud_left: 900
+ * /formation_playback/hud_top: 20
+ * /formation_playback/hud_width: 360
+ * /formation_playback/initial_heading_policy: cargo_heading
+ * /formation_playback/offsets: [[1.0, 0.0], [0.0...
+ * /formation_playback/publish_tf: True
+ * /formation_playback/rate: 25.0
+ * /formation_playback/show_cargo_reason: False
+ * /formation_playback/show_status_text: False
+ * /formation_playback/transport_ui: True
+ * /formation_playback/vehicle_ids: [1, 2, 3]
+ * /formation_uniform_planner/backend: uniform_v02
+ * /formation_uniform_planner/collision_margin: 0.05
+ * /formation_uniform_planner/frame_id: map
+ * /formation_uniform_planner/goal_heading_tol: 0.017453292519943295
+ * /formation_uniform_planner/goal_psi_tol: 0.017453292519943295
+ * /formation_uniform_planner/goal_xy_tol: 0.02
+ * /formation_uniform_planner/max_expansions: 10000
+ * /formation_uniform_planner/max_publication_samples: 200001
+ * /formation_uniform_planner/max_seconds: 30.0
+ * /formation_uniform_planner/playback_finish_grace_s: 3.0
+ * /formation_uniform_planner/playback_start_timeout_s: 5.0
+ * /formation_uniform_planner/publication_dt: 0.02
+ * /formation_uniform_planner/sweep_spacing: 0.01
+ * /formation_uniform_planner/translation_step: 1.0
+ * /fwis_map_publisher/map_dir: /tmp/expv3-map-sc...
+ * /rosdistro: noetic
+ * /rosversion: 1.17.4
+
+NODES
+  /
+    formation_auto_goal (fwis_v3_demo/auto_goal.py)
+    formation_goal_bridge (fwis_v3_demo/formation_goal_bridge.py)
+    formation_playback (fwis_v3_playback/formation_playback.py)
+    formation_uniform_planner (fwis_v3_optimizer/formation_uniform_planner_node.py)
+    fwis_map_publisher (fwis_map_server/map_publisher.py)
+    rviz (rviz/rviz)
+
+[1mROS_MASTER_URI=http://127.0.0.1:11633[0m
+]2;/home/wq/whut_thesis/expv3_multi_virtual_a/catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch http://127.0.0.1:11633
+[1mprocess[fwis_map_publisher-1]: started with pid [516789][0m
+[1mprocess[formation_uniform_planner-2]: started with pid [516790][0m
+[1mprocess[formation_playback-3]: started with pid [516791][0m
+[1mprocess[formation_goal_bridge-4]: started with pid [516792][0m
+[1mprocess[formation_auto_goal-5]: started with pid [516793][0m
+[1mprocess[rviz-6]: started with pid [516794][0m
+[1m[formation_auto_goal-5] process has finished cleanly
+log file: /home/wq/whut_thesis/expv3_multi_virtual_a/work_flow/TASK01_evidence/07_ros_rviz/backend_uniform_v02/nodes_raw/3ef1cff4-e37a-11f1-a57b-1b4c90db486b/formation_auto_goal-5*.log[0m
+[rviz-6] killing on exit
+[formation_goal_bridge-4] killing on exit
+[formation_playback-3] killing on exit
+[formation_uniform_planner-2] killing on exit
+[fwis_map_publisher-1] killing on exit
+shutting down processing monitor...
+... shutting down processing monitor complete
+[1mdone[0m
