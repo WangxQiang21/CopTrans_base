@@ -4,15 +4,16 @@
        formation playback node.  It never starts three single-vehicle planners
        or the single-vehicle optimizer/playback.
 
-       backend:=uniform_v02 (default) starts only the autonomous FR05 uniform
-       planner: it publishes the atomic /formation/playback_plan envelope and
-       the legacy C++ front end / legacy optimizer are not started.
-       backend:=virtual_rigid_a starts the same node with the G5 virtual rigid
-       A backend hooks; it never starts the legacy front end/optimizer.
+       backend:=virtual_rigid_a (default) starts the same node with the G5
+       virtual rigid A backend hooks (corridor/hard research entry); it never
+       starts the legacy front end/optimizer.
+       backend:=uniform_v02 starts only the autonomous FR05 uniform planner:
+       it publishes the atomic /formation/playback_plan envelope and the
+       legacy C++ front end / legacy optimizer are not started.
        backend:=legacy starts only the historical C++ formation_planner and
        formation_optimizer_node.py; neither autonomous planner is started.
        Exactly one publishing backend can run at a time. -->
-  <arg name="backend" default="uniform_v02"/>
+  <arg name="backend" default="virtual_rigid_a"/>
   <arg name="planner" default="true"/>
   <arg name="scene" default="S09_underground_garage"/>
   <arg name="map_dir"
@@ -76,7 +77,10 @@
        STRAIGHT publishes explicit all-fixed headings equal to the cargo goal
        heading.  The uniform_v02 and legacy paths ignore this argument. -->
   <arg name="virtual_a_goal_policy" default="free"/>
-  <arg name="virtual_a_guidance_mode" default="legacy_route"/>
+  <!-- Research entry: corridor guidance with hard half-space enforcement is
+       the default.  soft remains available only by explicit experiment. -->
+  <arg name="virtual_a_guidance_mode" default="corridor"/>
+  <arg name="virtual_a_corridor_enforcement" default="hard"/>
   <arg name="virtual_a_planning_budget_s" default="60.0"/>
   <arg name="virtual_a_planning_timeout_s" default="75.0"/>
 
@@ -115,6 +119,9 @@
     <param if="$(eval arg('backend') == 'virtual_rigid_a')"
            name="virtual_a_guidance_mode"
            value="$(arg virtual_a_guidance_mode)"/>
+    <param if="$(eval arg('backend') == 'virtual_rigid_a')"
+           name="virtual_a_corridor_enforcement"
+           value="$(arg virtual_a_corridor_enforcement)"/>
     <param if="$(eval arg('backend') == 'virtual_rigid_a')"
            name="virtual_a_goal_policy" value="$(arg virtual_a_goal_policy)"/>
     <param if="$(eval arg('backend') == 'virtual_rigid_a')"

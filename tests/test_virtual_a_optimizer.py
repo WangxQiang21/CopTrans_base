@@ -9,6 +9,7 @@ import inspect
 import json
 import math
 from pathlib import Path
+from types import SimpleNamespace
 import unittest
 from unittest import mock
 
@@ -24,6 +25,7 @@ from fwis_v3_optimizer.formation_retiming import FormationTimingLimits
 from fwis_v3_optimizer.formation_continuous_a.contracts import (
     GeometryResult,
     GoalPolicy,
+    HeadingBranch,
     InitialAssumption,
     PlannerConfig,
     VirtualAContractError,
@@ -31,8 +33,10 @@ from fwis_v3_optimizer.formation_continuous_a.contracts import (
     request_fingerprint,
 )
 from fwis_v3_optimizer.formation_continuous_a.optimizer import (
+    initial_guess_key,
     make_initial_guesses,
     solve_open_path,
+    solve_open_path_guided,
 )
 from fwis_v3_optimizer.formation_continuous_a import optimizer as optimizer_module
 
@@ -1186,6 +1190,282 @@ class SoftDeadlineTests(unittest.TestCase):
         self.assertEqual(raised.exception.reason, "INVALID_AUDIT_CONFIG")
         self.assertEqual(raised.exception.location["field"],
                          "position_tolerance_m")
+
+
+class HeadingBranchPacketTests(unittest.TestCase):
+    """Step 3: one packet feeds initials, the solver and attempt metadata."""
+
+    def test_one_packet_reaches_initials_solver_and_attempt_metadata(self):
+        request = request_from_fixture("STRAIGHT_LINE")
+        config = planner_config(max_initials=2, max_seconds=2.0)
+        branch = HeadingBranch(
+            base_heading_rad=0.0,
+            winding_k=1,
+            unwrapped_heading_rad=2.0 * math.pi,
+            guide_turn_rad=2.0 * math.pi,
+            source="test_loop",
+            candidate_rank=0)
+        packets = []
+        solver_packets = []
+        real_search_packet = optimizer_module._search_packet
+
+        def recording_search_packet(*args, **kwargs):
+            packet = real_search_packet(*args, **kwargs)
+            packets.append(packet)
+            return packet
+
+        def fake_failure(_request, _config, packet, guess,
+                         wall_limit_s=None, **kwargs):
+            solver_packets.append((id(packet), initial_guess_key(guess)))
+            return {
+                "solver": "ipopt",
+                "z": None,
+                "objective": None,
+                "solver_status": "Maximum_Iterations_Exceeded",
+                "success": False,
+                "iterations": 1,
+                "detail": "fake failure",
+                "wall_time_s": 0.0,
+            }
+
+        with mock.patch.object(
+                optimizer_module, "_search_packet",
+                side_effect=recording_search_packet), \
+                mock.patch.object(
+                    optimizer_module, "_solve_with_ipopt",
+                    side_effect=fake_failure):
+            result = solve_open_path_guided(
+                request, config, heading_branch=branch,
+                guide_length_m=6.0)
+        self.assertEqual(len(packets), 1)
+        packet = packets[0]
+        self.assertEqual(packet["heading_change_rad"], 2.0 * math.pi)
+        self.assertEqual(packet["heading_branch"], branch.as_dict())
+        self.assertEqual(packet["guide_length_m"], 6.0)
+        self.assertEqual(result.goal_heading_branch_rad, 2.0 * math.pi)
+        self.assertTrue(solver_packets)
+        for packet_id, key in solver_packets:
+            self.assertEqual(packet_id, id(packet))
+            self.assertEqual(key[-1], 1)
+        self.assertTrue(result.attempts)
+        for attempt in result.attempts:
+            self.assertEqual(attempt.winding_k, 1)
+            self.assertEqual(attempt.heading_base_rad, 0.0)
+            self.assertEqual(attempt.guide_turn_rad, 2.0 * math.pi)
+        self.assertEqual(
+            result.goal_heading_branch_rad,
+            result.attempts[0].initial.metadata["heading_branch"][
+                "unwrapped_heading_rad"])
+
+    def test_route_initial_identity_changes_with_the_winding_branch(self):
+        request = request_from_fixture("STRAIGHT_LINE")
+        config = planner_config(max_initials=2)
+        guide = optimizer_module.GuideRoute(
+            points=((0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0),
+                    (0.0, 0.0)),
+            source="fixture_loop",
+            grid_sha256="0" * 64)
+        preferred = HeadingBranch(
+            base_heading_rad=0.0, winding_k=1,
+            unwrapped_heading_rad=2.0 * math.pi,
+            guide_turn_rad=2.0 * math.pi,
+            source="fixture_loop", candidate_rank=0)
+        neighbour = HeadingBranch(
+            base_heading_rad=0.0, winding_k=0,
+            unwrapped_heading_rad=0.0,
+            guide_turn_rad=2.0 * math.pi,
+            source="fixture_loop", candidate_rank=1)
+        first = make_initial_guesses(
+            request, config, route_guides=(guide,),
+            heading_branch=preferred, guide_length_m=guide.length_m)
+        second = make_initial_guesses(
+            request, config, route_guides=(guide,),
+            heading_branch=neighbour, guide_length_m=guide.length_m)
+        self.assertEqual(first[0].source, "map_route_guide")
+        self.assertEqual(second[0].source, "map_route_guide")
+        self.assertNotEqual(
+            initial_guess_key(first[0]), initial_guess_key(second[0]))
+        self.assertEqual(
+            first[0].metadata["heading_branch"], preferred.as_dict())
+        self.assertEqual(
+            second[0].metadata["heading_branch"], neighbour.as_dict())
+
+
+class SDomainPacketTests(unittest.TestCase):
+    """Step 4: one packet records the finite S domain and its solved S."""
+
+    def _packet(self, request, config, **kwargs):
+        return optimizer_module._search_packet(request, config, **kwargs)
+
+    def test_finite_s_domain_formula_without_guide(self):
+        request = request_from_fixture("STRAIGHT_LINE")
+        config = planner_config()
+        packet = self._packet(request, config)
+        kappa_ref = min(
+            float(config.kappa_limit),
+            1.0 / float(request.limits.r_min_ackermann))
+        lower = max(
+            int(config.intervals) * 0.05, 6.0,
+            abs(packet["heading_change_rad"]) / kappa_ref)
+        upper = max(lower + 2.0, 12.0, 3.0 * 6.0 + 10.0)
+        self.assertEqual(packet["kappa_ref_max"], kappa_ref)
+        self.assertEqual(packet["distance"], 6.0)
+        self.assertIsNone(packet["guide_length_m"])
+        self.assertEqual(packet["S_lower"], lower)
+        self.assertEqual(packet["S_upper"], upper)
+        self.assertEqual(packet["S_upper_active_tol_m"], 1e-6)
+        self.assertIsNone(packet["S_solution"])
+        self.assertIsNone(packet["upper_active"])
+
+    def test_guide_length_raises_the_finite_upper_bound_with_approved_factor(self):
+        request = request_from_fixture("STRAIGHT_LINE")
+        config = planner_config()
+        plain = self._packet(request, config)
+        guided = self._packet(request, config, guide_length_m=100.0)
+        self.assertEqual(guided["S_lower"], plain["S_lower"])
+        self.assertEqual(guided["guide_length_m"], 100.0)
+        self.assertAlmostEqual(guided["S_upper"], 115.0, places=12)
+        self.assertGreater(guided["S_upper"], plain["S_upper"])
+        # The guide polyline only raises the search upper bound; it is never
+        # the lower bound and never certifies feasibility.
+        self.assertEqual(guided["S_lower"], guided["distance"])
+        for guide_length in (0.0, 1.0, 50.0, 100.0):
+            packet = self._packet(
+                request, config, guide_length_m=guide_length)
+            self.assertEqual(
+                packet["S_upper"],
+                max(packet["S_lower"] + 2.0, 12.0, 28.0,
+                    1.15 * guide_length))
+
+    def test_fifty_and_hundred_metre_straight_lines_are_not_capped_at_sixty(self):
+        config = planner_config()
+        for distance, expected_upper in ((50.0, 160.0), (100.0, 310.0)):
+            request = request_from_fixture(
+                "STRAIGHT_LINE",
+                goal_qf=FormationPose(distance, 0.0, 0.0))
+            packet = self._packet(request, config)
+            self.assertEqual(packet["distance"], distance)
+            self.assertEqual(packet["S_lower"], distance)
+            self.assertEqual(packet["S_upper"], expected_upper)
+            self.assertGreater(packet["S_upper"], 60.0)
+            guesses = make_initial_guesses(request, config, packet=packet)
+            for guess in guesses:
+                self.assertGreaterEqual(guess.S, packet["S_lower"])
+                self.assertLessEqual(guess.S, packet["S_upper"])
+
+    def test_attempt_records_solution_and_tolerance_based_upper_activity(self):
+        metadata = {
+            "endpoint_distance_m": 6.0,
+            "guide_length_m": 12.0,
+            "S_lower_m": 6.0,
+            "S_upper_m": 13.8,
+            "S_upper_active_tol_m": 1e-6,
+        }
+        guess = SimpleNamespace(
+            metadata=metadata, source="test", label="test")
+        tolerance = metadata["S_upper_active_tol_m"]
+        for offset, expected in (
+                (0.0, True), (-tolerance, True),
+                (-2.0 * tolerance, False), (-1.0, False)):
+            result = {
+                "solver": "ipopt", "z": np.array([13.8 + offset]),
+                "objective": 0.0, "solver_status": "Solve_Succeeded",
+                "success": True, "iterations": 1, "detail": "",
+                "wall_time_s": 0.0,
+            }
+            attempt = optimizer_module._attempt_record(
+                0, guess, result, None, "", "SOLVER_SUCCESS_AUDITED")
+            self.assertEqual(attempt.distance_m, 6.0)
+            self.assertEqual(attempt.guide_length_m, 12.0)
+            self.assertEqual(attempt.s_lower_m, 6.0)
+            self.assertEqual(attempt.s_upper_m, 13.8)
+            self.assertEqual(attempt.s_solution_m, 13.8 + offset)
+            self.assertIs(attempt.s_upper_active, expected)
+        failure = {
+            "solver": "ipopt", "z": np.array([13.8]),
+            "objective": None, "solver_status": "Maximum_Iterations_Exceeded",
+            "success": False, "iterations": 1, "detail": "",
+            "wall_time_s": 0.0,
+        }
+        attempt = optimizer_module._attempt_record(
+            0, guess, failure, None, "Maximum_Iterations_Exceeded",
+            "SOLVER_FAILED")
+        self.assertIsNone(attempt.s_solution_m)
+        self.assertIsNone(attempt.s_upper_active)
+
+    def test_pathological_domains_fail_closed(self):
+        request = request_from_fixture("STRAIGHT_LINE")
+        with self.assertRaises(VirtualAContractError) as caught:
+            self._packet(request, planner_config(kappa_limit=0.0))
+        self.assertEqual(caught.exception.reason, "INVALID_SEARCH_DOMAIN")
+        with self.assertRaises(VirtualAContractError) as caught:
+            self._packet(
+                request, planner_config(), guide_length_m=float("nan"))
+        self.assertEqual(caught.exception.reason, "INVALID_GUIDE_LENGTH")
+        huge = request_from_fixture(
+            "STRAIGHT_LINE",
+            goal_qf=FormationPose(1e308, 0.0, 0.0))
+        with self.assertRaises(VirtualAContractError) as caught:
+            self._packet(huge, planner_config())
+        self.assertEqual(caught.exception.reason, "INVALID_SEARCH_DOMAIN")
+        for bad_length in (-1.0, float("inf"), float("nan")):
+            result = solve_open_path_guided(
+                request, planner_config(max_seconds=2.0),
+                guide_length_m=bad_length)
+            self.assertEqual(result.status, "INVALID_REQUEST")
+            self.assertEqual(result.reason, "INVALID_GUIDE_LENGTH")
+            self.assertIsNone(result.path)
+
+    def test_packet_and_attempt_agree_on_the_chosen_solution(self):
+        request = request_from_fixture("STRAIGHT_LINE")
+        config = planner_config(max_initials=1, max_seconds=2.0)
+        packets = []
+        real_search_packet = optimizer_module._search_packet
+
+        def recording_search_packet(*args, **kwargs):
+            packet = real_search_packet(*args, **kwargs)
+            packets.append(packet)
+            return packet
+
+        def fake_success(_request, _config, packet, guess,
+                         wall_limit_s=None, **kwargs):
+            return {
+                "solver": "ipopt",
+                "z": np.asarray(guess.vector, dtype=float).copy(),
+                "objective": 0.1,
+                "solver_status": "Solve_Succeeded",
+                "success": True,
+                "iterations": 1,
+                "detail": "fake success",
+                "wall_time_s": 0.0,
+            }
+
+        audit = SimpleNamespace(
+            passed=True, reason="", detail="", check_count=0,
+            first_failure=None, metrics={}, scope="geometry")
+        with mock.patch.object(
+                optimizer_module, "_search_packet",
+                side_effect=recording_search_packet), \
+                mock.patch.object(
+                    optimizer_module, "_solve_with_ipopt",
+                    side_effect=fake_success), \
+                mock.patch.object(
+                    optimizer_module, "audit_geometry", return_value=audit):
+            result = solve_open_path_guided(request, config)
+        self.assertEqual(result.status, "GEOMETRY_FEASIBLE")
+        self.assertEqual(len(packets), 1)
+        packet = packets[0]
+        self.assertEqual(packet["S_solution"], result.path.length_m)
+        audited = [
+            attempt for attempt in result.attempts
+            if attempt.status == "SOLVER_SUCCESS_AUDITED"]
+        self.assertEqual(len(audited), 1)
+        self.assertEqual(audited[0].s_solution_m, result.path.length_m)
+        self.assertIs(
+            packet["upper_active"], audited[0].s_upper_active)
+        self.assertEqual(
+            packet["upper_active"],
+            abs(packet["S_solution"] - packet["S_upper"]) <= 1e-6)
 
 
 if __name__ == "__main__":

@@ -23,11 +23,18 @@ from fwis_v3_optimizer.formation_continuous_a.contracts import (  # noqa: E402
     ConvexCorridor,
     CorridorChain,
     PlannerConfig,
+    PROGRESS_FAILED_STAGE,
+    PROGRESS_SCHEMA,
+    PROGRESS_STAGE_INDEX,
+    PROGRESS_STATES,
     VirtualAContractError,
 )
 from fwis_v3_optimizer.formation_continuous_a.corridor import (  # noqa: E402
     CORRIDOR_DISPLAY_STATE,
     corridor_display_fields,
+)
+from fwis_v3_optimizer.formation_continuous_a import (  # noqa: E402
+    pipeline as pipeline_module,
 )
 from fwis_v3_optimizer.formation_continuous_a.pipeline import (  # noqa: E402
     plan_virtual_a,
@@ -36,22 +43,41 @@ from fwis_v3_optimizer.formation_continuous_a.ros_adapter import (  # noqa: E402
     verify_envelope_fields,
 )
 from fwis_v3_optimizer.formation_playback import (  # noqa: E402
+    CANDIDATE_CENTER_NAMESPACE,
+    CANDIDATE_CERTIFIED,
+    CANDIDATE_DIAGNOSTIC_LABEL,
+    CANDIDATE_F_NAMESPACE,
+    CANDIDATE_OBB_COLOR,
+    CANDIDATE_OBB_LIMIT,
+    CANDIDATE_OBB_NAMESPACE,
+    CANDIDATE_POINT_LIMIT,
+    CANDIDATE_SAMPLE_SPACING_M,
+    CANDIDATE_SCHEMA,
+    CANDIDATE_UNVERIFIED,
     CLEARED,
     CORRIDOR_EDGE_ALPHA,
+    CORRIDOR_EDGE_COLOR,
+    CORRIDOR_EDGE_NAMESPACE,
     CORRIDOR_EDGE_Z_M,
     CORRIDOR_FILL_ALPHA,
+    CORRIDOR_FILL_COLOR,
+    CORRIDOR_FILL_NAMESPACE,
     CORRIDOR_FILL_Z_M,
-    GUIDE_ASTAR_NAMESPACE,
-    GUIDE_CENTERLINE_NAMESPACE,
-    GUIDE_CENTERLINE_WIDTH_M,
-    GUIDE_Z_M,
-    MODE_COLORS,
+    PLANNING_ASTAR_NAMESPACE,
+    PLANNING_DEBUG_SCHEMA,
+    PLANNING_FAILURE_NAMESPACE,
+    PLANNING_GUIDE_NAMESPACE,
+    PLANNING_PUBLISHED_STATE,
+    PLANNING_STATE,
     PlaybackValidationError,
+    build_candidate_display,
     build_corridor_markers,
-    build_guide_markers,
+    build_guide_display,
     build_markers,
     corridor_display_matches,
     frame_at,
+    sample_candidate_path,
+    vehicle_path_samples,
 )
 from visualization_msgs.msg import Marker  # noqa: E402
 import virtual_a_g4_support as g4  # noqa: E402
@@ -186,7 +212,9 @@ def _actual_corridor_case():
         start_headings={1: start.psi, 2: start.psi, 3: start.psi})
     map_request = g4.map_request(
         request, grid, planner=PlannerConfig(guidance_mode="corridor"))
-    result = plan_virtual_a(map_request)
+    progress_events = []
+    result = plan_virtual_a(
+        map_request, progress_callback=progress_events.append)
     if not result.executable:
         raise AssertionError(
             "synthetic corridor plan did not succeed: {} {}".format(
@@ -220,6 +248,7 @@ def _actual_corridor_case():
     verified = verify_envelope_fields(envelope)
     _V2_CASE.update({
         "map_request": map_request,
+        "progress_events": progress_events,
         "result": result,
         "round": rounds[-1],
         "route": result.routes[route_index],
@@ -295,9 +324,9 @@ class CorridorMarkerTest(unittest.TestCase):
                  if marker.marker_type == "TRIANGLE_LIST"]
         self.assertEqual(len(fills), len(self.chain.regions))
         for fill, region in zip(fills, self.chain.regions):
-            self.assertEqual(fill.namespace,
-                             "formation/{}/corridors/route_0/fill".format(
-                                 FORMATION_ID))
+            self.assertEqual(fill.namespace, CORRIDOR_FILL_NAMESPACE)
+            self.assertEqual(fill.color,
+                             CORRIDOR_FILL_COLOR + (CORRIDOR_FILL_ALPHA,))
             self.assertTrue(all(point[2] == CORRIDOR_FILL_Z_M
                                 for point in fill.points))
             self.assertEqual(fill.color[3], CORRIDOR_FILL_ALPHA)
@@ -319,9 +348,9 @@ class CorridorMarkerTest(unittest.TestCase):
                  if marker.marker_type == "LINE_STRIP"]
         self.assertEqual(len(edges), len(self.chain.regions))
         for edge, region in zip(edges, self.chain.regions):
-            self.assertEqual(edge.namespace,
-                             "formation/{}/corridors/route_0/edge".format(
-                                 FORMATION_ID))
+            self.assertEqual(edge.namespace, CORRIDOR_EDGE_NAMESPACE)
+            self.assertEqual(edge.color,
+                             CORRIDOR_EDGE_COLOR + (CORRIDOR_EDGE_ALPHA,))
             self.assertEqual(edge.points[0], edge.points[-1])
             self.assertEqual(len(edge.points), len(region.vertices) + 1)
             self.assertTrue(all(point[2] == CORRIDOR_EDGE_Z_M
@@ -330,20 +359,24 @@ class CorridorMarkerTest(unittest.TestCase):
         for marker in markers:
             self.assertEqual(marker.text, "")
 
-    def test_two_routes_get_deterministic_distinct_colors(self):
+    def test_routes_share_the_fixed_color_and_stable_namespace(self):
         route1 = corridor_display_fields(
             self.chain, _identity(self.chain, route_id=1))
         document = _display_document(self.chain, [self.route0, route1])
         first = build_corridor_markers(document)
         second = build_corridor_markers(copy.deepcopy(document))
-        fills0 = [marker for marker in first
-                  if marker.marker_type == "TRIANGLE_LIST"
-                  and marker.namespace.endswith("route_0/fill")]
-        fills1 = [marker for marker in first
-                  if marker.marker_type == "TRIANGLE_LIST"
-                  and marker.namespace.endswith("route_1/fill")]
-        self.assertTrue(fills0 and fills1)
-        self.assertNotEqual(fills0[0].color, fills1[0].color)
+        fills = [marker for marker in first
+                 if marker.marker_type == "TRIANGLE_LIST"]
+        self.assertTrue(fills)
+        # TASK 01 fixes one red corridor colour; routes must not get a
+        # per-route palette and the namespace must not encode formation or
+        # route identity.
+        self.assertTrue(all(marker.namespace == CORRIDOR_FILL_NAMESPACE
+                            for marker in fills))
+        self.assertTrue(all(marker.color == CORRIDOR_FILL_COLOR +
+                            (CORRIDOR_FILL_ALPHA,) for marker in fills))
+        ids = {(marker.namespace, marker.marker_id) for marker in fills}
+        self.assertEqual(len(ids), len(fills))
         self.assertEqual(
             [marker.color for marker in first],
             [marker.color for marker in second])
@@ -552,28 +585,29 @@ class V2ActualCorridorLayersTest(unittest.TestCase):
             for got_value, want_value in zip(got["b"], want["b"]):
                 self._assert_pair(got_value, want_value)
 
-    def test_guide_markers_copy_route_and_centreline_without_resampling(self):
+    def test_guide_paths_copy_route_and_centreline_without_resampling(self):
         case = self.case
-        markers = build_guide_markers(case["document"])
+        markers, paths = build_guide_display(case["document"])
+        route_id = case["display"]["route_id"]
         self.assertEqual(markers[0].action, "DELETEALL")
-        astar = next(marker for marker in markers
-                     if marker.namespace == GUIDE_ASTAR_NAMESPACE
-                     and marker.marker_type == "LINE_STRIP")
-        centerline = next(marker for marker in markers
-                          if marker.namespace == GUIDE_CENTERLINE_NAMESPACE
-                          and marker.marker_type == "LINE_STRIP")
-        self.assertEqual(len(astar.points), len(case["route"].points))
-        for got, want in zip(astar.points, case["route"].points):
-            self.assertEqual(got[2], GUIDE_Z_M)
-            self._assert_pair(got[0], want[0], "A* display x")
-            self._assert_pair(got[1], want[1], "A* display y")
-        self.assertEqual(len(centerline.points),
-                         len(case["round"]["guide"]["points"]))
-        for got, want in zip(centerline.points,
-                             case["round"]["guide"]["points"]):
-            self.assertEqual(got[2], GUIDE_Z_M)
-            self._assert_pair(got[0], want[0], "centreline display x")
-            self._assert_pair(got[1], want[1], "centreline display y")
+        source = [(float(point[0]), float(point[1]))
+                  for point in case["route"].points]
+        guide_source = [(float(point[0]), float(point[1]))
+                        for point in case["round"]["guide"]["points"]]
+        astar = paths[("astar_raw", route_id)]
+        centreline = paths[("portal_guide", route_id)]
+        self.assertEqual(len(astar), len(source))
+        for got, want in zip(astar, source):
+            self._assert_pair(got[0], want[0], "A* path x")
+            self._assert_pair(got[1], want[1], "A* path y")
+        self.assertEqual(len(centreline), len(guide_source))
+        for got, want in zip(centreline, guide_source):
+            self._assert_pair(got[0], want[0], "centreline path x")
+            self._assert_pair(got[1], want[1], "centreline path y")
+        # Path displays own colour/width; no route line remains in markers.
+        self.assertFalse(any(
+            marker.marker_type in ("LINE_LIST", "LINE_STRIP")
+            for marker in markers))
         texts = [marker.text for marker in markers
                  if marker.marker_type == "TEXT_VIEW_FACING"]
         self.assertIn("A* ROUTE | REFERENCE_ONLY", texts)
@@ -608,8 +642,7 @@ class V2ActualCorridorLayersTest(unittest.TestCase):
             self.assertEqual(edge.points[-1][0], vertices[0][0])
             self.assertEqual(edge.points[-1][1], vertices[0][1])
 
-    def test_final_paths_keep_mode_colors_and_non_sample_frame_consistency(
-            self):
+    def test_final_path_geometry_and_non_sample_frame_consistency(self):
         case = self.case
         plan = case["plan"]
         trajectory = case["trajectory"]
@@ -632,20 +665,25 @@ class V2ActualCorridorLayersTest(unittest.TestCase):
                                math.cos(vehicle.theta - expected.theta))),
                 1e-7)
         markers, namespaces, _, _ = build_markers(trajectory, frame)
-        paths = [marker for marker in markers
-                 if marker.colors and marker.marker_type == "LINE_STRIP"]
-        self.assertEqual(len(paths), 3)
-        for vehicle_id, marker in zip((1, 2, 3), paths):
+        # The full centre path is a separate nav_msgs/Path per vehicle (RViz
+        # owns its colour/width); the marker array keeps only the current
+        # pose, OBB, heading, history and labels.
+        paths = vehicle_path_samples(trajectory)
+        self.assertEqual(set(paths), {1, 2, 3})
+        for vehicle_id in (1, 2, 3):
             samples = trajectory.points[vehicle_id]
-            self.assertEqual(len(marker.points), len(samples))
-            for got, sample in zip(marker.points, samples):
+            self.assertEqual(len(paths[vehicle_id]), len(samples))
+            for got, sample in zip(paths[vehicle_id], samples):
                 self._assert_pair(got[0], sample.center_x)
                 self._assert_pair(got[1], sample.center_y)
-            self.assertEqual(
-                marker.colors,
-                tuple(MODE_COLORS[sample.mode] for sample in samples))
-            self.assertGreater(marker.scale[0],
-                               GUIDE_CENTERLINE_WIDTH_M)
+            namespace = "formation/{}/vehicle_{}".format(
+                trajectory.formation_id, vehicle_id)
+            vehicle_markers = [
+                marker for marker in markers
+                if marker.namespace == namespace]
+            self.assertEqual(len(vehicle_markers), 4)
+            self.assertFalse(any(marker.colors
+                                 for marker in vehicle_markers))
         self.assertFalse(any(namespace.startswith("formation/guides")
                              for namespace in namespaces))
 
@@ -668,13 +706,19 @@ class V2ActualCorridorLayersTest(unittest.TestCase):
         mixed_entry["corridors"][0]["model_sha256"] = "f" * 64
         self.assertFalse(corridor_display_matches(mixed_entry, job))
         with self.assertRaises(PlaybackValidationError):
-            build_guide_markers(mixed_entry)
+            build_guide_display(mixed_entry)
         candidate = copy.deepcopy(document)
         candidate["corridors"][0]["corridor_used"] = False
-        markers = build_guide_markers(candidate)
+        markers, paths = build_guide_display(candidate)
+        route_id = case["display"]["route_id"]
+        self.assertEqual(
+            set(paths),
+            {("astar_raw", route_id), ("portal_guide", route_id)})
         namespaces = {marker.namespace for marker in markers}
-        self.assertIn("formation/guides/astar_candidate", namespaces)
-        self.assertIn("formation/guides/centerline_candidate", namespaces)
+        self.assertIn(PLANNING_ASTAR_NAMESPACE, namespaces)
+        self.assertIn(PLANNING_GUIDE_NAMESPACE, namespaces)
+        self.assertFalse(any(namespace.startswith("formation/guides")
+                             for namespace in namespaces))
         self.assertTrue(all("CANDIDATE" in marker.text
                             for marker in markers
                             if marker.marker_type == "TEXT_VIEW_FACING"))
@@ -697,7 +741,7 @@ class V2ActualCorridorLayersTest(unittest.TestCase):
         safety = ("SMOOTH_PATH", "FEASIBLE", "CERTIFIED", "AUDIT_PASS",
                   "THREE_VEHICLE_CERTIFIED")
         for document in variants:
-            markers = build_guide_markers(document)
+            markers = build_guide_display(document)[0]
             texts = [marker.text for marker in markers
                      if marker.marker_type == "TEXT_VIEW_FACING"]
             self.assertTrue(any("UNVALIDATED_GUIDE" in text
@@ -717,7 +761,7 @@ class V2ActualCorridorLayersTest(unittest.TestCase):
             "audit_status": "PASS",
             "status": "SUCCESS",
         })
-        texts = [marker.text for marker in build_guide_markers(fake)
+        texts = [marker.text for marker in build_guide_display(fake)[0]
                  if marker.marker_type == "TEXT_VIEW_FACING"]
         self.assertFalse(any(word in text for text in texts
                              for word in safety), texts)
@@ -743,13 +787,12 @@ class V2ActualCorridorLayersTest(unittest.TestCase):
         elapsed = 0.5003 * case["plan"].duration_s + 1e-5
         frame_before = frame_at(case["trajectory"], elapsed)
         markers_before = build_markers(case["trajectory"], frame_before)
-        guide_markers = build_guide_markers(case["document"])
+        guide_markers, guide_paths = build_guide_display(case["document"])
         build_corridor_markers(case["document"])
         # A layer toggle only filters the already-built specs; drawing does
         # not enter planning or the common playback clock.
-        only_centreline = tuple(
-            marker for marker in guide_markers
-            if marker.namespace == GUIDE_CENTERLINE_NAMESPACE)
+        only_centreline = guide_paths[
+            ("portal_guide", case["display"]["route_id"])]
         self.assertTrue(only_centreline)
         frame_after = frame_at(case["trajectory"], elapsed)
         markers_after = build_markers(case["trajectory"], frame_after)
@@ -767,30 +810,56 @@ class V2ActualCorridorLayersTest(unittest.TestCase):
 
 
 class V2PlannerDebugPublicationTest(unittest.TestCase):
-    """The planner emits V2 route/guide fields in the same debug payload."""
+    """The planner emits progressive documents from the actual result."""
 
     @classmethod
     def setUpClass(cls):
         cls.case = _actual_corridor_case()
 
-    def _node(self):
+    def _node(self, astar=None):
         node = object.__new__(_PLANNER_NODE.UniformPlannerNode)
         node.backend = "virtual_rigid_a"
         node.planning_debug_pub = _Publisher()
+        result = self.case["result"]
+        node._virtual_admission = {
+            "formation_id": self.case["identity"]["formation_id"],
+            "request_sha256": result.request_sha256,
+            "grid_sha256": result.grid_sha256,
+            "planning_context_sha256": result.planning_context_sha256,
+        }
+        node._virtual_request = self.case["map_request"].request
+        node._progress_layers = {
+            1: {"astar": astar, "corridors": None, "candidates": None}}
+        node._planning_progress = None
+        node._progress_display_errors = 0
+        node._progress_display_disabled = set()
         return node
+
+    def _snapshot(self):
+        return SimpleNamespace(
+            formation_id=self.case["identity"]["formation_id"])
 
     def _document(self, node):
         self.assertEqual(len(node.planning_debug_pub.messages), 1)
         return json.loads(node.planning_debug_pub.messages[0].data)
 
-    def test_planning_debug_carries_actual_route_guide_and_chain(self):
-        node = self._node()
-        node._publish_corridor_debug(
-            1, self.case["identity"]["plan_id"],
-            SimpleNamespace(formation_id=self.case["identity"]["formation_id"]),
-            self.case["result"])
+    def test_published_document_carries_actual_route_guide_and_chain(self):
+        route = self.case["route"]
+        astar = [{"route_id": 0,
+                  "points": [[float(p[0]), float(p[1])]
+                             for p in route.points]}]
+        node = self._node(astar=astar)
+        result = self.case["result"]
+        node._publish_planning_published(
+            1, self.case["identity"]["plan_id"], self._snapshot(), result,
+            result.model_sha256, 0.5)
         document = self._document(node)
-        self.assertEqual(document["state"], CORRIDOR_DISPLAY_STATE)
+        self.assertEqual(document["schema"], PLANNING_DEBUG_SCHEMA)
+        self.assertEqual(document["state"], PLANNING_PUBLISHED_STATE)
+        self.assertEqual(document["stage"], PLANNING_PUBLISHED_STATE)
+        self.assertEqual(document["stage_index"], 8)
+        self.assertEqual(document["model_sha256"], result.model_sha256)
+        self.assertEqual(document["astar"], astar)
         self.assertEqual(len(document["corridors"]), 1)
         corridor = document["corridors"][0]
         for name in ("raw_route_points", "guide_points", "guide_quality",
@@ -805,9 +874,12 @@ class V2PlannerDebugPublicationTest(unittest.TestCase):
                          len(self.case["route"].points))
         self.assertEqual(len(corridor["guide_points"]),
                          len(self.case["round"]["guide"]["points"]))
+        candidates = document["candidates"]
+        self.assertEqual(candidates["schema"], CANDIDATE_SCHEMA)
+        self.assertEqual(candidates["classification"], CANDIDATE_CERTIFIED)
+        self.assertTrue(candidates["certified"])
 
-    def test_missing_corridor_round_clears_instead_of_reusing_old_geometry(
-            self):
+    def test_missing_corridor_round_clears_only_that_layer(self):
         node = self._node()
         stale = SimpleNamespace(
             search={},
@@ -815,14 +887,17 @@ class V2PlannerDebugPublicationTest(unittest.TestCase):
             grid_sha256=self.case["identity"]["grid_sha256"],
             planning_context_sha256=self.case["identity"][
                 "planning_context_sha256"],
-            model_sha256=self.case["identity"]["model_sha256"])
-        node._publish_corridor_debug(
-            1, self.case["identity"]["plan_id"],
-            SimpleNamespace(formation_id=self.case["identity"]["formation_id"]),
-            stale)
+            model_sha256="f" * 64)
+        with mock.patch.object(_PLANNER_NODE.rospy, "logerr"):
+            node._publish_planning_published(
+                1, self.case["identity"]["plan_id"], self._snapshot(), stale,
+                "f" * 64, 0.5)
         document = self._document(node)
-        self.assertEqual(document["state"], CLEARED)
-        self.assertEqual(document["corridors"], [])
+        # A display construction failure never changes the plan outcome; it
+        # clears only the corridor/guide layer of a PUBLISHED document.
+        self.assertEqual(document["state"], PLANNING_PUBLISHED_STATE)
+        self.assertIsNone(document["corridors"])
+        self.assertEqual(node._progress_display_errors, 1)
 
 
 class V2GuideCallbackTest(unittest.TestCase):
@@ -844,6 +919,11 @@ class V2GuideCallbackTest(unittest.TestCase):
             self.case["identity"]["plan_id"]: self.case["job"]}
         node.corridor_pub = _Publisher()
         node.guide_pub = _Publisher()
+        node.guide_path_pubs = {
+            "/formation/path/astar_raw_0": _Publisher(),
+            "/formation/path/portal_guide_0": _Publisher(),
+        }
+        node.candidate_path_pubs = {}
         return node
 
     def _publish(self, node, document):
@@ -861,9 +941,9 @@ class V2GuideCallbackTest(unittest.TestCase):
         guide_markers = node.guide_pub.messages[0].markers
         self.assertEqual(corridor_markers[0].action, Marker.DELETEALL)
         self.assertEqual(guide_markers[0].action, Marker.DELETEALL)
-        self.assertTrue(any(marker.ns == GUIDE_ASTAR_NAMESPACE
+        self.assertTrue(any(marker.ns == PLANNING_ASTAR_NAMESPACE
                             for marker in guide_markers))
-        self.assertTrue(any(marker.ns == GUIDE_CENTERLINE_NAMESPACE
+        self.assertTrue(any(marker.ns == PLANNING_GUIDE_NAMESPACE
                             for marker in guide_markers))
 
     def test_cleared_payload_deletes_both_layers(self):
@@ -885,16 +965,22 @@ class V2GuideCallbackTest(unittest.TestCase):
             self.assertEqual(publisher.messages[0].markers[0].action,
                              Marker.DELETEALL)
 
-    def test_invalid_guide_clears_both_layers_without_stale_add(self):
+    def test_invalid_guide_clears_only_the_guide_layer(self):
         node = self._node()
         broken = copy.deepcopy(self.case["document"])
         broken["corridors"][0]["raw_route_points"] = [[0.0, 0.0]]
         self._publish(node, broken)
-        for publisher in (node.corridor_pub, node.guide_pub):
-            self.assertEqual(len(publisher.messages), 1)
-            markers = publisher.messages[0].markers
-            self.assertEqual([marker.action for marker in markers],
-                             [Marker.DELETEALL])
+        # The corridor payload is still valid; only the guide builder fails,
+        # so only the guide layer is cleared.
+        self.assertEqual(len(node.corridor_pub.messages), 1)
+        corridor_markers = node.corridor_pub.messages[0].markers
+        self.assertEqual(corridor_markers[0].action, Marker.DELETEALL)
+        self.assertTrue(any(marker.action == Marker.ADD
+                            for marker in corridor_markers[1:]))
+        self.assertEqual(len(node.guide_pub.messages), 1)
+        markers = node.guide_pub.messages[0].markers
+        self.assertEqual([marker.action for marker in markers],
+                         [Marker.DELETEALL])
 
     def test_wrong_generation_never_touches_either_layer(self):
         node = self._node()
@@ -919,7 +1005,7 @@ class V2GuideCallbackTest(unittest.TestCase):
         self.assertEqual(len(node.corridor_pub.messages), 1)
         self.assertEqual(len(node.guide_pub.messages), 1)
         self.assertTrue(any(
-            marker.ns == GUIDE_CENTERLINE_NAMESPACE
+            marker.ns == PLANNING_GUIDE_NAMESPACE
             for marker in node.guide_pub.messages[0].markers))
 
     def test_other_plans_verified_digest_never_fills_job_identity(self):
@@ -933,6 +1019,709 @@ class V2GuideCallbackTest(unittest.TestCase):
         self._publish(node, self.case["document"])
         self.assertEqual(node.corridor_pub.messages, [])
         self.assertEqual(node.guide_pub.messages, [])
+
+
+class ProgressCallbackContractTest(unittest.TestCase):
+    """TASK 01 Step 1: the ROS-free progress events of one real solve."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.case = _actual_corridor_case()
+
+    def test_real_success_events_are_monotone_read_only_and_identifiable(self):
+        events = self.case["progress_events"]
+        map_request = self.case["map_request"]
+        self.assertTrue(events)
+        seen = []
+        first_seen = {}
+        last_stage = -1
+        for event in events:
+            self.assertEqual(event["schema"], PROGRESS_SCHEMA)
+            self.assertIn(event["state"], PROGRESS_STATES)
+            self.assertEqual(event["request_sha256"],
+                             map_request.request_sha256)
+            self.assertEqual(event["grid_sha256"], map_request.grid_sha256)
+            self.assertGreaterEqual(event["elapsed_s"], 0.0)
+            self.assertNotEqual(event["state"], "PUBLISHED")
+            if event["stage"] == PROGRESS_FAILED_STAGE:
+                self.assertEqual(event["state"], "FAILED")
+                self.assertGreaterEqual(event["stage_index"], 0)
+                self.assertLessEqual(event["stage_index"], 8)
+                continue
+            self.assertEqual(event["stage_index"],
+                             PROGRESS_STAGE_INDEX[event["stage"]])
+            # Real re-entry is allowed across routes/rounds; the stage index
+            # may never jump beyond the final audit stage.
+            self.assertGreaterEqual(event["stage_index"], 0)
+            self.assertLessEqual(event["stage_index"], 8)
+            last_stage = event["stage_index"]
+            if event["stage"] not in seen:
+                seen.append(event["stage"])
+                first_seen[event["stage"]] = event["stage_index"]
+        self.assertGreaterEqual(last_stage, 0)
+        expected = ("ASTAR_SEARCH", "CORRIDOR_BUILD", "PORTAL_GUIDE",
+                    "NLP_SOLVE", "GEOMETRY_AUDIT", "DYNAMICS_AUDIT",
+                    "OBB_COLLISION_AUDIT")
+        for stage in expected:
+            self.assertIn(stage, seen)
+        # The first pass follows the real operation order; later re-entry
+        # across routes/rounds is allowed and is not constrained here.
+        first_order = [first_seen[stage] for stage in expected]
+        self.assertEqual(first_order, sorted(first_order))
+        self.assertEqual(len(set(first_order)), len(first_order))
+        self.assertNotIn("PUBLISHED", seen)
+        self.assertEqual(self.case["result"].status, "SUCCESS")
+
+    def test_corridor_evidence_reaches_progress_and_result(self):
+        events = self.case["progress_events"]
+        completes = [
+            event for event in events
+            if event["stage"] == "NLP_SOLVE"
+            and event["metrics"].get("phase") == "complete"]
+        self.assertTrue(completes)
+        last = completes[-1]["metrics"]
+        count = last["corridor_halfspace_constraint_count"]
+        residual = last["corridor_max_residual_m"]
+        self.assertIsInstance(count, int)
+        self.assertGreater(count, 0)
+        self.assertIsNotNone(residual)
+        self.assertGreaterEqual(float(residual), 0.0)
+        self.assertLessEqual(float(residual), 1e-8)
+        result = self.case["result"]
+        self.assertEqual(
+            result.metrics["corridor_halfspace_constraint_count"], count)
+        self.assertEqual(result.metrics["corridor_max_residual_m"],
+                         float(residual))
+        last_round = result.search["rounds"][-1]
+        self.assertEqual(
+            last_round["corridor_halfspace_constraint_count"], count)
+        self.assertEqual(
+            last_round["corridor_max_residual_m"], float(residual))
+
+    def test_callback_exception_is_recorded_and_disables_later_events(self):
+        calls = []
+
+        def failing(event):
+            calls.append("call")
+            raise RuntimeError("display callback failure")
+
+        emitter = pipeline_module._ProgressEmitter(
+            self.case["map_request"], failing)
+        emitter.emit("ASTAR_SEARCH", metrics={"phase": "running"})
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(emitter.error_count, 1)
+        self.assertIn("display callback failure", emitter.error)
+        emitter.emit("NLP_SOLVE", metrics={"phase": "running"})
+        self.assertEqual(len(calls), 1)
+
+
+class _RaisingPublisher(object):
+
+    def __init__(self):
+        self.calls = 0
+
+    def publish(self, message):
+        self.calls += 1
+        raise RuntimeError("publisher failure")
+
+
+class ProgressiveDocumentTest(unittest.TestCase):
+    """Node-level progressive documents: identity, sampling and freeze."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.case = _actual_corridor_case()
+        cls.request = cls.case["map_request"].request
+        cls.snapshot = g5.snapshot_from_request(cls.request)
+        cls.plan_id = cls.case["identity"]["plan_id"]
+        cls.generation = 1
+
+    def _node(self):
+        node = object.__new__(_PLANNER_NODE.UniformPlannerNode)
+        node.backend = "virtual_rigid_a"
+        node.planning_debug_pub = _Publisher()
+        node._lock = threading.RLock()
+        node._generation = self.generation
+        node._state = "PLANNING"
+        node._state_plan = self.plan_id
+        node._virtual_snapshot = self.snapshot
+        node._virtual_request = self.request
+        node._backend_hooks = object()
+        node._virtual_admission = {
+            "formation_id": self.snapshot.formation_id,
+            "request_sha256": self.case["map_request"].request_sha256,
+            "grid_sha256": self.case["result"].grid_sha256,
+            "planning_context_sha256":
+                self.case["result"].planning_context_sha256,
+        }
+        node._planning_progress = None
+        node._progress_layers = {}
+        node._progress_display_errors = 0
+        node._progress_display_disabled = set()
+        return node
+
+    def _astar(self):
+        return [{"route_id": 0,
+                 "points": [[float(point[0]), float(point[1])]
+                            for point in self.case["route"].points]}]
+
+    def _event(self, **overrides):
+        event = {
+            "schema": PROGRESS_SCHEMA,
+            "stage": "PORTAL_GUIDE",
+            "stage_index": PROGRESS_STAGE_INDEX["PORTAL_GUIDE"],
+            "state": "PLANNING",
+            "elapsed_s": 1.25,
+            "route_index": 0,
+            "route_count": 1,
+            "round_index": 0,
+            "request_sha256": self.case["map_request"].request_sha256,
+            "grid_sha256": self.case["result"].grid_sha256,
+            "planning_context_sha256":
+                self.case["result"].planning_context_sha256,
+            "metrics": {"phase": "running"},
+            "diagnostic_path": self.case["result"].path,
+            "diagnostic_display": {
+                "astar": self._astar(),
+                "result": self.case["result"],
+            },
+        }
+        event.update(overrides)
+        return event
+
+    def _documents(self, node):
+        return [json.loads(message.data)
+                for message in node.planning_debug_pub.messages]
+
+    def test_real_event_creates_all_three_progressive_layers(self):
+        node = self._node()
+        node._on_virtual_progress(
+            self.generation, self.plan_id, self.snapshot, self._event())
+        documents = self._documents(node)
+        self.assertEqual(len(documents), 1)
+        document = documents[0]
+        self.assertEqual(document["schema"], PLANNING_DEBUG_SCHEMA)
+        self.assertEqual(document["state"], PLANNING_STATE)
+        self.assertEqual(document["generation"], self.generation)
+        self.assertEqual(document["model_sha256"], None)
+        self.assertEqual(document["astar"], self._astar())
+        self.assertEqual(len(document["corridors"]), 1)
+        candidates = document["candidates"]
+        self.assertEqual(candidates["schema"], CANDIDATE_SCHEMA)
+        self.assertEqual(candidates["classification"], CANDIDATE_UNVERIFIED)
+        self.assertFalse(candidates["certified"])
+        self.assertEqual(candidates["diagnostic_label"],
+                         CANDIDATE_DIAGNOSTIC_LABEL)
+
+    def test_wrong_identity_or_generation_publishes_nothing(self):
+        variants = (
+            ("request_sha256", "0" * 64),
+            ("grid_sha256", "1" * 64),
+            ("planning_context_sha256", "2" * 64),
+            ("schema", "virtual_a_progress/v0"),
+            ("state", "PUBLISHED"),
+            ("stage", "PUBLISHED"),
+            ("stage_index", 99),
+        )
+        for name, value in variants:
+            with self.subTest(name=name):
+                node = self._node()
+                node._on_virtual_progress(
+                    self.generation, self.plan_id, self.snapshot,
+                    self._event(**{name: value}))
+                self.assertEqual(node.planning_debug_pub.messages, [])
+        node = self._node()
+        node._on_virtual_progress(
+            self.generation + 1, self.plan_id, self.snapshot, self._event())
+        self.assertEqual(node.planning_debug_pub.messages, [])
+        node = self._node()
+        node._on_virtual_progress(
+            self.generation, self.plan_id + 1, self.snapshot, self._event())
+        self.assertEqual(node.planning_debug_pub.messages, [])
+        node = self._node()
+        node._on_virtual_progress(
+            self.generation, self.plan_id, object(), self._event())
+        self.assertEqual(node.planning_debug_pub.messages, [])
+
+    def test_failed_document_freezes_completed_layers(self):
+        node = self._node()
+        node._on_virtual_progress(
+            self.generation, self.plan_id, self.snapshot, self._event())
+        node._publish_planning_failed(
+            self.generation, self.plan_id, self.snapshot,
+            self.case["result"], "DYNAMICS_REJECTED", "test failure",
+            "dynamics", 2.5)
+        documents = self._documents(node)
+        self.assertEqual(len(documents), 2)
+        failed = documents[-1]
+        self.assertEqual(failed["state"], "FAILED")
+        self.assertEqual(failed["stage"], PROGRESS_FAILED_STAGE)
+        self.assertEqual(failed["stage_index"], PROGRESS_STAGE_INDEX[
+            "PORTAL_GUIDE"])
+        self.assertEqual(failed["astar"], self._astar())
+        self.assertEqual(len(failed["corridors"]), 1)
+        self.assertEqual(failed["candidates"]["classification"],
+                         CANDIDATE_UNVERIFIED)
+        self.assertEqual(failed["reason"], "DYNAMICS_REJECTED")
+
+    def test_candidate_is_pointwise_from_the_real_state_at_s(self):
+        node = self._node()
+        node._on_virtual_progress(
+            self.generation, self.plan_id, self.snapshot, self._event())
+        candidates = self._documents(node)[0]["candidates"]
+        path = self.case["result"].path
+        length = float(path.length_m)
+        count = min(
+            CANDIDATE_POINT_LIMIT,
+            max(2, int(math.ceil(length / CANDIDATE_SAMPLE_SPACING_M)) + 1))
+        stations = [length * index / float(count - 1)
+                    for index in range(count)]
+        self.assertEqual(len(candidates["f_points"]), count)
+        centers = {vehicle_id: []
+                   for vehicle_id in (
+                       vehicle["vehicle_id"]
+                       for vehicle in candidates["vehicles"])}
+        for index, station in enumerate(stations):
+            state = path.state_at_s(station)
+            qf = state.qf
+            got = candidates["f_points"][index]
+            self.assertLessEqual(abs(got[0] - qf.x), 1e-12)
+            self.assertLessEqual(abs(got[1] - qf.y), 1e-12)
+            for vehicle in state.vehicles:
+                centers[vehicle.vehicle_id].append(
+                    (vehicle.x, vehicle.y))
+                payload = next(
+                    item for item in candidates["vehicles"]
+                    if item["vehicle_id"] == vehicle.vehicle_id)
+                point = payload["center_points"][index]
+                self.assertLessEqual(abs(point[0] - vehicle.x), 1e-12)
+                self.assertLessEqual(abs(point[1] - vehicle.y), 1e-12)
+        ids = sorted(centers)
+        for first in range(len(ids)):
+            for second in range(first + 1, len(ids)):
+                distances = [
+                    math.hypot(a[0] - b[0], a[1] - b[1])
+                    for a, b in zip(centers[ids[first]], centers[ids[second]])]
+                self.assertLessEqual(
+                    max(distances) - min(distances), 1e-10)
+        # OBB corners use each vehicle's actual body heading at that station.
+        obb_count = min(CANDIDATE_OBB_LIMIT, count)
+        if obb_count == 1:
+            obb_indices = [0]
+        else:
+            obb_indices = sorted({
+                int(round(index * (count - 1) / float(obb_count - 1)))
+                for index in range(obb_count)})
+        shapes = self.request.vehicle_shapes
+        for vehicle in candidates["vehicles"]:
+            vehicle_id = vehicle["vehicle_id"]
+            shape = shapes[vehicle_id]
+            half_length = 0.5 * shape.length_m
+            half_width = 0.5 * shape.width_m
+            self.assertEqual(len(vehicle["obb_corners"]), len(obb_indices))
+            for position, station_index in enumerate(obb_indices):
+                state = path.state_at_s(stations[station_index])
+                jet = next(item for item in state.vehicles
+                           if item.vehicle_id == vehicle_id)
+                cosine, sine = math.cos(jet.theta), math.sin(jet.theta)
+                expected = (
+                    jet.x + cosine * half_length - sine * half_width,
+                    jet.y + sine * half_length + cosine * half_width)
+                outline = vehicle["obb_corners"][position]
+                self.assertEqual(len(outline), 5)
+                self.assertEqual(outline[0], outline[-1])
+                self.assertLessEqual(abs(outline[0][0] - expected[0]), 1e-12)
+                self.assertLessEqual(abs(outline[0][1] - expected[1]), 1e-12)
+
+    def test_publisher_failure_disables_later_progress_only(self):
+        node = self._node()
+        node.planning_debug_pub = _RaisingPublisher()
+        with mock.patch.object(_PLANNER_NODE.rospy, "logerr"):
+            node._on_virtual_progress(
+                self.generation, self.plan_id, self.snapshot, self._event())
+        self.assertIn(self.generation, node._progress_display_disabled)
+        self.assertEqual(node._progress_display_errors, 1)
+        node.planning_debug_pub = _Publisher()
+        node._on_virtual_progress(
+            self.generation, self.plan_id, self.snapshot, self._event())
+        self.assertEqual(node.planning_debug_pub.messages, [])
+
+
+class ProgressiveLayerLifecycleTest(unittest.TestCase):
+    """Only a new admission or CLEARED empties the diagnostic layers."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.case = _actual_corridor_case()
+        cls.plan_id = cls.case["identity"]["plan_id"]
+        cls.identity = cls.case["identity"]
+        cls.candidate = sample_candidate_path(
+            cls.case["result"].path,
+            cls.case["map_request"].request.vehicle_shapes,
+            source="test", status=cls.case["result"].status)
+
+    def _node(self):
+        node = object.__new__(_NODE.FormationPlaybackNode)
+        node._lock = threading.RLock()
+        node.frame_id = "map"
+        node.backend = "virtual_rigid_a"
+        node.transport_ui = False
+        node._job_state = "PLAYING"
+        node._job_state_plan = self.plan_id
+        job = dict(self.case["job"])
+        job["request_sha256"] = (
+            self.case["map_request"].request_sha256)
+        node._virtual_jobs = {self.plan_id: job}
+        node._raw_requests = {}
+        node._planning_progress = None
+        node.trajectory = None
+        node.hold = None
+        node._hold_reason = "START"
+        node._active_plan = None
+        node._previewing = False
+        node._playback_model_sha256 = None
+        node._playback_semantic_version = None
+        node._clear_markers_pending = False
+        node._last_state = None
+        node.corridor_pub = _Publisher()
+        node.guide_pub = _Publisher()
+        node.candidate_pub = _Publisher()
+        node.guide_path_pubs = {
+            "/formation/path/astar_raw_{}".format(route_id): _Publisher()
+            for route_id in range(3)}
+        node.guide_path_pubs.update({
+            "/formation/path/portal_guide_{}".format(route_id): _Publisher()
+            for route_id in range(3)})
+        node.candidate_path_pubs = {
+            "/formation/path/f_candidate": _Publisher(),
+            **{"/formation/path/candidate_vehicle_{}".format(vehicle_id):
+               _Publisher() for vehicle_id in (1, 2, 3)},
+        }
+        node.status_pub = _Publisher()
+        node.marker_pub = _Publisher()
+        node.hud_pub = None
+        return node
+
+    def _planning_document(self, **overrides):
+        corridor = copy.deepcopy(self.case["display"])
+        corridor["model_sha256"] = None
+        document = {
+            "schema": PLANNING_DEBUG_SCHEMA,
+            "state": PLANNING_STATE,
+            "plan_id": self.identity["plan_id"],
+            "formation_id": self.identity["formation_id"],
+            "backend": self.identity["backend"],
+            "generation": self.identity["generation"],
+            "request_sha256": self.case["map_request"].request_sha256,
+            "grid_sha256": self.identity["grid_sha256"],
+            "planning_context_sha256":
+                self.identity["planning_context_sha256"],
+            "model_sha256": None,
+            "stage": "PORTAL_GUIDE", "stage_index": 3,
+            "elapsed_s": 1.0, "route_index": 0, "route_count": 1,
+            "round_index": 0, "reason": "", "detail": "", "metrics": {},
+            "astar": self._astar(),
+            "corridors": [corridor],
+        }
+        document.update(overrides)
+        return document
+
+    def _astar(self):
+        return [{"route_id": 0,
+                 "points": [[float(point[0]), float(point[1])]
+                            for point in self.case["route"].points]}]
+
+    def _publish(self, node, document):
+        with mock.patch.object(
+                _NODE.rospy.Time, "now",
+                return_value=_NODE.rospy.Time(0, 0)):
+            node.on_planning_debug(SimpleNamespace(data=json.dumps(document)))
+
+    def _job_state(self, node, report):
+        with mock.patch.object(
+                _NODE.rospy.Time, "now",
+                return_value=_NODE.rospy.Time(0, 0)):
+            node.on_job_state(SimpleNamespace(data=json.dumps(report)))
+
+    def _report(self, state, plan_id):
+        report = dict(self.case["job"])
+        report.update({
+            "state": state, "plan_id": plan_id,
+            "formation_id": self.identity["formation_id"],
+            "backend": "virtual_rigid_a",
+            "request_sha256": self.case["map_request"].request_sha256,
+        })
+        return report
+
+    def test_new_planning_admission_clears_all_three_layers(self):
+        node = self._node()
+        self._job_state(node, self._report("PLANNING", self.plan_id + 1))
+        for publisher in (node.corridor_pub, node.guide_pub,
+                          node.candidate_pub):
+            self.assertEqual(len(publisher.messages), 1)
+            self.assertEqual(publisher.messages[0].markers[0].action,
+                             Marker.DELETEALL)
+        self.assertIsNone(node._planning_progress)
+        for registry in (node.guide_path_pubs, node.candidate_path_pubs):
+            self.assertTrue(registry)
+            for publisher in registry.values():
+                self.assertEqual(len(publisher.messages), 1)
+                self.assertFalse(publisher.messages[0].poses)
+
+    def test_heartbeat_failed_and_raw_request_never_clear_layers(self):
+        node = self._node()
+        self._job_state(node, self._report("PLANNING", self.plan_id))
+        self._job_state(node, self._report("FAILED", self.plan_id))
+        request = SimpleNamespace(
+            plan_id=self.plan_id,
+            formation_id=self.identity["formation_id"],
+            formation_start=SimpleNamespace(x=0.0, y=0.0, theta=0.0),
+            formation_goal=SimpleNamespace(x=1.0, y=0.0, theta=0.0),
+            allow_reverse=False,
+            vehicles=[
+                SimpleNamespace(
+                    vehicle_id=vehicle_id,
+                    offset_in_formation=SimpleNamespace(x=0.0, y=0.0),
+                    start_center=SimpleNamespace(x=0.0, y=0.0, theta=0.0),
+                    goal_center=SimpleNamespace(x=1.0, y=0.0, theta=0.0),
+                    goal_heading_free=False,
+                    body_length_m=0.7, body_width_m=0.5)
+                for vehicle_id in (1, 2, 3)])
+        node.on_request(request)
+        for publisher in (node.corridor_pub, node.guide_pub,
+                          node.candidate_pub):
+            self.assertEqual(publisher.messages, [])
+        self.assertIsNone(node.trajectory)
+        self.assertIn(self.plan_id, node._raw_requests)
+        with mock.patch.object(
+                _NODE.rospy.Time, "now",
+                return_value=_NODE.rospy.Time(0, 0)):
+            node._clear("test")
+        for publisher in (node.corridor_pub, node.guide_pub,
+                          node.candidate_pub):
+            self.assertEqual(publisher.messages, [])
+
+    def test_astar_only_document_publishes_orange_and_spares_corridor(self):
+        node = self._node()
+        astar_document = self._planning_document()
+        astar_document.pop("corridors")
+        self._publish(node, astar_document)
+        self.assertEqual(node.corridor_pub.messages, [])
+        self.assertEqual(len(node.guide_pub.messages), 1)
+        markers = node.guide_pub.messages[0].markers
+        self.assertEqual(markers[0].action, Marker.DELETEALL)
+        self.assertFalse(any(marker.type in (Marker.LINE_LIST,
+                                             Marker.LINE_STRIP)
+                             for marker in markers))
+        self.assertTrue(any(marker.ns == PLANNING_ASTAR_NAMESPACE
+                            and marker.type == Marker.TEXT_VIEW_FACING
+                            for marker in markers))
+        astar_pub = node.guide_path_pubs["/formation/path/astar_raw_0"]
+        self.assertTrue(astar_pub.messages[-1].poses)
+        self.assertEqual(
+            len(astar_pub.messages[-1].poses),
+            len(self.case["route"].points))
+        for route_id in (1, 2):
+            self.assertFalse(
+                node.guide_path_pubs[
+                    "/formation/path/astar_raw_{}".format(route_id)
+                ].messages[-1].poses)
+        self.assertFalse(
+            node.guide_path_pubs["/formation/path/portal_guide_0"]
+            .messages[-1].poses)
+
+    def test_candidate_payload_publishes_paths_and_keeps_obb_markers(self):
+        node = self._node()
+        self._publish(
+            node, self._planning_document(candidates=self.candidate))
+        for topic in ("/formation/path/f_candidate",
+                      "/formation/path/candidate_vehicle_1",
+                      "/formation/path/candidate_vehicle_2",
+                      "/formation/path/candidate_vehicle_3"):
+            self.assertTrue(node.candidate_path_pubs[topic].messages[-1].poses)
+        markers = node.candidate_pub.messages[-1].markers
+        self.assertEqual(markers[0].action, Marker.DELETEALL)
+        self.assertFalse(any(
+            marker.type == Marker.LINE_STRIP
+            and (marker.ns == CANDIDATE_F_NAMESPACE
+                 or marker.ns.endswith("_center_candidate"))
+            for marker in markers))
+        self.assertTrue(any(
+            marker.type == Marker.LINE_STRIP
+            and marker.ns.endswith("_obb_candidate")
+            for marker in markers))
+        self.assertTrue(
+            node.guide_path_pubs["/formation/path/astar_raw_0"]
+            .messages[-1].poses)
+        self.assertTrue(
+            node.guide_path_pubs["/formation/path/portal_guide_0"]
+            .messages[-1].poses)
+
+    def test_null_corridors_clears_corridor_and_repaints_astar(self):
+        node = self._node()
+        self._publish(node, self._planning_document())
+        self.assertEqual(len(node.corridor_pub.messages), 1)
+        self.assertEqual(len(node.guide_pub.messages), 1)
+        self._publish(node, self._planning_document(corridors=None))
+        self.assertEqual(len(node.corridor_pub.messages), 2)
+        self.assertEqual(node.corridor_pub.messages[1].markers[0].action,
+                         Marker.DELETEALL)
+        self.assertEqual(len(node.guide_pub.messages), 2)
+        markers = node.guide_pub.messages[1].markers
+        self.assertFalse(any(
+            marker.type in (Marker.LINE_LIST, Marker.LINE_STRIP)
+            for marker in markers))
+        self.assertTrue(any(
+            marker.ns == PLANNING_ASTAR_NAMESPACE
+            and marker.type == Marker.TEXT_VIEW_FACING
+            for marker in markers))
+        self.assertTrue(
+            node.guide_path_pubs["/formation/path/astar_raw_0"]
+            .messages[-1].poses)
+        self.assertFalse(
+            node.guide_path_pubs["/formation/path/portal_guide_0"]
+            .messages[-1].poses)
+
+    def test_null_candidates_with_failure_draws_only_the_failure_layer(self):
+        node = self._node()
+        document = self._planning_document(candidates=None)
+        document["failure"] = {
+            "x": 1.0, "y": 2.0, "reason": "COLLISION", "source": "COLLISION"}
+        self._publish(node, document)
+        self.assertEqual(len(node.candidate_pub.messages), 1)
+        markers = node.candidate_pub.messages[0].markers
+        self.assertEqual(markers[0].action, Marker.DELETEALL)
+        failure = [marker for marker in markers
+                   if marker.ns == PLANNING_FAILURE_NAMESPACE]
+        self.assertTrue(any(marker.type == Marker.SPHERE
+                            for marker in failure))
+        self.assertFalse(any(marker.ns == CANDIDATE_F_NAMESPACE
+                             for marker in markers))
+        self.assertTrue(node.candidate_path_pubs)
+        for publisher in node.candidate_path_pubs.values():
+            self.assertEqual(len(publisher.messages), 1)
+            self.assertFalse(publisher.messages[0].poses)
+
+    def test_null_candidates_without_failure_clears_candidates(self):
+        node = self._node()
+        document = self._planning_document(candidates=None)
+        self._publish(node, document)
+        self.assertEqual(len(node.candidate_pub.messages), 1)
+        markers = node.candidate_pub.messages[0].markers
+        self.assertEqual([marker.action for marker in markers],
+                         [Marker.DELETEALL])
+        for publisher in node.candidate_path_pubs.values():
+            self.assertEqual(len(publisher.messages), 1)
+            self.assertFalse(publisher.messages[0].poses)
+
+    def test_progress_record_keeps_the_planning_formation_and_elapsed(self):
+        node = self._node()
+        self._publish(node, self._planning_document())
+        self.assertEqual(node._planning_progress["formation_id"],
+                         self.identity["formation_id"])
+        with mock.patch.object(
+                _NODE.rospy.Time, "now",
+                return_value=_NODE.rospy.Time(10, 0)):
+            view = node._hud_progress()
+        self.assertEqual(view["formation_id"],
+                         self.identity["formation_id"])
+        self.assertAlmostEqual(view["elapsed_s"], 11.0, places=6)
+
+
+class CandidateMarkerTest(unittest.TestCase):
+    """Candidate markers copy the sampled payload; no certification early."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.case = _actual_corridor_case()
+        cls.payload = sample_candidate_path(
+            cls.case["result"].path,
+            cls.case["map_request"].request.vehicle_shapes,
+            source="test", status=cls.case["result"].status)
+
+    def test_unverified_candidate_uses_stable_namespaces_and_labels(self):
+        document = {"state": PLANNING_STATE, "candidates": self.payload}
+        markers, paths = build_candidate_display(document)
+        self.assertEqual(markers[0].action, "DELETEALL")
+        namespaces = {marker.namespace for marker in markers}
+        self.assertIn(CANDIDATE_F_NAMESPACE, namespaces)
+        for vehicle_id in (1, 2, 3):
+            self.assertIn(CANDIDATE_CENTER_NAMESPACE.format(vehicle_id),
+                          namespaces)
+            self.assertIn(CANDIDATE_OBB_NAMESPACE.format(vehicle_id),
+                          namespaces)
+        self.assertLessEqual(len(namespaces), 9)
+        f_path = paths["f_candidate"]
+        self.assertEqual(len(f_path), len(self.payload["f_points"]))
+        for got, want in zip(f_path, self.payload["f_points"]):
+            self.assertLessEqual(abs(got[0] - want[0]), 1e-12)
+            self.assertLessEqual(abs(got[1] - want[1]), 1e-12)
+        for vehicle in self.payload["vehicles"]:
+            vehicle_id = vehicle["vehicle_id"]
+            centre = paths[("candidate_vehicle", vehicle_id)]
+            self.assertEqual(len(centre), len(vehicle["center_points"]))
+            for got, want in zip(centre, vehicle["center_points"]):
+                self.assertLessEqual(abs(got[0] - want[0]), 1e-12)
+                self.assertLessEqual(abs(got[1] - want[1]), 1e-12)
+        self.assertFalse(any(
+            marker.marker_type == "LINE_STRIP"
+            and (marker.namespace == CANDIDATE_F_NAMESPACE
+                 or marker.namespace.endswith("_center_candidate"))
+            for marker in markers))
+        obb_lines = [
+            marker for marker in markers
+            if marker.namespace.endswith("_obb_candidate")]
+        self.assertTrue(obb_lines)
+        self.assertTrue(all(marker.color == CANDIDATE_OBB_COLOR
+                            for marker in obb_lines))
+        texts = [marker.text for marker in markers
+                 if marker.marker_type == "TEXT_VIEW_FACING"]
+        self.assertTrue(any(CANDIDATE_DIAGNOSTIC_LABEL in text
+                            for text in texts))
+        self.assertFalse(any("CERTIFIED" in text for text in texts))
+
+    def test_certified_payload_requires_a_published_document(self):
+        certified = sample_candidate_path(
+            self.case["result"].path,
+            self.case["map_request"].request.vehicle_shapes,
+            classification=CANDIDATE_CERTIFIED,
+            source="test", status=self.case["result"].status)
+        with self.assertRaises(PlaybackValidationError):
+            build_candidate_display(
+                {"state": PLANNING_STATE, "candidates": certified})
+        markers = build_candidate_display(
+            {"state": PLANNING_PUBLISHED_STATE,
+             "candidates": certified})[0]
+        texts = [marker.text for marker in markers
+                 if marker.marker_type == "TEXT_VIEW_FACING"]
+        self.assertTrue(any("CERTIFIED" in text for text in texts))
+
+    def test_failure_markers_need_a_real_finite_coordinate(self):
+        document = {
+            "state": "FAILED",
+            "candidates": None,
+            "failure": {"x": 1.5, "y": -2.0, "reason": "COLLISION",
+                        "source": "COLLISION"},
+        }
+        markers, paths = build_candidate_display(document)
+        self.assertEqual(paths, {})
+        self.assertEqual(markers[0].action, "DELETEALL")
+        failure = [marker for marker in markers
+                   if marker.namespace == PLANNING_FAILURE_NAMESPACE]
+        self.assertTrue(any(marker.marker_type == "SPHERE"
+                            for marker in failure))
+        self.assertTrue(any(marker.marker_type == "TEXT_VIEW_FACING"
+                            and "COLLISION" in marker.text
+                            for marker in failure))
+        self.assertFalse(any(
+            marker.namespace == CANDIDATE_F_NAMESPACE
+            for marker in markers))
+        with self.assertRaises(PlaybackValidationError):
+            build_candidate_display({
+                "state": "FAILED", "candidates": None,
+                "failure": {"x": float("nan"), "y": 0.0,
+                            "reason": "COLLISION", "source": "COLLISION"},
+            })
 
 
 if __name__ == "__main__":

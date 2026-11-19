@@ -432,7 +432,7 @@ class VirtualATimedPlan:
             "selection": _normalize_json(self._selection),
         }
         numerics_block = {
-            "version": bounds.NUMERICS_VERSION,
+            "version": self._path.numerics_version,
             "position_error_bound_m": float(
                 self._path.position_error_bound_m),
             "angle_error_bound_rad": float(
@@ -997,6 +997,20 @@ class VirtualATimedPlan:
                 "MODEL_TIMING_INCONSISTENT",
                 "path.kind={!r} timing.kind={!r}".format(
                     path_block["kind"], timing["kind"]))
+        # The document's numerics version selects the reconstruction path.
+        # There is no "unknown version means newest": a model is rebuilt with
+        # the certificate it declares, and both the path and profile blocks
+        # must agree with it.
+        numerics = _require_exact_keys(
+            document["numerics"], _NUMERICS_KEYS, "numerics")
+        numerics_version = numerics["version"]
+        if not isinstance(numerics_version, str) or \
+                numerics_version not in bounds.SUPPORTED_NUMERICS_VERSIONS:
+            raise VirtualAContractError(
+                "UNKNOWN_NUMERICS_VERSION",
+                "numerics.version={!r} supported={}".format(
+                    numerics_version,
+                    sorted(bounds.SUPPORTED_NUMERICS_VERSIONS)))
         total_s = _json_float(timing["S"], "timing.S")
         duration = _json_float(timing["T_s"], "timing.T_s")
         start_qf_values = path_block["start_qf"]
@@ -1018,11 +1032,20 @@ class VirtualATimedPlan:
                     "UNSUPPORTED_PROFILE",
                     "profile kind={!r}; only production hermite_c2 is "
                     "accepted".format(profile_block["kind"]))
-            if profile_block["numerics_version"] != bounds.NUMERICS_VERSION:
+            profile_version = profile_block["numerics_version"]
+            if not isinstance(profile_version, str) or \
+                    profile_version not in bounds.SUPPORTED_NUMERICS_VERSIONS:
                 raise VirtualAContractError(
                     "UNKNOWN_NUMERICS_VERSION",
-                    "profile numerics_version={!r}".format(
-                        profile_block["numerics_version"]))
+                    "profile numerics_version={!r} supported={}".format(
+                        profile_version,
+                        sorted(bounds.SUPPORTED_NUMERICS_VERSIONS)))
+            if profile_version != numerics_version:
+                raise VirtualAContractError(
+                    "MODEL_NUMERICS_MISMATCH",
+                    "profile numerics_version={!r} differs from "
+                    "numerics.version={!r}".format(
+                        profile_version, numerics_version))
             profile_length = _json_float(
                 profile_block["length_m"], "profile.length_m")
             if profile_length <= 0.0:
@@ -1041,13 +1064,16 @@ class VirtualATimedPlan:
                     _json_float(knot["s"], "knot.s"),
                     _json_float(knot["value"], "knot.value"),
                     _json_float(knot["derivative"], "knot.derivative")))
-            profile = C2CurvatureProfile.from_knots(control_knots)
+            profile = C2CurvatureProfile.from_knots(
+                control_knots, numerics_version=profile_version)
             if abs(profile.length_m - profile_length) > 0.0:
                 raise VirtualAContractError(
                     "MODEL_PROFILE_LENGTH_MISMATCH",
                     "profile.length_m={!r} knots end={!r}".format(
                         profile_length, profile.length_m))
-            path = VirtualAPath(start_qf, profile, request.model)
+            path = VirtualAPath(
+                start_qf, profile, request.model,
+                numerics_version=numerics_version)
         else:
             if path_block["profile"] is not None:
                 raise VirtualAContractError(
@@ -1055,7 +1081,9 @@ class VirtualATimedPlan:
                     "hold path must have profile=None")
             profile = None
             profile_length = 0.0
-            path = VirtualAPath.hold(start_qf, request.model)
+            path = VirtualAPath.hold(
+                start_qf, request.model,
+                numerics_version=numerics_version)
         declared_length = _json_float(
             path_block["length_m"], "path.length_m")
         if declared_length != path.length_m or declared_length != total_s:
@@ -1079,12 +1107,6 @@ class VirtualATimedPlan:
             raise VirtualAContractError(
                 "MODEL_NUMERICS_MISMATCH",
                 "model integration budget does not match the rebuilt path")
-        numerics = _require_exact_keys(
-            document["numerics"], _NUMERICS_KEYS, "numerics")
-        if numerics["version"] != bounds.NUMERICS_VERSION:
-            raise VirtualAContractError(
-                "UNKNOWN_NUMERICS_VERSION",
-                "numerics.version={!r}".format(numerics["version"]))
         expected_method = "motion" if timing["kind"] == "motion" else "hold"
         if numerics["integration_method"] != expected_method:
             raise VirtualAContractError(

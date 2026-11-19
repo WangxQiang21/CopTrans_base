@@ -2998,10 +2998,26 @@ def _audit_bind_plan(request, plan, expected_planning_context):
         raise _AuditFailure(
             "UNSUPPORTED_MODEL_FIELD", "numerics model keys are invalid",
             constraint="MODEL_JSON")
-    if numerics["version"] != bounds.NUMERICS_VERSION:
+    numerics_version = numerics["version"]
+    if not isinstance(numerics_version, str) or \
+            numerics_version not in bounds.SUPPORTED_NUMERICS_VERSIONS:
         raise _AuditFailure(
             "UNKNOWN_NUMERICS_VERSION",
-            "numerics version={!r}".format(numerics["version"]),
+            "numerics version={!r} supported={}".format(
+                numerics_version, sorted(bounds.SUPPORTED_NUMERICS_VERSIONS)),
+            constraint="MODEL_NUMERICS")
+    path_version = getattr(path, "numerics_version", None)
+    if not isinstance(path_version, str) or \
+            path_version not in bounds.SUPPORTED_NUMERICS_VERSIONS:
+        raise _AuditFailure(
+            "UNKNOWN_NUMERICS_VERSION",
+            "path numerics version={!r}".format(path_version),
+            constraint="MODEL_NUMERICS")
+    if path_version != numerics_version:
+        raise _AuditFailure(
+            "MODEL_NUMERICS_MISMATCH",
+            "path numerics version={!r} differs from model {!r}".format(
+                path_version, numerics_version),
             constraint="MODEL_NUMERICS")
     expected_method = "motion" if timing["kind"] == "motion" else "hold"
     if numerics["integration_method"] != expected_method:
@@ -3030,25 +3046,47 @@ def _audit_bind_plan(request, plan, expected_planning_context):
             raise _AuditFailure(
                 "UNSUPPORTED_MODEL_FIELD", "profile model keys are invalid",
                 constraint="MODEL_JSON")
-        if profile_block["kind"] != "hermite_c2" or \
-                profile_block["numerics_version"] != bounds.NUMERICS_VERSION:
+        if profile_block["kind"] != "hermite_c2":
             raise _AuditFailure(
                 "UNSUPPORTED_PROFILE",
-                "profile kind/version={!r}/{!r}".format(
-                    profile_block["kind"],
-                    profile_block["numerics_version"]),
+                "profile kind={!r}".format(profile_block["kind"]),
                 constraint="PROFILE")
+        profile_version = profile_block["numerics_version"]
+        if not isinstance(profile_version, str) or \
+                profile_version not in bounds.SUPPORTED_NUMERICS_VERSIONS:
+            raise _AuditFailure(
+                "UNSUPPORTED_PROFILE",
+                "profile numerics_version={!r} supported={}".format(
+                    profile_version,
+                    sorted(bounds.SUPPORTED_NUMERICS_VERSIONS)),
+                constraint="PROFILE")
+        if profile_version != numerics_version:
+            raise _AuditFailure(
+                "MODEL_NUMERICS_MISMATCH",
+                "profile numerics_version={!r} differs from model {!r}".format(
+                    profile_version, numerics_version),
+                constraint="MODEL_NUMERICS")
         if path.is_hold or path.profile is None:
             raise _AuditFailure(
                 "MODEL_PATH_MISMATCH",
                 "motion model requires a production curvature path",
                 constraint="PLAN_PATH")
         profile = path.profile
-        if profile.kind != "hermite_c2" or \
-                profile.numerics_version != bounds.NUMERICS_VERSION:
+        if profile.kind != "hermite_c2":
             raise _AuditFailure(
-                "UNSUPPORTED_PROFILE", "plan profile version differs",
+                "UNSUPPORTED_PROFILE", "plan profile kind differs",
                 constraint="PROFILE")
+        if profile.numerics_version not in \
+                bounds.SUPPORTED_NUMERICS_VERSIONS:
+            raise _AuditFailure(
+                "UNSUPPORTED_PROFILE", "plan profile version is unsupported",
+                constraint="PROFILE")
+        if profile.numerics_version != profile_version:
+            raise _AuditFailure(
+                "MODEL_NUMERICS_MISMATCH",
+                "plan profile version={!r} differs from model {!r}".format(
+                    profile.numerics_version, profile_version),
+                constraint="MODEL_NUMERICS")
         if _finite_audit(profile.length_m, "profile.length_m") != total_s or \
                 _audit_core_float(
                     profile_block["length_m"], "profile.length_m") != total_s:

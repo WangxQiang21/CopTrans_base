@@ -396,7 +396,7 @@ class FrameAndMarkerTest(unittest.TestCase):
             self.trajectory, frame, status=self._status())
         self.assertTrue(executable)
         self.assertEqual(audit_state, "FEASIBLE")
-        self.assertEqual(len(markers), 20)
+        self.assertEqual(len(markers), 17)
         self.assertEqual(len({marker.marker_id for marker in markers}),
                          len(markers))
         self.assertEqual(tuple(sorted(namespaces)), namespaces)
@@ -406,7 +406,7 @@ class FrameAndMarkerTest(unittest.TestCase):
             vehicle_markers = [marker for marker in markers
                                if marker.namespace == vehicle_namespace(
                                    self.formation_id, vehicle_id)]
-            self.assertEqual(len(vehicle_markers), 5)
+            self.assertEqual(len(vehicle_markers), 4)
             for marker in vehicle_markers:
                 self.assertEqual(marker.frame_id, "map")
             arrow = next(marker for marker in vehicle_markers
@@ -541,7 +541,7 @@ class NoMotionEnvelopeTest(unittest.TestCase):
         frame = frame_at(self.trajectory, 0.0)
         markers, namespaces, audit_state, executable = build_markers(
             self.trajectory, frame)
-        self.assertEqual(len(markers), 20)
+        self.assertEqual(len(markers), 17)
         self.assertIsInstance(audit_state, str)
         self.assertIsInstance(executable, bool)
         for vehicle in frame.vehicles:

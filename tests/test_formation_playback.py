@@ -19,7 +19,6 @@ from fwis_v3_optimizer.formation_playback import (  # noqa: E402
     GEOMETRY_ONLY_LABEL,
     HOLD_END,
     HOLD_START,
-    MODE_COLORS,
     OBLIQUE,
     PLAYING,
     PlaybackMarkerOptions,
@@ -34,6 +33,7 @@ from fwis_v3_optimizer.formation_playback import (  # noqa: E402
     tf_frame_prefix,
     trajectory_from_fields,
     vehicle_namespace,
+    vehicle_path_samples,
 )
 
 
@@ -321,24 +321,32 @@ class PlaybackMarkerTest(unittest.TestCase):
         self.assertAlmostEqual(max(ys) - min(ys), 0.738, places=6)
         self.assertAlmostEqual(max(xs) - min(xs), 0.5, places=6)
 
-    def test_mode_band_colors_follow_each_sample_mode(self):
+    def test_vehicle_path_samples_keep_every_authoritative_sample(self):
         samples = {
             0: (point(0.0, 0.0, 0.0, 0.0, ACKERMANN),
-                point(1.0, 1.0, 0.0, 0.0, OBLIQUE),
-                point(2.0, 2.0, 0.0, 0.0, SPIN)),
+                point(1.0, 1.0, 0.0, 0.5, OBLIQUE),
+                point(2.0, 2.0, 0.0, 1.0, SPIN)),
             1: fields()["trajectories"][1]["points"],
         }
         model = trajectory(samples=samples)
+        paths = vehicle_path_samples(model)
+        self.assertEqual(set(paths), {0, 1})
+        self.assertEqual(
+            paths[0],
+            ((0.0, 0.0, 0.0), (1.0, 0.0, 0.5), (2.0, 0.0, 1.0)))
+        self.assertEqual(
+            paths[1],
+            tuple((item[1], item[2], item[3])
+                  for item in samples[1]))
         frame = frame_at(model, 1.0)
         markers, _, _, _ = build_markers(model, frame)
+        # The marker array must not carry a second, non-adjustable copy of
+        # the full path; RViz Path displays own the full-centre polylines.
         namespace = vehicle_namespace("wedge_3", 0)
-        band = next(
-            marker for marker in markers
-            if marker.namespace == namespace and marker.colors
-            and len(marker.colors) == 3)
-        self.assertEqual(band.colors[0], MODE_COLORS[ACKERMANN])
-        self.assertEqual(band.colors[1], MODE_COLORS[OBLIQUE])
-        self.assertEqual(band.colors[2], MODE_COLORS[SPIN])
+        vehicle_markers = [
+            marker for marker in markers if marker.namespace == namespace]
+        self.assertEqual(len(vehicle_markers), 4)
+        self.assertFalse(any(marker.colors for marker in vehicle_markers))
 
     def test_audited_status_allows_feasible_label(self):
         model = trajectory()

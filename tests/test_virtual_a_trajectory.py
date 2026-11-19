@@ -34,6 +34,9 @@ from fwis_v3_optimizer.formation_continuous_a.timing import retime_path
 from fwis_v3_optimizer.formation_continuous_a.trajectory import (
     VirtualATimedPlan,
 )
+from fwis_v3_optimizer.formation_continuous_a import (
+    bounds as bounds_module,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE_DIR = ROOT / "tests" / "fixtures" / "virtual_a"
@@ -889,6 +892,116 @@ class SerializationIdentityTests(unittest.TestCase):
         self.assertEqual(rebuilt.to_model_json(), before)
         self.assertEqual(rebuilt.state_at(0.0).vehicles[0].wheel_speeds,
                          (0.0, 0.0, 0.0, 0.0))
+
+
+class VersionedNumericsModelTests(unittest.TestCase):
+    """Step 5: old v2 model replay and rejection of version tampering."""
+
+    V2_SHA256 = ("df146b9bb4710132adeacd4d718d5a84"
+                 "0c0f0e3bce353d06331a84142c2eaaf8")
+
+    @classmethod
+    def setUpClass(cls):
+        cls.v2_payload = (
+            FIXTURE_DIR / "v2_model_600000.json").read_text()
+        cls.v2_document = json.loads(cls.v2_payload)
+        request, path = curved_request_and_path()
+        cls.v3_plan = retime_path(request, path, TimingConfig()).plan
+        cls.v3_payload = cls.v3_plan.to_model_json()
+        cls.v3_document = json.loads(cls.v3_payload)
+
+    @staticmethod
+    def _mutate(document, mutate):
+        mutate(document)
+        return canonical_json(document)
+
+    def test_historical_v2_model_replays_byte_identically(self):
+        self.assertEqual(bounds_module.NUMERICS_V2,
+                         "virtual_rigid_a.numerics.g1.v2")
+        plan = VirtualATimedPlan.from_model_json(self.v2_payload)
+        self.assertEqual(plan.path.numerics_version, bounds_module.NUMERICS_V2)
+        self.assertEqual(plan.path.profile.numerics_version,
+                         bounds_module.NUMERICS_V2)
+        budget = plan.path.integration_budget
+        self.assertEqual(budget["numerics_version"], bounds_module.NUMERICS_V2)
+        self.assertNotIn("segments", budget)
+        self.assertEqual(plan.model_sha256(), self.V2_SHA256)
+        self.assertEqual(plan.to_model_json(), self.v2_payload)
+        self.assertLessEqual(plan.path.position_error_bound_m, 1e-7)
+
+    def test_new_v3_model_declares_v3_in_every_numerics_field(self):
+        document = self.v3_document
+        self.assertEqual(document["numerics"]["version"],
+                         bounds_module.NUMERICS_V3)
+        self.assertEqual(document["path"]["profile"]["numerics_version"],
+                         bounds_module.NUMERICS_V3)
+        self.assertEqual(
+            document["path"]["integration_budget"]["numerics_version"],
+            bounds_module.NUMERICS_V3)
+        self.assertIn("segments",
+                      document["path"]["integration_budget"])
+        rebuilt = VirtualATimedPlan.from_model_json(self.v3_payload)
+        self.assertEqual(rebuilt.to_model_json(), self.v3_payload)
+        self.assertEqual(rebuilt.model_sha256(), self.v3_plan.model_sha256())
+
+    def test_cross_version_tampering_is_rejected(self):
+        def set_version(document, block, value):
+            if block == "profile":
+                document["path"]["profile"]["numerics_version"] = value
+            else:
+                document[block]["version"] = value
+
+        cases = (
+            ("v2_numerics_to_v3_only",
+             lambda d: set_version(d, "numerics",
+                                   bounds_module.NUMERICS_V3),
+             "MODEL_NUMERICS_MISMATCH"),
+            ("v2_profile_to_v3_only",
+             lambda d: set_version(d, "profile", bounds_module.NUMERICS_V3),
+             "MODEL_NUMERICS_MISMATCH"),
+            ("v2_document_claims_v3",
+             lambda d: (set_version(d, "numerics",
+                                    bounds_module.NUMERICS_V3),
+                        set_version(d, "profile",
+                                    bounds_module.NUMERICS_V3)),
+             "MODEL_NUMERICS_MISMATCH"),
+            ("v2_numerics_unknown",
+             lambda d: set_version(d, "numerics", "other"),
+             "UNKNOWN_NUMERICS_VERSION"),
+            ("v2_profile_unknown",
+             lambda d: set_version(d, "profile", "other"),
+             "UNKNOWN_NUMERICS_VERSION"),
+        )
+        for name, mutate, expected in cases:
+            with self.subTest(case=name):
+                with self.assertRaises(VirtualAContractError) as caught:
+                    VirtualATimedPlan.from_model_json(
+                        self._mutate(json.loads(self.v2_payload), mutate))
+                self.assertEqual(caught.exception.reason, expected)
+
+        def v3_as_v2(document):
+            set_version(document, "numerics", bounds_module.NUMERICS_V2)
+            set_version(document, "profile", bounds_module.NUMERICS_V2)
+
+        def v3_profile_as_v2(document):
+            set_version(document, "profile", bounds_module.NUMERICS_V2)
+
+        def v3_budget_replaced_by_v2(document):
+            document["path"]["integration_budget"] = self.v2_document[
+                "path"]["integration_budget"]
+
+        for name, mutate, expected in (
+                ("v3_document_claims_v2", v3_as_v2,
+                 "MODEL_NUMERICS_MISMATCH"),
+                ("v3_profile_claims_v2", v3_profile_as_v2,
+                 "MODEL_NUMERICS_MISMATCH"),
+                ("v3_budget_replaced_by_v2", v3_budget_replaced_by_v2,
+                 "MODEL_NUMERICS_MISMATCH")):
+            with self.subTest(case=name):
+                with self.assertRaises(VirtualAContractError) as caught:
+                    VirtualATimedPlan.from_model_json(
+                        self._mutate(json.loads(self.v3_payload), mutate))
+                self.assertEqual(caught.exception.reason, expected)
 
 
 if __name__ == "__main__":

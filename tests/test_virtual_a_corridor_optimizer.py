@@ -10,6 +10,8 @@ geometry only: no test claims a three-vehicle executable path.
 import json
 import math
 import unittest
+import xml.etree.ElementTree as ElementTree
+from pathlib import Path
 from unittest import mock
 
 import numpy as np
@@ -26,9 +28,11 @@ from fwis_v3_optimizer.formation_continuous_a.contracts import (
     ConvexCorridor,
     CorridorChain,
     GuideRoute,
+    HeadingBranch,
     PlannerConfig,
     VirtualAContractError,
     planner_config_from_dict,
+    research_planner_config,
     validate_planner_config,
 )
 from fwis_v3_optimizer.formation_continuous_a.corridor import (
@@ -51,6 +55,7 @@ from fwis_v3_optimizer.formation_continuous_a.optimizer import (
     _constraint_value_offsets,
     _corridor_residual_diagnostic,
     _gauss,
+    _guidance_mode,
     _numeric_constraint_vector,
     _numeric_objective,
     _proxy_numeric_penalty,
@@ -62,6 +67,9 @@ from tests.test_virtual_a_optimizer import (
     planner_config,
     request_from_fixture,
 )
+
+ROOT = Path(__file__).resolve().parents[1]
+LAUNCH = ROOT / "catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch"
 
 
 def _box(x0, y0, x1, y1, seed_start, seed_end):
@@ -524,6 +532,69 @@ class CorridorOptimizerC2BTests(unittest.TestCase):
                 PlannerConfig(corridor_quadrature_points=65)).reason,
             "INVALID_CONFIG")
 
+    def test_research_entry_factory_changes_only_the_two_choices(self):
+        config = research_planner_config()
+        self.assertEqual(config.guidance_mode, "corridor")
+        self.assertEqual(config.corridor_enforcement, "hard")
+        payload = config.as_dict()
+        self.assertEqual(payload["guidance_mode"], "corridor")
+        self.assertEqual(payload["corridor_enforcement"], "hard")
+        # Historical direct construction keeps its legacy default.
+        self.assertEqual(PlannerConfig().guidance_mode, "legacy_route")
+        self.assertEqual(
+            PlannerConfig().as_dict().get("guidance_mode"), None)
+
+        explicit = research_planner_config(
+            guidance_mode=" Corridor ", corridor_enforcement="SOFT")
+        self.assertEqual(explicit.guidance_mode, "corridor")
+        self.assertEqual(explicit.corridor_enforcement, "soft")
+        self.assertEqual(
+            planner_config_from_dict(
+                json.loads(json.dumps(explicit.as_dict()))), explicit)
+
+        for guidance, enforcement in (("sideways", "hard"),
+                                      ("corridor", "loose")):
+            with self.assertRaises(VirtualAContractError) as raised:
+                research_planner_config(
+                    guidance_mode=guidance,
+                    corridor_enforcement=enforcement)
+            self.assertEqual(raised.exception.reason, "INVALID_CONFIG")
+
+    def test_launch_research_defaults_reach_the_casadi_halfspaces(self):
+        root = ElementTree.parse(str(LAUNCH)).getroot()
+        args = {arg.get("name"): arg.get("default")
+                for arg in root.findall("arg")}
+        self.assertEqual(args["backend"], "virtual_rigid_a")
+        config = research_planner_config(
+            guidance_mode=args["virtual_a_guidance_mode"],
+            corridor_enforcement=args["virtual_a_corridor_enforcement"])
+        # This is the same normalized config the node logs and hands to the
+        # pipeline; the optimizer selects corridor constraints from it.
+        self.assertEqual(_guidance_mode(config), "corridor")
+        self.assertEqual(config.corridor_enforcement, "hard")
+
+        request = request_from_fixture("STRAIGHT_LINE")
+        chain = _corridor_chain((
+            _box(-1.0, -1.0, 7.0, 1.0, (0.0, 0.0), (6.0, 0.0)),))
+        allocation = _eight_entries()
+        packet = _search_packet(request, config)
+        constraint = _build_corridor_constraint(
+            chain, allocation, request, config)
+        solver, _lower_x, _upper_x, lower_g, upper_g = _build_casadi_nlp(
+            request, config, packet, corridor_constraint=constraint)
+        _equality_end, signed_end, corridor_end = _constraint_value_offsets(
+            request, config, packet, constraint)
+        self.assertEqual(constraint.halfspace_constraint_count, 352)
+        self.assertEqual(corridor_end - signed_end, 352)
+        self.assertEqual(int(np.count_nonzero(
+            np.isneginf(lower_g[signed_end:corridor_end]))), 352)
+        self.assertEqual(int(np.count_nonzero(
+            upper_g[signed_end:corridor_end] == 0.0)), 352)
+        self.assertEqual(
+            np.asarray(solver.get_function("nlp_g")(
+                _straight_vector(config), np.zeros(0)),
+                dtype=float).ravel()[signed_end:corridor_end].size, 352)
+
     def test_halfspace_residual_is_identical_in_numeric_and_casadi_nlp(self):
         request = request_from_fixture("STRAIGHT_LINE")
         config = planner_config(
@@ -537,6 +608,9 @@ class CorridorOptimizerC2BTests(unittest.TestCase):
         self.assertEqual(constraint.sample_count, 88)
         self.assertEqual(constraint.quadrature_points, 9)
         self.assertEqual(constraint.margin_m, 1e-5)
+        self.assertEqual(constraint.halfspace_constraint_count, 352)
+        self.assertEqual(
+            constraint.as_dict()["halfspace_constraint_count"], 352)
         self.assertFalse(
             constraint.as_dict()["is_three_vehicle_certificate"])
 
@@ -566,6 +640,9 @@ class CorridorOptimizerC2BTests(unittest.TestCase):
             float(np.max(casadi_values[signed_end:])), 1e-8)
         self.assertTrue(np.all(np.isneginf(lower_g[signed_end:])))
         self.assertTrue(np.all(upper_g[signed_end:] == 0.0))
+        self.assertEqual(
+            corridor_end - signed_end,
+            constraint.halfspace_constraint_count)
         self.assertEqual(equality_end + 264, signed_end)
 
         shifted = _corridor_chain((
@@ -577,6 +654,46 @@ class CorridorOptimizerC2BTests(unittest.TestCase):
             z, request, config, packet, shifted_constraint)
         self.assertEqual(error, "")
         self.assertGreater(shifted_residual, 0.4)
+
+    def test_branch_heading_reaches_numeric_and_casadi_equalities(self):
+        request = request_from_fixture("STRAIGHT_LINE")
+        config = planner_config(
+            guidance_mode="corridor", solver="ipopt", max_initials=1)
+        chain = _corridor_chain((
+            _box(-1.0, -1.0, 7.0, 1.0, (0.0, 0.0), (6.0, 0.0)),))
+        allocation = _eight_entries()
+        branch = HeadingBranch(
+            base_heading_rad=0.0,
+            winding_k=1,
+            unwrapped_heading_rad=2.0 * math.pi,
+            guide_turn_rad=2.0 * math.pi,
+            source="fixture_loop",
+            candidate_rank=0)
+        packet = _search_packet(
+            request, config, heading_branch=branch, guide_length_m=6.0)
+        self.assertEqual(packet["heading_change_rad"], 2.0 * math.pi)
+        self.assertEqual(packet["heading_branch"], branch.as_dict())
+        self.assertEqual(packet["guide_length_m"], 6.0)
+        constraint = _build_corridor_constraint(
+            chain, allocation, request, config)
+        z = _straight_vector(config)
+        equality_end, _signed_end, _corridor_end = _constraint_value_offsets(
+            request, config, packet, constraint)
+        values = _numeric_constraint_vector(
+            z, request, config, packet, int(config.collocation_points),
+            corridor_constraint=constraint)
+        self.assertAlmostEqual(
+            float(values[equality_end - 1]), -2.0 * math.pi, places=6)
+        solver, _lower_x, _upper_x, _lower_g, _upper_g = _build_casadi_nlp(
+            request, config, packet, corridor_constraint=constraint)
+        casadi_values = np.asarray(
+            solver.get_function("nlp_g")(z, np.zeros(0)),
+            dtype=float).ravel()
+        np.testing.assert_allclose(
+            casadi_values[:equality_end], values[:equality_end],
+            atol=1e-12, rtol=0.0)
+        self.assertAlmostEqual(
+            float(casadi_values[equality_end - 1]), -2.0 * math.pi, places=6)
 
     def test_corridor_solution_passes_solver_and_independent_audit(self):
         request = request_from_fixture("STRAIGHT_LINE")
@@ -601,6 +718,14 @@ class CorridorOptimizerC2BTests(unittest.TestCase):
         self.assertIsNotNone(audited[0].corridor_residual_m)
         self.assertLessEqual(audited[0].corridor_residual_m, 1e-8)
         self.assertGreaterEqual(audited[0].corridor_residual_m, 0.0)
+        # Result evidence comes from the actual constraint rows, not from the
+        # display polygon: 88 samples x 4 box halfspaces.
+        self.assertEqual(result.corridor_halfspace_constraint_count, 352)
+        self.assertEqual(
+            result.as_dict()["corridor_halfspace_constraint_count"], 352)
+        self.assertEqual(
+            result.corridor_max_residual_m, audited[0].corridor_residual_m)
+        self.assertLessEqual(result.corridor_max_residual_m, 1e-8)
         start = result.path.state_at_s(0.0).qf
         end = result.path.state_at_s(result.path.length_m).qf
         self.assertAlmostEqual(start.x, 0.0, places=9)

@@ -62,11 +62,6 @@ OFFSETS = ((0.0, 0.0), (0.0, 1.2), (0.0, -1.2))
 GOAL_X = 2.5
 BODY_LENGTH_M = 0.738
 BODY_WIDTH_M = 0.500
-MODE_COLORS = {
-    0: (0.10, 0.45, 1.00, 0.95),
-    1: (0.10, 0.78, 0.30, 0.95),
-    2: (1.00, 0.40, 0.10, 0.95),
-}
 
 rospy = None
 String = None
@@ -76,6 +71,7 @@ Pose2D = None
 Point = None
 Marker = None
 MarkerArray = None
+RosPath = None
 FormationPlanRequest = None
 FormationPlanSeed = None
 FormationTimedTrajectory = None
@@ -188,7 +184,7 @@ def prepare_python_path(environment):
 
 def load_ros_modules():
     global rospy, String, TFMessage, OccupancyGrid, Pose2D, Point
-    global Marker, MarkerArray
+    global Marker, MarkerArray, RosPath
     global FormationPlanRequest, FormationPlanSeed
     global FormationTimedTrajectory, FormationTimedPoint
     global FormationVehicleSpec, FormationVehicleTrajectory
@@ -202,6 +198,7 @@ def load_ros_modules():
         from geometry_msgs.msg import Point as ImportedPoint
         from visualization_msgs.msg import Marker as ImportedMarker
         from visualization_msgs.msg import MarkerArray as ImportedMarkerArray
+        from nav_msgs.msg import Path as ImportedPath
         from fwis_v3_msgs.msg import (
             FormationPlanRequest as ImportedPlanRequest,
             FormationPlanSeed as ImportedPlanSeed,
@@ -225,6 +222,7 @@ def load_ros_modules():
     Point = ImportedPoint
     Marker = ImportedMarker
     MarkerArray = ImportedMarkerArray
+    RosPath = ImportedPath
     FormationPlanRequest = ImportedPlanRequest
     FormationPlanSeed = ImportedPlanSeed
     FormationTimedTrajectory = ImportedTimedTrajectory
@@ -322,6 +320,7 @@ class Observations:
         self.quality = []
         self.trajectories = []
         self.markers = []
+        self.paths = {}
         self.playback = []
         self.tf_frames = OrderedDict()
         self.tf_updates = 0
@@ -350,6 +349,9 @@ class Observations:
     def add_markers(self, message):
         self.markers.append((time.time(), message))
         del self.markers[:-500]
+
+    def add_path(self, vehicle_id, message):
+        self.paths[int(vehicle_id)] = (time.time(), message)
 
     def add_playback_status(self, message):
         self.playback.append((time.time(), self._parse(message)))
@@ -853,7 +855,6 @@ def check_markers(summary, array, terminal, trajectory_message):
     path_point_map = {}
     obb_errors = []
     heading_errors = []
-    color_errors = []
     type_errors = []
     history_errors = []
     link_errors = []
@@ -864,8 +865,8 @@ def check_markers(summary, array, terminal, trajectory_message):
         by_type = {}
         for marker in markers:
             by_type.setdefault(marker.type, []).append(marker)
-        if (len(markers) != 5 or
-                len(by_type.get(Marker.LINE_STRIP, [])) != 3 or
+        if (len(markers) != 4 or
+                len(by_type.get(Marker.LINE_STRIP, [])) != 2 or
                 len(by_type.get(Marker.ARROW, [])) != 1 or
                 len(by_type.get(Marker.TEXT_VIEW_FACING, [])) != 1):
             type_errors.append((vehicle_id, len(markers), {
@@ -876,14 +877,11 @@ def check_markers(summary, array, terminal, trajectory_message):
         obb = next((marker for marker in line_strips
                     if len(marker.points) == 5 and
                     abs(marker.scale.x - 0.03) <= 1e-9), None)
-        body_path = next((marker for marker in line_strips
-                          if len(marker.points) == sample_count and
-                          abs(marker.scale.x - 0.05) <= 1e-9), None)
         history = next((marker for marker in line_strips
                         if abs(marker.scale.x - 0.015) <= 1e-9), None)
-        if obb is None or body_path is None or history is None:
+        if obb is None or history is None:
             type_errors.append(
-                (vehicle_id, len(markers), "missing OBB/path/history"))
+                (vehicle_id, len(markers), "missing OBB/history"))
             continue
         corners = obb.points
         edge_lengths = [
@@ -909,25 +907,11 @@ def check_markers(summary, array, terminal, trajectory_message):
                 float(terminal_by_vehicle[vehicle_id]["theta"]))))
 
         points = points_by_vehicle[vehicle_id]
-        if len(body_path.colors) != sample_count:
-            color_errors.append((vehicle_id, "color count"))
-        else:
-            for index, (color, point) in enumerate(
-                    zip(body_path.colors, points)):
-                expected = MODE_COLORS[int(point.mode)]
-                if max(abs(color.r - expected[0]),
-                       abs(color.g - expected[1]),
-                       abs(color.b - expected[2]),
-                       abs(color.a - expected[3])) > 1e-6:
-                    color_errors.append((vehicle_id, index, int(point.mode)))
-                    break
-        path_point_map[vehicle_id] = body_path
-        if (len(history.points) != sample_count or len(body_path.points) !=
-                sample_count or any(
-                    abs(first.x - second.x) > 1e-9 or
-                    abs(first.y - second.y) > 1e-9
-                    for first, second in zip(history.points,
-                                             body_path.points))):
+        path_point_map[vehicle_id] = history
+        if (len(history.points) != sample_count or any(
+                abs(got.x - float(point.center_pose.x)) > 1e-9 or
+                abs(got.y - float(point.center_pose.y)) > 1e-9
+                for got, point in zip(history.points, points))):
             history_errors.append((vehicle_id, len(history.points)))
 
     _check(
@@ -939,18 +923,13 @@ def check_markers(summary, array, terminal, trajectory_message):
             type_errors, max(obb_errors or [math.inf]),
             max(heading_errors or [math.inf])))
     _check(
-        summary, "marker_mode_color_bands",
-        not color_errors,
-        "every full-path color matches its A/O/S mode; errors={}".format(
-            color_errors[:5]))
-    _check(
-        summary, "marker_history_and_paths",
+        summary, "marker_history_contains_all_shared_samples",
         not type_errors and not history_errors and
         all(vehicle_id in path_point_map and
             len(path_point_map[vehicle_id].points) == sample_count
             for vehicle_id in VEHICLE_IDS),
-        "full path and traveled history contain all shared samples; "
-        "errors={}".format(history_errors[:5]))
+        "traveled history contains all shared samples; errors={}".format(
+            history_errors[:5]))
 
     links = _markers_with_namespace(
         array, _shared_namespace(formation_id, "links"))
@@ -1020,6 +999,51 @@ def check_markers(summary, array, terminal, trajectory_message):
         sorted(namespaces_documented) == sorted(set(namespaces)),
         "playback status recorded {} namespaces".format(
             len(namespaces_documented)))
+
+
+def check_paths(summary, observations, trajectory_message):
+    """Every vehicle path must arrive as nav_msgs/Path, not as a marker."""
+    stamp = (int(trajectory_message.header.stamp.secs),
+             int(trajectory_message.header.stamp.nsecs))
+    points_by_vehicle = {
+        int(item.vehicle_id): item.points
+        for item in trajectory_message.trajectories}
+    errors = []
+    for vehicle_id in VEHICLE_IDS:
+        item = observations.paths.get(vehicle_id)
+        if item is None:
+            errors.append((vehicle_id, "missing"))
+            continue
+        path = item[1]
+        if (path.header.frame_id != "map" or
+                (int(path.header.stamp.secs),
+                 int(path.header.stamp.nsecs)) != stamp):
+            errors.append((vehicle_id, "header"))
+            continue
+        points = points_by_vehicle[vehicle_id]
+        if len(path.poses) != len(points):
+            errors.append(
+                (vehicle_id, "count", len(path.poses), len(points)))
+            continue
+        for index, (pose, point) in enumerate(zip(path.poses, points)):
+            orientation = pose.pose.orientation
+            yaw = math.atan2(
+                2 * (orientation.w * orientation.z +
+                     orientation.x * orientation.y),
+                1 - 2 * (orientation.y * orientation.y +
+                         orientation.z * orientation.z))
+            if (abs(pose.pose.position.x -
+                    float(point.center_pose.x)) > 1e-9 or
+                    abs(pose.pose.position.y -
+                        float(point.center_pose.y)) > 1e-9 or
+                    abs(_wrap(yaw - float(point.center_pose.theta))) > 1e-9):
+                errors.append((vehicle_id, index))
+                break
+    _check(
+        summary, "path_topics_contain_all_shared_samples",
+        not errors,
+        "three nav_msgs/Path topics carry every common-time sample; "
+        "errors={}".format(errors[:5]))
 
 
 def check_tf(summary, observations, terminal, trajectory_message):
@@ -1160,6 +1184,12 @@ def run(args):
         rospy.Subscriber(
             "/formation/markers", MarkerArray, observations.add_markers,
             queue_size=50)
+        for vehicle_id in VEHICLE_IDS:
+            rospy.Subscriber(
+                "/formation/path/vehicle_{}".format(vehicle_id), RosPath,
+                lambda message, vehicle_id=vehicle_id:
+                    observations.add_path(vehicle_id, message),
+                queue_size=5)
         rospy.Subscriber(
             "/formation/playback_status", String,
             observations.add_playback_status, queue_size=100)
@@ -1355,6 +1385,12 @@ def run(args):
             terminal_marker_item[1].markers)
         check_markers(
             summary, terminal_marker_item[1], terminal, trajectory_message)
+        wait_for(
+            lambda: all(vehicle_id in observations.paths
+                        for vehicle_id in VEHICLE_IDS), 5.0,
+            "vehicle Path topics", nodes, observations)
+        summary["observed"]["path_vehicle_ids"] = sorted(observations.paths)
+        check_paths(summary, observations, trajectory_message)
 
         wait_for(
             lambda: all(frame in observations.tf_frames for frame in (

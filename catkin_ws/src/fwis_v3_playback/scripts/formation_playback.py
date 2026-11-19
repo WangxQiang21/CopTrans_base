@@ -14,6 +14,7 @@ from functools import wraps
 from types import SimpleNamespace
 import rospy
 from std_msgs.msg import String
+from nav_msgs.msg import Path
 from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import Point, Quaternion, TransformStamped, Vector3, PoseStamped
 from std_msgs.msg import ColorRGBA
@@ -27,14 +28,16 @@ from fwis_v3_optimizer.formation_playback import (
     INVALID,
     PLAYBACK_PLAN_BACKEND,
     PLAYBACK_PLAN_SCHEMA,
+    PLANNING_FAILED_STATE,
     VIRTUAL_CERTIFICATION,
     VIRTUAL_PLAYBACK_BACKEND,
     VIRTUAL_PLAYBACK_SEMANTIC_VERSION,
     VIRTUAL_MODEL_VERSION,
     PlaybackMarkerOptions,
     PlaybackValidationError,
+    build_candidate_display,
     build_corridor_markers,
-    build_guide_markers,
+    build_guide_display,
     build_markers,
     clear_marker_specs,
     corridor_display_matches,
@@ -51,6 +54,7 @@ from fwis_v3_optimizer.formation_playback import (
     virtual_a_request_from_raw_request,
     PlaybackVehicleSpec,
     build_hold_markers,
+    vehicle_path_samples,
 )
 try:
     from jsk_rviz_plugins.msg import OverlayText
@@ -66,9 +70,15 @@ from fwis_v3_optimizer.formation_continuous_a.contracts import (
 from fwis_v3_optimizer.transport_contract import load_contract
 
 MARKER_TOPIC = "/formation/markers"
+VEHICLE_PATH_TOPIC = "/formation/path/vehicle_{}"
+F_CANDIDATE_PATH_TOPIC = "/formation/path/f_candidate"
+CANDIDATE_VEHICLE_PATH_TOPIC = "/formation/path/candidate_vehicle_{}"
+ASTAR_PATH_TOPIC = "/formation/path/astar_raw_{}"
+GUIDE_PATH_TOPIC = "/formation/path/portal_guide_{}"
 HUD_TOPIC = "/formation/hud"
 CORRIDOR_TOPIC = "/formation/corridors"
 GUIDES_TOPIC = "/formation/guides"
+CANDIDATES_TOPIC = "/formation/planning_candidates"
 PLANNING_DEBUG_TOPIC = "/formation/planning_debug"
 STATUS_TOPIC = "/formation/playback_status"
 TRAJECTORY_TOPIC = "/formation/timed_trajectory"
@@ -111,6 +121,14 @@ class FormationPlaybackNode:
     quality_report = None
     corridor_pub = None
     guide_pub = None
+    candidate_pub = None
+    path_pubs = {}
+    # Dynamic latched Path publishers for diagnostic layers.  A* routes and
+    # guides are route-suffixed, so these cannot be created from the vehicle
+    # contract at startup.
+    guide_path_pubs = {}
+    candidate_path_pubs = {}
+    _planning_progress = None
 
     def __init__(self):
         self._lock = threading.RLock()
@@ -175,6 +193,7 @@ class FormationPlaybackNode:
         self._raw_requests = {}
         self._virtual_jobs = {}
         self._virtual_terminals = {}
+        self._planning_progress = None
         self.trajectory = None
         self.optimizer_status = None
         self._optimizer_status_by_plan = {}
@@ -205,13 +224,30 @@ class FormationPlaybackNode:
                 _hud_import_error)
         self.marker_pub = rospy.Publisher(
             MARKER_TOPIC, MarkerArray, queue_size=1)
+        # One latched nav_msgs/Path per vehicle: RViz Path displays can change
+        # colour and line width, unlike a MarkerArray LINE_STRIP.  The topics
+        # start empty so a restart cannot leave a stale path on screen.
+        self.path_pubs = {}
+        self.guide_path_pubs = {}
+        self.candidate_path_pubs = {}
+        vehicle_ids = (tuple(self.contract.vehicle_ids)
+                       if self.contract is not None else (1, 2, 3))
+        for vehicle_id in vehicle_ids:
+            vehicle_id = int(vehicle_id)
+            self.path_pubs[vehicle_id] = rospy.Publisher(
+                VEHICLE_PATH_TOPIC.format(vehicle_id), Path,
+                queue_size=1, latch=True)
+        self._clear_paths()
         self.corridor_pub = None
         self.guide_pub = None
+        self.candidate_pub = None
         if self.backend == VIRTUAL_PLAYBACK_BACKEND:
             self.corridor_pub = rospy.Publisher(
                 CORRIDOR_TOPIC, MarkerArray, queue_size=1)
             self.guide_pub = rospy.Publisher(
                 GUIDES_TOPIC, MarkerArray, queue_size=1)
+            self.candidate_pub = rospy.Publisher(
+                CANDIDATES_TOPIC, MarkerArray, queue_size=1)
         self.status_pub = rospy.Publisher(
             STATUS_TOPIC, String, queue_size=1, latch=True)
         if self.hud_enabled:
@@ -257,9 +293,8 @@ class FormationPlaybackNode:
                 quality=None, force=True)
         if self.corridor_pub is not None:
             # RViz keeps lifetime-zero markers across a node restart; start
-            # from empty corridor and guide layers instead of a stale chain.
-            self._clear_corridors()
-            self._clear_guides()
+            # from empty diagnostic layers instead of a stale chain.
+            self._clear_diagnostics()
         rospy.loginfo(
             "[formation playback] common-clock display ready; "
             "GEOMETRY_ONLY is shown until an independent FEASIBLE status "
@@ -301,8 +336,10 @@ class FormationPlaybackNode:
             trajectory.plan_id, trajectory.formation_id,
             len(trajectory.vehicles), trajectory.sample_count,
             trajectory.duration)
-        # Publish one frame immediately so a latched trajectory that is
-        # already old is still visible without waiting for the next tick.
+        # Publish the full path once as nav_msgs/Path (RViz-adjustable),
+        # then one frame immediately so a latched trajectory that is already
+        # old is still visible without waiting for the next tick.
+        self._publish_paths(trajectory)
         self._publish_tick()
 
     @staticmethod
@@ -391,9 +428,18 @@ class FormationPlaybackNode:
         if state not in ("IDLE", "PLANNING", "PLAYING", "HOLD_END", "FAILED"):
             return
         plan_id = report.get("plan_id")
+        previous_plan = self._job_state_plan
+        new_admission = (
+            state == "PLANNING" and plan_id is not None and
+            plan_id != previous_plan)
         self._job_state = state
         self._job_state_plan = plan_id
         self._record_virtual_job(report)
+        if new_admission:
+            # A new admission is the only event that empties the progressive
+            # diagnostic layers.  Raw requests and busy rejections never do.
+            self._clear_diagnostics()
+            self._planning_progress = None
         if (state == "PLANNING" and plan_id is not None and
                 self.trajectory is not None and
                 self.trajectory.plan_id != plan_id):
@@ -419,6 +465,11 @@ class FormationPlaybackNode:
     def on_playback_plan(self, message):
         """Accept only an atomic, model-bound V0.2 playback envelope."""
         if self._previewing:
+            rospy.logwarn_throttle(
+                5.0,
+                "[formation playback] ignoring playback plan %s while a "
+                "transport preview is active",
+                getattr(message, "plan_id", None))
             return
         if (self._active_plan is not None and
                 message.plan_id < self._active_plan):
@@ -483,6 +534,7 @@ class FormationPlaybackNode:
             self.backend, trajectory.plan_id, trajectory.formation_id,
             digest, len(trajectory.vehicles), trajectory.sample_count,
             trajectory.duration)
+        self._publish_paths(trajectory)
         self._publish_tick()
 
     @staticmethod
@@ -691,13 +743,21 @@ class FormationPlaybackNode:
 
     @synchronized
     def on_planning_debug(self, message):
+        """Layer-preserving progressive planning display (TASK 01 Step 1).
+
+        Absent layer keys preserve the existing markers; an explicit ``null``
+        clears exactly that layer.  A document that fails identity, state or
+        parse checks changes nothing.  A builder failure clears only its own
+        layer.  ``CLEARED`` is the only payload that empties all diagnostics.
+        """
         document = self._parse_json(message, "planning_debug")
         if document is None:
             return
         plan_id = document.get("plan_id")
         if plan_id != self._job_state_plan:
-            rospy.logwarn(
-                "[formation playback] ignoring corridor payload for plan %s: "
+            rospy.logwarn_throttle(
+                5.0,
+                "[formation playback] ignoring planning payload for plan %s: "
                 "current job is plan %s", plan_id, self._job_state_plan)
             return
         job = (self._virtual_jobs.get(plan_id)
@@ -716,42 +776,171 @@ class FormationPlaybackNode:
                 job = dict(job)
                 job["model_sha256"] = verified
         if not corridor_display_matches(document, job):
-            rospy.logwarn(
-                "[formation playback] ignoring corridor payload for plan %s: "
+            rospy.logwarn_throttle(
+                5.0,
+                "[formation playback] ignoring planning payload for plan %s: "
                 "identity does not match the current admission", plan_id)
             return
         if document.get("state") == CLEARED:
-            self._clear_corridors()
-            self._clear_guides()
+            self._clear_diagnostics()
+            self._planning_progress = None
             return
-        if self._job_state not in ("PLANNING", "PLAYING"):
+        failed_document = (
+            document.get("state") == PLANNING_FAILED_STATE)
+        if self._job_state not in ("PLANNING", "PLAYING") and not (
+                failed_document and self._job_state == PLANNING_FAILED_STATE):
+            # The final FAILED document may be processed after the matching
+            # FAILED job report; it must still freeze the completed layers.
             rospy.logwarn(
-                "[formation playback] ignoring corridor payload for plan %s "
+                "[formation playback] ignoring planning payload for plan %s "
                 "while job state is %s", plan_id, self._job_state)
+            return
+        stamp = rospy.Time.now()
+        self._record_planning_progress(document)
+        corridors_present = "corridors" in document
+        corridors = document.get("corridors")
+        if corridors_present:
+            if corridors is None:
+                self._clear_corridors()
+                if document.get("astar"):
+                    self._publish_guide_layer(document, stamp)
+                else:
+                    self._clear_guides()
+            else:
+                self._publish_corridor_layer(document, stamp)
+                self._publish_guide_layer(document, stamp)
+        elif "astar" in document:
+            if document.get("astar") is None:
+                self._clear_guides()
+            else:
+                self._publish_guide_layer(document, stamp)
+        if "candidates" in document:
+            candidates = document.get("candidates")
+            if candidates is None and document.get("failure") is None:
+                self._clear_candidates()
+            else:
+                try:
+                    specs, paths = build_candidate_display(
+                        document, self.frame_id)
+                except (TypeError, ValueError) as exc:
+                    rospy.logerr(
+                        "[formation playback] rejecting candidate payload "
+                        "for plan %s: %s", plan_id, exc)
+                    self._clear_candidates()
+                else:
+                    self._publish_candidate_paths(paths, stamp)
+                    if self.candidate_pub is not None:
+                        self.candidate_pub.publish(
+                            self._marker_array(specs, stamp))
+        rospy.loginfo(
+            "[formation playback] planning display plan=%s generation=%s "
+            "stage=%s/%s layers=%s",
+            plan_id, document.get("generation"),
+            document.get("stage"), document.get("stage_index"),
+            ",".join(sorted(
+                key for key in ("astar", "corridors", "candidates")
+                if key in document)) or "identity-only")
+
+    def _publish_corridor_layer(self, document, stamp):
+        if self.corridor_pub is None:
             return
         try:
             specs = build_corridor_markers(document, self.frame_id)
-            guide_specs = build_guide_markers(document, self.frame_id)
         except (TypeError, ValueError) as exc:
             rospy.logerr(
-                "[formation playback] rejecting corridor/guide payload: %s",
-                exc)
+                "[formation playback] rejecting corridor payload: %s", exc)
             self._clear_corridors()
+            return
+        self.corridor_pub.publish(self._marker_array(specs, stamp))
+
+    def _path_registry(self, name):
+        registry = getattr(self, name, None)
+        if registry is None:
+            registry = {}
+            setattr(self, name, registry)
+        return registry
+
+    def _path_publisher(self, registry_name, topic):
+        registry = self._path_registry(registry_name)
+        publisher = registry.get(topic)
+        if publisher is None:
+            publisher = rospy.Publisher(
+                topic, Path, queue_size=1, latch=True)
+            registry[topic] = publisher
+        return publisher
+
+    def _topic_path_message(self, samples, stamp):
+        message = Path()
+        message.header.frame_id = self.frame_id
+        message.header.stamp = stamp
+        for x, y in samples:
+            pose = PoseStamped()
+            pose.header.frame_id = self.frame_id
+            pose.header.stamp = stamp
+            pose.pose.position = Point(x=float(x), y=float(y), z=0.0)
+            pose.pose.orientation = Quaternion(w=1.0)
+            message.poses.append(pose)
+        return message
+
+    def _publish_topic_paths(self, registry_name, entries, stamp):
+        for topic, samples in entries:
+            self._path_publisher(registry_name, topic).publish(
+                self._topic_path_message(samples, stamp))
+
+    def _clear_topic_paths(self, registry_name):
+        """Empty every latched Path in one diagnostic-layer registry.
+
+        Clearing before each new payload removes route topics that are no
+        longer present, so a shorter route list cannot leave stale geometry
+        behind on the map.
+        """
+        now = rospy.Time.now()
+        for publisher in self._path_registry(registry_name).values():
+            message = Path()
+            message.header.frame_id = self.frame_id
+            message.header.stamp = now
+            publisher.publish(message)
+
+    def _publish_guide_paths(self, paths, stamp):
+        self._clear_topic_paths("guide_path_pubs")
+        entries = []
+        for (kind, route_id), samples in paths.items():
+            if kind == "astar_raw":
+                topic = ASTAR_PATH_TOPIC.format(route_id)
+            elif kind == "portal_guide":
+                topic = GUIDE_PATH_TOPIC.format(route_id)
+            else:
+                raise PlaybackValidationError(
+                    "unknown guide path kind {!r}".format(kind))
+            entries.append((topic, samples))
+        self._publish_topic_paths("guide_path_pubs", entries, stamp)
+
+    def _publish_candidate_paths(self, paths, stamp):
+        self._clear_topic_paths("candidate_path_pubs")
+        entries = []
+        for key, samples in paths.items():
+            if key == "f_candidate":
+                topic = F_CANDIDATE_PATH_TOPIC
+            elif (isinstance(key, tuple) and len(key) == 2
+                  and key[0] == "candidate_vehicle"):
+                topic = CANDIDATE_VEHICLE_PATH_TOPIC.format(key[1])
+            else:
+                raise PlaybackValidationError(
+                    "unknown candidate path key {!r}".format(key))
+            entries.append((topic, samples))
+        self._publish_topic_paths("candidate_path_pubs", entries, stamp)
+
+    def _publish_guide_layer(self, document, stamp):
+        try:
+            specs, paths = build_guide_display(document, self.frame_id)
+        except (TypeError, ValueError) as exc:
+            rospy.logerr(
+                "[formation playback] rejecting guide payload: %s", exc)
             self._clear_guides()
             return
-        stamp = rospy.Time.now()
-        self.corridor_pub.publish(self._marker_array(specs, stamp))
+        self._publish_guide_paths(paths, stamp)
         if self.guide_pub is not None:
-            self.guide_pub.publish(
-                self._marker_array(guide_specs, stamp))
-        rospy.loginfo(
-            "[formation playback] corridor/guide display plan=%s "
-            "generation=%s routes=%d regions=%d "
-            "state=CANDIDATE_REFERENCE_POINT_ONLY",
-            plan_id, document.get("generation"),
-            len(document["corridors"]),
-            sum(len(corridor["regions"])
-                for corridor in document["corridors"]))
+            self.guide_pub.publish(self._marker_array(specs, stamp))
 
     def _clear_corridors(self):
         if self.corridor_pub is None:
@@ -760,14 +949,115 @@ class FormationPlaybackNode:
             clear_marker_specs(self.frame_id), rospy.Time.now()))
 
     def _clear_guides(self):
+        self._clear_topic_paths("guide_path_pubs")
         if self.guide_pub is None:
             return
         self.guide_pub.publish(self._marker_array(
             clear_marker_specs(self.frame_id), rospy.Time.now()))
 
+    def _clear_candidates(self):
+        self._clear_topic_paths("candidate_path_pubs")
+        if self.candidate_pub is None:
+            return
+        self.candidate_pub.publish(self._marker_array(
+            clear_marker_specs(self.frame_id), rospy.Time.now()))
+
+    def _clear_paths(self):
+        """Empty every latched vehicle Path display."""
+        now = rospy.Time.now()
+        for publisher in getattr(self, "path_pubs", {}).values():
+            message = Path()
+            message.header.frame_id = self.frame_id
+            message.header.stamp = now
+            publisher.publish(message)
+
+    def _publish_paths(self, trajectory):
+        """Publish the verified full centre path of each vehicle once."""
+        publishers = getattr(self, "path_pubs", None)
+        if publishers is None:
+            publishers = {}
+            self.path_pubs = publishers
+        stamp = rospy.Time(*trajectory.stamp)
+        for vehicle_id, samples in vehicle_path_samples(trajectory).items():
+            vehicle_id = int(vehicle_id)
+            publisher = publishers.get(vehicle_id)
+            if publisher is None:
+                publisher = rospy.Publisher(
+                    VEHICLE_PATH_TOPIC.format(vehicle_id), Path,
+                    queue_size=1, latch=True)
+                publishers[vehicle_id] = publisher
+            message = Path()
+            message.header.frame_id = trajectory.frame_id
+            message.header.stamp = stamp
+            for x, y, theta in samples:
+                pose = PoseStamped()
+                pose.header.frame_id = trajectory.frame_id
+                pose.header.stamp = stamp
+                pose.pose.position = Point(x=x, y=y, z=0.0)
+                pose.pose.orientation = self._quaternion(theta)
+                message.poses.append(pose)
+            publisher.publish(message)
+
+    def _clear_diagnostics(self):
+        """Clear every non-hold planning layer, including the full paths."""
+        self._clear_corridors()
+        self._clear_guides()
+        self._clear_candidates()
+        self._clear_paths()
+
+    def _record_planning_progress(self, document):
+        """Retain the stage fields only; geometry stays in the topics."""
+        self._planning_progress = {
+            "plan_id": document.get("plan_id"),
+            "formation_id": document.get("formation_id"),
+            "generation": document.get("generation"),
+            "stage": document.get("stage"),
+            "stage_index": document.get("stage_index"),
+            "state": document.get("state"),
+            "elapsed_s": document.get("elapsed_s"),
+            "route_index": document.get("route_index"),
+            "route_count": document.get("route_count"),
+            "round_index": document.get("round_index"),
+            "reason": document.get("reason"),
+            "detail": document.get("detail"),
+            "received_wall": rospy.Time.now().to_sec(),
+        }
+
+    def _hud_progress(self):
+        """HUD view with a 10 Hz elapsed extrapolation while planning."""
+        progress = getattr(self, "_planning_progress", None)
+        if not isinstance(progress, dict):
+            return None
+        result = dict(progress)
+        received = result.pop("received_wall", None)
+        if (result.get("state") == "PLANNING" and
+                isinstance(received, (int, float)) and
+                math.isfinite(float(received))):
+            elapsed = result.get("elapsed_s")
+            if isinstance(elapsed, (int, float)) and not isinstance(
+                    elapsed, bool):
+                result["elapsed_s"] = max(
+                    0.0, float(elapsed) +
+                    max(0.0, rospy.Time.now().to_sec() - float(received)))
+        return result
+
     @synchronized
     def on_request(self, message):
         self._record_raw_request(message)
+        if self.backend == VIRTUAL_PLAYBACK_BACKEND:
+            # Raw message receipt is not admission; only the planner's
+            # job_state PLANNING admits an experiment.  Never clear the active
+            # replay, the hold or a diagnostic layer from this callback.
+            # It does end a transport preview: the goal bridge latches
+            # /formation/display_pose before the goal, and leaving
+            # ``_previewing`` set would make ``on_playback_plan`` silently
+            # drop the atomic envelope for this experiment.  A busy request
+            # for another admitted plan keeps the preview, matching the
+            # non-virtual ordering above.
+            if (self._job_state not in ("PLANNING", "PLAYING") or
+                    message.plan_id == self._job_state_plan):
+                self._previewing = False
+            return
         if (self.backend in (PLAYBACK_PLAN_BACKEND, VIRTUAL_PLAYBACK_BACKEND)
                 and self._job_state in ("PLANNING", "PLAYING") and
                 message.plan_id != self._job_state_plan):
@@ -830,6 +1120,11 @@ class FormationPlaybackNode:
         self._previewing = True
         self._active_plan = None
         self._hold_reason = "START"
+        # A manual 2D Pose Estimate starts a new experiment.  The previous
+        # plan's candidate, corridor, guide and full-path layers belong to
+        # that old experiment and must disappear immediately; only a raw
+        # request (which is not admission) is forbidden from clearing them.
+        self._clear_diagnostics()
         self._publish_hold(clear=True)
 
     @synchronized
@@ -885,8 +1180,13 @@ class FormationPlaybackNode:
         if self.hud_pub is None:
             return
         now = rospy.Time.now()
+        progress = self._hud_progress()
         signature = (
-            document.get("plan_id"), document.get("state"), self._job_state)
+            document.get("plan_id"), document.get("state"), self._job_state,
+            None if progress is None else (
+                progress.get("stage"), progress.get("stage_index"),
+                progress.get("route_index"), progress.get("round_index"),
+                progress.get("state"), progress.get("reason")))
         changed = signature != self._last_hud_signature
         if (not force and not changed and
                 self._last_hud_publish is not None and
@@ -904,7 +1204,8 @@ class FormationPlaybackNode:
         message.font = "DejaVu Sans Mono"
         message.fg_color = ColorRGBA(1.0, 1.0, 1.0, 0.95)
         message.text = hud_text(
-            document, self._job_state, quality, self.show_cargo_reason)
+            document, self._job_state, quality, self.show_cargo_reason,
+            progress=progress)
         self.hud_pub.publish(message)
         self._last_hud_publish = now
         self._last_hud_signature = signature
@@ -931,8 +1232,34 @@ class FormationPlaybackNode:
         if self.trajectory is None:
             if self.transport_ui:
                 self._publish_hold()
+            self._publish_progress_hud()
             return
         self._publish_tick()
+
+    def _publish_progress_hud(self):
+        """Refresh the fixed-corner HUD while planning has no trajectory."""
+        if self.hud_pub is None:
+            return
+        progress = self._hud_progress()
+        if progress is None:
+            return
+        state = progress.get("state")
+        formation_id = progress.get("formation_id")
+        if not isinstance(formation_id, str) or not formation_id:
+            formation_id = None if self.hold is None else self.hold[0]
+        document = {
+            "schema": "formation_playback/v1",
+            "state": state if isinstance(state, str) else "UNKNOWN",
+            "cleared": False,
+            "plan_id": self._job_state_plan,
+            "formation_id": formation_id,
+            "backend": self.backend,
+            "model_sha256": self._playback_model_sha256,
+            "request_sha256": None,
+            "planning_context_sha256": None,
+            "executable": False,
+        }
+        self._publish_hud(document, quality=None)
 
     def _status_for_trajectory(self):
         # A busy rejection (or a newly admitted plan) publishes its own status
@@ -1126,8 +1453,11 @@ class FormationPlaybackNode:
         self.status_pub.publish(String(data=json.dumps(
             document, sort_keys=True, allow_nan=False)))
         self._publish_hud(document, quality=None, force=True)
-        self._clear_corridors()
-        self._clear_guides()
+        # Diagnostic layers are cleared only by CLEARED or a new admission;
+        # a playback clear must leave a completed FAILED plan visible.  The
+        # Path layers are tied to this playback trajectory, so they are
+        # emptied here rather than left on screen.
+        self._clear_paths()
         rospy.loginfo("[formation playback] cleared: %s", reason)
         if self.transport_ui and freeze and self.hold is not None:
             self._publish_hold(clear=True, stamp=now)

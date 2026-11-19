@@ -11,6 +11,7 @@ from dataclasses import replace
 import heapq
 import math
 import time
+from types import MappingProxyType, SimpleNamespace
 
 import numpy as np
 
@@ -19,9 +20,15 @@ from .collision import audit_collision
 from .contracts import (
     COLLISION_SCOPE,
     DYNAMICS_SCOPE,
+    PROGRESS_FAILED_STAGE,
+    PROGRESS_SCHEMA,
+    PROGRESS_STAGE_INDEX,
+    PROGRESS_STAGES,
+    PROGRESS_STATES,
     CachedClearanceField,
     DynamicAuditConfig,
     GuideRoute,
+    HeadingBranch,
     MAX_INITIALS,
     ObstacleContext,
     RouteGuideConfig,
@@ -37,6 +44,7 @@ from .contracts import (
     validate_route_guide_config,
     validate_timing_config,
     validate_virtual_a_request,
+    _wrap,
 )
 from .corridor import (
     allocate_corridors,
@@ -466,15 +474,466 @@ def _report_checks(report):
 
 
 # ---------------------------------------------------------------------------
+# Display-only progress events (TASK 01 Step 1)
+# ---------------------------------------------------------------------------
+
+def _progress_scalar(value):
+    """Return a JSON-safe copy of one metric value, or None.
+
+    Values that are not finite or not plain data are dropped: the ROS node
+    serialises events with ``allow_nan=False``, and a display-only payload must
+    never be able to break planning or a later serialisation.
+    """
+    if value is None or isinstance(value, (bool, int, str)):
+        return value
+    if isinstance(value, float):
+        return value if math.isfinite(value) else None
+    if isinstance(value, (list, tuple)):
+        return [_progress_scalar(item) for item in value]
+    if hasattr(value, "items"):
+        return {str(key): _progress_scalar(item)
+                for key, item in value.items()}
+    return None
+
+
+def _progress_audit_metrics(report):
+    """Real summary of one independent audit report; no placeholder fields."""
+    if report is None:
+        return {"report_available": False}
+    return {
+        "report_available": True,
+        "scope": str(getattr(report, "scope", "") or ""),
+        "passed": bool(getattr(report, "passed", False)),
+        "reason": str(getattr(report, "reason", "") or ""),
+        "detail": str(getattr(report, "detail", "") or ""),
+        "check_count": int(getattr(report, "check_count", 0) or 0),
+        "first_failure": _progress_scalar(
+            getattr(report, "first_failure", None)),
+        "metrics": _progress_scalar(getattr(report, "metrics", None) or {}),
+    }
+
+
+def _corridor_evidence(geometry):
+    """Actual corridor halfspace count and maximum residual of one solve.
+
+    ``None`` means the solve constructed no corridor constraint; it is never
+    replaced by a count estimated from the display polygon.
+    """
+    count = getattr(geometry, "corridor_halfspace_constraint_count", None)
+    residual = getattr(geometry, "corridor_max_residual_m", None)
+    return {
+        "corridor_halfspace_constraint_count": (
+            None if count is None else int(count)),
+        "corridor_max_residual_m": (
+            None if residual is None else float(residual)),
+    }
+
+
+def _s_domain_evidence(geometry):
+    """Finite S domain, solved S and upper-bound activity of one solve.
+
+    Every field is copied from an ``AttemptRecord``, which received the values
+    from the single solver packet.  For a successful solve the audited attempt
+    whose solved S equals the returned path length is reported; otherwise the
+    last attempt is reported.  ``upper_active`` is the attempt's numeric
+    tolerance decision, never a solver status string.
+    """
+    attempts = tuple(getattr(geometry, "attempts", ()) or ())
+    audited = [
+        attempt for attempt in attempts
+        if str(getattr(attempt, "status", "") or "")
+        == "SOLVER_SUCCESS_AUDITED"]
+    decisive = None
+    path = getattr(geometry, "path", None)
+    if path is not None and audited:
+        length = float(getattr(path, "length_m", float("nan")))
+        for attempt in audited:
+            solution = getattr(attempt, "s_solution_m", None)
+            if solution is not None and math.isfinite(length) \
+                    and abs(float(solution) - length) <= 1e-9:
+                decisive = attempt
+                break
+        if decisive is None:
+            decisive = audited[-1]
+    elif attempts:
+        decisive = attempts[-1]
+    if decisive is None:
+        return {
+            "distance_m": None,
+            "guide_length_m": None,
+            "S_lower_m": None,
+            "S_upper_m": None,
+            "S_solution_m": None,
+            "upper_active": None,
+        }
+    return {
+        "distance_m": getattr(decisive, "distance_m", None),
+        "guide_length_m": getattr(decisive, "guide_length_m", None),
+        "S_lower_m": getattr(decisive, "s_lower_m", None),
+        "S_upper_m": getattr(decisive, "s_upper_m", None),
+        "S_solution_m": getattr(decisive, "s_solution_m", None),
+        "upper_active": getattr(decisive, "s_upper_active", None),
+    }
+
+
+def _progress_polyline_length(points):
+    points = tuple(points or ())
+    total = 0.0
+    for first, second in zip(points, points[1:]):
+        total += math.hypot(
+            float(second[0]) - float(first[0]),
+            float(second[1]) - float(first[1]))
+    return float(total)
+
+
+# Step 3: a guide segment shorter than this is treated as numerical noise and
+# removed before the tangent turn is accumulated.  Real A*/corridor guides
+# have metre-scale segments; the threshold only removes duplicate vertices.
+WINDING_GUIDE_SEGMENT_EPS_M = 1e-6
+# The finite branch set is {k0-1, k0, k0+1}: the preferred branch plus its two
+# neighbours, never an unbounded integer search.
+WINDING_NEIGHBOUR_BRANCHES = 1
+# Accumulating wrapped atan2 turns leaves a few float ulps in otherwise equal
+# branch distances.  Ranking compares distances at 1e-12 rad so the specified
+# tie-break (smaller |k|, then smaller k) decides mathematical ties instead of
+# floating-point noise; 1e-12 rad is far below any physical heading scale.
+WINDING_RANK_TIE_DIGITS = 12
+
+
+def _guide_segment_tangents(points):
+    """Effective guide-segment tangents after duplicate/near-zero removal."""
+    cleaned = []
+    for point in tuple(points or ()):
+        try:
+            x, y = float(point[0]), float(point[1])
+        except (TypeError, ValueError, IndexError) as exc:
+            raise VirtualAContractError(
+                "INVALID_GUIDE_ROUTE",
+                "guide points must be (x, y) pairs") from exc
+        if not (math.isfinite(x) and math.isfinite(y)):
+            raise VirtualAContractError(
+                "INVALID_GUIDE_ROUTE", "guide point is not finite")
+        if cleaned:
+            last_x, last_y = cleaned[-1]
+            if math.hypot(x - last_x, y - last_y) <= \
+                    WINDING_GUIDE_SEGMENT_EPS_M:
+                continue
+        cleaned.append((x, y))
+    return tuple(
+        math.atan2(cleaned[index + 1][1] - cleaned[index][1],
+                   cleaned[index + 1][0] - cleaned[index][0])
+        for index in range(len(cleaned) - 1))
+
+
+def _heading_branch_candidates(request, points, source):
+    """Finite deterministic endpoint-heading branches for one guide.
+
+    ``Theta_G`` accumulates the wrapped turn of the effective guide tangents
+    between the start tangent, every segment tangent and the goal tangent.
+    ``base = wrap(psi_goal - psi_start)`` and the preferred integer is
+    ``round((Theta_G - base)/2*pi)``.  The finite set ``{k0-1, k0, k0+1}`` is
+    ordered by unwrapped-turn error, then smaller ``|k|``, then smaller ``k``.
+    A degenerate or absent guide has no reliable turn: only the primary
+    shortest-wrap branch ``k=0`` is offered.  No guide is ever executable and
+    the physical goal pose is never modified.
+    """
+    base = _wrap(request.goal_qf.psi - request.start_qf.psi)
+    tangents = _guide_segment_tangents(points)
+    if not tangents:
+        return (HeadingBranch(
+            base_heading_rad=base,
+            winding_k=0,
+            unwrapped_heading_rad=base,
+            guide_turn_rad=None,
+            source="no_reliable_guide",
+            candidate_rank=0),)
+    guide_turn = 0.0
+    previous = request.start_qf.psi
+    for tangent in tangents:
+        guide_turn += _wrap(tangent - previous)
+        previous = tangent
+    guide_turn += _wrap(request.goal_qf.psi - previous)
+    preferred = int(round((guide_turn - base) / (2.0 * math.pi)))
+    ks = {
+        preferred + offset
+        for offset in range(-WINDING_NEIGHBOUR_BRANCHES,
+                            WINDING_NEIGHBOUR_BRANCHES + 1)}
+    ordered = sorted(
+        ks,
+        key=lambda k: (
+            round(abs(base + 2.0 * math.pi * k - guide_turn),
+                  WINDING_RANK_TIE_DIGITS),
+            abs(k), k))
+    return tuple(HeadingBranch(
+        base_heading_rad=base,
+        winding_k=int(k),
+        unwrapped_heading_rad=float(base + 2.0 * math.pi * k),
+        guide_turn_rad=guide_turn,
+        source=str(source),
+        candidate_rank=rank) for rank, k in enumerate(ordered))
+
+
+def _winding_evidence(branch, guide_length_m):
+    """Round/search evidence for the packet's unwrapped heading branch."""
+    return {
+        "heading_branch": None if branch is None else branch.as_dict(),
+        "heading_base_rad": (
+            None if branch is None else float(branch.base_heading_rad)),
+        "winding_k": None if branch is None else int(branch.winding_k),
+        "unwrapped_heading_rad": (
+            None if branch is None else float(branch.unwrapped_heading_rad)),
+        "guide_turn_rad": (
+            None if branch is None else branch.guide_turn_rad),
+        "winding_candidate_rank": (
+            None if branch is None else int(branch.candidate_rank)),
+        "guide_length_m": (
+            None if guide_length_m is None else float(guide_length_m)),
+    }
+
+
+def _winding_retry_allowed(geometry):
+    """Only solver non-convergence or an endpoint-constraint rejection may
+    spend the single recovery on the next finite heading branch.  Collision,
+    dynamics, numerical-certification and corridor-containment failures never
+    guess another winding."""
+    reason = str(getattr(geometry, "reason", "") or "")
+    if reason in ("SOLVER_NOT_CONVERGED", "FIXED_ALLOCATION_LIMIT"):
+        return True
+    if reason != "AUDIT_REJECTED":
+        return False
+    # The optimizer derives AUDIT_REJECTED from the last audit-rejected
+    # attempt; an earlier endpoint rejection does not make a final numerical
+    # certification failure an endpoint constraint.
+    rejections = [
+        attempt for attempt in tuple(getattr(geometry, "attempts", ()))
+        if str(getattr(attempt, "status", "") or "")
+        == "SOLVER_SUCCESS_AUDIT_REJECTED"]
+    if not rejections:
+        return False
+    return str(getattr(rejections[-1], "rejection_reason", "") or "") in (
+        "ENDPOINT_POSITION_ERROR", "ENDPOINT_HEADING_ERROR")
+
+
+def _progress_astar_display(routes):
+    """Copy each actual raw A* polyline for the progressive display layer.
+
+    Only the real generated route points are exported; nothing is simplified,
+    resampled or refitted.  The node renders them as dashed display geometry.
+    """
+    display = []
+    for index, route in enumerate(routes or ()):
+        points = tuple(getattr(route, "points", ()) or ())
+        if len(points) < 2:
+            continue
+        display.append({
+            "route_id": int(index),
+            "points": [[float(point[0]), float(point[1])]
+                       for point in points],
+        })
+    return tuple(display)
+
+
+def _progress_result_view(progress, search, routes):
+    """Read-only result-shaped view of the still-running pipeline.
+
+    The node's existing ``_display_from_corridor_round()`` consumes exactly
+    ``search``/``routes``/``grid_sha256``; providing them here lets it reuse
+    the same corridor display builder instead of copying chain geometry.
+    ``model_sha256`` stays ``None`` until the node publishes the envelope.
+    """
+    return SimpleNamespace(
+        search=search,
+        routes=tuple(routes or ()),
+        grid_sha256=progress.grid_sha256,
+        planning_context_sha256=progress.planning_context_sha256,
+        model_sha256=None)
+
+
+class _ProgressEmitter:
+    """Cover the optional ROS-free callback with identity and stage checks.
+
+    The callback is display-only: it cannot alter the request, the solver, the
+    budget or ``search``.  One exception disables the remaining callbacks for
+    this request and is retained on ``error`` for the node's explicit
+    ``PROGRESS_DISPLAY_ERROR`` record; planning and every safety audit continue.
+    """
+
+    def __init__(self, map_request, callback):
+        self._callback = callback if callable(callback) else None
+        self._started = time.monotonic()
+        self._request_sha256 = ""
+        self._grid_sha256 = ""
+        self._context_sha256 = ""
+        try:
+            self._request_sha256 = str(map_request.request_sha256)
+            self._grid_sha256 = str(map_request.grid_sha256)
+            self._context_sha256 = str(
+                planning_context_sha256(map_request.context()))
+        except Exception:
+            # An invalid request still gets a FAILED event; identity fields
+            # stay empty rather than inventing a digest.
+            pass
+        self.route_index = None
+        self.route_count = 0
+        self.round_index = None
+        self.last_stage_index = 0
+        self.last_path = None
+        # Process-local display geometry, never serialized by the pipeline.
+        # ``last_astar`` lets a FAILED document redraw the already completed
+        # A* layer; ``last_result_view`` carries the actual ``search``/
+        # ``routes`` so the node can reuse ``_display_from_corridor_round()``
+        # instead of duplicating corridor geometry.
+        self.last_astar = None
+        self.last_result_view = None
+        self.error = None
+        self.error_count = 0
+
+    @property
+    def request_sha256(self):
+        return self._request_sha256
+
+    @property
+    def grid_sha256(self):
+        return self._grid_sha256
+
+    @property
+    def planning_context_sha256(self):
+        return self._context_sha256
+
+    @property
+    def disabled(self):
+        return self.error is not None
+
+    def emit(self, stage, state="PLANNING", metrics=None,
+             diagnostic_path=None, route_index=None, route_count=None,
+             round_index=None, diagnostic_display=None):
+        if stage not in PROGRESS_STAGE_INDEX \
+                and stage != PROGRESS_FAILED_STAGE:
+            raise ValueError("unknown progress stage: {!r}".format(stage))
+        if state not in PROGRESS_STATES:
+            raise ValueError("unknown progress state: {!r}".format(state))
+        if stage == "PUBLISHED" or state == "PUBLISHED":
+            raise ValueError(
+                "only the ROS node emits PUBLISHED after the atomic envelope")
+        if (state == "FAILED") != (stage == PROGRESS_FAILED_STAGE):
+            raise ValueError(
+                "FAILED state and FAILED stage must be used together")
+        if route_index is not None:
+            self.route_index = int(route_index)
+        if route_count is not None:
+            self.route_count = int(route_count)
+        if round_index is not None:
+            self.round_index = int(round_index)
+        if diagnostic_path is not None:
+            self.last_path = diagnostic_path
+        if diagnostic_display is not None:
+            astar = diagnostic_display.get("astar")
+            result_view = diagnostic_display.get("result")
+            if astar is not None:
+                self.last_astar = astar
+            if result_view is not None:
+                self.last_result_view = result_view
+        if stage == PROGRESS_FAILED_STAGE:
+            stage_index = int(self.last_stage_index)
+        else:
+            stage_index = int(PROGRESS_STAGE_INDEX[stage])
+            self.last_stage_index = stage_index
+        event = MappingProxyType({
+            "schema": PROGRESS_SCHEMA,
+            "stage": stage,
+            "stage_index": stage_index,
+            "state": state,
+            "elapsed_s": max(0.0, time.monotonic() - self._started),
+            "route_index": self.route_index,
+            "route_count": int(self.route_count),
+            "round_index": self.round_index,
+            "request_sha256": self._request_sha256,
+            "grid_sha256": self._grid_sha256,
+            "planning_context_sha256": self._context_sha256,
+            "metrics": MappingProxyType(dict(metrics or {})),
+            "diagnostic_path": (
+                diagnostic_path if diagnostic_path is not None
+                else self.last_path),
+            # Display-only in-process geometry; the ROS node reads it and the
+            # pipeline itself never serializes or feeds it back to the solver.
+            "diagnostic_display": MappingProxyType({
+                "astar": self.last_astar,
+                "result": self.last_result_view,
+            }),
+        })
+        callback = self._callback
+        if callback is None or self.disabled:
+            return
+        try:
+            callback(event)
+        except Exception as exc:
+            # Display failure only: record it and disable later callbacks.
+            self.error_count += 1
+            self.error = "{}: {}".format(type(exc).__name__, exc)
+
+
+def _progress_diagnostic_path(geometry):
+    """The real path a solver actually constructed, never an interpolation.
+
+    ``geometry.path`` is the accepted path when the geometry audit passed.
+    Otherwise the last attempt that retained a ``candidate_path`` is the
+    diagnostic object the solver really built.
+    """
+    path = getattr(geometry, "path", None)
+    if path is not None:
+        return path
+    for attempt in reversed(tuple(getattr(geometry, "attempts", ()) or ())):
+        candidate = getattr(attempt, "candidate_path", None)
+        if candidate is not None:
+            return candidate
+    return None
+
+
+# ---------------------------------------------------------------------------
 # G4 end-to-end pipeline
 # ---------------------------------------------------------------------------
 
-def plan_virtual_a(map_request):
+def plan_virtual_a(map_request, progress_callback=None):
     """Autonomously solve, retime, audit and certify one map request.
 
-    No reference profile, known-good trajectory, scene manifest or plan ID is
-    read.  Only ``VirtualAMapRequest`` fields are used.
+    ``progress_callback`` is optional and ROS-free.  It receives read-only
+    stage dictionaries and is never allowed to influence planning.  The
+    pipeline never emits ``PUBLISHED``: only the ROS node knows whether the
+    atomic playback envelope was actually published.
     """
+    progress = _ProgressEmitter(map_request, progress_callback)
+    try:
+        result = _plan_virtual_a_impl(map_request, progress)
+    except BaseException as exc:
+        if not progress.disabled:
+            progress.emit(
+                PROGRESS_FAILED_STAGE, state="FAILED",
+                metrics={
+                    "phase": "exception",
+                    "reason": "PIPELINE_EXCEPTION",
+                    "detail": "{}: {}".format(type(exc).__name__, exc),
+                },
+                diagnostic_path=progress.last_path)
+        raise
+    if not bool(getattr(result, "executable", False)):
+        progress.emit(
+            PROGRESS_FAILED_STAGE, state="FAILED",
+            metrics={
+                "phase": "failed",
+                "status": str(getattr(result, "status", "") or ""),
+                "reason": str(getattr(result, "reason", "") or ""),
+                "detail": str(getattr(result, "detail", "") or ""),
+                "first_failure_layer": str(
+                    getattr(result, "first_failure_layer", "") or ""),
+                "wall_time_s": float(
+                    getattr(result, "wall_time_s", 0.0) or 0.0),
+                "checks": int(getattr(result, "checks", 0) or 0),
+            },
+            diagnostic_path=progress.last_path)
+    return result
+
+
+def _plan_virtual_a_impl(map_request, progress):
     started = time.monotonic()
     timings = {
         "route_generation_s": 0.0,
@@ -491,6 +950,9 @@ def plan_virtual_a(map_request):
         "initial_keys": [], "reallocation": None,
         "first_failure_layer": "", "last_reason": "",
         "recoveries": [],
+        "winding": {
+            "candidates": [], "selected_rank": None,
+            "selected": None, "guide_length_m": None},
     }
 
     if not isinstance(map_request, VirtualAMapRequest):
@@ -591,6 +1053,9 @@ def plan_virtual_a(map_request):
     tried_routes = set()
     recovery_count = 0
     endpoint_only = False
+    winding_guide_key = None
+    winding_branches = ()
+    winding_branch_rank = 0
     used_initial_keys = set()
     reallocation_done = False
     first_failure_layer = ""
@@ -706,11 +1171,43 @@ def plan_virtual_a(map_request):
         })
         endpoint_only = True
 
+    def winding_branch_recovery(reason):
+        # Step 3: the one recovery may advance this guide's finite branch
+        # ordering by exactly one candidate.  The branch changes only the
+        # unwrapped endpoint heading used by the packet, never the physical
+        # goal; the retry still consumes the request-wide recovery and initial
+        # budgets through ``can_recover()``.
+        nonlocal recovery_count, winding_branch_rank
+        previous = winding_branches[winding_branch_rank]
+        winding_branch_rank += 1
+        branch = winding_branches[winding_branch_rank]
+        recovery_count += 1
+        search["recovery_count"] = recovery_count
+        search["recoveries"].append({
+            "recovery_index": recovery_count,
+            "action": "winding_branch",
+            "first_failure_layer": first_failure_layer,
+            "reason": str(reason or ""),
+            "from_route_index": int(route_index),
+            "to_route_index": int(route_index),
+            "from_winding_k": int(previous.winding_k),
+            "to_winding_k": int(branch.winding_k),
+            "from_candidate_rank": int(previous.candidate_rank),
+            "to_candidate_rank": int(branch.candidate_rank),
+            "wall_time_s": time.monotonic() - started,
+        })
+
+    def next_winding_branch(solve_routes):
+        return (not hold_request and not endpoint_only and bool(solve_routes)
+                and winding_branch_rank + 1 < len(winding_branches)
+                and can_recover())
+
     while True:
         containment = None
         if remaining() <= 0.0:
             return budget_stop("route generation/solve")
         if not routes and not hold_request:
+            progress.emit("ASTAR_SEARCH", metrics={"phase": "running"})
             route_started = time.monotonic()
             if clearance_field is None:
                 try:
@@ -775,12 +1272,31 @@ def plan_virtual_a(map_request):
             endpoint_only = False
             corridor_route_index = None
             search["route_count"] = len(routes)
+            progress.emit(
+                "ASTAR_SEARCH",
+                metrics={
+                    "phase": "complete",
+                    "route_count": len(routes),
+                    "route_sources": [route.source for route in routes],
+                    "route_lengths_m": [
+                        float(route.length_m) for route in routes],
+                    "route_point_counts": [
+                        len(route.points) for route in routes],
+                },
+                route_index=0, route_count=len(routes),
+                diagnostic_display={
+                    "astar": _progress_astar_display(routes)})
         if remaining() <= 0.0:
             return budget_stop("corridor build/solve")
         if corridor_mode and not hold_request \
                 and corridor_route_index != route_index:
             route = routes[route_index]
             route_failure = None
+            failed_stage = "CORRIDOR_BUILD"
+            progress.emit(
+                "CORRIDOR_BUILD", metrics={"phase": "running"},
+                route_index=route_index, route_count=len(routes),
+                round_index=len(search["rounds"]))
             build_started = time.monotonic()
             try:
                 simplified = simplify_route(grid, route)
@@ -797,6 +1313,27 @@ def plan_virtual_a(map_request):
                     route_failure = (
                         chain_audit["reason"], chain_audit["detail"])
             if route_failure is None:
+                progress.emit(
+                    "CORRIDOR_BUILD",
+                    metrics={
+                        "phase": "complete",
+                        "simplified_point_count": len(simplified.points),
+                        "region_count": int(chain_audit["region_count"]),
+                        "chain_digest": str(chain.digest),
+                        "chain_audit_passed": bool(
+                            chain_audit["passed"]),
+                        "chain_audit_region_count": int(
+                            chain_audit["region_count"]),
+                        "chain_audit_min_region_area_m2": _progress_scalar(
+                            chain_audit.get("min_region_area_m2")),
+                        "chain_audit_min_portal_radius_m": _progress_scalar(
+                            chain_audit.get("min_portal_radius_m")),
+                    },
+                    route_index=route_index, route_count=len(routes))
+                failed_stage = "PORTAL_GUIDE"
+                progress.emit(
+                    "PORTAL_GUIDE", metrics={"phase": "running"},
+                    route_index=route_index, route_count=len(routes))
                 guide_started = time.monotonic()
                 try:
                     corridor_guide = make_corridor_guide(
@@ -820,7 +1357,54 @@ def plan_virtual_a(map_request):
                         "CORRIDOR_ALLOCATION_FAILED", exc.detail)
                 timings["corridor_allocation_s"] += \
                     time.monotonic() - allocation_started
+            if route_failure is None:
+                # Record the actual round before announcing completion so the
+                # progressive display builder reads the same search/rounds the
+                # solver will consume, with no duplicated corridor geometry.
+                corridor_round = {
+                    "round_index": len(search["rounds"]),
+                    "route_index": int(route_index),
+                    "route_source": route.source,
+                    "simplified_route": simplified.as_dict(),
+                    "chain": chain.as_dict(),
+                    "chain_digest": chain.digest,
+                    "chain_audit": chain_audit,
+                    "guide": corridor_guide.as_dict(),
+                    "allocation": [
+                        list(entry) for entry in corridor_allocation],
+                    "effective_margin_m": corridor_effective_margin(
+                        chain, planner_config),
+                }
+                search["corridor"]["rounds"].append(corridor_round)
+                corridor_route_index = route_index
+                progress.emit(
+                    "PORTAL_GUIDE",
+                    metrics={
+                        "phase": "complete",
+                        "guide_source": str(corridor_guide.source),
+                        "guide_point_count": len(corridor_guide.points),
+                        "guide_length_m": _progress_polyline_length(
+                            corridor_guide.points),
+                        "guide_quality": _progress_scalar(
+                            corridor_guide.quality),
+                        "allocation_count": len(corridor_allocation),
+                        "effective_margin_m": float(
+                            corridor_effective_margin(
+                                chain, planner_config)),
+                    },
+                    route_index=route_index, route_count=len(routes),
+                    diagnostic_display={
+                        "result": _progress_result_view(
+                            progress, search, routes)})
             if route_failure is not None:
+                progress.emit(
+                    failed_stage,
+                    metrics={
+                        "phase": "failed",
+                        "reason": str(route_failure[0] or ""),
+                        "detail": str(route_failure[1] or ""),
+                    },
+                    route_index=route_index, route_count=len(routes))
                 # A degenerate C-side corridor is not a solver failure: the
                 # single recovery may select another already generated route,
                 # never relax the allocation, intervals or audit.
@@ -848,22 +1432,6 @@ def plan_virtual_a(map_request):
                     geometry_audit=last_geometry_audit,
                     dynamic_audit=last_dynamic_audit,
                     collision_audit=last_collision_audit)
-            corridor_route_index = route_index
-            corridor_round = {
-                "round_index": len(search["rounds"]),
-                "route_index": int(route_index),
-                "route_source": route.source,
-                "simplified_route": simplified.as_dict(),
-                "chain": chain.as_dict(),
-                "chain_digest": chain.digest,
-                "chain_audit": chain_audit,
-                "guide": corridor_guide.as_dict(),
-                "allocation": [
-                    list(entry) for entry in corridor_allocation],
-                "effective_margin_m": corridor_effective_margin(
-                    chain, planner_config),
-            }
-            search["corridor"]["rounds"].append(corridor_round)
         if not isinstance(geometry_config, type(planner_config)):
             geometry_config = planner_config
         geometry_config = replace(
@@ -884,8 +1452,51 @@ def plan_virtual_a(map_request):
                 if not hold_request and routes and not endpoint_only else ()
             solve_chain = None
             solve_allocation = None
+        # Step 3: one finite branch ordering per route/guide.  The preferred
+        # branch is the default; only the winding recovery may advance by one.
+        heading_branch = None
+        guide_length_m = None
+        if solve_routes:
+            guide = solve_routes[0]
+            guide_key = (int(route_index), bool(corridor_mode))
+            if guide_key != winding_guide_key:
+                winding_guide_key = guide_key
+                winding_branches = _heading_branch_candidates(
+                    request, guide.points,
+                    getattr(guide, "source", "") or "route_guide")
+                winding_branch_rank = 0
+            winding_branch_rank = min(
+                winding_branch_rank, len(winding_branches) - 1)
+            heading_branch = winding_branches[winding_branch_rank]
+            guide_length_m = _progress_polyline_length(guide.points)
+        else:
+            winding_guide_key = None
+            winding_branches = ()
+            winding_branch_rank = 0
+        search["winding"] = {
+            "candidates": [
+                branch.as_dict() for branch in winding_branches],
+            "selected_rank": (
+                None if heading_branch is None
+                else int(heading_branch.candidate_rank)),
+            "selected": (
+                None if heading_branch is None else heading_branch.as_dict()),
+            "guide_length_m": guide_length_m,
+        }
         if remaining() <= 0.0:
             return budget_stop("geometry solve")
+        progress.emit(
+            "NLP_SOLVE",
+            metrics={
+                "phase": "running",
+                "route_guided": bool(solve_routes),
+                "endpoint_only": bool(endpoint_only),
+                "corridor_guided": bool(solve_chain is not None),
+                **_winding_evidence(heading_branch, guide_length_m),
+            },
+            route_index=route_index if routes else None,
+            route_count=len(routes),
+            round_index=len(search["rounds"]))
         solve_started = time.monotonic()
         geometry = solve_open_path_guided(
             request, geometry_config, route_guides=solve_routes,
@@ -893,12 +1504,52 @@ def plan_virtual_a(map_request):
             geometry_audit_config=audit_config,
             corridor_chain=solve_chain,
             corridor_allocation=solve_allocation,
+            heading_branch=heading_branch,
+            guide_length_m=guide_length_m,
             excluded_initial_keys=tuple(used_initial_keys),
             max_new_initials=remaining_initial_slots(),
             stop_after_route_audit=bool(solve_routes))
         timings["geometry_solve_s"] += time.monotonic() - solve_started
         all_attempts.extend(geometry.attempts)
         last_geometry_audit = geometry.audit
+        diagnostic_path = _progress_diagnostic_path(geometry)
+        last_attempt = (geometry.attempts[-1]
+                        if geometry.attempts else None)
+        progress.emit(
+            "NLP_SOLVE",
+            metrics={
+                "phase": "complete",
+                "status": str(geometry.status),
+                "reason": str(geometry.reason or ""),
+                "detail": str(geometry.detail or ""),
+                "solver_used": str(geometry.solver_used or ""),
+                "initial_count": int(geometry.initial_count),
+                "attempt_count": len(geometry.attempts),
+                "iterations": int(getattr(last_attempt, "iterations", 0)
+                                  or 0),
+                "constraint_residual": _progress_scalar(getattr(
+                    last_attempt, "constraint_residual", None)),
+                **_corridor_evidence(geometry),
+                **_winding_evidence(heading_branch, guide_length_m),
+                **_s_domain_evidence(geometry),
+                "S_m": (None if diagnostic_path is None else float(
+                    getattr(diagnostic_path, "length_m", 0.0) or 0.0)),
+                "wall_time_s": float(geometry.wall_time_s),
+            },
+            diagnostic_path=diagnostic_path,
+            route_index=route_index if routes else None,
+            route_count=len(routes),
+            round_index=len(search["rounds"]))
+        progress.emit(
+            "GEOMETRY_AUDIT",
+            metrics={
+                "phase": "complete",
+                "source": "geometry_solver",
+                "geometry_status": str(geometry.status),
+                **_progress_audit_metrics(geometry.audit),
+            },
+            route_index=route_index if routes else None,
+            route_count=len(routes))
         tried_routes.add(route_index)
         new_initial_count = absorb_attempt_initials(geometry)
         search["initial_count"] = int(geometry.initial_count)
@@ -913,6 +1564,9 @@ def plan_virtual_a(map_request):
             "new_initial_count": int(new_initial_count),
             "initial_mode": "endpoint_only" if endpoint_only
             else "route_guided",
+            **_winding_evidence(heading_branch, guide_length_m),
+            **_s_domain_evidence(geometry),
+            **_corridor_evidence(geometry),
             "corridor_round_index": corridor_round["round_index"]
             if corridor_mode and not hold_request
             and corridor_round is not None else None,
@@ -924,6 +1578,14 @@ def plan_virtual_a(map_request):
             status = _timing_status_for_geometry(geometry.status)
             record_failure(
                 "GEOMETRY", geometry.reason or "NO_ACCEPTED_CANDIDATE")
+            if _winding_retry_allowed(geometry) \
+                    and next_winding_branch(solve_routes):
+                # The preferred branch produced no audited candidate and the
+                # failure is solver non-convergence or an endpoint-constraint
+                # rejection: spend the one recovery on the next finite branch.
+                winding_branch_recovery(
+                    geometry.reason or "NO_ACCEPTED_CANDIDATE")
+                continue
             if geometry.reason in (
                     "SOLVER_NOT_CONVERGED", "ALL_ATTEMPTS_NUMERICAL_FAILURE"):
                 # Numerical non-convergence: the solver already scheduled and
@@ -945,7 +1607,9 @@ def plan_virtual_a(map_request):
                 "GEOMETRY", timings, time.monotonic() - started, search,
                 checks=_report_checks(geometry.audit),
                 attempts=all_attempts, routes=tuple(routes),
-                geometry_audit=geometry.audit)
+                geometry_audit=geometry.audit,
+                metrics=(
+                    _corridor_evidence(geometry) if corridor_mode else None))
         if corridor_mode and not hold_request:
             if remaining() <= 0.0:
                 search["rounds"].append(round_record)
@@ -1179,6 +1843,19 @@ def plan_virtual_a(map_request):
         round_record["timing_reason"] = timing.reason
         round_record["duration_s"] = timing.T_s
         last_geometry_audit = timing.geometry_audit or last_geometry_audit
+        if timing.geometry_audit is not None:
+            # The retimer reruns the independent geometry audit on the timed
+            # model; report that actual report instead of the solver's copy.
+            progress.emit(
+                "GEOMETRY_AUDIT",
+                metrics={
+                    "phase": "complete",
+                    "source": "retime",
+                    "timing_status": str(timing.status),
+                    **_progress_audit_metrics(timing.geometry_audit),
+                },
+                route_index=route_index if routes else None,
+                route_count=len(routes))
         if timing.status not in ("DYNAMIC_FEASIBLE", "NO_MOTION"):
             search["rounds"].append(round_record)
             layer = _failure_layer_for_timing(timing.status)
@@ -1197,12 +1874,31 @@ def plan_virtual_a(map_request):
         if remaining() <= 0.0:
             search["rounds"].append(round_record)
             return budget_stop("dynamics audit")
+        progress.emit(
+            "DYNAMICS_AUDIT",
+            metrics={
+                "phase": "running",
+                "timing_status": str(timing.status),
+                "duration_s": float(getattr(timing, "T_s", 0.0) or 0.0),
+            },
+            route_index=route_index if routes else None,
+            route_count=len(routes))
         dynamics_started = time.monotonic()
         dynamics = audit_dynamics(
             request, plan, dynamic_config,
             expected_planning_context=context)
         timings["dynamics_audit_s"] += time.monotonic() - dynamics_started
         last_dynamic_audit = dynamics
+        progress.emit(
+            "DYNAMICS_AUDIT",
+            metrics={
+                "phase": "complete",
+                "timing_status": str(timing.status),
+                **_progress_audit_metrics(dynamics),
+            },
+            route_index=route_index if routes else None,
+            route_count=len(routes),
+            diagnostic_path=path)
         round_record["dynamics_passed"] = bool(dynamics.passed)
         round_record["dynamics_reason"] = dynamics.reason
         if not dynamics.passed:
@@ -1222,11 +1918,25 @@ def plan_virtual_a(map_request):
         if remaining() <= 0.0:
             search["rounds"].append(round_record)
             return budget_stop("collision audit")
+        progress.emit(
+            "OBB_COLLISION_AUDIT", metrics={"phase": "running"},
+            route_index=route_index if routes else None,
+            route_count=len(routes),
+            diagnostic_path=path)
         collision_started = time.monotonic()
         collision = audit_collision(
             request, plan, grid, collision_config)
         timings["collision_audit_s"] += time.monotonic() - collision_started
         last_collision_audit = collision
+        progress.emit(
+            "OBB_COLLISION_AUDIT",
+            metrics={
+                "phase": "complete",
+                **_progress_audit_metrics(collision),
+            },
+            route_index=route_index if routes else None,
+            route_count=len(routes),
+            diagnostic_path=path)
         round_record["collision_passed"] = bool(collision.passed)
         round_record["collision_reason"] = collision.reason
         round_record["collision_first_failure"] = collision.first_failure
@@ -1338,6 +2048,7 @@ def plan_virtual_a(map_request):
             "corridor_containment_samples": int(containment["sample_count"]),
             "corridor_containment_max_bound_residual_m": containment[
                 "max_bound_residual_m"],
+            **_corridor_evidence(geometry),
         }
         corridor_detail = (
             "; continuous corridor containment certified"
@@ -1397,6 +2108,10 @@ __all__ = [
     "G4_ROUTE_CLEARANCE_WEIGHT",
     "G4_TOTAL_SOFT_BUDGET_S",
     "MAX_RECOVERIES",
+    "PROGRESS_SCHEMA",
+    "PROGRESS_STAGES",
+    "PROGRESS_STAGE_INDEX",
+    "PROGRESS_STATES",
     "make_route_guides",
     "plan_virtual_a",
 ]

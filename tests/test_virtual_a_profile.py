@@ -573,9 +573,13 @@ class SimpsonRemainderReworkTests(unittest.TestCase):
             self.assertLessEqual(error, path.position_error_bound_m)
 
     def test_refinement_is_recorded_and_uses_the_corrected_remainder(self):
+        # Historical v2 certificate: the explicit version keeps the
+        # byte-compatible global-M4 planner and its 1e-10 m accumulation guard.
         profile = BENCHMARK.DoubleLaneChangeProfile()
-        path = VirtualAPath(starting_pose(), profile, research_model())
+        path = VirtualAPath(starting_pose(), profile, research_model(),
+                            numerics_version=bounds_module.NUMERICS_V2)
         budget = path.integration_budget
+        self.assertEqual(budget["numerics_version"], bounds_module.NUMERICS_V2)
         self.assertEqual(len(budget["panels_per_segment"]), 2)
         self.assertEqual(len(budget["initial_panels_per_segment"]), 2)
         self.assertTrue(all(n % 2 == 0 for n in budget["panels_per_segment"]))
@@ -620,6 +624,203 @@ class SimpsonRemainderReworkTests(unittest.TestCase):
             bounds_module.POSITION_BUDGET_M = original
         self.assertEqual(caught.exception.reason, "BOUND_UNCONFIRMED")
         self.assertIn("total_panels", caught.exception.location)
+
+
+class V3NumericsTests(unittest.TestCase):
+    """Versioned production numerics: the g1.v3 certificate."""
+
+    def _assert_certificate(self, profile, path):
+        budget = path.integration_budget
+        self.assertEqual(path.numerics_version, bounds_module.NUMERICS_V3)
+        self.assertEqual(budget["numerics_version"], bounds_module.NUMERICS_V3)
+        self.assertLessEqual(budget["position_error_bound_m"], 1e-7)
+        self.assertLessEqual(budget["angle_error_bound_rad"], 1e-9)
+        segments = budget["segments"]
+        self.assertEqual(len(segments), profile.segment_count)
+        self.assertEqual(len(budget["panels_per_segment"]), len(segments))
+        quadrature = 0.0
+        for index, segment in enumerate(segments):
+            h = segment["s1"] - segment["s0"]
+            panels = segment["subintervals"]
+            self.assertEqual(panels, budget["panels_per_segment"][index])
+            self.assertEqual(panels % 2, 0)
+            self.assertEqual(segment["full_panel_count"], panels // 2)
+            self.assertEqual(len(segment["panel_m4_upper_m"]), panels // 2)
+            self.assertEqual(segment["maximum_panel_m4_upper_m"],
+                             max(segment["panel_m4_upper_m"]))
+            self.assertGreaterEqual(
+                segment["quadrature_remainder_m"],
+                segment["quadrature_full_remainder_m"]
+                + segment["quadrature_local_remainder_m"])
+            self.assertLessEqual(
+                segment["quadrature_remainder_m"],
+                (segment["quadrature_full_remainder_m"]
+                 + segment["quadrature_local_remainder_m"]) * (1.0 + 1e-12))
+            self.assertGreater(segment["evaluation_guard_m"], 0.0)
+            self.assertEqual(segment["angle_guard_m"],
+                             bounds_module._next_up(
+                                 h * budget["angle_error_bound_rad"]))
+            expected_segment = bounds_module._next_up(
+                bounds_module._next_up(
+                    segment["quadrature_remainder_m"]
+                    + segment["evaluation_guard_m"])
+                + segment["angle_guard_m"])
+            self.assertEqual(segment["per_coordinate_total_m"],
+                             expected_segment)
+            quadrature = bounds_module._next_up(
+                quadrature + segment["quadrature_remainder_m"])
+            self.assertGreaterEqual(segment["subintervals"] * 2, 2)
+        self.assertEqual(budget["per_coordinate_quadrature_m"], quadrature)
+        evaluation = budget["evaluation_guard_components"]
+        raw_evaluation = (evaluation["psi_accumulation_m"]
+                          + evaluation["coordinate_accumulation_m"]
+                          + sum(evaluation["per_segment_m"]))
+        self.assertAlmostEqual(
+            budget["per_coordinate_evaluation_m"] / raw_evaluation,
+            1.0, delta=1e-12)
+        self.assertEqual(
+            budget["floating_point_guard_m"],
+            bounds_module._next_up(
+                budget["per_coordinate_evaluation_m"]
+                + budget["per_coordinate_angle_m"]))
+        self.assertEqual(
+            budget["per_coordinate_total_m"],
+            bounds_module._next_up(
+                bounds_module._next_up(
+                    budget["per_coordinate_quadrature_m"]
+                    + budget["per_coordinate_evaluation_m"])
+                + budget["per_coordinate_angle_m"]))
+        self.assertEqual(
+            budget["total_budget_m"],
+            bounds_module._next_up(
+                bounds_module._next_up(math.sqrt(2.0))
+                * budget["per_coordinate_total_m"]))
+        self.assertEqual(budget["total_panels"],
+                         sum(budget["panels_per_segment"]))
+        # One local panel per piece is charged, so every state_at_s query is
+        # covered by the same certificate.
+        self.assertEqual(budget["total_local_simpson_panels"],
+                         len(segments))
+        self.assertEqual(budget["local_simpson_panels_per_segment"], 1)
+        self.assertIn("outward_rounding_method", budget)
+
+    def test_new_profiles_and_paths_default_to_v3(self):
+        profile = quadratic_profile()
+        self.assertEqual(profile.numerics_version, bounds_module.NUMERICS_V3)
+        path = VirtualAPath(starting_pose(), profile, research_model())
+        self._assert_certificate(profile, path)
+        self.assertEqual(path.integration_budget["m4_method"],
+                         "exact_interval_fourth_derivative_per_panel")
+        self.assertNotEqual(profile.numerics_version, bounds_module.NUMERICS_V2)
+
+    def test_v3_certificate_covers_hermite_and_analytic_profiles(self):
+        for profile in (g_jump_profile(),
+                        BENCHMARK.DoubleLaneChangeProfile(),
+                        BENCHMARK.DoubleLaneChangeProfile(mirror=True)):
+            path = VirtualAPath(starting_pose(), profile, research_model())
+            self._assert_certificate(profile, path)
+        analytic = VirtualAPath(
+            starting_pose(), BENCHMARK.DoubleLaneChangeProfile(),
+            research_model())
+        self.assertEqual(analytic.integration_budget["m4_method"],
+                         "analytic_interval_envelope_per_panel")
+
+    def test_v3_bound_contains_the_independent_quadrature_error(self):
+        profile = BENCHMARK.DoubleLaneChangeProfile()
+        path = VirtualAPath(starting_pose(), profile, research_model())
+        worst = 0.0
+        for index in range(201):
+            s = profile.length_m * index / 200
+            x, y = BENCHMARK.quadrature_position(profile, s)
+            state = path.state_at_s(s)
+            worst = max(worst, math.hypot(state.qf.x - x, state.qf.y - y))
+        self.assertLessEqual(worst, path.position_error_bound_m)
+
+    def test_v3_guard_is_far_below_the_v2_accumulation_guard(self):
+        profile = BENCHMARK.DoubleLaneChangeProfile()
+        v2 = VirtualAPath(starting_pose(), profile, research_model(),
+                          numerics_version=bounds_module.NUMERICS_V2)
+        v3 = VirtualAPath(starting_pose(), profile, research_model())
+        v3_guard = v3.integration_budget["floating_point_guard_m"]
+        v2_guard = v2.integration_budget["floating_point_guard_m"]
+        self.assertLess(v3_guard, v2_guard)
+        self.assertLess(v3_guard, v2_guard / 10.0)
+        # The v2 guard is 1e-10 m per accumulation panel; the v3 guard is a
+        # derived float64 evaluation bound, not that per-panel constant.
+        v2_panels = (v2.integration_budget["total_full_simpson_panels"]
+                     + v2.integration_budget["total_local_simpson_panels"])
+        self.assertGreaterEqual(
+            v2_guard, 1e-10 * v2_panels * (1.0 - 1e-12))
+
+    def test_v3_long_straight_profile_certifies_where_v2_fails_closed(self):
+        knots = (ControlKnot(0.0, 0.0, 0.0), ControlKnot(50.0, 0.0, 0.0))
+        profile = C2CurvatureProfile.from_knots(knots)
+        path = VirtualAPath(starting_pose(), profile, research_model())
+        self.assertEqual(path.numerics_version, bounds_module.NUMERICS_V3)
+        self.assertLessEqual(path.position_error_bound_m, 1e-7)
+        self.assertEqual(len(path.integration_budget["segments"]), 1)
+        v2_profile = C2CurvatureProfile.from_knots(
+            knots, numerics_version=bounds_module.NUMERICS_V2)
+        with self.assertRaises(VirtualAContractError) as caught:
+            VirtualAPath(starting_pose(), v2_profile, research_model(),
+                         numerics_version=bounds_module.NUMERICS_V2)
+        self.assertEqual(caught.exception.reason, "BOUND_UNCONFIRMED")
+        self.assertIn("total_panels", caught.exception.location)
+
+    def test_v3_unsupported_versions_and_mismatches_fail_closed(self):
+        knots = (ControlKnot(0.0, 0.0, 0.0), ControlKnot(1.0, 0.01, 0.02))
+        with self.assertRaises(VirtualAContractError) as caught:
+            C2CurvatureProfile.from_knots(
+                knots, numerics_version="virtual_rigid_a.numerics.g1.v9")
+        self.assertEqual(caught.exception.reason, "UNKNOWN_NUMERICS_VERSION")
+        v2_profile = C2CurvatureProfile.from_knots(
+            knots, numerics_version=bounds_module.NUMERICS_V2)
+        v3_profile = C2CurvatureProfile.from_knots(knots)
+        with self.assertRaises(VirtualAContractError) as caught:
+            VirtualAPath(starting_pose(), v2_profile, research_model(),
+                         numerics_version=bounds_module.NUMERICS_V3)
+        self.assertEqual(caught.exception.reason, "NUMERICS_VERSION_MISMATCH")
+        with self.assertRaises(VirtualAContractError) as caught:
+            VirtualAPath(starting_pose(), v3_profile, research_model(),
+                         numerics_version=bounds_module.NUMERICS_V2)
+        self.assertEqual(caught.exception.reason, "NUMERICS_VERSION_MISMATCH")
+        with self.assertRaises(VirtualAContractError) as caught:
+            VirtualAPath(starting_pose(), v3_profile, research_model(),
+                         numerics_version="virtual_rigid_a.numerics.g1.v9")
+        self.assertEqual(caught.exception.reason, "UNKNOWN_NUMERICS_VERSION")
+        # A serializable profile must not silently fall back to the newest
+        # version when it declares an unsupported one.
+        v3_profile._numerics_version = "external.numerics.v0"
+        with self.assertRaises(VirtualAContractError) as caught:
+            VirtualAPath(starting_pose(), v3_profile, research_model())
+        self.assertEqual(caught.exception.reason, "UNKNOWN_NUMERICS_VERSION")
+        # The non-serializable analytic diagnostic profile has its own
+        # version string; both supported production versions are explicit.
+        analytic = BENCHMARK.DoubleLaneChangeProfile()
+        for version in (bounds_module.NUMERICS_V2, bounds_module.NUMERICS_V3):
+            path = VirtualAPath(starting_pose(), analytic, research_model(),
+                                numerics_version=version)
+            self.assertEqual(path.numerics_version, version)
+        self.assertEqual(
+            VirtualAPath(starting_pose(), analytic,
+                         research_model()).numerics_version,
+            bounds_module.NUMERICS_V3)
+
+    def test_v3_irreducible_guard_fails_before_any_refinement(self):
+        original = bounds_module.POSITION_BUDGET_M
+        try:
+            bounds_module.POSITION_BUDGET_M = 0.0
+            with self.assertRaises(VirtualAContractError) as caught:
+                VirtualAPath(starting_pose(),
+                             BENCHMARK.DoubleLaneChangeProfile(),
+                             research_model())
+        finally:
+            bounds_module.POSITION_BUDGET_M = original
+        self.assertEqual(caught.exception.reason, "BOUND_UNCONFIRMED")
+        self.assertIn("per_coordinate_budget_m", caught.exception.location)
+        # 2 segments x ceil(6.0/0.02)=300 initial subintervals; the
+        # irreducible guard fails immediately instead of looping.
+        self.assertEqual(caught.exception.location["total_panels"], 600)
 
 
 if __name__ == "__main__":

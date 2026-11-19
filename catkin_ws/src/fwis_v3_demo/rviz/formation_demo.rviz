@@ -15,24 +15,144 @@ Visualization Manager:
       Value: true
     - Class: rviz/MarkerArray
       Enabled: true
-      Name: Final certified vehicle paths
+      Name: Vehicle bodies, headings, history and labels (markers)
       Marker Topic: /formation/markers
+      Value: true
+    - Class: rviz/Path
+      Enabled: true
+      Name: Certified path vehicle 1 (editable)
+      Topic: /formation/path/vehicle_1
+      Color: 22; 166; 182
+      Line Style: Lines
+      Line Width: 0.08
+      Value: true
+    - Class: rviz/Path
+      Enabled: true
+      Name: Certified path vehicle 2 (editable)
+      Topic: /formation/path/vehicle_2
+      Color: 242; 142; 43
+      Line Style: Lines
+      Line Width: 0.08
+      Value: true
+    - Class: rviz/Path
+      Enabled: true
+      Name: Certified path vehicle 3 (editable)
+      Topic: /formation/path/vehicle_3
+      Color: 143; 99; 199
+      Line Style: Lines
+      Line Width: 0.08
+      Value: true
+    - Class: rviz/Path
+      Enabled: true
+      Name: F candidate path (editable)
+      Topic: /formation/path/f_candidate
+      Color: 255; 217; 13
+      Line Style: Lines
+      Line Width: 0.045
+      Value: true
+    - Class: rviz/Path
+      Enabled: true
+      Name: Candidate centre path car1 (editable)
+      Topic: /formation/path/candidate_vehicle_1
+      Color: 26; 115; 255
+      Line Style: Lines
+      Line Width: 0.03
+      Value: true
+    - Class: rviz/Path
+      Enabled: true
+      Name: Candidate centre path car2 (editable)
+      Topic: /formation/path/candidate_vehicle_2
+      Color: 26; 115; 255
+      Line Style: Lines
+      Line Width: 0.03
+      Value: true
+    - Class: rviz/Path
+      Enabled: true
+      Name: Candidate centre path car3 (editable)
+      Topic: /formation/path/candidate_vehicle_3
+      Color: 26; 115; 255
+      Line Style: Lines
+      Line Width: 0.03
+      Value: true
+    - Class: rviz/Path
+      Enabled: true
+      Name: A* raw route 0 (editable)
+      Topic: /formation/path/astar_raw_0
+      Color: 255; 140; 0
+      Line Style: Lines
+      Line Width: 0.026
+      Value: true
+    - Class: rviz/Path
+      Enabled: true
+      Name: A* raw route 1 (editable)
+      Topic: /formation/path/astar_raw_1
+      Color: 255; 140; 0
+      Line Style: Lines
+      Line Width: 0.026
+      Value: true
+    - Class: rviz/Path
+      Enabled: true
+      Name: A* raw route 2 (editable)
+      Topic: /formation/path/astar_raw_2
+      Color: 255; 140; 0
+      Line Style: Lines
+      Line Width: 0.026
+      Value: true
+    - Class: rviz/Path
+      Enabled: true
+      Name: Portal guide 0 (editable)
+      Topic: /formation/path/portal_guide_0
+      Color: 13; 209; 64
+      Line Style: Lines
+      Line Width: 0.032
+      Value: true
+    - Class: rviz/Path
+      Enabled: true
+      Name: Portal guide 1 (editable)
+      Topic: /formation/path/portal_guide_1
+      Color: 13; 209; 64
+      Line Style: Lines
+      Line Width: 0.032
+      Value: true
+    - Class: rviz/Path
+      Enabled: true
+      Name: Portal guide 2 (editable)
+      Topic: /formation/path/portal_guide_2
+      Color: 13; 209; 64
+      Line Style: Lines
+      Line Width: 0.032
       Value: true
     - Class: rviz/MarkerArray
       Enabled: true
       Marker Topic: /formation/guides
-      Name: A* route (default off) and C2-A centreline (reference only)
+      Name: Guide labels (markers)
       Namespaces:
-        formation/guides/astar: false
-        formation/guides/astar_candidate: false
-        formation/guides/centerline: true
-        formation/guides/centerline_candidate: false
+        formation/planning/astar_raw: true
+        formation/planning/portal_guide: true
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
       Enabled: true
-      Name: Corridor candidates (reference point only, low alpha)
+      Name: Convex workspace corridors (F point only)
       Marker Topic: /formation/corridors
+      Namespaces:
+        formation/planning/corridor_f_only/fill: true
+        formation/planning/corridor_f_only/edge: true
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Name: Candidate OBBs and labels (markers)
+      Marker Topic: /formation/planning_candidates
+      Namespaces:
+        formation/planning/f_candidate: true
+        formation/planning/car1_center_candidate: true
+        formation/planning/car2_center_candidate: true
+        formation/planning/car3_center_candidate: true
+        formation/planning/car1_obb_candidate: true
+        formation/planning/car2_obb_candidate: true
+        formation/planning/car3_obb_candidate: true
+        formation/planning/failure: true
+      Queue Size: 100
       Value: true
     - Align Bottom: false
       Background Alpha: 0.55

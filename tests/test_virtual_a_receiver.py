@@ -9,6 +9,7 @@ covered separately by ``ros_virtual_a_smoke.py``.
 import copy
 import importlib.util
 import json
+import math
 from pathlib import Path
 import sys
 import threading
@@ -347,6 +348,246 @@ class VirtualReceiverTest(unittest.TestCase):
         envelope["backend"] = "uniform_v02"
         with self.assertRaises(PlaybackValidationError):
             self._verify(envelope=envelope)
+
+
+class VirtualTransportPreviewTest(unittest.TestCase):
+    """A raw virtual request must end the goal-bridge transport preview.
+
+    The goal bridge latches ``/formation/display_pose`` at a manual reset,
+    which sets ``_previewing`` and makes ``on_playback_plan`` ignore any
+    envelope.  Raw virtual request receipt is not admission and must not
+    clear the replay/hold/diagnostics, but it must leave preview mode;
+    otherwise the atomic envelope for the admitted experiment is dropped
+    silently.  A busy request for another admitted plan keeps the preview,
+    matching the pre-existing non-virtual guard ordering.
+    """
+
+    def _node(self):
+        node = object.__new__(_NODE.FormationPlaybackNode)
+        node._lock = threading.RLock()
+        node.backend = "virtual_rigid_a"
+        node._job_state = "IDLE"
+        node._job_state_plan = None
+        node._previewing = True
+        node.trajectory = None
+        node._active_plan = None
+        node._hold_reason = "START"
+        node.hold = None
+        node._clear_markers_pending = False
+        node._record_raw_request = lambda message: None
+        return node
+
+    def test_idle_virtual_request_ends_the_preview(self):
+        node = self._node()
+        node.on_request(SimpleNamespace(plan_id=600000))
+        self.assertFalse(node._previewing)
+        self.assertIsNone(node.trajectory)
+        self.assertEqual(node._hold_reason, "START")
+
+    def test_matching_admitted_virtual_request_ends_the_preview(self):
+        node = self._node()
+        node._job_state = "PLANNING"
+        node._job_state_plan = 600000
+        node.on_request(SimpleNamespace(plan_id=600000))
+        self.assertFalse(node._previewing)
+
+    def test_busy_virtual_request_keeps_the_preview(self):
+        node = self._node()
+        node._job_state = "PLANNING"
+        node._job_state_plan = 600001
+        node.on_request(SimpleNamespace(plan_id=600000))
+        self.assertTrue(node._previewing)
+
+
+class VehiclePathAndResetTest(unittest.TestCase):
+    """RViz Path topics and the 2D Pose Estimate reset behaviour."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.case = g5.solved("S2", "straight")
+        cls.envelope = g5.envelope_for(cls.case)
+
+    def _receiver_node(self):
+        node = object.__new__(_NODE.FormationPlaybackNode)
+        node._lock = threading.RLock()
+        node._raw_requests = {}
+        node._virtual_jobs = {}
+        request = self.case["map_request"].request
+        node._raw_requests[request.plan_id] = raw_document(request)
+        node._virtual_jobs[request.plan_id] = {
+            "schema": "formation_job/v1",
+            "state": "PLANNING",
+            "backend": "virtual_rigid_a",
+            "plan_id": request.plan_id,
+            "formation_id": request.formation_id,
+            "request_sha256": request_fingerprint(request),
+            "planning_context_sha256": self.case["context_sha256"],
+            "grid_sha256": self.case["map_request"].grid_sha256,
+            "virtual_a_goal_policy": request.goal_policy.value.lower(),
+            "planning_context": copy.deepcopy(self.case["context"]),
+            "initial_context": g5.reset_context(
+                self.case["scene"],
+                context_id=request.initial.context_id).as_dict(),
+            "initial_compatible": True,
+        }
+        return node
+
+    def test_full_path_is_published_once_as_a_path_message(self):
+        node = self._receiver_node()
+        message = envelope_message(self.envelope)
+        trajectory, _plan, _digest = node._verify_virtual_envelope(
+            message, self.envelope["trajectory_fields"])
+        publishers = {vehicle_id: _Publisher()
+                      for vehicle_id in trajectory.points}
+        node.path_pubs = publishers
+        node._publish_paths(trajectory)
+        stamp = trajectory.stamp
+        for vehicle_id, publisher in publishers.items():
+            self.assertEqual(len(publisher.messages), 1)
+            path = publisher.messages[0]
+            self.assertEqual(path.header.frame_id, "map")
+            self.assertEqual(
+                (path.header.stamp.secs, path.header.stamp.nsecs), stamp)
+            samples = trajectory.points[vehicle_id]
+            self.assertEqual(len(path.poses), len(samples))
+            for pose, sample in zip(path.poses, samples):
+                self.assertEqual(pose.header.frame_id, "map")
+                self.assertAlmostEqual(
+                    pose.pose.position.x, sample.center_x, places=12)
+                self.assertAlmostEqual(
+                    pose.pose.position.y, sample.center_y, places=12)
+                quaternion = pose.pose.orientation
+                yaw = math.atan2(
+                    2 * (quaternion.w * quaternion.z +
+                         quaternion.x * quaternion.y),
+                    1 - 2 * (quaternion.y * quaternion.y +
+                             quaternion.z * quaternion.z))
+                self.assertLess(abs(math.atan2(
+                    math.sin(yaw - sample.theta),
+                    math.cos(yaw - sample.theta))), 1e-9)
+
+    def test_diagnostic_paths_clear_stale_routes_before_replacement(self):
+        node = object.__new__(_NODE.FormationPlaybackNode)
+        node.frame_id = "map"
+        node.guide_path_pubs = {
+            "/formation/path/astar_raw_0": _Publisher(),
+            "/formation/path/astar_raw_2": _Publisher(),
+            "/formation/path/portal_guide_0": _Publisher(),
+        }
+        node.candidate_path_pubs = {
+            "/formation/path/f_candidate": _Publisher(),
+            "/formation/path/candidate_vehicle_1": _Publisher(),
+        }
+        stamp = _NODE.rospy.Time(3, 4)
+        with mock.patch.object(
+                _NODE.rospy.Time, "now", return_value=stamp):
+            node._publish_guide_paths({
+                ("astar_raw", 0): ((0.0, 1.0), (2.0, 3.0)),
+                ("portal_guide", 0): ((4.0, 5.0),),
+            }, stamp)
+            node._publish_candidate_paths({
+                "f_candidate": ((6.0, 7.0), (8.0, 9.0)),
+                ("candidate_vehicle", 1): ((10.0, 11.0),),
+            }, stamp)
+        astar = node.guide_path_pubs[
+            "/formation/path/astar_raw_0"].messages[-1]
+        self.assertEqual((astar.header.stamp.secs,
+                          astar.header.stamp.nsecs), (3, 4))
+        self.assertEqual(astar.header.frame_id, "map")
+        self.assertEqual(len(astar.poses), 2)
+        self.assertEqual(
+            (astar.poses[0].pose.position.x, astar.poses[0].pose.position.y),
+            (0.0, 1.0))
+        self.assertEqual(astar.poses[0].pose.orientation.w, 1.0)
+        self.assertEqual(
+            len(node.guide_path_pubs[
+                "/formation/path/portal_guide_0"].messages[-1].poses), 1)
+        # A shorter payload must empty every route topic not present now.
+        with mock.patch.object(
+                _NODE.rospy.Time, "now", return_value=stamp):
+            node._publish_guide_paths({
+                ("astar_raw", 0): ((0.0, 1.0),),
+            }, stamp)
+            node._publish_candidate_paths({"f_candidate": ((6.0, 7.0),)},
+                                          stamp)
+        self.assertEqual(
+            len(node.guide_path_pubs[
+                "/formation/path/portal_guide_0"].messages[-1].poses), 0)
+        self.assertEqual(
+            len(node.guide_path_pubs[
+                "/formation/path/astar_raw_2"].messages[-1].poses), 0)
+        self.assertEqual(
+            len(node.guide_path_pubs[
+                "/formation/path/astar_raw_0"].messages[-1].poses), 1)
+        self.assertEqual(
+            len(node.candidate_path_pubs[
+                "/formation/path/candidate_vehicle_1"].messages[-1].poses),
+            0)
+        self.assertEqual(
+            len(node.candidate_path_pubs[
+                "/formation/path/f_candidate"].messages[-1].poses), 1)
+
+    def test_2d_pose_estimate_clears_every_old_display_layer(self):
+        node = object.__new__(_NODE.FormationPlaybackNode)
+        node._lock = threading.RLock()
+        node.frame_id = "map"
+        node.transport_ui = True
+        node.backend = "virtual_rigid_a"
+        node.trajectory = SimpleNamespace(plan_id=600007)
+        node._active_plan = 600007
+        node._previewing = False
+        node._clear_markers_pending = False
+        node._hold_reason = "FAILED"
+        node.contract = SimpleNamespace(
+            formation_id="cargo_wedge",
+            body_length_m=0.738,
+            body_width_m=0.5,
+            vehicle_ids=(1, 2, 3),
+            offsets=((1.0, 0.0), (0.0, 1.0), (0.0, -1.0)),
+            headings_for_policy=lambda yaw: {1: yaw, 2: yaw, 3: yaw})
+        node.corridor_pub = _Publisher()
+        node.guide_pub = _Publisher()
+        node.candidate_pub = _Publisher()
+        node.path_pubs = {1: _Publisher(), 2: _Publisher(), 3: _Publisher()}
+        node.guide_path_pubs = {
+            "/formation/path/astar_raw_0": _Publisher(),
+            "/formation/path/portal_guide_0": _Publisher(),
+        }
+        node.candidate_path_pubs = {
+            "/formation/path/f_candidate": _Publisher(),
+            "/formation/path/candidate_vehicle_1": _Publisher(),
+            "/formation/path/candidate_vehicle_2": _Publisher(),
+            "/formation/path/candidate_vehicle_3": _Publisher(),
+        }
+        hold_calls = []
+        node._publish_hold = lambda clear=False, stamp=None: hold_calls.append(
+            clear)
+        message = SimpleNamespace(
+            header=SimpleNamespace(frame_id="map"),
+            pose=SimpleNamespace(
+                position=SimpleNamespace(x=1.0, y=2.0),
+                orientation=SimpleNamespace(x=0.0, y=0.0, z=0.0, w=1.0)))
+        with mock.patch.object(
+                _NODE.rospy.Time, "now",
+                return_value=_NODE.rospy.Time(0, 0)):
+            node.on_preview(message)
+        self.assertTrue(node._previewing)
+        self.assertIsNone(node.trajectory)
+        self.assertIsNone(node._active_plan)
+        self.assertEqual(node._hold_reason, "START")
+        self.assertEqual(hold_calls, [True])
+        for publisher in (node.corridor_pub, node.guide_pub,
+                          node.candidate_pub):
+            self.assertEqual(len(publisher.messages), 1)
+            marker = publisher.messages[0].markers[0]
+            self.assertEqual(marker.action, Marker.DELETEALL)
+        for registry in (node.path_pubs, node.guide_path_pubs,
+                         node.candidate_path_pubs):
+            for publisher in registry.values():
+                self.assertEqual(len(publisher.messages), 1)
+                path = publisher.messages[0]
+                self.assertEqual(path.header.frame_id, "map")
+                self.assertEqual(len(path.poses), 0)
 
 
 if __name__ == "__main__":

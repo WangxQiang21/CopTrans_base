@@ -20,10 +20,13 @@ usage() {
 用法：./run_demo.sh [--map map01] [--scale 比例] [--backend uniform_v02|virtual_rigid_a|legacy] [auto_goal:=false] [rviz:=true]
 默认启动货物中心楔形编队：car1(1,0)、car2(0,1)、car3(0,-1)，单位米。
 2D Pose Estimate 设置货物起点与航向，2D Nav Goal 设置货物终点与航向。
-编队后端默认 uniform_v02（V0.2 自主统一规划，原子 /formation/playback_plan 信封）；
-backend:=virtual_rigid_a 使用 G5 虚拟刚性 A 后端（同一原子信封，需先做
+编队后端默认 virtual_rigid_a（G5 虚拟刚性 A 研究入口，guidance=corridor、
+enforcement=hard、auto_goal=false；同一原子 /formation/playback_plan 信封，需先做
 2D Pose Estimate 明确新实验，virtual_a_goal_policy:=free|straight 选择终点策略）；
---backend legacy 或 backend:=legacy 仅启动旧 C++ 前端与旧优化器用于对照。
+virtual_a_guidance_mode:=corridor|legacy_route 与
+virtual_a_corridor_enforcement:=hard|soft 可显式覆盖默认研究入口；
+backend:=uniform_v02 启动 V0.2 自主统一规划；--backend legacy 或
+backend:=legacy 仅启动旧 C++ 前端与旧优化器用于对照。
 同一时刻只会启动一个规划发布后端，不会同时发布两套轨迹。
 编队默认比例为原单车比例 × 3.75（旧策略，尚待按新构型重新验收）；--scale 指定绝对比例。
 --list-maps 查看地图。--single 使用原单车流程（含 --collect-data）。
@@ -391,7 +394,7 @@ if [[ "$demo_kind" == formation ]]; then
     formation_backend="${requested_backend}"
   fi
   if [[ -z "${formation_backend}" ]]; then
-    formation_backend="uniform_v02"
+    formation_backend="virtual_rigid_a"
   fi
   if [[ "${formation_backend}" != "uniform_v02" && "${formation_backend}" != "virtual_rigid_a" && "${formation_backend}" != "legacy" ]]; then
     echo "错误：formation backend 只能是 uniform_v02、virtual_rigid_a 或 legacy，收到 ${formation_backend}。" >&2
@@ -399,6 +402,43 @@ if [[ "$demo_kind" == formation ]]; then
   fi
   if [[ "${backend_in_launch_args}" == false ]]; then
     launch_args+=("backend:=${formation_backend}")
+  fi
+  # Research entry: virtual_rigid_a defaults to corridor guidance with hard
+  # enforcement and a manual start pose.  Only missing values are injected;
+  # an explicitly repeated parameter name (even with the same value) exits 2.
+  # Explicit uniform_v02/legacy keep their historical auto_goal behaviour.
+  if [[ "${formation_backend}" == "virtual_rigid_a" ]]; then
+    guidance_seen=0
+    enforcement_seen=0
+    virtual_auto_goal_seen=0
+    for arg in "${launch_args[@]}"; do
+      case "${arg}" in
+        virtual_a_guidance_mode:=*)
+          guidance_seen=$((guidance_seen + 1))
+          ;;
+        virtual_a_corridor_enforcement:=*)
+          enforcement_seen=$((enforcement_seen + 1))
+          ;;
+        auto_goal:=*)
+          virtual_auto_goal_seen=$((virtual_auto_goal_seen + 1))
+          ;;
+      esac
+    done
+    if (( guidance_seen > 1 )); then
+      echo "错误：virtual_a_guidance_mode:= 只能指定一次。" >&2
+      exit 2
+    fi
+    if (( enforcement_seen > 1 )); then
+      echo "错误：virtual_a_corridor_enforcement:= 只能指定一次。" >&2
+      exit 2
+    fi
+    if (( virtual_auto_goal_seen > 1 )); then
+      echo "错误：auto_goal:= 只能指定一次。" >&2
+      exit 2
+    fi
+    (( guidance_seen == 1 )) || launch_args+=("virtual_a_guidance_mode:=corridor")
+    (( enforcement_seen == 1 )) || launch_args+=("virtual_a_corridor_enforcement:=hard")
+    (( virtual_auto_goal_seen == 1 )) || launch_args+=("auto_goal:=false")
   fi
   echo "[expv3] 编队发布后端 ${formation_backend}（同一时刻只启动这一个发布后端）"
 fi

@@ -327,5 +327,66 @@ class G4PipelineTests(unittest.TestCase):
             result.search["budget"]["total_soft_budget_s"], 0.0)
 
 
+class SDomainSearchEvidenceTests(unittest.TestCase):
+    """Step 4: attempt and search round records carry the finite S domain."""
+
+    def _fake_success(self, _request, _config, _packet, guess,
+                      wall_limit_s=None, **kwargs):
+        return {
+            "solver": "ipopt",
+            "z": np.asarray(guess.vector, dtype=float).copy(),
+            "objective": 1.0,
+            "solver_status": "Solve_Succeeded",
+            "success": True,
+            "iterations": 1,
+            "detail": "fake success",
+            "wall_time_s": 0.0,
+        }
+
+    def test_attempt_and_search_round_share_the_same_finite_domain(self):
+        grid = load_synthetic("corridor")[0]
+        request = make_request(
+            FormationPose(0.0, 0.0, 0.0), FormationPose(10.0, 0.0, 0.0))
+        with mock.patch.object(
+                optimizer_module, "_solve_with_ipopt",
+                side_effect=self._fake_success):
+            result = plan_virtual_a(map_request(request, grid))
+        self.assertTrue(result.search["rounds"])
+        for attempt in result.attempts:
+            self.assertEqual(attempt.distance_m, 10.0)
+            self.assertIsNotNone(attempt.guide_length_m)
+            self.assertGreater(attempt.guide_length_m, 0.0)
+            self.assertIsNotNone(attempt.s_lower_m)
+            self.assertIsNotNone(attempt.s_upper_m)
+            self.assertGreater(attempt.s_upper_m, attempt.s_lower_m)
+            self.assertLessEqual(attempt.s_lower_m, attempt.s_solution_m)
+            self.assertLessEqual(attempt.s_solution_m, attempt.s_upper_m)
+            self.assertEqual(
+                attempt.s_upper_active,
+                abs(attempt.s_solution_m - attempt.s_upper_m) <= 1e-6)
+        decisive = result.attempts[-1]
+        last_round = result.search["rounds"][-1]
+        self.assertEqual(last_round["distance_m"], decisive.distance_m)
+        self.assertEqual(
+            last_round["guide_length_m"], decisive.guide_length_m)
+        self.assertEqual(last_round["S_lower_m"], decisive.s_lower_m)
+        self.assertEqual(last_round["S_upper_m"], decisive.s_upper_m)
+        self.assertEqual(last_round["S_solution_m"], decisive.s_solution_m)
+        self.assertIs(last_round["upper_active"], decisive.s_upper_active)
+        for round_record in result.search["rounds"]:
+            expected_upper = max(
+                round_record["S_lower_m"] + 2.0, 12.0,
+                3.0 * round_record["distance_m"] + 10.0)
+            if round_record["guide_length_m"] is not None:
+                expected_upper = max(
+                    expected_upper,
+                    1.15 * round_record["guide_length_m"])
+            self.assertEqual(round_record["S_upper_m"], expected_upper)
+            self.assertEqual(
+                round_record["upper_active"],
+                abs(round_record["S_solution_m"]
+                    - round_record["S_upper_m"]) <= 1e-6)
+
+
 if __name__ == "__main__":
     unittest.main()

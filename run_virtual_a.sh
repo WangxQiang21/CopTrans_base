@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 # Convenience launcher for the G5 virtual_rigid_a three-vehicle backend.
 #
-# It deliberately does NOT change run_demo.sh's accepted default backend
-# (uniform_v02).  It only injects the two parameters virtual_rigid_a needs:
+# It is a thin wrapper around run_demo.sh: it only fills the parameters that
+# the research entry needs when they are absent, and never copies map/GUI
+# logic:
 #   backend:=virtual_rigid_a
+#   virtual_a_guidance_mode:=corridor
+#   virtual_a_corridor_enforcement:=hard
 #   auto_goal:=false   (a manual 2D Pose Estimate is mandatory; auto_goal
 #                       would publish a goal before the reset is confirmed)
 #
@@ -16,6 +19,8 @@ set -euo pipefail
 root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 has_backend=false
+has_guidance=false
+has_enforcement=false
 has_auto_goal=false
 args=()
 for arg in "$@"; do
@@ -27,6 +32,14 @@ for arg in "$@"; do
         exit 2
       fi
       has_backend=true
+      args+=("$arg")
+      ;;
+    virtual_a_guidance_mode:=*)
+      has_guidance=true
+      args+=("$arg")
+      ;;
+    virtual_a_corridor_enforcement:=*)
+      has_enforcement=true
       args+=("$arg")
       ;;
     auto_goal:=*)
@@ -42,8 +55,8 @@ done
 if [[ "$has_backend" == false ]]; then
   args=("backend:=virtual_rigid_a" "${args[@]}")
 fi
-if [[ "$has_auto_goal" == false ]]; then
-  args+=("auto_goal:=false")
-fi
+[[ "$has_guidance" == true ]] || args+=("virtual_a_guidance_mode:=corridor")
+[[ "$has_enforcement" == true ]] || args+=("virtual_a_corridor_enforcement:=hard")
+[[ "$has_auto_goal" == true ]] || args+=("auto_goal:=false")
 
 exec "${root}/run_demo.sh" "${args[@]}"

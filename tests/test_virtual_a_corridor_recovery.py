@@ -5,7 +5,7 @@ count calls and only replace solver iterates; they never bypass the
 independent geometry/dynamics/collision certificates.  No ROS process is
 started by this module.
 """
-from dataclasses import replace
+from dataclasses import FrozenInstanceError, replace
 import math
 import time
 import unittest
@@ -22,8 +22,10 @@ from fwis_v3_optimizer.formation_continuous_a.contracts import (
     ConvexCorridor,
     CorridorChain,
     GuideRoute,
+    HeadingBranch,
     PlannerConfig,
     RouteGuideConfig,
+    _wrap,
 )
 from fwis_v3_optimizer.formation_continuous_a.corridor import (
     reallocate_adjacent_portal_once,
@@ -35,6 +37,9 @@ from fwis_v3_optimizer.formation_continuous_a.optimizer import (
     solve_open_path_guided,
 )
 from fwis_v3_optimizer.formation_continuous_a.pipeline import (
+    _guide_segment_tangents,
+    _heading_branch_candidates,
+    _winding_retry_allowed,
     make_route_guides,
     plan_virtual_a,
 )
@@ -146,6 +151,124 @@ def geometry_with_attempts(request, path, planner, guesses):
         "GEOMETRY_FEASIBLE", request=request, path=path, audit=base.audit,
         attempts=attempts, request_sha256=base.request_sha256,
         config=planner)
+
+
+class HeadingBranchCandidateTests(unittest.TestCase):
+    """Step 3 finite unwrapped-heading candidates; no solver is started."""
+
+    def _request(self, start_psi=0.0, goal_psi=0.0):
+        return make_request(
+            FormationPose(0.0, 0.0, float(start_psi)),
+            FormationPose(8.0, 0.0, float(goal_psi)))
+
+    def test_counter_clockwise_loop_prefers_the_positive_branch(self):
+        request = self._request()
+        points = (
+            (0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0), (0.0, 0.0))
+        branches = _heading_branch_candidates(request, points, "loop_ccw")
+        self.assertEqual([b.winding_k for b in branches], [1, 0, 2])
+        self.assertEqual([b.candidate_rank for b in branches], [0, 1, 2])
+        self.assertAlmostEqual(branches[0].base_heading_rad, 0.0, places=12)
+        self.assertAlmostEqual(
+            branches[0].guide_turn_rad, 2.0 * math.pi, places=12)
+        self.assertAlmostEqual(
+            branches[0].unwrapped_heading_rad, 2.0 * math.pi, places=12)
+        self.assertEqual(branches[0].source, "loop_ccw")
+        for branch in branches:
+            self.assertAlmostEqual(
+                _wrap(branch.unwrapped_heading_rad
+                      - branch.base_heading_rad),
+                0.0, places=12)
+
+    def test_clockwise_loop_prefers_the_negative_branch(self):
+        request = self._request()
+        points = (
+            (0.0, 0.0), (1.0, 0.0), (1.0, -1.0), (0.0, -1.0), (0.0, 0.0))
+        branches = _heading_branch_candidates(request, points, "loop_cw")
+        self.assertEqual([b.winding_k for b in branches], [-1, 0, -2])
+        self.assertAlmostEqual(
+            branches[0].guide_turn_rad, -2.0 * math.pi, places=12)
+        self.assertAlmostEqual(
+            branches[0].unwrapped_heading_rad, -2.0 * math.pi, places=12)
+
+    def test_duplicate_and_near_zero_segments_are_removed(self):
+        points = (
+            (0.0, 0.0), (0.0, 0.0), (1e-9, 0.0), (1.0, 0.0),
+            (1.0, 0.0), (1.0, 1.0))
+        tangents = _guide_segment_tangents(points)
+        self.assertEqual(len(tangents), 2)
+        self.assertAlmostEqual(tangents[0], 0.0, places=12)
+        self.assertAlmostEqual(tangents[1], math.pi / 2.0, places=12)
+        request = self._request()
+        branches = _heading_branch_candidates(request, points, "duplicates")
+        self.assertEqual([b.winding_k for b in branches], [0, -1, 1])
+        self.assertAlmostEqual(
+            branches[0].guide_turn_rad, 0.0, places=12)
+
+    def test_near_tie_resolves_to_smaller_absolute_k(self):
+        # The 600004 geometry: base=+3.124, guide turn=-3.159..., i.e. the
+        # theta=base-2*pi case.  k=0 and k=-2 are both 2*pi from the guide
+        # turn mathematically; float accumulation must not let the negative
+        # full-turn branch jump ahead of the shorter physical heading.
+        goal_psi = 3.124
+        # Two principal segments accumulate a negative turn equal to
+        # base-2*pi: -pi/2 then a wrapped +pi heading.
+        request = self._request(0.0, goal_psi)
+        points = ((0.0, 0.0), (0.0, -1.0), (-1.0, -1.0))
+        branches = _heading_branch_candidates(request, points, "near_tie")
+        self.assertEqual([b.winding_k for b in branches], [-1, 0, -2])
+        self.assertEqual([b.candidate_rank for b in branches], [0, 1, 2])
+        first = abs(branches[0].unwrapped_heading_rad
+                    - branches[0].guide_turn_rad)
+        second = abs(branches[1].unwrapped_heading_rad
+                     - branches[1].guide_turn_rad)
+        third = abs(branches[2].unwrapped_heading_rad
+                    - branches[2].guide_turn_rad)
+        self.assertLess(first, 1e-9)
+        self.assertAlmostEqual(second, third, places=9)
+
+    def test_degenerate_guide_offers_only_the_shortest_wrap_branch(self):
+        request = self._request(0.3, -0.4)
+        points = ((1.0, 2.0), (1.0, 2.0), (1.0 + 1e-9, 2.0))
+        branches = _heading_branch_candidates(request, points, "degenerate")
+        self.assertEqual(len(branches), 1)
+        branch = branches[0]
+        self.assertEqual(branch.winding_k, 0)
+        self.assertEqual(branch.source, "no_reliable_guide")
+        self.assertIsNone(branch.guide_turn_rad)
+        self.assertAlmostEqual(
+            branch.unwrapped_heading_rad, _wrap(-0.4 - 0.3), places=12)
+        self.assertAlmostEqual(
+            _wrap(branch.unwrapped_heading_rad + 0.7), 0.0, places=12)
+
+    def test_physical_goal_pose_is_never_rewritten(self):
+        request = self._request(0.0, 0.0)
+        before = (
+            request.start_qf.x, request.start_qf.y, request.start_qf.psi,
+            request.goal_qf.x, request.goal_qf.y, request.goal_qf.psi)
+        points = (
+            (0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0), (0.0, 0.0))
+        branches = _heading_branch_candidates(request, points, "loop_ccw")
+        self.assertNotEqual(branches[0].unwrapped_heading_rad, 0.0)
+        after = (
+            request.start_qf.x, request.start_qf.y, request.start_qf.psi,
+            request.goal_qf.x, request.goal_qf.y, request.goal_qf.psi)
+        self.assertEqual(before, after)
+
+    def test_heading_branch_is_immutable_and_serialises_six_fields(self):
+        branch = HeadingBranch(
+            base_heading_rad=0.1,
+            winding_k=1,
+            unwrapped_heading_rad=0.1 + 2.0 * math.pi,
+            guide_turn_rad=0.1 + 2.0 * math.pi,
+            source="unit",
+            candidate_rank=0)
+        with self.assertRaises(FrozenInstanceError):
+            branch.winding_k = 2
+        self.assertEqual(
+            set(branch.as_dict()),
+            {"base_heading_rad", "winding_k", "unwrapped_heading_rad",
+             "guide_turn_rad", "source", "candidate_rank"})
 
 
 class CandidateSchedulingTests(unittest.TestCase):
@@ -262,7 +385,7 @@ class CandidateSchedulingTests(unittest.TestCase):
 
 
 class RecoverySchedulingTests(unittest.TestCase):
-    def test_fake_solver_success_but_audit_rejection_spends_no_recovery(self):
+    def test_fake_solver_success_but_audit_rejection_is_never_certified(self):
         grid = box_grid()
         request = moving_request()
 
@@ -291,9 +414,25 @@ class RecoverySchedulingTests(unittest.TestCase):
         self.assertEqual(result.status, "NO_ACCEPTED_CANDIDATE")
         self.assertEqual(result.reason, "AUDIT_REJECTED")
         self.assertEqual(result.first_failure_layer, "GEOMETRY")
-        self.assertEqual(result.search["recovery_count"], 0)
-        self.assertEqual(result.search["recoveries"], [])
-        self.assertEqual(result.search["initial_count"], 5)
+        # Step 3: an endpoint-constraint rejection may spend the single
+        # recovery on the next finite heading branch.  The fake success still
+        # never becomes an executable candidate.
+        self.assertEqual(result.search["recovery_count"], 1)
+        recovery = result.search["recoveries"][0]
+        self.assertEqual(recovery["action"], "winding_branch")
+        candidates = result.search["winding"]["candidates"]
+        self.assertGreaterEqual(len(candidates), 2)
+        self.assertEqual(
+            recovery["from_winding_k"], candidates[0]["winding_k"])
+        self.assertEqual(
+            recovery["to_winding_k"], candidates[1]["winding_k"])
+        rounds = result.search["rounds"]
+        self.assertEqual(len(rounds), 2)
+        self.assertEqual(rounds[0]["initial_count"], 5)
+        self.assertEqual(rounds[1]["winding_candidate_rank"], 1)
+        self.assertEqual(rounds[1]["winding_k"], candidates[1]["winding_k"])
+        self.assertEqual(len(result.search["initial_keys"]), 6)
+        self.assertEqual(result.search["initial_count_total"], 6)
         self.assertTrue(result.attempts)
         self.assertTrue(all(
             attempt.status == "SOLVER_SUCCESS_AUDIT_REJECTED"
@@ -340,6 +479,16 @@ class RecoverySchedulingTests(unittest.TestCase):
         grid = empty_grid()
         request = moving_request()
         calls = []
+        # Step 3: with several finite heading branches this failure would spend
+        # the recovery on the next branch first.  A degenerate guide offers
+        # only k=0, so the historical endpoint-only recovery remains reachable.
+        single_branch = (HeadingBranch(
+            base_heading_rad=0.0,
+            winding_k=0,
+            unwrapped_heading_rad=0.0,
+            guide_turn_rad=0.0,
+            source="test_single_branch",
+            candidate_rank=0),)
 
         def fake_failure(_request, _config, _packet, guess,
                          wall_limit_s=None, **kwargs):
@@ -347,6 +496,8 @@ class RecoverySchedulingTests(unittest.TestCase):
             return fake_solver_failure(None, None, None, None)
 
         with mock.patch.object(
+                pipeline_module, "_heading_branch_candidates",
+                return_value=single_branch), mock.patch.object(
                 optimizer_module, "_solve_with_ipopt",
                 side_effect=fake_failure):
             result = plan_virtual_a(map_request(request, grid))
@@ -378,6 +529,190 @@ class RecoverySchedulingTests(unittest.TestCase):
         self.assertEqual(recovery["action"], "endpoint_only_initial")
         self.assertEqual(recovery["reason"], "SOLVER_NOT_CONVERGED")
         self.assertEqual(recovery["first_failure_layer"], "GEOMETRY")
+        # The degenerate guide exposes exactly one branch: no winding retry
+        # exists, and the endpoint-only round uses the historical shortest wrap.
+        self.assertEqual(rounds[0]["winding_candidate_rank"], 0)
+        self.assertEqual(rounds[0]["winding_k"], 0)
+        self.assertEqual(
+            rounds[0]["heading_branch"]["source"], "test_single_branch")
+        self.assertEqual(rounds[1]["winding_k"], None)
+        self.assertEqual(rounds[1]["heading_branch"], None)
+
+    def test_solver_non_convergence_retries_exactly_one_next_branch(self):
+        grid = empty_grid()
+        request = moving_request()
+        calls = []
+        solver_packets = []
+
+        def fake_failure(_request, _config, packet, guess,
+                         wall_limit_s=None, **kwargs):
+            calls.append(initial_guess_key(guess))
+            solver_packets.append(packet)
+            return fake_solver_failure(None, None, None, None)
+
+        with mock.patch.object(
+                optimizer_module, "_solve_with_ipopt",
+                side_effect=fake_failure):
+            result = plan_virtual_a(map_request(request, grid))
+        self.assertFalse(result.executable)
+        self.assertEqual(result.status, "NO_ACCEPTED_CANDIDATE")
+        self.assertEqual(result.reason, "SOLVER_NOT_CONVERGED")
+        self.assertEqual(result.search["recovery_count"], 1)
+        recovery = result.search["recoveries"][0]
+        self.assertEqual(recovery["action"], "winding_branch")
+        self.assertEqual(recovery["from_route_index"], 0)
+        self.assertEqual(recovery["to_route_index"], 0)
+        candidates = result.search["winding"]["candidates"]
+        self.assertEqual(len(candidates), 3)
+        self.assertEqual(
+            [candidate["candidate_rank"] for candidate in candidates],
+            [0, 1, 2])
+        self.assertEqual(candidates[0]["winding_k"], 0)
+        self.assertEqual(candidates[1]["winding_k"], -1)
+        self.assertEqual(recovery["from_candidate_rank"], 0)
+        self.assertEqual(recovery["to_candidate_rank"], 1)
+        self.assertEqual(
+            recovery["from_winding_k"], candidates[0]["winding_k"])
+        self.assertEqual(
+            recovery["to_winding_k"], candidates[1]["winding_k"])
+        rounds = result.search["rounds"]
+        self.assertEqual(len(rounds), 2)
+        self.assertEqual(
+            [record["initial_mode"] for record in rounds],
+            ["route_guided", "route_guided"])
+        self.assertEqual(
+            [record["winding_k"] for record in rounds], [0, -1])
+        self.assertEqual(
+            [record["winding_candidate_rank"] for record in rounds], [0, 1])
+        self.assertEqual(
+            [record["initial_count"] for record in rounds], [5, 1])
+        self.assertGreater(rounds[0]["guide_length_m"], 8.0)
+        self.assertAlmostEqual(
+            rounds[0]["guide_length_m"],
+            result.search["routes"][0]["length_m"], places=9)
+        self.assertEqual(
+            rounds[0]["guide_length_m"], rounds[1]["guide_length_m"])
+        # The second round launches only the same route's next-branch initial:
+        # its identity carries k=-1 and no already-launched initial repeats.
+        self.assertEqual(len(calls), 6)
+        self.assertEqual(len(set(calls)), 6)
+        self.assertEqual(calls[-1][-1], -1)
+        self.assertEqual(result.search["initial_count_total"], 6)
+        self.assertEqual(result.search["duplicate_initial_launch_count"], 0)
+        self.assertTrue(result.attempts)
+        self.assertTrue(all(
+            attempt.winding_k is not None for attempt in result.attempts))
+        self.assertEqual(
+            result.attempts[-1].winding_k, -1)
+        self.assertEqual(result.attempts[-1].heading_base_rad, 0.0)
+        self.assertEqual(
+            result.attempts[-1].guide_turn_rad, 0.0)
+        for packet in solver_packets:
+            self.assertIn("heading_branch", packet)
+            self.assertIn("guide_length_m", packet)
+        self.assertEqual(
+            solver_packets[-1]["heading_branch"],
+            candidates[1])
+
+    def test_non_endpoint_audit_rejection_never_guesses_winding(self):
+        grid = empty_grid()
+        request = moving_request()
+
+        def fake_success(_request, _config, _packet, guess,
+                         wall_limit_s=None, **kwargs):
+            values = np.asarray(guess.vector, dtype=float).copy()
+            values[1:] = values[1:] * 1.1
+            return {
+                "solver": "ipopt",
+                "z": values,
+                "objective": 1.0,
+                "solver_status": "Solve_Succeeded",
+                "success": True,
+                "iterations": 1,
+                "detail": "fake success",
+                "wall_time_s": 0.0,
+            }
+
+        def forced_rejection(*_args, **_kwargs):
+            return SimpleNamespace(
+                passed=False,
+                reason="CERTIFICATE_ERROR",
+                detail="forced non-endpoint certification failure",
+                scope="geometry",
+                check_count=0,
+                first_failure=None,
+                metrics={})
+
+        with mock.patch.object(
+                optimizer_module, "_solve_with_ipopt",
+                side_effect=fake_success), mock.patch.object(
+                optimizer_module, "audit_geometry",
+                side_effect=forced_rejection):
+            result = plan_virtual_a(map_request(request, grid))
+        self.assertFalse(result.executable)
+        self.assertEqual(result.reason, "AUDIT_REJECTED")
+        self.assertEqual(result.search["recovery_count"], 0)
+        self.assertEqual(result.search["recoveries"], [])
+        self.assertEqual(result.search["winding"]["selected_rank"], 0)
+        self.assertTrue(result.attempts)
+        self.assertTrue(all(
+            attempt.status == "SOLVER_SUCCESS_AUDIT_REJECTED"
+            for attempt in result.attempts))
+
+    def test_winding_retry_uses_the_concrete_audit_rejection(self):
+        def rejection(status, reason):
+            return SimpleNamespace(status=status, rejection_reason=reason)
+
+        endpoint = rejection(
+            "SOLVER_SUCCESS_AUDIT_REJECTED", "ENDPOINT_HEADING_ERROR")
+        certificate = rejection(
+            "SOLVER_SUCCESS_AUDIT_REJECTED", "CERTIFICATE_ERROR")
+        self.assertTrue(_winding_retry_allowed(SimpleNamespace(
+            reason="AUDIT_REJECTED", attempts=(certificate, endpoint))))
+        # The optimizer takes the concrete reason from the last rejected
+        # attempt: a later certification failure is not an endpoint limit.
+        self.assertFalse(_winding_retry_allowed(SimpleNamespace(
+            reason="AUDIT_REJECTED", attempts=(endpoint, certificate))))
+        self.assertFalse(_winding_retry_allowed(SimpleNamespace(
+            reason="AUDIT_REJECTED", attempts=())))
+        self.assertFalse(_winding_retry_allowed(SimpleNamespace(
+            reason="SOFT_BUDGET_EXHAUSTED", attempts=(endpoint,))))
+
+    def test_dynamics_failure_never_enters_the_winding_retry(self):
+        grid = box_grid()
+        request = moving_request()
+        path = straight_path(8.0)
+        request, _timing, _context = retime(path, grid)
+        geometry = geometry_result_for(path, request)
+        solve_calls = []
+
+        def injected_geometry(*_args, **kwargs):
+            solve_calls.append(kwargs.get("heading_branch"))
+            return geometry
+
+        def forced_dynamics(*_args, **_kwargs):
+            return SimpleNamespace(
+                passed=False,
+                reason="DYNAMIC_AUDIT_REJECTED",
+                detail="forced dynamics failure",
+                scope="dynamics",
+                check_count=1,
+                first_failure=None,
+                metrics={})
+
+        with mock.patch.object(
+                pipeline_module, "solve_open_path_guided",
+                side_effect=injected_geometry), mock.patch.object(
+                pipeline_module, "audit_dynamics",
+                side_effect=forced_dynamics):
+            result = plan_virtual_a(map_request(request, grid))
+        self.assertEqual(result.status, "DYNAMICS_FAILED")
+        self.assertEqual(result.reason, "DYNAMIC_AUDIT_REJECTED")
+        self.assertEqual(result.search["recovery_count"], 0)
+        self.assertEqual(result.search["recoveries"], [])
+        self.assertEqual(len(solve_calls), 1)
+        self.assertIsInstance(solve_calls[0], HeadingBranch)
+        self.assertEqual(solve_calls[0].winding_k, 0)
 
     def test_solver_auto_fallback_is_one_initial_and_no_fake_recovery(self):
         grid = empty_grid()

@@ -26,6 +26,10 @@ from fwis_v3_optimizer.formation import FormationPose  # noqa: E402
 from fwis_v3_optimizer.formation_continuous_a.contracts import (  # noqa: E402
     GoalPolicy,
     VirtualAContractError,
+    research_planner_config,
+)
+from fwis_v3_optimizer.formation_continuous_a.corridor import (  # noqa: E402
+    CORRIDOR_DISPLAY_STATE,
 )
 from fwis_v3_optimizer.formation_continuous_a.geometry import (  # noqa: E402
     C2CurvatureProfile,
@@ -33,6 +37,9 @@ from fwis_v3_optimizer.formation_continuous_a.geometry import (  # noqa: E402
 )
 from fwis_v3_optimizer.formation_continuous_a.pipeline import (  # noqa: E402
     plan_virtual_a,
+)
+from fwis_v3_optimizer.formation_playback import (  # noqa: E402
+    PLANNING_PUBLISHED_STATE,
 )
 from fwis_v3_optimizer.formation_continuous_a.ros_adapter import (  # noqa: E402
     INITIAL_RESET_NOT_CONFIRMED,
@@ -57,6 +64,7 @@ from fwis_v3_optimizer.formation_continuous_a.ros_adapter import (  # noqa: E402
     terminal_context_from_plan,
     verify_envelope_fields,
 )
+import formation_uniform_planner_node as planner_node  # noqa: E402
 from formation_uniform_planner_node import (  # noqa: E402
     HOLD_END,
     IDLE,
@@ -204,6 +212,30 @@ class RequestFromSnapshotTest(unittest.TestCase):
                          self.settings_free.timing_config)
         self.assertEqual(map_request.collision_config,
                          self.settings_free.collision_config)
+
+    def test_research_settings_reach_the_map_request_and_corridor_mode(self):
+        config = research_planner_config()
+        settings = VirtualABackendSettings(
+            planner_config=config,
+            timing_config=self.settings_free.timing_config,
+            collision_config=self.settings_free.collision_config,
+            goal_policy="free")
+        start = FormationPose(0.0, 0.0, 0.0)
+        snapshot = g5.snapshot_for(
+            self.scene, policy="free", start=start,
+            start_headings={1: 0.0, 2: 1e-8, 3: -1e-8},
+            goal_heading_free={1: True, 2: True, 3: True})
+        map_request = request_from_snapshot(
+            snapshot, self.scene["grid"], settings, self._reset(start))
+        self.assertIs(map_request.planner_config, config)
+        self.assertEqual(map_request.planner_config.guidance_mode, "corridor")
+        self.assertEqual(
+            map_request.planner_config.corridor_enforcement, "hard")
+        context = map_request.context()
+        self.assertEqual(
+            context["planner_config"]["guidance_mode"], "corridor")
+        self.assertEqual(
+            context["planner_config"]["corridor_enforcement"], "hard")
 
     def test_straight_request_accepts_all_fixed_compatible_headings(self):
         snapshot = g5.snapshot_for(
@@ -1099,12 +1131,12 @@ class JobDocumentTest(_NodeHarness):
             self.assertNotIn(key, document)
 
 
-class CorridorDebugPublicationTest(_NodeHarness):
-    """V1: only display fields from the current admission reach the topic."""
+class CorridorDisplayConstructionTest(_NodeHarness):
+    """Progressive corridor display comes only from the current admission."""
 
     def _display(self, **overrides):
         display = {
-            "state": "CANDIDATE_REFERENCE_POINT_ONLY",
+            "state": CORRIDOR_DISPLAY_STATE,
             "plan_id": self.PLAN_ID,
             "formation_id": self.FORMATION,
             "backend": "virtual_rigid_a",
@@ -1118,39 +1150,55 @@ class CorridorDebugPublicationTest(_NodeHarness):
         display.update(overrides)
         return display
 
-    def _result(self, displays):
+    def _view(self, displays):
         return SimpleNamespace(
             search={"corridor_displays": displays},
             grid_sha256="c" * 64,
             planning_context_sha256="b" * 64,
             model_sha256=None)
 
-    def _publish(self, node, result):
-        node._publish_corridor_debug(
-            0, self.PLAN_ID,
-            SimpleNamespace(formation_id=self.FORMATION), result)
-        return json.loads(self.planning_debug[-1].data)
-
-    def test_matching_display_fields_are_published(self):
+    def _corridor_node(self):
         node = self._node(backend_hooks=VirtualABackendHooks())
-        document = self._publish(node, self._result([self._display()]))
-        self.assertEqual(document["state"],
-                         "CANDIDATE_REFERENCE_POINT_ONLY")
-        self.assertEqual(document["plan_id"], self.PLAN_ID)
-        self.assertEqual(len(document["corridors"]), 1)
+        node._virtual_admission = {
+            "formation_id": self.FORMATION,
+            "request_sha256": "e" * 64,
+            "grid_sha256": "c" * 64,
+            "planning_context_sha256": "b" * 64,
+        }
+        node._progress_layers = {}
+        node._progress_display_errors = 0
+        node._progress_display_disabled = set()
+        snapshot = SimpleNamespace(formation_id=self.FORMATION)
+        node._virtual_snapshot = snapshot
+        return node, snapshot
 
-    def test_stale_or_malformed_display_is_replaced_by_an_empty_layer(self):
-        node = self._node(backend_hooks=VirtualABackendHooks())
+    def _build(self, node, snapshot, displays):
+        identity = node._planning_identity(
+            0, self.PLAN_ID, snapshot, PLANNING)
+        self.assertIsNotNone(identity)
+        return node._corridor_displays(
+            0, self.PLAN_ID, snapshot, self._view(displays), identity)
+
+    def test_matching_display_fields_are_returned(self):
+        node, snapshot = self._corridor_node()
+        checked = self._build(node, snapshot, [self._display()])
+        self.assertEqual(len(checked), 1)
+        self.assertEqual(checked[0]["state"], CORRIDOR_DISPLAY_STATE)
+        self.assertEqual(checked[0]["plan_id"], self.PLAN_ID)
+        self.assertEqual(node._progress_display_errors, 0)
+
+    def test_stale_or_malformed_display_clears_only_that_layer(self):
+        node, snapshot = self._corridor_node()
         for display in (
                 self._display(plan_id=self.PLAN_ID + 1),
-                self._display(grid_sha256="e" * 64),
+                self._display(grid_sha256="f" * 64),
                 self._display(state="FEASIBLE"),
-                {"state": "CANDIDATE_REFERENCE_POINT_ONLY"}):
+                {"state": CORRIDOR_DISPLAY_STATE},
+                []):
             with self.subTest(display=display):
-                document = self._publish(
-                    node, self._result([display]))
-                self.assertEqual(document["state"], "CLEARED")
-                self.assertEqual(document["corridors"], [])
+                node._progress_display_errors = 0
+                self.assertIsNone(self._build(node, snapshot, display))
+                self.assertEqual(node._progress_display_errors, 1)
 
 
 class VirtualEnvelopePublicationTest(unittest.TestCase):
@@ -1167,6 +1215,7 @@ class VirtualEnvelopePublicationTest(unittest.TestCase):
         published = []
         failures = []
         planning_debug = []
+        order = []
         node = UniformPlannerNode.__new__(UniformPlannerNode)
         hooks = VirtualABackendHooks(self.case["settings"])
         node._backend_hooks = hooks
@@ -1185,9 +1234,16 @@ class VirtualEnvelopePublicationTest(unittest.TestCase):
         node._publication_delay_s = None
         stamps = iter([(1000, 0), (1000, 10000000)])
         node._now = lambda: next(stamps)
-        node.playback_plan_pub = SimpleNamespace(publish=published.append)
-        node.planning_debug_pub = SimpleNamespace(
-            publish=planning_debug.append)
+        def record_envelope(message):
+            published.append(message)
+            order.append(("envelope", message))
+
+        def record_planning(message):
+            planning_debug.append(message)
+            order.append(("planning", message))
+
+        node.playback_plan_pub = SimpleNamespace(publish=record_envelope)
+        node.planning_debug_pub = SimpleNamespace(publish=record_planning)
         node._publish_status = lambda document: None
         node._publish_quality = lambda document: None
         node._base_status = lambda *args, **kwargs: dict(kwargs)
@@ -1213,15 +1269,65 @@ class VirtualEnvelopePublicationTest(unittest.TestCase):
         self.assertEqual(
             stamp, (int(envelope.trajectory.header.stamp.secs),
                     int(envelope.trajectory.header.stamp.nsecs)))
-        # C1 chains are not written to result.search until C2-B, so this
-        # result must publish an explicit empty corridor generation rather
+        # PUBLISHED is the ROS node's statement after the atomic envelope
+        # exists.  The pipeline itself never emits it, and the document must
+        # not precede the envelope on the wire.  This result has no C2
+        # corridor round, so the corridor layer is cleared explicitly rather
         # than leaving an older display latched.
+        self.assertEqual(
+            [kind for kind, _ in order], ["envelope", "planning"])
         self.assertEqual(len(planning_debug), 1)
-        cleared = json.loads(planning_debug[0].data)
-        self.assertEqual(cleared["state"], "CLEARED")
-        self.assertEqual(cleared["plan_id"], self.request.plan_id)
-        self.assertEqual(cleared["generation"], 0)
-        self.assertEqual(cleared["corridors"], [])
+        document = json.loads(planning_debug[0].data)
+        self.assertEqual(document["state"], PLANNING_PUBLISHED_STATE)
+        self.assertEqual(document["stage"], PLANNING_PUBLISHED_STATE)
+        self.assertEqual(document["stage_index"], 8)
+        self.assertEqual(document["model_sha256"], result.model_sha256)
+        self.assertEqual(document["plan_id"], self.request.plan_id)
+        self.assertEqual(document["generation"], 0)
+        self.assertIsNone(document["corridors"])
+
+
+class NodeMainResearchEntryTest(unittest.TestCase):
+    """The ROS params in main() reach hooks.settings.planner_config."""
+
+    def _run_main(self, params):
+        def get_param(name, default=None):
+            return params.get(name, default)
+
+        with patch.object(planner_node.rospy, "init_node"), \
+                patch.object(planner_node.rospy, "get_param",
+                             side_effect=get_param), \
+                patch.object(planner_node.rospy, "spin"), \
+                patch.object(planner_node.rospy, "loginfo") as loginfo, \
+                patch.object(planner_node.rospy, "logfatal") as logfatal, \
+                patch.object(planner_node, "UniformPlannerNode") as node_cls:
+            planner_node.main()
+        return node_cls, loginfo, logfatal
+
+    def test_main_builds_the_validated_research_config(self):
+        node_cls, loginfo, _logfatal = self._run_main({
+            "~backend": "virtual_rigid_a",
+            "~virtual_a_guidance_mode": " Corridor ",
+            "~virtual_a_corridor_enforcement": "HARD",
+        })
+        hooks = node_cls.call_args.kwargs["backend_hooks"]
+        config = hooks.settings.planner_config
+        self.assertEqual(config.guidance_mode, "corridor")
+        self.assertEqual(config.corridor_enforcement, "hard")
+        logged = loginfo.call_args_list[0].args
+        self.assertIn("validated planner config", logged[0])
+        self.assertEqual(logged[1], "corridor")
+        self.assertEqual(logged[2], "hard")
+
+    def test_main_fails_closed_on_unknown_values(self):
+        for params in (
+                {"~backend": "virtual_rigid_a",
+                 "~virtual_a_guidance_mode": "sideways"},
+                {"~backend": "virtual_rigid_a",
+                 "~virtual_a_corridor_enforcement": "loose"}):
+            with self.assertRaises(VirtualAContractError) as raised:
+                self._run_main(params)
+            self.assertEqual(raised.exception.reason, "INVALID_CONFIG")
 
 
 if __name__ == "__main__":

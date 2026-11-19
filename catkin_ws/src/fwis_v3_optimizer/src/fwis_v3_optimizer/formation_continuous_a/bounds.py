@@ -19,7 +19,19 @@ ANGLE_BUDGET_RAD = 1e-9
 POSITION_ROUNDOFF_GUARD_M = 1e-10
 ANGLE_ROUNDOFF_GUARD_RAD = 1e-11
 MAX_PANELS = 200000
-NUMERICS_VERSION = "virtual_rigid_a.numerics.g1.v2"
+# Versioned production numerics.  ``g1.v2`` is the historical global-triangle
+# M4 certificate with the 1e-10 m per-accumulation-panel guard; it is kept
+# byte-compatible so old serialized models can be rebuilt and verified.
+# ``g1.v3`` uses exact per-panel M4 bounds plus a derived float64 evaluation
+# guard for newly planned paths.  Reconstruction from a model document must
+# pass the version stored in that document; there is no "unknown means latest".
+NUMERICS_V2 = "virtual_rigid_a.numerics.g1.v2"
+NUMERICS_V3 = "virtual_rigid_a.numerics.g1.v3"
+SUPPORTED_NUMERICS_VERSIONS = frozenset((NUMERICS_V2, NUMERICS_V3))
+DEFAULT_NUMERICS_VERSION = NUMERICS_V3
+# Historical alias: the default for a *newly constructed* path.  Versioned
+# reconstruction must not rely on it (see ``geometry.VirtualAPath``).
+NUMERICS_VERSION = DEFAULT_NUMERICS_VERSION
 
 
 def _next_up(value):

@@ -17,7 +17,7 @@ import math
 
 from ..continuous_geometry import ControlKnot, MotionBlock
 from ..formation import FormationModel, FormationPose
-from . import bounds
+from . import bounds, integration_bounds
 from .contracts import (
     INITIAL_CURVATURE_TOLERANCE,
     INITIAL_HEADING_TOLERANCE_RAD,
@@ -58,6 +58,18 @@ def _finite(value, context):
 
 def _wrap(angle):
     return math.atan2(math.sin(angle), math.cos(angle))
+
+
+def _require_numerics_version(version):
+    """Fail closed unless ``version`` is one of the supported numerics."""
+    if not isinstance(version, str) or \
+            version not in bounds.SUPPORTED_NUMERICS_VERSIONS:
+        raise VirtualAContractError(
+            "UNKNOWN_NUMERICS_VERSION",
+            "numerics_version={!r} supported={}".format(
+                version, sorted(bounds.SUPPORTED_NUMERICS_VERSIONS)),
+            numerics_version=version)
+    return version
 
 
 def _require_side(side):
@@ -116,17 +128,30 @@ class C2CurvatureProfile:
 
     kind = "hermite_c2"
     serialization_ready = True
-    numerics_version = bounds.NUMERICS_VERSION
 
-    def __init__(self, knots, pieces, length_m, psi_prefix):
+    def __init__(self, knots, pieces, length_m, psi_prefix,
+                 numerics_version):
         self._knots = tuple(knots)
         self._pieces = tuple(pieces)
         self._length_m = float(length_m)
         self._psi_prefix = tuple(psi_prefix)
+        self._numerics_version = _require_numerics_version(numerics_version)
+
+    @property
+    def numerics_version(self):
+        return self._numerics_version
 
     @classmethod
-    def from_knots(cls, knots):
-        """Build and verify a C2 cubic-Hermite profile from shared knots."""
+    def from_knots(cls, knots, numerics_version=None):
+        """Build and verify a C2 cubic-Hermite profile from shared knots.
+
+        ``numerics_version=None`` means a newly planned profile and defaults
+        to the current production version (``g1.v3``).  Reconstruction from a
+        serialized model must pass the document's version explicitly.
+        """
+        version = _require_numerics_version(
+            bounds.DEFAULT_NUMERICS_VERSION if numerics_version is None
+            else numerics_version)
         try:
             supplied = tuple(knots)
         except TypeError as exc:
@@ -204,7 +229,7 @@ class C2CurvatureProfile:
                     u_left=u_left, u_right=u_right)
 
         profile = cls(supplied, pieces, supplied[-1].s,
-                      cls._exact_psi_prefix(pieces))
+                      cls._exact_psi_prefix(pieces), version)
         profile._verify_against_motion_block()
         return profile
 
@@ -393,7 +418,7 @@ class VirtualAPath:
     and only ``s=0`` is accepted.
     """
 
-    def __init__(self, start_qf, profile, model):
+    def __init__(self, start_qf, profile, model, numerics_version=None):
         if not isinstance(start_qf, FormationPose):
             raise VirtualAContractError(
                 "INVALID_FORMATION_POSE", "start_qf must be a FormationPose")
@@ -411,15 +436,46 @@ class VirtualAPath:
         if length <= 0.0:
             raise VirtualAContractError(
                 "INVALID_PROFILE", "a motion path needs length_m > 0")
+        profile_version = getattr(profile, "numerics_version", None)
+        if numerics_version is None:
+            if profile_version is None:
+                version = bounds.DEFAULT_NUMERICS_VERSION
+            elif profile_version in bounds.SUPPORTED_NUMERICS_VERSIONS:
+                version = profile_version
+            elif getattr(profile, "serialization_ready", True):
+                # A serializable profile must declare a supported version;
+                # there is no "unknown version means newest".
+                raise VirtualAContractError(
+                    "UNKNOWN_NUMERICS_VERSION",
+                    "serializable profile declares numerics_version={!r}; "
+                    "expected one of {}".format(
+                        profile_version,
+                        sorted(bounds.SUPPORTED_NUMERICS_VERSIONS)),
+                    numerics_version=profile_version)
+            else:
+                # Non-serializable diagnostic profiles (for example the
+                # analytic sin^3 benchmark) never reach a model document.
+                version = bounds.DEFAULT_NUMERICS_VERSION
+        else:
+            version = _require_numerics_version(numerics_version)
+            if (profile_version in bounds.SUPPORTED_NUMERICS_VERSIONS
+                    and profile_version != version):
+                raise VirtualAContractError(
+                    "NUMERICS_VERSION_MISMATCH",
+                    "path numerics_version={!r} but profile "
+                    "numerics_version={!r}".format(
+                        version, profile_version),
+                    path_version=version, profile_version=profile_version)
         self._start_qf = start_qf
         self._profile = profile
         self._model = model
         self._kernel = "motion"
         self._length_m = length
+        self._numerics_version = version
         self._plan_integration()
 
     @classmethod
-    def hold(cls, start_qf, model):
+    def hold(cls, start_qf, model, numerics_version=None):
         if not isinstance(start_qf, FormationPose):
             raise VirtualAContractError(
                 "INVALID_FORMATION_POSE", "start_qf must be a FormationPose")
@@ -427,23 +483,30 @@ class VirtualAPath:
             raise VirtualAContractError(
                 "INVALID_FORMATION_MODEL", "model must be a FormationModel")
         require_research_formation(model)
+        version = _require_numerics_version(
+            bounds.DEFAULT_NUMERICS_VERSION if numerics_version is None
+            else numerics_version)
         instance = cls.__new__(cls)
         instance._start_qf = start_qf
         instance._profile = None
         instance._model = model
         instance._kernel = "hold"
         instance._length_m = 0.0
+        instance._numerics_version = version
         instance._grids = ()
         instance._prefix_x = ()
         instance._prefix_y = ()
         instance._position_error_bound_m = 0.0
         instance._angle_error_bound_rad = 0.0
-        instance._budget = {
+        budget = {
             "kind": "hold",
             "position_error_bound_m": 0.0,
             "angle_error_bound_rad": 0.0,
             "total_panels": 0,
         }
+        if version == bounds.NUMERICS_V3:
+            budget["numerics_version"] = version
+        instance._budget = budget
         return instance
 
     @property
@@ -467,6 +530,10 @@ class VirtualAPath:
         return self._kernel
 
     @property
+    def numerics_version(self):
+        return self._numerics_version
+
+    @property
     def is_hold(self):
         return self._kernel == "hold"
 
@@ -483,6 +550,19 @@ class VirtualAPath:
         return dict(self._budget)
 
     def _plan_integration(self):
+        if self._numerics_version == bounds.NUMERICS_V2:
+            self._plan_integration_v2()
+        elif self._numerics_version == bounds.NUMERICS_V3:
+            self._plan_integration_v3()
+        else:
+            raise VirtualAContractError(
+                "UNKNOWN_NUMERICS_VERSION",
+                "no production integration planner for {!r}".format(
+                    self._numerics_version),
+                numerics_version=self._numerics_version)
+
+    def _plan_integration_v2(self):
+        # Historical certificate, kept byte-compatible for model replay.
         records = []
         max_kappa = 0.0
         for s0, s1 in self._profile.domain_segments:
@@ -540,37 +620,8 @@ class VirtualAPath:
             raise VirtualAContractError(
                 "BOUND_UNCONFIRMED", "Simpson refinement did not converge")
 
-        grids = []
-        prefix_x = [self._start_qf.x]
-        prefix_y = [self._start_qf.y]
-        for record in records:
-            h, panels = record["h"], record["panels"]
-            width = h / panels
-            psi = [
-                self._profile.psi_at(
-                    record["s1"] if index == panels
-                    else record["s0"] + index * width)
-                for index in range(panels + 1)]
-            fx = [math.cos(value + self._start_qf.psi) for value in psi]
-            fy = [math.sin(value + self._start_qf.psi) for value in psi]
-            cumulative_x = [0.0] * (panels + 1)
-            cumulative_y = [0.0] * (panels + 1)
-            for index in range(1, panels, 2):
-                factor = width / 3.0
-                cumulative_x[index + 1] = cumulative_x[index - 1] + factor * (
-                    fx[index - 1] + 4.0 * fx[index] + fx[index + 1])
-                cumulative_y[index + 1] = cumulative_y[index - 1] + factor * (
-                    fy[index - 1] + 4.0 * fy[index] + fy[index + 1])
-            grids.append({
-                "s0": record["s0"], "s1": record["s1"],
-                "h": h, "panels": panels, "width": width,
-                "cumulative_x": cumulative_x, "cumulative_y": cumulative_y,
-            })
-            prefix_x.append(prefix_x[-1] + cumulative_x[panels])
-            prefix_y.append(prefix_y[-1] + cumulative_y[panels])
-        self._grids = tuple(grids)
-        self._prefix_x = tuple(prefix_x)
-        self._prefix_y = tuple(prefix_y)
+        self._grids, self._prefix_x, self._prefix_y = \
+            self._build_grids(records)
         self._position_error_bound_m = total
         self._angle_error_bound_rad = angle_bound
         segment_budgets = budget["segment_budgets"]
@@ -608,7 +659,372 @@ class VirtualAPath:
                 record["full_panel_width_m"] for record in segment_budgets],
             "subinterval_widths_m": [
                 record["h"] / record["panels"] for record in records],
-            "numerics_version": bounds.NUMERICS_VERSION,
+            "numerics_version": self._numerics_version,
+        }
+
+    def _build_grids(self, records):
+        """Build the cached Simpson grids shared by v2 and v3.
+
+        The arithmetic is identical for both versions: the certificate differs,
+        not the sampled integral or ``state_at_s``.
+        """
+        grids = []
+        prefix_x = [self._start_qf.x]
+        prefix_y = [self._start_qf.y]
+        for record in records:
+            h, panels = record["h"], record["panels"]
+            width = h / panels
+            psi = [
+                self._profile.psi_at(
+                    record["s1"] if index == panels
+                    else record["s0"] + index * width)
+                for index in range(panels + 1)]
+            fx = [math.cos(value + self._start_qf.psi) for value in psi]
+            fy = [math.sin(value + self._start_qf.psi) for value in psi]
+            cumulative_x = [0.0] * (panels + 1)
+            cumulative_y = [0.0] * (panels + 1)
+            for index in range(1, panels, 2):
+                factor = width / 3.0
+                cumulative_x[index + 1] = cumulative_x[index - 1] + factor * (
+                    fx[index - 1] + 4.0 * fx[index] + fx[index + 1])
+                cumulative_y[index + 1] = cumulative_y[index - 1] + factor * (
+                    fy[index - 1] + 4.0 * fy[index] + fy[index + 1])
+            grids.append({
+                "s0": record["s0"], "s1": record["s1"],
+                "h": h, "panels": panels, "width": width,
+                "cumulative_x": cumulative_x, "cumulative_y": cumulative_y,
+            })
+            prefix_x.append(prefix_x[-1] + cumulative_x[panels])
+            prefix_y.append(prefix_y[-1] + cumulative_y[panels])
+        return tuple(grids), tuple(prefix_x), tuple(prefix_y)
+
+    def _plan_integration_v3(self):
+        """Production certificate with exact per-panel M4 and derived guard.
+
+        Each complete Simpson panel receives its own outward fourth-derivative
+        bound; one arbitrary-prefix local panel per piece is charged with the
+        maximum panel M4.  The float64 evaluation guard bounds the production
+        cached-grid Horner/trig/prefix arithmetic item by item (see
+        :func:`integration_bounds.production_evaluation_guard`).  The fixed
+        1e-7 m position contract, the angle budget and the independent audit
+        are unchanged.  A refinement is accepted only if the total bound
+        strictly decreases and quadrature is still the main improvable term;
+        otherwise the path fails closed instead of running to MAX_PANELS.
+        """
+        records = []
+        max_kappa = 0.0
+        for index, (s0, s1) in enumerate(self._profile.domain_segments):
+            piece_bounds = self._profile.interval_bounds(s0, s1)
+            # Adjacent pieces contribute zero-length records at a shared node;
+            # the interval itself is one positive-length Hermite piece.
+            pieces = tuple(
+                record for record in (piece_bounds.get("segments") or ())
+                if record.get("s1", 0.0) > record.get("s0", 0.0))
+            if len(pieces) != 1:
+                raise VirtualAContractError(
+                    "INVALID_PROFILE",
+                    "segment {} spans {} Hermite pieces".format(
+                        index, len(pieces)),
+                    index=index)
+            raw_coefficients = pieces[0].get("coefficients")
+            coefficients = None
+            if raw_coefficients is not None:
+                coefficients = tuple(
+                    _finite(value, "coefficient") for value in raw_coefficients)
+                if len(coefficients) != 4:
+                    raise VirtualAContractError(
+                        "INVALID_PROFILE",
+                        "segment {} needs four Hermite coefficients".format(
+                            index), index=index)
+            max_kappa = max(max_kappa, piece_bounds["k"][1])
+            kappa_envelope = max(
+                abs(piece_bounds["k"][0]), abs(piece_bounds["k"][1]))
+            if coefficients is not None:
+                coefficient_magnitude = sum(
+                    abs(value) for value in coefficients)
+            else:
+                # ``|psi_increment| <= h * max|k|`` also bounds the Horner
+                # intermediates the production guard charges.
+                coefficient_magnitude = kappa_envelope
+            # Non-serializable analytic diagnostic profiles expose only jet
+            # envelopes, not Hermite coefficients.  Their conservative global
+            # envelope is used per panel; planned C2 profiles use the exact
+            # per-panel fourth derivative.
+            envelope_m4 = bounds.m4_upper(
+                kappa_envelope,
+                max(abs(piece_bounds["eta"][0]), abs(piece_bounds["eta"][1])),
+                max(abs(piece_bounds["u"][0]), abs(piece_bounds["u"][1])),
+                max(abs(piece_bounds["g"][0]), abs(piece_bounds["g"][1])))
+            h = s1 - s0
+            records.append({
+                "s0": s0, "s1": s1, "h": h,
+                "coefficients": coefficients,
+                "coefficient_magnitude": coefficient_magnitude,
+                "envelope_m4": envelope_m4,
+                "panels": _even_at_least(h / MAX_PANEL_WIDTH_M),
+            })
+        initial_panels = [record["panels"] for record in records]
+        angle_bound = bounds.angle_budget(
+            self._profile.segment_count,
+            abs(self._start_qf.psi) + self._length_m * max_kappa)
+        if angle_bound > bounds.ANGLE_BUDGET_RAD:
+            raise VirtualAContractError(
+                "BOUND_UNCONFIRMED",
+                "angle bound {!r} exceeds budget".format(angle_bound),
+                angle_bound_rad=angle_bound)
+
+        panel_m4s = [None for _ in records]
+        segment_budgets = [None for _ in records]
+        segment_methods = [None for _ in records]
+
+        def refresh(index):
+            record = records[index]
+            try:
+                if record["coefficients"] is not None:
+                    m4s = integration_bounds.panel_m4_bounds(
+                        record["coefficients"][0], record["coefficients"][1],
+                        record["coefficients"][2], record["coefficients"][3],
+                        record["h"], record["panels"])
+                    method = "exact_interval_fourth_derivative_per_panel"
+                else:
+                    m4s = [record["envelope_m4"]] * (record["panels"] // 2)
+                    method = "analytic_interval_envelope_per_panel"
+                budget = integration_bounds.segment_budget(
+                    record["h"], record["panels"], m4s)
+            except (TypeError, ValueError, OverflowError) as exc:
+                raise VirtualAContractError(
+                    "BOUND_UNCONFIRMED",
+                    "unable to form per-panel M4 bounds: {}: {}".format(
+                        type(exc).__name__, exc),
+                    interval=index) from exc
+            for value in m4s:
+                if not math.isfinite(value) or value < 0.0:
+                    raise VirtualAContractError(
+                        "BOUND_UNCONFIRMED",
+                        "non-finite panel M4 bound",
+                        interval=index, value=value)
+            panel_m4s[index] = m4s
+            segment_budgets[index] = budget
+            segment_methods[index] = method
+
+        def evaluate():
+            for index in range(len(records)):
+                if segment_budgets[index] is None or \
+                        segment_budgets[index]["subintervals"] != \
+                        records[index]["panels"]:
+                    refresh(index)
+            quadrature = 0.0
+            for index in range(len(records)):
+                quadrature = bounds._next_up(
+                    quadrature
+                    + segment_budgets[index]["segment_remainder_m"])
+            evaluation = integration_bounds.production_evaluation_guard(
+                [(record["h"], record["panels"],
+                  record["coefficient_magnitude"])
+                 for record in records],
+                self._start_qf.psi,
+                max(abs(self._start_qf.x), abs(self._start_qf.y)))
+            angle = bounds._next_up(self._length_m * angle_bound)
+            per_coordinate = bounds._next_up(
+                bounds._next_up(quadrature
+                                + evaluation["total_evaluation_m"])
+                + angle)
+            total = bounds._next_up(
+                bounds._next_up(math.sqrt(2.0)) * per_coordinate)
+            return {
+                "quadrature": quadrature,
+                "evaluation": evaluation,
+                "angle": angle,
+                "per_coordinate": per_coordinate,
+                "total": total,
+            }
+
+        refinement_steps = 0
+        refined_segments = []
+        per_coordinate_budget = bounds._next_down(
+            bounds.POSITION_BUDGET_M / math.sqrt(2.0))
+        while True:
+            current = evaluate()
+            if current["total"] <= bounds.POSITION_BUDGET_M:
+                break
+            irreducible = bounds._next_up(
+                current["evaluation"]["total_evaluation_m"]
+                + current["angle"])
+            if irreducible >= per_coordinate_budget:
+                raise VirtualAContractError(
+                    "BOUND_UNCONFIRMED",
+                    "irreducible evaluation/angle guard {!r} already reaches "
+                    "the per-coordinate budget".format(irreducible),
+                    irreducible_m=irreducible,
+                    per_coordinate_budget_m=per_coordinate_budget,
+                    total_panels=sum(
+                        record["panels"] for record in records))
+            if refinement_steps >= 64:
+                raise VirtualAContractError(
+                    "BOUND_UNCONFIRMED",
+                    "v3 Simpson refinement did not converge")
+            worst = max(
+                range(len(records)),
+                key=lambda idx: segment_budgets[idx]["segment_remainder_m"])
+            previous_panels = records[worst]["panels"]
+            trial_panels = previous_panels * 2
+            trial_total_panels = (
+                sum(record["panels"] for record in records)
+                - previous_panels + trial_panels)
+            if trial_total_panels > MAX_PANELS:
+                raise VirtualAContractError(
+                    "BOUND_UNCONFIRMED",
+                    "Simpson refinement would exceed {} subintervals".format(
+                        MAX_PANELS),
+                    total_panels=trial_total_panels)
+            records[worst]["panels"] = trial_panels
+            trial = evaluate()
+            if not (trial["total"] < current["total"]):
+                raise VirtualAContractError(
+                    "BOUND_UNCONFIRMED",
+                    "doubling segment {} does not strictly decrease the "
+                    "total bound ({!r} -> {!r})".format(
+                        worst, current["total"], trial["total"]),
+                    interval=worst, total_panels=trial_total_panels)
+            if not (current["quadrature"] >= max(
+                    current["evaluation"]["total_evaluation_m"],
+                    current["angle"])):
+                raise VirtualAContractError(
+                    "BOUND_UNCONFIRMED",
+                    "quadrature is no longer the main improvable term",
+                    interval=worst,
+                    quadrature_m=current["quadrature"],
+                    evaluation_m=current["evaluation"]["total_evaluation_m"],
+                    angle_m=current["angle"])
+            refinement_steps += 1
+            refined_segments.append(worst)
+
+        self._grids, self._prefix_x, self._prefix_y = \
+            self._build_grids(records)
+        final = current
+        evaluation = final["evaluation"]
+        self._position_error_bound_m = final["total"]
+        self._angle_error_bound_rad = angle_bound
+        scale = bounds._next_up(math.sqrt(2.0))
+        segments = []
+        for index, record in enumerate(records):
+            budget = segment_budgets[index]
+            angle_share = bounds._next_up(record["h"] * angle_bound)
+            segment_total = bounds._next_up(
+                bounds._next_up(
+                    budget["segment_remainder_m"]
+                    + evaluation["segment_evaluation_m"][index])
+                + angle_share)
+            segments.append({
+                "segment_index": index,
+                "s0": record["s0"], "s1": record["s1"], "h": record["h"],
+                "subintervals": record["panels"],
+                "subinterval_width_m": budget["subinterval_width_m"],
+                "full_panel_count": budget["full_panel_count"],
+                "full_panel_width_m": budget["full_panel_width_m"],
+                "panel_m4_upper_m": list(panel_m4s[index]),
+                "maximum_panel_m4_upper_m":
+                    budget["maximum_panel_m4_upper_m"],
+                "m4_method": segment_methods[index],
+                "quadrature_full_remainder_m":
+                    budget["full_remainder_m"],
+                "quadrature_local_remainder_m":
+                    budget["local_remainder_m"],
+                "quadrature_remainder_m":
+                    budget["segment_remainder_m"],
+                "evaluation_guard_m":
+                    evaluation["segment_evaluation_m"][index],
+                "angle_guard_m": angle_share,
+                "per_coordinate_total_m": segment_total,
+            })
+        total_subintervals = sum(record["panels"] for record in records)
+        total_full_panels = sum(
+            budget["full_panel_count"] for budget in segment_budgets)
+        total_local_panels = sum(
+            budget["local_panel_count"] for budget in segment_budgets)
+        self._budget = {
+            "kind": "motion",
+            "numerics_version": self._numerics_version,
+            "position_error_bound_m": final["total"],
+            "angle_error_bound_rad": angle_bound,
+            "position_budget_m": bounds.POSITION_BUDGET_M,
+            "per_coordinate_budget_m": per_coordinate_budget,
+            "fixed_threshold_m": bounds.POSITION_BUDGET_M,
+            "confirmed": True,
+            "m4_method": (
+                "exact_interval_fourth_derivative_per_panel"
+                if all(method == "exact_interval_fourth_derivative_per_panel"
+                       for method in segment_methods)
+                else "analytic_interval_envelope_per_panel"
+                if all(method == "analytic_interval_envelope_per_panel"
+                       for method in segment_methods)
+                else "mixed_exact_and_analytic_envelope_per_panel"),
+            "quadrature_method": (
+                "sum of complete Simpson panels H^5*M4/2880 plus one local "
+                "panel per piece using the maximum panel M4"),
+            "outward_rounding_method": (
+                "IEEE-754 next_up successor after every product and sum; "
+                "piece coefficients widened by bounds.COEFFICIENT_ULPS; "
+                "Simpson panel endpoints widened outward; evaluation guard "
+                "outward rounded term by term"),
+            "per_coordinate_quadrature_m": final["quadrature"],
+            "per_coordinate_evaluation_m":
+                evaluation["total_evaluation_m"],
+            "per_coordinate_angle_m": final["angle"],
+            "per_coordinate_total_m": final["per_coordinate"],
+            "euclidean_scale": scale,
+            "total_budget_m": final["total"],
+            "total_panels": total_subintervals,
+            "total_full_simpson_panels": total_full_panels,
+            "local_simpson_panels_per_segment": 1,
+            "total_local_simpson_panels": total_local_panels,
+            "segments": segments,
+            "evaluation_guard_components": {
+                "method": evaluation["method"],
+                "formula": evaluation["formula"],
+                "epsilon": evaluation["epsilon"],
+                "psi_bound_rad": evaluation["psi_bound_rad"],
+                "per_segment_m":
+                    evaluation["segment_evaluation_m"],
+                "psi_accumulation_m": evaluation["psi_accumulation_m"],
+                "coordinate_accumulation_m":
+                    evaluation["coordinate_accumulation_m"],
+                "local_panel_included_per_segment":
+                    evaluation["local_panel_evaluation_included_per_segment"],
+            },
+            "panels_per_segment": [
+                record["panels"] for record in records],
+            "initial_panels_per_segment": initial_panels,
+            "refinement_steps": refinement_steps,
+            "refined_segments": refined_segments,
+            "m4_per_segment": [
+                budget["maximum_panel_m4_upper_m"]
+                for budget in segment_budgets],
+            "simpson_euclidean_m": bounds._next_up(
+                scale * final["quadrature"]),
+            "simpson_per_coordinate_m": final["quadrature"],
+            "simpson_panel_widths_m": [
+                budget["full_panel_width_m"]
+                for budget in segment_budgets],
+            "simpson_local_panel_widths_m": [
+                budget["local_panel_width_m"]
+                for budget in segment_budgets],
+            "simpson_full_remainders_m": [
+                budget["full_remainder_m"]
+                for budget in segment_budgets],
+            "simpson_local_remainders_m": [
+                budget["local_remainder_m"]
+                for budget in segment_budgets],
+            "simpson_segment_remainders_m": [
+                budget["segment_remainder_m"]
+                for budget in segment_budgets],
+            "floating_point_guard_m": bounds._next_up(
+                evaluation["total_evaluation_m"] + final["angle"]),
+            "panel_widths_m": [
+                budget["full_panel_width_m"]
+                for budget in segment_budgets],
+            "subinterval_widths_m": [
+                record["h"] / record["panels"] for record in records],
         }
 
     def _grid_index(self, s):

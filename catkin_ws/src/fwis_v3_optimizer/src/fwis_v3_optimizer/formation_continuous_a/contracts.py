@@ -25,6 +25,25 @@ G3_SCHEMA = "virtual_rigid_a.g3.contracts.v1"
 G4_SCHEMA = "virtual_rigid_a.g4.contracts.v1"
 G4_PLANNING_SCHEMA = "virtual_rigid_a.g4.planning_context.v1"
 REQUEST_SCHEMA = "virtual_rigid_a.g2.request.v1"
+# TASK 01 Step 1 display contract: the pipeline emits read-only stage events,
+# the planner node adds admission identity, and only the node may report
+# PUBLISHED after the atomic playback envelope is actually on the wire.
+PROGRESS_SCHEMA = "virtual_a_progress/v1"
+PROGRESS_STAGES = (
+    "REQUEST_ADMITTED",
+    "ASTAR_SEARCH",
+    "CORRIDOR_BUILD",
+    "PORTAL_GUIDE",
+    "NLP_SOLVE",
+    "GEOMETRY_AUDIT",
+    "DYNAMICS_AUDIT",
+    "OBB_COLLISION_AUDIT",
+    "PUBLISHED",
+)
+PROGRESS_STAGE_INDEX = {
+    stage: index for index, stage in enumerate(PROGRESS_STAGES)}
+PROGRESS_STATES = frozenset(("PLANNING", "FAILED", "PUBLISHED"))
+PROGRESS_FAILED_STAGE = "FAILED"
 GEOMETRY_SCOPE = "GEOMETRY"
 DYNAMICS_SCOPE = "DYNAMICS"
 COLLISION_SCOPE = "COLLISION"
@@ -1038,6 +1057,39 @@ def validate_planner_config(config):
         corridor_box_padding_m=box_padding)
 
 
+def research_planner_config(guidance_mode="corridor",
+                            corridor_enforcement="hard", **overrides):
+    """Build the default virtual-A research planner configuration.
+
+    Only the two entry-point choices are preset.  Every historical
+    ``PlannerConfig`` default, ``as_dict`` echo and ``from_dict`` round trip
+    is unchanged: legacy callers that construct ``PlannerConfig()`` directly
+    still receive ``legacy_route``.  Guidance and enforcement are normalized
+    before validation, so the returned frozen config is exactly what the
+    planner consumes.  Unknown values fail here rather than at solve time.
+    """
+    if not isinstance(guidance_mode, str):
+        raise VirtualAContractError(
+            "INVALID_CONFIG",
+            "guidance_mode must be a string, got {!r}".format(guidance_mode))
+    if not isinstance(corridor_enforcement, str):
+        raise VirtualAContractError(
+            "INVALID_CONFIG",
+            "corridor_enforcement must be a string, got {!r}".format(
+                corridor_enforcement))
+    guidance = guidance_mode.strip().lower()
+    enforcement = corridor_enforcement.strip().lower()
+    config = PlannerConfig(
+        guidance_mode=guidance,
+        corridor_enforcement=enforcement,
+        **overrides)
+    validation = validate_planner_config(config)
+    if not validation.passed:
+        raise VirtualAContractError(
+            validation.reason, validation.detail, **validation.location)
+    return config
+
+
 def validate_geometry_audit_config(config):
     """Validate every independent-audit limit before it is used.
 
@@ -1164,6 +1216,51 @@ class InitialGuess:
 
     def as_dict(self):
         return self.reconstruct()
+
+
+@dataclass(frozen=True)
+class HeadingBranch:
+    """One finite unwrapped endpoint-heading candidate for a guide.
+
+    TASK 01 Step 3: the curvature path's endpoint heading is
+    ``base + 2*pi*k``.  ``base_heading_rad`` is the shortest physical wrap,
+    ``winding_k`` is the integer branch, and ``unwrapped_heading_rad`` is the
+    value the NLP endpoint equality and the initial packet actually use.  The
+    physical request goal pose is never rewritten.  ``guide_turn_rad`` is the
+    accumulated guide-tangent turn used to rank the branch (``None`` when no
+    reliable guide exists); ``candidate_rank`` is the 0-based position in the
+    deterministic finite candidate ordering.
+    """
+
+    base_heading_rad: float
+    winding_k: int
+    unwrapped_heading_rad: float
+    guide_turn_rad: float = None
+    source: str = "no_reliable_guide"
+    candidate_rank: int = 0
+
+    def __post_init__(self):
+        object.__setattr__(self, "base_heading_rad",
+                           float(self.base_heading_rad))
+        object.__setattr__(self, "winding_k", int(self.winding_k))
+        object.__setattr__(
+            self, "unwrapped_heading_rad",
+            float(self.unwrapped_heading_rad))
+        if self.guide_turn_rad is not None:
+            object.__setattr__(self, "guide_turn_rad",
+                               float(self.guide_turn_rad))
+        object.__setattr__(self, "candidate_rank", int(self.candidate_rank))
+        object.__setattr__(self, "source", str(self.source))
+
+    def as_dict(self):
+        return {
+            "base_heading_rad": self.base_heading_rad,
+            "winding_k": self.winding_k,
+            "unwrapped_heading_rad": self.unwrapped_heading_rad,
+            "guide_turn_rad": self.guide_turn_rad,
+            "source": self.source,
+            "candidate_rank": self.candidate_rank,
+        }
 
 
 @dataclass(frozen=True)
@@ -1346,6 +1443,20 @@ class AttemptRecord:
     soft_deadline_triggered: bool = False
     deadline_trigger_stage: str = ""
     remaining_budget_s: float = None
+    # Step 3 branch evidence: the same HeadingBranch object that produced the
+    # initial packet and the NLP endpoint equality.
+    heading_base_rad: float = None
+    winding_k: int = None
+    guide_turn_rad: float = None
+    # Step 4 S-domain evidence: the finite domain this attempt was solved in,
+    # the solved S and whether that S sits on the upper bound.  ``upper_active``
+    # is decided by the packet tolerance, never by a solver status string.
+    distance_m: float = None
+    guide_length_m: float = None
+    s_lower_m: float = None
+    s_upper_m: float = None
+    s_solution_m: float = None
+    s_upper_active: bool = None
 
     @property
     def candidate_audit(self):
@@ -1375,6 +1486,24 @@ class AttemptRecord:
             "deadline_trigger_stage": self.deadline_trigger_stage,
             "remaining_budget_s": self.remaining_budget_s,
         }
+        if self.heading_base_rad is not None:
+            payload["heading_base_rad"] = self.heading_base_rad
+        if self.winding_k is not None:
+            payload["winding_k"] = self.winding_k
+        if self.guide_turn_rad is not None:
+            payload["guide_turn_rad"] = self.guide_turn_rad
+        if self.distance_m is not None:
+            payload["distance_m"] = self.distance_m
+        if self.guide_length_m is not None:
+            payload["guide_length_m"] = self.guide_length_m
+        if self.s_lower_m is not None:
+            payload["S_lower_m"] = self.s_lower_m
+        if self.s_upper_m is not None:
+            payload["S_upper_m"] = self.s_upper_m
+        if self.s_solution_m is not None:
+            payload["S_solution_m"] = self.s_solution_m
+        if self.s_upper_active is not None:
+            payload["upper_active"] = self.s_upper_active
         if self.corridor_residual_m is not None:
             payload["corridor_residual_m"] = self.corridor_residual_m
         return payload
@@ -1400,6 +1529,11 @@ class GeometryResult:
     deadline_summary: dict = field(default_factory=dict)
     # C3 record only: number of initial guesses this solve was scheduled with.
     initial_count: int = 0
+    # C2-B evidence: actual scalar halfspaces built for the NLP and the
+    # maximum halfspace excess of the returned candidate (or of the recorded
+    # attempts on failure).  ``None`` means no corridor was constructed.
+    corridor_halfspace_constraint_count: int = None
+    corridor_max_residual_m: float = None
 
     def __post_init__(self):
         if self.status not in GEOMETRY_STATUSES:
@@ -1436,6 +1570,9 @@ class GeometryResult:
             "deadline_exhausted": self.deadline_exhausted,
             "deadline_summary": self.deadline_summary,
             "initial_count": self.initial_count,
+            "corridor_halfspace_constraint_count":
+                self.corridor_halfspace_constraint_count,
+            "corridor_max_residual_m": self.corridor_max_residual_m,
             "path": path_summary,
             "audit": self.audit.as_dict() if hasattr(
                 self.audit, "as_dict") else None,
@@ -2833,6 +2970,9 @@ def request_from_payload(payload):
 
 __all__ = [
     "G4_SCHEMA", "G4_PLANNING_SCHEMA", "COLLISION_SCOPE",
+    "PROGRESS_SCHEMA", "PROGRESS_STAGES", "PROGRESS_STAGE_INDEX",
+    "PROGRESS_STATES", "PROGRESS_FAILED_STAGE",
+    "PlannerConfig", "research_planner_config", "HeadingBranch",
     "G4_RESULT_STATUSES", "G4_EXECUTABLE_STATUSES",
     "PLAYBACK_SEMANTIC_VERSION", "PLAYBACK_CERTIFICATION",
     "CollisionConfig", "RouteGuideConfig", "GuideRoute", "ObstacleContext",

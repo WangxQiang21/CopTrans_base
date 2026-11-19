@@ -36,6 +36,7 @@ from fwis_v3_optimizer.formation_continuous_a.audit import (
     audit_geometry,
 )
 from fwis_v3_optimizer.formation_continuous_a import audit as audit_module
+from fwis_v3_optimizer.formation_continuous_a import bounds as bounds_module
 from fwis_v3_optimizer.formation_continuous_a.timing import retime_path
 from fwis_v3_optimizer.formation_continuous_a.trajectory import (
     VirtualATimedPlan,
@@ -1497,6 +1498,70 @@ class G3HoldAndFailClosedTests(unittest.TestCase):
                 self.assertFalse(report.passed)
                 self.assertEqual(report.reason, "INVALID_AUDIT_CONFIG")
                 self.assertEqual(report.location["field"], field)
+
+
+class VersionedAuditBindingTests(unittest.TestCase):
+    """Step 5: the audit accepts both supported numerics and rejects swaps."""
+
+    @classmethod
+    def setUpClass(cls):
+        request, path = g_jump_request_and_path()
+        result = retime_path(request, path, TimingConfig())
+        cls.request = request
+        cls.plan = result.plan
+        cls.config = DynamicAuditConfig()
+
+    def _tampered(self, mutate):
+        import copy
+        plan = copy.deepcopy(self.plan)
+        mutate(plan._model_core)
+        return audit_dynamics(self.request, plan, self.config)
+
+    def test_v3_plan_passes_with_v3_declared_everywhere(self):
+        report = audit_dynamics(self.request, self.plan, self.config)
+        self.assertTrue(report.passed, report.as_dict())
+        core = self.plan._model_core
+        self.assertEqual(core["numerics"]["version"],
+                         bounds_module.NUMERICS_V3)
+        self.assertEqual(core["path"]["profile"]["numerics_version"],
+                         bounds_module.NUMERICS_V3)
+
+    def test_tampered_numerics_version_is_rejected(self):
+        cases = (
+            ("unknown_numerics",
+             lambda core: core["numerics"].__setitem__(
+                 "version", "other"),
+             "UNKNOWN_NUMERICS_VERSION"),
+            ("unknown_profile",
+             lambda core: core["path"]["profile"].__setitem__(
+                 "numerics_version", "other"),
+             "UNSUPPORTED_PROFILE"),
+            ("profile_v2_numerics_v3",
+             lambda core: core["path"]["profile"].__setitem__(
+                 "numerics_version", bounds_module.NUMERICS_V2),
+             "MODEL_NUMERICS_MISMATCH"),
+            ("numerics_v2_profile_v3",
+             lambda core: core["numerics"].__setitem__(
+                 "version", bounds_module.NUMERICS_V2),
+             "MODEL_NUMERICS_MISMATCH"),
+        )
+        for name, mutate, expected in cases:
+            with self.subTest(case=name):
+                report = self._tampered(mutate)
+                self.assertFalse(report.passed)
+                self.assertEqual(report.reason, expected)
+
+    def test_v3_budget_swapped_for_a_v2_budget_is_rejected(self):
+        def mutate(core):
+            core["path"]["integration_budget"] = {
+                "kind": "motion",
+                "position_error_bound_m": 0.0,
+                "angle_error_bound_rad": 0.0,
+                "total_panels": 0,
+            }
+        report = self._tampered(mutate)
+        self.assertFalse(report.passed)
+        self.assertEqual(report.reason, "MODEL_NUMERICS_MISMATCH")
 
 
 if __name__ == "__main__":

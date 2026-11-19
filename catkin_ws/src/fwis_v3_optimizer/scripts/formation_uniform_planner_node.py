@@ -16,6 +16,7 @@ and playback can ignore a non-admitted request.  Busy release is driven by the
 real playback terminal state (``/formation/playback_status`` reaching
 HOLD_END) or by an explicit failure -- not by "a trajectory was published".
 """
+from collections.abc import Mapping
 from dataclasses import replace
 import json
 import math
@@ -39,10 +40,24 @@ from fwis_v3_msgs.msg import (
 
 from fwis_v3_optimizer.core import Grid
 from fwis_v3_optimizer.formation import FormationModel
+from fwis_v3_optimizer.formation_continuous_a.contracts import (
+    PROGRESS_FAILED_STAGE,
+    PROGRESS_SCHEMA,
+    PROGRESS_STAGE_INDEX,
+    PROGRESS_STAGES,
+    PROGRESS_STATES,
+)
 from fwis_v3_optimizer.formation_playback import (
+    CANDIDATE_CERTIFIED,
+    CANDIDATE_UNVERIFIED,
+    PLANNING_DEBUG_SCHEMA,
+    PLANNING_FAILED_STATE,
+    PLANNING_PUBLISHED_STATE,
     PLAYBACK_PLAN_BACKEND,
     PLAYBACK_PLAN_SCHEMA,
+    failure_point_from_result,
     fields_from_timed_message,
+    sample_candidate_path,
     verify_uniform_playback_plan,
 )
 from fwis_v3_optimizer.formation_quality import grid_signature
@@ -107,6 +122,21 @@ def _status_word(pipeline_status):
 
 def _json(data):
     return json.dumps(data, sort_keys=True, allow_nan=False)
+
+
+def _is_sha256_text(value):
+    return (isinstance(value, str) and len(value) == 64
+            and all(character in "0123456789abcdef" for character in value))
+
+
+def _progress_metrics_copy(metrics):
+    """JSON-safe copy of real progress metrics, or ``None`` if not finite."""
+    if not isinstance(metrics, Mapping):
+        return None
+    try:
+        return json.loads(json.dumps(dict(metrics), allow_nan=False))
+    except (TypeError, ValueError):
+        return None
 
 
 def _finite(value, context):
@@ -466,6 +496,13 @@ class UniformPlannerNode(object):
         self._virtual_context_sha256 = None
         self._virtual_grid_sha256 = None
         self._virtual_admission = None
+        # TASK 01 progressive planning display.  Each accepted stage document
+        # replaces only its own layer; previously completed display data is
+        # retained so a FAILED document freezes the last real geometry.
+        self._progress_display_errors = 0
+        self._progress_display_disabled = set()
+        self._progress_layers = {}
+        self._planning_progress = None
 
         self.status_pub = rospy.Publisher(
             STATUS_TOPIC, String, queue_size=1, latch=True)
@@ -657,63 +694,500 @@ class UniformPlannerNode(object):
             guide_source=guide.get("source"),
             corridor_used=True)
 
-    def _publish_corridor_debug(self, generation, plan_id, snapshot, result):
-        from fwis_v3_optimizer.formation_continuous_a.corridor import (
-            CORRIDOR_DISPLAYS_KEY,
-            CORRIDOR_DISPLAY_STATE,
-        )
-        identity = {
-            "state": CORRIDOR_DISPLAY_STATE,
+    # ---- progressive planning display (TASK 01 Step 1) ----------------
+
+    def _progress_disabled_set(self):
+        disabled = getattr(self, "_progress_display_disabled", None)
+        if not isinstance(disabled, set):
+            disabled = set()
+            self._progress_display_disabled = disabled
+        return disabled
+
+    def _progress_layers_for(self, generation):
+        layers = getattr(self, "_progress_layers", None)
+        if not isinstance(layers, dict):
+            layers = {}
+            self._progress_layers = layers
+        generation = int(generation)
+        current = layers.get(generation)
+        if not isinstance(current, dict):
+            current = {"astar": None, "corridors": None, "candidates": None}
+            layers[generation] = current
+        return current
+
+    def _record_progress_display_error(self, generation, plan_id, layer, exc):
+        self._progress_display_errors = int(
+            getattr(self, "_progress_display_errors", 0)) + 1
+        rospy.logerr(
+            "[uniform planner] PROGRESS_DISPLAY_ERROR plan %s generation %s "
+            "layer=%s: %s: %s; planning and audits continue",
+            plan_id, generation, layer, type(exc).__name__, exc)
+
+    def _planning_identity(self, generation, plan_id, snapshot, state,
+                           model_sha256=None):
+        """Admission identity for one progressive planning document."""
+        admission = getattr(self, "_virtual_admission", None)
+        if not isinstance(admission, Mapping):
+            return None
+        if snapshot is None or snapshot.formation_id != admission.get(
+                "formation_id"):
+            return None
+        for name in ("request_sha256", "grid_sha256",
+                     "planning_context_sha256"):
+            if not _is_sha256_text(admission.get(name)):
+                return None
+        return {
+            "schema": PLANNING_DEBUG_SCHEMA,
+            "state": state,
             "plan_id": int(plan_id),
             "formation_id": snapshot.formation_id,
             "backend": self.backend,
             "generation": int(generation),
-            "grid_sha256": result.grid_sha256,
-            "planning_context_sha256": result.planning_context_sha256,
-            "model_sha256": (result.model_sha256 or None),
+            "request_sha256": admission["request_sha256"],
+            "grid_sha256": admission["grid_sha256"],
+            "planning_context_sha256": admission["planning_context_sha256"],
+            "model_sha256": model_sha256,
+        }
+
+    def _corridor_displays(self, generation, plan_id, snapshot, view,
+                           identity):
+        """The actual display payload for the current corridor round.
+
+        Reuses ``_display_from_corridor_round()`` so corridor geometry is never
+        copied here.  Returns ``None`` (and records PROGRESS_DISPLAY_ERROR) if
+        the display cannot be built; the caller then clears only the
+        corridor/guide layer and planning continues.
+        """
+        from fwis_v3_optimizer.formation_continuous_a.corridor import (
+            CORRIDOR_DISPLAYS_KEY,
+            CORRIDOR_DISPLAY_STATE,
+        )
+        try:
+            if view is None:
+                raise ValueError("corridor display needs a real result view")
+            for name in ("grid_sha256", "planning_context_sha256"):
+                value = getattr(view, name, None)
+                if value is not None and value != identity[name]:
+                    raise ValueError(
+                        "display view {} differs from the admission".format(
+                            name))
+            display_identity = dict(identity)
+            display_identity["state"] = CORRIDOR_DISPLAY_STATE
+            display = self._display_from_corridor_round(
+                display_identity, view)
+            displays = ([] if display is None else [display])
+            if not displays:
+                displays = view.search.get(CORRIDOR_DISPLAYS_KEY)
+            if not isinstance(displays, (list, tuple)) or not displays:
+                raise ValueError(
+                    "no actual corridor display exists for this round")
+            checked = []
+            for entry in displays:
+                if not isinstance(entry, Mapping):
+                    raise ValueError("corridor display must be an object")
+                if entry.get("state") != CORRIDOR_DISPLAY_STATE:
+                    raise ValueError("corridor display state differs")
+                for name in ("plan_id", "formation_id", "backend",
+                             "generation", "grid_sha256",
+                             "planning_context_sha256", "model_sha256"):
+                    if entry.get(name) != identity[name]:
+                        raise ValueError(
+                            "corridor display {} differs from the "
+                            "admission".format(name))
+                if entry.get("chain_digest") is None:
+                    raise ValueError("corridor display lacks a chain digest")
+                if not entry.get("regions"):
+                    raise ValueError("corridor display has no regions")
+                checked.append(dict(entry))
+        except (KeyError, TypeError, ValueError) as exc:
+            self._record_progress_display_error(
+                generation, plan_id, "corridors", exc)
+            return None
+        return checked
+
+    @staticmethod
+    def _astar_payload(astar):
+        """JSON-safe copy of the real raw A* routes (display only)."""
+        if not isinstance(astar, (list, tuple)):
+            raise ValueError("astar payload must be a list")
+        entries = []
+        for entry in astar:
+            if not isinstance(entry, Mapping):
+                raise ValueError("astar route must be an object")
+            route_id = entry.get("route_id")
+            if (not isinstance(route_id, int) or isinstance(route_id, bool)
+                    or route_id < 0):
+                raise ValueError("astar route_id must be non-negative")
+            points = entry.get("points")
+            if not isinstance(points, (list, tuple)) or len(points) < 2:
+                raise ValueError("astar route needs at least two points")
+            copied = []
+            for point in points:
+                if not isinstance(point, (list, tuple)) or len(point) != 2:
+                    raise ValueError("astar point must be a pair")
+                copied.append([
+                    _finite(point[0], "astar point x"),
+                    _finite(point[1], "astar point y")])
+            entries.append({"route_id": int(route_id), "points": copied})
+        return entries
+
+    def _candidate_payload(self, path, classification, plan_id, status,
+                           failure):
+        shapes = getattr(self._virtual_request, "vehicle_shapes", None)
+        return sample_candidate_path(
+            path, shapes, classification=classification,
+            source="plan {} {}".format(plan_id, self.backend),
+            status=str(status or ""), failure=failure)
+
+    def _progress_document(self, generation, plan_id, snapshot, event):
+        """Validate one pipeline event and build its progressive document.
+
+        Identity, stage order and admission digests fail closed: a late or
+        mismatched event returns ``None`` and never clears an existing layer.
+        Display-only construction failures clear only the affected layer.
+        """
+        if not isinstance(event, Mapping):
+            return None
+        if event.get("schema") != PROGRESS_SCHEMA:
+            return None
+        stage = event.get("stage")
+        state = event.get("state")
+        if state not in (PLANNING, PLANNING_FAILED_STATE):
+            # PUBLISHED is the ROS node's statement after the atomic envelope
+            # is actually published; the pipeline may never claim it.
+            return None
+        if stage not in PROGRESS_STAGE_INDEX \
+                and stage != PROGRESS_FAILED_STAGE:
+            return None
+        if (state == PLANNING_FAILED_STATE) != (
+                stage == PROGRESS_FAILED_STAGE):
+            return None
+        stage_index = event.get("stage_index")
+        if isinstance(stage_index, bool) or not isinstance(stage_index, int):
+            return None
+        if stage == PROGRESS_FAILED_STAGE:
+            if not 0 <= stage_index <= len(PROGRESS_STAGES) - 1:
+                return None
+        elif stage_index != PROGRESS_STAGE_INDEX[stage]:
+            return None
+        if int(generation) != int(getattr(self, "_generation", -1)):
+            return None
+        if getattr(self, "_state", None) != PLANNING:
+            return None
+        if getattr(self, "_state_plan", None) != plan_id:
+            return None
+        if getattr(self, "_virtual_snapshot", None) is not snapshot:
+            return None
+        admission = getattr(self, "_virtual_admission", None)
+        if not isinstance(admission, Mapping):
+            return None
+        for name in ("request_sha256", "grid_sha256",
+                     "planning_context_sha256"):
+            value = event.get(name)
+            if not _is_sha256_text(value) or value != admission.get(name):
+                return None
+        map_signature = getattr(self, "_map_signature", None)
+        request_signature = getattr(self, "_request_map_signature", None)
+        if (map_signature is not None and request_signature is not None
+                and map_signature != request_signature):
+            return None
+        elapsed = event.get("elapsed_s")
+        if (isinstance(elapsed, bool)
+                or not isinstance(elapsed, (int, float))
+                or not math.isfinite(float(elapsed))
+                or float(elapsed) < 0.0):
+            elapsed = 0.0
+        route_index = event.get("route_index")
+        if isinstance(route_index, bool) or not isinstance(route_index, int):
+            route_index = None
+        route_count = event.get("route_count")
+        if (isinstance(route_count, bool)
+                or not isinstance(route_count, int) or route_count < 0):
+            route_count = 0
+        round_index = event.get("round_index")
+        if isinstance(round_index, bool) or not isinstance(round_index, int):
+            round_index = None
+        metrics = _progress_metrics_copy(event.get("metrics"))
+        if metrics is None:
+            self._record_progress_display_error(
+                generation, plan_id, "metrics",
+                ValueError("progress metrics are not finite JSON"))
+            metrics = {}
+        reason = str(metrics.get("reason") or "")
+        detail = str(metrics.get("detail") or "")
+        if state == PLANNING_FAILED_STATE and not reason:
+            reason = str(metrics.get("status") or "FAILED")
+        identity = self._planning_identity(
+            generation, plan_id, snapshot, state)
+        if identity is None:
+            return None
+        document = dict(identity)
+        document.update({
+            "stage": stage,
+            "stage_index": int(stage_index),
+            "elapsed_s": float(elapsed),
+            "route_index": route_index,
+            "route_count": int(route_count),
+            "round_index": round_index,
+            "reason": reason,
+            "detail": detail,
+            "metrics": metrics,
+        })
+        layers = self._progress_layers_for(generation)
+        display = event.get("diagnostic_display")
+        if isinstance(display, Mapping):
+            astar = display.get("astar")
+            if astar is not None:
+                try:
+                    layers["astar"] = self._astar_payload(astar)
+                except (TypeError, ValueError) as exc:
+                    self._record_progress_display_error(
+                        generation, plan_id, "astar", exc)
+                    layers["astar"] = None
+                    document["astar"] = None
+            view = display.get("result")
+            if view is not None:
+                displays = self._corridor_displays(
+                    generation, plan_id, snapshot, view, identity)
+                layers["corridors"] = displays
+                document["corridors"] = displays
+        if "astar" not in document and layers["astar"] is not None:
+            document["astar"] = layers["astar"]
+        if "corridors" not in document and layers["corridors"] is not None:
+            document["corridors"] = layers["corridors"]
+        path = event.get("diagnostic_path")
+        if path is not None and callable(getattr(path, "state_at_s", None)):
+            try:
+                payload = self._candidate_payload(
+                    path, CANDIDATE_UNVERIFIED, plan_id,
+                    metrics.get("status"), None)
+            except (TypeError, ValueError) as exc:
+                self._record_progress_display_error(
+                    generation, plan_id, "candidates", exc)
+                layers["candidates"] = None
+                document["candidates"] = None
+            else:
+                layers["candidates"] = payload
+                document["candidates"] = payload
+        elif layers["candidates"] is not None:
+            document["candidates"] = layers["candidates"]
+        self._planning_progress = {
+            "stage": stage,
+            "stage_index": int(stage_index),
+            "state": state,
+            "elapsed_s": float(elapsed),
+            "route_index": route_index,
+            "route_count": int(route_count),
+            "round_index": round_index,
+            "reason": reason,
+        }
+        return document
+
+    def _on_virtual_progress(self, generation, plan_id, snapshot, event):
+        """Worker-thread progress callback: display only, never planning."""
+        disabled = self._progress_disabled_set()
+        if int(generation) in disabled:
+            return
+        try:
+            with self._lock:
+                if int(generation) in disabled:
+                    return
+                document = self._progress_document(
+                    generation, plan_id, snapshot, event)
+                if document is None:
+                    return
+                self._publish_planning_debug(document)
+        except Exception as exc:
+            # An unexpected document-level failure disables later display
+            # callbacks for this request only; the pipeline and its audits
+            # continue and the final terminal document still publishes.
+            disabled.add(int(generation))
+            self._progress_display_errors = int(
+                getattr(self, "_progress_display_errors", 0)) + 1
+            rospy.logerr(
+                "[uniform planner] PROGRESS_DISPLAY_ERROR plan %s "
+                "generation %s: %s: %s; further progress display for this "
+                "request is disabled, planning and audits continue",
+                plan_id, generation, type(exc).__name__, exc)
+
+    def _emit_request_admitted(self, generation, plan_id, snapshot, admission):
+        event = {
+            "schema": PROGRESS_SCHEMA,
+            "stage": "REQUEST_ADMITTED",
+            "stage_index": int(PROGRESS_STAGE_INDEX["REQUEST_ADMITTED"]),
+            "state": PLANNING,
+            "elapsed_s": 0.0,
+            "route_index": None,
+            "route_count": 0,
+            "round_index": None,
+            "request_sha256": admission["request_sha256"],
+            "grid_sha256": admission["grid_sha256"],
+            "planning_context_sha256": admission["planning_context_sha256"],
+            "metrics": {"phase": "admitted"},
+            "diagnostic_path": None,
+            "diagnostic_display": {"astar": None, "result": None},
+        }
+        self._on_virtual_progress(generation, plan_id, snapshot, event)
+
+    def _progress_stage_snapshot(self):
+        progress = getattr(self, "_planning_progress", None)
+        if not isinstance(progress, Mapping):
+            return 0, None, 0, None
+        stage_index = progress.get("stage_index")
+        if (isinstance(stage_index, int) and not isinstance(stage_index, bool)
+                and 0 <= stage_index <= len(PROGRESS_STAGES) - 1):
+            pass
+        else:
+            stage_index = 0
+        route_index = progress.get("route_index")
+        if isinstance(route_index, bool) or not isinstance(route_index, int):
+            route_index = None
+        route_count = progress.get("route_count")
+        if (isinstance(route_count, bool)
+                or not isinstance(route_count, int) or route_count < 0):
+            route_count = 0
+        round_index = progress.get("round_index")
+        if isinstance(round_index, bool) or not isinstance(round_index, int):
+            round_index = None
+        return int(stage_index), route_index, int(route_count), round_index
+
+    def _publish_planning_failed(self, generation, plan_id, snapshot, result,
+                                 reason, detail, layer, wall_time_s):
+        """Final FAILED document: freeze every layer already drawn."""
+        if getattr(self, "_backend_hooks", None) is None:
+            return
+        identity = self._planning_identity(
+            generation, plan_id, snapshot, PLANNING_FAILED_STATE)
+        if identity is None:
+            return
+        stage_index, route_index, route_count, round_index = \
+            self._progress_stage_snapshot()
+        wall_time_s = float(wall_time_s)
+        document = dict(identity)
+        document.update({
+            "stage": PROGRESS_FAILED_STAGE,
+            "stage_index": int(stage_index),
+            "elapsed_s": wall_time_s,
+            "route_index": route_index,
+            "route_count": int(route_count),
+            "round_index": round_index,
+            "reason": str(reason or ""),
+            "detail": str(detail or ""),
+            "metrics": {
+                "phase": "failed",
+                "status": str(getattr(result, "status", "") or ""),
+                "reason": str(reason or ""),
+                "detail": str(detail or ""),
+                "first_failure_layer": str(layer or ""),
+                "wall_time_s": wall_time_s,
+            },
+        })
+        layers = self._progress_layers_for(generation)
+        if layers["astar"] is not None:
+            document["astar"] = layers["astar"]
+        if layers["corridors"] is not None:
+            document["corridors"] = layers["corridors"]
+        candidates = layers["candidates"]
+        failure = failure_point_from_result(result)
+        path = getattr(result, "path", None)
+        if path is not None and callable(getattr(path, "state_at_s", None)):
+            try:
+                candidates = self._candidate_payload(
+                    path, CANDIDATE_UNVERIFIED, plan_id,
+                    getattr(result, "status", ""), failure)
+                layers["candidates"] = candidates
+            except (TypeError, ValueError) as exc:
+                self._record_progress_display_error(
+                    generation, plan_id, "candidates", exc)
+                candidates = None
+        elif candidates is not None and failure is not None:
+            # The retained candidate is real; the failure point is a separate
+            # real audit coordinate.  Keep both, labelled by their sources.
+            candidates = dict(candidates)
+            candidates["failure"] = failure
+        if candidates is not None:
+            document["candidates"] = candidates
+        else:
+            document["candidates"] = None
+            if failure is not None:
+                document["failure"] = failure
+        self._planning_progress = {
+            "stage": PROGRESS_FAILED_STAGE,
+            "stage_index": int(stage_index),
+            "state": PLANNING_FAILED_STATE,
+            "elapsed_s": wall_time_s,
+            "route_index": route_index,
+            "route_count": int(route_count),
+            "round_index": round_index,
+            "reason": str(reason or ""),
         }
         try:
-            display = self._display_from_corridor_round(identity, result)
-        except (KeyError, TypeError, ValueError) as exc:
-            rospy.logerr(
-                "[uniform planner] cannot export the actual C2 corridor "
-                "round: %s: %s; no corridor/guide layer is published",
-                type(exc).__name__, exc)
-            self._clear_planning_debug(
-                plan_id, generation, snapshot.formation_id)
+            self._publish_planning_debug(document)
+        except (TypeError, ValueError) as exc:
+            self._record_progress_display_error(
+                generation, plan_id, "document", exc)
+
+    def _publish_planning_published(self, generation, plan_id, snapshot,
+                                    result, model_sha256, wall_time_s):
+        """PUBLISHED document, after the atomic playback envelope exists."""
+        identity = self._planning_identity(
+            generation, plan_id, snapshot, PLANNING_PUBLISHED_STATE,
+            model_sha256=model_sha256)
+        if identity is None:
             return
-        displays = ([] if display is None else [display])
-        if not displays:
-            # V1 callers may still supply pre-built display fields.  The C2
-            # pipeline itself stores the chain in ``corridor.rounds``.
-            displays = result.search.get(CORRIDOR_DISPLAYS_KEY)
-        if not isinstance(displays, (list, tuple)) or not displays:
-            self._clear_planning_debug(
-                plan_id, generation, snapshot.formation_id)
-            return
-        # C2-B writes only corridor_display_fields() output here.  Refuse to
-        # publish anything that is not display-only or that carries a stale
-        # admission identity: playback would otherwise show a chain from
-        # another plan, map or generation.
-        for display in displays:
-            mismatched = (
-                None if not isinstance(display, dict)
-                else [key for key, value in identity.items()
-                      if display.get(key) != value])
-            if mismatched is not None and not mismatched and \
-                    display.get("chain_digest") is not None and \
-                    display.get("regions"):
-                continue
-            rospy.logerr(
-                "[uniform planner] refusing result.search[%s] display with "
-                "mismatched fields %s; no corridor layer is published",
-                CORRIDOR_DISPLAYS_KEY, mismatched)
-            self._clear_planning_debug(
-                plan_id, generation, snapshot.formation_id)
-            return
+        stage_index, route_index, route_count, round_index = \
+            self._progress_stage_snapshot()
+        wall_time_s = float(wall_time_s)
         document = dict(identity)
-        document["corridors"] = list(displays)
-        self._publish_planning_debug(document)
+        document.update({
+            "stage": PLANNING_PUBLISHED_STATE,
+            "stage_index": int(PROGRESS_STAGE_INDEX["PUBLISHED"]),
+            "elapsed_s": wall_time_s,
+            "route_index": route_index,
+            "route_count": int(route_count),
+            "round_index": round_index,
+            "reason": str(getattr(result, "reason", "") or ""),
+            "detail": str(getattr(result, "detail", "") or ""),
+            "metrics": {
+                "phase": "published",
+                "status": str(getattr(result, "status", "") or ""),
+                "wall_time_s": wall_time_s,
+            },
+        })
+        layers = self._progress_layers_for(generation)
+        if layers["astar"] is not None:
+            document["astar"] = layers["astar"]
+        displays = self._corridor_displays(
+            generation, plan_id, snapshot, result, identity)
+        document["corridors"] = displays
+        layers["corridors"] = displays
+        candidates = None
+        path = getattr(result, "path", None)
+        if path is not None and callable(getattr(path, "state_at_s", None)):
+            try:
+                candidates = self._candidate_payload(
+                    path, CANDIDATE_CERTIFIED, plan_id,
+                    getattr(result, "status", ""), None)
+            except (TypeError, ValueError) as exc:
+                self._record_progress_display_error(
+                    generation, plan_id, "candidates", exc)
+        document["candidates"] = candidates
+        layers["candidates"] = candidates
+        self._planning_progress = {
+            "stage": PLANNING_PUBLISHED_STATE,
+            "stage_index": int(PROGRESS_STAGE_INDEX["PUBLISHED"]),
+            "state": PLANNING_PUBLISHED_STATE,
+            "elapsed_s": wall_time_s,
+            "route_index": route_index,
+            "route_count": int(route_count),
+            "round_index": round_index,
+            "reason": str(getattr(result, "reason", "") or ""),
+        }
+        try:
+            self._publish_planning_debug(document)
+        except (TypeError, ValueError) as exc:
+            self._record_progress_display_error(
+                generation, plan_id, "document", exc)
 
     def _job_document(self, reason="", detail=""):
         document = {
@@ -1267,6 +1741,12 @@ class UniformPlannerNode(object):
         self._publish_no_envelope(0, "", "ADMITTED_PLANNING")
         self._clear_planning_debug(
             plan_id, generation, snapshot.formation_id)
+        # A new admission is the only event that empties the progressive
+        # planning layers; busy/stale rejections never touch them.
+        self._progress_layers = {}
+        self._planning_progress = None
+        self._emit_request_admitted(
+            generation, plan_id, snapshot, admission)
         rospy.loginfo(
             "[uniform planner] plan %s admitted for virtual_rigid_a: "
             "start=(%.3f, %.3f, %.3f) goal=(%.3f, %.3f, %.3f) "
@@ -1303,8 +1783,11 @@ class UniformPlannerNode(object):
     def _virtual_plan_worker(self, generation, plan_id, snapshot,
                              map_request, admission):
         started = _time.monotonic()
+        callback = lambda event: self._on_virtual_progress(
+            generation, plan_id, snapshot, event)
         try:
-            result = self._backend_hooks.solve(map_request)
+            result = self._backend_hooks.solve(
+                map_request, progress_callback=callback)
         except Exception as exc:
             with self._lock:
                 self._worker_active = False
@@ -1371,8 +1854,11 @@ class UniformPlannerNode(object):
             plan_id=plan_id, formation_id=snapshot.formation_id,
             feasible=False, executable=False, published=False, extra=extra))
         self._publish_no_envelope(plan_id, snapshot.formation_id, reason)
-        self._clear_planning_debug(
-            plan_id, self._generation, snapshot.formation_id)
+        # Freeze the completed layers in one final FAILED document; do not
+        # clear them (TASK 01 Step 1 failure-freeze rule).
+        self._publish_planning_failed(
+            self._generation, plan_id, snapshot, result, reason, detail,
+            layer, wall)
         self._publish_job_state(reason, detail)
 
     def _finish_virtual_success(self, generation, plan_id, snapshot, result,
@@ -1457,6 +1943,11 @@ class UniformPlannerNode(object):
         self._published_stamp = fields["stamp"]
         self._playback_seen = False
         self.playback_plan_pub.publish(envelope)
+        # PUBLISHED is emitted only now: the atomic replay envelope has
+        # actually been published by this ROS node.
+        self._publish_planning_published(
+            generation, plan_id, snapshot, result, verified.model_sha256,
+            float(getattr(result, "wall_time_s", 0.0)))
         status_word = self._active_status_word
         wall = float(getattr(result, "wall_time_s", 0.0))
         extra = {
@@ -1497,8 +1988,6 @@ class UniformPlannerNode(object):
             "plan", status_word, result.reason, result.detail,
             plan_id=plan_id, formation_id=snapshot.formation_id,
             feasible=True, executable=True, published=True, extra=extra))
-        self._publish_corridor_debug(
-            generation, plan_id, snapshot, result)
         rospy.loginfo(
             "[uniform planner] virtual plan %s published: T_end=%.3f s "
             "model_sha256=%s samples=%d wall=%.3f s "
@@ -1531,8 +2020,11 @@ class UniformPlannerNode(object):
             self._publish_no_envelope(plan_id, snapshot.formation_id,
                                       "INTERNAL_ERROR")
             if getattr(self, "_backend_hooks", None) is not None:
-                self._clear_planning_debug(
-                    plan_id, self._generation, snapshot.formation_id)
+                # The worker raised: keep every layer already drawn and state
+                # the failure in a final FAILED document.
+                self._publish_planning_failed(
+                    generation, plan_id, snapshot, None, "INTERNAL_ERROR",
+                    detail, "internal", wall)
             self._publish_job_state("INTERNAL_ERROR", detail)
 
     def _publish_no_envelope(self, plan_id, formation_id, reason):
@@ -1934,13 +2426,22 @@ def main():
         hooks = None
         if backend == "virtual_rigid_a":
             from fwis_v3_optimizer.formation_continuous_a.contracts import (
-                PlannerConfig)
+                research_planner_config)
             from fwis_v3_optimizer.formation_continuous_a.ros_adapter import (
                 VirtualABackendHooks, VirtualABackendSettings)
+            planner_config = research_planner_config(
+                guidance_mode=str(rospy.get_param(
+                    "~virtual_a_guidance_mode", "corridor")),
+                corridor_enforcement=str(rospy.get_param(
+                    "~virtual_a_corridor_enforcement", "hard")))
+            rospy.loginfo(
+                "[uniform planner] virtual_rigid_a validated planner config: "
+                "guidance_mode=%s corridor_enforcement=%s as_dict=%s",
+                planner_config.guidance_mode,
+                planner_config.corridor_enforcement,
+                planner_config.as_dict())
             settings = VirtualABackendSettings(
-                planner_config=PlannerConfig(
-                    guidance_mode=str(rospy.get_param(
-                        "~virtual_a_guidance_mode", "legacy_route"))),
+                planner_config=planner_config,
                 goal_policy=str(rospy.get_param(
                     "~virtual_a_goal_policy", "free")),
                 frame_id=str(rospy.get_param("~frame_id", "map")),

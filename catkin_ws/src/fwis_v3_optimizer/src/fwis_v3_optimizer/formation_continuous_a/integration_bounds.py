@@ -370,6 +370,113 @@ def evaluation_guard(records, psi_start, start_magnitude_m):
     }
 
 
+def production_evaluation_guard(records, psi_start, start_magnitude_m):
+    """Derived float64 guard for the production cached-grid Simpson path.
+
+    This is not :func:`evaluation_guard`: that function bounds the independent
+    audit's own plain Simpson sums.  The production ``VirtualAPath`` evaluates
+    a different algorithm, so its guard is derived item by item here:
+
+    * ``psi_at`` locates the piece, forms ``q = (s - s0) / h``, evaluates the
+      cubic ``psi_increment`` with the production Horner expression (three
+      rounded coefficient divisions, four products and four sums), and adds
+      the accumulated ``psi`` prefix.  User stations are splatted over grid
+      nodes; the total Simpson weight over one segment is at most ``h_j``, so
+      this contributes at most ``16 * Psi * h_j`` in position.
+    * the grid caches ``sin``/``cos`` at every node.  A correctly-rounded libm
+      value has unit magnitude error, and the same ``h_j`` argument bounds its
+      contribution; the ``8 * n_j`` term below also covers the rounded grid
+      stations and the sequential in-segment accumulation.
+    * the weighted panel sum ``factor * (f0 + 4*f1 + f2)`` with
+      ``factor = width/3`` and the per-segment coordinate prefix each add
+      rounded products/sums; these are bounded by the per-segment constant.
+    * one local query panel per piece re-evaluates three ``psi_at`` stations,
+      three libm values and the weighted coordinate sums.  The local width is
+      at most one complete Simpson panel, and the ``16 * Psi`` term already
+      covers its ``psi`` error; the per-segment constant also includes its
+      arithmetic so that the single certificate covers every ``state_at_s``.
+    * ``psi`` prefix accumulation shifts a whole segment's integrand by
+      ``d psi``; ``Psi = 1 + |psi_start| + sum_j h_j * C_j`` bounds every
+      intermediate, giving ``16 * (segments + 1) * epsilon * L * Psi``.
+    * the coordinate prefix ``x += dx`` over segments costs at most
+      ``2 * (segments + 1) * epsilon * (|start| + L)``.
+
+    ``records`` is an iterable of ``(h, subintervals, coefficient_magnitude)``
+    with ``coefficient_magnitude = |c0| + |c1| + |c2| + |c3|``.  Every product
+    and sum is outward rounded with ``bounds._next_up``.  The result is a
+    per-coordinate metre bound on the float64 evaluation error of the
+    production cached-grid integral; it is added to the exact per-panel
+    quadrature remainder and the unchanged production angle term.
+    """
+    epsilon = bounds.EPSILON
+    origin = abs(_finite(psi_start, "psi_start"))
+    magnitude = _finite(start_magnitude_m, "start_magnitude")
+    if magnitude < 0.0:
+        raise PanelBoundError("start_magnitude must be non-negative")
+    base = []
+    length_total = 0.0
+    psi_bound = origin
+    for h, subintervals, coefficient_magnitude in records:
+        length = _finite(h, "piece_length")
+        if length <= 0.0:
+            raise PanelBoundError("piece length must be positive")
+        if isinstance(subintervals, bool) or not isinstance(subintervals, int):
+            raise PanelBoundError("subintervals must be an even integer")
+        if subintervals < 2 or subintervals % 2:
+            raise PanelBoundError("subintervals must be even and >= 2")
+        coefficient = _finite(coefficient_magnitude, "coefficient_magnitude")
+        if coefficient < 0.0:
+            raise PanelBoundError("negative coefficient magnitude")
+        psi_bound = bounds._next_up(
+            psi_bound + bounds._next_up(length * coefficient))
+        length_total = bounds._next_up(length_total + length)
+        base.append((length, subintervals))
+    if not base:
+        raise PanelBoundError("at least one piece is required")
+    psi_bound = bounds._next_up(psi_bound + 1.0)
+    segment_guards = []
+    per_segment = 0.0
+    for length, subintervals in base:
+        # 12*n_j: grid station formation, in-node accumulation and rounded
+        #         weighted products/sums; 64: cached libm values, the
+        #         per-segment prefix append and one local query panel;
+        #         16*Psi: the Horner ``psi_at`` magnitude term.
+        units = bounds._next_up(12.0 * float(subintervals))
+        units = bounds._next_up(units + 64.0)
+        units = bounds._next_up(units + bounds._next_up(16.0 * psi_bound))
+        term = bounds._next_up(
+            bounds._next_up(length * units) * epsilon)
+        segment_guards.append(term)
+        per_segment = bounds._next_up(per_segment + term)
+    count = float(len(base) + 1)
+    psi_accumulation = bounds._next_up(
+        bounds._next_up(bounds._next_up(16.0 * count) * epsilon)
+        * bounds._next_up(length_total * psi_bound))
+    coordinate_accumulation = bounds._next_up(
+        bounds._next_up(bounds._next_up(2.0 * count) * epsilon)
+        * bounds._next_up(magnitude + length_total))
+    total = bounds._next_up(
+        bounds._next_up(per_segment + psi_accumulation)
+        + coordinate_accumulation)
+    return {
+        "method": "production_cached_grid_float64_evaluation_guard",
+        "formula": (
+            "EPSILON*sum_j h_j*(12*n_j+64+16*Psi) + "
+            "16*(segments+1)*EPSILON*L*Psi + "
+            "2*(segments+1)*EPSILON*(|start|+L), "
+            "Psi=1+|psi_start|+sum_j h_j*sum_i|c_i|, outward rounded"),
+        "epsilon": epsilon,
+        "psi_bound_rad": psi_bound,
+        "length_m": length_total,
+        "segment_evaluation_m": segment_guards,
+        "per_segment_evaluation_m": per_segment,
+        "psi_accumulation_m": psi_accumulation,
+        "coordinate_accumulation_m": coordinate_accumulation,
+        "local_panel_evaluation_included_per_segment": True,
+        "total_evaluation_m": total,
+    }
+
+
 def position_budget(records):
     """Euclidean budget from exact per-panel segment categories.
 

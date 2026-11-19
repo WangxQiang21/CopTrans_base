@@ -22,6 +22,7 @@ from .contracts import (
     GeometryAuditConfig,
     GeometryResult,
     GuideRoute,
+    HeadingBranch,
     InitialGuess,
     MAX_INITIALS,
     ObstacleContext,
@@ -37,6 +38,18 @@ from .contracts import (
     validate_planner_config,
     validate_virtual_a_request,
 )
+
+# TASK 01 Step 4: the technical plan's approved first-round guide-length
+# coefficient.  The guide polyline is not a feasible lower bound, so this only
+# raises the finite search upper bound; it never makes a guide executable.
+GUIDE_S_UPPER_FACTOR = 1.15
+# S_solution is bound-active when it is within this tolerance of S_upper.
+# The tolerance is derived from the selected solver tolerance, not from a status
+# string.  With the frozen 1e-8 tolerances the floor and ``100 * tol`` are both
+# 1e-6 m; the floor keeps non-default tighter tolerances from making a plain
+# floating-point equality out of this decision.
+S_UPPER_ACTIVE_TOL_FLOOR_M = 1e-6
+S_UPPER_ACTIVE_TOL_SOLVER_FACTOR = 100.0
 from .corridor import (
     corridor_effective_margin,
     corridor_min_portal_radius,
@@ -136,31 +149,86 @@ def _piece_position_samples(h, coeffs, psi0, q_values, sin, cos,
     return displacements, headings
 
 
-def _search_packet(request, config):
-    """Endpoint-only local target and engineering search domain."""
+def _solver_tolerance(config):
+    """Convergence tolerance of the configured solver (auto keeps both)."""
+    choice = str(getattr(config, "solver", "")).lower()
+    ipopt = float(config.ipopt_tolerance)
+    scipy = float(config.scipy_tolerance)
+    return scipy if choice in ("scipy", "slsqp") else max(ipopt, scipy)
+
+
+def _search_packet(request, config, heading_branch=None, guide_length_m=None):
+    """Endpoint-only local target and finite engineering search domain.
+
+    Step 3: ``heading_branch`` is the single source of the unwrapped endpoint
+    heading.  The packet is constructed once by the solver and handed to the
+    initial constructors, the route guess, the numeric/CasADi endpoint
+    equality and the attempt metadata.  Without a branch the historical
+    shortest-wrap value is used byte for byte.
+
+    Step 4: the finite S domain uses the same packet and the same unwrapped
+    heading everywhere.  ``kappa_ref_max`` is the smaller of the configured
+    curvature limit and the Ackermann minimum-radius bound; the lower bound
+    also covers the turn ``|heading|/kappa_ref_max``.  A supplied guide length
+    raises the upper bound by the approved ``1.15`` coefficient.  The
+    historical hard 60 m cap is gone, but ``S_upper`` is still finite; it is
+    never a lower bound and never makes a guide executable.
+    """
     start = request.start_qf
     goal = request.goal_qf
     cosine, sine = math.cos(start.psi), math.sin(start.psi)
     dx = cosine * (goal.x - start.x) + sine * (goal.y - start.y)
     dy = -sine * (goal.x - start.x) + cosine * (goal.y - start.y)
     distance = math.hypot(dx, dy)
-    heading = _wrap(goal.psi - start.psi)
+    heading = (float(heading_branch.unwrapped_heading_rad)
+               if heading_branch is not None
+               else _wrap(goal.psi - start.psi))
     intervals = int(config.intervals)
-    lower = max(intervals * 0.05, distance)
-    upper = min(60.0, max(12.0, 3.0 * distance + 10.0))
+    cmax = 1.0 / float(request.limits.r_min_ackermann)
+    kappa_ref_max = min(float(config.kappa_limit), cmax)
+    if not math.isfinite(kappa_ref_max) or kappa_ref_max <= 0.0:
+        raise VirtualAContractError(
+            "INVALID_SEARCH_DOMAIN",
+            "kappa_ref_max must be finite and positive")
+    guide_length = None if guide_length_m is None else float(guide_length_m)
+    if guide_length is not None and (
+            not math.isfinite(guide_length) or guide_length < 0.0):
+        raise VirtualAContractError(
+            "INVALID_GUIDE_LENGTH",
+            "guide_length_m must be finite and nonnegative")
+    lower = max(intervals * 0.05, distance,
+                abs(heading) / kappa_ref_max)
+    upper_terms = [lower + 2.0, 12.0, 3.0 * distance + 10.0]
+    if guide_length is not None:
+        upper_terms.append(GUIDE_S_UPPER_FACTOR * guide_length)
+    upper = max(upper_terms)
+    if not (math.isfinite(lower) and math.isfinite(upper)):
+        raise VirtualAContractError(
+            "INVALID_SEARCH_DOMAIN",
+            "S_lower={!r}, S_upper={!r} must be finite".format(
+                lower, upper))
     return {
         "start": start,
         "dx": dx,
         "dy": dy,
         "distance": distance,
         "heading_change_rad": heading,
+        "heading_branch": heading_branch.as_dict()
+        if isinstance(heading_branch, HeadingBranch) else None,
+        "guide_length_m": guide_length,
         "S_lower": lower,
         "S_upper": upper,
+        "S_upper_active_tol_m": max(
+            S_UPPER_ACTIVE_TOL_FLOOR_M,
+            S_UPPER_ACTIVE_TOL_SOLVER_FACTOR * _solver_tolerance(config)),
+        "S_solution": None,
+        "upper_active": None,
         "l0": max(1.0, distance),
         "intervals": intervals,
         "eta_limit": float(config.eta_limit),
         "kappa_limit": float(config.kappa_limit),
-        "cmax": 1.0 / float(request.limits.r_min_ackermann),
+        "kappa_ref_max": kappa_ref_max,
+        "cmax": cmax,
     }
 
 
@@ -242,12 +310,17 @@ def _guess_for(request, config, packet, multiplier, sign):
         "endpoint_distance_m": distance,
         "intervals": n,
         "heading_change_rad": heading,
+        "heading_branch": packet.get("heading_branch"),
+        "guide_length_m": packet.get("guide_length_m"),
         "length_multiplier": multiplier,
         "shape_sign": sign,
         "correction_coefficient": correction,
         "approximate_lateral_need": approximate_need,
         "S_search_lower_m": S_lower,
         "S_search_upper_m": S_upper,
+        "S_lower_m": S_lower,
+        "S_upper_m": S_upper,
+        "S_upper_active_tol_m": packet.get("S_upper_active_tol_m"),
         "projection": "clamped_cubic_spline_C2_eta0_etaN_zero",
         "initial_terminal_kappa": float(kappas[-1]),
         "initial_terminal_eta": float(etas[-1]),
@@ -398,10 +471,15 @@ def _route_guess(request, config, packet, guide, route_index,
         "endpoint_distance_m": packet["distance"],
         "intervals": n,
         "heading_change_rad": packet["heading_change_rad"],
+        "heading_branch": packet.get("heading_branch"),
+        "guide_length_m": packet.get("guide_length_m"),
         "length_multiplier": route_length / max(1.0, packet["distance"]),
         "shape_sign": 0,
         "S_search_lower_m": packet["S_lower"],
         "S_search_upper_m": packet["S_upper"],
+        "S_lower_m": packet["S_lower"],
+        "S_upper_m": packet["S_upper"],
+        "S_upper_active_tol_m": packet.get("S_upper_active_tol_m"),
         "route_index": int(route_index),
         "route_source": guide.source,
         "route_grid_sha256": guide.grid_sha256,
@@ -490,6 +568,19 @@ class _CorridorConstraint:
     quadrature_points: int
     enforcement: str
 
+    @property
+    def halfspace_constraint_count(self):
+        """Number of actual scalar halfspaces sent to the NLP.
+
+        Every ``(q, rows, limits)`` entry contributes one constraint per
+        outward row; this is the same count appended to the CasADi ``g``
+        vector and to the numeric residual vector.  It is never inferred from
+        the display polygon.
+        """
+        return sum(
+            len(limits) for group in self.groups
+            for _q, _rows, limits in group)
+
     def as_dict(self):
         return {
             "role": "reference_point_convex_halfspaces",
@@ -499,6 +590,8 @@ class _CorridorConstraint:
             "min_portal_radius_m": self.min_portal_radius_m,
             "quadrature_points": int(self.quadrature_points),
             "sample_count": int(self.sample_count),
+            "halfspace_constraint_count": int(
+                self.halfspace_constraint_count),
             "allocation_count": len(self.allocation),
             "region_count": int(self.region_count),
             "is_three_vehicle_certificate": False,
@@ -740,7 +833,8 @@ def _validate_route_inputs(route_guides, obstacle_context):
 
 
 def make_initial_guesses(request, config, *, route_guides=(),
-                         obstacle_context=None):
+                         obstacle_context=None, heading_branch=None,
+                         guide_length_m=None, packet=None):
     """Return at most ``max_initials`` automatic, reconstructible initials.
 
     With no route topology the function is byte-for-byte the G2 automatic
@@ -750,6 +844,12 @@ def make_initial_guesses(request, config, *, route_guides=(),
     ``C3_ENDPOINT_SHAPES`` distinct default length shapes with one initial
     per (length, direction) pair.  A route initial is never replaced by an
     endpoint shape merely to reach ``max_initials``.
+
+    Step 3: ``packet`` is the one packet the solver already built for this
+    round.  Constructing it here as well would let the initials and the NLP
+    disagree about the heading branch/S domain, so callers inside one solve
+    must pass the same packet.  The standalone form keeps the historical
+    signature (and shortest-wrap heading) when no packet or branch is given.
     """
     request_ok = validate_virtual_a_request(request)
     if not request_ok.passed:
@@ -761,7 +861,10 @@ def make_initial_guesses(request, config, *, route_guides=(),
             config_ok.reason, config_ok.detail, **config_ok.location)
     route_guides, obstacle_context = _validate_route_inputs(
         route_guides, obstacle_context)
-    packet = _search_packet(request, config)
+    if packet is None:
+        packet = _search_packet(
+            request, config, heading_branch=heading_branch,
+            guide_length_m=guide_length_m)
     if packet["S_lower"] >= packet["S_upper"]:
         raise VirtualAContractError(
             "EMPTY_SEARCH_DOMAIN",
@@ -817,30 +920,38 @@ def initial_guess_key(guess):
     fields already serialized by ``InitialGuess``/``_route_guess``/
     ``_guess_for``: the source, the route source/grid digest/index and the
     label for route initials, and the source, length multiplier, shape sign
-    and label for endpoint initials.  Object addresses, solver vectors and
-    float-array hashes are deliberately not used, so the same identity can be
-    rebuilt from recorded evidence.
+    and label for endpoint initials.  Step 3 appends the winding branch ``k``
+    when the guess carries one: the same geometric initial launched for a
+    different unwrapped heading is a different launch identity.  Object
+    addresses, solver vectors and float-array hashes are deliberately not
+    used, so the same identity can be rebuilt from recorded evidence.
     """
     source = str(getattr(guess, "source", ""))
     label = str(getattr(guess, "label", ""))
     metadata = getattr(guess, "metadata", None)
     if not isinstance(metadata, dict):
         metadata = {}
+    branch = metadata.get("heading_branch")
+    winding_k = None
+    if isinstance(branch, dict) and branch.get("winding_k") is not None:
+        winding_k = int(branch["winding_k"])
     if source == "map_route_guide":
-        return (
+        key = (
             source,
             str(metadata.get("route_source", "")),
             str(metadata.get("route_grid_sha256", "")),
             int(metadata.get("route_index", -1)),
             label,
         )
+        return key + (winding_k,) if winding_k is not None else key
     if source == "automatic_endpoint_shape":
-        return (
+        key = (
             source,
             float(getattr(guess, "length_multiplier", 0.0)),
             int(getattr(guess, "shape_sign", 0)),
             label,
         )
+        return key + (winding_k,) if winding_k is not None else key
     return (source, label)
 
 
@@ -1611,8 +1722,42 @@ def _solver_failure(solver, status, detail, started, remaining_budget):
     }
 
 
+def _solution_s_from_result(result):
+    """Return the solver's S variable, or ``None`` when there is no solution.
+
+    A timed-out iterate is deliberately not a solution: the wrappers return
+    ``success=False`` and the attempt status records the timeout.  Only a
+    solver vector that the solver itself reports as successful may populate
+    ``S_solution_m``.
+    """
+    if not isinstance(result, dict) or not result.get("success"):
+        return None
+    vector = result.get("z")
+    if vector is None:
+        return None
+    try:
+        value = float(np.asarray(vector, dtype=float).reshape(-1)[0])
+    except (TypeError, ValueError, IndexError):
+        return None
+    return value if math.isfinite(value) else None
+
+
 def _attempt_record(index, guess, result, audit, rejection, status,
                     endpoint_error=None, heading_error=None):
+    metadata = getattr(guess, "metadata", None)
+    if not isinstance(metadata, dict):
+        metadata = {}
+    branch = metadata.get("heading_branch")
+    if not isinstance(branch, dict):
+        branch = {}
+    s_lower = metadata.get("S_lower_m")
+    s_upper = metadata.get("S_upper_m")
+    s_tolerance = metadata.get("S_upper_active_tol_m")
+    s_solution = _solution_s_from_result(result)
+    s_upper_active = None
+    if (s_solution is not None and s_upper is not None
+            and s_tolerance is not None):
+        s_upper_active = abs(s_solution - float(s_upper)) <= float(s_tolerance)
     return AttemptRecord(
         attempt_index=index,
         initial_source=guess.source,
@@ -1636,13 +1781,24 @@ def _attempt_record(index, guess, result, audit, rejection, status,
             result.get("soft_deadline_triggered", False)),
         deadline_trigger_stage=str(
             result.get("deadline_trigger_stage", "")),
-        remaining_budget_s=result.get("remaining_budget_s"))
+        remaining_budget_s=result.get("remaining_budget_s"),
+        heading_base_rad=branch.get("base_heading_rad"),
+        winding_k=branch.get("winding_k"),
+        guide_turn_rad=branch.get("guide_turn_rad"),
+        distance_m=metadata.get("endpoint_distance_m"),
+        guide_length_m=metadata.get("guide_length_m"),
+        s_lower_m=s_lower,
+        s_upper_m=s_upper,
+        s_solution_m=s_solution,
+        s_upper_active=s_upper_active)
 
 
 def _result(status, request=None, path=None, audit=None, attempts=(),
             wall_time_s=0.0, request_sha256="", reason="", detail="",
             config=None, solver_used="", branch=None, deadline=False,
-            deadline_summary=None, initial_count=0):
+            deadline_summary=None, initial_count=0,
+            corridor_halfspace_constraint_count=None,
+            corridor_max_residual_m=None):
     summary = request_summary(request) if isinstance(
         request, VirtualARequest) else {
             "type": type(request).__name__ if request is not None else None,
@@ -1662,7 +1818,11 @@ def _result(status, request=None, path=None, audit=None, attempts=(),
         goal_heading_branch_rad=branch,
         deadline_exhausted=bool(deadline),
         deadline_summary=dict(deadline_summary or {}),
-        initial_count=int(initial_count))
+        initial_count=int(initial_count),
+        corridor_halfspace_constraint_count=(
+            None if corridor_halfspace_constraint_count is None
+            else int(corridor_halfspace_constraint_count)),
+        corridor_max_residual_m=corridor_max_residual_m)
 
 
 def _audit_config(config, geometry_audit_config=None):
@@ -1688,7 +1848,9 @@ def solve_open_path_guided(request, config, *, route_guides=(),
                            corridor_allocation=None,
                            excluded_initial_keys=(),
                            max_new_initials=None,
-                           stop_after_route_audit=False):
+                           stop_after_route_audit=False,
+                           heading_branch=None,
+                           guide_length_m=None):
     """Solve and independently audit an endpoint-driven geometry candidate.
 
     ``route_guides``/``obstacle_context`` are optional map-guidance inputs for
@@ -1716,6 +1878,12 @@ def solve_open_path_guided(request, config, *, route_guides=(),
     enter both the numeric and CasADi NLP and the corridor objective replaces
     the legacy route weights.  In legacy mode these two arguments must be
     omitted, preserving the historical call path byte for byte.
+
+    ``heading_branch`` is the Step 3 finite unwrapped-heading branch selected
+    for the current route/guide.  One ``_search_packet`` is built here and
+    passed unchanged to ``make_initial_guesses``, the route guess, the numeric
+    and CasADi endpoint equalities and the attempt metadata.  ``None`` keeps
+    the historical shortest-wrap heading exactly.
     """
     started = time.monotonic()
     validation = validate_virtual_a_request(request)
@@ -1770,8 +1938,43 @@ def solve_open_path_guided(request, config, *, route_guides=(),
             request_sha256=validation.metrics["request_sha256"],
             config=config,
             branch=validation.metrics.get("goal_heading_branch_rad"))
+    if heading_branch is not None:
+        if not isinstance(heading_branch, HeadingBranch):
+            return _result(
+                "INVALID_REQUEST", request=request,
+                reason="INVALID_HEADING_BRANCH",
+                detail="heading_branch must be a HeadingBranch",
+                wall_time_s=time.monotonic() - started,
+                request_sha256=validation.metrics["request_sha256"],
+                config=config,
+                branch=validation.metrics.get("goal_heading_branch_rad"))
+        if not math.isfinite(float(heading_branch.unwrapped_heading_rad)):
+            return _result(
+                "INVALID_REQUEST", request=request,
+                reason="INVALID_HEADING_BRANCH",
+                detail="unwrapped_heading_rad must be finite",
+                wall_time_s=time.monotonic() - started,
+                request_sha256=validation.metrics["request_sha256"],
+                config=config,
+                branch=validation.metrics.get("goal_heading_branch_rad"))
+    if guide_length_m is not None:
+        try:
+            guide_length_m = float(guide_length_m)
+        except (TypeError, ValueError):
+            guide_length_m = float("nan")
+        if not math.isfinite(guide_length_m) or guide_length_m < 0.0:
+            return _result(
+                "INVALID_REQUEST", request=request,
+                reason="INVALID_GUIDE_LENGTH",
+                detail="guide_length_m must be finite and nonnegative",
+                wall_time_s=time.monotonic() - started,
+                request_sha256=validation.metrics["request_sha256"],
+                config=config,
+                branch=validation.metrics.get("goal_heading_branch_rad"))
     fingerprint = validation.metrics["request_sha256"]
-    branch = validation.metrics.get("goal_heading_branch_rad")
+    branch = (float(heading_branch.unwrapped_heading_rad)
+              if heading_branch is not None
+              else validation.metrics.get("goal_heading_branch_rad"))
     if request.start_qf == request.goal_qf:
         hold = VirtualAPath.hold(request.start_qf, request.model)
         hold.request_sha256 = fingerprint
@@ -1816,9 +2019,14 @@ def solve_open_path_guided(request, config, *, route_guides=(),
                 request_sha256=fingerprint, config=config, branch=branch)
         max_new_initials = int(max_new_initials)
     try:
+        # One packet for this whole solve: initials, route guess, both NLP
+        # formulations and attempt metadata all read the same heading/S domain.
+        packet = _search_packet(
+            request, config, heading_branch=heading_branch,
+            guide_length_m=guide_length_m)
         guesses = make_initial_guesses(
             request, config, route_guides=route_guides,
-            obstacle_context=obstacle_context)
+            obstacle_context=obstacle_context, packet=packet)
         excluded = set(excluded_initial_keys)
         if max_new_initials is not None and max_new_initials <= 0:
             guesses = ()
@@ -1832,7 +2040,6 @@ def solve_open_path_guided(request, config, *, route_guides=(),
                         and len(filtered) >= max_new_initials:
                     break
             guesses = tuple(filtered)
-        packet = _search_packet(request, config)
     except VirtualAContractError as exc:
         status = "INVALID_REQUEST" if exc.reason == "EMPTY_SEARCH_DOMAIN" else \
             "NUMERICAL_FAILURE"
@@ -1853,10 +2060,15 @@ def solve_open_path_guided(request, config, *, route_guides=(),
             request_sha256=fingerprint, config=config, branch=branch,
             initial_count=0)
     corridor_constraint = None
+    corridor_halfspace_count = None
     if corridor_mode:
         try:
             corridor_constraint = _build_corridor_constraint(
                 corridor_chain, corridor_allocation, request, config)
+            count = getattr(
+                corridor_constraint, "halfspace_constraint_count", None)
+            corridor_halfspace_count = (
+                None if count is None else int(count))
         except VirtualAContractError as exc:
             return _result(
                 "INVALID_REQUEST", request=request, reason=exc.reason,
@@ -2176,6 +2388,12 @@ def solve_open_path_guided(request, config, *, route_guides=(),
             mark_deadline("post_attempt_boundary")
             break
     wall = time.monotonic() - started
+    corridor_residuals = [
+        float(attempt.corridor_residual_m)
+        for attempt in attempts
+        if attempt.corridor_residual_m is not None]
+    corridor_max_residual = (
+        max(corridor_residuals) if corridor_residuals else None)
     deadline_info["triggered"] = bool(deadline_exhausted)
     deadline_info["audited_candidate_preserved"] = bool(
         best is not None and deadline_exhausted)
@@ -2184,6 +2402,20 @@ def solve_open_path_guided(request, config, *, route_guides=(),
         mark_deadline("final_boundary")
         deadline_info["final_wall_time_s"] = time.monotonic() - started
     if best is not None:
+        # Close the packet with the chosen candidate's solved S so the single
+        # S-domain record agrees with the attempt that was audited.
+        best_metadata = getattr(best["guess"], "metadata", None)
+        if not isinstance(best_metadata, dict):
+            best_metadata = {}
+        packet["S_solution"] = _solution_s_from_result(best["result"])
+        best_upper = best_metadata.get("S_upper_m", packet["S_upper"])
+        best_tolerance = best_metadata.get(
+            "S_upper_active_tol_m", packet["S_upper_active_tol_m"])
+        if (packet["S_solution"] is not None and best_upper is not None
+                and best_tolerance is not None):
+            packet["upper_active"] = (
+                abs(packet["S_solution"] - float(best_upper))
+                <= float(best_tolerance))
         return _result(
             "GEOMETRY_FEASIBLE", request=request, path=best["path"],
             audit=best["audit"], attempts=attempts, wall_time_s=wall,
@@ -2195,7 +2427,11 @@ def solve_open_path_guided(request, config, *, route_guides=(),
             config=config, solver_used=best["result"]["solver"],
             branch=branch, deadline=deadline_exhausted,
             deadline_summary=deadline_info,
-            initial_count=len(guesses))
+            initial_count=len(guesses),
+            corridor_halfspace_constraint_count=corridor_halfspace_count,
+            corridor_max_residual_m=(
+                None if best["result"].get("corridor_residual_m") is None
+                else float(best["result"]["corridor_residual_m"])))
     audit_rejections = [
         attempt for attempt in attempts
         if attempt.status == "SOLVER_SUCCESS_AUDIT_REJECTED"]
@@ -2250,7 +2486,9 @@ def solve_open_path_guided(request, config, *, route_guides=(),
         request_sha256=fingerprint, reason=reason, detail=detail,
         config=config, solver_used=solver_used, branch=branch,
         deadline=deadline_exhausted, deadline_summary=deadline_info,
-        initial_count=len(guesses))
+        initial_count=len(guesses),
+        corridor_halfspace_constraint_count=corridor_halfspace_count,
+        corridor_max_residual_m=corridor_max_residual)
 
 
 def solve_open_path(request, config, **kwargs):

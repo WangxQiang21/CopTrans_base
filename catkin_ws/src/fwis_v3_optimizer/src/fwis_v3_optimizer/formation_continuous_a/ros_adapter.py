@@ -584,12 +584,17 @@ def terminal_context_from_plan(plan, request, context_id):
         terminal=summary)
 
 
-def solve(request):
-    """Run the autonomous G4 pipeline and guard its executable identity."""
+def solve(request, progress_callback=None):
+    """Run the autonomous G4 pipeline and guard its executable identity.
+
+    ``progress_callback`` is passed through unchanged to the ROS-free
+    pipeline; the historical ``solve(request)`` call remains valid.
+    """
     if not isinstance(request, VirtualAMapRequest):
         raise VirtualAContractError(
             "INVALID_MAP_REQUEST", "expected VirtualAMapRequest")
-    result = plan_virtual_a(request)
+    result = plan_virtual_a(
+        request, progress_callback=progress_callback)
     if not bool(getattr(result, "executable", False)):
         return result
     plan = getattr(result, "plan", None)
@@ -1109,8 +1114,8 @@ class VirtualABackendHooks:
         return request_from_snapshot(
             snapshot, grid, settings or self.settings, initial_context)
 
-    def solve(self, request):
-        return solve(request)
+    def solve(self, request, progress_callback=None):
+        return solve(request, progress_callback=progress_callback)
 
     def publication_fields(self, snapshot, result, stamp, dt):
         return publication_fields(

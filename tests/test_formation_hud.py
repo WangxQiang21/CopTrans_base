@@ -284,6 +284,45 @@ class HUDTextTest(unittest.TestCase):
         self.assertEqual(document["backend"], VIRTUAL_PLAYBACK_BACKEND)
 
 
+class PlanningProgressHUDTest(unittest.TestCase):
+    """TASK 01 Step 1: the HUD states the real planning stage and elapsed."""
+
+    def test_stage_step_route_round_and_elapsed_are_reported(self):
+        progress = {
+            "stage": "NLP_SOLVE", "stage_index": 4, "state": "PLANNING",
+            "elapsed_s": 12.34, "route_index": 0, "route_count": 2,
+            "round_index": 1, "reason": "",
+        }
+        text = hud_text(playback_document(), "PLANNING", None,
+                        progress=progress)
+        line = next(item for item in text.splitlines()
+                    if item.startswith("planning "))
+        self.assertIn("planning NLP_SOLVE", line)
+        self.assertIn("step 4/8", line)
+        self.assertIn("route 0/2", line)
+        self.assertIn("round 1", line)
+        self.assertIn("elapsed 12.3 s", line)
+
+    def test_failed_stage_keeps_the_last_real_step_and_reason(self):
+        progress = {
+            "stage": "FAILED", "stage_index": 7, "state": "FAILED",
+            "elapsed_s": 3.0, "route_index": None, "route_count": 1,
+            "round_index": None, "reason": "OBB_COLLISION_REJECTED",
+        }
+        text = hud_text(playback_document(), "FAILED", None,
+                        progress=progress)
+        line = next(item for item in text.splitlines()
+                    if item.startswith("planning "))
+        self.assertIn("planning FAILED", line)
+        self.assertIn("step 7/8", line)
+        self.assertIn("routes 1", line)
+        self.assertIn("OBB_COLLISION_REJECTED", line)
+
+    def test_non_object_progress_fails_closed(self):
+        with self.assertRaises(PlaybackValidationError):
+            hud_text(playback_document(), "PLANNING", None, progress=[])
+
+
 class DisplaySwitchTest(unittest.TestCase):
 
     def test_status_text_switch_only_removes_the_long_map_block(self):
