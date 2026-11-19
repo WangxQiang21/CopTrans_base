@@ -318,6 +318,9 @@ class CorridorMarkerTest(unittest.TestCase):
         cls.document = _display_document(cls.chain, [cls.route0])
 
     def test_fan_triangulation_reproduces_the_audited_region_area(self):
+        self.assertEqual(CORRIDOR_FILL_ALPHA, 0.09)
+        self.assertEqual(CORRIDOR_FILL_COLOR,
+                         (232 / 255, 121 / 255, 134 / 255))
         markers = build_corridor_markers(self.document)
         self.assertEqual(markers[0].action, "DELETEALL")
         fills = [marker for marker in markers
@@ -343,6 +346,9 @@ class CorridorMarkerTest(unittest.TestCase):
                 abs(area - region.area_m2) / region.area_m2, 1e-9)
 
     def test_edges_are_closed_line_strips_at_the_display_height(self):
+        self.assertEqual(CORRIDOR_EDGE_ALPHA, 0.55)
+        self.assertEqual(CORRIDOR_EDGE_COLOR,
+                         (180 / 255, 83 / 255, 98 / 255))
         markers = build_corridor_markers(self.document)
         edges = [marker for marker in markers
                  if marker.marker_type == "LINE_STRIP"]
@@ -356,6 +362,7 @@ class CorridorMarkerTest(unittest.TestCase):
             self.assertTrue(all(point[2] == CORRIDOR_EDGE_Z_M
                                 for point in edge.points))
             self.assertEqual(edge.color[3], CORRIDOR_EDGE_ALPHA)
+            self.assertEqual(edge.scale, (0.013, 0.0, 0.0))
         for marker in markers:
             self.assertEqual(marker.text, "")
 
@@ -922,6 +929,8 @@ class V2GuideCallbackTest(unittest.TestCase):
         node.guide_path_pubs = {
             "/formation/path/astar_raw_0": _Publisher(),
             "/formation/path/portal_guide_0": _Publisher(),
+            "/formation/path/astar_active": _Publisher(),
+            "/formation/path/portal_guide_active": _Publisher(),
         }
         node.candidate_path_pubs = {}
         return node
@@ -1392,6 +1401,9 @@ class ProgressiveLayerLifecycleTest(unittest.TestCase):
         node.guide_path_pubs.update({
             "/formation/path/portal_guide_{}".format(route_id): _Publisher()
             for route_id in range(3)})
+        node.guide_path_pubs.update({
+            "/formation/path/astar_active": _Publisher(),
+            "/formation/path/portal_guide_active": _Publisher()})
         node.candidate_path_pubs = {
             "/formation/path/f_candidate": _Publisher(),
             **{"/formation/path/candidate_vehicle_{}".format(vehicle_id):
@@ -1529,6 +1541,89 @@ class ProgressiveLayerLifecycleTest(unittest.TestCase):
         self.assertFalse(
             node.guide_path_pubs["/formation/path/portal_guide_0"]
             .messages[-1].poses)
+
+    def test_active_aliases_follow_real_route_index(self):
+        node = self._node()
+        document = self._planning_document()
+        document.pop("corridors")
+        document["astar"] = [
+            {"route_id": 0, "points": [[0.0, 0.0], [0.0, 1.0]]},
+            {"route_id": 1, "points": [[1.0, 0.0], [1.0, 1.0]]},
+            {"route_id": 2, "points": [[2.0, 0.0], [2.0, 1.0]]},
+        ]
+        document.update({"route_index": 2, "route_count": 3})
+        self._publish(node, document)
+        active_astar = node.guide_path_pubs[
+            "/formation/path/astar_active"].messages[-1]
+        self.assertEqual(
+            [(pose.pose.position.x, pose.pose.position.y)
+             for pose in active_astar.poses],
+            [(2.0, 0.0), (2.0, 1.0)])
+        self.assertFalse(node.guide_path_pubs[
+            "/formation/path/portal_guide_active"].messages[-1].poses)
+
+        changed = copy.deepcopy(document)
+        changed.update({"route_index": 1, "route_count": 3})
+        self._publish(node, changed)
+        astar_pub = node.guide_path_pubs["/formation/path/astar_active"]
+        self.assertEqual(
+            [(pose.pose.position.x, pose.pose.position.y)
+             for pose in astar_pub.messages[-1].poses],
+            [(1.0, 0.0), (1.0, 1.0)])
+        self.assertFalse(astar_pub.messages[-2].poses)
+
+        invalid = copy.deepcopy(changed)
+        invalid["route_index"] = 3
+        self._publish(node, invalid)
+        self.assertFalse(astar_pub.messages[-1].poses)
+        self.assertFalse(node.guide_path_pubs[
+            "/formation/path/portal_guide_active"].messages[-1].poses)
+
+    def test_active_alias_never_falls_back_to_route_zero(self):
+        node = self._node()
+        document = self._planning_document()
+        document.pop("corridors")
+        document["astar"] = [
+            {"route_id": 0, "points": [[0.0, 0.0], [0.0, 1.0]]},
+        ]
+        document.update({"route_index": 2, "route_count": 3})
+        self._publish(node, document)
+        self.assertFalse(node.guide_path_pubs[
+            "/formation/path/astar_active"].messages[-1].poses)
+        self.assertTrue(node.guide_path_pubs[
+            "/formation/path/astar_raw_0"].messages[-1].poses)
+
+    def test_active_guide_follows_corridor_route_id(self):
+        node = self._node()
+        corridors = []
+        for route_id in range(3):
+            corridor = copy.deepcopy(self.case["display"])
+            corridor["model_sha256"] = None
+            corridor["route_id"] = route_id
+            corridor["raw_route_points"] = [
+                [float(route_id), 0.0], [float(route_id), 1.0]]
+            corridor["guide_points"] = [
+                [float(route_id), 0.5], [float(route_id), 1.5]]
+            corridors.append(corridor)
+        document = self._planning_document(
+            corridors=corridors, route_index=2, route_count=3)
+        self._publish(node, document)
+        active_astar = node.guide_path_pubs[
+            "/formation/path/astar_active"].messages[-1]
+        active_guide = node.guide_path_pubs[
+            "/formation/path/portal_guide_active"].messages[-1]
+        self.assertEqual(
+            [(pose.pose.position.x, pose.pose.position.y)
+             for pose in active_astar.poses],
+            [(2.0, 0.0), (2.0, 1.0)])
+        self.assertEqual(
+            [(pose.pose.position.x, pose.pose.position.y)
+             for pose in active_guide.poses],
+            [(2.0, 0.5), (2.0, 1.5)])
+        for route_id in range(3):
+            self.assertTrue(node.guide_path_pubs[
+                "/formation/path/astar_raw_{}".format(route_id)
+            ].messages[-1].poses)
 
     def test_candidate_payload_publishes_paths_and_keeps_obb_markers(self):
         node = self._node()
@@ -1671,14 +1766,24 @@ class CandidateMarkerTest(unittest.TestCase):
         obb_lines = [
             marker for marker in markers
             if marker.namespace.endswith("_obb_candidate")]
-        self.assertTrue(obb_lines)
+        self.assertEqual(CANDIDATE_OBB_LIMIT, 5)
+        self.assertLessEqual(len(obb_lines), 3 * CANDIDATE_OBB_LIMIT)
+        for vehicle in self.payload["vehicles"]:
+            self.assertLessEqual(
+                len(vehicle["obb_corners"]), CANDIDATE_OBB_LIMIT)
         self.assertTrue(all(marker.color == CANDIDATE_OBB_COLOR
                             for marker in obb_lines))
-        texts = [marker.text for marker in markers
+        self.assertTrue(all(marker.scale[0] == 0.010
+                            for marker in obb_lines))
+        texts = [marker for marker in markers
                  if marker.marker_type == "TEXT_VIEW_FACING"]
-        self.assertTrue(any(CANDIDATE_DIAGNOSTIC_LABEL in text
-                            for text in texts))
-        self.assertFalse(any("CERTIFIED" in text for text in texts))
+        self.assertTrue(any(CANDIDATE_DIAGNOSTIC_LABEL in marker.text
+                            for marker in texts))
+        self.assertFalse(any("CERTIFIED" in marker.text
+                             for marker in texts))
+        f_label = next(marker for marker in texts
+                       if marker.namespace == CANDIDATE_F_NAMESPACE)
+        self.assertEqual(f_label.scale[2], 0.14)
 
     def test_certified_payload_requires_a_published_document(self):
         certified = sample_candidate_path(

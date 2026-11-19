@@ -552,6 +552,8 @@ class VehiclePathAndResetTest(unittest.TestCase):
         node.guide_path_pubs = {
             "/formation/path/astar_raw_0": _Publisher(),
             "/formation/path/portal_guide_0": _Publisher(),
+            "/formation/path/astar_active": _Publisher(),
+            "/formation/path/portal_guide_active": _Publisher(),
         }
         node.candidate_path_pubs = {
             "/formation/path/f_candidate": _Publisher(),

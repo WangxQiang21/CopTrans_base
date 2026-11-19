@@ -75,6 +75,8 @@ F_CANDIDATE_PATH_TOPIC = "/formation/path/f_candidate"
 CANDIDATE_VEHICLE_PATH_TOPIC = "/formation/path/candidate_vehicle_{}"
 ASTAR_PATH_TOPIC = "/formation/path/astar_raw_{}"
 GUIDE_PATH_TOPIC = "/formation/path/portal_guide_{}"
+ASTAR_ACTIVE_PATH_TOPIC = "/formation/path/astar_active"
+GUIDE_ACTIVE_PATH_TOPIC = "/formation/path/portal_guide_active"
 HUD_TOPIC = "/formation/hud"
 CORRIDOR_TOPIC = "/formation/corridors"
 GUIDES_TOPIC = "/formation/guides"
@@ -100,6 +102,27 @@ def _seconds(value):
     if hasattr(value, "to_sec"):
         return float(value.to_sec())
     return float(value)
+
+
+def active_route_index(document):
+    """The real selected route index, or None when the document cannot say.
+
+    Both fields come from the verified planning-debug document written by the
+    pipeline.  There is deliberately no ``route 0`` default: an absent or
+    inconsistent pair must clear the active aliases instead of presenting a
+    guess as the selected route.
+    """
+    if not isinstance(document, dict):
+        return None
+    route_index = document.get("route_index")
+    route_count = document.get("route_count")
+    if isinstance(route_index, bool) or not isinstance(route_index, int):
+        return None
+    if isinstance(route_count, bool) or not isinstance(route_count, int):
+        return None
+    if route_count < 1 or route_index < 0 or route_index >= route_count:
+        return None
+    return route_index
 
 
 def fields_from_message(message):
@@ -248,6 +271,13 @@ class FormationPlaybackNode:
                 GUIDES_TOPIC, MarkerArray, queue_size=1)
             self.candidate_pub = rospy.Publisher(
                 CANDIDATES_TOPIC, MarkerArray, queue_size=1)
+            # Active aliases copy the one route selected by the real
+            # route_index in the verified planning document.  They are
+            # created latched here so subscription callbacks never create a
+            # publisher on the wire.
+            for topic in (ASTAR_ACTIVE_PATH_TOPIC, GUIDE_ACTIVE_PATH_TOPIC):
+                self.guide_path_pubs[topic] = rospy.Publisher(
+                    topic, Path, queue_size=1, latch=True)
         self.status_pub = rospy.Publisher(
             STATUS_TOPIC, String, queue_size=1, latch=True)
         if self.hud_enabled:
@@ -901,7 +931,7 @@ class FormationPlaybackNode:
             message.header.stamp = now
             publisher.publish(message)
 
-    def _publish_guide_paths(self, paths, stamp):
+    def _publish_guide_paths(self, paths, stamp, route_index=None):
         self._clear_topic_paths("guide_path_pubs")
         entries = []
         for (kind, route_id), samples in paths.items():
@@ -914,6 +944,26 @@ class FormationPlaybackNode:
                     "unknown guide path kind {!r}".format(kind))
             entries.append((topic, samples))
         self._publish_topic_paths("guide_path_pubs", entries, stamp)
+        self._publish_active_guide_paths(paths, stamp, route_index)
+
+    def _publish_active_guide_paths(self, paths, stamp, route_index):
+        """Copy only the route the planner reports as currently selected.
+
+        The aliases never fall back to route 0.  A missing, malformed or
+        out-of-range ``route_index`` leaves both active topics empty because
+        ``_clear_topic_paths`` has already emptied this registry.
+        """
+        if isinstance(route_index, bool) or not isinstance(route_index, int):
+            return
+        registry = self._path_registry("guide_path_pubs")
+        for topic, kind in ((ASTAR_ACTIVE_PATH_TOPIC, "astar_raw"),
+                            (GUIDE_ACTIVE_PATH_TOPIC, "portal_guide")):
+            publisher = registry.get(topic)
+            if publisher is None:
+                continue
+            samples = paths.get((kind, route_index))
+            if samples:
+                publisher.publish(self._topic_path_message(samples, stamp))
 
     def _publish_candidate_paths(self, paths, stamp):
         self._clear_topic_paths("candidate_path_pubs")
@@ -938,7 +988,8 @@ class FormationPlaybackNode:
                 "[formation playback] rejecting guide payload: %s", exc)
             self._clear_guides()
             return
-        self._publish_guide_paths(paths, stamp)
+        self._publish_guide_paths(paths, stamp,
+                                  active_route_index(document))
         if self.guide_pub is not None:
             self.guide_pub.publish(self._marker_array(specs, stamp))
 

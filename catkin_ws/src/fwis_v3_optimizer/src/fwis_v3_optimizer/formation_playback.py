@@ -2351,12 +2351,13 @@ def clear_marker_specs(frame_id="map"):
 
 CORRIDOR_FILL_Z_M = 0.005
 CORRIDOR_EDGE_Z_M = 0.01
-CORRIDOR_FILL_ALPHA = 0.15
-CORRIDOR_EDGE_ALPHA = 0.95
+CORRIDOR_FILL_ALPHA = 0.09
+CORRIDOR_EDGE_ALPHA = 0.55
 # TASK 01: one fixed colour for every corridor polygon.  The layer is a
-# candidate F-point workspace display, not an execution certificate.
-CORRIDOR_FILL_COLOR = (0.85, 0.08, 0.06)
-CORRIDOR_EDGE_COLOR = (0.45, 0.02, 0.01)
+# candidate F-point workspace display, not an execution certificate.  The
+# soft red fill and deep-rose edge keep the corridor behind every path.
+CORRIDOR_FILL_COLOR = (232 / 255, 121 / 255, 134 / 255)
+CORRIDOR_EDGE_COLOR = (180 / 255, 83 / 255, 98 / 255)
 CORRIDOR_FILL_NAMESPACE = "formation/planning/corridor_f_only/fill"
 CORRIDOR_EDGE_NAMESPACE = "formation/planning/corridor_f_only/edge"
 
@@ -2601,7 +2602,7 @@ def build_corridor_markers(document, frame_id="map"):
                 CORRIDOR_EDGE_NAMESPACE, marker_id, "LINE_STRIP", frame_id,
                 points=edge,
                 color=CORRIDOR_EDGE_COLOR + (CORRIDOR_EDGE_ALPHA,),
-                scale=(0.03, 0.0, 0.0)))
+                scale=(0.013, 0.0, 0.0)))
     return tuple(markers)
 
 
@@ -2826,7 +2827,7 @@ CANDIDATE_UNVERIFIED = "UNVERIFIED_CANDIDATE"
 CANDIDATE_CERTIFIED = "CERTIFIED"
 CANDIDATE_DIAGNOSTIC_LABEL = "DIAGNOSTIC_ONLY"
 CANDIDATE_POINT_LIMIT = 400
-CANDIDATE_OBB_LIMIT = 80
+CANDIDATE_OBB_LIMIT = 5
 CANDIDATE_SAMPLE_SPACING_M = 0.05
 CANDIDATE_F_NAMESPACE = "formation/planning/f_candidate"
 CANDIDATE_CENTER_NAMESPACE = "formation/planning/car{}_center_candidate"
@@ -2834,8 +2835,8 @@ CANDIDATE_OBB_NAMESPACE = "formation/planning/car{}_obb_candidate"
 PLANNING_FAILURE_NAMESPACE = "formation/planning/failure"
 CANDIDATE_F_COLOR = (1.00, 0.85, 0.05, 0.95)
 CANDIDATE_CENTER_COLOR = (0.10, 0.45, 1.00, 0.95)
-CANDIDATE_OBB_COLOR = (0.10, 0.62, 1.00, 0.90)
-PLANNING_FAILURE_COLOR = (0.78, 0.04, 0.62, 1.00)
+CANDIDATE_OBB_COLOR = (148 / 255, 163 / 255, 184 / 255, 0.38)
+PLANNING_FAILURE_COLOR = (236 / 255, 72 / 255, 153 / 255, 1.00)
 CANDIDATE_OBB_Z_M = 0.028
 PLANNING_FAILURE_Z_M = 0.16
 CANDIDATE_CLASSIFICATIONS = (CANDIDATE_UNVERIFIED, CANDIDATE_CERTIFIED)
@@ -3265,7 +3266,7 @@ def build_candidate_display(document, frame_id="map"):
         position=(f_points[len(f_points) // 2][0],
                   f_points[len(f_points) // 2][1], 0.40),
         text=" | ".join(label_parts),
-        color=CANDIDATE_F_COLOR, scale=(0.0, 0.0, 0.24)))
+        color=CANDIDATE_F_COLOR, scale=(0.0, 0.0, 0.14)))
     for vehicle_id, _length, _width, center_points, obbs in \
             checked_vehicles:
         center_namespace = CANDIDATE_CENTER_NAMESPACE.format(vehicle_id)
@@ -3279,13 +3280,13 @@ def build_candidate_display(document, frame_id="map"):
                 vehicle_id,
                 classification if classification == CANDIDATE_CERTIFIED
                 else diagnostic_label),
-            color=CANDIDATE_CENTER_COLOR, scale=(0.0, 0.0, 0.18)))
+            color=CANDIDATE_CENTER_COLOR, scale=(0.0, 0.0, 0.14)))
         for index, corners in enumerate(obbs):
             markers.append(_marker(
                 obb_namespace, index, "LINE_STRIP", frame_id,
                 points=tuple((x, y, CANDIDATE_OBB_Z_M)
                              for x, y in corners),
-                color=CANDIDATE_OBB_COLOR, scale=(0.018, 0.0, 0.0)))
+                color=CANDIDATE_OBB_COLOR, scale=(0.010, 0.0, 0.0)))
     markers.extend(_failure_marker_specs(failure, frame_id))
     return tuple(markers), paths
 

@@ -370,7 +370,9 @@ class FormationRvizTest(unittest.TestCase):
                            if item.get("Name") == "Map")
         self.assertEqual(map_display["Topic"], "/map")
         marker_display = next(
-            item for item in displays if item.get("Class") == "rviz/MarkerArray")
+            item for item in displays
+            if item.get("Class") == "rviz/MarkerArray"
+            and item.get("Marker Topic") == "/formation/markers")
         self.assertEqual(marker_display["Marker Topic"], "/formation/markers")
         self.assertTrue(any(item.get("Class") == "rviz/TF"
                             for item in displays))
@@ -414,12 +416,58 @@ class FormationRvizTest(unittest.TestCase):
         expected_topics.update(
             "/formation/path/portal_guide_{}".format(route_id)
             for route_id in (0, 1, 2))
+        expected_topics.update((
+            "/formation/path/astar_active",
+            "/formation/path/portal_guide_active"))
         self.assertEqual({item["Topic"] for item in paths}, expected_topics)
+        by_topic = {item["Topic"]: item for item in paths}
         for item in paths:
-            self.assertTrue(item["Enabled"])
             self.assertIn("Color", item)
             self.assertIn("Line Width", item)
             self.assertGreater(item["Line Width"], 0.0)
+
+        expected_enabled = {
+            "/formation/path/vehicle_1",
+            "/formation/path/vehicle_2",
+            "/formation/path/vehicle_3",
+            "/formation/path/f_candidate",
+            "/formation/path/astar_active",
+            "/formation/path/portal_guide_active",
+        }
+        self.assertEqual(
+            {topic for topic, item in by_topic.items() if item["Enabled"]},
+            expected_enabled)
+        for vehicle_id in (1, 2, 3):
+            certified = by_topic[
+                "/formation/path/vehicle_{}".format(vehicle_id)]
+            self.assertEqual(certified["Color"], "56; 189; 248")
+            self.assertEqual(certified["Line Width"], 0.065)
+            candidate = by_topic[
+                "/formation/path/candidate_vehicle_{}".format(vehicle_id)]
+            self.assertEqual(candidate["Color"], "250; 204; 21")
+            self.assertEqual(candidate["Line Width"], 0.024)
+        self.assertEqual(by_topic["/formation/path/f_candidate"]["Color"],
+                         "250; 204; 21")
+        self.assertEqual(
+            by_topic["/formation/path/f_candidate"]["Line Width"], 0.047)
+        for route_id in (0, 1, 2):
+            raw = by_topic[
+                "/formation/path/astar_raw_{}".format(route_id)]
+            guide = by_topic[
+                "/formation/path/portal_guide_{}".format(route_id)]
+            self.assertEqual(raw["Color"], "249; 115; 22")
+            self.assertEqual(guide["Color"], "34; 197; 94")
+        self.assertEqual(by_topic["/formation/path/astar_active"]["Color"],
+                         "249; 115; 22")
+        self.assertEqual(by_topic["/formation/path/astar_active"]
+                         ["Line Width"], 0.025)
+        self.assertEqual(
+            by_topic["/formation/path/portal_guide_active"]["Color"],
+            "34; 197; 94")
+        self.assertEqual(
+            by_topic["/formation/path/portal_guide_active"]["Line Width"],
+            0.035)
+
         marker_display = next(
             item for item in displays
             if item.get("Class") == "rviz/MarkerArray"
@@ -432,12 +480,22 @@ class FormationRvizTest(unittest.TestCase):
             if item.get("Class") == "rviz/MarkerArray"
             and item.get("Marker Topic") == "/formation/guides")
         self.assertEqual(guide_markers["Name"], "Guide labels (markers)")
+        self.assertFalse(guide_markers["Enabled"])
         candidate_markers = next(
             item for item in displays
             if item.get("Class") == "rviz/MarkerArray"
             and item.get("Marker Topic") == "/formation/planning_candidates")
         self.assertEqual(candidate_markers["Name"],
                          "Candidate OBBs and labels (markers)")
+        self.assertTrue(candidate_markers["Namespaces"][
+            "formation/planning/car1_obb_candidate"])
+        for vehicle_id in (1, 2, 3):
+            self.assertFalse(candidate_markers["Namespaces"][
+                "formation/planning/car{}_center_candidate".format(
+                    vehicle_id)])
+        tf_display = next(item for item in displays
+                          if item.get("Class") == "rviz/TF")
+        self.assertFalse(tf_display["Enabled"])
 
     def test_demo_rviz_exposes_goal_and_initial_pose_tools(self):
         manager = self.document["Visualization Manager"]
