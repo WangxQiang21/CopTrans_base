@@ -1,0 +1,531 @@
+diff --git a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py
+index 1946f8b..f3dc6bb 100644
+--- a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py
++++ b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py
+@@ -18,6 +18,7 @@ polygon-versus-cell SAT, treating a touching edge as a collision.
+ import bisect
+ import math
+ import numbers
++import sys
+ from collections.abc import Mapping as MappingABC
+ 
+ import numpy as np
+@@ -148,6 +149,496 @@ def _signed_twice_area(vertices):
+             vertices, vertices[1:] + vertices[:1]))
+ 
+ 
++# ---------------------------------------------------------------------------
++# TASK 02: complete OBB coverage in one convex corridor or an adjacent union
++# ---------------------------------------------------------------------------
++# These are fixed-sample diagnostic predicates.  ``SINGLE_REGION`` and
++# ``COVERED_BY_ADJACENT_UNION`` describe only the supplied polygon (one static
++# vehicle rectangle) against the artificial convex regions.  They never
++# certify the map free space, never enlarge a halfspace by a tolerance and
++# never replace the continuous audits in this module.
++COVERAGE_SINGLE_REGION = "SINGLE_REGION"
++COVERAGE_ADJACENT_UNION = "COVERED_BY_ADJACENT_UNION"
++COVERAGE_GAP = "GAP"
++COVERAGE_UNCONFIRMED = "UNCONFIRMED_NUMERICS"
++_COVERAGE_TOL_FLOOR_M = 1e-9
++
++
++def _coverage_scale(polygons, corridors):
++    """Coordinate/limit scale used by the suggested coverage tolerance."""
++    scale = 1.0
++    for polygon in polygons:
++        for point in polygon:
++            try:
++                scale = max(scale, abs(float(point[0])),
++                            abs(float(point[1])))
++            except (TypeError, ValueError, IndexError):
++                continue
++    for corridor in corridors:
++        if corridor is None:
++            continue
++        for value in getattr(corridor, "b", ()) or ():
++            try:
++                scale = max(scale, abs(float(value)))
++            except (TypeError, ValueError):
++                continue
++        for point in getattr(corridor, "vertices", ()) or ():
++            try:
++                scale = max(scale, abs(float(point[0])),
++                            abs(float(point[1])))
++            except (TypeError, ValueError, IndexError):
++                continue
++    return scale
++
++
++def _coverage_tolerance(tol_m, polygons, corridors):
++    """Explicit tolerance or ``max(1e-9, 64 eps scale)`` when omitted."""
++    suggested = max(
++        _COVERAGE_TOL_FLOOR_M,
++        64.0 * sys.float_info.epsilon * _coverage_scale(polygons, corridors))
++    if tol_m is None:
++        return suggested
++    try:
++        value = float(tol_m)
++    except (TypeError, ValueError) as exc:
++        raise VirtualAContractError(
++            "INVALID_COVERAGE_TOLERANCE",
++            "tol_m must be a real number") from exc
++    if not math.isfinite(value) or value < 0.0:
++        raise VirtualAContractError(
++            "INVALID_COVERAGE_TOLERANCE",
++            "tol_m must be finite and nonnegative")
++    return value
++
++
++def obb_polygon(center_xy, theta_rad, shape):
++    """Four world-frame corners of one vehicle rectangle, CCW and unclosed.
++
++    ``shape`` is the request's ``VehicleShape``-like object; only its
++    ``length_m`` and ``width_m`` are read.  The body heading is the actual
++    mapped vehicle heading supplied by the caller, never ``psi_F``.
++    """
++    try:
++        center_x = float(center_xy[0])
++        center_y = float(center_xy[1])
++        theta = float(theta_rad)
++        length = float(shape.length_m)
++        width = float(shape.width_m)
++    except (TypeError, ValueError, IndexError, AttributeError) as exc:
++        raise VirtualAContractError(
++            "INVALID_OBB_GEOMETRY",
++            "OBB centre, heading and vehicle shape must be numeric") from exc
++    if not (math.isfinite(center_x) and math.isfinite(center_y)
++            and math.isfinite(theta)):
++        raise VirtualAContractError(
++            "INVALID_OBB_GEOMETRY", "OBB pose must be finite")
++    if not (math.isfinite(length) and math.isfinite(width)
++            and length > 0.0 and width > 0.0):
++        raise VirtualAContractError(
++            "INVALID_OBB_GEOMETRY",
++            "vehicle length_m and width_m must be finite and positive")
++    cosine = math.cos(theta)
++    sine = math.sin(theta)
++    half_length = 0.5 * length
++    half_width = 0.5 * width
++    corners = []
++    for local_x, local_y in (
++            (-half_length, -half_width),
++            (half_length, -half_width),
++            (half_length, half_width),
++            (-half_length, half_width)):
++        corners.append((
++            center_x + cosine * local_x - sine * local_y,
++            center_y + sine * local_x + cosine * local_y))
++    return tuple(corners)
++
++
++def obb_support_halfwidth(normal, theta_rad, shape):
++    """Support half-width ``h(n, theta)`` of the full rotated rectangle.
++
++    ``normal`` must be a unit vector.  For the rectangle centre ``p`` this is
++    exactly ``max_corner n . corner - n . p``; the coverage checks below use
++    the equivalent explicit-vertex form.
++    """
++    try:
++        normal_x = float(normal[0])
++        normal_y = float(normal[1])
++        theta = float(theta_rad)
++        length = float(shape.length_m)
++        width = float(shape.width_m)
++    except (TypeError, ValueError, IndexError, AttributeError) as exc:
++        raise VirtualAContractError(
++            "INVALID_OBB_GEOMETRY",
++            "support normal, heading and vehicle shape must be numeric") from exc
++    if not (math.isfinite(normal_x) and math.isfinite(normal_y)
++            and math.isfinite(theta)):
++        raise VirtualAContractError(
++            "INVALID_OBB_GEOMETRY", "support inputs must be finite")
++    if abs(math.hypot(normal_x, normal_y) - 1.0) > 1e-9:
++        raise VirtualAContractError(
++            "INVALID_OBB_GEOMETRY", "support normal must be unit length")
++    if not (math.isfinite(length) and math.isfinite(width)
++            and length > 0.0 and width > 0.0):
++        raise VirtualAContractError(
++            "INVALID_OBB_GEOMETRY",
++            "vehicle length_m and width_m must be finite and positive")
++    cosine = math.cos(theta)
++    sine = math.sin(theta)
++    tangent_x, tangent_y = cosine, sine
++    lateral_x, lateral_y = -sine, cosine
++    return (0.5 * length * abs(
++                normal_x * tangent_x + normal_y * tangent_y)
++            + 0.5 * width * abs(
++                normal_x * lateral_x + normal_y * lateral_y))
++
++
++def _coverage_polygon(vertices, tol_m):
++    """Validate one convex CCW polygon for the coverage predicates.
++
++    Returns ``{"polygon", "perimeter_m", "reason"}``; ``polygon`` is ``None``
++    for any non-finite, clockwise, non-convex or degenerate input so the
++    public predicates can fail closed without raising on numeric input.
++    """
++    try:
++        points = [(float(point[0]), float(point[1])) for point in vertices]
++    except (TypeError, ValueError, IndexError) as exc:
++        return {"polygon": None, "perimeter_m": 0.0,
++                "reason": "INVALID_POLYGON"}
++    if len(points) < 3:
++        return {"polygon": None, "perimeter_m": 0.0,
++                "reason": "DEGENERATE_POLYGON"}
++    for x, y in points:
++        if not (math.isfinite(x) and math.isfinite(y)):
++            return {"polygon": None, "perimeter_m": 0.0,
++                    "reason": "NON_FINITE_POLYGON"}
++    cleaned = []
++    for point in points:
++        if not cleaned or math.hypot(
++                point[0] - cleaned[-1][0],
++                point[1] - cleaned[-1][1]) > _VERTEX_DEDUP_M:
++            cleaned.append(point)
++    if len(cleaned) > 1 and math.hypot(
++            cleaned[0][0] - cleaned[-1][0],
++            cleaned[0][1] - cleaned[-1][1]) <= _VERTEX_DEDUP_M:
++        cleaned.pop()
++    if len(cleaned) < 3 or _signed_twice_area(cleaned) <= 0.0:
++        return {"polygon": None, "perimeter_m": 0.0,
++                "reason": "CLOCKWISE_OR_DEGENERATE_POLYGON"}
++    perimeter = sum(
++        math.hypot(second[0] - first[0], second[1] - first[1])
++        for first, second in zip(cleaned, cleaned[1:] + cleaned[:1]))
++    cross_tol = tol_m * max(1.0, perimeter)
++    count = len(cleaned)
++    for index in range(count):
++        first = cleaned[index]
++        middle = cleaned[(index + 1) % count]
++        last = cleaned[(index + 2) % count]
++        cross = ((middle[0] - first[0]) * (last[1] - middle[1])
++                 - (middle[1] - first[1]) * (last[0] - middle[0]))
++        if cross < -cross_tol:
++            return {"polygon": None, "perimeter_m": 0.0,
++                    "reason": "NON_CONVEX_POLYGON"}
++    canonical = _canonical_vertices(cleaned)
++    if canonical is None:
++        return {"polygon": None, "perimeter_m": 0.0,
++                "reason": "DEGENERATE_POLYGON"}
++    return {"polygon": canonical[0], "perimeter_m": float(perimeter),
++            "reason": None}
++
++
++def _corridor_halfspaces(corridor):
++    if not isinstance(corridor, ConvexCorridor):
++        raise VirtualAContractError(
++            "INVALID_CONVEX_CORRIDOR",
++            "coverage geometry needs a ConvexCorridor")
++    return tuple(corridor.A), tuple(corridor.b)
++
++
++def _polygon_violation(points, rows, limits):
++    """Signed maximum violation and its first witness over all halfspaces."""
++    max_violation = -math.inf
++    max_witness = None
++    for vertex_index, (x, y) in enumerate(points):
++        for halfspace_index, (row, limit) in enumerate(zip(rows, limits)):
++            violation = row[0] * x + row[1] * y - limit
++            if violation > max_violation:
++                max_violation = violation
++                max_witness = (halfspace_index, vertex_index, (x, y),
++                               violation)
++    return max_violation, max_witness
++
++
++def _violation_witness(witness):
++    halfspace_index, vertex_index, vertex, violation = witness
++    return {
++        "halfspace_index": int(halfspace_index),
++        "vertex_index": int(vertex_index),
++        "vertex": [float(vertex[0]), float(vertex[1])],
++        "violation_m": float(violation),
++    }
++
++
++def _coverage_band_state(violation, tol_m):
++    """Robust inside / strictly outside / numeric tolerance band."""
++    if violation <= -tol_m:
++        return "INSIDE"
++    if violation > tol_m:
++        return "OUTSIDE"
++    return "BAND"
++
++
++def obb_coverage_in_corridor(obb_vertices, corridor, tol_m=None,
++                             region_index=None):
++    """Complete-polygon coverage of one convex corridor by one OBB.
++
++    The whole polygon is checked against every halfspace of ``corridor`` via
++    its explicit vertices (equivalent to the support half-width for a
++    rectangle).  ``GAP`` requires a strictly positive violation; any boundary
++    or degenerate evidence returns ``UNCONFIRMED_NUMERICS`` instead of
++    silently accepting it.
++    """
++    rows, limits = _corridor_halfspaces(corridor)
++    tol = _coverage_tolerance(tol_m, (obb_vertices,), (corridor,))
++    checked = _coverage_polygon(obb_vertices, tol)
++    if checked["polygon"] is None:
++        return {
++            "status": COVERAGE_UNCONFIRMED,
++            "region_index": region_index,
++            "max_violation_m": None,
++            "witness": {"reason": checked["reason"]},
++            "tol_m": tol,
++            "reason": checked["reason"],
++        }
++    violation, witness = _polygon_violation(
++        checked["polygon"], rows, limits)
++    state = _coverage_band_state(violation, tol)
++    if state == "INSIDE":
++        status, reason = COVERAGE_SINGLE_REGION, "ROBUSTLY_INSIDE"
++    elif state == "OUTSIDE":
++        status, reason = COVERAGE_GAP, "ROBUST_VIOLATION"
++    else:
++        status, reason = COVERAGE_UNCONFIRMED, "TOLERANCE_BAND"
++    return {
++        "status": status,
++        "region_index": region_index,
++        "max_violation_m": float(violation),
++        "witness": _violation_witness(witness),
++        "tol_m": tol,
++        "reason": reason,
++    }
++
++
++def _union_order(polygon, first_rows, first_limits, second_rows,
++                 second_limits, tol_m, area_tol):
++    """One-order constructive union classification for a fixed polygon.
++
++    The remaining part of ``polygon`` is clipped by the first region's
++    halfspaces.  Every positive-area outside piece must be completely inside
++    the second region (checked at all of its vertices, valid by convexity).
++    A positive-area piece with a vertex strictly violating the second region
++    proves a gap; tiny or boundary-band pieces only make the order ambiguous.
++    """
++    violation, witness = _polygon_violation(
++        polygon, first_rows, first_limits)
++    if _coverage_band_state(violation, tol_m) == "INSIDE":
++        return {
++            "kind": "SINGLE_FIRST",
++            "max_violation_m": float(violation),
++            "witness": _violation_witness(witness),
++            "covered_pieces": 0,
++            "outside_pieces": 0,
++            "ambiguous": False,
++            "gap": None,
++        }
++    remaining = list(polygon)
++    outside_pieces = 0
++    covered_pieces = 0
++    ambiguous = False
++    gap = None
++    worst_covered = -math.inf
++    for halfspace_index, (row, limit) in enumerate(
++            zip(first_rows, first_limits)):
++        outside = _clip_polygon(remaining, (-row[0], -row[1]), -limit)
++        canonical = (_canonical_vertices(outside)
++                     if len(outside) >= 3 else None)
++        if canonical is None:
++            if outside:
++                # A segment/point outside piece is only a boundary sliver.
++                ambiguous = True
++        else:
++            piece, area = canonical
++            if area <= area_tol:
++                ambiguous = True
++            else:
++                outside_pieces += 1
++                piece_violation, piece_witness = _polygon_violation(
++                    piece, second_rows, second_limits)
++                state = _coverage_band_state(piece_violation, tol_m)
++                if state == "INSIDE":
++                    covered_pieces += 1
++                    worst_covered = max(worst_covered, piece_violation)
++                elif state == "OUTSIDE":
++                    if gap is None:
++                        gap = _violation_witness(piece_witness)
++                        gap["outside_area_m2"] = float(area)
++                        gap["clip_halfspace_index"] = int(halfspace_index)
++                else:
++                    ambiguous = True
++        inside = _clip_polygon(remaining, row, limit)
++        canonical_inside = (_canonical_vertices(inside)
++                            if len(inside) >= 3 else None)
++        if canonical_inside is None:
++            remaining = []
++            break
++        remaining = list(canonical_inside[0])
++    if gap is not None:
++        return {
++            "kind": "GAP",
++            "max_violation_m": float(gap["violation_m"]),
++            "witness": gap,
++            "covered_pieces": covered_pieces,
++            "outside_pieces": outside_pieces,
++            "ambiguous": ambiguous,
++            "gap": gap,
++        }
++    if outside_pieces == 0:
++        return {
++            "kind": "UNCONFIRMED",
++            "max_violation_m": float(violation),
++            "witness": {"reason": "NO_SUBSTANTIVE_OUTSIDE_PIECE"},
++            "covered_pieces": 0,
++            "outside_pieces": 0,
++            "ambiguous": ambiguous,
++            "gap": None,
++        }
++    if ambiguous or covered_pieces != outside_pieces:
++        return {
++            "kind": "UNCONFIRMED",
++            "max_violation_m": (float(worst_covered)
++                                if covered_pieces else float(violation)),
++            "witness": {"reason": "TOLERANCE_BAND"},
++            "covered_pieces": covered_pieces,
++            "outside_pieces": outside_pieces,
++            "ambiguous": ambiguous,
++            "gap": None,
++        }
++    return {
++        "kind": "COVERED",
++        "max_violation_m": float(worst_covered),
++        "witness": {
++            "covered_pieces": covered_pieces,
++            "outside_pieces": outside_pieces,
++            "worst_piece_violation_m": float(worst_covered),
++        },
++        "covered_pieces": covered_pieces,
++        "outside_pieces": outside_pieces,
++        "ambiguous": False,
++        "gap": None,
++    }
++
++
++def obb_coverage_in_adjacent_union(obb_vertices, left, right, tol_m=None):
++    """Complete-polygon coverage of ``C_left union C_right`` by one OBB.
++
++    A polygon entirely inside one region returns ``SINGLE_REGION`` with its
++    region index.  Otherwise the constructive clipping test is run in both
++    orders; only two covered orders return ``COVERED_BY_ADJACENT_UNION`` and
++    only two strict-gap orders return ``GAP``.  Any disagreement, boundary
++    contact or degenerate clip returns ``UNCONFIRMED_NUMERICS``.  The convex
++    hull of the two regions is never built: that would fill a real gap.
++    """
++    left_rows, left_limits = _corridor_halfspaces(left)
++    right_rows, right_limits = _corridor_halfspaces(right)
++    tol = _coverage_tolerance(tol_m, (obb_vertices,), (left, right))
++    checked = _coverage_polygon(obb_vertices, tol)
++    if checked["polygon"] is None:
++        return {
++            "status": COVERAGE_UNCONFIRMED,
++            "region_index": None,
++            "max_violation_m": None,
++            "witness": {"reason": checked["reason"]},
++            "tol_m": tol,
++            "reason": checked["reason"],
++            "order_results": {"forward": checked["reason"],
++                              "reverse": checked["reason"]},
++        }
++    polygon = checked["polygon"]
++    area_tol = tol * max(1.0, checked["perimeter_m"])
++    left_violation, left_witness = _polygon_violation(
++        polygon, left_rows, left_limits)
++    if _coverage_band_state(left_violation, tol) == "INSIDE":
++        return {
++            "status": COVERAGE_SINGLE_REGION,
++            "region_index": 0,
++            "max_violation_m": float(left_violation),
++            "witness": _violation_witness(left_witness),
++            "tol_m": tol,
++            "reason": "ROBUSTLY_INSIDE_LEFT_REGION",
++            "order_results": {"forward": "SINGLE_FIRST",
++                              "reverse": "SINGLE_SECOND"},
++        }
++    right_violation, right_witness = _polygon_violation(
++        polygon, right_rows, right_limits)
++    if _coverage_band_state(right_violation, tol) == "INSIDE":
++        return {
++            "status": COVERAGE_SINGLE_REGION,
++            "region_index": 1,
++            "max_violation_m": float(right_violation),
++            "witness": _violation_witness(right_witness),
++            "tol_m": tol,
++            "reason": "ROBUSTLY_INSIDE_RIGHT_REGION",
++            "order_results": {"forward": "SINGLE_SECOND",
++                              "reverse": "SINGLE_FIRST"},
++        }
++    forward = _union_order(
++        polygon, left_rows, left_limits, right_rows, right_limits,
++        tol, area_tol)
++    reverse = _union_order(
++        polygon, right_rows, right_limits, left_rows, left_limits,
++        tol, area_tol)
++    order_results = {"forward": forward["kind"], "reverse": reverse["kind"]}
++    if forward["kind"] == "COVERED" and reverse["kind"] == "COVERED":
++        return {
++            "status": COVERAGE_ADJACENT_UNION,
++            "region_index": None,
++            "max_violation_m": max(forward["max_violation_m"],
++                                   reverse["max_violation_m"]),
++            "witness": {
++                "covered_pieces_forward": forward["covered_pieces"],
++                "covered_pieces_reverse": reverse["covered_pieces"],
++                "worst_piece_violation_m": max(
++                    forward["max_violation_m"],
++                    reverse["max_violation_m"]),
++            },
++            "tol_m": tol,
++            "reason": "BOTH_ORDERS_COVERED",
++            "order_results": order_results,
++        }
++    if forward["kind"] == "GAP" and reverse["kind"] == "GAP":
++        return {
++            "status": COVERAGE_GAP,
++            "region_index": None,
++            "max_violation_m": float(forward["max_violation_m"]),
++            "witness": forward["witness"],
++            "tol_m": tol,
++            "reason": "BOTH_ORDERS_GAP",
++            "order_results": order_results,
++        }
++    return {
++        "status": COVERAGE_UNCONFIRMED,
++        "region_index": None,
++        "max_violation_m": None,
++        "witness": {
++            "reason": "ORDER_RESULTS_DISAGREE",
++            "forward": forward["witness"],
++            "reverse": reverse["witness"],
++        },
++        "tol_m": tol,
++        "reason": "ORDER_RESULTS_DISAGREE",
++        "order_results": order_results,
++    }
++
++
+ def _seed_box(grid, start, end, padding):
+     left = grid.ox + _MAP_INSET_M
+     bottom = grid.oy + _MAP_INSET_M
+@@ -1903,6 +2394,10 @@ def corridor_chain_from_payload(payload):
+ __all__ = [
+     "CORRIDOR_DISPLAYS_KEY",
+     "CORRIDOR_DISPLAY_STATE",
++    "COVERAGE_ADJACENT_UNION",
++    "COVERAGE_GAP",
++    "COVERAGE_SINGLE_REGION",
++    "COVERAGE_UNCONFIRMED",
+     "allocate_corridors",
+     "audit_corridor_chain",
+     "audit_path_in_corridors",
+@@ -1912,5 +2407,9 @@ __all__ = [
+     "corridor_effective_margin",
+     "corridor_min_portal_radius",
+     "make_corridor_guide",
++    "obb_coverage_in_adjacent_union",
++    "obb_coverage_in_corridor",
++    "obb_polygon",
++    "obb_support_halfwidth",
+     "validate_corridor_allocation",
+ ]
+\ No newline at end of file

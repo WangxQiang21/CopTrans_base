@@ -1,0 +1,83 @@
+/formation_goal_bridge/admission_backend: legacy
+/formation_goal_bridge/allow_reverse: true
+/formation_goal_bridge/body_length_m: 0.738
+/formation_goal_bridge/body_width_m: 0.5
+/formation_goal_bridge/formation_id: cargo_wedge
+/formation_goal_bridge/frame_id: map
+/formation_goal_bridge/goal_heading_free: true
+/formation_goal_bridge/initial_heading_policy: cargo_heading
+/formation_goal_bridge/initial_plan_id: 600000
+/formation_goal_bridge/job_state_timeout_s: 3.0
+/formation_goal_bridge/map_timeout_s: 8.0
+/formation_goal_bridge/offsets:
+- - 1.0
+  - 0.0
+- - 0.0
+  - 1.0
+- - 0.0
+  - -1.0
+/formation_goal_bridge/playback_tf_timeout_s: 0.5
+/formation_goal_bridge/start_theta: 0.0
+/formation_goal_bridge/start_x: 10.0
+/formation_goal_bridge/start_y: 3.6
+/formation_goal_bridge/vehicle_ids:
+- 1
+- 2
+- 3
+/formation_goal_bridge/virtual_a_goal_policy: free
+/formation_optimizer/collision_margin: 0.05
+/formation_optimizer/enable_nlp: true
+/formation_optimizer/kinematic_limits/require_cargo_heading: false
+/formation_optimizer/max_candidates: 4
+/formation_optimizer/optimizer_time_limit: 1.0
+/formation_optimizer/planning_dt: 0.02
+/formation_optimizer/publication_dt: 0.02
+/formation_optimizer/require_collision_precheck: true
+/formation_optimizer/start_on_publication: true
+/formation_optimizer/sweep_spacing: 0.01
+/formation_planner/formation/cost/clearance: 0.25
+/formation_planner/formation/cost/risk_horizon_m: 0.5
+/formation_planner/formation/cost/rotation: 0.5
+/formation_planner/formation/cost/switch: 0.2
+/formation_planner/formation/cost/translation: 1.0
+/formation_planner/formation/search/goal_xy_tol_m: 0.16
+/formation_planner/formation/search/goal_yaw_tol_rad: 0.16
+/formation_planner/formation/search/max_candidates: 4
+/formation_planner/formation/search/max_corner_step_m: 0.05
+/formation_planner/formation/search/max_expansions: 50000
+/formation_planner/formation/search/max_wall_time_s: 8.0
+/formation_planner/formation/search/rotation_step_rad: 0.17453292519943295
+/formation_planner/formation/search/translation_step_m: 0.5
+/formation_planner/formation/search/xy_res: 0.2
+/formation_planner/formation/search/yaw_res: 0.17453292519943295
+/formation_playback/allow_reverse: true
+/formation_playback/backend: legacy
+/formation_playback/body_length_m: 0.738
+/formation_playback/body_width_m: 0.5
+/formation_playback/formation_id: cargo_wedge
+/formation_playback/frame_id: map
+/formation_playback/goal_heading_free: true
+/formation_playback/hud_enabled: true
+/formation_playback/hud_height: 270
+/formation_playback/hud_left: 900
+/formation_playback/hud_top: 20
+/formation_playback/hud_width: 360
+/formation_playback/initial_heading_policy: cargo_heading
+/formation_playback/offsets:
+- - 1.0
+  - 0.0
+- - 0.0
+  - 1.0
+- - 0.0
+  - -1.0
+/formation_playback/publish_tf: true
+/formation_playback/rate: 25.0
+/formation_playback/show_cargo_reason: false
+/formation_playback/show_status_text: false
+/formation_playback/transport_ui: true
+/formation_playback/vehicle_ids:
+- 1
+- 2
+- 3
+/fwis_map_publisher/map_dir: /home/wq/whut_thesis/expv3_multi_virtual_a/catkin_ws/src/fwis_v3_demo/../../../maps/map16-s09-underground-garage
+

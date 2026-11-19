@@ -1,0 +1,220 @@
+Panels:
+- Class: rviz/Displays
+  Name: Displays
+Visualization Manager:
+  Class: ''
+  Displays:
+  - Class: rviz/Grid
+    Enabled: true
+    Name: Grid
+    Value: true
+  - Class: rviz/Map
+    Enabled: true
+    Name: Map
+    Topic: /map
+    Value: true
+  - Class: rviz/MarkerArray
+    Enabled: true
+    Name: Convex workspace corridors (F point only)
+    Marker Topic: /formation/corridors
+    Namespaces:
+      formation/planning/corridor_f_only/fill: true
+      formation/planning/corridor_f_only/edge: true
+    Value: true
+  - Class: rviz/Path
+    Enabled: true
+    Name: Certified path vehicle 1 (editable)
+    Topic: /formation/path/vehicle_1
+    Color: 56; 189; 248
+    Line Style: Lines
+    Line Width: 0.065
+    Value: true
+  - Class: rviz/Path
+    Enabled: true
+    Name: Certified path vehicle 2 (editable)
+    Topic: /formation/path/vehicle_2
+    Color: 56; 189; 248
+    Line Style: Lines
+    Line Width: 0.065
+    Value: true
+  - Class: rviz/Path
+    Enabled: true
+    Name: Certified path vehicle 3 (editable)
+    Topic: /formation/path/vehicle_3
+    Color: 56; 189; 248
+    Line Style: Lines
+    Line Width: 0.065
+    Value: true
+  - Class: rviz/Path
+    Enabled: true
+    Name: F candidate path (editable)
+    Topic: /formation/path/f_candidate
+    Color: 250; 204; 21
+    Line Style: Lines
+    Line Width: 0.047
+    Value: true
+  - Class: rviz/Path
+    Enabled: false
+    Name: Candidate centre path car1 (editable)
+    Topic: /formation/path/candidate_vehicle_1
+    Color: 250; 204; 21
+    Line Style: Lines
+    Line Width: 0.024
+    Value: false
+  - Class: rviz/Path
+    Enabled: false
+    Name: Candidate centre path car2 (editable)
+    Topic: /formation/path/candidate_vehicle_2
+    Color: 250; 204; 21
+    Line Style: Lines
+    Line Width: 0.024
+    Value: false
+  - Class: rviz/Path
+    Enabled: false
+    Name: Candidate centre path car3 (editable)
+    Topic: /formation/path/candidate_vehicle_3
+    Color: 250; 204; 21
+    Line Style: Lines
+    Line Width: 0.024
+    Value: false
+  - Class: rviz/Path
+    Enabled: false
+    Name: A* raw route 0 (editable)
+    Topic: /formation/path/astar_raw_0
+    Color: 249; 115; 22
+    Line Style: Lines
+    Line Width: 0.025
+    Value: false
+  - Class: rviz/Path
+    Enabled: false
+    Name: A* raw route 1 (editable)
+    Topic: /formation/path/astar_raw_1
+    Color: 249; 115; 22
+    Line Style: Lines
+    Line Width: 0.025
+    Value: false
+  - Class: rviz/Path
+    Enabled: false
+    Name: A* raw route 2 (editable)
+    Topic: /formation/path/astar_raw_2
+    Color: 249; 115; 22
+    Line Style: Lines
+    Line Width: 0.025
+    Value: false
+  - Class: rviz/Path
+    Enabled: false
+    Name: Portal guide 0 (editable)
+    Topic: /formation/path/portal_guide_0
+    Color: 34; 197; 94
+    Line Style: Lines
+    Line Width: 0.035
+    Value: false
+  - Class: rviz/Path
+    Enabled: false
+    Name: Portal guide 1 (editable)
+    Topic: /formation/path/portal_guide_1
+    Color: 34; 197; 94
+    Line Style: Lines
+    Line Width: 0.035
+    Value: false
+  - Class: rviz/Path
+    Enabled: false
+    Name: Portal guide 2 (editable)
+    Topic: /formation/path/portal_guide_2
+    Color: 34; 197; 94
+    Line Style: Lines
+    Line Width: 0.035
+    Value: false
+  - Class: rviz/Path
+    Enabled: true
+    Name: Active A* route (editable)
+    Topic: /formation/path/astar_active
+    Color: 249; 115; 22
+    Line Style: Lines
+    Line Width: 0.025
+    Value: true
+  - Class: rviz/Path
+    Enabled: true
+    Name: Active Portal guide (editable)
+    Topic: /formation/path/portal_guide_active
+    Color: 34; 197; 94
+    Line Style: Lines
+    Line Width: 0.035
+    Value: true
+  - Class: rviz/MarkerArray
+    Enabled: true
+    Name: Vehicle bodies, headings, history and labels (markers)
+    Marker Topic: /formation/markers
+    Value: true
+  - Class: rviz/MarkerArray
+    Enabled: false
+    Marker Topic: /formation/guides
+    Name: Guide labels (markers)
+    Namespaces:
+      formation/planning/astar_raw: false
+      formation/planning/portal_guide: false
+    Queue Size: 100
+    Value: false
+  - Class: rviz/MarkerArray
+    Enabled: true
+    Name: Candidate OBBs and labels (markers)
+    Marker Topic: /formation/planning_candidates
+    Namespaces:
+      formation/planning/f_candidate: true
+      formation/planning/car1_center_candidate: false
+      formation/planning/car2_center_candidate: false
+      formation/planning/car3_center_candidate: false
+      formation/planning/car1_obb_candidate: true
+      formation/planning/car2_obb_candidate: true
+      formation/planning/car3_obb_candidate: true
+      formation/planning/failure: true
+    Queue Size: 100
+    Value: true
+  - Align Bottom: false
+    Background Alpha: 0.55
+    Background Color: 0; 0; 0
+    Class: jsk_rviz_plugin/OverlayText
+    Enabled: true
+    Foreground Alpha: 0.95
+    Foreground Color: 255; 255; 255
+    Invert Shadow: false
+    Name: Formation HUD
+    Overtake BG Color Properties: true
+    Overtake FG Color Properties: true
+    Overtake Position Properties: true
+    Topic: /formation/hud
+    Value: true
+    font: DejaVu Sans Mono
+    height: 270
+    left: 900
+    line width: 2
+    text size: 13
+    top: 20
+    width: 360
+  - Class: rviz/TF
+    Enabled: false
+    Name: Formation TF
+    Show Arrows: true
+    Show Axes: true
+    Show Names: true
+    Value: false
+  Global Options:
+    Fixed Frame: map
+    Background Color: 48; 48; 48
+    Frame Rate: 30
+  Tools:
+  - Class: rviz/Interact
+  - Class: rviz/MoveCamera
+  - Class: rviz/Select
+  - Class: rviz/SetInitialPose
+    Topic: /initialpose
+  - Class: rviz/SetGoal
+    Topic: /move_base_simple/goal
+  Views:
+    Current:
+      Class: rviz/TopDownOrtho
+      Name: Current View
+      Scale: 39.73509933774834
+      X: 3.4250000000000007
+      Y: 2.75
+      Angle: 0

@@ -46,16 +46,31 @@ from .contracts import (
     validate_virtual_a_request,
     _wrap,
 )
+from ..formation_collision import FormationCollisionChecker
 from .corridor import (
+    ASSESSMENT_SCHEMA,
+    CANDIDATE_CERTIFICATION_DIAGNOSTIC_ONLY,
+    KINEMATIC_NORMAL_BRANCH_INVALID,
+    MAP_CLEAR_AT_SAMPLES,
+    MAP_COLLISION_OBSERVED,
+    MAP_SAMPLE_UNCONFIRMED,
+    ROUTE_ASSESSMENT_SCHEMA,
     allocate_corridors,
+    assess_formation_guide,
+    assess_route_guide,
     audit_corridor_chain,
     audit_path_in_corridors,
     build_corridor_chain,
     corridor_effective_margin,
     make_corridor_guide,
+    plan_guide_candidates,
     reallocate_adjacent_portal_once,
 )
-from .optimizer import initial_guess_key, solve_open_path_guided
+from .optimizer import (
+    _node_route_curvature,
+    initial_guess_key,
+    solve_open_path_guided,
+)
 from .route_processing import segment_is_free, simplify_route
 from .timing import retime_path
 
@@ -673,6 +688,326 @@ def _heading_branch_candidates(request, points, source):
         candidate_rank=rank) for rank, k in enumerate(ordered))
 
 
+def _unavailable_route_assessment(route_index, reason):
+    """UNKNOWN route diagnostics when the real checker cannot be used."""
+    return {
+        "schema": ROUTE_ASSESSMENT_SCHEMA,
+        "route_index": int(route_index),
+        "map_sample_status": "UNKNOWN",
+        "map_sample_counts": {},
+        "coverage_sample_status": "UNKNOWN",
+        "coverage_vehicles": {},
+        "kinematic_hint_status": "UNKNOWN",
+        "kinematic_vehicles": {},
+        "guide_hint_status": "UNKNOWN",
+        "sample_cap": False,
+        "station_count": 0,
+        "candidate_certification":
+            CANDIDATE_CERTIFICATION_DIAGNOSTIC_ONLY,
+        "formation_obb_hard_constraints": False,
+        "continuously_certified": False,
+        "reason": str(reason),
+    }
+
+
+def _unavailable_formation_assessment(route_index, round_index, reason,
+                                      request_sha256="", grid_sha256="",
+                                      planning_context_sha256=""):
+    """UNKNOWN guide diagnostics; never a certification or solver input."""
+    return {
+        "schema": ASSESSMENT_SCHEMA,
+        "candidate_id": "",
+        "route_index": int(route_index),
+        "round_index": int(round_index),
+        "request_sha256": str(request_sha256 or ""),
+        "grid_sha256": str(grid_sha256 or ""),
+        "planning_context_sha256": str(planning_context_sha256 or ""),
+        "map_sample_status": "UNKNOWN",
+        "map_sample_counts": {},
+        "coverage_sample_status": "UNKNOWN",
+        "coverage_vehicles": {},
+        "kinematic_hint_status": "UNKNOWN",
+        "kinematic_vehicles": {},
+        "guide_hint_status": "UNKNOWN",
+        "transition_windows": [],
+        "sample_cap": False,
+        "incomplete_reasons": [str(reason)],
+        "candidate_certification":
+            CANDIDATE_CERTIFICATION_DIAGNOSTIC_ONLY,
+        "formation_obb_hard_constraints": False,
+        "continuously_certified": False,
+        "reason": str(reason),
+    }
+
+
+def _progress_assessment_summary(assessment):
+    """Bounded JSON-safe assessment counts for the PORTAL_GUIDE progress."""
+    if not isinstance(assessment, dict):
+        return {"available": False, "reason": "ASSESSMENT_MISSING"}
+    map_counts = assessment.get("map_sample_counts") or {}
+    single_region = 0
+    union_covered = 0
+    union_gap = 0
+    union_unknown = 0
+    for vehicle in (assessment.get("coverage_vehicles") or {}).values():
+        counts = vehicle.get("counts") or {}
+        # Keep single-region and adjacent-union coverage separate; the HUD
+        # and progress fields must expose the same four real counters.
+        single_region += int(counts.get("single", 0))
+        union_covered += int(counts.get("union", 0))
+        union_gap += int(counts.get("gap", 0))
+        union_unknown += int(counts.get("unconfirmed", 0))
+    windows = assessment.get("transition_windows") or []
+    portal_unconfirmed = sum(
+        1 for window in windows
+        if isinstance(window, dict) and str(
+            window.get("status", "")).endswith("UNCONFIRMED"))
+    available = str(assessment.get("map_sample_status", "")) != "UNKNOWN"
+    return {
+        "available": bool(available),
+        "candidate_id": str(assessment.get("candidate_id", "") or ""),
+        "station_count": int(assessment.get("station_count", 0) or 0),
+        "map_sample_status": str(
+            assessment.get("map_sample_status", "") or ""),
+        "map_collision_count": int(map_counts.get("map_collision", 0)) +
+            int(map_counts.get("vehicle_collision", 0)),
+        "single_region_count": int(single_region),
+        "union_covered_count": int(union_covered),
+        "union_gap_count": int(union_gap),
+        "union_unknown_count": int(union_unknown),
+        "kinematic_hint_status": str(
+            assessment.get("kinematic_hint_status", "") or ""),
+        "guide_hint_status": str(
+            assessment.get("guide_hint_status", "") or ""),
+        "portal_window_count": len(windows),
+        "portal_unconfirmed_count": int(portal_unconfirmed),
+        "sample_cap": bool(assessment.get("sample_cap", False)),
+    }
+
+
+_ROUTE_MAP_STATUS_RANK = {
+    MAP_CLEAR_AT_SAMPLES: 0,
+    MAP_COLLISION_OBSERVED: 1,
+    MAP_SAMPLE_UNCONFIRMED: 2,
+}
+
+
+def _route_assessment_score(assessment, route_length_m, route_index):
+    """Stable lexicographic route preference from coarse map diagnostics.
+
+    A definite clear sample set ranks above an observed collision, which ranks
+    above an unconfirmed sample set.  Collision and unknown station counts,
+    route length and finally the original A* index break ties.  A missing
+    assessment is never treated as clear.
+    """
+    try:
+        length = float(route_length_m)
+    except (TypeError, ValueError):
+        length = float("inf")
+    if not isinstance(assessment, dict):
+        return (3, 3, 3, length, int(route_index))
+    counts = assessment.get("map_sample_counts") or {}
+    try:
+        collisions = int(counts.get("map_collision", 0) or 0) + \
+            int(counts.get("vehicle_collision", 0) or 0)
+        unconfirmed = int(counts.get("unconfirmed", 0) or 0)
+    except (TypeError, ValueError):
+        collisions = 3
+        unconfirmed = 3
+    rank = _ROUTE_MAP_STATUS_RANK.get(
+        str(assessment.get("map_sample_status") or ""), 3)
+    return (int(rank), int(collisions), int(unconfirmed), length,
+            int(route_index))
+
+
+def _route_attempt_order(routes, assessments):
+    """Original route indices in diagnostic-first attempt order.
+
+    The A* ``routes`` tuple, its topic IDs and the active route alias keep
+    their original indices; this order only decides which untried original
+    index the single recovery attempts next.
+    """
+    by_index = {}
+    for assessment in assessments or ():
+        if not isinstance(assessment, dict):
+            continue
+        try:
+            by_index[int(assessment.get("route_index"))] = assessment
+        except (TypeError, ValueError):
+            continue
+    return tuple(sorted(
+        range(len(routes)),
+        key=lambda index: _route_assessment_score(
+            by_index.get(index),
+            getattr(routes[index], "length_m", float("inf")),
+            index)))
+
+
+def _guide_candidate_rank(candidate):
+    """Diagnostic candidate family rank; base QP always wins a tie."""
+    origin = ""
+    quality = getattr(candidate, "quality", None)
+    if isinstance(quality, dict):
+        origin = str(quality.get("candidate_origin") or "")
+    if origin == "CHEBYSHEV_CENTRE_GUIDE":
+        return 1
+    if origin.startswith("ONE_PORTAL_VARIANT_"):
+        return 2
+    return 0
+
+
+def _guide_candidate_counts(assessment):
+    """Bounded comparison counts; ``None`` means no usable assessment."""
+    if not isinstance(assessment, dict) or \
+            str(assessment.get("map_sample_status") or "UNKNOWN") == "UNKNOWN":
+        return None
+    map_counts = assessment.get("map_sample_counts") or {}
+    coverage_counts = assessment.get("coverage_vehicles") or {}
+    kinematic_counts = assessment.get("kinematic_vehicles") or {}
+    try:
+        collisions = int(map_counts.get("map_collision", 0) or 0) + \
+            int(map_counts.get("vehicle_collision", 0) or 0)
+        map_unknown = int(map_counts.get("unconfirmed", 0) or 0)
+        gap = 0
+        coverage_unknown = 0
+        for vehicle in coverage_counts.values():
+            counts = vehicle.get("counts") or {}
+            gap += int(counts.get("gap", 0) or 0)
+            coverage_unknown += int(counts.get("unconfirmed", 0) or 0)
+        invalid = 0
+        for vehicle in kinematic_counts.values():
+            counts = vehicle.get("counts") or {}
+            invalid += int(
+                counts.get(KINEMATIC_NORMAL_BRANCH_INVALID, 0) or 0)
+    except (TypeError, ValueError, AttributeError):
+        return None
+    return {
+        "has_collision": int(collisions > 0),
+        "collision_count": int(collisions),
+        "has_invalid": int(
+            str(assessment.get("normal_branch_status") or "")
+            == KINEMATIC_NORMAL_BRANCH_INVALID),
+        "invalid_count": int(invalid),
+        "gap_count": int(gap),
+        "coverage_unknown_count": int(coverage_unknown),
+        "map_unknown_count": int(map_unknown),
+    }
+
+
+def _guide_candidate_score(record):
+    """Diagnostic lexicographic candidate score; availability dominates.
+
+    Unassessed candidates rank below every assessed candidate.  Ties then
+    prefer the base QP family, then shorter guides, then the generation index.
+    """
+    index = int(record.get("candidate_index", 0))
+    try:
+        length = float(record.get("length_m", float("inf")))
+    except (TypeError, ValueError):
+        length = float("inf")
+    rank = int(record.get("guide_rank", 3))
+    # The round record keeps only a bounded summary per candidate, so the
+    # comparison counts frozen at record construction are authoritative here.
+    counts = record.get("selection_counts")
+    if record.get("status") != "ASSESSED" or not isinstance(counts, dict):
+        return (1, 0, 0, 0, 0, 0, 0, 0, rank, length, index)
+    return (0, counts["has_collision"], counts["collision_count"],
+            counts["has_invalid"], counts["invalid_count"],
+            counts["gap_count"], counts["coverage_unknown_count"],
+            counts["map_unknown_count"], rank, length, index)
+
+
+def _guide_candidate_record(candidate_index, candidate, allocation,
+                            assessment):
+    """Bounded public evidence for one generated Guide candidate."""
+    quality = candidate.quality if isinstance(candidate.quality, dict) else {}
+    summary = _progress_assessment_summary(assessment)
+    counts = _guide_candidate_counts(assessment)
+    return {
+        "candidate_index": int(candidate_index),
+        "guide_source": str(candidate.source),
+        "candidate_origin": (
+            None if quality.get("candidate_origin") is None
+            else str(quality.get("candidate_origin"))),
+        "target_portal_index": (
+            None if quality.get("target_portal_index") is None
+            else int(quality["target_portal_index"])),
+        "target_window_index": (
+            None if quality.get("target_window_index") is None
+            else int(quality["target_window_index"])),
+        "local_portal_assessment": (
+            None if not isinstance(
+                quality.get("local_portal_assessment"), dict)
+            else dict(quality["local_portal_assessment"])),
+        "guide_rank": int(_guide_candidate_rank(candidate)),
+        "point_count": len(candidate.points),
+        "length_m": float(candidate.length_m),
+        "allocation_count": 0 if allocation is None else len(allocation),
+        "solver_compatible": allocation is not None,
+        "status": ("ASSESSED" if counts is not None
+                   else "ASSESSMENT_UNAVAILABLE"),
+        "assessment": summary,
+        "selection_counts": counts,
+        "selected": False,
+        "certification_claim": "NONE",
+        "candidate_certification":
+            CANDIDATE_CERTIFICATION_DIAGNOSTIC_ONLY,
+        "formation_obb_hard_constraints": False,
+        "continuously_certified": False,
+    }
+
+
+def _assess_guide_candidate(chain, candidate, checker, request, map_request,
+                            candidate_index, route_index, round_index,
+                            digest, context_sha, intervals, deadline):
+    """Allocate and assess one Guide candidate; never relax its corridor.
+
+    Returns ``(record, state, allocation_error)``.  ``state`` is ``None``
+    when the candidate has no solver-compatible allocation; the record keeps
+    the explicit incompatibility reason for the bounded round evidence.
+    """
+    try:
+        allocation = allocate_corridors(
+            chain, candidate, intervals=int(intervals))
+    except VirtualAContractError as exc:
+        record = _guide_candidate_record(
+            candidate_index, candidate, None, None)
+        record["status"] = "ALLOCATION_INCOMPATIBLE"
+        record["reason"] = "FORMATION_GUIDE_NOT_SOLVER_COMPATIBLE"
+        record["detail"] = str(exc.detail)[:240]
+        return record, None, str(exc.detail)
+    if checker is None:
+        assessment = _unavailable_formation_assessment(
+            route_index, round_index, "CHECKER_UNAVAILABLE",
+            str(map_request.request_sha256), digest, context_sha)
+    else:
+        try:
+            assessment = assess_formation_guide(
+                chain, candidate.points, checker, request.model,
+                request.vehicle_shapes, float(request.start_qf.psi),
+                float(request.goal_qf.psi),
+                route_index=int(route_index),
+                round_index=int(round_index),
+                guide_source=str(candidate.source),
+                allocation=allocation,
+                node_curvature=tuple(
+                    float(value) for value in
+                    _node_route_curvature(candidate.points)),
+                grid_sha256=digest,
+                request_sha256=str(map_request.request_sha256),
+                planning_context_sha256=context_sha,
+                deadline=deadline)
+        except Exception as exc:
+            assessment = _unavailable_formation_assessment(
+                route_index, round_index,
+                "FORMATION_ASSESSMENT_UNAVAILABLE: {}: {}".format(
+                    type(exc).__name__, exc),
+                str(map_request.request_sha256), digest, context_sha)
+    record = _guide_candidate_record(
+        candidate_index, candidate, allocation, assessment)
+    return record, (candidate, allocation, assessment), None
+
+
 def _winding_evidence(branch, guide_length_m):
     """Round/search evidence for the packet's unwrapped heading branch."""
     return {
@@ -990,11 +1325,13 @@ def _plan_virtual_a_impl(map_request, progress):
             "corridor_guide_s": 0.0,
             "corridor_allocation_s": 0.0,
             "corridor_containment_s": 0.0,
+            "formation_assessment_s": 0.0,
         })
         search["corridor"] = {
             "guidance_mode": "corridor",
             "enforcement": corridor_enforcement,
             "rounds": [],
+            "route_assessments": [],
         }
     try:
         context = map_request.context()
@@ -1049,6 +1386,9 @@ def _plan_virtual_a_impl(map_request, progress):
         geometry_config = planner_config
 
     routes = ()
+    simplified_by_route = {}
+    assessment_checker = None
+    route_attempt_order = ()
     route_index = 0
     tried_routes = set()
     recovery_count = 0
@@ -1084,7 +1424,10 @@ def _plan_virtual_a_impl(map_request, progress):
             collision_audit=last_collision_audit)
 
     def untried_route_index():
-        for index in range(len(routes)):
+        # Recovery picks the next untried original A* index in diagnostic
+        # attempt order; it never renumbers ``routes`` or its topic IDs.
+        order = route_attempt_order or tuple(range(len(routes)))
+        for index in order:
             if index not in tried_routes:
                 return index
         return None
@@ -1267,7 +1610,63 @@ def _plan_virtual_a_impl(map_request, progress):
                     geometry_audit=last_geometry_audit,
                     dynamic_audit=last_dynamic_audit,
                     collision_audit=last_collision_audit)
-            route_index = 0
+            if corridor_mode:
+                # Step C: one request-level checker over the real model,
+                # shapes, grid and baseline margin.  Coarse route samples are
+                # diagnostic only and never claim a chain that was not built.
+                assessment_started = time.monotonic()
+                assessment_deadline = started + G4_TOTAL_SOFT_BUDGET_S
+                try:
+                    assessment_checker = FormationCollisionChecker(
+                        grid, request.model, request.vehicle_shapes,
+                        float(collision_config.baseline_margin_m))
+                except Exception as exc:
+                    assessment_checker = None
+                    search["corridor"]["assessment_error"] = (
+                        "CHECKER_UNAVAILABLE: {}: {}".format(
+                            type(exc).__name__, exc))
+                route_assessments = []
+                for index, route in enumerate(routes[:3]):
+                    if assessment_checker is None:
+                        route_assessments.append(
+                            _unavailable_route_assessment(
+                                index, "CHECKER_UNAVAILABLE"))
+                        continue
+                    try:
+                        simplified = simplified_by_route.get(index)
+                        if simplified is None:
+                            simplified = simplify_route(grid, route)
+                            simplified_by_route[index] = simplified
+                        curvature = tuple(
+                            float(value) for value in
+                            _node_route_curvature(simplified.points))
+                        route_assessments.append(assess_route_guide(
+                            index, simplified.points, assessment_checker,
+                            request.model, request.vehicle_shapes,
+                            float(request.start_qf.psi),
+                            float(request.goal_qf.psi),
+                            node_curvature=curvature,
+                            grid_sha256=digest,
+                            request_sha256=str(
+                                map_request.request_sha256),
+                            planning_context_sha256=context_sha,
+                            deadline=assessment_deadline))
+                    except Exception as exc:
+                        route_assessments.append(
+                            _unavailable_route_assessment(
+                                index,
+                                "ROUTE_ASSESSMENT_UNAVAILABLE: {}: {}".format(
+                                    type(exc).__name__, exc)))
+                timings["formation_assessment_s"] += \
+                    time.monotonic() - assessment_started
+                search["corridor"]["route_assessments"] = route_assessments
+                route_attempt_order = _route_attempt_order(
+                    routes, route_assessments)
+                search["corridor"]["route_attempt_order"] = [
+                    int(index) for index in route_attempt_order]
+            if not route_attempt_order:
+                route_attempt_order = tuple(range(len(routes)))
+            route_index = int(route_attempt_order[0])
             tried_routes = set()
             endpoint_only = False
             corridor_route_index = None
@@ -1283,7 +1682,7 @@ def _plan_virtual_a_impl(map_request, progress):
                     "route_point_counts": [
                         len(route.points) for route in routes],
                 },
-                route_index=0, route_count=len(routes),
+                route_index=route_index, route_count=len(routes),
                 diagnostic_display={
                     "astar": _progress_astar_display(routes)})
         if remaining() <= 0.0:
@@ -1292,6 +1691,7 @@ def _plan_virtual_a_impl(map_request, progress):
                 and corridor_route_index != route_index:
             route = routes[route_index]
             route_failure = None
+            guide_candidates = ()
             failed_stage = "CORRIDOR_BUILD"
             progress.emit(
                 "CORRIDOR_BUILD", metrics={"phase": "running"},
@@ -1299,7 +1699,10 @@ def _plan_virtual_a_impl(map_request, progress):
                 round_index=len(search["rounds"]))
             build_started = time.monotonic()
             try:
-                simplified = simplify_route(grid, route)
+                simplified = simplified_by_route.get(route_index)
+                if simplified is None:
+                    simplified = simplify_route(grid, route)
+                    simplified_by_route[route_index] = simplified
                 chain = build_corridor_chain(
                     grid, simplified,
                     box_padding_m=float(
@@ -1336,7 +1739,7 @@ def _plan_virtual_a_impl(map_request, progress):
                     route_index=route_index, route_count=len(routes))
                 guide_started = time.monotonic()
                 try:
-                    corridor_guide = make_corridor_guide(
+                    base_guide = make_corridor_guide(
                         chain,
                         (float(request.start_qf.x),
                          float(request.start_qf.y)),
@@ -1346,18 +1749,113 @@ def _plan_virtual_a_impl(map_request, progress):
                     route_failure = ("CORRIDOR_GUIDE_FAILED", exc.detail)
                 timings["corridor_guide_s"] += \
                     time.monotonic() - guide_started
+            guide_candidates = ()
+            generation_evidence = None
+            candidate_records = []
+            candidate_state = []
+            compatible_indices = []
             if route_failure is None:
+                # Step D: each bounded candidate must receive its own
+                # allocation before it can be compared.  The QP base guide is
+                # assessed first so local variants target a real baseline
+                # risk Portal; its assessment is reused, not recomputed.
                 allocation_started = time.monotonic()
+                assessment_started = allocation_started
+                allocation_errors = []
+                base_record, base_state, base_error = _assess_guide_candidate(
+                    chain, base_guide, assessment_checker, request,
+                    map_request, 0, route_index, len(search["rounds"]),
+                    digest, context_sha, planner_config.intervals,
+                    started + G4_TOTAL_SOFT_BUDGET_S)
+                candidate_records.append(base_record)
+                candidate_state.append(
+                    base_state if base_state is not None
+                    else (base_guide, None, None))
+                if base_state is not None:
+                    compatible_indices.append(0)
+                if base_error is not None:
+                    allocation_errors.append(base_error)
+                baseline_assessment = None
+                if base_state is not None and isinstance(
+                        base_state[2], dict) and str(
+                            base_state[2].get("map_sample_status")
+                            or "UNKNOWN") != "UNKNOWN":
+                    baseline_assessment = base_state[2]
+                generation_started = time.monotonic()
                 try:
-                    corridor_allocation = allocate_corridors(
-                        chain, corridor_guide,
-                        intervals=int(planner_config.intervals))
+                    guide_candidates, generation_evidence = \
+                        plan_guide_candidates(
+                            chain,
+                            (float(request.start_qf.x),
+                             float(request.start_qf.y)),
+                            (float(request.goal_qf.x),
+                             float(request.goal_qf.y)),
+                            base_guide=base_guide,
+                            baseline_assessment=baseline_assessment,
+                            checker=(
+                                assessment_checker
+                                if baseline_assessment is not None else None),
+                            model=request.model,
+                            vehicle_shapes=request.vehicle_shapes,
+                            start_heading_rad=float(request.start_qf.psi),
+                            goal_heading_rad=float(request.goal_qf.psi),
+                            deadline=started + G4_TOTAL_SOFT_BUDGET_S)
                 except VirtualAContractError as exc:
+                    route_failure = ("CORRIDOR_GUIDE_FAILED", exc.detail)
+                timings["corridor_guide_s"] += \
+                    time.monotonic() - generation_started
+            if route_failure is None:
+                guide_candidates = tuple(guide_candidates or ())
+                if not guide_candidates:
                     route_failure = (
-                        "CORRIDOR_ALLOCATION_FAILED", exc.detail)
+                        "CORRIDOR_GUIDE_FAILED",
+                        "the bounded candidate generator produced no guide")
+            if route_failure is None:
+                for candidate_index, candidate in enumerate(
+                        guide_candidates[1:], start=1):
+                    record, state, error = _assess_guide_candidate(
+                        chain, candidate, assessment_checker, request,
+                        map_request, candidate_index, route_index,
+                        len(search["rounds"]), digest, context_sha,
+                        planner_config.intervals,
+                        started + G4_TOTAL_SOFT_BUDGET_S)
+                    candidate_records.append(record)
+                    candidate_state.append(
+                        state if state is not None
+                        else (candidate, None, None))
+                    if state is not None:
+                        compatible_indices.append(int(candidate_index))
+                    if error is not None:
+                        allocation_errors.append(error)
                 timings["corridor_allocation_s"] += \
                     time.monotonic() - allocation_started
+                timings["formation_assessment_s"] += \
+                    time.monotonic() - assessment_started
+                if not compatible_indices:
+                    route_failure = (
+                        "CORRIDOR_ALLOCATION_FAILED",
+                        allocation_errors[0] if allocation_errors else
+                        "no solver-compatible corridor guide candidate")
             if route_failure is None:
+                # Deterministic diagnostic selection: lexical score, then the
+                # generation index.  It ranks sampled evidence only; it never
+                # certifies the selected guide.
+                selected_index = min(
+                    compatible_indices,
+                    key=lambda index: _guide_candidate_score(
+                        candidate_records[index]))
+                for index, record in enumerate(candidate_records):
+                    record["selected"] = bool(index == selected_index)
+                selected_record = candidate_records[selected_index]
+                corridor_guide, corridor_allocation, corridor_assessment = \
+                    candidate_state[selected_index]
+                if len(candidate_records) == 1:
+                    selection_reason = "SINGLE_BASE_GUIDE"
+                elif selected_record["status"] != "ASSESSED":
+                    selection_reason = (
+                        "ASSESSMENT_UNAVAILABLE_BASE_FALLBACK")
+                else:
+                    selection_reason = "DIAGNOSTIC_LEXICOGRAPHIC_BEST"
                 # Record the actual round before announcing completion so the
                 # progressive display builder reads the same search/rounds the
                 # solver will consume, with no duplicated corridor geometry.
@@ -1374,6 +1872,30 @@ def _plan_virtual_a_impl(map_request, progress):
                         list(entry) for entry in corridor_allocation],
                     "effective_margin_m": corridor_effective_margin(
                         chain, planner_config),
+                    "formation_assessment": corridor_assessment,
+                    "guide_candidates": candidate_records,
+                    "guide_selection": {
+                        "candidate_count": len(candidate_records),
+                        "solver_compatible_count": len(
+                            compatible_indices),
+                        "selected_candidate_index": int(selected_index),
+                        "selected_guide_source": str(
+                            corridor_guide.source),
+                        "selected_candidate_origin": (
+                            None if selected_record.get(
+                                "candidate_origin") is None
+                            else str(selected_record[
+                                "candidate_origin"])),
+                        "selection_rule": str(selection_reason),
+                        "base_guide_solver_compatible": bool(
+                            candidate_records[0]["solver_compatible"]),
+                        "candidate_generation": generation_evidence,
+                        "certification_claim": "NONE",
+                        "candidate_certification":
+                            CANDIDATE_CERTIFICATION_DIAGNOSTIC_ONLY,
+                        "formation_obb_hard_constraints": False,
+                        "continuously_certified": False,
+                    },
                 }
                 search["corridor"]["rounds"].append(corridor_round)
                 corridor_route_index = route_index
@@ -1387,10 +1909,23 @@ def _plan_virtual_a_impl(map_request, progress):
                             corridor_guide.points),
                         "guide_quality": _progress_scalar(
                             corridor_guide.quality),
+                        "guide_candidate_count": len(candidate_records),
+                        "guide_candidate_sources": [
+                            str(record["guide_source"])
+                            for record in candidate_records],
+                        "selected_candidate_index": int(selected_index),
+                        "selected_candidate_origin": (
+                            None if selected_record.get(
+                                "candidate_origin") is None
+                            else str(selected_record[
+                                "candidate_origin"])),
+                        "guide_selection_rule": str(selection_reason),
                         "allocation_count": len(corridor_allocation),
                         "effective_margin_m": float(
                             corridor_effective_margin(
                                 chain, planner_config)),
+                        "assessment": _progress_assessment_summary(
+                            corridor_assessment),
                     },
                     route_index=route_index, route_count=len(routes),
                     diagnostic_display={
@@ -1458,7 +1993,12 @@ def _plan_virtual_a_impl(map_request, progress):
         guide_length_m = None
         if solve_routes:
             guide = solve_routes[0]
-            guide_key = (int(route_index), bool(corridor_mode))
+            # The guide identity includes the exact selected points: a route
+            # rebuild or a different selected candidate must recompute the
+            # finite heading branches instead of reusing stale ones.
+            guide_key = (int(route_index), bool(corridor_mode),
+                         str(getattr(guide, "source", "") or ""),
+                         tuple(guide.points))
             if guide_key != winding_guide_key:
                 winding_guide_key = guide_key
                 winding_branches = _heading_branch_candidates(
@@ -2006,6 +2546,10 @@ def _plan_virtual_a_impl(map_request, progress):
         tried_routes = set()
         route_index = 0
         corridor_route_index = None
+        # The regenerated route set has new geometry: invalidate the cached
+        # simplifications and the attempt order computed for the old set.
+        simplified_by_route = {}
+        route_attempt_order = ()
         search["rounds"].append(round_record)
 
     # Every layer passed: publish the exact plan that was audited.  No field

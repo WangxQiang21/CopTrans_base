@@ -513,8 +513,16 @@ class UniformPlannerNode(object):
         self.playback_plan_pub = rospy.Publisher(
             PLAYBACK_PLAN_TOPIC, FormationPlaybackPlan, queue_size=1,
             latch=True)
+        # Progress stages are published in bursts: the "complete" document of
+        # a stage is immediately followed by the "running" document of the
+        # next one, and each carries the retained geometry.  A single-slot
+        # send queue drops those complete documents (verified on the real
+        # map05 run: guide/selection diagnostics never reached the playback
+        # HUD).  A bounded multi-slot queue preserves order and delivery
+        # without changing any admission, planning or publish gate; only the
+        # latest document remains latched.
         self.planning_debug_pub = rospy.Publisher(
-            PLANNING_DEBUG_TOPIC, String, queue_size=1, latch=True)
+            PLANNING_DEBUG_TOPIC, String, queue_size=20, latch=True)
         rospy.Subscriber(MAP_TOPIC, OccupancyGrid, self.on_map, queue_size=1)
         rospy.Subscriber(REQUEST_TOPIC, FormationPlanRequest,
                          self.on_request, queue_size=1)
@@ -662,6 +670,7 @@ class UniformPlannerNode(object):
         from fwis_v3_optimizer.formation_continuous_a.corridor import (
             corridor_chain_from_payload,
             corridor_display_fields,
+            corridor_portal_diagnostics,
         )
         corridor = result.search.get("corridor")
         rounds = (corridor.get("rounds")
@@ -686,13 +695,20 @@ class UniformPlannerNode(object):
         chain = corridor_chain_from_payload(current.get("chain"))
         identity = dict(identity)
         identity["route_id"] = int(route_index)
-        return corridor_display_fields(
+        display = corridor_display_fields(
             chain, identity,
             raw_route_points=raw_route.points,
             guide_points=guide.get("points"),
             guide_quality=guide.get("quality"),
             guide_source=guide.get("source"),
             corridor_used=True)
+        diagnostics = corridor_portal_diagnostics(
+            current,
+            guide_points=guide.get("points"),
+            guide_source=guide.get("source"))
+        if diagnostics is not None:
+            display["portal_diagnostics"] = diagnostics
+        return display
 
     # ---- progressive planning display (TASK 01 Step 1) ----------------
 

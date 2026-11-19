@@ -1,0 +1,817 @@
+{
+ "generated_utc": "2026-11-19",
+ "guide_selection_evidence": {
+  "later_portal_risk": {
+   "allocation_counts": [
+    11,
+    11,
+    11,
+    11,
+    11
+   ],
+   "allocations_nonempty": true,
+   "candidate_count": 5,
+   "candidate_origins": [
+    null,
+    "CHEBYSHEV_CENTRE_GUIDE",
+    "ONE_PORTAL_VARIANT_2",
+    "ONE_PORTAL_VARIANT_2",
+    "ONE_PORTAL_VARIANT_2"
+   ],
+   "candidate_points": [
+    [
+     [
+      -0.5,
+      0.0
+     ],
+     [
+      2.5,
+      0.0
+     ],
+     [
+      7.5,
+      0.0
+     ],
+     [
+      12.5,
+      0.0
+     ],
+     [
+      17.0,
+      0.0
+     ]
+    ],
+    [
+     [
+      -0.5,
+      0.0
+     ],
+     [
+      2.5,
+      -1.5
+     ],
+     [
+      7.5,
+      -1.5
+     ],
+     [
+      12.5,
+      -1.5
+     ],
+     [
+      17.0,
+      0.0
+     ]
+    ],
+    [
+     [
+      -0.5,
+      0.0
+     ],
+     [
+      2.5,
+      0.0
+     ],
+     [
+      7.5,
+      0.0
+     ],
+     [
+      12.25,
+      0.25
+     ],
+     [
+      17.0,
+      0.0
+     ]
+    ],
+    [
+     [
+      -0.5,
+      0.0
+     ],
+     [
+      2.5,
+      0.0
+     ],
+     [
+      7.5,
+      0.0
+     ],
+     [
+      12.25,
+      -1.75
+     ],
+     [
+      17.0,
+      0.0
+     ]
+    ],
+    [
+     [
+      -0.5,
+      0.0
+     ],
+     [
+      2.5,
+      0.0
+     ],
+     [
+      7.5,
+      0.0
+     ],
+     [
+      12.75,
+      -1.75
+     ],
+     [
+      17.0,
+      0.0
+     ]
+    ]
+   ],
+   "fixture": {
+    "base_guide_points": [
+     [
+      -0.5,
+      0.0
+     ],
+     [
+      2.5,
+      0.0
+     ],
+     [
+      7.5,
+      0.0
+     ],
+     [
+      12.5,
+      0.0
+     ],
+     [
+      17.0,
+      0.0
+     ]
+    ],
+    "baseline_windows": [
+     {
+      "portal_index": 0,
+      "s_window_m": [
+       1.5,
+       3.5
+      ],
+      "status": "PORTAL_TRANSITION_SAMPLED"
+     },
+     {
+      "portal_index": 1,
+      "s_window_m": [
+       6.5,
+       8.5
+      ],
+      "status": "PORTAL_TRANSITION_SAMPLED"
+     },
+     {
+      "portal_index": 2,
+      "s_window_m": [
+       11.5,
+       13.5
+      ],
+      "status": "PORTAL_TRANSITION_GAP"
+     }
+    ],
+    "region_count": 4
+   },
+   "generation": {
+    "candidate_certification": "DIAGNOSTIC_ONLY",
+    "certification_claim": "NONE",
+    "continuously_certified": false,
+    "dropped_local_candidates": [
+     {
+      "counts": {
+       "coverage_unconfirmed": 3,
+       "gap": 0,
+       "map_collision": 4,
+       "map_unconfirmed": 1,
+       "sampled": 15
+      },
+      "point": [
+       12.75,
+       0.25
+      ],
+      "point_index": 2,
+      "reason": "LOCAL_CANDIDATE_LIMIT",
+      "status": "UNKNOWN"
+     }
+    ],
+    "formation_obb_hard_constraints": false,
+    "local_candidate_count": 4,
+    "local_candidate_point_count": 4,
+    "local_candidates": [
+     {
+      "counts": {
+       "coverage_unconfirmed": 3,
+       "gap": 0,
+       "map_collision": 1,
+       "map_unconfirmed": 1,
+       "sampled": 15
+      },
+      "kept": true,
+      "point": [
+       12.25,
+       0.25
+      ],
+      "point_index": 3,
+      "reason": "LOCAL_SAMPLE_CAP",
+      "status": "UNKNOWN"
+     },
+     {
+      "counts": {
+       "coverage_unconfirmed": 3,
+       "gap": 20,
+       "map_collision": 1,
+       "map_unconfirmed": 1,
+       "sampled": 15
+      },
+      "kept": true,
+      "point": [
+       12.25,
+       -1.75
+      ],
+      "point_index": 0,
+      "reason": "LOCAL_SAMPLE_CAP",
+      "status": "UNKNOWN"
+     },
+     {
+      "counts": {
+       "coverage_unconfirmed": 3,
+       "gap": 20,
+       "map_collision": 3,
+       "map_unconfirmed": 1,
+       "sampled": 15
+      },
+      "kept": true,
+      "point": [
+       12.75,
+       -1.75
+      ],
+      "point_index": 1,
+      "reason": "LOCAL_SAMPLE_CAP",
+      "status": "UNKNOWN"
+     }
+    ],
+    "local_candidates_kept": 3,
+    "portal_radii_m": [],
+    "risk_portals": [
+     {
+      "first_s_m": 13.0,
+      "kinds": [
+       "UNION_GAP"
+      ],
+      "portal_index": 3,
+      "window_index": 2
+     }
+    ],
+    "schema": "virtual_a_guide_candidate_generation_v1",
+    "selection": "BASELINE_RISK",
+    "target_portal_index": 3,
+    "target_radius_m": null,
+    "target_reason": "UNION_GAP",
+    "target_window_index": 2
+   },
+   "local_variants": [
+    {
+     "changed_indices": [
+      3
+     ],
+     "goal_unchanged": true,
+     "point": [
+      12.25,
+      0.25
+     ],
+     "previous_portal_unchanged": true,
+     "source": "corridor_candidate_portal_2",
+     "start_unchanged": true,
+     "violation_region_2_m": -0.75,
+     "violation_region_3_m": -0.25
+    },
+    {
+     "changed_indices": [
+      3
+     ],
+     "goal_unchanged": true,
+     "point": [
+      12.25,
+      -1.75
+     ],
+     "previous_portal_unchanged": true,
+     "source": "corridor_candidate_portal_2",
+     "start_unchanged": true,
+     "violation_region_2_m": -0.25,
+     "violation_region_3_m": -0.25
+    },
+    {
+     "changed_indices": [
+      3
+     ],
+     "goal_unchanged": true,
+     "point": [
+      12.75,
+      -1.75
+     ],
+     "previous_portal_unchanged": true,
+     "source": "corridor_candidate_portal_2",
+     "start_unchanged": true,
+     "violation_region_2_m": -0.25,
+     "violation_region_3_m": -0.25
+    }
+   ],
+   "selection": {
+    "candidate_certification": "DIAGNOSTIC_ONLY",
+    "certification_claim": "NONE",
+    "continuously_certified": false,
+    "formation_obb_hard_constraints": false,
+    "portal_radii_m": [],
+    "risk_portals": [
+     {
+      "first_s_m": 13.0,
+      "kinds": [
+       "UNION_GAP"
+      ],
+      "portal_index": 3,
+      "window_index": 2
+     }
+    ],
+    "schema": "virtual_a_guide_candidate_generation_v1",
+    "selection": "BASELINE_RISK",
+    "target_portal_index": 3,
+    "target_reason": "UNION_GAP",
+    "target_window_index": 2
+   }
+  },
+  "no_risk_radius": {
+   "radius_tie": {
+    "selection": {
+     "candidate_certification": "DIAGNOSTIC_ONLY",
+     "certification_claim": "NONE",
+     "continuously_certified": false,
+     "formation_obb_hard_constraints": false,
+     "portal_radii_m": [
+      [
+       1,
+       0.5
+      ],
+      [
+       2,
+       0.5
+      ]
+     ],
+     "risk_portals": [],
+     "schema": "virtual_a_guide_candidate_generation_v1",
+     "selection": "SMALLEST_CHEBYSHEV_RADIUS",
+     "target_portal_index": 1,
+     "target_radius_m": 0.5,
+     "target_reason": "SMALLEST_CHEBYSHEV_RADIUS",
+     "target_window_index": 0
+    },
+    "target_portal_index": 1
+   },
+   "smallest_radius": {
+    "selection": {
+     "candidate_certification": "DIAGNOSTIC_ONLY",
+     "certification_claim": "NONE",
+     "continuously_certified": false,
+     "formation_obb_hard_constraints": false,
+     "portal_radii_m": [
+      [
+       1,
+       0.5
+      ],
+      [
+       2,
+       0.25
+      ]
+     ],
+     "risk_portals": [],
+     "schema": "virtual_a_guide_candidate_generation_v1",
+     "selection": "SMALLEST_CHEBYSHEV_RADIUS",
+     "target_portal_index": 2,
+     "target_radius_m": 0.25,
+     "target_reason": "SMALLEST_CHEBYSHEV_RADIUS",
+     "target_window_index": 1
+    },
+    "target_portal_index": 2
+   }
+  },
+  "real_static_check_improvement": {
+   "base_map_collision_count": 12,
+   "candidates": [
+    {
+     "candidate_index": 0,
+     "candidate_origin": null,
+     "guide_source": "unit_base_guide",
+     "points": [
+      [
+       0.0,
+       0.0
+      ],
+      [
+       5.0,
+       0.0
+      ],
+      [
+       10.0,
+       0.0
+      ]
+     ],
+     "selected": false,
+     "selection_counts": {
+      "collision_count": 12,
+      "coverage_unknown_count": 1,
+      "gap_count": 0,
+      "has_collision": 1,
+      "has_invalid": 0,
+      "invalid_count": 0,
+      "map_unknown_count": 0
+     },
+     "status": "ASSESSED"
+    },
+    {
+     "candidate_index": 1,
+     "candidate_origin": "CHEBYSHEV_CENTRE_GUIDE",
+     "guide_source": "corridor_candidate_chebyshev",
+     "points": [
+      [
+       0.0,
+       0.0
+      ],
+      [
+       5.0,
+       -1.0
+      ],
+      [
+       10.0,
+       0.0
+      ]
+     ],
+     "selected": false,
+     "selection_counts": {
+      "collision_count": 13,
+      "coverage_unknown_count": 1,
+      "gap_count": 39,
+      "has_collision": 1,
+      "has_invalid": 0,
+      "invalid_count": 0,
+      "map_unknown_count": 0
+     },
+     "status": "ASSESSED"
+    },
+    {
+     "candidate_index": 2,
+     "candidate_origin": "ONE_PORTAL_VARIANT_0",
+     "guide_source": "corridor_candidate_portal_0",
+     "points": [
+      [
+       0.0,
+       0.0
+      ],
+      [
+       5.5,
+       0.5
+      ],
+      [
+       10.0,
+       0.0
+      ]
+     ],
+     "selected": true,
+     "selection_counts": {
+      "collision_count": 0,
+      "coverage_unknown_count": 1,
+      "gap_count": 0,
+      "has_collision": 0,
+      "has_invalid": 0,
+      "invalid_count": 0,
+      "map_unknown_count": 0
+     },
+     "status": "ASSESSED"
+    },
+    {
+     "candidate_index": 3,
+     "candidate_origin": "ONE_PORTAL_VARIANT_0",
+     "guide_source": "corridor_candidate_portal_0",
+     "points": [
+      [
+       0.0,
+       0.0
+      ],
+      [
+       4.5,
+       0.5
+      ],
+      [
+       10.0,
+       0.0
+      ]
+     ],
+     "selected": false,
+     "selection_counts": {
+      "collision_count": 0,
+      "coverage_unknown_count": 1,
+      "gap_count": 0,
+      "has_collision": 0,
+      "has_invalid": 0,
+      "invalid_count": 0,
+      "map_unknown_count": 0
+     },
+     "status": "ASSESSED"
+    },
+    {
+     "candidate_index": 4,
+     "candidate_origin": "ONE_PORTAL_VARIANT_0",
+     "guide_source": "corridor_candidate_portal_0",
+     "points": [
+      [
+       0.0,
+       0.0
+      ],
+      [
+       4.5,
+       -1.5
+      ],
+      [
+       10.0,
+       0.0
+      ]
+     ],
+     "selected": false,
+     "selection_counts": {
+      "collision_count": 0,
+      "coverage_unknown_count": 6,
+      "gap_count": 51,
+      "has_collision": 0,
+      "has_invalid": 0,
+      "invalid_count": 0,
+      "map_unknown_count": 0
+     },
+     "status": "ASSESSED"
+    }
+   ],
+   "checker_static_check_calls": 384,
+   "generation": {
+    "candidate_certification": "DIAGNOSTIC_ONLY",
+    "certification_claim": "NONE",
+    "continuously_certified": false,
+    "dropped_local_candidates": [
+     {
+      "counts": {
+       "coverage_unconfirmed": 3,
+       "gap": 16,
+       "map_collision": 2,
+       "map_unconfirmed": 1,
+       "sampled": 15
+      },
+      "point": [
+       5.5,
+       -1.5
+      ],
+      "point_index": 1,
+      "reason": "LOCAL_CANDIDATE_LIMIT",
+      "status": "UNKNOWN"
+     }
+    ],
+    "formation_obb_hard_constraints": false,
+    "local_candidate_count": 4,
+    "local_candidate_point_count": 4,
+    "local_candidates": [
+     {
+      "counts": {
+       "coverage_unconfirmed": 3,
+       "gap": 0,
+       "map_collision": 0,
+       "map_unconfirmed": 1,
+       "sampled": 15
+      },
+      "kept": true,
+      "point": [
+       5.5,
+       0.5
+      ],
+      "point_index": 2,
+      "reason": "LOCAL_SAMPLE_CAP",
+      "status": "UNKNOWN"
+     },
+     {
+      "counts": {
+       "coverage_unconfirmed": 3,
+       "gap": 0,
+       "map_collision": 0,
+       "map_unconfirmed": 1,
+       "sampled": 15
+      },
+      "kept": true,
+      "point": [
+       4.5,
+       0.5
+      ],
+      "point_index": 3,
+      "reason": "LOCAL_SAMPLE_CAP",
+      "status": "UNKNOWN"
+     },
+     {
+      "counts": {
+       "coverage_unconfirmed": 3,
+       "gap": 16,
+       "map_collision": 0,
+       "map_unconfirmed": 1,
+       "sampled": 15
+      },
+      "kept": true,
+      "point": [
+       4.5,
+       -1.5
+      ],
+      "point_index": 0,
+      "reason": "LOCAL_SAMPLE_CAP",
+      "status": "UNKNOWN"
+     }
+    ],
+    "local_candidates_kept": 3,
+    "portal_radii_m": [],
+    "risk_portals": [
+     {
+      "first_s_m": 4.538497595561783,
+      "kinds": [
+       "MAP_COLLISION"
+      ],
+      "portal_index": 1,
+      "window_index": 0
+     }
+    ],
+    "schema": "virtual_a_guide_candidate_generation_v1",
+    "selection": "BASELINE_RISK",
+    "target_portal_index": 1,
+    "target_radius_m": null,
+    "target_reason": "MAP_COLLISION",
+    "target_window_index": 0
+   },
+   "selected_candidate_has_map_changed": true,
+   "selected_candidate_index": 2,
+   "selected_candidate_origin": "ONE_PORTAL_VARIANT_0",
+   "selected_candidate_points": [
+    [
+     0.0,
+     0.0
+    ],
+    [
+     5.5,
+     0.5
+    ],
+    [
+     10.0,
+     0.0
+    ]
+   ],
+   "selection": {
+    "candidate_certification": "DIAGNOSTIC_ONLY",
+    "certification_claim": "NONE",
+    "continuously_certified": false,
+    "formation_obb_hard_constraints": false,
+    "portal_radii_m": [],
+    "risk_portals": [
+     {
+      "first_s_m": 4.538497595561783,
+      "kinds": [
+       "MAP_COLLISION"
+      ],
+      "portal_index": 1,
+      "window_index": 0
+     }
+    ],
+    "schema": "virtual_a_guide_candidate_generation_v1",
+    "selection": "BASELINE_RISK",
+    "target_portal_index": 1,
+    "target_reason": "MAP_COLLISION",
+    "target_window_index": 0
+   },
+   "target_portal_index": 1
+  }
+ },
+ "live": {
+  "map05_default": {
+   "candidate_certification": "DIAGNOSTIC_ONLY",
+   "command": "./run_demo.sh --map map05 --scale 2.625",
+   "continuously_certified": false,
+   "coverage_sample_status": "SINGLE_REGION",
+   "driver_exit": 0,
+   "executable_envelope_count": 1,
+   "hud_lines": [
+    "samples=13 | map_collisions=0 | single=39 | union=0 | gap=0 | unknown=0 | status=CLEAR_AT_SAMPLES",
+    "samples=13 | map_collisions=0 | single=39 | union=0 | gap=0 | unknown=0 | status=CLEAR_AT_SAMPLES",
+    "samples=13 | map_collisions=0 | single=39 | union=0 | gap=0 | unknown=0 | status=CLEAR_AT_SAMPLES",
+    "samples=13 | map_collisions=0 | single=39 | union=0 | gap=0 | unknown=0 | status=CLEAR_AT_SAMPLES"
+   ],
+   "map_sample_status": "CLEAR_AT_SAMPLES",
+   "reason": "",
+   "selection_rule": null,
+   "single_region_total": 39,
+   "status": "SUCCESS",
+   "union_covered_total": 0,
+   "union_gap_total": 0,
+   "union_unknown_total": 0
+  },
+  "s1_default": {
+   "candidate_collision_counts": [
+    36,
+    28,
+    25,
+    28,
+    36
+   ],
+   "candidate_origins": [
+    null,
+    "CHEBYSHEV_CENTRE_GUIDE",
+    "ONE_PORTAL_VARIANT_0",
+    "ONE_PORTAL_VARIANT_0",
+    "ONE_PORTAL_VARIANT_0"
+   ],
+   "command": "./run_demo.sh --map evaluation/virtual_formation_a/G4/20261116T081458Z/scenes/inputs/S1 --scale 1.0",
+   "driver_exit": 0,
+   "executable_envelope_count": 0,
+   "first_failure_layer": "GEOMETRY",
+   "hud_lines": [
+    "samples=61 | map_collisions=25 | single=35 | union=0 | gap=108 | unknown=40 | status=COLLISION_OBSERVED",
+    "samples=61 | map_collisions=25 | single=35 | union=0 | gap=108 | unknown=40 | status=COLLISION_OBSERVED",
+    "samples=61 | map_collisions=25 | single=35 | union=0 | gap=108 | unknown=40 | status=COLLISION_OBSERVED",
+    "samples=61 | map_collisions=25 | single=35 | union=0 | gap=108 | unknown=40 | status=COLLISION_OBSERVED"
+   ],
+   "local_candidate_point_count": 4,
+   "local_candidates_kept": 3,
+   "reason": "CORRIDOR_AUDIT_WIDTH_LIMIT",
+   "risk_portals": [
+    {
+     "first_s_m": 0.9601540550585371,
+     "kinds": [
+      "MAP_COLLISION",
+      "UNION_GAP"
+     ],
+     "portal_index": 1,
+     "window_index": 0
+    }
+   ],
+   "route_count": 3,
+   "selected_candidate_index": 2,
+   "selected_candidate_origin": "ONE_PORTAL_VARIANT_0",
+   "selected_guide_points": [
+    [
+     0.0,
+     0.0
+    ],
+    [
+     8.806754891170641,
+     2.383738911592296
+    ],
+    [
+     8.819581504169413,
+     3.4858722492682084
+    ]
+   ],
+   "selection_rule": "DIAGNOSTIC_LEXICOGRAPHIC_BEST",
+   "status": "GEOMETRY_FAILED",
+   "target_portal_index": 1,
+   "target_reason": "MAP_COLLISION",
+   "target_window_index": 0
+  }
+ },
+ "schema": "task02.rework.evidence.v1",
+ "task01_dirty_sha256": {
+  "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/geometry.py": "f31b20bbd6333c44f12be4064c069e11143c870ab02b99d4839b9778317efc3d",
+  "tests/test_virtual_a_geometry.py": "4f59e68ff5dc26468d42e131836078b0d2eef06853e998bfca5e168c77ddb4c7"
+ },
+ "test_results": {
+  "bash_n_run_demo": {
+   "exit": 0
+  },
+  "catkin_make": {
+   "exit": 0
+  },
+  "git_diff_check": {
+   "exit": 0
+  },
+  "test_virtual_a_corridor + test_virtual_a_collision": {
+   "exit": 0,
+   "tests": 42
+  },
+  "test_virtual_a_corridor_display + test_formation_hud": {
+   "exit": 0,
+   "tests": 92
+  },
+  "test_virtual_a_formation_assessment": {
+   "exit": 0,
+   "tests": 40
+  },
+  "test_virtual_a_pipeline": {
+   "exit": 0,
+   "tests": 13
+  }
+ }
+}

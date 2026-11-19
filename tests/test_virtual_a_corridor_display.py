@@ -32,6 +32,7 @@ from fwis_v3_optimizer.formation_continuous_a.contracts import (  # noqa: E402
 from fwis_v3_optimizer.formation_continuous_a.corridor import (  # noqa: E402
     CORRIDOR_DISPLAY_STATE,
     corridor_display_fields,
+    corridor_portal_diagnostics,
 )
 from fwis_v3_optimizer.formation_continuous_a import (  # noqa: E402
     pipeline as pipeline_module,
@@ -63,12 +64,21 @@ from fwis_v3_optimizer.formation_playback import (  # noqa: E402
     CORRIDOR_FILL_COLOR,
     CORRIDOR_FILL_NAMESPACE,
     CORRIDOR_FILL_Z_M,
+    COVERAGE_GAP_COLOR,
+    COVERAGE_GAP_NAMESPACE,
+    MAP_COLLISION_SAMPLE_COLOR,
+    MAP_COLLISION_SAMPLE_NAMESPACE,
     PLANNING_ASTAR_NAMESPACE,
     PLANNING_DEBUG_SCHEMA,
     PLANNING_FAILURE_NAMESPACE,
     PLANNING_GUIDE_NAMESPACE,
     PLANNING_PUBLISHED_STATE,
     PLANNING_STATE,
+    PORTAL_DIAGNOSTIC_COLLISION_LIMIT,
+    PORTAL_DIAGNOSTIC_GAP_LIMIT,
+    PORTAL_DIAGNOSTIC_WINDOW_LIMIT,
+    PORTAL_WINDOW_COLOR,
+    PORTAL_WINDOW_NAMESPACE,
     PlaybackValidationError,
     build_candidate_display,
     build_corridor_markers,
@@ -76,6 +86,7 @@ from fwis_v3_optimizer.formation_playback import (  # noqa: E402
     build_markers,
     corridor_display_matches,
     frame_at,
+    planning_diagnostics_view,
     sample_candidate_path,
     vehicle_path_samples,
 )
@@ -611,9 +622,13 @@ class V2ActualCorridorLayersTest(unittest.TestCase):
         for got, want in zip(centreline, guide_source):
             self._assert_pair(got[0], want[0], "centreline path x")
             self._assert_pair(got[1], want[1], "centreline path y")
-        # Path displays own colour/width; no route line remains in markers.
+        # Path displays own colour/width; no route line remains in the
+        # A*/guide label namespaces.  The separate diagnostic namespaces may
+        # carry their own bounded sample graphics (Step E).
         self.assertFalse(any(
             marker.marker_type in ("LINE_LIST", "LINE_STRIP")
+            and marker.namespace in (PLANNING_ASTAR_NAMESPACE,
+                                     PLANNING_GUIDE_NAMESPACE)
             for marker in markers))
         texts = [marker.text for marker in markers
                  if marker.marker_type == "TEXT_VIEW_FACING"]
@@ -728,7 +743,10 @@ class V2ActualCorridorLayersTest(unittest.TestCase):
                              for namespace in namespaces))
         self.assertTrue(all("CANDIDATE" in marker.text
                             for marker in markers
-                            if marker.marker_type == "TEXT_VIEW_FACING"))
+                            if marker.marker_type == "TEXT_VIEW_FACING"
+                            and marker.namespace in (
+                                PLANNING_ASTAR_NAMESPACE,
+                                PLANNING_GUIDE_NAMESPACE)))
 
     def test_unvalidated_guide_and_fake_audit_never_get_safety_labels(self):
         case = self.case
@@ -816,6 +834,452 @@ class V2ActualCorridorLayersTest(unittest.TestCase):
             verify_envelope_fields(case["envelope"]).trajectory.duration)
 
 
+class V2PortalDiagnosticsTest(unittest.TestCase):
+    """Step E: bounded real assessment samples, never a certificate."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.case = _actual_corridor_case()
+
+    def _document(self):
+        return copy.deepcopy(self.case["document"])
+
+    def _diagnostics(self, document):
+        return document["corridors"][0]["portal_diagnostics"]
+
+    @staticmethod
+    def _point_at_s(points, s_m):
+        """Arc-length interpolation, independent of the display module."""
+        values = [(float(x), float(y)) for x, y in points]
+        lengths = [math.hypot(second[0] - first[0],
+                              second[1] - first[1])
+                   for first, second in zip(values, values[1:])]
+        target = min(max(float(s_m), 0.0), math.fsum(lengths))
+        for index, length in enumerate(lengths):
+            if target <= length + 1e-12 or index == len(lengths) - 1:
+                if length <= 1e-8:
+                    return values[index]
+                ratio = target / length
+                first, second = values[index], values[index + 1]
+                return (first[0] + ratio * (second[0] - first[0]),
+                        first[1] + ratio * (second[1] - first[1]))
+            target -= length
+        return values[-1]
+
+    def test_round_export_carries_bounded_diagnostics_bound_to_the_assessment(
+            self):
+        case = self.case
+        display = case["display"]
+        round_record = case["round"]
+        assessment = round_record["formation_assessment"]
+        diagnostics = display["portal_diagnostics"]
+        self.assertEqual(diagnostics["schema"],
+                         "virtual_a_portal_diagnostics_v1")
+        self.assertEqual(diagnostics["chain_digest"],
+                         round_record["chain_digest"])
+        self.assertEqual(diagnostics["chain_digest"],
+                         display["chain_sha256"])
+        self.assertEqual(diagnostics["guide_source"],
+                         display["guide_source"])
+        self.assertEqual(diagnostics["guide_source"],
+                         assessment["selected_guide_source"])
+        self.assertEqual(diagnostics["assessment_candidate_id"],
+                         assessment["candidate_id"])
+        self.assertEqual(diagnostics["map_sample_status"],
+                         assessment["map_sample_status"])
+        self.assertEqual(diagnostics["station_count"],
+                         assessment["station_count"])
+        self.assertEqual(diagnostics["certification_claim"], "NONE")
+        self.assertEqual(diagnostics["candidate_certification"],
+                         "DIAGNOSTIC_ONLY")
+        self.assertFalse(diagnostics["continuously_certified"])
+        self.assertFalse(diagnostics["formation_obb_hard_constraints"])
+        counts = diagnostics["counts"]
+        self.assertLessEqual(
+            len(diagnostics["map_collision_samples"]),
+            PORTAL_DIAGNOSTIC_COLLISION_LIMIT)
+        self.assertLessEqual(len(diagnostics["coverage_gaps"]),
+                             PORTAL_DIAGNOSTIC_GAP_LIMIT)
+        self.assertLessEqual(len(diagnostics["portal_windows"]),
+                             PORTAL_DIAGNOSTIC_WINDOW_LIMIT)
+        self.assertEqual(counts["map_collision_marker_count"],
+                         len(diagnostics["map_collision_samples"]))
+        self.assertEqual(counts["coverage_gap_marker_count"],
+                         len(diagnostics["coverage_gaps"]))
+        self.assertEqual(counts["portal_window_marker_count"],
+                         len(diagnostics["portal_windows"]))
+        map_counts = assessment["map_sample_counts"]
+        self.assertEqual(
+            counts["map_collision_total"],
+            map_counts["map_collision"] + map_counts["vehicle_collision"])
+        single = union = gap = unknown = 0
+        for vehicle in assessment["coverage_vehicles"].values():
+            vehicle_counts = vehicle["counts"]
+            # SINGLE_REGION and COVERED_BY_ADJACENT_UNION remain separate.
+            single += vehicle_counts["single"]
+            union += vehicle_counts["union"]
+            gap += vehicle_counts["gap"]
+            unknown += vehicle_counts["unconfirmed"]
+        self.assertEqual(counts["single_region_total"], single)
+        self.assertEqual(counts["union_covered_total"], union)
+        self.assertEqual(counts["union_gap_total"], gap)
+        self.assertEqual(counts["union_unknown_total"], unknown)
+        self.assertGreater(single, 0)
+        self.assertEqual(union, 0)
+        self.assertEqual(counts["portal_window_total"],
+                         len(assessment["transition_windows"]))
+        # The real assessment has more collisions than the marker cap; the
+        # totals must still state the full sampled risk.
+        self.assertGreater(counts["map_collision_total"],
+                           len(diagnostics["map_collision_samples"]))
+        for sample in diagnostics["map_collision_samples"]:
+            expected = self._point_at_s(
+                display["guide_points"], sample["s_m"])
+            self.assertLessEqual(
+                math.hypot(sample["point"][0] - expected[0],
+                           sample["point"][1] - expected[1]),
+                1e-9)
+            self.assertIn(sample["reason"],
+                          ("MAP_OBB_COLLISION", "VEHICLE_OBB_COLLISION"))
+
+    def test_builder_truncates_at_the_marker_caps_but_keeps_full_totals(self):
+        assessment = copy.deepcopy(
+            self.case["round"]["formation_assessment"])
+        assessment["vehicle_map_collisions"] = (
+            list(assessment.get("vehicle_map_collisions") or ()) * 5)
+        for vehicle in assessment["coverage_vehicles"].values():
+            witnesses = list(vehicle.get("witnesses") or ())
+            gap_witnesses = [witness for witness in witnesses
+                             if witness.get("status") == "GAP"]
+            if gap_witnesses:
+                vehicle["witnesses"] = witnesses + gap_witnesses * 6
+        assessment["transition_windows"] = (
+            list(assessment.get("transition_windows") or ()) * 5)
+        diagnostics = corridor_portal_diagnostics(
+            {"formation_assessment": assessment},
+            guide_points=self.case["round"]["guide"]["points"],
+            guide_source=self.case["display"]["guide_source"])
+        self.assertEqual(len(diagnostics["map_collision_samples"]),
+                         PORTAL_DIAGNOSTIC_COLLISION_LIMIT)
+        self.assertEqual(len(diagnostics["coverage_gaps"]),
+                         PORTAL_DIAGNOSTIC_GAP_LIMIT)
+        self.assertEqual(len(diagnostics["portal_windows"]),
+                         PORTAL_DIAGNOSTIC_WINDOW_LIMIT)
+        map_counts = assessment["map_sample_counts"]
+        self.assertEqual(
+            diagnostics["counts"]["map_collision_total"],
+            map_counts["map_collision"] + map_counts["vehicle_collision"])
+        self.assertEqual(
+            diagnostics["counts"]["portal_window_total"],
+            len(assessment["transition_windows"]))
+
+    def _diagnostics_with_counts(self, counts_by_vehicle):
+        assessment = copy.deepcopy(
+            self.case["round"]["formation_assessment"])
+        for key, counts in counts_by_vehicle.items():
+            assessment["coverage_vehicles"][key]["counts"] = dict(counts)
+        return corridor_portal_diagnostics(
+            {"formation_assessment": assessment},
+            guide_points=self.case["round"]["guide"]["points"],
+            guide_source=self.case["display"]["guide_source"])
+
+    def test_single_region_only_samples_never_increment_the_union_total(
+            self):
+        vehicles = self.case["round"]["formation_assessment"][
+            "coverage_vehicles"]
+        counts = {key: {"single": 2, "union": 0, "gap": 0,
+                        "unconfirmed": 0}
+                  for key in vehicles}
+        diagnostics = self._diagnostics_with_counts(counts)
+        self.assertEqual(diagnostics["counts"]["single_region_total"],
+                         2 * len(vehicles))
+        self.assertEqual(diagnostics["counts"]["union_covered_total"], 0)
+        self.assertEqual(diagnostics["counts"]["union_gap_total"], 0)
+        self.assertEqual(diagnostics["counts"]["union_unknown_total"], 0)
+
+    def test_adjacent_union_only_samples_report_exactly_the_union_count(
+            self):
+        vehicles = self.case["round"]["formation_assessment"][
+            "coverage_vehicles"]
+        counts = {key: {"single": 0, "union": 3, "gap": 0,
+                        "unconfirmed": 0}
+                  for key in vehicles}
+        diagnostics = self._diagnostics_with_counts(counts)
+        self.assertEqual(diagnostics["counts"]["single_region_total"], 0)
+        self.assertEqual(diagnostics["counts"]["union_covered_total"],
+                         3 * len(vehicles))
+        self.assertEqual(diagnostics["counts"]["union_gap_total"], 0)
+        self.assertEqual(diagnostics["counts"]["union_unknown_total"], 0)
+
+    def test_mixed_single_union_gap_and_unknown_counts_stay_separate(self):
+        vehicles = self.case["round"]["formation_assessment"][
+            "coverage_vehicles"]
+        keys = list(vehicles)
+        mixed = (
+            {"single": 2, "union": 0, "gap": 1, "unconfirmed": 4},
+            {"single": 0, "union": 3, "gap": 0, "unconfirmed": 0},
+            {"single": 1, "union": 1, "gap": 2, "unconfirmed": 3},
+        )
+        counts = {key: dict(mixed[index % len(mixed)])
+                  for index, key in enumerate(keys)}
+        expected = {
+            "single": sum(item["single"] for item in counts.values()),
+            "union": sum(item["union"] for item in counts.values()),
+            "gap": sum(item["gap"] for item in counts.values()),
+            "unknown": sum(item["unconfirmed"] for item in counts.values()),
+        }
+        diagnostics = self._diagnostics_with_counts(counts)
+        self.assertEqual(
+            diagnostics["counts"]["single_region_total"],
+            expected["single"])
+        self.assertEqual(
+            diagnostics["counts"]["union_covered_total"],
+            expected["union"])
+        self.assertEqual(
+            diagnostics["counts"]["union_gap_total"], expected["gap"])
+        self.assertEqual(
+            diagnostics["counts"]["union_unknown_total"],
+            expected["unknown"])
+        # The progress summary and the display diagnostic use one semantic:
+        # four independent counters copied from the same assessment.
+        summary = pipeline_module._progress_assessment_summary(
+            {"map_sample_counts": {"map_collision": 0,
+                                   "vehicle_collision": 0},
+             "map_sample_status": "MAP_CLEAR_AT_SAMPLES",
+             "station_count": 10,
+             "coverage_vehicles": {
+                 key: {"counts": value} for key, value in counts.items()}})
+        self.assertEqual(summary["single_region_count"],
+                         expected["single"])
+        self.assertEqual(summary["union_covered_count"],
+                         expected["union"])
+        self.assertEqual(summary["union_gap_count"], expected["gap"])
+        self.assertEqual(summary["union_unknown_count"], expected["unknown"])
+        view = planning_diagnostics_view(
+            {"metrics": {"assessment": summary}})
+        self.assertEqual(view["assessment"]["single_region_count"],
+                         expected["single"])
+        self.assertEqual(view["assessment"]["union_covered_count"],
+                         expected["union"])
+        self.assertEqual(view["assessment"]["union_gap_count"],
+                         expected["gap"])
+        self.assertEqual(view["assessment"]["union_unknown_count"],
+                         expected["unknown"])
+
+    def test_builder_requires_a_round_and_returns_none_without_assessment(self):
+        with self.assertRaises(VirtualAContractError):
+            corridor_portal_diagnostics(
+                [], guide_points=self.case["round"]["guide"]["points"])
+        self.assertIsNone(corridor_portal_diagnostics(
+            {"formation_assessment": None},
+            guide_points=self.case["round"]["guide"]["points"]))
+
+    def test_diagnostic_markers_have_separate_namespaces_colors_and_labels(
+            self):
+        case = self.case
+        markers, _paths = build_guide_display(case["document"])
+        collisions = [marker for marker in markers
+                      if marker.namespace ==
+                      MAP_COLLISION_SAMPLE_NAMESPACE]
+        gaps = [marker for marker in markers
+                if marker.namespace == COVERAGE_GAP_NAMESPACE]
+        portals = [marker for marker in markers
+                   if marker.namespace == PORTAL_WINDOW_NAMESPACE]
+        self.assertTrue(collisions)
+        self.assertTrue(gaps)
+        self.assertTrue(portals)
+        collision_lines = [marker for marker in collisions
+                           if marker.marker_type == "LINE_LIST"]
+        self.assertEqual(
+            len(collision_lines),
+            len(case["display"]["portal_diagnostics"][
+                "map_collision_samples"]))
+        for marker in collision_lines:
+            self.assertEqual(marker.color, MAP_COLLISION_SAMPLE_COLOR)
+            self.assertEqual(len(marker.points), 4)
+        collision_texts = [
+            marker.text for marker in collisions
+            if marker.marker_type == "TEXT_VIEW_FACING"]
+        self.assertEqual(len(collision_texts), len(collision_lines))
+        self.assertTrue(all("MAP COLLISION (sample)" in text
+                            for text in collision_texts))
+        gap_lines = [marker for marker in gaps
+                     if marker.marker_type == "LINE_STRIP"]
+        self.assertEqual(
+            len(gap_lines),
+            len(case["display"]["portal_diagnostics"]["coverage_gaps"]))
+        for marker in gap_lines:
+            self.assertEqual(marker.color, COVERAGE_GAP_COLOR)
+            self.assertEqual(marker.points[0], marker.points[-1])
+        gap_texts = [marker.text for marker in gaps
+                     if marker.marker_type == "TEXT_VIEW_FACING"]
+        self.assertTrue(gap_texts)
+        self.assertTrue(all("CORRIDOR COVERAGE GAP (sample)" in text
+                            for text in gap_texts))
+        # A corridor gap must never be disguised as a map collision.
+        self.assertFalse(any("MAP COLLISION" in text for text in gap_texts))
+        self.assertFalse(any("COVERAGE GAP" in text
+                             for text in collision_texts))
+        portal_lines = [marker for marker in portals
+                        if marker.marker_type == "LINE_STRIP"]
+        self.assertEqual(
+            len(portal_lines),
+            len(case["display"]["portal_diagnostics"]["portal_windows"]))
+        for marker in portal_lines:
+            self.assertEqual(marker.color, PORTAL_WINDOW_COLOR)
+            self.assertEqual(len(marker.points), 2)
+        portal_texts = [marker.text for marker in portals
+                        if marker.marker_type == "TEXT_VIEW_FACING"]
+        self.assertTrue(any(text.startswith("PORTAL 0->1")
+                            for text in portal_texts))
+        self.assertFalse(any("CERTIFIED" in marker.text
+                             for marker in markers
+                             if marker.marker_type == "TEXT_VIEW_FACING"))
+
+    def test_bad_identity_cap_or_claim_fails_the_guide_layer_closed(self):
+        document = self._document()
+        self._diagnostics(document)["chain_digest"] = "0" * 64
+        with self.assertRaises(PlaybackValidationError):
+            build_guide_display(document)
+
+        document = self._document()
+        self._diagnostics(document)["guide_source"] = "another_guide"
+        with self.assertRaises(PlaybackValidationError):
+            build_guide_display(document)
+
+        document = self._document()
+        self._diagnostics(document)["certification_claim"] = "CERTIFIED"
+        with self.assertRaises(PlaybackValidationError):
+            build_guide_display(document)
+
+        document = self._document()
+        self._diagnostics(document)["continuously_certified"] = True
+        with self.assertRaises(PlaybackValidationError):
+            build_guide_display(document)
+
+        document = self._document()
+        samples = self._diagnostics(document)["map_collision_samples"]
+        self._diagnostics(document)["map_collision_samples"] = (
+            list(samples) * (PORTAL_DIAGNOSTIC_COLLISION_LIMIT + 1))
+        with self.assertRaises(PlaybackValidationError):
+            build_guide_display(document)
+
+        document = self._document()
+        gaps = self._diagnostics(document)["coverage_gaps"]
+        self._diagnostics(document)["coverage_gaps"] = (
+            [gaps[0]] * (PORTAL_DIAGNOSTIC_GAP_LIMIT + 1))
+        with self.assertRaises(PlaybackValidationError):
+            build_guide_display(document)
+
+        document = self._document()
+        windows = self._diagnostics(document)["portal_windows"]
+        self._diagnostics(document)["portal_windows"] = (
+            [windows[0]] * (PORTAL_DIAGNOSTIC_WINDOW_LIMIT + 1))
+        with self.assertRaises(PlaybackValidationError):
+            build_guide_display(document)
+
+        document = self._document()
+        self._diagnostics(document)["counts"]["map_collision_total"] = -1
+        with self.assertRaises(PlaybackValidationError):
+            build_guide_display(document)
+
+    def test_missing_diagnostics_keeps_the_guide_layer_without_samples(self):
+        document = self._document()
+        document["corridors"][0].pop("portal_diagnostics", None)
+        markers, _paths = build_guide_display(document)
+        self.assertTrue(any(marker.namespace == PLANNING_GUIDE_NAMESPACE
+                            for marker in markers))
+        self.assertFalse(any(
+            marker.namespace in (MAP_COLLISION_SAMPLE_NAMESPACE,
+                                 COVERAGE_GAP_NAMESPACE,
+                                 PORTAL_WINDOW_NAMESPACE)
+            for marker in markers))
+
+
+class V2PlanningProgressDiagnosticsTest(unittest.TestCase):
+    """The real progress document exposes the selected route and Guide."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.case = _actual_corridor_case()
+
+    def test_completed_portal_guide_event_carries_selected_route_and_samples(
+            self):
+        case = self.case
+        completed = [
+            event for event in case["progress_events"]
+            if event.get("stage") == "PORTAL_GUIDE"
+            and event.get("metrics", {}).get("phase") == "complete"
+            and event.get("metrics", {}).get("assessment", {}).get(
+                "available")]
+        self.assertTrue(completed)
+        event = completed[-1]
+        metrics = event["metrics"]
+        self.assertEqual(event["route_index"],
+                         case["round"]["route_index"])
+        self.assertEqual(metrics["guide_source"],
+                         case["display"]["guide_source"])
+        self.assertLess(metrics["selected_candidate_index"],
+                        metrics["guide_candidate_count"])
+        view = planning_diagnostics_view(event)
+        self.assertEqual(view["guide_source"], metrics["guide_source"])
+        self.assertEqual(view["selected_candidate_index"],
+                         metrics["selected_candidate_index"])
+        self.assertEqual(view["guide_selection_rule"],
+                         metrics["guide_selection_rule"])
+        assessment = view["assessment"]
+        self.assertTrue(assessment["available"])
+        counts = case["display"]["portal_diagnostics"]["counts"]
+        self.assertEqual(assessment["station_count"],
+                         case["round"]["formation_assessment"][
+                             "station_count"])
+        self.assertEqual(assessment["map_collision_count"],
+                         counts["map_collision_total"])
+        self.assertEqual(assessment["single_region_count"],
+                         counts["single_region_total"])
+        self.assertEqual(assessment["union_covered_count"],
+                         counts["union_covered_total"])
+        self.assertEqual(assessment["union_gap_count"],
+                         counts["union_gap_total"])
+        self.assertEqual(assessment["union_unknown_count"],
+                         counts["union_unknown_total"])
+
+    def test_view_never_invents_missing_fields(self):
+        self.assertIsNone(planning_diagnostics_view({}))
+        self.assertEqual(planning_diagnostics_view({"metrics": {}}),
+                         {"assessment": None})
+        self.assertEqual(
+            planning_diagnostics_view(
+                {"metrics": {"assessment": {"available": False}}}),
+            {"assessment": {"available": False}})
+
+    def test_old_or_malformed_progress_payload_fails_closed_per_field(self):
+        # An old document only carried union_covered_count; the new
+        # single_region_count must stay unknown instead of being fabricated.
+        old = planning_diagnostics_view({"metrics": {"assessment": {
+            "available": True,
+            "station_count": 21,
+            "map_sample_status": "MAP_CLEAR_AT_SAMPLES",
+            "map_collision_count": 0,
+            "union_covered_count": 133,
+            "union_gap_count": 0,
+            "union_unknown_count": 0,
+        }}})
+        self.assertNotIn("single_region_count", old["assessment"])
+        self.assertEqual(old["assessment"]["union_covered_count"], 133)
+        malformed = planning_diagnostics_view({"metrics": {"assessment": {
+            "available": True,
+            "station_count": True,
+            "map_collision_count": -1,
+            "single_region_count": "39",
+            "union_covered_count": None,
+            "union_gap_count": 1.5,
+            "union_unknown_count": 7,
+        }}})
+        self.assertEqual(malformed["assessment"],
+                         {"available": True, "union_unknown_count": 7})
+
+
 class V2PlannerDebugPublicationTest(unittest.TestCase):
     """The planner emits progressive documents from the actual result."""
 
@@ -885,6 +1349,57 @@ class V2PlannerDebugPublicationTest(unittest.TestCase):
         self.assertEqual(candidates["schema"], CANDIDATE_SCHEMA)
         self.assertEqual(candidates["classification"], CANDIDATE_CERTIFIED)
         self.assertTrue(candidates["certified"])
+
+    def test_real_progress_document_keeps_route_guide_source_and_counts(self):
+        case = self.case
+        node = self._node(astar=None)
+        node._lock = threading.RLock()
+        node._generation = 1
+        node._state = "PLANNING"
+        node._state_plan = case["identity"]["plan_id"]
+        node._map_signature = None
+        node._request_map_signature = None
+        snapshot = self._snapshot()
+        node._virtual_snapshot = snapshot
+        completed = [
+            event for event in case["progress_events"]
+            if event.get("stage") == "PORTAL_GUIDE"
+            and event.get("metrics", {}).get("assessment", {}).get(
+                "available")][-1]
+        node._on_virtual_progress(
+            1, case["identity"]["plan_id"], snapshot, completed)
+        document = self._document(node)
+        self.assertEqual(document["state"], "PLANNING")
+        self.assertEqual(document["stage"], "PORTAL_GUIDE")
+        self.assertEqual(document["route_index"],
+                         case["round"]["route_index"])
+        metrics = document["metrics"]
+        self.assertEqual(metrics["guide_source"],
+                         case["display"]["guide_source"])
+        selection = case["round"]["guide_selection"]
+        self.assertEqual(metrics["selected_candidate_index"],
+                         selection["selected_candidate_index"])
+        self.assertEqual(metrics["guide_candidate_count"],
+                         selection["candidate_count"])
+        self.assertEqual(metrics["guide_selection_rule"],
+                         selection["selection_rule"])
+        assessment = metrics["assessment"]
+        self.assertTrue(assessment["available"])
+        diagnostics = case["display"]["portal_diagnostics"]["counts"]
+        self.assertEqual(assessment["single_region_count"],
+                         diagnostics["single_region_total"])
+        self.assertEqual(assessment["union_covered_count"],
+                         diagnostics["union_covered_total"])
+        self.assertEqual(assessment["union_gap_count"],
+                         diagnostics["union_gap_total"])
+        self.assertEqual(assessment["union_unknown_count"],
+                         diagnostics["union_unknown_total"])
+        corridor = document["corridors"][0]
+        self.assertEqual(corridor["portal_diagnostics"]["chain_digest"],
+                         corridor["chain_sha256"])
+        self.assertEqual(
+            corridor["portal_diagnostics"]["assessment_candidate_id"],
+            case["round"]["formation_assessment"]["candidate_id"])
 
     def test_missing_corridor_round_clears_only_that_layer(self):
         node = self._node()
@@ -989,6 +1504,22 @@ class V2GuideCallbackTest(unittest.TestCase):
         self.assertEqual(len(node.guide_pub.messages), 1)
         markers = node.guide_pub.messages[0].markers
         self.assertEqual([marker.action for marker in markers],
+                         [Marker.DELETEALL])
+
+    def test_invalid_portal_diagnostics_clear_only_the_guide_layer(self):
+        node = self._node()
+        broken = copy.deepcopy(self.case["document"])
+        broken["corridors"][0]["portal_diagnostics"]["chain_digest"] = \
+            "0" * 64
+        self._publish(node, broken)
+        self.assertEqual(len(node.corridor_pub.messages), 1)
+        corridor_markers = node.corridor_pub.messages[0].markers
+        self.assertEqual(corridor_markers[0].action, Marker.DELETEALL)
+        self.assertTrue(any(marker.action == Marker.ADD
+                            for marker in corridor_markers[1:]))
+        self.assertEqual(len(node.guide_pub.messages), 1)
+        self.assertEqual([marker.action
+                          for marker in node.guide_pub.messages[0].markers],
                          [Marker.DELETEALL])
 
     def test_wrong_generation_never_touches_either_layer(self):
@@ -1721,6 +2252,52 @@ class ProgressiveLayerLifecycleTest(unittest.TestCase):
         self.assertEqual(view["formation_id"],
                          self.identity["formation_id"])
         self.assertAlmostEqual(view["elapsed_s"], 11.0, places=6)
+
+    def test_progress_diagnostics_are_retained_only_for_the_same_round(self):
+        node = self._node()
+        completed = self._planning_document(
+            stage="PORTAL_GUIDE", stage_index=3, route_index=0,
+            round_index=0,
+            metrics={
+                "phase": "complete",
+                "guide_source": "corridor_candidate_chebyshev",
+                "selected_candidate_origin": "CHEBYSHEV_CENTER",
+                "selected_candidate_index": 1,
+                "guide_candidate_count": 3,
+                "guide_selection_rule": "DIAGNOSTIC_LEXICOGRAPHIC_BEST",
+                "assessment": {
+                    "available": True,
+                    "station_count": 21,
+                    "map_sample_status": "MAP_CLEAR_AT_SAMPLES",
+                    "map_collision_count": 0,
+                    "single_region_count": 39,
+                    "union_covered_count": 133,
+                    "union_gap_count": 0,
+                    "union_unknown_count": 0,
+                },
+            })
+        self._publish(node, completed)
+        diagnostics = node._planning_progress["diagnostics"]
+        self.assertEqual(diagnostics["guide_source"],
+                         "corridor_candidate_chebyshev")
+        self.assertEqual(diagnostics["selected_candidate_index"], 1)
+        self.assertEqual(diagnostics["assessment"]["single_region_count"],
+                         39)
+        self.assertEqual(diagnostics["assessment"]["union_covered_count"],
+                         133)
+        # A later stage of the same round keeps the completed assessment.
+        self._publish(node, self._planning_document(
+            stage="ASTAR_SEARCH", stage_index=2, route_index=0,
+            round_index=0, metrics={"phase": "running"}))
+        self.assertEqual(node._planning_progress["diagnostics"],
+                         diagnostics)
+        # A new round (or plan) never inherits another round's counts.
+        self._publish(node, self._planning_document(
+            stage="CORRIDOR_BUILD", stage_index=1, route_index=1,
+            round_index=1, metrics={"phase": "running"}))
+        self.assertEqual(node._planning_progress["round_index"], 1)
+        self.assertEqual(node._planning_progress["diagnostics"],
+                         {"assessment": None})
 
 
 class CandidateMarkerTest(unittest.TestCase):

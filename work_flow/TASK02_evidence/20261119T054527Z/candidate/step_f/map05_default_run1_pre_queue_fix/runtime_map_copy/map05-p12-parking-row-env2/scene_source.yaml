@@ -1,0 +1,23 @@
+name: P12_env2
+source_pdf: 12_Bao_4WIS_Executable_Trajectories_2026.pdf
+source_page: 9
+source_figure: "Fig. 5, Env2"
+description: "Four-method parking-row benchmark."
+paper_coordinate_bounds: [0.0, 15.0, 0.0, 10.0]
+map_coordinate_bounds: [1.457785, 13.542215, 0.971856, 9.028144]
+source_plot_pixels: [440, 900, 930, 1226]
+source_resolution_m_per_pixel_approx: 0.030644
+map_resolution_m_per_pixel: 0.024713
+robot_scale_factor: 0.806452
+paper_vehicle_width_m: 0.620
+target_robot_width_m: 0.500
+scale_reference: "paper vehicle width mapped to target robot width"
+scale_center: [7.500000, 5.000000]
+obstacle_fill_class: gray166
+ignored_overlays: []
+cleanup_notes: "Reconstructed straight parking-row walls and teeth from intact rectangular faces; removed raster bumps and restored two trace-eroded teeth; original grid size and metric extent retained."
+pose_source: not encoded in paper; project-defined test poses are in scene_meta.yaml
+limitations: >-
+  Reconstructed from a printed simulation figure, not the authors'
+  occupancy grid. Boundaries and scale are approximate. Recheck all
+  paths with the vehicle swept-footprint collision checker.

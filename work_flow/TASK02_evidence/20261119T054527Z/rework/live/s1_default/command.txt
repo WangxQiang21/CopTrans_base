@@ -1,0 +1,37 @@
+TASK02 rework live run: S1 default entry (no hidden backend/guidance args)
+UTC date: 2026-11-19
+
+Launch command (verbatim):
+  ./run_demo.sh --map evaluation/virtual_formation_a/G4/20261116T081458Z/scenes/inputs/S1 --scale 1.0
+
+Environment:
+  ROS_MASTER_URI=http://127.0.0.1:11633   (task-private master)
+  ROS_HOME=$PWD/work_flow/TASK02_evidence/20261119T054527Z/rework/live/s1_default/ros_home
+  ROS_LOG_DIR=$PWD/work_flow/TASK02_evidence/20261119T054527Z/rework/live/s1_default/nodes_raw
+  DISPLAY=:1
+  PYTHONDONTWRITEBYTECODE=1
+
+No backend:=, virtual_a_guidance_mode:=, virtual_a_corridor_enforcement:=,
+auto_goal:=, or rviz:= argument was passed; run_demo defaults were used
+(launch.log records backend:=virtual_rigid_a guidance=corridor
+enforcement=hard auto_goal:=false rviz:=true).
+
+RViz-style inputs (same topics as a user: /initialpose and
+/move_base_simple/goal):
+  reset 0,0,0
+  goal  8.819581504169413,3.4858722492682084,1.5707963267948968
+
+Capture driver command:
+  python3 work_flow/TASK02_evidence/20261119T054527Z/candidate/step_f/ros_step_f_capture.py \
+    --run-dir work_flow/TASK02_evidence/20261119T054527Z/rework/live/s1_default \
+    --label s1_rework_default --reset 0,0,0 \
+    --goal 8.819581504169413,3.4858722492682084,1.5707963267948968 \
+    --planning-timeout 240 --screenshot-seconds 20
+  driver exit code: 0 (capture_driver.exit)
+
+Process control:
+  actual run_demo.sh process group 747859 (session.pid 747854 was the setsid
+  wrapper that exits immediately; corrected in stop.log and
+  session_pgid_actual.txt)
+  stop: kill -INT -- -747859; all group processes gone; master stopped last
+  Other-session master 11411 and roslaunch pid 4042262 were never touched.

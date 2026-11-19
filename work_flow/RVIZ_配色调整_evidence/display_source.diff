@@ -1,0 +1,694 @@
+diff --git a/catkin_ws/src/fwis_v3_demo/rviz/formation_demo.rviz b/catkin_ws/src/fwis_v3_demo/rviz/formation_demo.rviz
+index 6a33316..f3689cb 100644
+--- a/catkin_ws/src/fwis_v3_demo/rviz/formation_demo.rviz
++++ b/catkin_ws/src/fwis_v3_demo/rviz/formation_demo.rviz
+@@ -15,139 +15,155 @@ Visualization Manager:
+       Value: true
+     - Class: rviz/MarkerArray
+       Enabled: true
+-      Name: Vehicle bodies, headings, history and labels (markers)
+-      Marker Topic: /formation/markers
++      Name: Convex workspace corridors (F point only)
++      Marker Topic: /formation/corridors
++      Namespaces:
++        formation/planning/corridor_f_only/fill: true
++        formation/planning/corridor_f_only/edge: true
+       Value: true
+     - Class: rviz/Path
+       Enabled: true
+       Name: Certified path vehicle 1 (editable)
+       Topic: /formation/path/vehicle_1
+-      Color: 22; 166; 182
++      Color: 56; 189; 248
+       Line Style: Lines
+-      Line Width: 0.08
++      Line Width: 0.065
+       Value: true
+     - Class: rviz/Path
+       Enabled: true
+       Name: Certified path vehicle 2 (editable)
+       Topic: /formation/path/vehicle_2
+-      Color: 242; 142; 43
++      Color: 56; 189; 248
+       Line Style: Lines
+-      Line Width: 0.08
++      Line Width: 0.065
+       Value: true
+     - Class: rviz/Path
+       Enabled: true
+       Name: Certified path vehicle 3 (editable)
+       Topic: /formation/path/vehicle_3
+-      Color: 143; 99; 199
++      Color: 56; 189; 248
+       Line Style: Lines
+-      Line Width: 0.08
++      Line Width: 0.065
+       Value: true
+     - Class: rviz/Path
+       Enabled: true
+       Name: F candidate path (editable)
+       Topic: /formation/path/f_candidate
+-      Color: 255; 217; 13
++      Color: 250; 204; 21
+       Line Style: Lines
+-      Line Width: 0.045
++      Line Width: 0.047
+       Value: true
+     - Class: rviz/Path
+-      Enabled: true
++      Enabled: false
+       Name: Candidate centre path car1 (editable)
+       Topic: /formation/path/candidate_vehicle_1
+-      Color: 26; 115; 255
++      Color: 250; 204; 21
+       Line Style: Lines
+-      Line Width: 0.03
+-      Value: true
++      Line Width: 0.024
++      Value: false
+     - Class: rviz/Path
+-      Enabled: true
++      Enabled: false
+       Name: Candidate centre path car2 (editable)
+       Topic: /formation/path/candidate_vehicle_2
+-      Color: 26; 115; 255
++      Color: 250; 204; 21
+       Line Style: Lines
+-      Line Width: 0.03
+-      Value: true
++      Line Width: 0.024
++      Value: false
+     - Class: rviz/Path
+-      Enabled: true
++      Enabled: false
+       Name: Candidate centre path car3 (editable)
+       Topic: /formation/path/candidate_vehicle_3
+-      Color: 26; 115; 255
++      Color: 250; 204; 21
+       Line Style: Lines
+-      Line Width: 0.03
+-      Value: true
++      Line Width: 0.024
++      Value: false
+     - Class: rviz/Path
+-      Enabled: true
++      Enabled: false
+       Name: A* raw route 0 (editable)
+       Topic: /formation/path/astar_raw_0
+-      Color: 255; 140; 0
++      Color: 249; 115; 22
+       Line Style: Lines
+-      Line Width: 0.026
+-      Value: true
++      Line Width: 0.025
++      Value: false
+     - Class: rviz/Path
+-      Enabled: true
++      Enabled: false
+       Name: A* raw route 1 (editable)
+       Topic: /formation/path/astar_raw_1
+-      Color: 255; 140; 0
++      Color: 249; 115; 22
+       Line Style: Lines
+-      Line Width: 0.026
+-      Value: true
++      Line Width: 0.025
++      Value: false
+     - Class: rviz/Path
+-      Enabled: true
++      Enabled: false
+       Name: A* raw route 2 (editable)
+       Topic: /formation/path/astar_raw_2
+-      Color: 255; 140; 0
++      Color: 249; 115; 22
+       Line Style: Lines
+-      Line Width: 0.026
+-      Value: true
++      Line Width: 0.025
++      Value: false
+     - Class: rviz/Path
+-      Enabled: true
++      Enabled: false
+       Name: Portal guide 0 (editable)
+       Topic: /formation/path/portal_guide_0
+-      Color: 13; 209; 64
++      Color: 34; 197; 94
+       Line Style: Lines
+-      Line Width: 0.032
+-      Value: true
++      Line Width: 0.035
++      Value: false
+     - Class: rviz/Path
+-      Enabled: true
++      Enabled: false
+       Name: Portal guide 1 (editable)
+       Topic: /formation/path/portal_guide_1
+-      Color: 13; 209; 64
++      Color: 34; 197; 94
+       Line Style: Lines
+-      Line Width: 0.032
+-      Value: true
++      Line Width: 0.035
++      Value: false
+     - Class: rviz/Path
+-      Enabled: true
++      Enabled: false
+       Name: Portal guide 2 (editable)
+       Topic: /formation/path/portal_guide_2
+-      Color: 13; 209; 64
++      Color: 34; 197; 94
++      Line Style: Lines
++      Line Width: 0.035
++      Value: false
++    - Class: rviz/Path
++      Enabled: true
++      Name: Active A* route (editable)
++      Topic: /formation/path/astar_active
++      Color: 249; 115; 22
++      Line Style: Lines
++      Line Width: 0.025
++      Value: true
++    - Class: rviz/Path
++      Enabled: true
++      Name: Active Portal guide (editable)
++      Topic: /formation/path/portal_guide_active
++      Color: 34; 197; 94
+       Line Style: Lines
+-      Line Width: 0.032
++      Line Width: 0.035
+       Value: true
+     - Class: rviz/MarkerArray
+       Enabled: true
++      Name: Vehicle bodies, headings, history and labels (markers)
++      Marker Topic: /formation/markers
++      Value: true
++    - Class: rviz/MarkerArray
++      Enabled: false
+       Marker Topic: /formation/guides
+       Name: Guide labels (markers)
+       Namespaces:
+-        formation/planning/astar_raw: true
+-        formation/planning/portal_guide: true
++        formation/planning/astar_raw: false
++        formation/planning/portal_guide: false
+       Queue Size: 100
+-      Value: true
+-    - Class: rviz/MarkerArray
+-      Enabled: true
+-      Name: Convex workspace corridors (F point only)
+-      Marker Topic: /formation/corridors
+-      Namespaces:
+-        formation/planning/corridor_f_only/fill: true
+-        formation/planning/corridor_f_only/edge: true
+-      Value: true
++      Value: false
+     - Class: rviz/MarkerArray
+       Enabled: true
+       Name: Candidate OBBs and labels (markers)
+       Marker Topic: /formation/planning_candidates
+       Namespaces:
+         formation/planning/f_candidate: true
+-        formation/planning/car1_center_candidate: true
+-        formation/planning/car2_center_candidate: true
+-        formation/planning/car3_center_candidate: true
++        formation/planning/car1_center_candidate: false
++        formation/planning/car2_center_candidate: false
++        formation/planning/car3_center_candidate: false
+         formation/planning/car1_obb_candidate: true
+         formation/planning/car2_obb_candidate: true
+         formation/planning/car3_obb_candidate: true
+@@ -176,12 +192,12 @@ Visualization Manager:
+       top: 20
+       width: 360
+     - Class: rviz/TF
+-      Enabled: true
++      Enabled: false
+       Name: Formation TF
+       Show Arrows: true
+       Show Axes: true
+       Show Names: true
+-      Value: true
++      Value: false
+   Global Options:
+     Fixed Frame: map
+     Background Color: 48; 48; 48
+diff --git a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_playback.py b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_playback.py
+index 2579360..5102fcf 100644
+--- a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_playback.py
++++ b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_playback.py
+@@ -2351,12 +2351,13 @@ def clear_marker_specs(frame_id="map"):
+ 
+ CORRIDOR_FILL_Z_M = 0.005
+ CORRIDOR_EDGE_Z_M = 0.01
+-CORRIDOR_FILL_ALPHA = 0.15
+-CORRIDOR_EDGE_ALPHA = 0.95
++CORRIDOR_FILL_ALPHA = 0.09
++CORRIDOR_EDGE_ALPHA = 0.55
+ # TASK 01: one fixed colour for every corridor polygon.  The layer is a
+-# candidate F-point workspace display, not an execution certificate.
+-CORRIDOR_FILL_COLOR = (0.85, 0.08, 0.06)
+-CORRIDOR_EDGE_COLOR = (0.45, 0.02, 0.01)
++# candidate F-point workspace display, not an execution certificate.  The
++# soft red fill and deep-rose edge keep the corridor behind every path.
++CORRIDOR_FILL_COLOR = (232 / 255, 121 / 255, 134 / 255)
++CORRIDOR_EDGE_COLOR = (180 / 255, 83 / 255, 98 / 255)
+ CORRIDOR_FILL_NAMESPACE = "formation/planning/corridor_f_only/fill"
+ CORRIDOR_EDGE_NAMESPACE = "formation/planning/corridor_f_only/edge"
+ 
+@@ -2601,7 +2602,7 @@ def build_corridor_markers(document, frame_id="map"):
+                 CORRIDOR_EDGE_NAMESPACE, marker_id, "LINE_STRIP", frame_id,
+                 points=edge,
+                 color=CORRIDOR_EDGE_COLOR + (CORRIDOR_EDGE_ALPHA,),
+-                scale=(0.03, 0.0, 0.0)))
++                scale=(0.013, 0.0, 0.0)))
+     return tuple(markers)
+ 
+ 
+@@ -2826,7 +2827,7 @@ CANDIDATE_UNVERIFIED = "UNVERIFIED_CANDIDATE"
+ CANDIDATE_CERTIFIED = "CERTIFIED"
+ CANDIDATE_DIAGNOSTIC_LABEL = "DIAGNOSTIC_ONLY"
+ CANDIDATE_POINT_LIMIT = 400
+-CANDIDATE_OBB_LIMIT = 80
++CANDIDATE_OBB_LIMIT = 5
+ CANDIDATE_SAMPLE_SPACING_M = 0.05
+ CANDIDATE_F_NAMESPACE = "formation/planning/f_candidate"
+ CANDIDATE_CENTER_NAMESPACE = "formation/planning/car{}_center_candidate"
+@@ -2834,8 +2835,8 @@ CANDIDATE_OBB_NAMESPACE = "formation/planning/car{}_obb_candidate"
+ PLANNING_FAILURE_NAMESPACE = "formation/planning/failure"
+ CANDIDATE_F_COLOR = (1.00, 0.85, 0.05, 0.95)
+ CANDIDATE_CENTER_COLOR = (0.10, 0.45, 1.00, 0.95)
+-CANDIDATE_OBB_COLOR = (0.10, 0.62, 1.00, 0.90)
+-PLANNING_FAILURE_COLOR = (0.78, 0.04, 0.62, 1.00)
++CANDIDATE_OBB_COLOR = (148 / 255, 163 / 255, 184 / 255, 0.38)
++PLANNING_FAILURE_COLOR = (236 / 255, 72 / 255, 153 / 255, 1.00)
+ CANDIDATE_OBB_Z_M = 0.028
+ PLANNING_FAILURE_Z_M = 0.16
+ CANDIDATE_CLASSIFICATIONS = (CANDIDATE_UNVERIFIED, CANDIDATE_CERTIFIED)
+@@ -3265,7 +3266,7 @@ def build_candidate_display(document, frame_id="map"):
+         position=(f_points[len(f_points) // 2][0],
+                   f_points[len(f_points) // 2][1], 0.40),
+         text=" | ".join(label_parts),
+-        color=CANDIDATE_F_COLOR, scale=(0.0, 0.0, 0.24)))
++        color=CANDIDATE_F_COLOR, scale=(0.0, 0.0, 0.14)))
+     for vehicle_id, _length, _width, center_points, obbs in \
+             checked_vehicles:
+         center_namespace = CANDIDATE_CENTER_NAMESPACE.format(vehicle_id)
+@@ -3279,13 +3280,13 @@ def build_candidate_display(document, frame_id="map"):
+                 vehicle_id,
+                 classification if classification == CANDIDATE_CERTIFIED
+                 else diagnostic_label),
+-            color=CANDIDATE_CENTER_COLOR, scale=(0.0, 0.0, 0.18)))
++            color=CANDIDATE_CENTER_COLOR, scale=(0.0, 0.0, 0.14)))
+         for index, corners in enumerate(obbs):
+             markers.append(_marker(
+                 obb_namespace, index, "LINE_STRIP", frame_id,
+                 points=tuple((x, y, CANDIDATE_OBB_Z_M)
+                              for x, y in corners),
+-                color=CANDIDATE_OBB_COLOR, scale=(0.018, 0.0, 0.0)))
++                color=CANDIDATE_OBB_COLOR, scale=(0.010, 0.0, 0.0)))
+     markers.extend(_failure_marker_specs(failure, frame_id))
+     return tuple(markers), paths
+ 
+diff --git a/catkin_ws/src/fwis_v3_playback/scripts/formation_playback.py b/catkin_ws/src/fwis_v3_playback/scripts/formation_playback.py
+index dca8a8b..037ef12 100644
+--- a/catkin_ws/src/fwis_v3_playback/scripts/formation_playback.py
++++ b/catkin_ws/src/fwis_v3_playback/scripts/formation_playback.py
+@@ -75,6 +75,8 @@ F_CANDIDATE_PATH_TOPIC = "/formation/path/f_candidate"
+ CANDIDATE_VEHICLE_PATH_TOPIC = "/formation/path/candidate_vehicle_{}"
+ ASTAR_PATH_TOPIC = "/formation/path/astar_raw_{}"
+ GUIDE_PATH_TOPIC = "/formation/path/portal_guide_{}"
++ASTAR_ACTIVE_PATH_TOPIC = "/formation/path/astar_active"
++GUIDE_ACTIVE_PATH_TOPIC = "/formation/path/portal_guide_active"
+ HUD_TOPIC = "/formation/hud"
+ CORRIDOR_TOPIC = "/formation/corridors"
+ GUIDES_TOPIC = "/formation/guides"
+@@ -102,6 +104,27 @@ def _seconds(value):
+     return float(value)
+ 
+ 
++def active_route_index(document):
++    """The real selected route index, or None when the document cannot say.
++
++    Both fields come from the verified planning-debug document written by the
++    pipeline.  There is deliberately no ``route 0`` default: an absent or
++    inconsistent pair must clear the active aliases instead of presenting a
++    guess as the selected route.
++    """
++    if not isinstance(document, dict):
++        return None
++    route_index = document.get("route_index")
++    route_count = document.get("route_count")
++    if isinstance(route_index, bool) or not isinstance(route_index, int):
++        return None
++    if isinstance(route_count, bool) or not isinstance(route_count, int):
++        return None
++    if route_count < 1 or route_index < 0 or route_index >= route_count:
++        return None
++    return route_index
++
++
+ def fields_from_message(message):
+     """Convert the ROS message into plain display fields, failing closed."""
+     return fields_from_timed_message(message)
+@@ -248,6 +271,13 @@ class FormationPlaybackNode:
+                 GUIDES_TOPIC, MarkerArray, queue_size=1)
+             self.candidate_pub = rospy.Publisher(
+                 CANDIDATES_TOPIC, MarkerArray, queue_size=1)
++            # Active aliases copy the one route selected by the real
++            # route_index in the verified planning document.  They are
++            # created latched here so subscription callbacks never create a
++            # publisher on the wire.
++            for topic in (ASTAR_ACTIVE_PATH_TOPIC, GUIDE_ACTIVE_PATH_TOPIC):
++                self.guide_path_pubs[topic] = rospy.Publisher(
++                    topic, Path, queue_size=1, latch=True)
+         self.status_pub = rospy.Publisher(
+             STATUS_TOPIC, String, queue_size=1, latch=True)
+         if self.hud_enabled:
+@@ -901,7 +931,7 @@ class FormationPlaybackNode:
+             message.header.stamp = now
+             publisher.publish(message)
+ 
+-    def _publish_guide_paths(self, paths, stamp):
++    def _publish_guide_paths(self, paths, stamp, route_index=None):
+         self._clear_topic_paths("guide_path_pubs")
+         entries = []
+         for (kind, route_id), samples in paths.items():
+@@ -914,6 +944,26 @@ class FormationPlaybackNode:
+                     "unknown guide path kind {!r}".format(kind))
+             entries.append((topic, samples))
+         self._publish_topic_paths("guide_path_pubs", entries, stamp)
++        self._publish_active_guide_paths(paths, stamp, route_index)
++
++    def _publish_active_guide_paths(self, paths, stamp, route_index):
++        """Copy only the route the planner reports as currently selected.
++
++        The aliases never fall back to route 0.  A missing, malformed or
++        out-of-range ``route_index`` leaves both active topics empty because
++        ``_clear_topic_paths`` has already emptied this registry.
++        """
++        if isinstance(route_index, bool) or not isinstance(route_index, int):
++            return
++        registry = self._path_registry("guide_path_pubs")
++        for topic, kind in ((ASTAR_ACTIVE_PATH_TOPIC, "astar_raw"),
++                            (GUIDE_ACTIVE_PATH_TOPIC, "portal_guide")):
++            publisher = registry.get(topic)
++            if publisher is None:
++                continue
++            samples = paths.get((kind, route_index))
++            if samples:
++                publisher.publish(self._topic_path_message(samples, stamp))
+ 
+     def _publish_candidate_paths(self, paths, stamp):
+         self._clear_topic_paths("candidate_path_pubs")
+@@ -938,7 +988,8 @@ class FormationPlaybackNode:
+                 "[formation playback] rejecting guide payload: %s", exc)
+             self._clear_guides()
+             return
+-        self._publish_guide_paths(paths, stamp)
++        self._publish_guide_paths(paths, stamp,
++                                  active_route_index(document))
+         if self.guide_pub is not None:
+             self.guide_pub.publish(self._marker_array(specs, stamp))
+ 
+diff --git a/tests/test_formation_demo_assets.py b/tests/test_formation_demo_assets.py
+index 4159418..900b67b 100644
+--- a/tests/test_formation_demo_assets.py
++++ b/tests/test_formation_demo_assets.py
+@@ -370,7 +370,9 @@ class FormationRvizTest(unittest.TestCase):
+                            if item.get("Name") == "Map")
+         self.assertEqual(map_display["Topic"], "/map")
+         marker_display = next(
+-            item for item in displays if item.get("Class") == "rviz/MarkerArray")
++            item for item in displays
++            if item.get("Class") == "rviz/MarkerArray"
++            and item.get("Marker Topic") == "/formation/markers")
+         self.assertEqual(marker_display["Marker Topic"], "/formation/markers")
+         self.assertTrue(any(item.get("Class") == "rviz/TF"
+                             for item in displays))
+@@ -414,12 +416,58 @@ class FormationRvizTest(unittest.TestCase):
+         expected_topics.update(
+             "/formation/path/portal_guide_{}".format(route_id)
+             for route_id in (0, 1, 2))
++        expected_topics.update((
++            "/formation/path/astar_active",
++            "/formation/path/portal_guide_active"))
+         self.assertEqual({item["Topic"] for item in paths}, expected_topics)
++        by_topic = {item["Topic"]: item for item in paths}
+         for item in paths:
+-            self.assertTrue(item["Enabled"])
+             self.assertIn("Color", item)
+             self.assertIn("Line Width", item)
+             self.assertGreater(item["Line Width"], 0.0)
++
++        expected_enabled = {
++            "/formation/path/vehicle_1",
++            "/formation/path/vehicle_2",
++            "/formation/path/vehicle_3",
++            "/formation/path/f_candidate",
++            "/formation/path/astar_active",
++            "/formation/path/portal_guide_active",
++        }
++        self.assertEqual(
++            {topic for topic, item in by_topic.items() if item["Enabled"]},
++            expected_enabled)
++        for vehicle_id in (1, 2, 3):
++            certified = by_topic[
++                "/formation/path/vehicle_{}".format(vehicle_id)]
++            self.assertEqual(certified["Color"], "56; 189; 248")
++            self.assertEqual(certified["Line Width"], 0.065)
++            candidate = by_topic[
++                "/formation/path/candidate_vehicle_{}".format(vehicle_id)]
++            self.assertEqual(candidate["Color"], "250; 204; 21")
++            self.assertEqual(candidate["Line Width"], 0.024)
++        self.assertEqual(by_topic["/formation/path/f_candidate"]["Color"],
++                         "250; 204; 21")
++        self.assertEqual(
++            by_topic["/formation/path/f_candidate"]["Line Width"], 0.047)
++        for route_id in (0, 1, 2):
++            raw = by_topic[
++                "/formation/path/astar_raw_{}".format(route_id)]
++            guide = by_topic[
++                "/formation/path/portal_guide_{}".format(route_id)]
++            self.assertEqual(raw["Color"], "249; 115; 22")
++            self.assertEqual(guide["Color"], "34; 197; 94")
++        self.assertEqual(by_topic["/formation/path/astar_active"]["Color"],
++                         "249; 115; 22")
++        self.assertEqual(by_topic["/formation/path/astar_active"]
++                         ["Line Width"], 0.025)
++        self.assertEqual(
++            by_topic["/formation/path/portal_guide_active"]["Color"],
++            "34; 197; 94")
++        self.assertEqual(
++            by_topic["/formation/path/portal_guide_active"]["Line Width"],
++            0.035)
++
+         marker_display = next(
+             item for item in displays
+             if item.get("Class") == "rviz/MarkerArray"
+@@ -432,12 +480,22 @@ class FormationRvizTest(unittest.TestCase):
+             if item.get("Class") == "rviz/MarkerArray"
+             and item.get("Marker Topic") == "/formation/guides")
+         self.assertEqual(guide_markers["Name"], "Guide labels (markers)")
++        self.assertFalse(guide_markers["Enabled"])
+         candidate_markers = next(
+             item for item in displays
+             if item.get("Class") == "rviz/MarkerArray"
+             and item.get("Marker Topic") == "/formation/planning_candidates")
+         self.assertEqual(candidate_markers["Name"],
+                          "Candidate OBBs and labels (markers)")
++        self.assertTrue(candidate_markers["Namespaces"][
++            "formation/planning/car1_obb_candidate"])
++        for vehicle_id in (1, 2, 3):
++            self.assertFalse(candidate_markers["Namespaces"][
++                "formation/planning/car{}_center_candidate".format(
++                    vehicle_id)])
++        tf_display = next(item for item in displays
++                          if item.get("Class") == "rviz/TF")
++        self.assertFalse(tf_display["Enabled"])
+ 
+     def test_demo_rviz_exposes_goal_and_initial_pose_tools(self):
+         manager = self.document["Visualization Manager"]
+diff --git a/tests/test_virtual_a_corridor_display.py b/tests/test_virtual_a_corridor_display.py
+index db31f6b..b67f825 100644
+--- a/tests/test_virtual_a_corridor_display.py
++++ b/tests/test_virtual_a_corridor_display.py
+@@ -318,6 +318,9 @@ class CorridorMarkerTest(unittest.TestCase):
+         cls.document = _display_document(cls.chain, [cls.route0])
+ 
+     def test_fan_triangulation_reproduces_the_audited_region_area(self):
++        self.assertEqual(CORRIDOR_FILL_ALPHA, 0.09)
++        self.assertEqual(CORRIDOR_FILL_COLOR,
++                         (232 / 255, 121 / 255, 134 / 255))
+         markers = build_corridor_markers(self.document)
+         self.assertEqual(markers[0].action, "DELETEALL")
+         fills = [marker for marker in markers
+@@ -343,6 +346,9 @@ class CorridorMarkerTest(unittest.TestCase):
+                 abs(area - region.area_m2) / region.area_m2, 1e-9)
+ 
+     def test_edges_are_closed_line_strips_at_the_display_height(self):
++        self.assertEqual(CORRIDOR_EDGE_ALPHA, 0.55)
++        self.assertEqual(CORRIDOR_EDGE_COLOR,
++                         (180 / 255, 83 / 255, 98 / 255))
+         markers = build_corridor_markers(self.document)
+         edges = [marker for marker in markers
+                  if marker.marker_type == "LINE_STRIP"]
+@@ -356,6 +362,7 @@ class CorridorMarkerTest(unittest.TestCase):
+             self.assertTrue(all(point[2] == CORRIDOR_EDGE_Z_M
+                                 for point in edge.points))
+             self.assertEqual(edge.color[3], CORRIDOR_EDGE_ALPHA)
++            self.assertEqual(edge.scale, (0.013, 0.0, 0.0))
+         for marker in markers:
+             self.assertEqual(marker.text, "")
+ 
+@@ -922,6 +929,8 @@ class V2GuideCallbackTest(unittest.TestCase):
+         node.guide_path_pubs = {
+             "/formation/path/astar_raw_0": _Publisher(),
+             "/formation/path/portal_guide_0": _Publisher(),
++            "/formation/path/astar_active": _Publisher(),
++            "/formation/path/portal_guide_active": _Publisher(),
+         }
+         node.candidate_path_pubs = {}
+         return node
+@@ -1392,6 +1401,9 @@ class ProgressiveLayerLifecycleTest(unittest.TestCase):
+         node.guide_path_pubs.update({
+             "/formation/path/portal_guide_{}".format(route_id): _Publisher()
+             for route_id in range(3)})
++        node.guide_path_pubs.update({
++            "/formation/path/astar_active": _Publisher(),
++            "/formation/path/portal_guide_active": _Publisher()})
+         node.candidate_path_pubs = {
+             "/formation/path/f_candidate": _Publisher(),
+             **{"/formation/path/candidate_vehicle_{}".format(vehicle_id):
+@@ -1530,6 +1542,89 @@ class ProgressiveLayerLifecycleTest(unittest.TestCase):
+             node.guide_path_pubs["/formation/path/portal_guide_0"]
+             .messages[-1].poses)
+ 
++    def test_active_aliases_follow_real_route_index(self):
++        node = self._node()
++        document = self._planning_document()
++        document.pop("corridors")
++        document["astar"] = [
++            {"route_id": 0, "points": [[0.0, 0.0], [0.0, 1.0]]},
++            {"route_id": 1, "points": [[1.0, 0.0], [1.0, 1.0]]},
++            {"route_id": 2, "points": [[2.0, 0.0], [2.0, 1.0]]},
++        ]
++        document.update({"route_index": 2, "route_count": 3})
++        self._publish(node, document)
++        active_astar = node.guide_path_pubs[
++            "/formation/path/astar_active"].messages[-1]
++        self.assertEqual(
++            [(pose.pose.position.x, pose.pose.position.y)
++             for pose in active_astar.poses],
++            [(2.0, 0.0), (2.0, 1.0)])
++        self.assertFalse(node.guide_path_pubs[
++            "/formation/path/portal_guide_active"].messages[-1].poses)
++
++        changed = copy.deepcopy(document)
++        changed.update({"route_index": 1, "route_count": 3})
++        self._publish(node, changed)
++        astar_pub = node.guide_path_pubs["/formation/path/astar_active"]
++        self.assertEqual(
++            [(pose.pose.position.x, pose.pose.position.y)
++             for pose in astar_pub.messages[-1].poses],
++            [(1.0, 0.0), (1.0, 1.0)])
++        self.assertFalse(astar_pub.messages[-2].poses)
++
++        invalid = copy.deepcopy(changed)
++        invalid["route_index"] = 3
++        self._publish(node, invalid)
++        self.assertFalse(astar_pub.messages[-1].poses)
++        self.assertFalse(node.guide_path_pubs[
++            "/formation/path/portal_guide_active"].messages[-1].poses)
++
++    def test_active_alias_never_falls_back_to_route_zero(self):
++        node = self._node()
++        document = self._planning_document()
++        document.pop("corridors")
++        document["astar"] = [
++            {"route_id": 0, "points": [[0.0, 0.0], [0.0, 1.0]]},
++        ]
++        document.update({"route_index": 2, "route_count": 3})
++        self._publish(node, document)
++        self.assertFalse(node.guide_path_pubs[
++            "/formation/path/astar_active"].messages[-1].poses)
++        self.assertTrue(node.guide_path_pubs[
++            "/formation/path/astar_raw_0"].messages[-1].poses)
++
++    def test_active_guide_follows_corridor_route_id(self):
++        node = self._node()
++        corridors = []
++        for route_id in range(3):
++            corridor = copy.deepcopy(self.case["display"])
++            corridor["model_sha256"] = None
++            corridor["route_id"] = route_id
++            corridor["raw_route_points"] = [
++                [float(route_id), 0.0], [float(route_id), 1.0]]
++            corridor["guide_points"] = [
++                [float(route_id), 0.5], [float(route_id), 1.5]]
++            corridors.append(corridor)
++        document = self._planning_document(
++            corridors=corridors, route_index=2, route_count=3)
++        self._publish(node, document)
++        active_astar = node.guide_path_pubs[
++            "/formation/path/astar_active"].messages[-1]
++        active_guide = node.guide_path_pubs[
++            "/formation/path/portal_guide_active"].messages[-1]
++        self.assertEqual(
++            [(pose.pose.position.x, pose.pose.position.y)
++             for pose in active_astar.poses],
++            [(2.0, 0.0), (2.0, 1.0)])
++        self.assertEqual(
++            [(pose.pose.position.x, pose.pose.position.y)
++             for pose in active_guide.poses],
++            [(2.0, 0.5), (2.0, 1.5)])
++        for route_id in range(3):
++            self.assertTrue(node.guide_path_pubs[
++                "/formation/path/astar_raw_{}".format(route_id)
++            ].messages[-1].poses)
++
+     def test_candidate_payload_publishes_paths_and_keeps_obb_markers(self):
+         node = self._node()
+         self._publish(
+@@ -1671,14 +1766,24 @@ class CandidateMarkerTest(unittest.TestCase):
+         obb_lines = [
+             marker for marker in markers
+             if marker.namespace.endswith("_obb_candidate")]
+-        self.assertTrue(obb_lines)
++        self.assertEqual(CANDIDATE_OBB_LIMIT, 5)
++        self.assertLessEqual(len(obb_lines), 3 * CANDIDATE_OBB_LIMIT)
++        for vehicle in self.payload["vehicles"]:
++            self.assertLessEqual(
++                len(vehicle["obb_corners"]), CANDIDATE_OBB_LIMIT)
+         self.assertTrue(all(marker.color == CANDIDATE_OBB_COLOR
+                             for marker in obb_lines))
+-        texts = [marker.text for marker in markers
++        self.assertTrue(all(marker.scale[0] == 0.010
++                            for marker in obb_lines))
++        texts = [marker for marker in markers
+                  if marker.marker_type == "TEXT_VIEW_FACING"]
+-        self.assertTrue(any(CANDIDATE_DIAGNOSTIC_LABEL in text
+-                            for text in texts))
+-        self.assertFalse(any("CERTIFIED" in text for text in texts))
++        self.assertTrue(any(CANDIDATE_DIAGNOSTIC_LABEL in marker.text
++                            for marker in texts))
++        self.assertFalse(any("CERTIFIED" in marker.text
++                             for marker in texts))
++        f_label = next(marker for marker in texts
++                       if marker.namespace == CANDIDATE_F_NAMESPACE)
++        self.assertEqual(f_label.scale[2], 0.14)
+ 
+     def test_certified_payload_requires_a_published_document(self):
+         certified = sample_candidate_path(
+diff --git a/tests/test_virtual_a_receiver.py b/tests/test_virtual_a_receiver.py
+index fa44fec..98680f1 100644
+--- a/tests/test_virtual_a_receiver.py
++++ b/tests/test_virtual_a_receiver.py
+@@ -552,6 +552,8 @@ class VehiclePathAndResetTest(unittest.TestCase):
+         node.guide_path_pubs = {
+             "/formation/path/astar_raw_0": _Publisher(),
+             "/formation/path/portal_guide_0": _Publisher(),
++            "/formation/path/astar_active": _Publisher(),
++            "/formation/path/portal_guide_active": _Publisher(),
+         }
+         node.candidate_path_pubs = {
+             "/formation/path/f_candidate": _Publisher(),

@@ -2054,6 +2054,111 @@ def _hud_vehicle_line(vehicle, static=False):
     return "car{} | {} | v={:.2f} m/s".format(vehicle_id, mode, speed)
 
 
+def _hud_diagnostic_count(value):
+    """Reject a malformed count; display-only fields never invent a number."""
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        return None
+    return int(value)
+
+
+def planning_diagnostics_view(document):
+    """Bounded diagnostics copied from one real progress document.
+
+    Missing or malformed diagnostic fields stay ``None``; the HUD then prints
+    ``unknown`` rather than a fabricated count or percentage.  No geometry is
+    copied here; markers/paths remain in their own topic layers.
+    """
+    if not isinstance(document, Mapping):
+        return None
+    metrics = document.get("metrics")
+    if not isinstance(metrics, Mapping):
+        return None
+    view = {}
+    source = metrics.get("guide_source")
+    if isinstance(source, str) and source:
+        view["guide_source"] = source[:80]
+    origin = metrics.get("selected_candidate_origin")
+    if isinstance(origin, str) and origin:
+        view["selected_candidate_origin"] = origin[:80]
+    index = _hud_diagnostic_count(metrics.get("selected_candidate_index"))
+    if index is not None:
+        view["selected_candidate_index"] = index
+    count = _hud_diagnostic_count(metrics.get("guide_candidate_count"))
+    if count is not None:
+        view["guide_candidate_count"] = count
+    rule = metrics.get("guide_selection_rule")
+    if isinstance(rule, str) and rule:
+        view["guide_selection_rule"] = rule[:80]
+    assessment = metrics.get("assessment")
+    if isinstance(assessment, Mapping):
+        if assessment.get("available") is True:
+            copied = {"available": True}
+            status = assessment.get("map_sample_status")
+            if isinstance(status, str) and status:
+                copied["map_sample_status"] = status[:64]
+            for name in ("station_count", "map_collision_count",
+                         "single_region_count", "union_covered_count",
+                         "union_gap_count", "union_unknown_count"):
+                value = _hud_diagnostic_count(assessment.get(name))
+                if value is not None:
+                    copied[name] = value
+            view["assessment"] = copied
+        else:
+            view["assessment"] = {"available": False}
+    elif assessment is None:
+        view["assessment"] = None
+    return view
+
+
+def _hud_diagnostics_line(diagnostics):
+    """Two compact true-count lines; absent metrics are printed as unknown."""
+    if diagnostics is None:
+        return None
+    if not isinstance(diagnostics, Mapping):
+        raise PlaybackValidationError(
+            "HUD diagnostics must be an object or null")
+    source = diagnostics.get("guide_source")
+    parts = ["guide={}".format(
+        source if isinstance(source, str) and source else "unknown")]
+    origin = diagnostics.get("selected_candidate_origin")
+    if isinstance(origin, str) and origin:
+        parts.append("origin={}".format(origin))
+    index = _hud_diagnostic_count(
+        diagnostics.get("selected_candidate_index"))
+    count = _hud_diagnostic_count(
+        diagnostics.get("guide_candidate_count"))
+    if index is not None:
+        parts.append("selected={}/{}".format(
+            index, "?" if count is None else count))
+    rule = diagnostics.get("guide_selection_rule")
+    if isinstance(rule, str) and rule:
+        parts.append(rule)
+    assessment = diagnostics.get("assessment")
+    if isinstance(assessment, Mapping) and \
+            assessment.get("available") is True:
+        parts = ["diagnostics | " + " | ".join(parts)]
+        parts.append(
+            "samples={} | map_collisions={} | "
+            "single={} | union={} | gap={} | unknown={} | status={}".format(
+                _unknown_count(assessment.get("station_count")),
+                _unknown_count(assessment.get("map_collision_count")),
+                _unknown_count(assessment.get("single_region_count")),
+                _unknown_count(assessment.get("union_covered_count")),
+                _unknown_count(assessment.get("union_gap_count")),
+                _unknown_count(assessment.get("union_unknown_count")),
+                assessment.get("map_sample_status") or "UNKNOWN"))
+        return "\n".join(parts)
+    parts = ["diagnostics | " + " | ".join(parts)]
+    parts.append(
+        "samples=unknown | map_collisions=unknown | "
+        "single=unknown | union=unknown | gap=unknown | unknown=unknown")
+    return "\n".join(parts)
+
+
+def _unknown_count(value):
+    return "unknown" if value is None else str(value)
+
+
 def _hud_progress_line(progress):
     """One compact planning line; large geometry is never repeated here."""
     if progress is None:
@@ -2090,7 +2195,11 @@ def _hud_progress_line(progress):
     reason = progress.get("reason")
     if isinstance(reason, str) and reason:
         parts.append(reason[:80])
-    return " | ".join(parts)
+    line = " | ".join(parts)
+    diagnostics = _hud_diagnostics_line(progress.get("diagnostics"))
+    if diagnostics is None and stage in ("CORRIDOR_BUILD", "PORTAL_GUIDE"):
+        diagnostics = _hud_diagnostics_line({})
+    return line if diagnostics is None else line + "\n" + diagnostics
 
 
 def hud_text(playback_status, job_state, quality, show_cargo_reason=True,
@@ -2618,6 +2727,19 @@ GUIDE_ASTAR_COLOR = (1.0, 0.55, 0.0, 0.95)
 GUIDE_CENTERLINE_COLOR = (0.05, 0.82, 0.25, 0.95)
 GUIDE_UNVALIDATED_COLOR = (1.0, 0.78, 0.0, 0.95)
 
+PORTAL_DIAGNOSTICS_SCHEMA = "virtual_a_portal_diagnostics_v1"
+PORTAL_WINDOW_NAMESPACE = "formation/planning/portal_window"
+MAP_COLLISION_SAMPLE_NAMESPACE = "formation/planning/map_collision_sample"
+COVERAGE_GAP_NAMESPACE = "formation/planning/coverage_gap"
+PORTAL_WINDOW_COLOR = (0.20, 0.80, 0.95, 0.55)
+MAP_COLLISION_SAMPLE_COLOR = (236 / 255, 72 / 255, 153 / 255, 1.0)
+COVERAGE_GAP_COLOR = (1.0, 0.55, 0.05, 1.0)
+PORTAL_DIAGNOSTIC_Z_M = 0.03
+PORTAL_DIAGNOSTIC_TEXT_Z_M = 0.20
+PORTAL_DIAGNOSTIC_COLLISION_LIMIT = 5
+PORTAL_DIAGNOSTIC_GAP_LIMIT = 6
+PORTAL_DIAGNOSTIC_WINDOW_LIMIT = 3
+
 
 def _guide_polyline(points, name):
     """Copy an actual route/guide polyline without resampling it."""
@@ -2811,7 +2933,221 @@ def build_guide_display(document, frame_id="map"):
         _guide_free_text(
             markers, PLANNING_GUIDE_NAMESPACE, text_id,
             guide[len(guide) // 2], label + route_suffix, color, frame_id)
+    _append_portal_diagnostics(markers, corridors, document, frame_id)
     return tuple(markers), paths
+
+
+def _portal_point(value, context):
+    """Validate one finite display coordinate from the diagnostics payload."""
+    if not isinstance(value, (list, tuple)) or len(value) != 2:
+        raise PlaybackValidationError(
+            "{} must be a coordinate pair".format(context))
+    return (_finite(value[0], "{} x".format(context)),
+            _finite(value[1], "{} y".format(context)))
+
+
+def _portal_count(value, context):
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise PlaybackValidationError(
+            "{} must be a non-negative integer".format(context))
+    return int(value)
+
+
+def _portal_diagnostic_payload(diagnostics, corridor):
+    """Validate one display-only diagnostic block and bind its identity."""
+    if not isinstance(diagnostics, Mapping):
+        raise PlaybackValidationError(
+            "portal diagnostics must be an object")
+    if diagnostics.get("schema") != PORTAL_DIAGNOSTICS_SCHEMA:
+        raise PlaybackValidationError(
+            "portal diagnostics schema differs")
+    if diagnostics.get("certification_claim") != "NONE":
+        raise PlaybackValidationError(
+            "portal diagnostics cannot claim certification")
+    if diagnostics.get("continuously_certified") is not False:
+        raise PlaybackValidationError(
+            "portal diagnostics cannot certify a continuous transfer")
+    if diagnostics.get("formation_obb_hard_constraints") is not False:
+        raise PlaybackValidationError(
+            "portal diagnostics cannot claim OBB hard constraints")
+    chain_digest = diagnostics.get("chain_digest")
+    if chain_digest is not None and chain_digest != corridor.get(
+            "chain_sha256"):
+        raise PlaybackValidationError(
+            "portal diagnostics chain differs from the corridor")
+    guide_source = diagnostics.get("guide_source")
+    if not isinstance(guide_source, str):
+        raise PlaybackValidationError(
+            "portal diagnostics guide_source must be a string")
+    if corridor.get("guide_source") and guide_source and \
+            guide_source != corridor.get("guide_source"):
+        raise PlaybackValidationError(
+            "portal diagnostics guide differs from the corridor")
+    counts = diagnostics.get("counts")
+    if not isinstance(counts, Mapping):
+        raise PlaybackValidationError(
+            "portal diagnostics counts must be an object")
+    for name in ("map_collision_total", "single_region_total",
+                 "union_covered_total", "union_gap_total",
+                 "union_unknown_total", "portal_window_total"):
+        _portal_count(counts.get(name), "portal diagnostics {}".format(name))
+    samples = diagnostics.get("map_collision_samples")
+    gaps = diagnostics.get("coverage_gaps")
+    windows = diagnostics.get("portal_windows")
+    for entries, limit, name in (
+            (samples, PORTAL_DIAGNOSTIC_COLLISION_LIMIT,
+             "map_collision_samples"),
+            (gaps, PORTAL_DIAGNOSTIC_GAP_LIMIT, "coverage_gaps"),
+            (windows, PORTAL_DIAGNOSTIC_WINDOW_LIMIT, "portal_windows")):
+        if not isinstance(entries, (list, tuple)):
+            raise PlaybackValidationError(
+                "portal diagnostics {} must be a list".format(name))
+        if len(entries) > limit:
+            raise PlaybackValidationError(
+                "portal diagnostics {} exceed the marker cap".format(name))
+    return diagnostics
+
+
+def _append_portal_diagnostics(markers, corridors, document, frame_id):
+    """Append bounded real map-collision/gap/Portal diagnostics.
+
+    These are sample annotations from the finite assessment, never a
+    collision certificate and never part of the executable path.  Bad data
+    fails the whole guide layer closed; marker text deliberately separates
+    ``MAP COLLISION (sample)`` from ``CORRIDOR COVERAGE GAP``.
+    """
+    for corridor in corridors:
+        if not isinstance(corridor, Mapping):
+            raise PlaybackValidationError("guide route must be a mapping")
+        diagnostics = corridor.get("portal_diagnostics")
+        if diagnostics is None:
+            continue
+        _portal_diagnostic_payload(diagnostics, corridor)
+        route_id = corridor.get("route_id")
+        if (not isinstance(route_id, int) or isinstance(route_id, bool)
+                or route_id < 0):
+            raise PlaybackValidationError(
+                "guide route_id must be a non-negative integer")
+        base_id = 1000 + 100 * int(route_id)
+        samples = diagnostics.get("map_collision_samples")
+        gaps = diagnostics.get("coverage_gaps")
+        windows = diagnostics.get("portal_windows")
+        for index, sample in enumerate(samples):
+            if not isinstance(sample, Mapping):
+                raise PlaybackValidationError(
+                    "map collision sample must be an object")
+            x, y = _portal_point(
+                sample.get("point"), "map collision sample point")
+            sample_s = _finite(
+                sample.get("s_m"), "map collision sample s_m")
+            vehicle_id = sample.get("vehicle_id")
+            if vehicle_id is not None and (
+                    isinstance(vehicle_id, bool)
+                    or not isinstance(vehicle_id, int) or vehicle_id < 1):
+                raise PlaybackValidationError(
+                    "map collision sample vehicle_id is invalid")
+            marker_id = base_id + index
+            size = 0.07
+            markers.append(_marker(
+                MAP_COLLISION_SAMPLE_NAMESPACE, marker_id, "LINE_LIST",
+                frame_id,
+                points=(
+                    (x - size, y, PORTAL_DIAGNOSTIC_Z_M),
+                    (x + size, y, PORTAL_DIAGNOSTIC_Z_M),
+                    (x, y - size, PORTAL_DIAGNOSTIC_Z_M),
+                    (x, y + size, PORTAL_DIAGNOSTIC_Z_M)),
+                color=MAP_COLLISION_SAMPLE_COLOR,
+                scale=(0.018, 0.0, 0.0)))
+            car = "?" if vehicle_id is None else str(vehicle_id)
+            markers.append(_marker(
+                MAP_COLLISION_SAMPLE_NAMESPACE, base_id + 500 + index,
+                "TEXT_VIEW_FACING", frame_id,
+                position=(x, y, PORTAL_DIAGNOSTIC_TEXT_Z_M),
+                text="MAP COLLISION (sample) | car{} | s={:.2f} | {}".format(
+                    car, sample_s, str(sample.get("reason") or "")[:40]),
+                color=MAP_COLLISION_SAMPLE_COLOR,
+                scale=(0.0, 0.0, 0.22)))
+        for index, gap in enumerate(gaps):
+            if not isinstance(gap, Mapping):
+                raise PlaybackValidationError(
+                    "coverage gap sample must be an object")
+            x, y = _portal_point(
+                gap.get("point"), "coverage gap sample point")
+            gap_s = _finite(gap.get("s_m"), "coverage gap sample s_m")
+            vehicle_id = gap.get("vehicle_id")
+            if isinstance(vehicle_id, bool) or not isinstance(
+                    vehicle_id, int) or vehicle_id < 1:
+                raise PlaybackValidationError(
+                    "coverage gap sample vehicle_id is invalid")
+            marker_id = base_id + index
+            size = 0.07
+            markers.append(_marker(
+                COVERAGE_GAP_NAMESPACE, marker_id, "LINE_STRIP", frame_id,
+                points=(
+                    (x - size, y, PORTAL_DIAGNOSTIC_Z_M),
+                    (x, y + size, PORTAL_DIAGNOSTIC_Z_M),
+                    (x + size, y, PORTAL_DIAGNOSTIC_Z_M),
+                    (x, y - size, PORTAL_DIAGNOSTIC_Z_M),
+                    (x - size, y, PORTAL_DIAGNOSTIC_Z_M)),
+                color=COVERAGE_GAP_COLOR,
+                scale=(0.016, 0.0, 0.0)))
+            markers.append(_marker(
+                COVERAGE_GAP_NAMESPACE, base_id + 500 + index,
+                "TEXT_VIEW_FACING", frame_id,
+                position=(x, y, PORTAL_DIAGNOSTIC_TEXT_Z_M),
+                text=(
+                    "CORRIDOR COVERAGE GAP (sample) | car{} | s={:.2f}"
+                    " | {}".format(
+                        vehicle_id, gap_s,
+                        str(gap.get("reason") or "")[:40])),
+                color=COVERAGE_GAP_COLOR,
+                scale=(0.0, 0.0, 0.22)))
+        for index, window in enumerate(windows):
+            if not isinstance(window, Mapping):
+                raise PlaybackValidationError(
+                    "portal window sample must be an object")
+            start = _portal_point(
+                window.get("start"), "portal window start")
+            end = _portal_point(window.get("end"), "portal window end")
+            portal_index = window.get("portal_index")
+            if portal_index is not None and (
+                    isinstance(portal_index, bool)
+                    or not isinstance(portal_index, int)
+                    or portal_index < 0):
+                raise PlaybackValidationError(
+                    "portal window index is invalid")
+            target = None if portal_index is None else portal_index + 1
+            label = "PORTAL {}->{} | {}".format(
+                "?" if portal_index is None else portal_index,
+                "?" if target is None else target,
+                str(window.get("status") or "UNKNOWN")[:48])
+            marker_id = base_id + index
+            markers.append(_marker(
+                PORTAL_WINDOW_NAMESPACE, marker_id, "LINE_STRIP", frame_id,
+                points=(
+                    (start[0], start[1], PORTAL_DIAGNOSTIC_Z_M),
+                    (end[0], end[1], PORTAL_DIAGNOSTIC_Z_M)),
+                color=PORTAL_WINDOW_COLOR,
+                scale=(0.021, 0.0, 0.0)))
+            seed = window.get("portal_seed_point")
+            if seed is not None:
+                sx, sy = _portal_point(seed, "portal seed point")
+                markers.append(_marker(
+                    PORTAL_WINDOW_NAMESPACE, base_id + 200 + index,
+                    "SPHERE", frame_id,
+                    position=(sx, sy, PORTAL_DIAGNOSTIC_Z_M),
+                    color=PORTAL_WINDOW_COLOR,
+                    scale=(0.045, 0.045, 0.045)))
+            markers.append(_marker(
+                PORTAL_WINDOW_NAMESPACE, base_id + 500 + index,
+                "TEXT_VIEW_FACING", frame_id,
+                position=(
+                    (start[0] + end[0]) / 2.0,
+                    (start[1] + end[1]) / 2.0,
+                    PORTAL_DIAGNOSTIC_TEXT_Z_M),
+                text=label,
+                color=PORTAL_WINDOW_COLOR,
+                scale=(0.0, 0.0, 0.20)))
 
 
 def build_guide_markers(document, frame_id="map"):

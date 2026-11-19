@@ -10,6 +10,7 @@ actual playback sample on ``/formation/playback_status``.
 import json
 import math
 import threading
+from collections.abc import Mapping
 from functools import wraps
 from types import SimpleNamespace
 import rospy
@@ -44,6 +45,7 @@ from fwis_v3_optimizer.formation_playback import (
     fields_from_timed_message,
     frame_at,
     hud_text,
+    planning_diagnostics_view,
     quality_identity_matches,
     status_document,
     terminal_errors,
@@ -306,9 +308,18 @@ class FormationPlaybackNode:
             rospy.Subscriber("/formation/plan_request", FormationPlanRequest,
                              self.on_request, queue_size=1)
         if self.backend == VIRTUAL_PLAYBACK_BACKEND:
+            # Progress documents arrive in bursts: a stage's "complete"
+            # document is immediately followed by the next stage's
+            # "running" document while this callback rebuilds and publishes
+            # the display layers (and the 10 Hz tick holds the same lock).
+            # A one-slot subscriber queue drops those complete documents
+            # (verified live on the map05 run: ASTAR/CORRIDOR/PORTAL_GUIDE
+            # completions never reached the HUD or the diagnostics view).
+            # A bounded multi-slot queue keeps order and delivery; it does
+            # not change identity, admission, or publish gates.
             rospy.Subscriber(
                 PLANNING_DEBUG_TOPIC, String, self.on_planning_debug,
-                queue_size=1)
+                queue_size=50)
         if self.transport_ui:
             rospy.Subscriber("/formation/display_pose", PoseStamped,
                              self.on_preview, queue_size=1)
@@ -1057,7 +1068,27 @@ class FormationPlaybackNode:
         self._clear_paths()
 
     def _record_planning_progress(self, document):
-        """Retain the stage fields only; geometry stays in the topics."""
+        """Retain the stage fields; geometry stays in the topics.
+
+        Diagnostic counts are copied only from this document's real
+        ``metrics``.  A later stage of the same generation/round keeps the
+        last completed assessment until a new one arrives; a new round or
+        plan never inherits another round's counts.
+        """
+        view = planning_diagnostics_view(document)
+        previous = getattr(self, "_planning_progress", None)
+        same_context = (
+            isinstance(previous, dict)
+            and previous.get("plan_id") == document.get("plan_id")
+            and previous.get("generation") == document.get("generation")
+            and previous.get("round_index") == document.get("round_index"))
+        view_has_data = isinstance(view, dict) and (
+            view.get("guide_source") is not None
+            or isinstance(view.get("assessment"), Mapping))
+        if isinstance(view, dict) and not view_has_data and same_context:
+            retained = previous.get("diagnostics")
+            if retained is not None:
+                view = retained
         self._planning_progress = {
             "plan_id": document.get("plan_id"),
             "formation_id": document.get("formation_id"),
@@ -1071,6 +1102,7 @@ class FormationPlaybackNode:
             "round_index": document.get("round_index"),
             "reason": document.get("reason"),
             "detail": document.get("detail"),
+            "diagnostics": view,
             "received_wall": rospy.Time.now().to_sec(),
         }
 

@@ -1,0 +1,124 @@
+diff --git a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/geometry.py b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/geometry.py
+index 77a7610..5c44275 100644
+--- a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/geometry.py
++++ b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/geometry.py
+@@ -736,9 +736,9 @@ class VirtualAPath:
+                         "INVALID_PROFILE",
+                         "segment {} needs four Hermite coefficients".format(
+                             index), index=index)
+-            max_kappa = max(max_kappa, piece_bounds["k"][1])
+             kappa_envelope = max(
+                 abs(piece_bounds["k"][0]), abs(piece_bounds["k"][1]))
++            max_kappa = max(max_kappa, kappa_envelope)
+             if coefficients is not None:
+                 coefficient_magnitude = sum(
+                     abs(value) for value in coefficients)
+diff --git a/tests/test_virtual_a_geometry.py b/tests/test_virtual_a_geometry.py
+index 7b6fbb1..e05aa8f 100644
+--- a/tests/test_virtual_a_geometry.py
++++ b/tests/test_virtual_a_geometry.py
+@@ -30,6 +30,10 @@ from fwis_v3_optimizer.formation_continuous_a import (  # noqa: E402
+     C2CurvatureProfile, CurvatureJet, InitialAssumption, VirtualAContractError,
+     VirtualAPath, check_vehicle_curvatures, map_spatial_state,
+     validate_initial_state)
++from fwis_v3_optimizer.formation_continuous_a import (  # noqa: E402
++    bounds as bounds_module)
++from fwis_v3_optimizer.formation_continuous_a.trajectory import (  # noqa: E402
++    VirtualATimedPlan)
+ from fwis_v3_optimizer.formation_retiming import FormationTimingLimits  # noqa: E402
+ from fwis_v3_optimizer.uniform_motion import a_arc_edge  # noqa: E402
+ 
+@@ -520,5 +524,92 @@ class CurvatureLimitTests(GeometryTestBase):
+         self.assertAlmostEqual(peak[3], 0.428571, delta=1e-3)
+ 
+ 
++class V3CurvatureEnvelopeTests(GeometryTestBase):
++    """Rework 01: v3 bounds must use ``max|kappa|``, not signed upper limits."""
++
++    V2_SHA256 = ("df146b9bb4710132adeacd4d718d5a84"
++                 "0c0f0e3bce353d06331a84142c2eaaf8")
++
++    def test_pure_negative_curvature_uses_absolute_envelope(self):
++        # Constructed curvature is the constant k=-0.05, so the envelope is
++        # |k|=0.05 by hand, not read back from the production interval code.
++        profile = C2CurvatureProfile.from_knots((
++            ControlKnot(0.0, -0.05, 0.0),
++            ControlKnot(2.0, -0.05, 0.0)))
++        self.assertEqual(profile.segment_count, 1)
++        interval = profile.interval_bounds(
++            *profile.domain_segments[0])["k"]
++        self.assertAlmostEqual(interval[0], -0.05, delta=1e-12)
++        self.assertAlmostEqual(interval[1], -0.05, delta=1e-12)
++        path = VirtualAPath(FormationPose(0.0, 0.0, 0.0),
++                            profile, research_model())
++        self.assertEqual(path.length_m, 2.0)
++        self.assertEqual(path.numerics_version, bounds_module.NUMERICS_V3)
++        self.assertEqual(path.start_qf.psi, 0.0)
++        expected = bounds_module.angle_budget(
++            profile.segment_count, 2.0 * 0.05)
++        self.assertEqual(path.angle_error_bound_rad, expected)
++        # A signed upper-bound envelope treats this negative piece as zero.
++        zero_envelope = bounds_module.angle_budget(profile.segment_count, 0.0)
++        self.assertGreater(path.angle_error_bound_rad, zero_envelope)
++
++    def test_negative_dominant_profile_uses_largest_absolute_curvature(self):
++        # k decreases linearly from +0.1 to -0.3; piece 1 is mixed, piece 2 is
++        # purely negative.  The signed upper limits are +0.1 and -0.1, so the
++        # old envelope stopped at +0.1 instead of the true 0.3.
++        profile = C2CurvatureProfile.from_knots((
++            ControlKnot(0.0, 0.1, -0.2),
++            ControlKnot(1.0, -0.1, -0.2),
++            ControlKnot(2.0, -0.3, -0.2)))
++        self.assertEqual(profile.segment_count, 2)
++        first = profile.interval_bounds(*profile.domain_segments[0])["k"]
++        second = profile.interval_bounds(*profile.domain_segments[1])["k"]
++        self.assertAlmostEqual(first[0], -0.1, delta=1e-12)
++        self.assertAlmostEqual(first[1], 0.1, delta=1e-12)
++        self.assertAlmostEqual(second[0], -0.3, delta=1e-12)
++        self.assertAlmostEqual(second[1], -0.1, delta=1e-12)
++        max_abs = 0.3
++        signed_upper = 0.1
++        path = VirtualAPath(FormationPose(0.0, 0.0, 0.0),
++                            profile, research_model())
++        self.assertEqual(path.start_qf.psi, 0.0)
++        expected = bounds_module.angle_budget(
++            profile.segment_count, 2.0 * max_abs)
++        wrong = bounds_module.angle_budget(
++            profile.segment_count, 2.0 * signed_upper)
++        self.assertEqual(path.angle_error_bound_rad, expected)
++        self.assertGreater(path.angle_error_bound_rad, wrong)
++
++    def test_frozen_v2_model_still_replays_byte_identically(self):
++        payload = (REPO_ROOT / "tests" / "fixtures" / "virtual_a"
++                   / "v2_model_600000.json").read_text()
++        plan = VirtualATimedPlan.from_model_json(payload)
++        self.assertEqual(plan.path.numerics_version,
++                         bounds_module.NUMERICS_V2)
++        self.assertEqual(plan.path.profile.numerics_version,
++                         bounds_module.NUMERICS_V2)
++        self.assertEqual(plan.path.integration_budget["numerics_version"],
++                         bounds_module.NUMERICS_V2)
++        self.assertEqual(plan.model_sha256(), self.V2_SHA256)
++        self.assertEqual(plan.to_model_json(), payload)
++
++    def test_angle_bound_still_fails_closed_above_budget(self):
++        profile = C2CurvatureProfile.from_knots((
++            ControlKnot(0.0, -300000.0, 0.0),
++            ControlKnot(2.0, -300000.0, 0.0)))
++        max_abs = 300000.0
++        expected = bounds_module.angle_budget(
++            profile.segment_count, 2.0 * max_abs)
++        self.assertGreater(expected, bounds_module.ANGLE_BUDGET_RAD)
++        error = self.assertRejected(
++            "BOUND_UNCONFIRMED",
++            lambda: VirtualAPath(FormationPose(0.0, 0.0, 0.0),
++                                 profile, research_model()))
++        self.assertGreater(error.location["angle_bound_rad"],
++                           bounds_module.ANGLE_BUDGET_RAD)
++        self.assertAlmostEqual(error.location["angle_bound_rad"], expected,
++                               delta=expected * 1e-12)
++
++
+ if __name__ == "__main__":
+     unittest.main()
+\ No newline at end of file

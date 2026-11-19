@@ -1,0 +1,3457 @@
+diff --git a/catkin_ws/src/fwis_v3_demo/rviz/formation_demo.rviz b/catkin_ws/src/fwis_v3_demo/rviz/formation_demo.rviz
+index f3689cb..2616292 100644
+--- a/catkin_ws/src/fwis_v3_demo/rviz/formation_demo.rviz
++++ b/catkin_ws/src/fwis_v3_demo/rviz/formation_demo.rviz
+@@ -155,6 +155,18 @@ Visualization Manager:
+         formation/planning/portal_guide: false
+       Queue Size: 100
+       Value: false
++    - Class: rviz/MarkerArray
++      Enabled: true
++      Marker Topic: /formation/guides
++      Name: Portal diagnostics (markers)
++      Namespaces:
++        formation/planning/astar_raw: false
++        formation/planning/portal_guide: false
++        formation/planning/portal_window: true
++        formation/planning/map_collision_sample: true
++        formation/planning/coverage_gap: true
++      Queue Size: 100
++      Value: true
+     - Class: rviz/MarkerArray
+       Enabled: true
+       Name: Candidate OBBs and labels (markers)
+diff --git a/catkin_ws/src/fwis_v3_optimizer/scripts/formation_uniform_planner_node.py b/catkin_ws/src/fwis_v3_optimizer/scripts/formation_uniform_planner_node.py
+index dcc869e..7b16db2 100644
+--- a/catkin_ws/src/fwis_v3_optimizer/scripts/formation_uniform_planner_node.py
++++ b/catkin_ws/src/fwis_v3_optimizer/scripts/formation_uniform_planner_node.py
+@@ -513,8 +513,16 @@ class UniformPlannerNode(object):
+         self.playback_plan_pub = rospy.Publisher(
+             PLAYBACK_PLAN_TOPIC, FormationPlaybackPlan, queue_size=1,
+             latch=True)
++        # Progress stages are published in bursts: the "complete" document of
++        # a stage is immediately followed by the "running" document of the
++        # next one, and each carries the retained geometry.  A single-slot
++        # send queue drops those complete documents (verified on the real
++        # map05 run: guide/selection diagnostics never reached the playback
++        # HUD).  A bounded multi-slot queue preserves order and delivery
++        # without changing any admission, planning or publish gate; only the
++        # latest document remains latched.
+         self.planning_debug_pub = rospy.Publisher(
+-            PLANNING_DEBUG_TOPIC, String, queue_size=1, latch=True)
++            PLANNING_DEBUG_TOPIC, String, queue_size=20, latch=True)
+         rospy.Subscriber(MAP_TOPIC, OccupancyGrid, self.on_map, queue_size=1)
+         rospy.Subscriber(REQUEST_TOPIC, FormationPlanRequest,
+                          self.on_request, queue_size=1)
+@@ -662,6 +670,7 @@ class UniformPlannerNode(object):
+         from fwis_v3_optimizer.formation_continuous_a.corridor import (
+             corridor_chain_from_payload,
+             corridor_display_fields,
++            corridor_portal_diagnostics,
+         )
+         corridor = result.search.get("corridor")
+         rounds = (corridor.get("rounds")
+@@ -686,13 +695,20 @@ class UniformPlannerNode(object):
+         chain = corridor_chain_from_payload(current.get("chain"))
+         identity = dict(identity)
+         identity["route_id"] = int(route_index)
+-        return corridor_display_fields(
++        display = corridor_display_fields(
+             chain, identity,
+             raw_route_points=raw_route.points,
+             guide_points=guide.get("points"),
+             guide_quality=guide.get("quality"),
+             guide_source=guide.get("source"),
+             corridor_used=True)
++        diagnostics = corridor_portal_diagnostics(
++            current,
++            guide_points=guide.get("points"),
++            guide_source=guide.get("source"))
++        if diagnostics is not None:
++            display["portal_diagnostics"] = diagnostics
++        return display
+ 
+     # ---- progressive planning display (TASK 01 Step 1) ----------------
+ 
+diff --git a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py
+index 1946f8b..4e008c6 100644
+--- a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py
++++ b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/corridor.py
+@@ -16,21 +16,27 @@ occupied cells intersecting each polygon's bounding box and applies a
+ polygon-versus-cell SAT, treating a touching edge as a collision.
+ """
+ import bisect
++import hashlib
++import json
+ import math
+ import numbers
++import sys
++import time
+ from collections.abc import Mapping as MappingABC
+ 
+ import numpy as np
+ from scipy.optimize import linprog, minimize
+ 
++from ..formation import FormationPose
+ from .contracts import (
+     ConvexCorridor,
+     CorridorChain,
++    CurvatureJet,
+     GuideRoute,
+     VirtualAContractError,
+     grid_signature,
+ )
+-from .geometry import VirtualAPath
++from .geometry import VirtualAPath, map_spatial_state
+ from .route_processing import _box_corners, _segment_box_nearest_pair
+ 
+ 
+@@ -148,6 +154,1824 @@ def _signed_twice_area(vertices):
+             vertices, vertices[1:] + vertices[:1]))
+ 
+ 
++# ---------------------------------------------------------------------------
++# TASK 02: complete OBB coverage in one convex corridor or an adjacent union
++# ---------------------------------------------------------------------------
++# These are fixed-sample diagnostic predicates.  ``SINGLE_REGION`` and
++# ``COVERED_BY_ADJACENT_UNION`` describe only the supplied polygon (one static
++# vehicle rectangle) against the artificial convex regions.  They never
++# certify the map free space, never enlarge a halfspace by a tolerance and
++# never replace the continuous audits in this module.
++COVERAGE_SINGLE_REGION = "SINGLE_REGION"
++COVERAGE_ADJACENT_UNION = "COVERED_BY_ADJACENT_UNION"
++COVERAGE_GAP = "GAP"
++COVERAGE_UNCONFIRMED = "UNCONFIRMED_NUMERICS"
++_COVERAGE_TOL_FLOOR_M = 1e-9
++
++
++def _coverage_scale(polygons, corridors):
++    """Coordinate/limit scale used by the suggested coverage tolerance."""
++    scale = 1.0
++    for polygon in polygons:
++        for point in polygon:
++            try:
++                scale = max(scale, abs(float(point[0])),
++                            abs(float(point[1])))
++            except (TypeError, ValueError, IndexError):
++                continue
++    for corridor in corridors:
++        if corridor is None:
++            continue
++        for value in getattr(corridor, "b", ()) or ():
++            try:
++                scale = max(scale, abs(float(value)))
++            except (TypeError, ValueError):
++                continue
++        for point in getattr(corridor, "vertices", ()) or ():
++            try:
++                scale = max(scale, abs(float(point[0])),
++                            abs(float(point[1])))
++            except (TypeError, ValueError, IndexError):
++                continue
++    return scale
++
++
++def _coverage_tolerance(tol_m, polygons, corridors):
++    """Explicit tolerance or ``max(1e-9, 64 eps scale)`` when omitted."""
++    suggested = max(
++        _COVERAGE_TOL_FLOOR_M,
++        64.0 * sys.float_info.epsilon * _coverage_scale(polygons, corridors))
++    if tol_m is None:
++        return suggested
++    try:
++        value = float(tol_m)
++    except (TypeError, ValueError) as exc:
++        raise VirtualAContractError(
++            "INVALID_COVERAGE_TOLERANCE",
++            "tol_m must be a real number") from exc
++    if not math.isfinite(value) or value < 0.0:
++        raise VirtualAContractError(
++            "INVALID_COVERAGE_TOLERANCE",
++            "tol_m must be finite and nonnegative")
++    return value
++
++
++def obb_polygon(center_xy, theta_rad, shape):
++    """Four world-frame corners of one vehicle rectangle, CCW and unclosed.
++
++    ``shape`` is the request's ``VehicleShape``-like object; only its
++    ``length_m`` and ``width_m`` are read.  The body heading is the actual
++    mapped vehicle heading supplied by the caller, never ``psi_F``.
++    """
++    try:
++        center_x = float(center_xy[0])
++        center_y = float(center_xy[1])
++        theta = float(theta_rad)
++        length = float(shape.length_m)
++        width = float(shape.width_m)
++    except (TypeError, ValueError, IndexError, AttributeError) as exc:
++        raise VirtualAContractError(
++            "INVALID_OBB_GEOMETRY",
++            "OBB centre, heading and vehicle shape must be numeric") from exc
++    if not (math.isfinite(center_x) and math.isfinite(center_y)
++            and math.isfinite(theta)):
++        raise VirtualAContractError(
++            "INVALID_OBB_GEOMETRY", "OBB pose must be finite")
++    if not (math.isfinite(length) and math.isfinite(width)
++            and length > 0.0 and width > 0.0):
++        raise VirtualAContractError(
++            "INVALID_OBB_GEOMETRY",
++            "vehicle length_m and width_m must be finite and positive")
++    cosine = math.cos(theta)
++    sine = math.sin(theta)
++    half_length = 0.5 * length
++    half_width = 0.5 * width
++    corners = []
++    for local_x, local_y in (
++            (-half_length, -half_width),
++            (half_length, -half_width),
++            (half_length, half_width),
++            (-half_length, half_width)):
++        corners.append((
++            center_x + cosine * local_x - sine * local_y,
++            center_y + sine * local_x + cosine * local_y))
++    return tuple(corners)
++
++
++def obb_support_halfwidth(normal, theta_rad, shape):
++    """Support half-width ``h(n, theta)`` of the full rotated rectangle.
++
++    ``normal`` must be a unit vector.  For the rectangle centre ``p`` this is
++    exactly ``max_corner n . corner - n . p``; the coverage checks below use
++    the equivalent explicit-vertex form.
++    """
++    try:
++        normal_x = float(normal[0])
++        normal_y = float(normal[1])
++        theta = float(theta_rad)
++        length = float(shape.length_m)
++        width = float(shape.width_m)
++    except (TypeError, ValueError, IndexError, AttributeError) as exc:
++        raise VirtualAContractError(
++            "INVALID_OBB_GEOMETRY",
++            "support normal, heading and vehicle shape must be numeric") from exc
++    if not (math.isfinite(normal_x) and math.isfinite(normal_y)
++            and math.isfinite(theta)):
++        raise VirtualAContractError(
++            "INVALID_OBB_GEOMETRY", "support inputs must be finite")
++    if abs(math.hypot(normal_x, normal_y) - 1.0) > 1e-9:
++        raise VirtualAContractError(
++            "INVALID_OBB_GEOMETRY", "support normal must be unit length")
++    if not (math.isfinite(length) and math.isfinite(width)
++            and length > 0.0 and width > 0.0):
++        raise VirtualAContractError(
++            "INVALID_OBB_GEOMETRY",
++            "vehicle length_m and width_m must be finite and positive")
++    cosine = math.cos(theta)
++    sine = math.sin(theta)
++    tangent_x, tangent_y = cosine, sine
++    lateral_x, lateral_y = -sine, cosine
++    return (0.5 * length * abs(
++                normal_x * tangent_x + normal_y * tangent_y)
++            + 0.5 * width * abs(
++                normal_x * lateral_x + normal_y * lateral_y))
++
++
++def _coverage_polygon(vertices, tol_m):
++    """Validate one convex CCW polygon for the coverage predicates.
++
++    Returns ``{"polygon", "perimeter_m", "reason"}``; ``polygon`` is ``None``
++    for any non-finite, clockwise, non-convex or degenerate input so the
++    public predicates can fail closed without raising on numeric input.
++    """
++    try:
++        points = [(float(point[0]), float(point[1])) for point in vertices]
++    except (TypeError, ValueError, IndexError) as exc:
++        return {"polygon": None, "perimeter_m": 0.0,
++                "reason": "INVALID_POLYGON"}
++    if len(points) < 3:
++        return {"polygon": None, "perimeter_m": 0.0,
++                "reason": "DEGENERATE_POLYGON"}
++    for x, y in points:
++        if not (math.isfinite(x) and math.isfinite(y)):
++            return {"polygon": None, "perimeter_m": 0.0,
++                    "reason": "NON_FINITE_POLYGON"}
++    cleaned = []
++    for point in points:
++        if not cleaned or math.hypot(
++                point[0] - cleaned[-1][0],
++                point[1] - cleaned[-1][1]) > _VERTEX_DEDUP_M:
++            cleaned.append(point)
++    if len(cleaned) > 1 and math.hypot(
++            cleaned[0][0] - cleaned[-1][0],
++            cleaned[0][1] - cleaned[-1][1]) <= _VERTEX_DEDUP_M:
++        cleaned.pop()
++    if len(cleaned) < 3 or _signed_twice_area(cleaned) <= 0.0:
++        return {"polygon": None, "perimeter_m": 0.0,
++                "reason": "CLOCKWISE_OR_DEGENERATE_POLYGON"}
++    perimeter = sum(
++        math.hypot(second[0] - first[0], second[1] - first[1])
++        for first, second in zip(cleaned, cleaned[1:] + cleaned[:1]))
++    cross_tol = tol_m * max(1.0, perimeter)
++    count = len(cleaned)
++    for index in range(count):
++        first = cleaned[index]
++        middle = cleaned[(index + 1) % count]
++        last = cleaned[(index + 2) % count]
++        cross = ((middle[0] - first[0]) * (last[1] - middle[1])
++                 - (middle[1] - first[1]) * (last[0] - middle[0]))
++        if cross < -cross_tol:
++            return {"polygon": None, "perimeter_m": 0.0,
++                    "reason": "NON_CONVEX_POLYGON"}
++    canonical = _canonical_vertices(cleaned)
++    if canonical is None:
++        return {"polygon": None, "perimeter_m": 0.0,
++                "reason": "DEGENERATE_POLYGON"}
++    return {"polygon": canonical[0], "perimeter_m": float(perimeter),
++            "reason": None}
++
++
++def _corridor_halfspaces(corridor):
++    if not isinstance(corridor, ConvexCorridor):
++        raise VirtualAContractError(
++            "INVALID_CONVEX_CORRIDOR",
++            "coverage geometry needs a ConvexCorridor")
++    return tuple(corridor.A), tuple(corridor.b)
++
++
++def _polygon_violation(points, rows, limits):
++    """Signed maximum violation and its first witness over all halfspaces."""
++    max_violation = -math.inf
++    max_witness = None
++    for vertex_index, (x, y) in enumerate(points):
++        for halfspace_index, (row, limit) in enumerate(zip(rows, limits)):
++            violation = row[0] * x + row[1] * y - limit
++            if violation > max_violation:
++                max_violation = violation
++                max_witness = (halfspace_index, vertex_index, (x, y),
++                               violation)
++    return max_violation, max_witness
++
++
++def _violation_witness(witness):
++    halfspace_index, vertex_index, vertex, violation = witness
++    return {
++        "halfspace_index": int(halfspace_index),
++        "vertex_index": int(vertex_index),
++        "vertex": [float(vertex[0]), float(vertex[1])],
++        "violation_m": float(violation),
++    }
++
++
++def _coverage_band_state(violation, tol_m):
++    """Robust inside / strictly outside / numeric tolerance band."""
++    if violation <= -tol_m:
++        return "INSIDE"
++    if violation > tol_m:
++        return "OUTSIDE"
++    return "BAND"
++
++
++def obb_coverage_in_corridor(obb_vertices, corridor, tol_m=None,
++                             region_index=None):
++    """Complete-polygon coverage of one convex corridor by one OBB.
++
++    The whole polygon is checked against every halfspace of ``corridor`` via
++    its explicit vertices (equivalent to the support half-width for a
++    rectangle).  ``GAP`` requires a strictly positive violation; any boundary
++    or degenerate evidence returns ``UNCONFIRMED_NUMERICS`` instead of
++    silently accepting it.
++    """
++    rows, limits = _corridor_halfspaces(corridor)
++    tol = _coverage_tolerance(tol_m, (obb_vertices,), (corridor,))
++    checked = _coverage_polygon(obb_vertices, tol)
++    if checked["polygon"] is None:
++        return {
++            "status": COVERAGE_UNCONFIRMED,
++            "region_index": region_index,
++            "max_violation_m": None,
++            "witness": {"reason": checked["reason"]},
++            "tol_m": tol,
++            "reason": checked["reason"],
++        }
++    violation, witness = _polygon_violation(
++        checked["polygon"], rows, limits)
++    state = _coverage_band_state(violation, tol)
++    if state == "INSIDE":
++        status, reason = COVERAGE_SINGLE_REGION, "ROBUSTLY_INSIDE"
++    elif state == "OUTSIDE":
++        status, reason = COVERAGE_GAP, "ROBUST_VIOLATION"
++    else:
++        status, reason = COVERAGE_UNCONFIRMED, "TOLERANCE_BAND"
++    return {
++        "status": status,
++        "region_index": region_index,
++        "max_violation_m": float(violation),
++        "witness": _violation_witness(witness),
++        "tol_m": tol,
++        "reason": reason,
++    }
++
++
++def _union_order(polygon, first_rows, first_limits, second_rows,
++                 second_limits, tol_m, area_tol):
++    """One-order constructive union classification for a fixed polygon.
++
++    The remaining part of ``polygon`` is clipped by the first region's
++    halfspaces.  Every positive-area outside piece must be completely inside
++    the second region (checked at all of its vertices, valid by convexity).
++    A positive-area piece with a vertex strictly violating the second region
++    proves a gap; tiny or boundary-band pieces only make the order ambiguous.
++    """
++    violation, witness = _polygon_violation(
++        polygon, first_rows, first_limits)
++    if _coverage_band_state(violation, tol_m) == "INSIDE":
++        return {
++            "kind": "SINGLE_FIRST",
++            "max_violation_m": float(violation),
++            "witness": _violation_witness(witness),
++            "covered_pieces": 0,
++            "outside_pieces": 0,
++            "ambiguous": False,
++            "gap": None,
++        }
++    remaining = list(polygon)
++    outside_pieces = 0
++    covered_pieces = 0
++    ambiguous = False
++    gap = None
++    worst_covered = -math.inf
++    for halfspace_index, (row, limit) in enumerate(
++            zip(first_rows, first_limits)):
++        outside = _clip_polygon(remaining, (-row[0], -row[1]), -limit)
++        canonical = (_canonical_vertices(outside)
++                     if len(outside) >= 3 else None)
++        if canonical is None:
++            if outside:
++                # A segment/point outside piece is only a boundary sliver.
++                ambiguous = True
++        else:
++            piece, area = canonical
++            if area <= area_tol:
++                ambiguous = True
++            else:
++                outside_pieces += 1
++                piece_violation, piece_witness = _polygon_violation(
++                    piece, second_rows, second_limits)
++                state = _coverage_band_state(piece_violation, tol_m)
++                if state == "INSIDE":
++                    covered_pieces += 1
++                    worst_covered = max(worst_covered, piece_violation)
++                elif state == "OUTSIDE":
++                    if gap is None:
++                        gap = _violation_witness(piece_witness)
++                        gap["outside_area_m2"] = float(area)
++                        gap["clip_halfspace_index"] = int(halfspace_index)
++                else:
++                    ambiguous = True
++        inside = _clip_polygon(remaining, row, limit)
++        canonical_inside = (_canonical_vertices(inside)
++                            if len(inside) >= 3 else None)
++        if canonical_inside is None:
++            remaining = []
++            break
++        remaining = list(canonical_inside[0])
++    if gap is not None:
++        return {
++            "kind": "GAP",
++            "max_violation_m": float(gap["violation_m"]),
++            "witness": gap,
++            "covered_pieces": covered_pieces,
++            "outside_pieces": outside_pieces,
++            "ambiguous": ambiguous,
++            "gap": gap,
++        }
++    if outside_pieces == 0:
++        return {
++            "kind": "UNCONFIRMED",
++            "max_violation_m": float(violation),
++            "witness": {"reason": "NO_SUBSTANTIVE_OUTSIDE_PIECE"},
++            "covered_pieces": 0,
++            "outside_pieces": 0,
++            "ambiguous": ambiguous,
++            "gap": None,
++        }
++    if ambiguous or covered_pieces != outside_pieces:
++        return {
++            "kind": "UNCONFIRMED",
++            "max_violation_m": (float(worst_covered)
++                                if covered_pieces else float(violation)),
++            "witness": {"reason": "TOLERANCE_BAND"},
++            "covered_pieces": covered_pieces,
++            "outside_pieces": outside_pieces,
++            "ambiguous": ambiguous,
++            "gap": None,
++        }
++    return {
++        "kind": "COVERED",
++        "max_violation_m": float(worst_covered),
++        "witness": {
++            "covered_pieces": covered_pieces,
++            "outside_pieces": outside_pieces,
++            "worst_piece_violation_m": float(worst_covered),
++        },
++        "covered_pieces": covered_pieces,
++        "outside_pieces": outside_pieces,
++        "ambiguous": False,
++        "gap": None,
++    }
++
++
++def obb_coverage_in_adjacent_union(obb_vertices, left, right, tol_m=None):
++    """Complete-polygon coverage of ``C_left union C_right`` by one OBB.
++
++    A polygon entirely inside one region returns ``SINGLE_REGION`` with its
++    region index.  Otherwise the constructive clipping test is run in both
++    orders; only two covered orders return ``COVERED_BY_ADJACENT_UNION`` and
++    only two strict-gap orders return ``GAP``.  Any disagreement, boundary
++    contact or degenerate clip returns ``UNCONFIRMED_NUMERICS``.  The convex
++    hull of the two regions is never built: that would fill a real gap.
++    """
++    left_rows, left_limits = _corridor_halfspaces(left)
++    right_rows, right_limits = _corridor_halfspaces(right)
++    tol = _coverage_tolerance(tol_m, (obb_vertices,), (left, right))
++    checked = _coverage_polygon(obb_vertices, tol)
++    if checked["polygon"] is None:
++        return {
++            "status": COVERAGE_UNCONFIRMED,
++            "region_index": None,
++            "max_violation_m": None,
++            "witness": {"reason": checked["reason"]},
++            "tol_m": tol,
++            "reason": checked["reason"],
++            "order_results": {"forward": checked["reason"],
++                              "reverse": checked["reason"]},
++        }
++    polygon = checked["polygon"]
++    area_tol = tol * max(1.0, checked["perimeter_m"])
++    left_violation, left_witness = _polygon_violation(
++        polygon, left_rows, left_limits)
++    if _coverage_band_state(left_violation, tol) == "INSIDE":
++        return {
++            "status": COVERAGE_SINGLE_REGION,
++            "region_index": 0,
++            "max_violation_m": float(left_violation),
++            "witness": _violation_witness(left_witness),
++            "tol_m": tol,
++            "reason": "ROBUSTLY_INSIDE_LEFT_REGION",
++            "order_results": {"forward": "SINGLE_FIRST",
++                              "reverse": "SINGLE_SECOND"},
++        }
++    right_violation, right_witness = _polygon_violation(
++        polygon, right_rows, right_limits)
++    if _coverage_band_state(right_violation, tol) == "INSIDE":
++        return {
++            "status": COVERAGE_SINGLE_REGION,
++            "region_index": 1,
++            "max_violation_m": float(right_violation),
++            "witness": _violation_witness(right_witness),
++            "tol_m": tol,
++            "reason": "ROBUSTLY_INSIDE_RIGHT_REGION",
++            "order_results": {"forward": "SINGLE_SECOND",
++                              "reverse": "SINGLE_FIRST"},
++        }
++    forward = _union_order(
++        polygon, left_rows, left_limits, right_rows, right_limits,
++        tol, area_tol)
++    reverse = _union_order(
++        polygon, right_rows, right_limits, left_rows, left_limits,
++        tol, area_tol)
++    order_results = {"forward": forward["kind"], "reverse": reverse["kind"]}
++    if forward["kind"] == "COVERED" and reverse["kind"] == "COVERED":
++        return {
++            "status": COVERAGE_ADJACENT_UNION,
++            "region_index": None,
++            "max_violation_m": max(forward["max_violation_m"],
++                                   reverse["max_violation_m"]),
++            "witness": {
++                "covered_pieces_forward": forward["covered_pieces"],
++                "covered_pieces_reverse": reverse["covered_pieces"],
++                "worst_piece_violation_m": max(
++                    forward["max_violation_m"],
++                    reverse["max_violation_m"]),
++            },
++            "tol_m": tol,
++            "reason": "BOTH_ORDERS_COVERED",
++            "order_results": order_results,
++        }
++    if forward["kind"] == "GAP" and reverse["kind"] == "GAP":
++        return {
++            "status": COVERAGE_GAP,
++            "region_index": None,
++            "max_violation_m": float(forward["max_violation_m"]),
++            "witness": forward["witness"],
++            "tol_m": tol,
++            "reason": "BOTH_ORDERS_GAP",
++            "order_results": order_results,
++        }
++    return {
++        "status": COVERAGE_UNCONFIRMED,
++        "region_index": None,
++        "max_violation_m": None,
++        "witness": {
++            "reason": "ORDER_RESULTS_DISAGREE",
++            "forward": forward["witness"],
++            "reverse": reverse["witness"],
++        },
++        "tol_m": tol,
++        "reason": "ORDER_RESULTS_DISAGREE",
++        "order_results": order_results,
++    }
++
++
++# ---------------------------------------------------------------------------
++# TASK 02 Step C: finite candidate sampling and formation assessment
++# ---------------------------------------------------------------------------
++
++ASSESSMENT_SCHEMA = "virtual_a_formation_assessment_v1"
++ROUTE_ASSESSMENT_SCHEMA = "virtual_a_route_assessment_v1"
++
++MAP_CLEAR_AT_SAMPLES = "CLEAR_AT_SAMPLES"
++MAP_COLLISION_OBSERVED = "COLLISION_OBSERVED"
++MAP_SAMPLE_UNCONFIRMED = "UNCONFIRMED"
++
++KINEMATIC_NORMAL_BRANCH_OK = "NORMAL_BRANCH_OK"
++KINEMATIC_NORMAL_BRANCH_INVALID = "NORMAL_BRANCH_INVALID"
++KINEMATIC_CURVATURE_UNCONFIRMED = "CURVATURE_HINT_UNCONFIRMED"
++
++GUIDE_HINT_VALID = "VALID_HINT"
++GUIDE_HINT_LOW_CONFIDENCE = "LOW_CONFIDENCE"
++GUIDE_HINT_DEGENERATE = "DEGENERATE"
++
++CANDIDATE_CERTIFICATION_DIAGNOSTIC_ONLY = "DIAGNOSTIC_ONLY"
++
++FORMATION_ASSESSMENT_MAX_STATIONS = 64
++ROUTE_ASSESSMENT_MAX_STATIONS = 32
++TRANSITION_WINDOW_SPACING_M = 0.10
++GUIDE_UNIFORM_SPACING_M = 0.50
++ROUTE_UNIFORM_SPACING_M = 1.00
++TRANSITION_BISECTION_LEVELS = 2
++CORRIDOR_GUIDE_CANDIDATE_LIMIT = 5
++CORRIDOR_GUIDE_PORTAL_VARIANT_LIMIT = 3
++_CANDIDATE_POINT_DEDUP_M = 1e-9
++MAX_ASSESSMENT_COLLISIONS = 8
++MAX_WINDOW_COLLISIONS = 3
++MAX_VEHICLE_WITNESSES = 3
++PORTAL_DIAGNOSTIC_COLLISION_LIMIT = 5
++PORTAL_DIAGNOSTIC_GAP_LIMIT = 6
++PORTAL_DIAGNOSTIC_WINDOW_LIMIT = 3
++PORTAL_DIAGNOSTICS_SCHEMA = "virtual_a_portal_diagnostics_v1"
++
++_SHORT_GUIDE_SEGMENT_M = 1e-8
++_BISECTOR_SUM_MIN_M = 1e-6
++_NEAR_REVERSE_COS = -0.999999
++_ENDPOINT_TANGENT_TOL_RAD = math.radians(20.0)
++_CURVATURE_JUMP_HINT_PER_M = 1.0
++_STATION_DEDUP_M = 1e-9
++_ASSESSMENT_TOL_M = None  # use the coverage module's scale-derived default
++_ASSESSMENT_DETAIL_CHARS = 240
++
++
++def _guide_arc_data(points):
++    """Finite polyline arc lengths and per-segment tangents."""
++    try:
++        values = tuple((float(point[0]), float(point[1]))
++                       for point in points)
++    except (TypeError, ValueError, IndexError) as exc:
++        raise VirtualAContractError(
++            "INVALID_GUIDE_POLYLINE",
++            "points must be (x, y) pairs") from exc
++    if len(values) < 2:
++        raise VirtualAContractError(
++            "INVALID_GUIDE_POLYLINE",
++            "a guide polyline needs at least two points")
++    for x, y in values:
++        if not (math.isfinite(x) and math.isfinite(y)):
++            raise VirtualAContractError(
++                "INVALID_GUIDE_POLYLINE", "guide point is not finite")
++    cumulative = [0.0]
++    lengths = []
++    tangents = []
++    for first, second in zip(values, values[1:]):
++        dx = second[0] - first[0]
++        dy = second[1] - first[1]
++        length = math.hypot(dx, dy)
++        lengths.append(length)
++        tangents.append(
++            math.atan2(dy, dx) if length > _SHORT_GUIDE_SEGMENT_M else None)
++        cumulative.append(cumulative[-1] + length)
++    return values, tuple(cumulative), tuple(lengths), tuple(tangents)
++
++
++def _angle_delta(first, second):
++    return math.atan2(math.sin(first - second), math.cos(first - second))
++
++
++def _assessment_digest(payload):
++    encoded = json.dumps(
++        payload, sort_keys=True, separators=(",", ":"), allow_nan=False)
++    return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
++
++
++def _assessment_identity(schema, request_sha256, grid_sha256,
++                         planning_context_sha256, route_index, round_index,
++                         chain_digest, guide_source, points):
++    return _assessment_digest({
++        "schema": str(schema),
++        "request_sha256": str(request_sha256 or ""),
++        "grid_sha256": str(grid_sha256 or ""),
++        "planning_context_sha256": str(planning_context_sha256 or ""),
++        "route_index": None if route_index is None else int(route_index),
++        "round_index": None if round_index is None else int(round_index),
++        "chain_digest": None if chain_digest is None else str(chain_digest),
++        "guide_source": str(guide_source or ""),
++        "guide_points": [[float(x), float(y)] for x, y in points],
++    })
++
++
++def _guide_points_digest(points):
++    return _assessment_digest(
++        [[float(x), float(y)] for x, y in points])
++
++
++def _validate_assessment_checker(checker, model, shapes, grid_sha256):
++    """Bind the re-used static checker to the request's model and map."""
++    checker_model = getattr(checker, "model", None)
++    if checker_model is None or not hasattr(checker_model, "offsets"):
++        raise VirtualAContractError(
++            "INVALID_ASSESSMENT_CHECKER",
++            "checker must expose the FormationModel it was built with")
++    expected = tuple((offset.vehicle_id, offset.x, offset.y)
++                     for offset in model.offsets)
++    actual = tuple((offset.vehicle_id, offset.x, offset.y)
++                   for offset in checker_model.offsets)
++    if expected != actual:
++        raise VirtualAContractError(
++            "INVALID_ASSESSMENT_CHECKER",
++            "checker model offsets do not match the request model")
++    checker_grid = getattr(checker, "grid", None)
++    if checker_grid is not None and grid_sha256:
++        try:
++            actual_grid = grid_signature(checker_grid)
++        except Exception:
++            actual_grid = ""
++        if actual_grid and actual_grid != str(grid_sha256):
++            raise VirtualAContractError(
++                "INVALID_ASSESSMENT_CHECKER",
++                "checker grid does not match grid_sha256")
++    checker_shapes = getattr(checker, "_shapes", None)
++    if isinstance(checker_shapes, MappingABC) and isinstance(shapes, MappingABC):
++        for vehicle_id, shape in shapes.items():
++            other = checker_shapes.get(vehicle_id)
++            if other is None:
++                raise VirtualAContractError(
++                    "INVALID_ASSESSMENT_CHECKER",
++                    "checker has no shape for vehicle_id={}".format(
++                        vehicle_id))
++            if (abs(float(other.length_m) - float(shape.length_m)) > 1e-12
++                    or abs(float(other.width_m) - float(shape.width_m))
++                    > 1e-12):
++                raise VirtualAContractError(
++                    "INVALID_ASSESSMENT_CHECKER",
++                    "checker shape differs for vehicle_id={}".format(
++                        vehicle_id))
++
++
++def _shape_view(shape):
++    """Length/width of one request shape, or None when unusable."""
++    try:
++        length = float(getattr(shape, "length_m"))
++        width = float(getattr(shape, "width_m"))
++    except (TypeError, ValueError, AttributeError):
++        return None
++    if not (math.isfinite(length) and math.isfinite(width)):
++        return None
++    if length <= 0.0 or width <= 0.0:
++        return None
++    return length, width
++
++
++def _shape_set_complete(model, shapes):
++    """True only when every modelled vehicle has a usable request shape."""
++    if not isinstance(shapes, MappingABC):
++        return False
++    for offset in model.offsets:
++        if _shape_view(shapes.get(offset.vehicle_id)) is None:
++            return False
++    return True
++
++
++def _assessment_rho(model, shapes):
++    """Finite reach radius for Portal windows, or (None, reason)."""
++    if not isinstance(shapes, MappingABC):
++        return None, "MISSING_VEHICLE_SHAPE"
++    radii = []
++    for offset in model.offsets:
++        shape = shapes.get(offset.vehicle_id)
++        view = _shape_view(shape)
++        if view is None:
++            return None, "MISSING_VEHICLE_SHAPE"
++        half_diagonal = 0.5 * math.hypot(view[0], view[1])
++        radii.append(math.hypot(offset.x, offset.y) + half_diagonal)
++    if not radii:
++        return None, "EMPTY_VEHICLE_SET"
++    return float(max(radii)), ""
++
++
++def formation_transition_windows(chain, guide_points, model, vehicle_shapes):
++    """Bounded Portal reach windows around every adjacent region pair.
++
++    The window is only a finite candidate-sampling hint; it is not a portal
++    inscribed radius and it never certifies a continuous transition.
++    """
++    if not isinstance(chain, CorridorChain):
++        raise VirtualAContractError(
++            "INVALID_CORRIDOR_CHAIN", "expected CorridorChain")
++    points, cumulative, _lengths, _tangents = _guide_arc_data(guide_points)
++    regions = chain.regions
++    if len(points) != len(regions) + 1:
++        raise VirtualAContractError(
++            "CORRIDOR_GUIDE_CHAIN_MISMATCH",
++            "guide has {} points for {} regions".format(
++                len(points), len(regions)))
++    violation = _guide_region_violation(chain, points)
++    if violation > _GUIDE_PRIMAL_TOL_M:
++        raise VirtualAContractError(
++            "CORRIDOR_GUIDE_OUTSIDE",
++            "guide leaves an assigned corridor by {} m".format(violation))
++    total = cumulative[-1]
++    rho, rho_reason = _assessment_rho(model, vehicle_shapes)
++    windows = []
++    for index in range(len(regions) - 1):
++        station = cumulative[index + 1]
++        sigma = station / total if total > _SHORT_GUIDE_SEGMENT_M else None
++        if total <= _SHORT_GUIDE_SEGMENT_M:
++            lower = upper = None
++            reason = "GUIDE_LENGTH_DEGENERATE"
++        elif rho is None:
++            lower = upper = None
++            reason = rho_reason
++        else:
++            lower = max(0.0, station - rho)
++            upper = min(total, station + rho)
++            reason = ""
++        windows.append({
++            "portal_index": int(index),
++            "source_region_index": int(index),
++            "target_region_index": int(index + 1),
++            "portal_seed_point": [float(points[index + 1][0]),
++                                  float(points[index + 1][1])],
++            "s_hint_m": float(station),
++            "sigma_hint": None if sigma is None else float(sigma),
++            "rho_m": None if rho is None else float(rho),
++            "s_window_m": (None if lower is None
++                           else [float(lower), float(upper)]),
++            "sigma_window": (
++                None if lower is None or total <= _SHORT_GUIDE_SEGMENT_M
++                else [float(lower / total), float(upper / total)]),
++            "reason": reason,
++        })
++    return windows
++
++
++def _station_meta(points, cumulative, lengths, tangents, station,
++                  node_curvature, node_curvature_valid,
++                  start_heading, goal_heading):
++    """One guide sample and its finite heading/curvature hints."""
++    total = cumulative[-1]
++    count = len(points)
++    eps = _STATION_DEDUP_M
++    low = []
++    if station <= eps:
++        x, y = points[0]
++        psi = float(start_heading)
++        source = "START_REQUEST"
++        first = tangents[0]
++        if first is None:
++            low.append("ZERO_LENGTH_SEGMENT")
++        elif abs(_angle_delta(first, psi)) > _ENDPOINT_TANGENT_TOL_RAD:
++            low.append("START_TANGENT_MISMATCH")
++        kappa, kappa_source = 0.0, "ENDPOINT_ZERO"
++        segment_index = 0
++    elif station >= total - eps:
++        x, y = points[-1]
++        psi = float(goal_heading)
++        source = "GOAL_REQUEST"
++        last = tangents[-1]
++        if last is None:
++            low.append("ZERO_LENGTH_SEGMENT")
++        elif abs(_angle_delta(last, psi)) > _ENDPOINT_TANGENT_TOL_RAD:
++            low.append("GOAL_TANGENT_MISMATCH")
++        kappa, kappa_source = 0.0, "ENDPOINT_ZERO"
++        segment_index = count - 2
++    else:
++        index = bisect.bisect_right(cumulative, station) - 1
++        index = min(max(index, 0), count - 2)
++        vertex = None
++        for candidate in (index, index + 1):
++            if 0 < candidate < count - 1 and \
++                    abs(cumulative[candidate] - station) <= eps:
++                vertex = candidate
++                break
++        if vertex is None:
++            x, y = _point_on_segment(
++                points[index], points[index + 1], cumulative[index],
++                lengths[index], station)
++            segment_index = index
++            tangent = tangents[index]
++            if tangent is None:
++                psi = None
++                source = "SEGMENT_DEGENERATE"
++                low.append("ZERO_LENGTH_SEGMENT")
++            else:
++                psi = float(tangent)
++                source = "SEGMENT_TANGENT"
++            kappa, kappa_source = 0.0, "SEGMENT_ZERO"
++        else:
++            x, y = points[vertex]
++            segment_index = min(vertex, count - 2)
++            incoming = tangents[vertex - 1]
++            outgoing = tangents[vertex]
++            if lengths[vertex - 1] <= _SHORT_GUIDE_SEGMENT_M or \
++                    lengths[vertex] <= _SHORT_GUIDE_SEGMENT_M:
++                low.append("SHORT_SEGMENT")
++            if incoming is None or outgoing is None:
++                psi = outgoing if outgoing is not None else incoming
++                source = ("VERTEX_OUTGOING_FALLBACK"
++                          if outgoing is not None else "VERTEX_DEGENERATE")
++                low.append("BISECTOR_DEGENERATE")
++            else:
++                cos_sum = math.cos(incoming) + math.cos(outgoing)
++                sin_sum = math.sin(incoming) + math.sin(outgoing)
++                norm = math.hypot(cos_sum, sin_sum)
++                dot = math.cos(incoming - outgoing)
++                if norm <= _BISECTOR_SUM_MIN_M or dot <= _NEAR_REVERSE_COS:
++                    psi = float(outgoing)
++                    source = "VERTEX_OUTGOING_FALLBACK"
++                    low.append("BISECTOR_DEGENERATE")
++                else:
++                    psi = math.atan2(sin_sum, cos_sum)
++                    source = "VERTEX_BISECTOR"
++            kappa = None
++            kappa_source = "UNAVAILABLE"
++            if node_curvature is not None and vertex < len(node_curvature):
++                value = node_curvature[vertex]
++                valid = True
++                if node_curvature_valid is not None:
++                    valid = bool(node_curvature_valid[vertex])
++                else:
++                    valid = _three_point_hint_valid(points, vertex)
++                if valid and value is not None and math.isfinite(
++                        float(value)):
++                    kappa = float(value)
++                    kappa_source = "VERTEX_THREE_POINT"
++                else:
++                    low.append("CURVATURE_HINT_DEGENERATE")
++            else:
++                low.append("CURVATURE_HINT_UNAVAILABLE")
++    reliable = (psi is not None and kappa is not None and source in (
++        "START_REQUEST", "GOAL_REQUEST", "SEGMENT_TANGENT",
++        "VERTEX_BISECTOR") and "SHORT_SEGMENT" not in low)
++    if not reliable and source == "VERTEX_BISECTOR" and \
++            "CURVATURE_HINT_DEGENERATE" in low:
++        pass
++    status = GUIDE_HINT_VALID if not low else GUIDE_HINT_LOW_CONFIDENCE
++    return {
++        "s_m": float(station),
++        "x": float(x),
++        "y": float(y),
++        "segment_index": int(segment_index),
++        "heading_hint_rad": None if psi is None else float(psi),
++        "heading_source": source,
++        "kappa_hint": None if kappa is None else float(kappa),
++        "kappa_source": kappa_source,
++        "guide_hint_status": status,
++        "hint_reasons": sorted(set(low)),
++        "pose_reliable": bool(reliable),
++        "window_indices": [],
++    }
++
++
++def _point_on_segment(first, second, first_s, length, station):
++    if length <= _SHORT_GUIDE_SEGMENT_M:
++        return float(first[0]), float(first[1])
++    ratio = (station - first_s) / length
++    return (float(first[0] + ratio * (second[0] - first[0])),
++            float(first[1] + ratio * (second[1] - first[1])))
++
++
++def _three_point_hint_valid(points, index):
++    if index <= 0 or index >= len(points) - 1:
++        return False
++    first = math.hypot(points[index][0] - points[index - 1][0],
++                       points[index][1] - points[index - 1][1])
++    second = math.hypot(points[index + 1][0] - points[index][0],
++                        points[index + 1][1] - points[index][1])
++    chord = math.hypot(points[index + 1][0] - points[index - 1][0],
++                       points[index + 1][1] - points[index - 1][1])
++    return min(first, second, chord) > _SHORT_GUIDE_SEGMENT_M
++
++
++def _merge_station_entries(entries):
++    entries.sort(key=lambda entry: float(entry["s"]))
++    merged = []
++    for entry in entries:
++        if merged and abs(entry["s"] - merged[-1]["s"]) <= _STATION_DEDUP_M:
++            merged[-1]["tier"] = min(merged[-1]["tier"], entry["tier"])
++            merged[-1]["kinds"].update(entry["kinds"])
++        else:
++            merged.append({
++                "s": float(entry["s"]),
++                "tier": int(entry["tier"]),
++                "kinds": set(entry["kinds"]),
++            })
++    return merged
++
++
++def _plan_assessment_stations(points, cumulative, lengths, tangents,
++                              windows, cap, uniform_spacing_m,
++                              window_spacing_m, node_curvature,
++                              node_curvature_valid, start_heading,
++                              goal_heading):
++    """Deterministic station set with required-first caps."""
++    total = cumulative[-1]
++    count = len(points)
++    entries = [{"s": 0.0, "tier": 0, "kinds": {"start"}},
++               {"s": total, "tier": 0, "kinds": {"goal"}}]
++    for index in range(1, count - 1):
++        entries.append({
++            "s": cumulative[index], "tier": 2, "kinds": {"corner"}})
++    for window in windows:
++        bounds = window.get("s_window_m")
++        if bounds is None:
++            continue
++        lower, upper = float(bounds[0]), float(bounds[1])
++        width = upper - lower
++        entries.append({"s": lower, "tier": 1, "kinds": {"window_start"}})
++        entries.append({"s": upper, "tier": 1, "kinds": {"window_end"}})
++        if width <= 0.0:
++            samples = 1
++        else:
++            samples = max(1, int(math.ceil(
++                width / max(float(window_spacing_m), 1e-12))))
++        for index in range(samples + 1):
++            entries.append({
++                "s": lower + width * index / float(samples),
++                "tier": 1, "kinds": {"window_uniform"}})
++        for index in range(1, count - 1):
++            if lower - _STATION_DEDUP_M <= cumulative[index] \
++                    <= upper + _STATION_DEDUP_M:
++                entries.append({
++                    "s": cumulative[index], "tier": 1,
++                    "kinds": {"portal_corner"}})
++        if width > 0.0:
++            entries.append({
++                "s": window["s_hint_m"], "tier": 1,
++                "kinds": {"portal_sigma"}})
++    if total > 0.0:
++        samples = max(1, int(math.ceil(
++            total / max(float(uniform_spacing_m), 1e-12))))
++        for index in range(1, samples):
++            entries.append({
++                "s": total * index / float(samples), "tier": 4,
++                "kinds": {"uniform"}})
++    merged = _merge_station_entries(entries)
++    ordered = sorted(merged, key=lambda entry: (entry["tier"], entry["s"]))
++    selected = ordered[:max(1, int(cap))]
++    selected_keys = {round(entry["s"], 12) for entry in selected}
++    dropped_required = sum(
++        1 for entry in ordered[len(selected):] if entry["tier"] < 4)
++    sample_cap = dropped_required > 0
++    selected.sort(key=lambda entry: entry["s"])
++    window_complete = []
++    for window in windows:
++        bounds = window.get("s_window_m")
++        if bounds is None:
++            window_complete.append(False)
++            continue
++        lower, upper = float(bounds[0]), float(bounds[1])
++        required = [
++            entry for entry in merged
++            if entry["tier"] < 4 and lower - _STATION_DEDUP_M
++            <= entry["s"] <= upper + _STATION_DEDUP_M]
++        window_complete.append(
++            all(round(entry["s"], 12) in selected_keys
++                for entry in required))
++    stations = []
++    for entry in selected:
++        meta = _station_meta(
++            points, cumulative, lengths, tangents, entry["s"],
++            node_curvature, node_curvature_valid, start_heading,
++            goal_heading)
++        for index, window in enumerate(windows):
++            bounds = window.get("s_window_m")
++            if bounds is not None and float(bounds[0]) - _STATION_DEDUP_M \
++                    <= entry["s"] <= float(bounds[1]) + _STATION_DEDUP_M:
++                meta["window_indices"].append(index)
++        stations.append(meta)
++    curvature_jumps = 0
++    if node_curvature is not None:
++        previous = None
++        for index in range(1, count - 1):
++            value = node_curvature[index]
++            valid = (_three_point_hint_valid(points, index)
++                     if node_curvature_valid is None
++                     else bool(node_curvature_valid[index]))
++            if not valid or value is None or not math.isfinite(float(value)):
++                previous = None
++                continue
++            if previous is not None and abs(
++                    float(value) - previous) > _CURVATURE_JUMP_HINT_PER_M:
++                curvature_jumps += 1
++            previous = float(value)
++    return {
++        "stations": stations,
++        "complete": not sample_cap,
++        "sample_cap": bool(sample_cap),
++        "dropped_required": int(dropped_required),
++        "required_count": int(sum(1 for entry in merged
++                                  if entry["tier"] < 4)),
++        "window_complete": window_complete,
++        "curvature_jumps": int(curvature_jumps),
++        "total_length_m": float(total),
++    }
++
++
++def _coverage_region_ids(status, region_index):
++    if status == COVERAGE_SINGLE_REGION and region_index is not None:
++        return [int(region_index)]
++    return []
++
++
++def _station_coverage(meta, mapped, model, shapes, chain, tol_m):
++    """Independent per-vehicle single-region and adjacent-union coverage."""
++    regions = None if chain is None else chain.regions
++    results = {}
++    for offset in model.offsets:
++        vehicle_id = offset.vehicle_id
++        unknown = {
++            "status": COVERAGE_UNCONFIRMED,
++            "region_ids": [],
++            "max_violation_m": None,
++            "reason": "",
++            "witness": None,
++        }
++        if regions is None or not regions:
++            unknown["reason"] = "NO_CORRIDOR"
++            results[vehicle_id] = unknown
++            continue
++        view = _shape_view(shapes.get(vehicle_id))
++        if view is None:
++            unknown["reason"] = "MISSING_VEHICLE_SHAPE"
++            results[vehicle_id] = unknown
++            continue
++        try:
++            vehicle = mapped.vehicle(vehicle_id)
++        except Exception:
++            unknown["reason"] = "VEHICLE_NOT_IN_STATE"
++            results[vehicle_id] = unknown
++            continue
++        try:
++            polygon = obb_polygon((vehicle.x, vehicle.y), vehicle.theta,
++                                  shapes.get(vehicle_id))
++        except VirtualAContractError as exc:
++            unknown["reason"] = exc.reason
++            results[vehicle_id] = unknown
++            continue
++        segment = meta["segment_index"]
++        segment = min(max(segment, 0), len(regions) - 1)
++        singles = []
++        single_notes = []
++        checked = obb_coverage_in_corridor(
++            polygon, regions[segment], tol_m=tol_m,
++            region_index=segment)
++        if checked["status"] == COVERAGE_SINGLE_REGION:
++            singles.append((segment, checked))
++            single_notes.append(checked)
++        window_results = []
++        for window_index in meta["window_indices"]:
++            left = window_index
++            if left < 0 or left + 1 >= len(regions):
++                continue
++            left_result = obb_coverage_in_corridor(
++                polygon, regions[left], tol_m=tol_m, region_index=left)
++            right_result = obb_coverage_in_corridor(
++                polygon, regions[left + 1], tol_m=tol_m,
++                region_index=left + 1)
++            for result, region_id in ((left_result, left),
++                                      (right_result, left + 1)):
++                if result["status"] == COVERAGE_SINGLE_REGION and \
++                        region_id not in [item[0] for item in singles]:
++                    singles.append((region_id, result))
++                    single_notes.append(result)
++            union = obb_coverage_in_adjacent_union(
++                polygon, regions[left], regions[left + 1], tol_m=tol_m)
++            window_results.append((left, union))
++        if singles:
++            worst = max(item[1]["max_violation_m"] for item in singles)
++            results[vehicle_id] = {
++                "status": COVERAGE_SINGLE_REGION,
++                "region_ids": sorted(item[0] for item in singles),
++                "max_violation_m": float(worst),
++                "reason": "ROBUSTLY_INSIDE_SINGLE_REGION",
++                "witness": _coverage_witness_view(single_notes[0]),
++                "window_index": (
++                    None if not meta["window_indices"]
++                    else int(meta["window_indices"][0])),
++            }
++            continue
++        covered = [(index, union) for index, union in window_results
++                   if union["status"] == COVERAGE_ADJACENT_UNION]
++        if covered:
++            index, union = covered[0]
++            results[vehicle_id] = {
++                "status": COVERAGE_ADJACENT_UNION,
++                "region_ids": [int(index), int(index + 1)],
++                "max_violation_m": float(union["max_violation_m"]),
++                "reason": union["reason"],
++                "witness": _coverage_witness_view(union),
++                "window_index": int(index),
++            }
++            continue
++        gaps = [(index, union) for index, union in window_results
++                if union["status"] == COVERAGE_GAP]
++        unknowns = [(index, union) for index, union in window_results
++                    if union["status"] == COVERAGE_UNCONFIRMED]
++        if gaps and not unknowns:
++            index, union = gaps[0]
++            witness = _coverage_witness_view(union)
++            witness["window_index"] = int(index)
++            results[vehicle_id] = {
++                "status": COVERAGE_GAP,
++                "region_ids": [int(index), int(index + 1)],
++                "max_violation_m": float(union["max_violation_m"]),
++                "reason": union["reason"],
++                "witness": witness,
++                "window_index": int(index),
++            }
++            continue
++        if not window_results:
++            unknown["reason"] = "OUTSIDE_TRANSITION_WINDOW"
++        elif unknowns:
++            index, union = unknowns[0]
++            unknown["reason"] = union.get("reason") or "UNCONFIRMED_UNION"
++            unknown["witness"] = _coverage_witness_view(union)
++            unknown["witness"]["window_index"] = int(index)
++            unknown["max_violation_m"] = union.get("max_violation_m")
++        else:
++            unknown["reason"] = "UNCONFIRMED_UNION"
++        results[vehicle_id] = unknown
++    return results
++
++
++def _coverage_witness_view(result):
++    witness = result.get("witness")
++    view = {}
++    if isinstance(witness, MappingABC):
++        for key in ("reason", "halfspace_index", "vertex_index", "vertex",
++                    "violation_m", "outside_area_m2", "clip_halfspace_index",
++                    "covered_pieces_forward", "covered_pieces_reverse",
++                    "worst_piece_violation_m", "covered_pieces",
++                    "outside_pieces"):
++            if key in witness:
++                value = witness[key]
++                if isinstance(value, (list, tuple)):
++                    view[key] = [float(item) if isinstance(item, (int, float))
++                                 else item for item in value]
++                elif isinstance(value, (int, float)) and not isinstance(
++                        value, bool):
++                    view[key] = float(value)
++                else:
++                    view[key] = value
++    if result.get("region_index") is not None:
++        view["region_index"] = int(result["region_index"])
++    view["status"] = result.get("status")
++    return view
++
++
++def _evaluate_station(meta, chain, checker, model, vehicle_shapes, tol_m):
++    """Map/vehicle SAT and coverage for one station, with separate statuses."""
++    vehicle_ids = tuple(offset.vehicle_id for offset in model.offsets)
++    coverage = {
++        vehicle_id: {
++            "status": COVERAGE_UNCONFIRMED,
++            "region_ids": [],
++            "max_violation_m": None,
++            "reason": "",
++            "witness": None,
++        } for vehicle_id in vehicle_ids}
++    normal_branch = {vehicle_id: KINEMATIC_CURVATURE_UNCONFIRMED
++                     for vehicle_id in vehicle_ids}
++    result = {
++        "meta": meta,
++        "map": {
++            "status": MAP_SAMPLE_UNCONFIRMED,
++            "reason": "",
++            "vehicle_id": None,
++            "other_vehicle_id": None,
++            "detail": "",
++        },
++        "coverage": coverage,
++        "normal_branch": normal_branch,
++        "normal_branch_reason": {vehicle_id: "" for vehicle_id in vehicle_ids},
++    }
++    if not meta["pose_reliable"]:
++        reason = "HINT_UNAVAILABLE"
++        result["map"]["reason"] = reason
++        for vehicle_id in vehicle_ids:
++            coverage[vehicle_id]["reason"] = reason
++            result["normal_branch_reason"][vehicle_id] = reason
++        return result
++    qf = FormationPose(meta["x"], meta["y"], meta["heading_hint_rad"])
++    jet = CurvatureJet(float(meta["kappa_hint"]), 0.0, 0.0, 0.0)
++    try:
++        mapped = map_spatial_state(qf, jet, model, s=meta["s_m"])
++    except VirtualAContractError as exc:
++        reason = str(exc.reason)
++        result["map"]["reason"] = reason
++        result["map"]["detail"] = str(exc.detail)[:_ASSESSMENT_DETAIL_CHARS]
++        for vehicle_id in vehicle_ids:
++            coverage[vehicle_id]["reason"] = reason
++            result["normal_branch_reason"][vehicle_id] = reason
++            if reason == "NORMAL_BRANCH_VIOLATION" and \
++                    exc.location.get("vehicle_id") == vehicle_id:
++                normal_branch[vehicle_id] = KINEMATIC_NORMAL_BRANCH_INVALID
++        return result
++    headings = {vehicle.vehicle_id: vehicle.theta
++                for vehicle in mapped.vehicles}
++    try:
++        report = checker.static_check(qf, headings)
++    except Exception as exc:
++        result["map"]["reason"] = "CHECKER_EXCEPTION"
++        result["map"]["detail"] = "{}: {}".format(
++            type(exc).__name__, exc)[:_ASSESSMENT_DETAIL_CHARS]
++        for vehicle_id in vehicle_ids:
++            coverage[vehicle_id]["reason"] = "CHECKER_EXCEPTION"
++        return result
++    reason = str(getattr(report, "reason", "") or "")
++    if bool(getattr(report, "success", False)):
++        result["map"]["status"] = MAP_CLEAR_AT_SAMPLES
++        result["map"]["reason"] = "MAP_AND_VEHICLE_SAT_CLEAR"
++        for vehicle_id in vehicle_ids:
++            normal_branch[vehicle_id] = KINEMATIC_NORMAL_BRANCH_OK
++    elif reason in ("MAP_OBB_COLLISION", "VEHICLE_OBB_COLLISION"):
++        result["map"]["status"] = MAP_COLLISION_OBSERVED
++        result["map"]["reason"] = reason
++        result["map"]["vehicle_id"] = getattr(report, "vehicle_id", None)
++        result["map"]["other_vehicle_id"] = getattr(
++            report, "other_vehicle_id", None)
++        result["map"]["detail"] = str(
++            getattr(report, "detail", "") or "")[:_ASSESSMENT_DETAIL_CHARS]
++        for vehicle_id in vehicle_ids:
++            normal_branch[vehicle_id] = KINEMATIC_NORMAL_BRANCH_OK
++    else:
++        result["map"]["status"] = MAP_SAMPLE_UNCONFIRMED
++        result["map"]["reason"] = reason or "UNKNOWN_CHECKER_RESULT"
++        result["map"]["vehicle_id"] = getattr(report, "vehicle_id", None)
++        result["map"]["detail"] = str(
++            getattr(report, "detail", "") or "")[:_ASSESSMENT_DETAIL_CHARS]
++    result["coverage"] = _station_coverage(
++        meta, mapped, model, vehicle_shapes, chain, tol_m)
++    return result
++
++
++def _station_signature(result, vehicle_ids):
++    return (
++        result["map"]["status"],
++        tuple(result["coverage"][vehicle_id]["status"]
++              for vehicle_id in vehicle_ids))
++
++
++def _window_map_summary(results):
++    counts = {"sampled": 0, "clear": 0, "map_collision": 0,
++              "vehicle_collision": 0, "unconfirmed": 0}
++    collisions = []
++    for result in results:
++        counts["sampled"] += 1
++        status = result["map"]["status"]
++        if status == MAP_CLEAR_AT_SAMPLES:
++            counts["clear"] += 1
++        elif status == MAP_COLLISION_OBSERVED:
++            if result["map"]["reason"] == "VEHICLE_OBB_COLLISION":
++                counts["vehicle_collision"] += 1
++            else:
++                counts["map_collision"] += 1
++            if len(collisions) < MAX_WINDOW_COLLISIONS:
++                collisions.append({
++                    "s_m": result["meta"]["s_m"],
++                    "station_index": result["meta"].get("station_index"),
++                    "reason": result["map"]["reason"],
++                    "vehicle_id": result["map"]["vehicle_id"],
++                    "other_vehicle_id": result["map"]["other_vehicle_id"],
++                })
++        else:
++            counts["unconfirmed"] += 1
++    if collisions:
++        status = MAP_COLLISION_OBSERVED
++    elif not results or counts["unconfirmed"]:
++        status = MAP_SAMPLE_UNCONFIRMED
++    else:
++        status = MAP_CLEAR_AT_SAMPLES
++    return status, counts, collisions
++
++
++def _vehicle_coverage_summary(results, vehicle_id, incomplete):
++    counts = {"single": 0, "union": 0, "gap": 0, "unconfirmed": 0}
++    region_ids = set()
++    margins = []
++    gap_violations = []
++    witnesses = []
++    first_gap = None
++    worst_covered = None
++    first_unknown = None
++    for result in results:
++        coverage = result["coverage"][vehicle_id]
++        status = coverage["status"]
++        if status == COVERAGE_SINGLE_REGION:
++            counts["single"] += 1
++        elif status == COVERAGE_ADJACENT_UNION:
++            counts["union"] += 1
++        elif status == COVERAGE_GAP:
++            counts["gap"] += 1
++        else:
++            counts["unconfirmed"] += 1
++        for region_id in coverage.get("region_ids") or ():
++            region_ids.add(int(region_id))
++        value = coverage.get("max_violation_m")
++        if status in (COVERAGE_SINGLE_REGION, COVERAGE_ADJACENT_UNION) \
++                and value is not None:
++            margin = -float(value)
++            margins.append(margin)
++            if worst_covered is None or margin < worst_covered[0]:
++                worst_covered = (margin, result)
++        if status == COVERAGE_GAP and value is not None:
++            gap_violations.append(float(value))
++            if first_gap is None:
++                first_gap = result
++        if status == COVERAGE_UNCONFIRMED and first_unknown is None:
++            first_unknown = result
++    if incomplete:
++        # A capped or degenerate sample set cannot claim a definite
++        # corridor-coverage state; observed gap counts stay visible above.
++        status = COVERAGE_UNCONFIRMED
++    elif counts["gap"]:
++        status = COVERAGE_GAP
++    elif counts["unconfirmed"]:
++        status = COVERAGE_UNCONFIRMED
++    elif counts["union"]:
++        status = COVERAGE_ADJACENT_UNION
++    elif counts["single"]:
++        status = COVERAGE_SINGLE_REGION
++    else:
++        status = COVERAGE_UNCONFIRMED
++    for pick in (first_gap, None if worst_covered is None else worst_covered[1],
++                 first_unknown):
++        if pick is None or len(witnesses) >= MAX_VEHICLE_WITNESSES:
++            continue
++        cover = pick["coverage"][vehicle_id]
++        witnesses.append({
++            "s_m": pick["meta"]["s_m"],
++            "station_index": pick["meta"].get("station_index"),
++            "status": cover["status"],
++            "reason": cover.get("reason"),
++            "region_ids": list(cover.get("region_ids") or ()),
++            "max_violation_m": cover.get("max_violation_m"),
++            "window_index": cover.get("window_index"),
++            "witness": cover.get("witness"),
++        })
++    return {
++        "status": status,
++        "counts": counts,
++        "single_region_ids": sorted(region_ids),
++        "min_covered_margin_m": (None if not margins else float(min(margins))),
++        "worst_gap_violation_m": (
++            None if not gap_violations else float(max(gap_violations))),
++        "witnesses": witnesses[:MAX_VEHICLE_WITNESSES],
++        "vehicle_curvature_status": KINEMATIC_CURVATURE_UNCONFIRMED,
++        "region_pair_sampled": bool(counts["union"]),
++    }
++
++
++def _vehicle_normal_branch_summary(results, vehicle_id, incomplete):
++    counts = {KINEMATIC_NORMAL_BRANCH_OK: 0,
++              KINEMATIC_NORMAL_BRANCH_INVALID: 0,
++              KINEMATIC_CURVATURE_UNCONFIRMED: 0}
++    witnesses = []
++    for result in results:
++        status = result["normal_branch"][vehicle_id]
++        counts[status] = counts.get(status, 0) + 1
++        if status == KINEMATIC_NORMAL_BRANCH_INVALID and \
++                len(witnesses) < MAX_VEHICLE_WITNESSES:
++            witnesses.append({
++                "s_m": result["meta"]["s_m"],
++                "station_index": result["meta"].get("station_index"),
++                "reason": result["normal_branch_reason"][vehicle_id],
++            })
++    if counts[KINEMATIC_NORMAL_BRANCH_INVALID]:
++        status = KINEMATIC_NORMAL_BRANCH_INVALID
++    elif incomplete or not results or \
++            counts[KINEMATIC_NORMAL_BRANCH_OK] != len(results):
++        status = KINEMATIC_CURVATURE_UNCONFIRMED
++    else:
++        status = KINEMATIC_NORMAL_BRANCH_OK
++    return {
++        "normal_branch_status": status,
++        "counts": counts,
++        "witnesses": witnesses[:MAX_VEHICLE_WITNESSES],
++        "vehicle_curvature_status": KINEMATIC_CURVATURE_UNCONFIRMED,
++    }
++
++
++def _assessment_map_summary(results, incomplete):
++    counts = {"sampled": len(results), "clear": 0, "map_collision": 0,
++              "vehicle_collision": 0, "unconfirmed": 0}
++    for result in results:
++        status = result["map"]["status"]
++        if status == MAP_CLEAR_AT_SAMPLES:
++            counts["clear"] += 1
++        elif status == MAP_COLLISION_OBSERVED:
++            if result["map"]["reason"] == "VEHICLE_OBB_COLLISION":
++                counts["vehicle_collision"] += 1
++            else:
++                counts["map_collision"] += 1
++        else:
++            counts["unconfirmed"] += 1
++    if counts["map_collision"] or counts["vehicle_collision"]:
++        status = MAP_COLLISION_OBSERVED
++    elif incomplete or counts["unconfirmed"] or not results:
++        status = MAP_SAMPLE_UNCONFIRMED
++    else:
++        status = MAP_CLEAR_AT_SAMPLES
++    return status, counts, _collect_collisions(results)
++
++
++def _assessment_coverage_summary(results, vehicle_ids, incomplete):
++    vehicles = {}
++    for vehicle_id in vehicle_ids:
++        vehicles[vehicle_id] = _vehicle_coverage_summary(
++            results, vehicle_id, incomplete)
++    statuses = [vehicles[vehicle_id]["status"] for vehicle_id in vehicle_ids]
++    if COVERAGE_GAP in statuses:
++        status = COVERAGE_GAP
++    elif incomplete or not results or COVERAGE_UNCONFIRMED in statuses:
++        status = COVERAGE_UNCONFIRMED
++    elif all(item == COVERAGE_SINGLE_REGION for item in statuses):
++        status = COVERAGE_SINGLE_REGION
++    else:
++        status = COVERAGE_ADJACENT_UNION
++    return status, vehicles
++
++
++def _assessment_kinematic_summary(results, vehicle_ids, incomplete):
++    vehicles = {}
++    for vehicle_id in vehicle_ids:
++        vehicles[vehicle_id] = _vehicle_normal_branch_summary(
++            results, vehicle_id, incomplete)
++    statuses = [
++        vehicles[vehicle_id]["normal_branch_status"]
++        for vehicle_id in vehicle_ids]
++    if KINEMATIC_NORMAL_BRANCH_INVALID in statuses:
++        status = KINEMATIC_NORMAL_BRANCH_INVALID
++    else:
++        # eta is never continuously estimated in TASK 02, so the aggregate
++        # curvature hint stays unknown even when every normal branch is OK.
++        status = KINEMATIC_CURVATURE_UNCONFIRMED
++    return status, vehicles
++
++
++def _assessment_guide_hint(stations, plan, total_length):
++    if total_length <= _SHORT_GUIDE_SEGMENT_M or not stations:
++        return GUIDE_HINT_DEGENERATE, ["GUIDE_LENGTH_DEGENERATE"]
++    reasons = set()
++    for station in stations:
++        reasons.update(station.get("hint_reasons") or ())
++    if plan.get("curvature_jumps"):
++        reasons.add("CURVATURE_JUMP")
++    if reasons:
++        return GUIDE_HINT_LOW_CONFIDENCE, sorted(reasons)
++    return GUIDE_HINT_VALID, []
++
++
++def _assessment_windows(windows, results, vehicle_ids, plan, incomplete):
++    summary = []
++    for index, window in enumerate(windows):
++        members = [result for result in results
++                   if index in result["meta"]["window_indices"]]
++        window_map_status, window_map_counts, window_collisions = \
++            _window_map_summary(members)
++        complete = bool(plan["window_complete"][index]) and not incomplete
++        vehicles = {}
++        for vehicle_id in vehicle_ids:
++            vehicle = _vehicle_coverage_summary(
++                members, vehicle_id, not complete)
++            vehicles[vehicle_id] = {
++                "single_region_ids": vehicle["single_region_ids"],
++                "union_cover_status": vehicle["status"],
++                "counts": vehicle["counts"],
++                "min_covered_margin_m": vehicle["min_covered_margin_m"],
++                "worst_gap_violation_m": vehicle["worst_gap_violation_m"],
++                "witnesses": vehicle["witnesses"],
++            }
++        statuses = [vehicles[vehicle_id]["union_cover_status"]
++                    for vehicle_id in vehicle_ids]
++        if not complete or not members:
++            # A window whose required stations were dropped cannot claim a
++            # transition state; gap counts remain recorded per vehicle.
++            status = "PORTAL_TRANSITION_UNCONFIRMED"
++        elif COVERAGE_GAP in statuses:
++            status = "PORTAL_TRANSITION_GAP"
++        elif COVERAGE_UNCONFIRMED in statuses:
++            status = "PORTAL_TRANSITION_UNCONFIRMED"
++        else:
++            status = "PORTAL_TRANSITION_SAMPLED"
++        reason = window.get("reason") or ""
++        if not plan["window_complete"][index]:
++            reason = "SAMPLE_CAP" if not reason else reason + "+SAMPLE_CAP"
++        meta = {
++            "portal_index": int(window["portal_index"]),
++            "source_region_index": int(window["source_region_index"]),
++            "target_region_index": int(window["target_region_index"]),
++            "portal_seed_point": list(window["portal_seed_point"]),
++            "sigma_hint": window["sigma_hint"],
++            "sigma_window": window["sigma_window"],
++            "s_window_m": (None if window["s_window_m"] is None
++                           else list(window["s_window_m"])),
++            "rho_m": window["rho_m"],
++            "station_count": len(members),
++            "status": status,
++            "reason": reason,
++            "map_sample_status": window_map_status,
++            "map_sample_counts": window_map_counts,
++            "collisions": window_collisions,
++            "vehicles": [dict({"vehicle_id": int(vehicle_id)},
++                              **vehicles[vehicle_id])
++                         for vehicle_id in vehicle_ids],
++            "continuously_certified": False,
++        }
++        channel = [result for result in members
++                   if any(coverage.get("status") == COVERAGE_GAP
++                          for coverage in result["coverage"].values())]
++        meta["gap_station_count"] = len(channel)
++        summary.append(meta)
++    return summary
++
++
++def _allocation_view(allocation):
++    if allocation is None:
++        return None
++    view = []
++    for entry in allocation:
++        try:
++            view.append([float(entry[0]), float(entry[1]), int(entry[2])])
++        except (TypeError, ValueError, IndexError):
++            raise VirtualAContractError(
++                "INVALID_ASSESSMENT_ALLOCATION",
++                "allocation entries must be (start, end, corridor_index)")
++    return view
++
++
++def _station_bucket(results, window_index=None):
++    if window_index is None:
++        return list(results)
++    return [result for result in results
++            if window_index in result["meta"]["window_indices"]]
++
++
++def _assign_station_indices(results):
++    results.sort(key=lambda result: result["meta"]["s_m"])
++    for index, result in enumerate(results):
++        result["meta"]["station_index"] = index
++    return results
++
++
++def _collect_collisions(results):
++    collisions = []
++    for result in results:
++        if result["map"]["status"] != MAP_COLLISION_OBSERVED:
++            continue
++        if len(collisions) >= MAX_ASSESSMENT_COLLISIONS:
++            break
++        collisions.append({
++            "station_index": result["meta"].get("station_index"),
++            "s_m": result["meta"]["s_m"],
++            "reason": result["map"]["reason"],
++            "vehicle_id": result["map"]["vehicle_id"],
++            "other_vehicle_id": result["map"]["other_vehicle_id"],
++            "detail": result["map"]["detail"],
++        })
++    return collisions
++
++
++def _assessment_result_common(results, vehicle_ids, plan, windows, deadline_hit,
++                              request_incomplete=False):
++    incomplete = (not plan["complete"] or bool(deadline_hit)
++                  or bool(request_incomplete))
++    degenerate = plan["total_length_m"] <= _SHORT_GUIDE_SEGMENT_M
++    map_status, map_counts, _unused = _assessment_map_summary(
++        results, incomplete)
++    coverage_status, coverage_vehicles = _assessment_coverage_summary(
++        results, vehicle_ids, incomplete or degenerate)
++    kinematic_status, kinematic_vehicles = _assessment_kinematic_summary(
++        results, vehicle_ids, incomplete)
++    normal_statuses = [kinematic_vehicles[vehicle_id][
++        "normal_branch_status"] for vehicle_id in vehicle_ids]
++    guide_status, guide_reasons = _assessment_guide_hint(
++        plan["stations"], plan, plan["total_length_m"])
++    reasons = []
++    if deadline_hit:
++        reasons.append("SOFT_BUDGET")
++    if plan["sample_cap"]:
++        reasons.append("SAMPLE_CAP")
++    if degenerate:
++        reasons.append("GUIDE_LENGTH_DEGENERATE")
++    if request_incomplete:
++        reasons.append("MISSING_VEHICLE_SHAPE")
++    return {
++        "station_count": len(results),
++        "sampled_station_count": len(results),
++        "required_station_count": int(plan["required_count"]),
++        "sample_cap": bool(plan["sample_cap"]),
++        "dropped_required_stations": int(plan["dropped_required"]),
++        "incomplete_reasons": reasons,
++        "map_sample_status": map_status,
++        "map_sample_counts": map_counts,
++        "vehicle_map_collisions": _collect_collisions(results),
++        "coverage_sample_status": coverage_status,
++        "coverage_vehicles": coverage_vehicles,
++        "kinematic_hint_status": kinematic_status,
++        "kinematic_vehicles": kinematic_vehicles,
++        "normal_branch_status": (
++            KINEMATIC_NORMAL_BRANCH_INVALID
++            if KINEMATIC_NORMAL_BRANCH_INVALID in normal_statuses
++            else (KINEMATIC_NORMAL_BRANCH_OK
++                  if not incomplete and all(
++                      status == KINEMATIC_NORMAL_BRANCH_OK
++                      for status in normal_statuses)
++                  else KINEMATIC_CURVATURE_UNCONFIRMED)),
++        "guide_hint_status": guide_status,
++        "guide_hint_reasons": guide_reasons,
++        "transition_windows": _assessment_windows(
++            windows, results, vehicle_ids, plan, incomplete),
++        "candidate_certification": CANDIDATE_CERTIFICATION_DIAGNOSTIC_ONLY,
++        "formation_obb_hard_constraints": False,
++        "continuously_certified": False,
++    }
++
++
++def _station_results_for_plan(plan, chain, checker, model, shapes, windows,
++                              deadline):
++    results = []
++    deadline_hit = False
++    for station in plan["stations"]:
++        if deadline is not None and time.monotonic() >= deadline:
++            deadline_hit = True
++            break
++        results.append(_evaluate_station(
++            station, chain, checker, model, shapes, _ASSESSMENT_TOL_M))
++    capacity = int(plan.get("capacity_stations", len(results)))
++    existing = {round(result["meta"]["s_m"], 12) for result in results}
++    vehicle_ids = tuple(offset.vehicle_id for offset in model.offsets)
++    for _level in range(TRANSITION_BISECTION_LEVELS):
++        if deadline_hit or not windows or len(results) >= capacity:
++            break
++        candidates = []
++        seen = set()
++        for window_index in range(len(windows)):
++            members = [result for result in results
++                       if window_index in result["meta"]["window_indices"]]
++            members.sort(key=lambda result: result["meta"]["s_m"])
++            for first, second in zip(members, members[1:]):
++                if _station_signature(first, vehicle_ids) == \
++                        _station_signature(second, vehicle_ids):
++                    continue
++                midpoint = 0.5 * (first["meta"]["s_m"]
++                                  + second["meta"]["s_m"])
++                key = round(midpoint, 12)
++                if key in existing or key in seen:
++                    continue
++                seen.add(key)
++                candidates.append(float(midpoint))
++        allowed = max(0, capacity - len(results))
++        candidates = candidates[:allowed]
++        if not candidates:
++            break
++        for station_s in candidates:
++            if deadline is not None and time.monotonic() >= deadline:
++                deadline_hit = True
++                break
++            frame = _station_meta(
++                plan["points"], plan["cumulative"], plan["lengths"],
++                plan["tangents"], float(station_s),
++                plan["node_curvature"], plan["node_curvature_valid"],
++                plan["start_heading"], plan["goal_heading"])
++            for index, window in enumerate(windows):
++                bounds = window.get("s_window_m")
++                if bounds is not None and \
++                        float(bounds[0]) - _STATION_DEDUP_M <= \
++                        station_s <= float(bounds[1]) + _STATION_DEDUP_M:
++                    frame["window_indices"].append(index)
++            results.append(_evaluate_station(
++                frame, chain, checker, model, shapes, _ASSESSMENT_TOL_M))
++            existing.add(round(station_s, 12))
++        if deadline_hit:
++            break
++    return results, deadline_hit
++
++
++def assess_route_guide(route_index, points, checker, model, vehicle_shapes,
++                       start_heading_rad, goal_heading_rad, *,
++                       node_curvature=None, node_curvature_valid=None,
++                       grid_sha256="", request_sha256="",
++                       planning_context_sha256="",
++                       max_stations=ROUTE_ASSESSMENT_MAX_STATIONS,
++                       uniform_spacing_m=ROUTE_UNIFORM_SPACING_M,
++                       deadline=None):
++    """Bounded coarse map/hint assessment of one simplified A* route.
++
++    No corridor coverage is claimed here: a route's chain is built only when
++    the real pipeline attempts that original index.
++    """
++    _validate_assessment_checker(checker, model, vehicle_shapes, grid_sha256)
++    values, cumulative, lengths, tangents = _guide_arc_data(points)
++    if max_stations < 1:
++        raise VirtualAContractError(
++            "INVALID_ASSESSMENT_LIMIT", "max_stations must be positive")
++    plan = _plan_assessment_stations(
++        values, cumulative, lengths, tangents, [], int(max_stations),
++        float(uniform_spacing_m), float(TRANSITION_WINDOW_SPACING_M),
++        node_curvature, node_curvature_valid, float(start_heading_rad),
++        float(goal_heading_rad))
++    plan["points"] = values
++    plan["cumulative"] = cumulative
++    plan["lengths"] = lengths
++    plan["tangents"] = tangents
++    plan["node_curvature"] = node_curvature
++    plan["node_curvature_valid"] = node_curvature_valid
++    plan["start_heading"] = float(start_heading_rad)
++    plan["goal_heading"] = float(goal_heading_rad)
++    plan["capacity_stations"] = int(max_stations)
++    results, deadline_hit = _station_results_for_plan(
++        plan, None, checker, model, vehicle_shapes, [], deadline)
++    results = _assign_station_indices(results)
++    vehicle_ids = tuple(offset.vehicle_id for offset in model.offsets)
++    common = _assessment_result_common(
++        results, vehicle_ids, plan, [], deadline_hit,
++        request_incomplete=not _shape_set_complete(model, vehicle_shapes))
++    payload = {
++        "schema": ROUTE_ASSESSMENT_SCHEMA,
++        "route_index": int(route_index),
++        "request_sha256": str(request_sha256 or ""),
++        "grid_sha256": str(grid_sha256 or ""),
++        "planning_context_sha256": str(planning_context_sha256 or ""),
++        "point_count": len(values),
++        "route_length_m": float(plan["total_length_m"]),
++        "candidate_certification": CANDIDATE_CERTIFICATION_DIAGNOSTIC_ONLY,
++        "continuously_certified": False,
++        "chain_digest": None,
++    }
++    payload.update(common)
++    return payload
++
++
++def assess_formation_guide(chain, points, checker, model, vehicle_shapes,
++                           start_heading_rad, goal_heading_rad, *,
++                           route_index=0, round_index=0, guide_source="",
++                           allocation=None, node_curvature=None,
++                           node_curvature_valid=None, grid_sha256="",
++                           request_sha256="", planning_context_sha256="",
++                           max_stations=FORMATION_ASSESSMENT_MAX_STATIONS,
++                           uniform_spacing_m=GUIDE_UNIFORM_SPACING_M,
++                           window_spacing_m=TRANSITION_WINDOW_SPACING_M,
++                           deadline=None, tol_m=None):
++    """Detailed finite formation assessment for one selected corridor guide.
++
++    Every returned status is diagnostic.  The OBB certifies no continuous
++    transition, never replaces the F-only allocation, and never feeds a
++    ``formation_obb_hard_constraints`` flag.
++    """
++    if not isinstance(chain, CorridorChain):
++        raise VirtualAContractError(
++            "INVALID_CORRIDOR_CHAIN", "expected CorridorChain")
++    _validate_assessment_checker(checker, model, vehicle_shapes, grid_sha256)
++    values, cumulative, lengths, tangents = _guide_arc_data(points)
++    if len(values) != len(chain.regions) + 1:
++        raise VirtualAContractError(
++            "CORRIDOR_GUIDE_CHAIN_MISMATCH",
++            "guide has {} points for {} regions".format(
++                len(values), len(chain.regions)))
++    violation = _guide_region_violation(chain, values)
++    if violation > _GUIDE_PRIMAL_TOL_M:
++        raise VirtualAContractError(
++            "CORRIDOR_GUIDE_OUTSIDE",
++            "guide leaves an assigned corridor by {} m".format(violation))
++    if max_stations < 1:
++        raise VirtualAContractError(
++            "INVALID_ASSESSMENT_LIMIT", "max_stations must be positive")
++    windows = formation_transition_windows(
++        chain, values, model, vehicle_shapes)
++    plan = _plan_assessment_stations(
++        values, cumulative, lengths, tangents, windows, int(max_stations),
++        float(uniform_spacing_m), float(window_spacing_m),
++        node_curvature, node_curvature_valid, float(start_heading_rad),
++        float(goal_heading_rad))
++    plan["points"] = values
++    plan["cumulative"] = cumulative
++    plan["lengths"] = lengths
++    plan["tangents"] = tangents
++    plan["node_curvature"] = node_curvature
++    plan["node_curvature_valid"] = node_curvature_valid
++    plan["start_heading"] = float(start_heading_rad)
++    plan["goal_heading"] = float(goal_heading_rad)
++    plan["capacity_stations"] = int(max_stations)
++    results, deadline_hit = _station_results_for_plan(
++        plan, chain, checker, model, vehicle_shapes, windows, deadline)
++    results = _assign_station_indices(results)
++    vehicle_ids = tuple(offset.vehicle_id for offset in model.offsets)
++    common = _assessment_result_common(
++        results, vehicle_ids, plan, windows, deadline_hit,
++        request_incomplete=not _shape_set_complete(model, vehicle_shapes))
++    candidate_id = _assessment_identity(
++        ASSESSMENT_SCHEMA, request_sha256, grid_sha256,
++        planning_context_sha256, route_index, round_index, chain.digest,
++        guide_source, values)
++    payload = {
++        "schema": ASSESSMENT_SCHEMA,
++        "candidate_id": candidate_id,
++        "route_index": int(route_index),
++        "round_index": int(round_index),
++        "request_sha256": str(request_sha256 or ""),
++        "grid_sha256": str(grid_sha256 or ""),
++        "planning_context_sha256": str(planning_context_sha256 or ""),
++        "chain_digest": str(chain.digest),
++        "selected_guide_source": str(guide_source or ""),
++        "selected_guide_sha256": _guide_points_digest(values),
++        "legacy_f_allocation": _allocation_view(allocation),
++        "route_length_m": float(plan["total_length_m"]),
++    }
++    payload.update(common)
++    return payload
++
++
+ def _seed_box(grid, start, end, padding):
+     left = grid.ox + _MAP_INSET_M
+     bottom = grid.oy + _MAP_INSET_M
+@@ -1252,6 +3076,145 @@ def allocate_corridors(chain, guide, intervals=8):
+     return tuple(result)
+ 
+ 
++def _candidate_points_differ(first, second):
++    """Whether two guide point lists differ beyond the dedup tolerance."""
++    if len(first) != len(second):
++        return True
++    for left, right in zip(first, second):
++        if math.hypot(left[0] - right[0], left[1] - right[1]) > \
++                _CANDIDATE_POINT_DEDUP_M:
++            return True
++    return False
++
++
++def _candidate_guide(chain, points, source, portal_radii, origin):
++    """Build one validated diagnostic guide candidate with C2-A quality."""
++    lengths = _guide_segment_lengths(points)
++    if any(length <= _GUIDE_POINT_DEDUP_M for length in lengths):
++        raise VirtualAContractError(
++            "CORRIDOR_GUIDE_DEGENERATE",
++            "candidate guide contains a zero-length segment")
++    violation = _guide_region_violation(chain, points)
++    if violation > _GUIDE_PRIMAL_TOL_M:
++        raise VirtualAContractError(
++            "CORRIDOR_GUIDE_OUTSIDE",
++            "candidate guide leaves an assigned corridor by {} m".format(
++                violation))
++    qp = {
++        "qp_attempted": False,
++        "qp_used": False,
++        "qp_status": "CANDIDATE_POLYLINE",
++        "qp_iterations": 0,
++        "qp_objective": None,
++        "fallback_objective": None,
++        "fallback_reason": str(origin),
++        "primal_violation_m": float(violation),
++        "candidate_origin": str(origin),
++    }
++    quality = _guide_quality(chain, points, source, portal_radii, qp)
++    quality["candidate_origin"] = str(origin)
++    quality["candidate_certification"] = \
++        CANDIDATE_CERTIFICATION_DIAGNOSTIC_ONLY
++    return GuideRoute(
++        points=tuple(points), source=str(source),
++        grid_sha256=chain.grid_sha256, quality=quality)
++
++
++def corridor_guide_candidates(chain, start, goal, base_guide=None):
++    """Bounded deterministic diagnostic variants of the QP corridor guide.
++
++    The first element is always the base C2-A guide: either the caller's
++    exact ``base_guide`` (the pipeline builds it once) or a fresh
++    ``make_corridor_guide()``.  Additional candidates are: the
++    all-Chebyshev-centre polyline and at most three one-portal variants that
++    move exactly one portal vertex, either to the portal Chebyshev centre or
++    halfway toward its farthest intersection vertex.  Every candidate is
++    checked against the same assigned-corridor halfspaces; a candidate that
++    leaves them or collapses a segment is dropped, never relaxed.  Generation
++    is diagnostic only.
++
++    Variants are only generated when the base has the canonical
++    ``start + one point per internal portal + goal`` shape, so an arbitrary
++    injected base guide never spawns meaningless portal variants.
++    """
++    if not isinstance(chain, CorridorChain):
++        raise VirtualAContractError(
++            "INVALID_CORRIDOR_CHAIN", "expected CorridorChain")
++    base = (make_corridor_guide(chain, start, goal)
++            if base_guide is None else base_guide)
++    if not isinstance(base, GuideRoute):
++        raise VirtualAContractError(
++            "INVALID_CORRIDOR_GUIDE", "base_guide must be a GuideRoute")
++    candidates = [base]
++    count = len(chain.regions)
++    if count <= 1 or len(base.points) != count + 1:
++        return tuple(candidates)
++    centres = []
++    radii = []
++    for portal_index in range(1, count):
++        centre, _rows, _limits, radius = _portal_bundle(chain, portal_index)
++        centres.append(centre)
++        radii.append(float(radius))
++    centre_points = [base.points[0]] + list(centres) + [base.points[-1]]
++    if _candidate_points_differ(centre_points, base.points):
++        try:
++            candidates.append(_candidate_guide(
++                chain, centre_points, "corridor_candidate_chebyshev",
++                radii, "CHEBYSHEV_CENTRE_GUIDE"))
++        except VirtualAContractError:
++            pass
++    variants = 0
++    for portal_index in range(1, count):
++        if variants >= CORRIDOR_GUIDE_PORTAL_VARIANT_LIMIT:
++            break
++        if len(candidates) >= CORRIDOR_GUIDE_CANDIDATE_LIMIT:
++            break
++        centre = centres[portal_index - 1]
++        base_point = base.points[portal_index]
++        target = None
++        if math.hypot(base_point[0] - centre[0],
++                      base_point[1] - centre[1]) > \
++                _CANDIDATE_POINT_DEDUP_M:
++            target = centre
++        else:
++            # The QP vertex already sits at the centre: sample halfway to
++            # the farthest portal-intersection vertex, which stays interior
++            # by convexity.
++            try:
++                _radius, _area, vertices = _portal_measure(
++                    chain.regions[portal_index - 1],
++                    chain.regions[portal_index])
++            except Exception:
++                vertices = ()
++            if vertices:
++                farthest = max(
++                    vertices,
++                    key=lambda vertex: math.hypot(
++                        vertex[0] - centre[0], vertex[1] - centre[1]))
++                target = (
++                    0.5 * (centre[0] + farthest[0]),
++                    0.5 * (centre[1] + farthest[1]))
++        if target is None:
++            continue
++        points = list(base.points)
++        points[portal_index] = (float(target[0]), float(target[1]))
++        if not _candidate_points_differ(points, base.points):
++            continue
++        if any(not _candidate_points_differ(points, existing.points)
++               for existing in candidates):
++            continue
++        try:
++            candidate = _candidate_guide(
++                chain, points,
++                "corridor_candidate_portal_{}".format(portal_index - 1),
++                radii, "ONE_PORTAL_VARIANT_{}".format(portal_index - 1))
++        except VirtualAContractError:
++            continue
++        candidates.append(candidate)
++        variants += 1
++    return tuple(candidates[:CORRIDOR_GUIDE_CANDIDATE_LIMIT])
++
++
+ def audit_path_in_corridors(
+         path, chain, allocation, *, position_budget_m=5e-8,
+         max_depth=20, max_intervals=20000, min_width_m=1e-5):
+@@ -1863,6 +3826,269 @@ def _display_guide_valid(chain, points, quality):
+     return isinstance(warnings, list) and not warnings
+ 
+ 
++def _display_point_at_s(values, cumulative, s_m):
++    """Interpolate the guide reference point at one real arc length."""
++    s_m = min(max(float(s_m), 0.0), float(cumulative[-1]))
++    for index, (first, second) in enumerate(zip(values, values[1:])):
++        segment_end = float(cumulative[index + 1])
++        if s_m <= segment_end or index == len(values) - 2:
++            length = segment_end - float(cumulative[index])
++            if length <= _SHORT_GUIDE_SEGMENT_M:
++                return (first[0], first[1])
++            ratio = (s_m - float(cumulative[index])) / length
++            return (first[0] + ratio * (second[0] - first[0]),
++                    first[1] + ratio * (second[1] - first[1]))
++    return (values[-1][0], values[-1][1])
++
++
++def _display_optional_point(value, name):
++    """Copy one real display coordinate; return ``None`` when malformed."""
++    try:
++        x, y = float(value[0]), float(value[1])
++    except (TypeError, ValueError, IndexError, KeyError):
++        return None
++    if not (math.isfinite(x) and math.isfinite(y)):
++        return None
++    return (x, y)
++
++
++def _display_count(value):
++    try:
++        return max(0, int(value))
++    except (TypeError, ValueError):
++        return 0
++
++
++def corridor_portal_diagnostics(round_state, *, guide_points,
++                                guide_source=None):
++    """Bounded display-only samples of one round's real assessments.
++
++    The returned markers are derived exclusively from the selected guide and
++    its already-computed finite assessment: sampled map collisions, coverage
++    gap witnesses and the finite Portal transition windows.  Collision sample
++    positions are the guide reference point at the assessed arc length, not a
++    contact point or a reconstructed vehicle pose; every claim remains
++    ``DIAGNOSTIC_ONLY`` and nothing here can certify playback.
++
++    The lists are capped for RViz.  Totals in ``counts`` stay the full
++    assessment counts so a capped marker layer never understates the sampled
++    risk.
++    """
++    if not isinstance(round_state, MappingABC):
++        raise VirtualAContractError(
++            "INVALID_CORRIDOR_DIAGNOSTICS",
++            "round state must be a mapping")
++    assessment = round_state.get("formation_assessment")
++    if not isinstance(assessment, MappingABC):
++        return None
++    values, cumulative, _lengths, _tangents = _guide_arc_data(guide_points)
++    collisions = []
++    for entry in assessment.get("vehicle_map_collisions") or ():
++        if not isinstance(entry, MappingABC):
++            continue
++        s_m = _display_optional_point(
++            (entry.get("s_m"), 0.0), "collision s_m")
++        if s_m is None:
++            continue
++        point = _display_point_at_s(values, cumulative, s_m[0])
++        vehicle_id = entry.get("vehicle_id")
++        station_index = entry.get("station_index")
++        collisions.append({
++            "s_m": float(s_m[0]),
++            "point": [point[0], point[1]],
++            "vehicle_id": (
++                int(vehicle_id) if isinstance(vehicle_id, int)
++                and not isinstance(vehicle_id, bool) else None),
++            "station_index": (
++                int(station_index) if isinstance(station_index, int)
++                and not isinstance(station_index, bool) else None),
++            "reason": str(entry.get("reason") or ""),
++            "other_vehicle_id": (
++                int(entry["other_vehicle_id"])
++                if isinstance(entry.get("other_vehicle_id"), int)
++                and not isinstance(entry.get("other_vehicle_id"), bool)
++                else None),
++        })
++    collisions = collisions[:PORTAL_DIAGNOSTIC_COLLISION_LIMIT]
++    coverage = assessment.get("coverage_vehicles") or {}
++    gaps = []
++    if isinstance(coverage, MappingABC):
++        for vehicle_key in sorted(coverage, key=lambda item: str(item)):
++            vehicle = coverage.get(vehicle_key)
++            if not isinstance(vehicle, MappingABC):
++                continue
++            vehicle_id = vehicle.get("vehicle_id")
++            if not isinstance(vehicle_id, int) or isinstance(
++                    vehicle_id, bool):
++                try:
++                    vehicle_id = int(vehicle_key)
++                except (TypeError, ValueError):
++                    continue
++            for witness in vehicle.get("witnesses") or ():
++                if not isinstance(witness, MappingABC) or \
++                        witness.get("status") != COVERAGE_GAP:
++                    continue
++                s_value = witness.get("s_m")
++                try:
++                    s_m = float(s_value)
++                except (TypeError, ValueError):
++                    continue
++                if not math.isfinite(s_m):
++                    continue
++                point = None
++                detail = witness.get("witness")
++                if isinstance(detail, MappingABC):
++                    point = _display_optional_point(
++                        detail.get("vertex"), "gap witness vertex")
++                if point is None:
++                    point = _display_point_at_s(values, cumulative, s_m)
++                gaps.append({
++                    "s_m": float(s_m),
++                    "point": [point[0], point[1]],
++                    "vehicle_id": int(vehicle_id),
++                    "station_index": witness.get("station_index"),
++                    "status": COVERAGE_GAP,
++                    "reason": str(witness.get("reason") or ""),
++                    "region_ids": [
++                        int(region_id)
++                        for region_id in witness.get("region_ids") or ()
++                        if isinstance(region_id, int)
++                        and not isinstance(region_id, bool)],
++                    "window_index": witness.get("window_index"),
++                    "max_violation_m": (
++                        None if witness.get("max_violation_m") is None
++                        else float(witness["max_violation_m"])),
++                })
++    gaps.sort(key=lambda entry: (
++        entry["s_m"], entry["vehicle_id"]))
++    gaps = gaps[:PORTAL_DIAGNOSTIC_GAP_LIMIT]
++    windows = []
++    for window in assessment.get("transition_windows") or ():
++        if not isinstance(window, MappingABC):
++            continue
++        bounds = window.get("s_window_m")
++        start = end = None
++        if isinstance(bounds, (list, tuple)) and len(bounds) == 2:
++            try:
++                start = _display_point_at_s(
++                    values, cumulative, float(bounds[0]))
++                end = _display_point_at_s(
++                    values, cumulative, float(bounds[1]))
++            except (TypeError, ValueError):
++                start = end = None
++        if start is None:
++            continue
++        portal_index = window.get("portal_index")
++        vehicles = []
++        for vehicle in window.get("vehicles") or ():
++            if not isinstance(vehicle, MappingABC):
++                continue
++            vehicle_id = vehicle.get("vehicle_id")
++            if not isinstance(vehicle_id, int) or isinstance(
++                    vehicle_id, bool):
++                continue
++            counts = vehicle.get("counts") or {}
++            vehicles.append({
++                "vehicle_id": int(vehicle_id),
++                "union_cover_status": str(
++                    vehicle.get("union_cover_status") or ""),
++                "counts": {
++                    "single": _display_count(counts.get("single")),
++                    "union": _display_count(counts.get("union")),
++                    "gap": _display_count(counts.get("gap")),
++                    "unconfirmed": _display_count(
++                        counts.get("unconfirmed")),
++                },
++                "min_covered_margin_m": (
++                    None if vehicle.get("min_covered_margin_m") is None
++                    else float(vehicle["min_covered_margin_m"])),
++                "worst_gap_violation_m": (
++                    None if vehicle.get("worst_gap_violation_m") is None
++                    else float(vehicle["worst_gap_violation_m"])),
++            })
++        seed = _display_optional_point(
++            window.get("portal_seed_point"), "portal seed point")
++        windows.append({
++            "portal_index": (
++                int(portal_index) if isinstance(portal_index, int)
++                and not isinstance(portal_index, bool) else None),
++            "source_region_index": window.get("source_region_index"),
++            "target_region_index": window.get("target_region_index"),
++            "s_window_m": [float(bounds[0]), float(bounds[1])],
++            "start": [start[0], start[1]],
++            "end": [end[0], end[1]],
++            "portal_seed_point": (
++                None if seed is None else [seed[0], seed[1]]),
++            "status": str(window.get("status") or ""),
++            "map_sample_status": str(
++                window.get("map_sample_status") or ""),
++            "vehicles": vehicles,
++        })
++    windows = windows[:PORTAL_DIAGNOSTIC_WINDOW_LIMIT]
++    map_counts = assessment.get("map_sample_counts") or {}
++    union_covered = 0
++    union_gap = 0
++    union_unknown = 0
++    if isinstance(coverage, MappingABC):
++        for vehicle in coverage.values():
++            if not isinstance(vehicle, MappingABC):
++                continue
++            counts = vehicle.get("counts") or {}
++            union_covered += (_display_count(counts.get("single"))
++                              + _display_count(counts.get("union")))
++            union_gap += _display_count(counts.get("gap"))
++            union_unknown += _display_count(counts.get("unconfirmed"))
++    window_total = len(assessment.get("transition_windows") or ())
++    source_name = guide_source if guide_source is not None else \
++        assessment.get("selected_guide_source")
++    return {
++        "schema": PORTAL_DIAGNOSTICS_SCHEMA,
++        "guide_source": str(source_name or ""),
++        "chain_digest": (
++            None if assessment.get("chain_digest") is None
++            else str(assessment["chain_digest"])),
++        "assessment_candidate_id": str(
++            assessment.get("candidate_id") or ""),
++        "map_sample_status": str(
++            assessment.get("map_sample_status") or ""),
++        "map_sample_counts": {
++            "sampled": _display_count(map_counts.get("sampled")),
++            "clear": _display_count(map_counts.get("clear")),
++            "map_collision": _display_count(
++                map_counts.get("map_collision")),
++            "vehicle_collision": _display_count(
++                map_counts.get("vehicle_collision")),
++            "unconfirmed": _display_count(map_counts.get("unconfirmed")),
++        },
++        "station_count": _display_count(assessment.get("station_count")),
++        "counts": {
++            "map_collision_total": (
++                _display_count(map_counts.get("map_collision"))
++                + _display_count(map_counts.get("vehicle_collision"))),
++            "union_covered_total": int(union_covered),
++            "union_gap_total": int(union_gap),
++            "union_unknown_total": int(union_unknown),
++            "portal_window_total": int(window_total),
++            "map_collision_marker_count": len(collisions),
++            "coverage_gap_marker_count": len(gaps),
++            "portal_window_marker_count": len(windows),
++        },
++        "limits": {
++            "map_collision_markers": PORTAL_DIAGNOSTIC_COLLISION_LIMIT,
++            "coverage_gap_markers": PORTAL_DIAGNOSTIC_GAP_LIMIT,
++            "portal_window_markers": PORTAL_DIAGNOSTIC_WINDOW_LIMIT,
++        },
++        "sample_point_semantics": "GUIDE_REFERENCE_POINT_AT_ARC_LENGTH",
++        "map_collision_samples": collisions,
++        "coverage_gaps": gaps,
++        "portal_windows": windows,
++        "certification_claim": "NONE",
++        "candidate_certification": CANDIDATE_CERTIFICATION_DIAGNOSTIC_ONLY,
++        "formation_obb_hard_constraints": False,
++        "continuously_certified": False,
++    }
++
++
+ def corridor_chain_from_payload(payload):
+     """Rebuild the chain object from ``result.search[...]['chain']``."""
+     if not isinstance(payload, MappingABC):
+@@ -1901,16 +4127,50 @@ def corridor_chain_from_payload(payload):
+ 
+ 
+ __all__ = [
++    "ASSESSMENT_SCHEMA",
++    "CANDIDATE_CERTIFICATION_DIAGNOSTIC_ONLY",
+     "CORRIDOR_DISPLAYS_KEY",
+     "CORRIDOR_DISPLAY_STATE",
++    "CORRIDOR_GUIDE_CANDIDATE_LIMIT",
++    "CORRIDOR_GUIDE_PORTAL_VARIANT_LIMIT",
++    "COVERAGE_ADJACENT_UNION",
++    "COVERAGE_GAP",
++    "COVERAGE_SINGLE_REGION",
++    "COVERAGE_UNCONFIRMED",
++    "FORMATION_ASSESSMENT_MAX_STATIONS",
++    "GUIDE_HINT_DEGENERATE",
++    "GUIDE_HINT_LOW_CONFIDENCE",
++    "GUIDE_HINT_VALID",
++    "KINEMATIC_CURVATURE_UNCONFIRMED",
++    "KINEMATIC_NORMAL_BRANCH_INVALID",
++    "KINEMATIC_NORMAL_BRANCH_OK",
++    "MAP_CLEAR_AT_SAMPLES",
++    "MAP_COLLISION_OBSERVED",
++    "MAP_SAMPLE_UNCONFIRMED",
++    "PORTAL_DIAGNOSTIC_COLLISION_LIMIT",
++    "PORTAL_DIAGNOSTIC_GAP_LIMIT",
++    "PORTAL_DIAGNOSTIC_WINDOW_LIMIT",
++    "PORTAL_DIAGNOSTICS_SCHEMA",
++    "ROUTE_ASSESSMENT_MAX_STATIONS",
++    "ROUTE_ASSESSMENT_SCHEMA",
++    "TRANSITION_WINDOW_SPACING_M",
+     "allocate_corridors",
++    "assess_formation_guide",
++    "assess_route_guide",
+     "audit_corridor_chain",
+     "audit_path_in_corridors",
+     "build_corridor_chain",
+     "corridor_chain_from_payload",
+     "corridor_display_fields",
+     "corridor_effective_margin",
++    "corridor_guide_candidates",
+     "corridor_min_portal_radius",
++    "corridor_portal_diagnostics",
++    "formation_transition_windows",
+     "make_corridor_guide",
++    "obb_coverage_in_adjacent_union",
++    "obb_coverage_in_corridor",
++    "obb_polygon",
++    "obb_support_halfwidth",
+     "validate_corridor_allocation",
+ ]
+\ No newline at end of file
+diff --git a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_playback.py b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_playback.py
+index 5102fcf..e986f4e 100644
+--- a/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_playback.py
++++ b/catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_playback.py
+@@ -2054,6 +2054,110 @@ def _hud_vehicle_line(vehicle, static=False):
+     return "car{} | {} | v={:.2f} m/s".format(vehicle_id, mode, speed)
+ 
+ 
++def _hud_diagnostic_count(value):
++    """Reject a malformed count; display-only fields never invent a number."""
++    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
++        return None
++    return int(value)
++
++
++def planning_diagnostics_view(document):
++    """Bounded diagnostics copied from one real progress document.
++
++    Missing or malformed diagnostic fields stay ``None``; the HUD then prints
++    ``unknown`` rather than a fabricated count or percentage.  No geometry is
++    copied here; markers/paths remain in their own topic layers.
++    """
++    if not isinstance(document, Mapping):
++        return None
++    metrics = document.get("metrics")
++    if not isinstance(metrics, Mapping):
++        return None
++    view = {}
++    source = metrics.get("guide_source")
++    if isinstance(source, str) and source:
++        view["guide_source"] = source[:80]
++    origin = metrics.get("selected_candidate_origin")
++    if isinstance(origin, str) and origin:
++        view["selected_candidate_origin"] = origin[:80]
++    index = _hud_diagnostic_count(metrics.get("selected_candidate_index"))
++    if index is not None:
++        view["selected_candidate_index"] = index
++    count = _hud_diagnostic_count(metrics.get("guide_candidate_count"))
++    if count is not None:
++        view["guide_candidate_count"] = count
++    rule = metrics.get("guide_selection_rule")
++    if isinstance(rule, str) and rule:
++        view["guide_selection_rule"] = rule[:80]
++    assessment = metrics.get("assessment")
++    if isinstance(assessment, Mapping):
++        if assessment.get("available") is True:
++            copied = {"available": True}
++            status = assessment.get("map_sample_status")
++            if isinstance(status, str) and status:
++                copied["map_sample_status"] = status[:64]
++            for name in ("station_count", "map_collision_count",
++                         "union_covered_count", "union_gap_count",
++                         "union_unknown_count"):
++                value = _hud_diagnostic_count(assessment.get(name))
++                if value is not None:
++                    copied[name] = value
++            view["assessment"] = copied
++        else:
++            view["assessment"] = {"available": False}
++    elif assessment is None:
++        view["assessment"] = None
++    return view
++
++
++def _hud_diagnostics_line(diagnostics):
++    """Two compact true-count lines; absent metrics are printed as unknown."""
++    if diagnostics is None:
++        return None
++    if not isinstance(diagnostics, Mapping):
++        raise PlaybackValidationError(
++            "HUD diagnostics must be an object or null")
++    source = diagnostics.get("guide_source")
++    parts = ["guide={}".format(
++        source if isinstance(source, str) and source else "unknown")]
++    origin = diagnostics.get("selected_candidate_origin")
++    if isinstance(origin, str) and origin:
++        parts.append("origin={}".format(origin))
++    index = _hud_diagnostic_count(
++        diagnostics.get("selected_candidate_index"))
++    count = _hud_diagnostic_count(
++        diagnostics.get("guide_candidate_count"))
++    if index is not None:
++        parts.append("selected={}/{}".format(
++            index, "?" if count is None else count))
++    rule = diagnostics.get("guide_selection_rule")
++    if isinstance(rule, str) and rule:
++        parts.append(rule)
++    assessment = diagnostics.get("assessment")
++    if isinstance(assessment, Mapping) and \
++            assessment.get("available") is True:
++        parts = ["diagnostics | " + " | ".join(parts)]
++        parts.append(
++            "samples={} | map_collisions={} | "
++            "union covered={} gap={} unknown={} | status={}".format(
++                _unknown_count(assessment.get("station_count")),
++                _unknown_count(assessment.get("map_collision_count")),
++                _unknown_count(assessment.get("union_covered_count")),
++                _unknown_count(assessment.get("union_gap_count")),
++                _unknown_count(assessment.get("union_unknown_count")),
++                assessment.get("map_sample_status") or "UNKNOWN"))
++        return "\n".join(parts)
++    parts = ["diagnostics | " + " | ".join(parts)]
++    parts.append(
++        "samples=unknown | map_collisions=unknown | "
++        "union covered=unknown gap=unknown unknown=unknown")
++    return "\n".join(parts)
++
++
++def _unknown_count(value):
++    return "unknown" if value is None else str(value)
++
++
+ def _hud_progress_line(progress):
+     """One compact planning line; large geometry is never repeated here."""
+     if progress is None:
+@@ -2090,7 +2194,11 @@ def _hud_progress_line(progress):
+     reason = progress.get("reason")
+     if isinstance(reason, str) and reason:
+         parts.append(reason[:80])
+-    return " | ".join(parts)
++    line = " | ".join(parts)
++    diagnostics = _hud_diagnostics_line(progress.get("diagnostics"))
++    if diagnostics is None and stage in ("CORRIDOR_BUILD", "PORTAL_GUIDE"):
++        diagnostics = _hud_diagnostics_line({})
++    return line if diagnostics is None else line + "\n" + diagnostics
+ 
+ 
+ def hud_text(playback_status, job_state, quality, show_cargo_reason=True,
+@@ -2618,6 +2726,19 @@ GUIDE_ASTAR_COLOR = (1.0, 0.55, 0.0, 0.95)
+ GUIDE_CENTERLINE_COLOR = (0.05, 0.82, 0.25, 0.95)
+ GUIDE_UNVALIDATED_COLOR = (1.0, 0.78, 0.0, 0.95)
+ 
++PORTAL_DIAGNOSTICS_SCHEMA = "virtual_a_portal_diagnostics_v1"
++PORTAL_WINDOW_NAMESPACE = "formation/planning/portal_window"
++MAP_COLLISION_SAMPLE_NAMESPACE = "formation/planning/map_collision_sample"
++COVERAGE_GAP_NAMESPACE = "formation/planning/coverage_gap"
++PORTAL_WINDOW_COLOR = (0.20, 0.80, 0.95, 0.55)
++MAP_COLLISION_SAMPLE_COLOR = (236 / 255, 72 / 255, 153 / 255, 1.0)
++COVERAGE_GAP_COLOR = (1.0, 0.55, 0.05, 1.0)
++PORTAL_DIAGNOSTIC_Z_M = 0.03
++PORTAL_DIAGNOSTIC_TEXT_Z_M = 0.20
++PORTAL_DIAGNOSTIC_COLLISION_LIMIT = 5
++PORTAL_DIAGNOSTIC_GAP_LIMIT = 6
++PORTAL_DIAGNOSTIC_WINDOW_LIMIT = 3
++
+ 
+ def _guide_polyline(points, name):
+     """Copy an actual route/guide polyline without resampling it."""
+@@ -2811,9 +2932,223 @@ def build_guide_display(document, frame_id="map"):
+         _guide_free_text(
+             markers, PLANNING_GUIDE_NAMESPACE, text_id,
+             guide[len(guide) // 2], label + route_suffix, color, frame_id)
++    _append_portal_diagnostics(markers, corridors, document, frame_id)
+     return tuple(markers), paths
+ 
+ 
++def _portal_point(value, context):
++    """Validate one finite display coordinate from the diagnostics payload."""
++    if not isinstance(value, (list, tuple)) or len(value) != 2:
++        raise PlaybackValidationError(
++            "{} must be a coordinate pair".format(context))
++    return (_finite(value[0], "{} x".format(context)),
++            _finite(value[1], "{} y".format(context)))
++
++
++def _portal_count(value, context):
++    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
++        raise PlaybackValidationError(
++            "{} must be a non-negative integer".format(context))
++    return int(value)
++
++
++def _portal_diagnostic_payload(diagnostics, corridor):
++    """Validate one display-only diagnostic block and bind its identity."""
++    if not isinstance(diagnostics, Mapping):
++        raise PlaybackValidationError(
++            "portal diagnostics must be an object")
++    if diagnostics.get("schema") != PORTAL_DIAGNOSTICS_SCHEMA:
++        raise PlaybackValidationError(
++            "portal diagnostics schema differs")
++    if diagnostics.get("certification_claim") != "NONE":
++        raise PlaybackValidationError(
++            "portal diagnostics cannot claim certification")
++    if diagnostics.get("continuously_certified") is not False:
++        raise PlaybackValidationError(
++            "portal diagnostics cannot certify a continuous transfer")
++    if diagnostics.get("formation_obb_hard_constraints") is not False:
++        raise PlaybackValidationError(
++            "portal diagnostics cannot claim OBB hard constraints")
++    chain_digest = diagnostics.get("chain_digest")
++    if chain_digest is not None and chain_digest != corridor.get(
++            "chain_sha256"):
++        raise PlaybackValidationError(
++            "portal diagnostics chain differs from the corridor")
++    guide_source = diagnostics.get("guide_source")
++    if not isinstance(guide_source, str):
++        raise PlaybackValidationError(
++            "portal diagnostics guide_source must be a string")
++    if corridor.get("guide_source") and guide_source and \
++            guide_source != corridor.get("guide_source"):
++        raise PlaybackValidationError(
++            "portal diagnostics guide differs from the corridor")
++    counts = diagnostics.get("counts")
++    if not isinstance(counts, Mapping):
++        raise PlaybackValidationError(
++            "portal diagnostics counts must be an object")
++    for name in ("map_collision_total", "union_covered_total",
++                 "union_gap_total", "union_unknown_total",
++                 "portal_window_total"):
++        _portal_count(counts.get(name), "portal diagnostics {}".format(name))
++    samples = diagnostics.get("map_collision_samples")
++    gaps = diagnostics.get("coverage_gaps")
++    windows = diagnostics.get("portal_windows")
++    for entries, limit, name in (
++            (samples, PORTAL_DIAGNOSTIC_COLLISION_LIMIT,
++             "map_collision_samples"),
++            (gaps, PORTAL_DIAGNOSTIC_GAP_LIMIT, "coverage_gaps"),
++            (windows, PORTAL_DIAGNOSTIC_WINDOW_LIMIT, "portal_windows")):
++        if not isinstance(entries, (list, tuple)):
++            raise PlaybackValidationError(
++                "portal diagnostics {} must be a list".format(name))
++        if len(entries) > limit:
++            raise PlaybackValidationError(
++                "portal diagnostics {} exceed the marker cap".format(name))
++    return diagnostics
++
++
++def _append_portal_diagnostics(markers, corridors, document, frame_id):
++    """Append bounded real map-collision/gap/Portal diagnostics.
++
++    These are sample annotations from the finite assessment, never a
++    collision certificate and never part of the executable path.  Bad data
++    fails the whole guide layer closed; marker text deliberately separates
++    ``MAP COLLISION (sample)`` from ``CORRIDOR COVERAGE GAP``.
++    """
++    for corridor in corridors:
++        if not isinstance(corridor, Mapping):
++            raise PlaybackValidationError("guide route must be a mapping")
++        diagnostics = corridor.get("portal_diagnostics")
++        if diagnostics is None:
++            continue
++        _portal_diagnostic_payload(diagnostics, corridor)
++        route_id = corridor.get("route_id")
++        if (not isinstance(route_id, int) or isinstance(route_id, bool)
++                or route_id < 0):
++            raise PlaybackValidationError(
++                "guide route_id must be a non-negative integer")
++        base_id = 1000 + 100 * int(route_id)
++        samples = diagnostics.get("map_collision_samples")
++        gaps = diagnostics.get("coverage_gaps")
++        windows = diagnostics.get("portal_windows")
++        for index, sample in enumerate(samples):
++            if not isinstance(sample, Mapping):
++                raise PlaybackValidationError(
++                    "map collision sample must be an object")
++            x, y = _portal_point(
++                sample.get("point"), "map collision sample point")
++            sample_s = _finite(
++                sample.get("s_m"), "map collision sample s_m")
++            vehicle_id = sample.get("vehicle_id")
++            if vehicle_id is not None and (
++                    isinstance(vehicle_id, bool)
++                    or not isinstance(vehicle_id, int) or vehicle_id < 1):
++                raise PlaybackValidationError(
++                    "map collision sample vehicle_id is invalid")
++            marker_id = base_id + index
++            size = 0.07
++            markers.append(_marker(
++                MAP_COLLISION_SAMPLE_NAMESPACE, marker_id, "LINE_LIST",
++                frame_id,
++                points=(
++                    (x - size, y, PORTAL_DIAGNOSTIC_Z_M),
++                    (x + size, y, PORTAL_DIAGNOSTIC_Z_M),
++                    (x, y - size, PORTAL_DIAGNOSTIC_Z_M),
++                    (x, y + size, PORTAL_DIAGNOSTIC_Z_M)),
++                color=MAP_COLLISION_SAMPLE_COLOR,
++                scale=(0.018, 0.0, 0.0)))
++            car = "?" if vehicle_id is None else str(vehicle_id)
++            markers.append(_marker(
++                MAP_COLLISION_SAMPLE_NAMESPACE, base_id + 500 + index,
++                "TEXT_VIEW_FACING", frame_id,
++                position=(x, y, PORTAL_DIAGNOSTIC_TEXT_Z_M),
++                text="MAP COLLISION (sample) | car{} | s={:.2f} | {}".format(
++                    car, sample_s, str(sample.get("reason") or "")[:40]),
++                color=MAP_COLLISION_SAMPLE_COLOR,
++                scale=(0.0, 0.0, 0.22)))
++        for index, gap in enumerate(gaps):
++            if not isinstance(gap, Mapping):
++                raise PlaybackValidationError(
++                    "coverage gap sample must be an object")
++            x, y = _portal_point(
++                gap.get("point"), "coverage gap sample point")
++            gap_s = _finite(gap.get("s_m"), "coverage gap sample s_m")
++            vehicle_id = gap.get("vehicle_id")
++            if isinstance(vehicle_id, bool) or not isinstance(
++                    vehicle_id, int) or vehicle_id < 1:
++                raise PlaybackValidationError(
++                    "coverage gap sample vehicle_id is invalid")
++            marker_id = base_id + index
++            size = 0.07
++            markers.append(_marker(
++                COVERAGE_GAP_NAMESPACE, marker_id, "LINE_STRIP", frame_id,
++                points=(
++                    (x - size, y, PORTAL_DIAGNOSTIC_Z_M),
++                    (x, y + size, PORTAL_DIAGNOSTIC_Z_M),
++                    (x + size, y, PORTAL_DIAGNOSTIC_Z_M),
++                    (x, y - size, PORTAL_DIAGNOSTIC_Z_M),
++                    (x - size, y, PORTAL_DIAGNOSTIC_Z_M)),
++                color=COVERAGE_GAP_COLOR,
++                scale=(0.016, 0.0, 0.0)))
++            markers.append(_marker(
++                COVERAGE_GAP_NAMESPACE, base_id + 500 + index,
++                "TEXT_VIEW_FACING", frame_id,
++                position=(x, y, PORTAL_DIAGNOSTIC_TEXT_Z_M),
++                text=(
++                    "CORRIDOR COVERAGE GAP (sample) | car{} | s={:.2f}"
++                    " | {}".format(
++                        vehicle_id, gap_s,
++                        str(gap.get("reason") or "")[:40])),
++                color=COVERAGE_GAP_COLOR,
++                scale=(0.0, 0.0, 0.22)))
++        for index, window in enumerate(windows):
++            if not isinstance(window, Mapping):
++                raise PlaybackValidationError(
++                    "portal window sample must be an object")
++            start = _portal_point(
++                window.get("start"), "portal window start")
++            end = _portal_point(window.get("end"), "portal window end")
++            portal_index = window.get("portal_index")
++            if portal_index is not None and (
++                    isinstance(portal_index, bool)
++                    or not isinstance(portal_index, int)
++                    or portal_index < 0):
++                raise PlaybackValidationError(
++                    "portal window index is invalid")
++            target = None if portal_index is None else portal_index + 1
++            label = "PORTAL {}->{} | {}".format(
++                "?" if portal_index is None else portal_index,
++                "?" if target is None else target,
++                str(window.get("status") or "UNKNOWN")[:48])
++            marker_id = base_id + index
++            markers.append(_marker(
++                PORTAL_WINDOW_NAMESPACE, marker_id, "LINE_STRIP", frame_id,
++                points=(
++                    (start[0], start[1], PORTAL_DIAGNOSTIC_Z_M),
++                    (end[0], end[1], PORTAL_DIAGNOSTIC_Z_M)),
++                color=PORTAL_WINDOW_COLOR,
++                scale=(0.021, 0.0, 0.0)))
++            seed = window.get("portal_seed_point")
++            if seed is not None:
++                sx, sy = _portal_point(seed, "portal seed point")
++                markers.append(_marker(
++                    PORTAL_WINDOW_NAMESPACE, base_id + 200 + index,
++                    "SPHERE", frame_id,
++                    position=(sx, sy, PORTAL_DIAGNOSTIC_Z_M),
++                    color=PORTAL_WINDOW_COLOR,
++                    scale=(0.045, 0.045, 0.045)))
++            markers.append(_marker(
++                PORTAL_WINDOW_NAMESPACE, base_id + 500 + index,
++                "TEXT_VIEW_FACING", frame_id,
++                position=(
++                    (start[0] + end[0]) / 2.0,
++                    (start[1] + end[1]) / 2.0,
++                    PORTAL_DIAGNOSTIC_TEXT_Z_M),
++                text=label,
++                color=PORTAL_WINDOW_COLOR,
++                scale=(0.0, 0.0, 0.20)))
++
++
+ def build_guide_markers(document, frame_id="map"):
+     """Display-only wrapper returning just the guide text markers."""
+     return build_guide_display(document, frame_id)[0]
+diff --git a/catkin_ws/src/fwis_v3_playback/scripts/formation_playback.py b/catkin_ws/src/fwis_v3_playback/scripts/formation_playback.py
+index 037ef12..1548d67 100644
+--- a/catkin_ws/src/fwis_v3_playback/scripts/formation_playback.py
++++ b/catkin_ws/src/fwis_v3_playback/scripts/formation_playback.py
+@@ -10,6 +10,7 @@ actual playback sample on ``/formation/playback_status``.
+ import json
+ import math
+ import threading
++from collections.abc import Mapping
+ from functools import wraps
+ from types import SimpleNamespace
+ import rospy
+@@ -44,6 +45,7 @@ from fwis_v3_optimizer.formation_playback import (
+     fields_from_timed_message,
+     frame_at,
+     hud_text,
++    planning_diagnostics_view,
+     quality_identity_matches,
+     status_document,
+     terminal_errors,
+@@ -306,9 +308,18 @@ class FormationPlaybackNode:
+             rospy.Subscriber("/formation/plan_request", FormationPlanRequest,
+                              self.on_request, queue_size=1)
+         if self.backend == VIRTUAL_PLAYBACK_BACKEND:
++            # Progress documents arrive in bursts: a stage's "complete"
++            # document is immediately followed by the next stage's
++            # "running" document while this callback rebuilds and publishes
++            # the display layers (and the 10 Hz tick holds the same lock).
++            # A one-slot subscriber queue drops those complete documents
++            # (verified live on the map05 run: ASTAR/CORRIDOR/PORTAL_GUIDE
++            # completions never reached the HUD or the diagnostics view).
++            # A bounded multi-slot queue keeps order and delivery; it does
++            # not change identity, admission, or publish gates.
+             rospy.Subscriber(
+                 PLANNING_DEBUG_TOPIC, String, self.on_planning_debug,
+-                queue_size=1)
++                queue_size=50)
+         if self.transport_ui:
+             rospy.Subscriber("/formation/display_pose", PoseStamped,
+                              self.on_preview, queue_size=1)
+@@ -1057,7 +1068,27 @@ class FormationPlaybackNode:
+         self._clear_paths()
+ 
+     def _record_planning_progress(self, document):
+-        """Retain the stage fields only; geometry stays in the topics."""
++        """Retain the stage fields; geometry stays in the topics.
++
++        Diagnostic counts are copied only from this document's real
++        ``metrics``.  A later stage of the same generation/round keeps the
++        last completed assessment until a new one arrives; a new round or
++        plan never inherits another round's counts.
++        """
++        view = planning_diagnostics_view(document)
++        previous = getattr(self, "_planning_progress", None)
++        same_context = (
++            isinstance(previous, dict)
++            and previous.get("plan_id") == document.get("plan_id")
++            and previous.get("generation") == document.get("generation")
++            and previous.get("round_index") == document.get("round_index"))
++        view_has_data = isinstance(view, dict) and (
++            view.get("guide_source") is not None
++            or isinstance(view.get("assessment"), Mapping))
++        if isinstance(view, dict) and not view_has_data and same_context:
++            retained = previous.get("diagnostics")
++            if retained is not None:
++                view = retained
+         self._planning_progress = {
+             "plan_id": document.get("plan_id"),
+             "formation_id": document.get("formation_id"),
+@@ -1071,6 +1102,7 @@ class FormationPlaybackNode:
+             "round_index": document.get("round_index"),
+             "reason": document.get("reason"),
+             "detail": document.get("detail"),
++            "diagnostics": view,
+             "received_wall": rospy.Time.now().to_sec(),
+         }
+ 
+diff --git a/tests/test_formation_hud.py b/tests/test_formation_hud.py
+index ce162c8..ad7193a 100644
+--- a/tests/test_formation_hud.py
++++ b/tests/test_formation_hud.py
+@@ -318,6 +318,80 @@ class PlanningProgressHUDTest(unittest.TestCase):
+         self.assertIn("routes 1", line)
+         self.assertIn("OBB_COLLISION_REJECTED", line)
+ 
++    def test_diagnostics_line_reports_real_counts_and_guide_source(self):
++        progress = {
++            "stage": "PORTAL_GUIDE", "stage_index": 3, "state": "PLANNING",
++            "elapsed_s": 2.0, "route_index": 1, "route_count": 3,
++            "round_index": 0, "reason": "",
++            "diagnostics": {
++                "guide_source": "corridor_candidate_chebyshev",
++                "selected_candidate_origin": "CHEBYSHEV_CENTER",
++                "selected_candidate_index": 1,
++                "guide_candidate_count": 3,
++                "guide_selection_rule": "DIAGNOSTIC_LEXICOGRAPHIC_BEST",
++                "assessment": {
++                    "available": True,
++                    "station_count": 21,
++                    "map_sample_status": "MAP_CLEAR_AT_SAMPLES",
++                    "map_collision_count": 0,
++                    "union_covered_count": 133,
++                    "union_gap_count": 0,
++                    "union_unknown_count": 0,
++                },
++            },
++        }
++        text = hud_text(playback_document(), "PLANNING", None,
++                        progress=progress)
++        self.assertIn("guide=corridor_candidate_chebyshev", text)
++        self.assertIn("origin=CHEBYSHEV_CENTER", text)
++        self.assertIn("selected=1/3", text)
++        self.assertIn("DIAGNOSTIC_LEXICOGRAPHIC_BEST", text)
++        self.assertIn(
++            "samples=21 | map_collisions=0 | union covered=133"
++            " gap=0 unknown=0 | status=MAP_CLEAR_AT_SAMPLES", text)
++        diagnostics_lines = [
++            line for line in text.splitlines()
++            if line.startswith(("diagnostics |", "samples="))]
++        self.assertTrue(diagnostics_lines)
++        self.assertFalse(any("%" in line for line in diagnostics_lines))
++
++    def test_missing_assessment_prints_unknown_not_a_fabricated_count(self):
++        progress = {
++            "stage": "PORTAL_GUIDE", "stage_index": 3, "state": "PLANNING",
++            "elapsed_s": 2.0, "route_index": 1, "route_count": 3,
++            "round_index": 0, "reason": "",
++            "diagnostics": {"guide_source": "", "assessment": None},
++        }
++        text = hud_text(playback_document(), "PLANNING", None,
++                        progress=progress)
++        self.assertIn("guide=unknown", text)
++        self.assertIn(
++            "samples=unknown | map_collisions=unknown |"
++            " union covered=unknown gap=unknown unknown=unknown", text)
++        diagnostics_lines = [
++            line for line in text.splitlines()
++            if line.startswith(("diagnostics |", "samples="))]
++        self.assertFalse(any("%" in line for line in diagnostics_lines))
++
++    def test_corridor_build_without_diagnostics_still_states_unknown(self):
++        progress = {
++            "stage": "CORRIDOR_BUILD", "stage_index": 1, "state": "PLANNING",
++            "elapsed_s": 0.5, "route_index": 0, "route_count": 1,
++            "round_index": 0, "reason": "",
++        }
++        text = hud_text(playback_document(), "PLANNING", None,
++                        progress=progress)
++        self.assertIn("diagnostics | guide=unknown", text)
++        self.assertIn("samples=unknown", text)
++
++    def test_non_object_diagnostics_fail_closed(self):
++        progress = {
++            "stage": "PORTAL_GUIDE", "stage_index": 3, "state": "PLANNING",
++            "diagnostics": [],
++        }
++        with self.assertRaises(PlaybackValidationError):
++            hud_text(playback_document(), "PLANNING", None, progress=progress)
++
+     def test_non_object_progress_fails_closed(self):
+         with self.assertRaises(PlaybackValidationError):
+             hud_text(playback_document(), "PLANNING", None, progress=[])
+diff --git a/tests/test_virtual_a_corridor_display.py b/tests/test_virtual_a_corridor_display.py
+index b67f825..9ff63e0 100644
+--- a/tests/test_virtual_a_corridor_display.py
++++ b/tests/test_virtual_a_corridor_display.py
+@@ -32,6 +32,7 @@ from fwis_v3_optimizer.formation_continuous_a.contracts import (  # noqa: E402
+ from fwis_v3_optimizer.formation_continuous_a.corridor import (  # noqa: E402
+     CORRIDOR_DISPLAY_STATE,
+     corridor_display_fields,
++    corridor_portal_diagnostics,
+ )
+ from fwis_v3_optimizer.formation_continuous_a import (  # noqa: E402
+     pipeline as pipeline_module,
+@@ -63,12 +64,21 @@ from fwis_v3_optimizer.formation_playback import (  # noqa: E402
+     CORRIDOR_FILL_COLOR,
+     CORRIDOR_FILL_NAMESPACE,
+     CORRIDOR_FILL_Z_M,
++    COVERAGE_GAP_COLOR,
++    COVERAGE_GAP_NAMESPACE,
++    MAP_COLLISION_SAMPLE_COLOR,
++    MAP_COLLISION_SAMPLE_NAMESPACE,
+     PLANNING_ASTAR_NAMESPACE,
+     PLANNING_DEBUG_SCHEMA,
+     PLANNING_FAILURE_NAMESPACE,
+     PLANNING_GUIDE_NAMESPACE,
+     PLANNING_PUBLISHED_STATE,
+     PLANNING_STATE,
++    PORTAL_DIAGNOSTIC_COLLISION_LIMIT,
++    PORTAL_DIAGNOSTIC_GAP_LIMIT,
++    PORTAL_DIAGNOSTIC_WINDOW_LIMIT,
++    PORTAL_WINDOW_COLOR,
++    PORTAL_WINDOW_NAMESPACE,
+     PlaybackValidationError,
+     build_candidate_display,
+     build_corridor_markers,
+@@ -76,6 +86,7 @@ from fwis_v3_optimizer.formation_playback import (  # noqa: E402
+     build_markers,
+     corridor_display_matches,
+     frame_at,
++    planning_diagnostics_view,
+     sample_candidate_path,
+     vehicle_path_samples,
+ )
+@@ -611,9 +622,13 @@ class V2ActualCorridorLayersTest(unittest.TestCase):
+         for got, want in zip(centreline, guide_source):
+             self._assert_pair(got[0], want[0], "centreline path x")
+             self._assert_pair(got[1], want[1], "centreline path y")
+-        # Path displays own colour/width; no route line remains in markers.
++        # Path displays own colour/width; no route line remains in the
++        # A*/guide label namespaces.  The separate diagnostic namespaces may
++        # carry their own bounded sample graphics (Step E).
+         self.assertFalse(any(
+             marker.marker_type in ("LINE_LIST", "LINE_STRIP")
++            and marker.namespace in (PLANNING_ASTAR_NAMESPACE,
++                                     PLANNING_GUIDE_NAMESPACE)
+             for marker in markers))
+         texts = [marker.text for marker in markers
+                  if marker.marker_type == "TEXT_VIEW_FACING"]
+@@ -728,7 +743,10 @@ class V2ActualCorridorLayersTest(unittest.TestCase):
+                              for namespace in namespaces))
+         self.assertTrue(all("CANDIDATE" in marker.text
+                             for marker in markers
+-                            if marker.marker_type == "TEXT_VIEW_FACING"))
++                            if marker.marker_type == "TEXT_VIEW_FACING"
++                            and marker.namespace in (
++                                PLANNING_ASTAR_NAMESPACE,
++                                PLANNING_GUIDE_NAMESPACE)))
+ 
+     def test_unvalidated_guide_and_fake_audit_never_get_safety_labels(self):
+         case = self.case
+@@ -816,6 +834,323 @@ class V2ActualCorridorLayersTest(unittest.TestCase):
+             verify_envelope_fields(case["envelope"]).trajectory.duration)
+ 
+ 
++class V2PortalDiagnosticsTest(unittest.TestCase):
++    """Step E: bounded real assessment samples, never a certificate."""
++
++    @classmethod
++    def setUpClass(cls):
++        cls.case = _actual_corridor_case()
++
++    def _document(self):
++        return copy.deepcopy(self.case["document"])
++
++    def _diagnostics(self, document):
++        return document["corridors"][0]["portal_diagnostics"]
++
++    @staticmethod
++    def _point_at_s(points, s_m):
++        """Arc-length interpolation, independent of the display module."""
++        values = [(float(x), float(y)) for x, y in points]
++        lengths = [math.hypot(second[0] - first[0],
++                              second[1] - first[1])
++                   for first, second in zip(values, values[1:])]
++        target = min(max(float(s_m), 0.0), math.fsum(lengths))
++        for index, length in enumerate(lengths):
++            if target <= length + 1e-12 or index == len(lengths) - 1:
++                if length <= 1e-8:
++                    return values[index]
++                ratio = target / length
++                first, second = values[index], values[index + 1]
++                return (first[0] + ratio * (second[0] - first[0]),
++                        first[1] + ratio * (second[1] - first[1]))
++            target -= length
++        return values[-1]
++
++    def test_round_export_carries_bounded_diagnostics_bound_to_the_assessment(
++            self):
++        case = self.case
++        display = case["display"]
++        round_record = case["round"]
++        assessment = round_record["formation_assessment"]
++        diagnostics = display["portal_diagnostics"]
++        self.assertEqual(diagnostics["schema"],
++                         "virtual_a_portal_diagnostics_v1")
++        self.assertEqual(diagnostics["chain_digest"],
++                         round_record["chain_digest"])
++        self.assertEqual(diagnostics["chain_digest"],
++                         display["chain_sha256"])
++        self.assertEqual(diagnostics["guide_source"],
++                         display["guide_source"])
++        self.assertEqual(diagnostics["guide_source"],
++                         assessment["selected_guide_source"])
++        self.assertEqual(diagnostics["assessment_candidate_id"],
++                         assessment["candidate_id"])
++        self.assertEqual(diagnostics["map_sample_status"],
++                         assessment["map_sample_status"])
++        self.assertEqual(diagnostics["station_count"],
++                         assessment["station_count"])
++        self.assertEqual(diagnostics["certification_claim"], "NONE")
++        self.assertEqual(diagnostics["candidate_certification"],
++                         "DIAGNOSTIC_ONLY")
++        self.assertFalse(diagnostics["continuously_certified"])
++        self.assertFalse(diagnostics["formation_obb_hard_constraints"])
++        counts = diagnostics["counts"]
++        self.assertLessEqual(
++            len(diagnostics["map_collision_samples"]),
++            PORTAL_DIAGNOSTIC_COLLISION_LIMIT)
++        self.assertLessEqual(len(diagnostics["coverage_gaps"]),
++                             PORTAL_DIAGNOSTIC_GAP_LIMIT)
++        self.assertLessEqual(len(diagnostics["portal_windows"]),
++                             PORTAL_DIAGNOSTIC_WINDOW_LIMIT)
++        self.assertEqual(counts["map_collision_marker_count"],
++                         len(diagnostics["map_collision_samples"]))
++        self.assertEqual(counts["coverage_gap_marker_count"],
++                         len(diagnostics["coverage_gaps"]))
++        self.assertEqual(counts["portal_window_marker_count"],
++                         len(diagnostics["portal_windows"]))
++        map_counts = assessment["map_sample_counts"]
++        self.assertEqual(
++            counts["map_collision_total"],
++            map_counts["map_collision"] + map_counts["vehicle_collision"])
++        covered = gap = unknown = 0
++        for vehicle in assessment["coverage_vehicles"].values():
++            vehicle_counts = vehicle["counts"]
++            covered += vehicle_counts["single"] + vehicle_counts["union"]
++            gap += vehicle_counts["gap"]
++            unknown += vehicle_counts["unconfirmed"]
++        self.assertEqual(counts["union_covered_total"], covered)
++        self.assertEqual(counts["union_gap_total"], gap)
++        self.assertEqual(counts["union_unknown_total"], unknown)
++        self.assertEqual(counts["portal_window_total"],
++                         len(assessment["transition_windows"]))
++        # The real assessment has more collisions than the marker cap; the
++        # totals must still state the full sampled risk.
++        self.assertGreater(counts["map_collision_total"],
++                           len(diagnostics["map_collision_samples"]))
++        for sample in diagnostics["map_collision_samples"]:
++            expected = self._point_at_s(
++                display["guide_points"], sample["s_m"])
++            self.assertLessEqual(
++                math.hypot(sample["point"][0] - expected[0],
++                           sample["point"][1] - expected[1]),
++                1e-9)
++            self.assertIn(sample["reason"],
++                          ("MAP_OBB_COLLISION", "VEHICLE_OBB_COLLISION"))
++
++    def test_builder_truncates_at_the_marker_caps_but_keeps_full_totals(self):
++        assessment = copy.deepcopy(
++            self.case["round"]["formation_assessment"])
++        assessment["vehicle_map_collisions"] = (
++            list(assessment.get("vehicle_map_collisions") or ()) * 5)
++        for vehicle in assessment["coverage_vehicles"].values():
++            witnesses = list(vehicle.get("witnesses") or ())
++            gap_witnesses = [witness for witness in witnesses
++                             if witness.get("status") == "GAP"]
++            if gap_witnesses:
++                vehicle["witnesses"] = witnesses + gap_witnesses * 6
++        assessment["transition_windows"] = (
++            list(assessment.get("transition_windows") or ()) * 5)
++        diagnostics = corridor_portal_diagnostics(
++            {"formation_assessment": assessment},
++            guide_points=self.case["round"]["guide"]["points"],
++            guide_source=self.case["display"]["guide_source"])
++        self.assertEqual(len(diagnostics["map_collision_samples"]),
++                         PORTAL_DIAGNOSTIC_COLLISION_LIMIT)
++        self.assertEqual(len(diagnostics["coverage_gaps"]),
++                         PORTAL_DIAGNOSTIC_GAP_LIMIT)
++        self.assertEqual(len(diagnostics["portal_windows"]),
++                         PORTAL_DIAGNOSTIC_WINDOW_LIMIT)
++        self.assertEqual(diagnostics["counts"]["map_collision_total"], 11)
++        self.assertEqual(
++            diagnostics["counts"]["portal_window_total"],
++            len(assessment["transition_windows"]))
++
++    def test_builder_requires_a_round_and_returns_none_without_assessment(self):
++        with self.assertRaises(VirtualAContractError):
++            corridor_portal_diagnostics(
++                [], guide_points=self.case["round"]["guide"]["points"])
++        self.assertIsNone(corridor_portal_diagnostics(
++            {"formation_assessment": None},
++            guide_points=self.case["round"]["guide"]["points"]))
++
++    def test_diagnostic_markers_have_separate_namespaces_colors_and_labels(
++            self):
++        case = self.case
++        markers, _paths = build_guide_display(case["document"])
++        collisions = [marker for marker in markers
++                      if marker.namespace ==
++                      MAP_COLLISION_SAMPLE_NAMESPACE]
++        gaps = [marker for marker in markers
++                if marker.namespace == COVERAGE_GAP_NAMESPACE]
++        portals = [marker for marker in markers
++                   if marker.namespace == PORTAL_WINDOW_NAMESPACE]
++        self.assertTrue(collisions)
++        self.assertTrue(gaps)
++        self.assertTrue(portals)
++        collision_lines = [marker for marker in collisions
++                           if marker.marker_type == "LINE_LIST"]
++        self.assertEqual(
++            len(collision_lines),
++            len(case["display"]["portal_diagnostics"][
++                "map_collision_samples"]))
++        for marker in collision_lines:
++            self.assertEqual(marker.color, MAP_COLLISION_SAMPLE_COLOR)
++            self.assertEqual(len(marker.points), 4)
++        collision_texts = [
++            marker.text for marker in collisions
++            if marker.marker_type == "TEXT_VIEW_FACING"]
++        self.assertEqual(len(collision_texts), len(collision_lines))
++        self.assertTrue(all("MAP COLLISION (sample)" in text
++                            for text in collision_texts))
++        gap_lines = [marker for marker in gaps
++                     if marker.marker_type == "LINE_STRIP"]
++        self.assertEqual(
++            len(gap_lines),
++            len(case["display"]["portal_diagnostics"]["coverage_gaps"]))
++        for marker in gap_lines:
++            self.assertEqual(marker.color, COVERAGE_GAP_COLOR)
++            self.assertEqual(marker.points[0], marker.points[-1])
++        gap_texts = [marker.text for marker in gaps
++                     if marker.marker_type == "TEXT_VIEW_FACING"]
++        self.assertTrue(gap_texts)
++        self.assertTrue(all("CORRIDOR COVERAGE GAP (sample)" in text
++                            for text in gap_texts))
++        # A corridor gap must never be disguised as a map collision.
++        self.assertFalse(any("MAP COLLISION" in text for text in gap_texts))
++        self.assertFalse(any("COVERAGE GAP" in text
++                             for text in collision_texts))
++        portal_lines = [marker for marker in portals
++                        if marker.marker_type == "LINE_STRIP"]
++        self.assertEqual(
++            len(portal_lines),
++            len(case["display"]["portal_diagnostics"]["portal_windows"]))
++        for marker in portal_lines:
++            self.assertEqual(marker.color, PORTAL_WINDOW_COLOR)
++            self.assertEqual(len(marker.points), 2)
++        portal_texts = [marker.text for marker in portals
++                        if marker.marker_type == "TEXT_VIEW_FACING"]
++        self.assertTrue(any(text.startswith("PORTAL 0->1")
++                            for text in portal_texts))
++        self.assertFalse(any("CERTIFIED" in marker.text
++                             for marker in markers
++                             if marker.marker_type == "TEXT_VIEW_FACING"))
++
++    def test_bad_identity_cap_or_claim_fails_the_guide_layer_closed(self):
++        document = self._document()
++        self._diagnostics(document)["chain_digest"] = "0" * 64
++        with self.assertRaises(PlaybackValidationError):
++            build_guide_display(document)
++
++        document = self._document()
++        self._diagnostics(document)["guide_source"] = "another_guide"
++        with self.assertRaises(PlaybackValidationError):
++            build_guide_display(document)
++
++        document = self._document()
++        self._diagnostics(document)["certification_claim"] = "CERTIFIED"
++        with self.assertRaises(PlaybackValidationError):
++            build_guide_display(document)
++
++        document = self._document()
++        self._diagnostics(document)["continuously_certified"] = True
++        with self.assertRaises(PlaybackValidationError):
++            build_guide_display(document)
++
++        document = self._document()
++        samples = self._diagnostics(document)["map_collision_samples"]
++        self._diagnostics(document)["map_collision_samples"] = (
++            list(samples) * (PORTAL_DIAGNOSTIC_COLLISION_LIMIT + 1))
++        with self.assertRaises(PlaybackValidationError):
++            build_guide_display(document)
++
++        document = self._document()
++        gaps = self._diagnostics(document)["coverage_gaps"]
++        self._diagnostics(document)["coverage_gaps"] = (
++            [gaps[0]] * (PORTAL_DIAGNOSTIC_GAP_LIMIT + 1))
++        with self.assertRaises(PlaybackValidationError):
++            build_guide_display(document)
++
++        document = self._document()
++        windows = self._diagnostics(document)["portal_windows"]
++        self._diagnostics(document)["portal_windows"] = (
++            [windows[0]] * (PORTAL_DIAGNOSTIC_WINDOW_LIMIT + 1))
++        with self.assertRaises(PlaybackValidationError):
++            build_guide_display(document)
++
++        document = self._document()
++        self._diagnostics(document)["counts"]["map_collision_total"] = -1
++        with self.assertRaises(PlaybackValidationError):
++            build_guide_display(document)
++
++    def test_missing_diagnostics_keeps_the_guide_layer_without_samples(self):
++        document = self._document()
++        document["corridors"][0].pop("portal_diagnostics", None)
++        markers, _paths = build_guide_display(document)
++        self.assertTrue(any(marker.namespace == PLANNING_GUIDE_NAMESPACE
++                            for marker in markers))
++        self.assertFalse(any(
++            marker.namespace in (MAP_COLLISION_SAMPLE_NAMESPACE,
++                                 COVERAGE_GAP_NAMESPACE,
++                                 PORTAL_WINDOW_NAMESPACE)
++            for marker in markers))
++
++
++class V2PlanningProgressDiagnosticsTest(unittest.TestCase):
++    """The real progress document exposes the selected route and Guide."""
++
++    @classmethod
++    def setUpClass(cls):
++        cls.case = _actual_corridor_case()
++
++    def test_completed_portal_guide_event_carries_selected_route_and_samples(
++            self):
++        case = self.case
++        completed = [
++            event for event in case["progress_events"]
++            if event.get("stage") == "PORTAL_GUIDE"
++            and event.get("metrics", {}).get("phase") == "complete"
++            and event.get("metrics", {}).get("assessment", {}).get(
++                "available")]
++        self.assertTrue(completed)
++        event = completed[-1]
++        metrics = event["metrics"]
++        self.assertEqual(event["route_index"],
++                         case["round"]["route_index"])
++        self.assertEqual(metrics["guide_source"],
++                         case["display"]["guide_source"])
++        self.assertLess(metrics["selected_candidate_index"],
++                        metrics["guide_candidate_count"])
++        view = planning_diagnostics_view(event)
++        self.assertEqual(view["guide_source"], metrics["guide_source"])
++        self.assertEqual(view["selected_candidate_index"],
++                         metrics["selected_candidate_index"])
++        self.assertEqual(view["guide_selection_rule"],
++                         metrics["guide_selection_rule"])
++        assessment = view["assessment"]
++        self.assertTrue(assessment["available"])
++        counts = case["display"]["portal_diagnostics"]["counts"]
++        self.assertEqual(assessment["station_count"],
++                         case["round"]["formation_assessment"][
++                             "station_count"])
++        self.assertEqual(assessment["map_collision_count"],
++                         counts["map_collision_total"])
++        self.assertEqual(assessment["union_covered_count"],
++                         counts["union_covered_total"])
++        self.assertEqual(assessment["union_gap_count"],
++                         counts["union_gap_total"])
++        self.assertEqual(assessment["union_unknown_count"],
++                         counts["union_unknown_total"])
++
++    def test_view_never_invents_missing_fields(self):
++        self.assertIsNone(planning_diagnostics_view({}))
++        self.assertEqual(planning_diagnostics_view({"metrics": {}}),
++                         {"assessment": None})
++        self.assertEqual(
++            planning_diagnostics_view(
++                {"metrics": {"assessment": {"available": False}}}),
++            {"assessment": {"available": False}})
++
++
+ class V2PlannerDebugPublicationTest(unittest.TestCase):
+     """The planner emits progressive documents from the actual result."""
+ 
+@@ -886,6 +1221,55 @@ class V2PlannerDebugPublicationTest(unittest.TestCase):
+         self.assertEqual(candidates["classification"], CANDIDATE_CERTIFIED)
+         self.assertTrue(candidates["certified"])
+ 
++    def test_real_progress_document_keeps_route_guide_source_and_counts(self):
++        case = self.case
++        node = self._node(astar=None)
++        node._lock = threading.RLock()
++        node._generation = 1
++        node._state = "PLANNING"
++        node._state_plan = case["identity"]["plan_id"]
++        node._map_signature = None
++        node._request_map_signature = None
++        snapshot = self._snapshot()
++        node._virtual_snapshot = snapshot
++        completed = [
++            event for event in case["progress_events"]
++            if event.get("stage") == "PORTAL_GUIDE"
++            and event.get("metrics", {}).get("assessment", {}).get(
++                "available")][-1]
++        node._on_virtual_progress(
++            1, case["identity"]["plan_id"], snapshot, completed)
++        document = self._document(node)
++        self.assertEqual(document["state"], "PLANNING")
++        self.assertEqual(document["stage"], "PORTAL_GUIDE")
++        self.assertEqual(document["route_index"],
++                         case["round"]["route_index"])
++        metrics = document["metrics"]
++        self.assertEqual(metrics["guide_source"],
++                         case["display"]["guide_source"])
++        selection = case["round"]["guide_selection"]
++        self.assertEqual(metrics["selected_candidate_index"],
++                         selection["selected_candidate_index"])
++        self.assertEqual(metrics["guide_candidate_count"],
++                         selection["candidate_count"])
++        self.assertEqual(metrics["guide_selection_rule"],
++                         selection["selection_rule"])
++        assessment = metrics["assessment"]
++        self.assertTrue(assessment["available"])
++        diagnostics = case["display"]["portal_diagnostics"]["counts"]
++        self.assertEqual(assessment["union_covered_count"],
++                         diagnostics["union_covered_total"])
++        self.assertEqual(assessment["union_gap_count"],
++                         diagnostics["union_gap_total"])
++        self.assertEqual(assessment["union_unknown_count"],
++                         diagnostics["union_unknown_total"])
++        corridor = document["corridors"][0]
++        self.assertEqual(corridor["portal_diagnostics"]["chain_digest"],
++                         corridor["chain_sha256"])
++        self.assertEqual(
++            corridor["portal_diagnostics"]["assessment_candidate_id"],
++            case["round"]["formation_assessment"]["candidate_id"])
++
+     def test_missing_corridor_round_clears_only_that_layer(self):
+         node = self._node()
+         stale = SimpleNamespace(
+@@ -991,6 +1375,22 @@ class V2GuideCallbackTest(unittest.TestCase):
+         self.assertEqual([marker.action for marker in markers],
+                          [Marker.DELETEALL])
+ 
++    def test_invalid_portal_diagnostics_clear_only_the_guide_layer(self):
++        node = self._node()
++        broken = copy.deepcopy(self.case["document"])
++        broken["corridors"][0]["portal_diagnostics"]["chain_digest"] = \
++            "0" * 64
++        self._publish(node, broken)
++        self.assertEqual(len(node.corridor_pub.messages), 1)
++        corridor_markers = node.corridor_pub.messages[0].markers
++        self.assertEqual(corridor_markers[0].action, Marker.DELETEALL)
++        self.assertTrue(any(marker.action == Marker.ADD
++                            for marker in corridor_markers[1:]))
++        self.assertEqual(len(node.guide_pub.messages), 1)
++        self.assertEqual([marker.action
++                          for marker in node.guide_pub.messages[0].markers],
++                         [Marker.DELETEALL])
++
+     def test_wrong_generation_never_touches_either_layer(self):
+         node = self._node()
+         wrong = copy.deepcopy(self.case["document"])
+@@ -1722,6 +2122,49 @@ class ProgressiveLayerLifecycleTest(unittest.TestCase):
+                          self.identity["formation_id"])
+         self.assertAlmostEqual(view["elapsed_s"], 11.0, places=6)
+ 
++    def test_progress_diagnostics_are_retained_only_for_the_same_round(self):
++        node = self._node()
++        completed = self._planning_document(
++            stage="PORTAL_GUIDE", stage_index=3, route_index=0,
++            round_index=0,
++            metrics={
++                "phase": "complete",
++                "guide_source": "corridor_candidate_chebyshev",
++                "selected_candidate_origin": "CHEBYSHEV_CENTER",
++                "selected_candidate_index": 1,
++                "guide_candidate_count": 3,
++                "guide_selection_rule": "DIAGNOSTIC_LEXICOGRAPHIC_BEST",
++                "assessment": {
++                    "available": True,
++                    "station_count": 21,
++                    "map_sample_status": "MAP_CLEAR_AT_SAMPLES",
++                    "map_collision_count": 0,
++                    "union_covered_count": 133,
++                    "union_gap_count": 0,
++                    "union_unknown_count": 0,
++                },
++            })
++        self._publish(node, completed)
++        diagnostics = node._planning_progress["diagnostics"]
++        self.assertEqual(diagnostics["guide_source"],
++                         "corridor_candidate_chebyshev")
++        self.assertEqual(diagnostics["selected_candidate_index"], 1)
++        self.assertEqual(diagnostics["assessment"]["union_covered_count"],
++                         133)
++        # A later stage of the same round keeps the completed assessment.
++        self._publish(node, self._planning_document(
++            stage="ASTAR_SEARCH", stage_index=2, route_index=0,
++            round_index=0, metrics={"phase": "running"}))
++        self.assertEqual(node._planning_progress["diagnostics"],
++                         diagnostics)
++        # A new round (or plan) never inherits another round's counts.
++        self._publish(node, self._planning_document(
++            stage="CORRIDOR_BUILD", stage_index=1, route_index=1,
++            round_index=1, metrics={"phase": "running"}))
++        self.assertEqual(node._planning_progress["round_index"], 1)
++        self.assertEqual(node._planning_progress["diagnostics"],
++                         {"assessment": None})
++
+ 
+ class CandidateMarkerTest(unittest.TestCase):
+     """Candidate markers copy the sampled payload; no certification early."""

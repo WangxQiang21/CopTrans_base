@@ -157,6 +157,18 @@ Visualization Manager:
       Value: false
     - Class: rviz/MarkerArray
       Enabled: true
+      Marker Topic: /formation/guides
+      Name: Portal diagnostics (markers)
+      Namespaces:
+        formation/planning/astar_raw: false
+        formation/planning/portal_guide: false
+        formation/planning/portal_window: true
+        formation/planning/map_collision_sample: true
+        formation/planning/coverage_gap: true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
       Name: Candidate OBBs and labels (markers)
       Marker Topic: /formation/planning_candidates
       Namespaces:

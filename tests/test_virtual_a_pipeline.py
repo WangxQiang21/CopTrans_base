@@ -12,7 +12,10 @@ from fwis_v3_optimizer.formation_continuous_a import optimizer as optimizer_modu
 from fwis_v3_optimizer.formation_continuous_a import pipeline as pipeline_module
 from fwis_v3_optimizer.formation_continuous_a.contracts import (
     G4_EXECUTABLE_STATUSES,
+    GuideRoute,
+    PlannerConfig,
     RouteGuideConfig,
+    grid_signature,
     request_fingerprint,
 )
 from fwis_v3_optimizer.formation_continuous_a.pipeline import (
@@ -181,6 +184,90 @@ class G4PipelineTests(unittest.TestCase):
                     result.search["duplicate_initial_launch_count"], 0)
                 self.assertLessEqual(result.search["recovery_count"], 1)
 
+    def test_corridor_round_records_bounded_diagnostic_assessments(self):
+        grid = empty_grid()
+        request = make_request(
+            FormationPose(0.0, 0.0, 0.0), FormationPose(10.0, 0.0, 0.0))
+        planner = PlannerConfig(guidance_mode="corridor", max_initials=1)
+        result = plan_virtual_a(map_request(request, grid, planner=planner))
+        self.assertEqual(result.status, "SUCCESS", result.as_dict())
+        corridor = result.search["corridor"]
+        assessments = corridor["route_assessments"]
+        self.assertLessEqual(len(assessments), 3)
+        self.assertEqual(len(assessments), result.search["route_count"])
+        for assessment in assessments:
+            self.assertEqual(
+                assessment["schema"], "virtual_a_route_assessment_v1")
+            self.assertEqual(assessment["grid_sha256"],
+                             result.grid_sha256)
+            self.assertEqual(assessment["request_sha256"],
+                             result.request_sha256)
+            self.assertEqual(assessment["planning_context_sha256"],
+                             result.planning_context_sha256)
+            self.assertLessEqual(assessment["station_count"], 32)
+            self.assertEqual(assessment["candidate_certification"],
+                             "DIAGNOSTIC_ONLY")
+            self.assertFalse(assessment["continuously_certified"])
+            self.assertFalse(
+                assessment["formation_obb_hard_constraints"])
+        attempt_order = corridor["route_attempt_order"]
+        self.assertEqual(sorted(attempt_order),
+                         list(range(result.search["route_count"])))
+        self.assertEqual(len(corridor["rounds"]), 1)
+        round_state = corridor["rounds"][0]
+        self.assertEqual(attempt_order[0], round_state["route_index"])
+        assessment = round_state["formation_assessment"]
+        self.assertEqual(assessment["chain_digest"],
+                         round_state["chain_digest"])
+        self.assertEqual(assessment["route_index"],
+                         round_state["route_index"])
+        self.assertEqual(assessment["round_index"],
+                         round_state["round_index"])
+        self.assertEqual(assessment["legacy_f_allocation"],
+                         round_state["allocation"])
+        self.assertEqual(len(assessment["candidate_id"]), 64)
+        self.assertLessEqual(assessment["station_count"], 64)
+        self.assertEqual(assessment["map_sample_status"],
+                         "CLEAR_AT_SAMPLES")
+        self.assertEqual(assessment["coverage_sample_status"],
+                         "SINGLE_REGION")
+        self.assertEqual(assessment["kinematic_hint_status"],
+                         "CURVATURE_HINT_UNCONFIRMED")
+        self.assertEqual(assessment["guide_hint_status"],
+                         "VALID_HINT")
+        self.assertFalse(assessment["continuously_certified"])
+        self.assertFalse(assessment["formation_obb_hard_constraints"])
+        self.assertGreaterEqual(result.timings["formation_assessment_s"],
+                                0.0)
+        selection = round_state["guide_selection"]
+        candidates = round_state["guide_candidates"]
+        self.assertLessEqual(len(candidates), 5)
+        self.assertEqual(selection["candidate_count"], len(candidates))
+        self.assertEqual(
+            sum(1 for record in candidates if record["selected"]), 1)
+        selected = candidates[selection["selected_candidate_index"]]
+        self.assertTrue(selected["selected"])
+        self.assertEqual(selected["guide_source"],
+                         round_state["guide"]["source"])
+        self.assertEqual(selected["allocation_count"],
+                         len(round_state["allocation"]))
+        self.assertEqual(selected["assessment"]["candidate_id"],
+                         assessment["candidate_id"])
+        self.assertIn(selection["selection_rule"], (
+            "SINGLE_BASE_GUIDE", "DIAGNOSTIC_LEXICOGRAPHIC_BEST",
+            "ASSESSMENT_UNAVAILABLE_BASE_FALLBACK"))
+        self.assertEqual(selection["certification_claim"], "NONE")
+        self.assertEqual(selection["candidate_certification"],
+                         "DIAGNOSTIC_ONLY")
+        self.assertFalse(selection["continuously_certified"])
+        self.assertFalse(selection["formation_obb_hard_constraints"])
+        for record in candidates:
+            self.assertEqual(record["certification_claim"], "NONE")
+            self.assertEqual(record["candidate_certification"],
+                             "DIAGNOSTIC_ONLY")
+            self.assertFalse(record["continuously_certified"])
+            self.assertFalse(record["formation_obb_hard_constraints"])
+
     def test_circumcircle_blocked_door_is_solved_by_real_obb_audit(self):
         grid, _metadata = load_synthetic("door_circumcircle")
         request = make_request(
@@ -325,6 +412,325 @@ class G4PipelineTests(unittest.TestCase):
         self.assertIsNone(result.path)
         self.assertEqual(
             result.search["budget"]["total_soft_budget_s"], 0.0)
+
+
+class RouteAndGuideSelectionTests(unittest.TestCase):
+    """Step D: bounded route ordering and Guide candidate selection."""
+
+    @staticmethod
+    def _wall(grid, x0, x1, y0, y1):
+        ix0 = int(round((x0 - grid.ox) / grid.res))
+        ix1 = int(round((x1 - grid.ox) / grid.res)) + 1
+        iy0 = int(round((y0 - grid.oy) / grid.res))
+        iy1 = int(round((y1 - grid.oy) / grid.res))
+        grid.occ[iy0:iy1, ix0:ix1] = True
+
+    def _two_gate_routes(self):
+        # Two free centerlines through one wall line at x~5.  The upper gate
+        # is clear for the rigid three-vehicle footprint; the lower gate is
+        # not.  Both original A* indices and the requested tuple stay fixed.
+        grid = empty_grid()
+        self._wall(grid, 4.9, 5.05, -0.6, 0.0)
+        self._wall(grid, 4.9, 5.05, 1.1, 1.5)
+        request = make_request(
+            FormationPose(0.0, 0.0, 0.0), FormationPose(10.0, 0.0, 0.0))
+        digest = grid_signature(grid)
+        below = GuideRoute(
+            points=((0.0, 0.0), (4.0, -1.9), (6.0, -1.9), (10.0, 0.0)),
+            source="route_below", grid_sha256=digest)
+        above = GuideRoute(
+            points=((0.0, 0.0), (4.0, 0.5), (6.0, 0.5), (10.0, 0.0)),
+            source="route_above", grid_sha256=digest)
+        planner = PlannerConfig(guidance_mode="corridor", max_initials=1)
+        return grid, request, planner, (below, above)
+
+    @staticmethod
+    def _failure_result(request, config):
+        return optimizer_module._result(
+            "NO_ACCEPTED_CANDIDATE", request=request, config=config,
+            request_sha256=request_fingerprint(request),
+            reason="ALL_ATTEMPTS_NUMERICAL_FAILURE", detail="test spy")
+
+    def test_route_attempt_order_and_guide_selection_reach_the_solver(self):
+        grid, request, planner, routes = self._two_gate_routes()
+        calls = []
+
+        def solver_spy(solver_request, config, **kwargs):
+            calls.append({
+                "guide": kwargs.get("route_guides")[0]
+                if kwargs.get("route_guides") else None,
+                "chain": kwargs.get("corridor_chain"),
+                "allocation": kwargs.get("corridor_allocation"),
+                "stop_after_route_audit": kwargs.get(
+                    "stop_after_route_audit"),
+                "config": config,
+            })
+            return self._failure_result(solver_request, config)
+
+        with mock.patch.object(
+                pipeline_module, "make_route_guides",
+                return_value=routes), \
+                mock.patch.object(
+                    pipeline_module, "solve_open_path_guided",
+                    side_effect=solver_spy):
+            result = plan_virtual_a(
+                map_request(request, grid, planner=planner))
+        self.assertEqual(result.status, "NO_ACCEPTED_CANDIDATE",
+                         result.as_dict())
+        self.assertEqual(result.reason, "ALL_ATTEMPTS_NUMERICAL_FAILURE")
+        # The original route tuple and topic IDs are unchanged; only the
+        # attempt order is diagnostic.
+        self.assertEqual([item["source"] for item in
+                          result.search["routes"]],
+                         ["route_below", "route_above"])
+        corridor = result.search["corridor"]
+        self.assertEqual(corridor["route_attempt_order"], [1, 0])
+        self.assertEqual([round_state["route_index"]
+                          for round_state in corridor["rounds"]], [1, 0])
+        assessments = corridor["route_assessments"]
+        self.assertEqual([item["route_index"] for item in assessments],
+                         [0, 1])
+        scores = [
+            pipeline_module._route_assessment_score(
+                assessments[index], routes[index].length_m, index)
+            for index in range(len(routes))]
+        self.assertLess(scores[1], scores[0])
+        self.assertEqual(len(calls), 2)
+        for call, round_state in zip(calls, corridor["rounds"]):
+            self.assertIsNotNone(call["guide"])
+            self.assertIsNotNone(call["chain"])
+            self.assertTrue(call["stop_after_route_audit"])
+            self.assertEqual(
+                [list(point) for point in call["guide"].points],
+                round_state["guide"]["points"])
+            self.assertEqual(call["chain"].digest,
+                             round_state["chain_digest"])
+            self.assertEqual(
+                [list(entry) for entry in call["allocation"]],
+                round_state["allocation"])
+            # The solver input, the selected candidate and the assessment
+            # passed to the round are one and the same source.
+            selection = round_state["guide_selection"]
+            selected = round_state["guide_candidates"][
+                selection["selected_candidate_index"]]
+            self.assertTrue(selected["selected"])
+            assessment = round_state["formation_assessment"]
+            self.assertEqual(selected["assessment"]["candidate_id"],
+                             assessment["candidate_id"])
+            self.assertEqual(assessment["selected_guide_source"],
+                             selected["guide_source"])
+            self.assertEqual(assessment["selected_guide_source"],
+                             str(call["guide"].source))
+            self.assertEqual(assessment["chain_digest"],
+                             round_state["chain_digest"])
+            self.assertEqual(assessment["legacy_f_allocation"],
+                             round_state["allocation"])
+        # Round 0 attempted original route 1 (upper gate).  The baseline QP
+        # assessment reports a Portal-1 risk, so the two canonical guides
+        # (base QP + Chebyshev centre) are joined by three one-Portal local
+        # variants; the real lexicographic assessment selects the local
+        # variant with the fewest sampled collisions.
+        upper = corridor["rounds"][0]
+        upper_candidates = upper["guide_candidates"]
+        self.assertEqual(len(upper_candidates), 5)
+        # Every candidate still samples collisions and coverage gaps; none is
+        # treated as clear, and the original solver is invoked regardless.
+        for candidate in upper_candidates:
+            self.assertGreater(
+                candidate["selection_counts"]["collision_count"], 0)
+            self.assertGreater(candidate["selection_counts"]["gap_count"], 0)
+        self.assertEqual(upper_candidates[0]["guide_source"],
+                         "corridor_qp_polyline")
+        self.assertIsNone(upper_candidates[0]["candidate_origin"])
+        self.assertEqual(upper_candidates[1]["candidate_origin"],
+                         "CHEBYSHEV_CENTRE_GUIDE")
+        for candidate in upper_candidates[2:]:
+            self.assertEqual(candidate["candidate_origin"],
+                             "ONE_PORTAL_VARIANT_0")
+            self.assertEqual(candidate["target_portal_index"], 1)
+            self.assertEqual(candidate["target_window_index"], 0)
+        upper_selected_index = upper["guide_selection"][
+            "selected_candidate_index"]
+        self.assertEqual(upper_selected_index, 3)
+        self.assertTrue(upper_candidates[upper_selected_index]["selected"])
+        self.assertFalse(upper_candidates[0]["selected"])
+        # The selection is driven by real FormationCollisionChecker samples:
+        # every candidate collides, and the selected local variant samples
+        # strictly fewer collisions than the QP base.
+        self.assertGreater(
+            upper_candidates[0]["selection_counts"]["collision_count"],
+            upper_candidates[upper_selected_index]["selection_counts"][
+                "collision_count"])
+        self.assertEqual(
+            upper_candidates[upper_selected_index]["selection_counts"][
+                "collision_count"],
+            min(candidate["selection_counts"]["collision_count"]
+                for candidate in upper_candidates))
+        generation = upper["guide_selection"]["candidate_generation"]
+        self.assertEqual(generation["selection"], "BASELINE_RISK")
+        self.assertEqual(generation["target_portal_index"], 1)
+        self.assertEqual(generation["target_window_index"], 0)
+        self.assertEqual(generation["target_reason"], "MAP_COLLISION")
+        self.assertEqual(generation["local_candidates_kept"], 3)
+        # The selected Guide changes only the target Portal point; its start
+        # and goal are the fixed request endpoints.
+        selected_local = generation["local_candidates"][
+            upper_selected_index - 2]
+        selected_points = upper["guide"]["points"]
+        self.assertEqual(selected_points[0], [0.0, 0.0])
+        self.assertEqual(selected_points[-1], [10.0, 0.0])
+        self.assertAlmostEqual(selected_points[1][0],
+                               selected_local["point"][0], places=12)
+        self.assertAlmostEqual(selected_points[1][1],
+                               selected_local["point"][1], places=12)
+        # Round 1 attempted original route 0 (lower gate); the base QP guide
+        # keeps the best real sampled assessment, so candidate 0 wins.
+        lower = corridor["rounds"][1]
+        lower_candidates = lower["guide_candidates"]
+        self.assertEqual(lower["guide_selection"]["selected_candidate_index"],
+                         0)
+        self.assertTrue(lower_candidates[0]["selected"])
+        self.assertEqual(
+            lower_candidates[0]["selection_counts"]["collision_count"],
+            min(candidate["selection_counts"]["collision_count"]
+                for candidate in lower_candidates))
+        for call in calls:
+            # The original solver path, caps and route audit stay in force
+            # even when every generated candidate samples collisions or gaps.
+            self.assertEqual(call["config"], planner)
+            self.assertEqual(call["config"].max_initials,
+                             planner.max_initials)
+            self.assertEqual(call["config"].max_iterations,
+                             planner.max_iterations)
+            self.assertEqual(call["config"].max_seconds,
+                             planner.max_seconds)
+            self.assertEqual(call["config"].guidance_mode, "corridor")
+        for round_state in corridor["rounds"]:
+            selection = round_state["guide_selection"]
+            self.assertEqual(selection["selection_rule"],
+                             "DIAGNOSTIC_LEXICOGRAPHIC_BEST")
+            self.assertEqual(selection["certification_claim"], "NONE")
+            self.assertFalse(selection["continuously_certified"])
+            self.assertFalse(selection["formation_obb_hard_constraints"])
+            self.assertEqual(
+                round_state["formation_assessment"]["candidate_certification"],
+                "DIAGNOSTIC_ONLY")
+
+    def test_unavailable_diagnostics_keep_the_base_guide_and_solver(self):
+        grid = empty_grid()
+        request = make_request(
+            FormationPose(0.0, 0.0, 0.0), FormationPose(10.0, 0.0, 0.0))
+        planner = PlannerConfig(guidance_mode="corridor", max_initials=1)
+        with mock.patch.object(
+                pipeline_module, "FormationCollisionChecker",
+                side_effect=RuntimeError("checker unavailable")):
+            result = plan_virtual_a(
+                map_request(request, grid, planner=planner))
+        self.assertEqual(result.status, "SUCCESS", result.as_dict())
+        self.assertTrue(result.executable)
+        corridor = result.search["corridor"]
+        self.assertTrue(
+            corridor["assessment_error"].startswith("CHECKER_UNAVAILABLE"))
+        for assessment in corridor["route_assessments"]:
+            self.assertEqual(assessment["map_sample_status"], "UNKNOWN")
+        round_state = corridor["rounds"][0]
+        candidates = round_state["guide_candidates"]
+        self.assertEqual(len(candidates), 1)
+        self.assertEqual(candidates[0]["status"],
+                         "ASSESSMENT_UNAVAILABLE")
+        self.assertTrue(candidates[0]["selected"])
+        self.assertFalse(candidates[0]["assessment"]["available"])
+        self.assertEqual(
+            round_state["guide_selection"]["selection_rule"],
+            "SINGLE_BASE_GUIDE")
+        self.assertEqual(
+            round_state["formation_assessment"]["map_sample_status"],
+            "UNKNOWN")
+        self.assertIn(
+            "CHECKER_UNAVAILABLE",
+            round_state["formation_assessment"]["incomplete_reasons"])
+        self.assertFalse(
+            round_state["formation_assessment"]["continuously_certified"])
+
+    def test_incompatible_variant_is_rejected_with_hard_corridor_kept(self):
+        grid = empty_grid()
+        request = make_request(
+            FormationPose(0.0, 0.0, 0.0), FormationPose(10.0, 0.0, 0.0))
+        planner = PlannerConfig(guidance_mode="corridor", max_initials=1)
+
+        def candidates_with_bad_variant(chain, start, goal,
+                                         base_guide=None, **_kwargs):
+            base = (base_guide if isinstance(base_guide, GuideRoute)
+                    else pipeline_module.make_corridor_guide(
+                        chain, start, goal))
+            bad = GuideRoute(
+                points=((0.0, 0.0), (5.0, 5.0), (10.0, 0.0)),
+                source="corrupted_variant", grid_sha256=base.grid_sha256)
+            return (base, bad), {"selection": "TEST_OVERRIDE"}
+
+        calls = []
+
+        def solver_spy(solver_request, config, **kwargs):
+            calls.append({
+                "guide": kwargs.get("route_guides")[0],
+                "chain": kwargs.get("corridor_chain"),
+                "allocation": kwargs.get("corridor_allocation"),
+                "stop_after_route_audit": kwargs.get(
+                    "stop_after_route_audit"),
+            })
+            return geometry_result_for(
+                straight_path(10.0), request=solver_request, planner=config)
+
+        with mock.patch.object(
+                pipeline_module, "plan_guide_candidates",
+                side_effect=candidates_with_bad_variant), \
+                mock.patch.object(
+                    pipeline_module, "solve_open_path_guided",
+                    side_effect=solver_spy):
+            result = plan_virtual_a(
+                map_request(request, grid, planner=planner))
+        self.assertEqual(result.status, "SUCCESS", result.as_dict())
+        self.assertTrue(result.executable)
+        round_state = result.search["corridor"]["rounds"][0]
+        candidates = round_state["guide_candidates"]
+        self.assertEqual(len(candidates), 2)
+        self.assertEqual(candidates[0]["guide_source"],
+                         "corridor_endpoint_polyline")
+        self.assertEqual(candidates[1]["status"],
+                         "ALLOCATION_INCOMPATIBLE")
+        self.assertEqual(candidates[1]["reason"],
+                         "FORMATION_GUIDE_NOT_SOLVER_COMPATIBLE")
+        self.assertFalse(candidates[1]["solver_compatible"])
+        self.assertFalse(candidates[1]["selected"])
+        self.assertTrue(candidates[0]["selected"])
+        selection = round_state["guide_selection"]
+        self.assertEqual(selection["solver_compatible_count"], 1)
+        self.assertEqual(selection["selected_candidate_index"], 0)
+        self.assertTrue(selection["base_guide_solver_compatible"])
+        self.assertEqual(selection["certification_claim"], "NONE")
+        self.assertEqual(len(calls), 1)
+        call = calls[0]
+        self.assertTrue(call["stop_after_route_audit"])
+        self.assertIsNotNone(call["chain"])
+        self.assertEqual(
+            [list(point) for point in call["guide"].points],
+            round_state["guide"]["points"])
+        self.assertEqual(
+            [list(entry) for entry in call["allocation"]],
+            round_state["allocation"])
+        self.assertEqual(call["chain"].digest,
+                         round_state["chain_digest"])
+        assessment = round_state["formation_assessment"]
+        self.assertEqual(
+            assessment["candidate_id"],
+            candidates[0]["assessment"]["candidate_id"])
+        self.assertEqual(assessment["selected_guide_source"],
+                         candidates[0]["guide_source"])
+        self.assertEqual(assessment["legacy_f_allocation"],
+                         round_state["allocation"])
+        self.assertEqual(
+            assessment["map_sample_status"],
+            "CLEAR_AT_SAMPLES")
 
 
 class SDomainSearchEvidenceTests(unittest.TestCase):

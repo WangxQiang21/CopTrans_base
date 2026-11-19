@@ -1,0 +1,220 @@
+{
+  "active_alias_comparisons": [
+    {
+      "active": "/formation/path/astar_active",
+      "raw": "/formation/path/astar_raw_0",
+      "same_point_count": true,
+      "same_sha256": true
+    },
+    {
+      "active": "/formation/path/portal_guide_active",
+      "raw": "/formation/path/portal_guide_0",
+      "same_point_count": true,
+      "same_sha256": true
+    }
+  ],
+  "active_alias_failure": {
+    "/formation/path/astar_active": {
+      "first": [
+        -3.625,
+        11.771
+      ],
+      "frame_id": "map",
+      "last": [
+        -2.49,
+        2.309
+      ],
+      "point_count": 739,
+      "points_sha256": "9756027d927b1944991cf550145789c54c2e1370d505560bf75a1fd68cbf06af"
+    },
+    "/formation/path/astar_raw_0": {
+      "first": [
+        -3.625,
+        11.771
+      ],
+      "frame_id": "map",
+      "last": [
+        -2.49,
+        2.309
+      ],
+      "point_count": 739,
+      "points_sha256": "9756027d927b1944991cf550145789c54c2e1370d505560bf75a1fd68cbf06af"
+    },
+    "/formation/path/astar_raw_1": {
+      "first": null,
+      "frame_id": "map",
+      "last": null,
+      "point_count": 0,
+      "points_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "/formation/path/astar_raw_2": {
+      "first": null,
+      "frame_id": "map",
+      "last": null,
+      "point_count": 0,
+      "points_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+    },
+    "/formation/path/portal_guide_0": {
+      "first": [
+        -3.625,
+        11.771
+      ],
+      "frame_id": "map",
+      "last": [
+        -2.49,
+        2.309
+      ],
+      "point_count": 4,
+      "points_sha256": "0dc4288a0565718a1363f945b9e7b3696a23d12ae86619f497db5b9df366410d"
+    },
+    "/formation/path/portal_guide_1": {
+      "error": "ROSException: timeout exceeded while waiting for message on topic /formation/path/portal_guide_1"
+    },
+    "/formation/path/portal_guide_2": {
+      "error": "ROSException: timeout exceeded while waiting for message on topic /formation/path/portal_guide_2"
+    },
+    "/formation/path/portal_guide_active": {
+      "first": [
+        -3.625,
+        11.771
+      ],
+      "frame_id": "map",
+      "last": [
+        -2.49,
+        2.309
+      ],
+      "point_count": 4,
+      "points_sha256": "0dc4288a0565718a1363f945b9e7b3696a23d12ae86619f497db5b9df366410d"
+    }
+  },
+  "checks": {
+    "active_astar_equals_raw0": true,
+    "active_guide_equals_raw0": true,
+    "failure_job_failed": true,
+    "failure_no_executable_envelope": true,
+    "failure_plan_id_matches": true,
+    "failure_reason_recorded": true,
+    "failure_route_selection_is_real": true,
+    "success_certification_matches": true,
+    "success_display_samples_present": true,
+    "success_display_worst_below_1e7": true,
+    "success_envelope_has_model": true,
+    "success_request_admitted": true
+  },
+  "failed_checks": [],
+  "failure": {
+    "astar_route_ids": [
+      0,
+      1,
+      2
+    ],
+    "corridor_route_ids": [
+      0
+    ],
+    "failure_playback_plan": {
+      "backend": "virtual_rigid_a",
+      "certification": "",
+      "formation_id": "cargo_wedge",
+      "model_json": "",
+      "model_sha256": "",
+      "model_version": "virtual_rigid_a.timed.v1",
+      "plan_id": 600001,
+      "sample_count": 0,
+      "semantic_version": "virtual_rigid_a.playback.v1",
+      "vehicle_count": 0
+    },
+    "goal": [
+      -2.49,
+      2.309,
+      3.102
+    ],
+    "image": "images/uturn_failure_cleared.png",
+    "job_state": "FAILED",
+    "optimizer_status": {
+      "collision_claim": "no executable envelope; the failed result does not certify geometry, dynamics or map collision",
+      "detail": "the executable virtual plan could not be enveloped and re-verified: VirtualAContractError('PLAYBACK_VERIFICATION_FAILED: sample 3201 time 64.019999999999996 is not an integer-nanosecond time')",
+      "executable": false,
+      "feasible": false,
+      "first_failure_layer": "envelope",
+      "node_state": "REJECTED",
+      "pipeline_status": "SUCCESS",
+      "reason": "ENVELOPE_INVALID",
+      "status": "FEASIBLE"
+    },
+    "plan_id": 600001,
+    "planning_debug": {
+      "plan_id": 600001,
+      "reason": "ENVELOPE_INVALID",
+      "route_count": 3,
+      "route_index": 0,
+      "stage": "FAILED",
+      "state": "FAILED"
+    },
+    "reset_context_id": "virtual-a-reset-600000-3",
+    "start": [
+      -3.625,
+      11.771,
+      -0.022
+    ]
+  },
+  "limitations": [
+    "The live failure reason is ENVELOPE_INVALID (time sample 64.019999999999996 is not integer-nanosecond), not the earlier historical SOFT_BUDGET_EXHAUSTED. The actual HUD and job status are recorded without relabeling.",
+    "The selected route is 0 of 3; no live route 1/2 selection was induced. Route 1/2 active selection and no-fallback behavior are covered by unit tests.",
+    "The run used the uncommitted geometry rework; display commit bee4e3a alone is not the exact binary state of this U-turn run."
+  ],
+  "map_scale": 2.625,
+  "map_source": "maps/map05-p12-parking-row-env2",
+  "note": "Live U-turn run on the current working tree (display commit bee4e3a plus the uncommitted TASK01 geometry rework). The failure surfaced as ENVELOPE_INVALID rather than the historical SOFT_BUDGET_EXHAUSTED; it is recorded as observed, not relabeled.",
+  "ros_master_uri": "http://127.0.0.1:11633",
+  "run_config": "backend=virtual_rigid_a guidance=corridor enforcement=hard auto_goal=false rviz=true goal_policy=free",
+  "schema": "rviz.uturn.live.evidence.v1",
+  "session": {
+    "driver_exit": 1,
+    "driver_note": "The first evidence driver exited 1 only after the four screenshots were written because the evidence serializer read a non-existent rejection_reason field. run_uturn_live.py was corrected; the ROS plan/screenshots were already complete.",
+    "nodes_after_stop": [
+      "/rosout"
+    ],
+    "other_master_11411": "not touched; still listening",
+    "private_master": "http://127.0.0.1:11633",
+    "private_master_closed": true
+  },
+  "stopped_at": "2026-11-19T12:22:31+08:00",
+  "success": {
+    "certification": "virtual_a_geometry_dynamics_collision/v1",
+    "display_samples": {
+      "marker": 1518,
+      "status": 1520,
+      "tf": 6107
+    },
+    "display_worst": {
+      "marker_angle_rad": 4.6629367034256575e-15,
+      "marker_position_m": 4.264181500047145e-14,
+      "status_angle_rad": 0.0,
+      "status_position_m": 0.0,
+      "tf_angle_rad": 2.6645352591003757e-15,
+      "tf_position_m": 4.264181500047145e-14
+    },
+    "goal": [
+      10.153,
+      2.076,
+      -3.126
+    ],
+    "images": [
+      "images/uturn_success_start.png",
+      "images/uturn_success_mid.png",
+      "images/uturn_success_end.png"
+    ],
+    "model_sha256": "dddb11b95a9200c41ff6da7f1cd11c715fb525e66d0e406998a961627e258f75",
+    "model_version": "virtual_rigid_a.timed.v1",
+    "plan_id": 600000,
+    "planning_state": "PLANNING",
+    "request_context_id": "virtual-a-reset-None-1",
+    "request_initial_source": "rviz_reset",
+    "start": [
+      10.841,
+      12.071,
+      0.0
+    ],
+    "trajectory_sample_count": 3184
+  }
+}

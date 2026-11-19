@@ -318,6 +318,135 @@ class PlanningProgressHUDTest(unittest.TestCase):
         self.assertIn("routes 1", line)
         self.assertIn("OBB_COLLISION_REJECTED", line)
 
+    def test_diagnostics_line_reports_real_counts_and_guide_source(self):
+        progress = {
+            "stage": "PORTAL_GUIDE", "stage_index": 3, "state": "PLANNING",
+            "elapsed_s": 2.0, "route_index": 1, "route_count": 3,
+            "round_index": 0, "reason": "",
+            "diagnostics": {
+                "guide_source": "corridor_candidate_chebyshev",
+                "selected_candidate_origin": "CHEBYSHEV_CENTER",
+                "selected_candidate_index": 1,
+                "guide_candidate_count": 3,
+                "guide_selection_rule": "DIAGNOSTIC_LEXICOGRAPHIC_BEST",
+                "assessment": {
+                    "available": True,
+                    "station_count": 21,
+                    "map_sample_status": "MAP_CLEAR_AT_SAMPLES",
+                    "map_collision_count": 0,
+                    "single_region_count": 39,
+                    "union_covered_count": 133,
+                    "union_gap_count": 0,
+                    "union_unknown_count": 0,
+                },
+            },
+        }
+        text = hud_text(playback_document(), "PLANNING", None,
+                        progress=progress)
+        self.assertIn("guide=corridor_candidate_chebyshev", text)
+        self.assertIn("origin=CHEBYSHEV_CENTER", text)
+        self.assertIn("selected=1/3", text)
+        self.assertIn("DIAGNOSTIC_LEXICOGRAPHIC_BEST", text)
+        self.assertIn(
+            "samples=21 | map_collisions=0 | single=39 | union=133"
+            " | gap=0 | unknown=0 | status=MAP_CLEAR_AT_SAMPLES", text)
+        diagnostics_lines = [
+            line for line in text.splitlines()
+            if line.startswith(("diagnostics |", "samples="))]
+        self.assertTrue(diagnostics_lines)
+        self.assertFalse(any("%" in line for line in diagnostics_lines))
+
+    def test_missing_assessment_prints_unknown_not_a_fabricated_count(self):
+        progress = {
+            "stage": "PORTAL_GUIDE", "stage_index": 3, "state": "PLANNING",
+            "elapsed_s": 2.0, "route_index": 1, "route_count": 3,
+            "round_index": 0, "reason": "",
+            "diagnostics": {"guide_source": "", "assessment": None},
+        }
+        text = hud_text(playback_document(), "PLANNING", None,
+                        progress=progress)
+        self.assertIn("guide=unknown", text)
+        self.assertIn(
+            "samples=unknown | map_collisions=unknown |"
+            " single=unknown | union=unknown | gap=unknown |"
+            " unknown=unknown", text)
+        diagnostics_lines = [
+            line for line in text.splitlines()
+            if line.startswith(("diagnostics |", "samples="))]
+        self.assertFalse(any("%" in line for line in diagnostics_lines))
+
+    def test_mixed_single_union_gap_unknown_counts_stay_separate(self):
+        progress = {
+            "stage": "PORTAL_GUIDE", "stage_index": 3, "state": "PLANNING",
+            "elapsed_s": 2.0, "route_index": 1, "route_count": 3,
+            "round_index": 0, "reason": "",
+            "diagnostics": {
+                "guide_source": "corridor_candidate_portal_0",
+                "selected_candidate_index": 2,
+                "guide_candidate_count": 5,
+                "guide_selection_rule": "DIAGNOSTIC_LEXICOGRAPHIC_BEST",
+                "assessment": {
+                    "available": True,
+                    "station_count": 21,
+                    "map_sample_status": "MAP_CLEAR_AT_SAMPLES",
+                    "map_collision_count": 0,
+                    "single_region_count": 3,
+                    "union_covered_count": 4,
+                    "union_gap_count": 3,
+                    "union_unknown_count": 7,
+                },
+            },
+        }
+        text = hud_text(playback_document(), "PLANNING", None,
+                        progress=progress)
+        self.assertIn(
+            "samples=21 | map_collisions=0 | single=3 | union=4 |"
+            " gap=3 | unknown=7 | status=MAP_CLEAR_AT_SAMPLES", text)
+        self.assertNotIn("union covered", text)
+
+    def test_old_payload_without_single_region_prints_unknown(self):
+        progress = {
+            "stage": "PORTAL_GUIDE", "stage_index": 3, "state": "PLANNING",
+            "elapsed_s": 2.0, "route_index": 1, "route_count": 3,
+            "round_index": 0, "reason": "",
+            "diagnostics": {
+                "guide_source": "corridor_qp_polyline",
+                "assessment": {
+                    "available": True,
+                    "station_count": 21,
+                    "map_sample_status": "MAP_CLEAR_AT_SAMPLES",
+                    "map_collision_count": 0,
+                    "union_covered_count": 133,
+                    "union_gap_count": 0,
+                    "union_unknown_count": 0,
+                },
+            },
+        }
+        text = hud_text(playback_document(), "PLANNING", None,
+                        progress=progress)
+        self.assertIn(
+            "samples=21 | map_collisions=0 | single=unknown | union=133 |"
+            " gap=0 | unknown=0 | status=MAP_CLEAR_AT_SAMPLES", text)
+
+    def test_corridor_build_without_diagnostics_still_states_unknown(self):
+        progress = {
+            "stage": "CORRIDOR_BUILD", "stage_index": 1, "state": "PLANNING",
+            "elapsed_s": 0.5, "route_index": 0, "route_count": 1,
+            "round_index": 0, "reason": "",
+        }
+        text = hud_text(playback_document(), "PLANNING", None,
+                        progress=progress)
+        self.assertIn("diagnostics | guide=unknown", text)
+        self.assertIn("samples=unknown", text)
+
+    def test_non_object_diagnostics_fail_closed(self):
+        progress = {
+            "stage": "PORTAL_GUIDE", "stage_index": 3, "state": "PLANNING",
+            "diagnostics": [],
+        }
+        with self.assertRaises(PlaybackValidationError):
+            hud_text(playback_document(), "PLANNING", None, progress=progress)
+
     def test_non_object_progress_fails_closed(self):
         with self.assertRaises(PlaybackValidationError):
             hud_text(playback_document(), "PLANNING", None, progress=[])
