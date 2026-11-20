@@ -973,7 +973,7 @@ _UNIFORM_VERIFY_FIELDS = frozenset((
 ))
 _VIRTUAL_VERIFY_FIELDS = _UNIFORM_VERIFY_FIELDS | frozenset((
     "expected_request", "expected_context", "expected_grid_sha256",
-    "geometry_audit_config", "dynamic_audit_config",
+    "geometry_audit_config", "dynamic_audit_config", "expected_formation",
 ))
 
 
@@ -1014,12 +1014,63 @@ def _canonical_mapping(value, label):
             "{} is not finite JSON: {}".format(label, exc)) from exc
 
 
+def _verify_union_formation_binding(binding, plan, request, context_sha,
+                                    grid_sha):
+    """Re-verify one retained union-scope template/certificate binding.
+
+    The binding is planner evidence, never transport content: the sealed
+    template and chain are rebuilt from their canonical payloads, the chain
+    must belong to the admitted grid, and the continuous certificate must
+    re-verify against the published path and the admitted planning context.
+    """
+    from .formation_continuous_a.corridor import corridor_chain_from_payload
+    from .formation_continuous_a.formation_certificate import (
+        verify_formation_certificate)
+    from .formation_continuous_a.formation_corridor import (
+        formation_template_from_payload)
+
+    expected = {"scope", "planning_context_sha256", "template", "chain",
+                "certificate"}
+    if set(binding) != expected:
+        raise PlaybackValidationError(
+            "formation corridor binding keys missing={} extra={}".format(
+                sorted(expected - set(binding)),
+                sorted(set(binding) - expected)))
+    if binding["scope"] != "three_vehicle_union_v1":
+        raise PlaybackValidationError(
+            "formation corridor binding scope={!r} is not the union scope"
+            .format(binding["scope"]))
+    if binding["planning_context_sha256"] != context_sha:
+        raise PlaybackValidationError(
+            "formation corridor binding planning context differs from the "
+            "admitted context")
+    try:
+        chain = corridor_chain_from_payload(binding["chain"])
+        template = formation_template_from_payload(binding["template"])
+    except Exception as exc:
+        raise PlaybackValidationError(
+            "formation corridor binding payload was rejected: {}: {}"
+            .format(type(exc).__name__, exc)) from exc
+    if chain.grid_sha256 != grid_sha:
+        raise PlaybackValidationError(
+            "formation corridor chain grid differs from the admitted grid")
+    verification = verify_formation_certificate(
+        binding["certificate"], plan.path, request, chain, template,
+        planning_context_sha256=context_sha)
+    if not bool(verification.get("passed")):
+        raise PlaybackValidationError(
+            "formation corridor certificate failed: {}: {}".format(
+                verification.get("reason", ""),
+                verification.get("detail", "")))
+
+
 def verify_virtual_a_playback_plan(*, plan_id, formation_id, backend,
                                    semantic_version, model_version,
                                    model_sha256, model_json, certification,
                                    trajectory_fields, expected_request=None,
                                    expected_context=None,
                                    expected_grid_sha256=None,
+                                   expected_formation=None,
                                    geometry_audit_config=None,
                                    dynamic_audit_config=None,
                                    position_tolerance=1e-9,
@@ -1035,7 +1086,11 @@ def verify_virtual_a_playback_plan(*, plan_id, formation_id, backend,
     admission record.  Geometry and dynamics are re-audited independently from
     the model, and every published sample is compared with
     ``state_at(actual_quantised_time)``.  A missing request or context is a
-    rejection, never a default acceptance.
+    rejection, never a default acceptance.  A plan whose admitted planner
+    config declares ``three_vehicle_union_v1`` additionally requires the
+    retained ``expected_formation`` binding (sealed template, corridor chain
+    and continuous certificate); the certificate is re-verified against the
+    published path, and a missing or stale binding is a rejection.
     """
     from .formation_continuous_a.audit import audit_dynamics, audit_geometry
     from .formation_continuous_a.contracts import (
@@ -1177,6 +1232,33 @@ def verify_virtual_a_playback_plan(*, plan_id, formation_id, backend,
     elif grid_summary_sha256(expected_grid) != grid_sha:
         raise PlaybackValidationError(
             "admitted grid digest differs from the model planning grid")
+
+    planner_config = expected_context.get("planner_config")
+    if not isinstance(planner_config, Mapping):
+        raise PlaybackValidationError(
+            "expected planning context carries no planner config")
+    model_scope = planner_config.get(
+        "formation_corridor_scope", "f_only")
+    if not isinstance(model_scope, str):
+        raise PlaybackValidationError(
+            "planning context formation_corridor_scope is not a string")
+    model_scope = model_scope.strip().lower()
+    if model_scope not in ("f_only", "three_vehicle_union_v1"):
+        raise PlaybackValidationError(
+            "planning context formation_corridor_scope={!r} is not a known "
+            "scope".format(model_scope))
+    if model_scope == "three_vehicle_union_v1":
+        if expected_formation is None:
+            raise PlaybackValidationError(
+                "union-scope plan has no retained formation corridor binding; "
+                "the virtual envelope cannot be accepted")
+        expected_formation = _canonical_mapping(
+            expected_formation, "expected formation corridor binding")
+        _verify_union_formation_binding(
+            expected_formation, plan, request, context_sha, grid_sha)
+    elif expected_formation is not None and expected_formation != {}:
+        raise PlaybackValidationError(
+            "f_only plan carries an unexpected formation corridor binding")
 
     if geometry_audit_config is None:
         geometry_audit_config = GeometryAuditConfig()

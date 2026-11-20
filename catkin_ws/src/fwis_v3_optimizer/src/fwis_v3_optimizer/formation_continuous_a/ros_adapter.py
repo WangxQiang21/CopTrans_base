@@ -95,8 +95,9 @@ ENVELOPE_KEYS = frozenset((
 ))
 EXPECTED_ENVELOPE_KEYS = frozenset((
     "expected_request", "expected_context", "expected_grid_sha256",
-    "expected_admission", "geometry_audit_config", "dynamic_audit_config",
-    "position_tolerance", "angle_tolerance", "speed_tolerance",
+    "expected_admission", "expected_formation", "geometry_audit_config",
+    "dynamic_audit_config", "position_tolerance", "angle_tolerance",
+    "speed_tolerance",
 ))
 
 
@@ -915,6 +916,7 @@ def verify_envelope_fields(envelope_fields):
     expected_context = values.pop("expected_context", None)
     expected_grid_sha256 = values.pop("expected_grid_sha256", None)
     expected_admission = values.pop("expected_admission", None)
+    expected_formation = values.pop("expected_formation", None)
     geometry_audit_config = values.pop("geometry_audit_config", None)
     dynamic_audit_config = values.pop("dynamic_audit_config", None)
     position_tolerance = values.pop("position_tolerance", 1e-9)
@@ -991,6 +993,7 @@ def verify_envelope_fields(envelope_fields):
             expected_request=request,
             expected_context=expected_context,
             expected_grid_sha256=grid_sha,
+            expected_formation=expected_formation,
             geometry_audit_config=geometry_audit_config,
             dynamic_audit_config=dynamic_audit_config,
             position_tolerance=position_tolerance,

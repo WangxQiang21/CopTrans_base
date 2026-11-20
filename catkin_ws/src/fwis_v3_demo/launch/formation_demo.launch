@@ -81,6 +81,10 @@
        the default.  soft remains available only by explicit experiment. -->
   <arg name="virtual_a_guidance_mode" default="corridor"/>
   <arg name="virtual_a_corridor_enforcement" default="hard"/>
+  <!-- TASK03 versioned formation corridor scope.  f_only is the historical
+       reference and stays the default until the union delivery is accepted;
+       three_vehicle_union_v1 must be requested explicitly. -->
+  <arg name="virtual_a_formation_corridor_scope" default="f_only"/>
   <arg name="virtual_a_planning_budget_s" default="60.0"/>
   <arg name="virtual_a_planning_timeout_s" default="75.0"/>
 
@@ -122,6 +126,9 @@
     <param if="$(eval arg('backend') == 'virtual_rigid_a')"
            name="virtual_a_corridor_enforcement"
            value="$(arg virtual_a_corridor_enforcement)"/>
+    <param if="$(eval arg('backend') == 'virtual_rigid_a')"
+           name="virtual_a_formation_corridor_scope"
+           value="$(arg virtual_a_formation_corridor_scope)"/>
     <param if="$(eval arg('backend') == 'virtual_rigid_a')"
            name="virtual_a_goal_policy" value="$(arg virtual_a_goal_policy)"/>
     <param if="$(eval arg('backend') == 'virtual_rigid_a')"

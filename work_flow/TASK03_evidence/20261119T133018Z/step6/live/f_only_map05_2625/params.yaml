@@ -1,0 +1,92 @@
+formation_goal_bridge:
+  admission_backend: virtual_rigid_a
+  allow_reverse: true
+  body_length_m: 0.738
+  body_width_m: 0.5
+  formation_id: cargo_wedge
+  frame_id: map
+  goal_heading_free: true
+  initial_heading_policy: cargo_heading
+  initial_plan_id: 600000
+  job_state_timeout_s: 3.0
+  map_timeout_s: 8.0
+  offsets:
+  - - 1.0
+    - 0.0
+  - - 0.0
+    - 1.0
+  - - 0.0
+    - -1.0
+  playback_tf_timeout_s: 0.5
+  start_theta: 0.0
+  start_x: 10.0
+  start_y: 3.6
+  vehicle_ids:
+  - 1
+  - 2
+  - 3
+  virtual_a_goal_policy: free
+formation_playback:
+  allow_reverse: true
+  backend: virtual_rigid_a
+  body_length_m: 0.738
+  body_width_m: 0.5
+  formation_id: cargo_wedge
+  frame_id: map
+  goal_heading_free: true
+  hud_enabled: true
+  hud_height: 270
+  hud_left: 900
+  hud_top: 20
+  hud_width: 360
+  initial_heading_policy: cargo_heading
+  offsets:
+  - - 1.0
+    - 0.0
+  - - 0.0
+    - 1.0
+  - - 0.0
+    - -1.0
+  publish_tf: true
+  rate: 25.0
+  show_cargo_reason: false
+  show_status_text: false
+  transport_ui: true
+  vehicle_ids:
+  - 1
+  - 2
+  - 3
+formation_uniform_planner:
+  backend: virtual_rigid_a
+  collision_margin: 0.05
+  frame_id: map
+  goal_heading_tol: 0.017453292519943295
+  goal_psi_tol: 0.017453292519943295
+  goal_xy_tol: 0.02
+  max_expansions: 10000
+  max_publication_samples: 200001
+  max_seconds: 30.0
+  playback_finish_grace_s: 3.0
+  playback_start_timeout_s: 5.0
+  publication_dt: 0.02
+  sweep_spacing: 0.01
+  translation_step: 1.0
+  virtual_a_corridor_enforcement: hard
+  virtual_a_formation_corridor_scope: f_only
+  virtual_a_goal_policy: free
+  virtual_a_guidance_mode: corridor
+  virtual_a_planning_budget_s: 60.0
+  virtual_a_planning_timeout_s: 75.0
+fwis_map_publisher:
+  map_dir: /tmp/expv3-map-scale.7I1hdU/map05-p12-parking-row-env2
+rosdistro: 'noetic
+
+  '
+roslaunch:
+  uris:
+    host_wq_ubuntu__33847: http://wq-ubuntu:33847/
+    host_wq_ubuntu__44239: http://wq-ubuntu:44239/
+rosversion: '1.17.4
+
+  '
+run_id: 079a059c-e43a-11f1-a57b-1b4c90db486b

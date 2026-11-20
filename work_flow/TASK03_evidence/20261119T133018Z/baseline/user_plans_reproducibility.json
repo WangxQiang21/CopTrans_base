@@ -1,0 +1,48 @@
+{
+  "exact_map_line": "[rosout][INFO] 2026-11-19 17:46:27,743: [uniform planner] exact map 489x326 res=0.044 origin=(-3.38, -2.25) signature=3b5a0bfcb1b20f04",
+  "note": "Plan numbers are not identities. These runs were not replayed; no frozen map or request payload exists for them.",
+  "observed_lines": [
+    "[rosout][INFO] 2026-11-19 17:46:27,743: [uniform planner] exact map 489x326 res=0.044 origin=(-3.38, -2.25) signature=3b5a0bfcb1b20f04",
+    "[rosout][INFO] 2026-11-19 17:46:43,053: [uniform planner] plan 600000 admitted for virtual_rigid_a: start=(-0.214, 9.934, -0.003) goal=(15.505, 3.831, -1.537) initial=rviz_reset/virtual-a-reset-None-1 policy=FREE",
+    "[rosout][ERROR] 2026-11-19 17:46:58,913: [uniform planner] virtual plan 600000 not executable: status=GEOMETRY_FAILED reason=CORRIDOR_AUDIT_WIDTH_LIMIT layer=GEOMETRY wall=15.859s",
+    "[rosout][INFO] 2026-11-19 17:47:29,630: [uniform planner] plan 600001 admitted for virtual_rigid_a: start=(10.429, 9.817, -0.020) goal=(15.534, 3.491, -1.578) initial=rviz_reset/virtual-a-reset-600000-2 policy=FREE",
+    "[rosout][ERROR] 2026-11-19 17:47:46,589: [uniform planner] virtual plan 600001 not executable: status=GEOMETRY_FAILED reason=CORRIDOR_AUDIT_WIDTH_LIMIT layer=GEOMETRY wall=16.957s",
+    "[rosout][INFO] 2026-11-19 18:03:12,543: [uniform planner] plan 600002 admitted for virtual_rigid_a: start=(12.407, 9.817, 0.000) goal=(15.572, 3.936, -1.493) initial=rviz_reset/virtual-a-reset-600001-3 policy=FREE",
+    "[rosout][ERROR] 2026-11-19 18:03:28,110: [uniform planner] virtual plan 600002 not executable: status=GEOMETRY_FAILED reason=CORRIDOR_AUDIT_WIDTH_LIMIT layer=GEOMETRY wall=15.565s",
+    "[rosout][INFO] 2026-11-19 18:04:59,425: [uniform planner] plan 600003 admitted for virtual_rigid_a: start=(12.242, 10.086, 0.012) goal=(15.676, 6.458, -1.583) initial=rviz_reset/virtual-a-reset-600002-4 policy=FREE",
+    "[rosout][ERROR] 2026-11-19 18:05:10,169: [uniform planner] virtual plan 600003 not executable: status=GEOMETRY_FAILED reason=CORRIDOR_AUDIT_WIDTH_LIMIT layer=GEOMETRY wall=10.742s"
+  ],
+  "plans": {
+    "600001": {
+      "available_identity": false,
+      "missing": [
+        "raw /formation/plan_request message",
+        "request_sha256",
+        "grid_sha256",
+        "planning_context_sha256",
+        "runtime map YAML/PGM copy and scale",
+        "capture quality/debug for this plan"
+      ],
+      "observed_failure": "GEOMETRY_FAILED / CORRIDOR_AUDIT_WIDTH_LIMIT / wall=16.957s",
+      "observed_start_goal_from_planner_log": "start=(10.429, 9.817, -0.020) goal=(15.534, 3.491, -1.578)",
+      "reason": "NOT_REPRODUCIBLE"
+    },
+    "600002": {
+      "available_identity": false,
+      "missing": [
+        "raw /formation/plan_request message",
+        "request_sha256",
+        "grid_sha256",
+        "planning_context_sha256",
+        "runtime map YAML/PGM copy and scale",
+        "capture quality/debug for this plan"
+      ],
+      "observed_failure": "GEOMETRY_FAILED / CORRIDOR_AUDIT_WIDTH_LIMIT / wall=15.565s; display-only S_DOMAIN notice also logged",
+      "observed_start_goal_from_planner_log": "start=(12.407, 9.817, 0.000) goal=(15.572, 3.936, -1.493)",
+      "reason": "NOT_REPRODUCIBLE"
+    }
+  },
+  "schema": "task03.step0.user_plan_reproducibility.v1",
+  "source_planner_log": "work_flow/TASK03_evidence/20261119T133018Z/baseline/user_plans_600001_600002_planner.log",
+  "source_planner_log_sha256": "ca81a659045a8eb71d22473e6c112fbd9409d440c83d336b58a4bc45db722d07"
+}

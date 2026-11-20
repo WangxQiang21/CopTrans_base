@@ -1,0 +1,42 @@
+....................................................................................................../opt/ros/noetic/lib/python3/dist-packages/rospy/core.py:205: DeprecationWarning: The 'warn' method is deprecated, use 'warning' instead
+  logfunc(msg, *args, **kwargs)
+[formation playback] ignoring planning payload for plan 16: current job is plan 17
+.[formation playback] ignoring planning payload for plan 17: identity does not match the current admission
+.....................................[formation playback] rejecting guide payload: raw_route_points needs at least two points
+.[formation playback] rejecting guide payload: portal diagnostics chain differs from the corridor
+....................E..............................................................................................E..................................................................................................................................................................................[uniform planner] PROGRESS_DISPLAY_ERROR plan 9002 generation 0 layer=corridors: ValueError: no actual corridor display exists for this round; planning and audits continue
+[uniform planner] PROGRESS_DISPLAY_ERROR plan 9002 generation 0 layer=corridors: ValueError: no actual corridor display exists for this round; planning and audits continue
+[uniform planner] PROGRESS_DISPLAY_ERROR plan 9002 generation 0 layer=corridors: ValueError: no actual corridor display exists for this round; planning and audits continue
+[uniform planner] PROGRESS_DISPLAY_ERROR plan 9002 generation 0 layer=corridors: ValueError: no actual corridor display exists for this round; planning and audits continue
+[uniform planner] PROGRESS_DISPLAY_ERROR plan 9002 generation 0 layer=corridors: ValueError: no actual corridor display exists for this round; planning and audits continue
+...........................................................[uniform planner] PROGRESS_DISPLAY_ERROR plan 9003 generation 0 layer=corridors: ValueError: no actual corridor display exists for this round; planning and audits continue
+.............................................
+======================================================================
+ERROR: test_virtual_a_corridor_optimizer (unittest.loader._FailedTest)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_virtual_a_corridor_optimizer
+Traceback (most recent call last):
+  File "/usr/lib/python3.8/unittest/loader.py", line 154, in loadTestsFromName
+    module = __import__(module_name)
+  File "/home/wq/whut_thesis/expv3_multi_virtual_a/tests/test_virtual_a_corridor_optimizer.py", line 70, in <module>
+    from tests.test_virtual_a_optimizer import (
+ModuleNotFoundError: No module named 'tests'
+
+
+======================================================================
+ERROR: test_virtual_a_formation_corridor (unittest.loader._FailedTest)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_virtual_a_formation_corridor
+Traceback (most recent call last):
+  File "/usr/lib/python3.8/unittest/loader.py", line 154, in loadTestsFromName
+    module = __import__(module_name)
+  File "/home/wq/whut_thesis/expv3_multi_virtual_a/tests/test_virtual_a_formation_corridor.py", line 103, in <module>
+    from tests.test_virtual_a_corridor_optimizer import _box
+ModuleNotFoundError: No module named 'tests'
+
+
+----------------------------------------------------------------------
+Ran 539 tests in 337.151s
+
+FAILED (errors=2)
+c1_50x50_build_s=0.014848 audit_s=0.004843

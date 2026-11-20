@@ -1,0 +1,337 @@
+{
+  "MAP05_straight": {
+    "audits": {
+      "collision": {
+        "check_count": 3740,
+        "detail": "static start/goal plus unchanged analytic three-vehicle OBB sweep over the whole closed path; declared per-lambda bounds independently verified; conservative margin includes the numerical envelope; map and G4 context bound",
+        "grid_sha256": "64eef089eb2be976589f9b7a2b2f4aa889452c86a08b7a843f9402ffb73af321",
+        "passed": true,
+        "planning_context_sha256": "06aed480a711839483c94e42648563b53c48eb0080f3c9dfe4e16daebe9414dd",
+        "reason": null,
+        "request_sha256": "e69d068b1cae75fa7205a7530b129f16bf731dddce705e6d2ef8042fec07aeaf",
+        "scope": "COLLISION"
+      },
+      "dynamics": {
+        "check_count": 909,
+        "detail": "independent raw-profile common-time dynamic audit; whole-domain interval certificate plus node/endpoint/inverse/differential checks; DYNAMIC_FEASIBLE; collision_checked=false; executable=false; no map/ROS",
+        "grid_sha256": "64eef089eb2be976589f9b7a2b2f4aa889452c86a08b7a843f9402ffb73af321",
+        "passed": true,
+        "planning_context_sha256": "06aed480a711839483c94e42648563b53c48eb0080f3c9dfe4e16daebe9414dd",
+        "reason": null,
+        "request_sha256": "e69d068b1cae75fa7205a7530b129f16bf731dddce705e6d2ef8042fec07aeaf",
+        "scope": "DYNAMICS"
+      },
+      "geometry": {
+        "check_count": 155,
+        "detail": "independent C2/interval/integration audit; geometry only, no timing/map/ROS/collision claim",
+        "grid_sha256": "64eef089eb2be976589f9b7a2b2f4aa889452c86a08b7a843f9402ffb73af321",
+        "passed": true,
+        "planning_context_sha256": "06aed480a711839483c94e42648563b53c48eb0080f3c9dfe4e16daebe9414dd",
+        "reason": null,
+        "request_sha256": "e69d068b1cae75fa7205a7530b129f16bf731dddce705e6d2ef8042fec07aeaf",
+        "scope": "GEOMETRY"
+      }
+    },
+    "certification": "virtual_a_geometry_dynamics_collision/v1",
+    "corridor_rounds": [
+      {
+        "chain_digest": "e7f8568f2397a95f44a0dc2693a1fea4e8f6bd50635dd80ce0e32c56eee4b618",
+        "chain_reason": "CORRIDOR_CHAIN_VERIFIED",
+        "containment": {
+          "allocation_count": 8,
+          "audit": "continuous_path_in_corridors",
+          "base_interval_count": 8,
+          "corridor_count": 1,
+          "detail": "continuous path containment certified with epsilon=5.1358986506874964e-08 m",
+          "epsilon_total_m": 5.1358986506874964e-08,
+          "first_failure": null,
+          "is_three_vehicle_certificate": false,
+          "max_bound_residual_m": -1.6249999486400117,
+          "max_depth": 20,
+          "max_depth_reached": 0,
+          "max_intervals": 20000,
+          "max_point_residual_m": -1.9999999999999982,
+          "method": "arc_length_midpoint_interval_bound",
+          "min_width_m": 1e-05,
+          "passed": true,
+          "path_position_error_bound_m": 1.3589865068749644e-09,
+          "position_budget_m": 5e-08,
+          "reason": "CORRIDOR_CONTAINMENT_VERIFIED",
+          "sample_count": 8
+        },
+        "effective_margin_m": 1e-05,
+        "guide_selection": {
+          "base_guide_solver_compatible": true,
+          "candidate_certification": "DIAGNOSTIC_ONLY",
+          "candidate_count": 1,
+          "candidate_generation": {
+            "candidate_certification": "DIAGNOSTIC_ONLY",
+            "certification_claim": "NONE",
+            "continuously_certified": false,
+            "dropped_local_candidates": [],
+            "formation_obb_hard_constraints": false,
+            "local_candidate_count": 0,
+            "local_candidate_point_count": 0,
+            "local_candidates": [],
+            "local_candidates_kept": 0,
+            "portal_radii_m": [],
+            "risk_portals": [],
+            "schema": "virtual_a_guide_candidate_generation_v1",
+            "selection": "NO_CANONICAL_BASE",
+            "target_portal_index": null,
+            "target_reason": null,
+            "target_window_index": null
+          },
+          "certification_claim": "NONE",
+          "continuously_certified": false,
+          "formation_obb_hard_constraints": false,
+          "selected_candidate_index": 0,
+          "selected_candidate_origin": null,
+          "selected_guide_source": "corridor_endpoint_polyline",
+          "selection_rule": "SINGLE_BASE_GUIDE",
+          "solver_compatible_count": 1
+        },
+        "round_index": 0,
+        "route_index": 0,
+        "route_source": "astar_primary"
+      }
+    ],
+    "final": {
+      "detail": "geometry, dynamics and collision audits passed; continuous corridor containment certified",
+      "executable": true,
+      "feasible": true,
+      "first_failure_layer": "",
+      "model_sha256": "e6b6e55db62346d041e959b1955e031d33bd571995e53483b46c1c962635bcad",
+      "model_version": "virtual_rigid_a.timed.v1",
+      "pipeline_status": "SUCCESS",
+      "playback_confirmed": false,
+      "reason": "",
+      "status": "FEASIBLE",
+      "trajectory_published": true,
+      "wall_time_s": 6.4456323380582035
+    },
+    "identity": {
+      "grid_sha256": "64eef089eb2be976589f9b7a2b2f4aa889452c86a08b7a843f9402ffb73af321",
+      "plan_id": 600000,
+      "planning_context_sha256": "06aed480a711839483c94e42648563b53c48eb0080f3c9dfe4e16daebe9414dd",
+      "request_sha256": "e69d068b1cae75fa7205a7530b129f16bf731dddce705e6d2ef8042fec07aeaf"
+    },
+    "model_summary": {
+      "S_m": 6.0,
+      "T_s": 14.203125000000316,
+      "authoritative_model": true,
+      "backend": "virtual_rigid_a",
+      "grid": {
+        "cell_count": 159414,
+        "height": 326,
+        "occupancy_sha256": "e5f91759835d6b0a2fbad3bc46da8fe21b4153c4680a90b1082c51529bcf0a7a",
+        "occupied_cells": 37838,
+        "origin_x": -8.360983812500002,
+        "origin_y": -5.573955875000001,
+        "resolution_m": 0.06487162411212921,
+        "width": 489
+      },
+      "kind": "motion",
+      "knot_count": 9,
+      "model_sha256": "e6b6e55db62346d041e959b1955e031d33bd571995e53483b46c1c962635bcad",
+      "model_version": "virtual_rigid_a.timed.v1",
+      "path_model_version": "virtual_rigid_a.path.v1",
+      "planning_context_sha256": "06aed480a711839483c94e42648563b53c48eb0080f3c9dfe4e16daebe9414dd",
+      "request_sha256": "e69d068b1cae75fa7205a7530b129f16bf731dddce705e6d2ef8042fec07aeaf",
+      "segment_count": 8
+    },
+    "terminal": {
+      "qf": {
+        "psi": -3.944304526105059e-31,
+        "x": 8.0,
+        "y": 1.9999999999999998
+      },
+      "region": "motion",
+      "s_m": 6.0,
+      "t_s": 14.203125000000316,
+      "vehicles": [
+        {
+          "C_i": 4.885285631140437e-16,
+          "omega_i": 0.0,
+          "theta": 1.0939448937114715e-15,
+          "v_i": 0.0,
+          "vehicle_id": 1,
+          "wheel_angles_rad": [
+            1.2066655508916882e-16,
+            1.206665550891688e-16,
+            -1.2066655508916882e-16,
+            -1.206665550891688e-16
+          ],
+          "x": 9.0,
+          "y": 1.9999999999999998
+        },
+        {
+          "C_i": 1.0939448937114731e-15,
+          "omega_i": 0.0,
+          "theta": -3.944304526105059e-31,
+          "v_i": 0.0,
+          "vehicle_id": 2,
+          "wheel_angles_rad": [
+            2.702043887467339e-16,
+            2.702043887467338e-16,
+            -2.702043887467339e-16,
+            -2.702043887467338e-16
+          ],
+          "x": 8.0,
+          "y": 3.0
+        },
+        {
+          "C_i": 1.0939448937114707e-15,
+          "omega_i": 0.0,
+          "theta": -3.944304526105059e-31,
+          "v_i": 0.0,
+          "vehicle_id": 3,
+          "wheel_angles_rad": [
+            2.702043887467333e-16,
+            2.702043887467332e-16,
+            -2.702043887467333e-16,
+            -2.702043887467332e-16
+          ],
+          "x": 8.0,
+          "y": 0.9999999999999998
+        }
+      ]
+    }
+  },
+  "S1": {
+    "corridor_rounds": [
+      {
+        "chain_digest": "0ddd65e0931e8ee68844ec927d39704dfca81f08efffc701a70c05bad1ef47a1",
+        "chain_reason": "CORRIDOR_CHAIN_VERIFIED",
+        "containment": {
+          "allocation_count": 9,
+          "audit": "continuous_path_in_corridors",
+          "base_interval_count": 9,
+          "corridor_count": 2,
+          "detail": "continuous path containment certified with epsilon=5.5312932084848235e-08 m",
+          "epsilon_total_m": 5.5312932084848235e-08,
+          "first_failure": null,
+          "is_three_vehicle_certificate": false,
+          "max_bound_residual_m": 0.5799315045871009,
+          "max_depth": 20,
+          "max_depth_reached": 17,
+          "max_intervals": 20000,
+          "max_point_residual_m": -9.338621578369732e-06,
+          "method": "arc_length_midpoint_interval_bound",
+          "min_width_m": 1e-05,
+          "passed": true,
+          "path_position_error_bound_m": 5.312932084848236e-09,
+          "position_budget_m": 5e-08,
+          "reason": "CORRIDOR_CONTAINMENT_VERIFIED",
+          "sample_count": 3801
+        },
+        "effective_margin_m": 1e-05,
+        "guide_selection": {
+          "base_guide_solver_compatible": true,
+          "candidate_certification": "DIAGNOSTIC_ONLY",
+          "candidate_count": 2,
+          "certification_claim": "NONE",
+          "continuously_certified": false,
+          "formation_obb_hard_constraints": false,
+          "selected_candidate_index": 1,
+          "selected_candidate_origin": "CHEBYSHEV_CENTRE_GUIDE",
+          "selected_guide_source": "corridor_candidate_chebyshev",
+          "selection_rule": "DIAGNOSTIC_LEXICOGRAPHIC_BEST",
+          "solver_compatible_count": 2
+        },
+        "round_index": 0,
+        "route_index": 1,
+        "route_source": "astar_alternative_1"
+      },
+      {
+        "chain_digest": "c2882091a0857c4280981f17d2df70ab2ef516ed31425c283fb2f989cdb2dc72",
+        "chain_reason": "CORRIDOR_CHAIN_VERIFIED",
+        "containment": {
+          "allocation_count": 9,
+          "audit": "continuous_path_in_corridors",
+          "base_interval_count": 9,
+          "corridor_count": 2,
+          "detail": "interval width 9.682634525276512e-06 m cannot close the bound",
+          "epsilon_total_m": 5.640643396781323e-08,
+          "first_failure": {
+            "bound_residual_m": 2.061278807859711e-07,
+            "corridor_index": 0,
+            "depth": 17,
+            "detail": "interval width 9.682634525276512e-06 m cannot close the bound",
+            "point_residual_m": -4.691596815820098e-06,
+            "reason": "CORRIDOR_AUDIT_WIDTH_LIMIT",
+            "s_m": 7.757789718176485,
+            "width_m": 9.682634525276512e-06
+          },
+          "is_three_vehicle_certificate": false,
+          "max_bound_residual_m": 0.5905181544326925,
+          "max_depth": 20,
+          "max_depth_reached": 17,
+          "max_intervals": 20000,
+          "max_point_residual_m": 0.0002850886833886124,
+          "method": "arc_length_midpoint_interval_bound",
+          "min_width_m": 1e-05,
+          "passed": false,
+          "path_position_error_bound_m": 6.406433967813237e-09,
+          "position_budget_m": 5e-08,
+          "reason": "CORRIDOR_AUDIT_WIDTH_LIMIT",
+          "sample_count": 453
+        },
+        "effective_margin_m": 1e-05,
+        "guide_selection": {
+          "base_guide_solver_compatible": true,
+          "candidate_certification": "DIAGNOSTIC_ONLY",
+          "candidate_count": 2,
+          "certification_claim": "NONE",
+          "continuously_certified": false,
+          "formation_obb_hard_constraints": false,
+          "selected_candidate_index": 1,
+          "selected_candidate_origin": "CHEBYSHEV_CENTRE_GUIDE",
+          "selected_guide_source": "corridor_candidate_chebyshev",
+          "selection_rule": "DIAGNOSTIC_LEXICOGRAPHIC_BEST",
+          "solver_compatible_count": 2
+        },
+        "round_index": 1,
+        "route_index": 0,
+        "route_source": "astar_primary"
+      }
+    ],
+    "final": {
+      "detail": "interval width 9.682634525276512e-06 m cannot close the bound",
+      "executable": false,
+      "feasible": false,
+      "first_failure_layer": "GEOMETRY",
+      "model_sha256": null,
+      "model_version": "virtual_rigid_a.timed.v1",
+      "pipeline_status": "GEOMETRY_FAILED",
+      "playback_confirmed": false,
+      "reason": "CORRIDOR_AUDIT_WIDTH_LIMIT",
+      "status": "REJECTED",
+      "trajectory_published": false,
+      "wall_time_s": 49.994424185948446
+    },
+    "geometry_audit": {
+      "check_count": 257,
+      "detail": "independent C2/interval/integration audit; geometry only, no timing/map/ROS/collision claim",
+      "grid_sha256": "",
+      "passed": true,
+      "planning_context_sha256": "",
+      "reason": null,
+      "request_sha256": "591b4100355ab991d3b7dd5afeb95e203343ec185bf7187d025e2662b4afdd3b",
+      "scope": "GEOMETRY"
+    },
+    "identity": {
+      "grid_sha256": "6e94c751a40ec94431b495fcbff002945f09c975429c493c89060f0e7e2aa2a4",
+      "plan_id": 600000,
+      "planning_context_sha256": "8a545c3f4c794f9f04c57f453c454612c54ca2d3fe31e4c6b887037d2d36604b",
+      "request_sha256": "591b4100355ab991d3b7dd5afeb95e203343ec185bf7187d025e2662b4afdd3b"
+    }
+  },
+  "schema": "task03.step0.old_results.v1",
+  "source_files": {
+    "MAP05_straight_planning_debug": "work_flow/TASK03_evidence/20261119T133018Z/baseline/frozen_inputs/MAP05_straight_old_planning_debug.jsonl",
+    "MAP05_straight_quality_report": "work_flow/TASK03_evidence/20261119T133018Z/baseline/frozen_inputs/MAP05_straight_old_quality_report.json",
+    "S1_planning_debug": "work_flow/TASK03_evidence/20261119T133018Z/baseline/frozen_inputs/S1_old_planning_debug.jsonl",
+    "S1_quality_report": "work_flow/TASK03_evidence/20261119T133018Z/baseline/frozen_inputs/S1_old_quality_report.json"
+  }
+}

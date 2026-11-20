@@ -1,0 +1,267 @@
+{
+  "casadi_available": true,
+  "dialect": "row counts are actual appended scalar inequalities; statuses are measured, not inferred",
+  "direct_definite_violation": {
+    "audit": {
+      "cut_sigma": 0.0025,
+      "is_continuous_certificate": false,
+      "max_evidence_m": 0.15000999856870972,
+      "max_residual_m": 0.15000999999999998,
+      "planned_sample_count": 200,
+      "reason": "definite OBB violation beyond the path error budget",
+      "sample_count": 200,
+      "spacing_sigma": 0.005,
+      "status": "DEFINITE_VIOLATION",
+      "witness": {
+        "error_budget_m": 1.4312902393776392e-09,
+        "evidence_m": 0.15000999856870972,
+        "halfspace_id": 3,
+        "region_index": 0,
+        "residual_m": 0.15000999999999998,
+        "sigma": 0.0025,
+        "vehicle_id": 2,
+        "vertex_id": 2
+      }
+    },
+    "f_feasible_obb_out_numeric_rows": {
+      "complete_obb_max_residual_m": 0.15000999999999998,
+      "corridor_end": 4514,
+      "f_halfspace_max_residual_m": -1.09999,
+      "formation_row_count": 3888,
+      "numeric_vector_size": 4514
+    },
+    "note": "the straight F reference path satisfies every old signed/F halfspace while complete vehicle corners exceed the wall"
+  },
+  "direct_unconfirmed_near_boundary": {
+    "audit": {
+      "cut_sigma": null,
+      "is_continuous_certificate": false,
+      "max_evidence_m": -9.312901980074537e-10,
+      "max_residual_m": 5.000000413701855e-10,
+      "planned_sample_count": 200,
+      "reason": "positive residual inside the path error budget",
+      "sample_count": 200,
+      "spacing_sigma": 0.005,
+      "status": "UNCONFIRMED",
+      "witness": {
+        "error_budget_m": 1.4312902393776392e-09,
+        "evidence_m": -9.312901980074537e-10,
+        "halfspace_id": 3,
+        "region_index": 0,
+        "residual_m": 5.000000413701855e-10,
+        "sigma": 0.0025,
+        "vehicle_id": 2,
+        "vertex_id": 2
+      }
+    },
+    "note": "positive residual below the 1e-9 m definite threshold yields UNCONFIRMED and no cut",
+    "y_half_m": 1.2500099995
+  },
+  "intervals": 8,
+  "mocked_one_audit_directed_cut": {
+    "added": {
+      "rows": 48,
+      "samples": 3
+    },
+    "attempt_statuses": [
+      "SOLVER_SUCCESS_FORMATION_REFINEMENT",
+      "SOLVER_SUCCESS_AUDITED"
+    ],
+    "g_rows": {
+      "casadi": {
+        "matches_numeric": true,
+        "size": 4562
+      },
+      "corridor_end": 4562,
+      "f_halfspace_rows": 352,
+      "numeric_size": 4562,
+      "numeric_size_equals_signed_plus_f_plus_obb": true,
+      "signed_end": 274
+    },
+    "initial_constraint": {
+      "f_halfspace_sample_count": 88,
+      "formation_rows_by_vehicle": [
+        [
+          1,
+          1296
+        ],
+        [
+          2,
+          1296
+        ],
+        [
+          3,
+          1296
+        ]
+      ],
+      "formation_sample_count": 243,
+      "formation_scalar_row_count": 3888,
+      "formation_segment_row_counts": [
+        3888
+      ],
+      "targeted_sample_count": 0,
+      "targeted_sigmas": []
+    },
+    "initial_guess_variables": {
+      "hermite_segments": 8,
+      "vector_length": 19
+    },
+    "note": "the solver is a deterministic double; the constraint rebuild, numeric vector and CasADi g are the production code",
+    "refined_constraint": {
+      "f_halfspace_sample_count": 88,
+      "formation_rows_by_vehicle": [
+        [
+          1,
+          1312
+        ],
+        [
+          2,
+          1312
+        ],
+        [
+          3,
+          1312
+        ]
+      ],
+      "formation_sample_count": 246,
+      "formation_scalar_row_count": 3936,
+      "formation_segment_row_counts": [
+        3936
+      ],
+      "targeted_sample_count": 3,
+      "targeted_sigmas": [
+        0.3
+      ]
+    },
+    "refinement": {
+      "attempts": 1,
+      "cuts_sigma": [
+        0.3
+      ],
+      "detail": "",
+      "final_obb_constraint_count": 3936,
+      "initial_obb_constraint_count": 3888,
+      "is_continuous_certificate": false,
+      "last_formation_obb_residual_m": 0.0,
+      "last_sample_audit": {
+        "certificate_note": "finite independent samples only; Step 4 must certify intervals",
+        "cut_sigma": null,
+        "definite_margin_m": 1e-09,
+        "is_continuous_certificate": false,
+        "max_evidence_m": null,
+        "max_residual_m": null,
+        "max_samples": 2048,
+        "path_length_m": 6.0,
+        "planned_sample_count": 10,
+        "reason": "",
+        "role": "independent_finite_sample_audit_not_a_certificate",
+        "sample_count": 10,
+        "schema": "virtual_a_formation_sample_audit_v1",
+        "spacing_sigma": 0.005,
+        "status": "SAMPLED_CLEAR",
+        "template_id": "dc8bcd0225a015130024c8c94586d9da17a7f918a3ba6edb5570560f55fc6aa3",
+        "witness": null
+      },
+      "outcome": "ACCEPTED",
+      "schema": "virtual_a_formation_constraint_refinement_v1",
+      "solver": "ipopt",
+      "solver_status": "Solve_Succeeded",
+      "used": true,
+      "wall_time_s": 0.01
+    },
+    "refinement_guess_variables": {
+      "label": "route_guide=0;source=corridor_endpoint_polyline|targeted_cut",
+      "source": "formation_refinement",
+      "vector_length": 19
+    },
+    "solver_call_count": 2,
+    "status": "GEOMETRY_FEASIBLE"
+  },
+  "real_clear_scene": {
+    "attempt_statuses": [
+      "SOLVER_SUCCESS_AUDITED"
+    ],
+    "audit_passed": true,
+    "corridor_halfspace_constraint_count": 352,
+    "corridor_max_residual_m": 0.0,
+    "formation_obb_constraint_count": 3888,
+    "formation_obb_max_residual_m": 0.0,
+    "note": "real IPOPT candidate; the audit is finite samples only and is not a continuous certificate",
+    "refinement": {
+      "attempts": 0,
+      "cuts_sigma": [],
+      "detail": "",
+      "final_obb_constraint_count": 3888,
+      "initial_obb_constraint_count": 3888,
+      "is_continuous_certificate": false,
+      "last_formation_obb_residual_m": null,
+      "last_sample_audit": {
+        "certificate_note": "finite independent samples only; Step 4 must certify intervals",
+        "cut_sigma": null,
+        "definite_margin_m": 1e-09,
+        "is_continuous_certificate": false,
+        "max_evidence_m": -42.64599000143129,
+        "max_residual_m": -42.64599,
+        "max_samples": 2048,
+        "path_length_m": 6.0,
+        "planned_sample_count": 200,
+        "reason": "",
+        "role": "independent_finite_sample_audit_not_a_certificate",
+        "sample_count": 200,
+        "schema": "virtual_a_formation_sample_audit_v1",
+        "spacing_sigma": 0.005,
+        "status": "SAMPLED_CLEAR",
+        "template_id": "dc8bcd0225a015130024c8c94586d9da17a7f918a3ba6edb5570560f55fc6aa3",
+        "witness": null
+      },
+      "outcome": "NOT_NEEDED",
+      "schema": "virtual_a_formation_constraint_refinement_v1",
+      "solver": "",
+      "solver_status": "",
+      "used": false,
+      "wall_time_s": 0.0
+    },
+    "sample_audit": {
+      "cut_sigma": null,
+      "is_continuous_certificate": false,
+      "max_evidence_m": -42.64599000143129,
+      "max_residual_m": -42.64599,
+      "planned_sample_count": 200,
+      "reason": "",
+      "sample_count": 200,
+      "spacing_sigma": 0.005,
+      "status": "SAMPLED_CLEAR",
+      "witness": null
+    },
+    "status": "GEOMETRY_FEASIBLE",
+    "variables": {
+      "S_m": 6.0,
+      "hermite_segments": 8,
+      "vector_length": 19
+    }
+  },
+  "real_f_feasible_obb_infeasible": {
+    "accepted_attempts": [],
+    "attempt_statuses": [
+      "SOLVER_FAILED"
+    ],
+    "deadline_summary": {
+      "audited_candidate_preserved": false,
+      "final_wall_time_s": 9.964102847967297,
+      "hard_real_time_guarantee": false,
+      "policy": "checked at initial and attempt boundaries; IPOPT uses a soft max_wall_time and SLSQP a Python iteration callback; the library is not claimed to interrupt immediately",
+      "soft_budget_s": 3.0,
+      "trigger_solver_status": "",
+      "trigger_stage": "post_attempt_boundary",
+      "trigger_wall_time_s": 9.964098098920658,
+      "triggered": true
+    },
+    "formation_obb_max_residual_m": null,
+    "note": "two walls 2.2 m apart cannot contain the 2.5 m complete three-vehicle OBB span; no candidate is accepted",
+    "path_is_none": true,
+    "reason": "SOFT_BUDGET_EXHAUSTED",
+    "status": "BUDGET_EXHAUSTED"
+  },
+  "role": "task03_step3_measured_sample_audit_and_one_cut",
+  "worktree": "/home/wq/whut_thesis/expv3_multi_virtual_a"
+}

@@ -1,0 +1,1 @@
+=== playback_v2_binding_rebuild :: python3 -m unittest tests.test_virtual_a_playback.UnionFormationEnvelopeTest.test_v2_template_payload_rebuilds_in_the_retained_binding

@@ -1,0 +1,30 @@
+TASK03 rework 02 command log (UTC)
+Worktree: /home/wq/whut_thesis/expv3_multi_virtual_a
+Every scan below used the production plan_virtual_a pipeline; the only
+instrumentation wrapped certify_formation_path / assess_formation_guide /
+make_route_guides to record their real inputs and outputs without changing
+any returned object.  No source file was modified (source.diff is empty).
+
+2026-11-20T02:52:03Z  start identity captured (start/git_identity.txt)
+  git rev-parse HEAD            -> a3c709e57560b1060dcc422777f4131a3e558acf
+  git rev-parse --abbrev-ref HEAD -> feature/virtual-rigid-formation-a
+  git status --porcelain        -> 32 pre-existing entries
+  sha256sum geometry.py tests/test_virtual_a_geometry.py -> protected SHAs match
+  sha256sum -c start/task03_source_hashes.txt -> 19/19 OK
+
+Scan runs (full argv in scan/commands.json; per-run exit/elapsed in *.meta):
+  s01  ..  s06   manual diagnostics (see scan/s01.log .. s06.log)
+  bash scan/run_batch_01.sh   (combinations 7..12, all exit=0)
+  bash scan/run_batch_02.sh   (combinations 13..18, all exit=0)
+  bash scan/run_batch_03.sh   (combinations 19..24, all exit=0)
+  bash scan/run_batch_04.sh   (combinations 25..30, all exit=0)
+  python3 scan/scan_e09.py ... (s02b/s03c repeats of combinations 2/3)
+  python3 scan/verify_witness.py > scan/witness_s30.json
+  python3 scan/summarize_scan.py  -> scan/scan_matrix.json/.md
+
+2026-11-20 (after 30/30) verification:
+  sha256sum protected files                    -> unchanged
+  sha256sum -c start/task03_source_hashes.txt  -> 19/19 OK
+  diff snapshot vs current sources             -> empty (0 lines)
+  git ls-tree -r HEAD evaluation | sha256sum   -> c2fa3efa... (matches start)
+  tree hashes TASK01/02/03/REWORK_01 evidence  -> match start/protected_dirs.txt

@@ -19,16 +19,25 @@ sys.path.insert(0, str(ROOT / "tests"))
 
 import virtual_a_g4_support as g4  # noqa: E402
 import virtual_a_g5_support as g5  # noqa: E402
+from fwis_v3_optimizer.formation import FormationPose  # noqa: E402
 from fwis_v3_optimizer.formation_continuous_a.contracts import (  # noqa: E402
+    FORMATION_CORRIDOR_COMPILER_VERSION,
+    FORMATION_CORRIDOR_SCOPE_THREE_VEHICLE_UNION_V1,
+    FORMATION_CORRIDOR_TEMPLATE_SCHEMA,
     GoalPolicy,
     VirtualAContractError,
     request_fingerprint,
     request_payload,
+    research_planner_config,
+)
+from fwis_v3_optimizer.formation_continuous_a.formation_corridor import (  # noqa: E402
+    formation_template_from_payload,
 )
 from fwis_v3_optimizer.formation_continuous_a.pipeline import (  # noqa: E402
     plan_virtual_a,
 )
 from fwis_v3_optimizer.formation_continuous_a.ros_adapter import (  # noqa: E402
+    solve,
     verify_envelope_fields,
 )
 from fwis_v3_optimizer.formation_playback import (  # noqa: E402
@@ -295,6 +304,134 @@ class EnvelopeTest(unittest.TestCase):
         fields = self._mutable_fields()
         fields["vehicles"].pop()
         self._reject(fields=fields)
+
+    def test_f_only_envelope_rejects_an_unexpected_formation_binding(self):
+        with self.assertRaises(VirtualAContractError) as caught:
+            self._verify(expected_formation={"scope": "three_vehicle_union_v1"})
+        self.assertEqual(caught.exception.reason,
+                         "PLAYBACK_VERIFICATION_FAILED")
+        self.assertIn("unexpected formation corridor binding",
+                      str(caught.exception))
+
+
+class UnionFormationEnvelopeTest(unittest.TestCase):
+    """TASK03 Step 6: union plans carry the sealed formation binding.
+
+    The case is a real pipeline run with the explicit
+    ``three_vehicle_union_v1`` scope; the envelope is the same atomic
+    transport as f_only.  The verifier must rebuild the retained template
+    and chain, re-verify the continuous certificate against the published
+    path, and reject a missing, stale or cross-wired binding.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        request = g4.make_request(
+            FormationPose(0.0, 0.0, 0.0), FormationPose(6.0, 0.0, 0.0),
+            plan_id=7101)
+        grid = g4.empty_grid()
+        planner = research_planner_config(
+            guidance_mode="corridor", corridor_enforcement="hard",
+            formation_corridor_scope=
+                FORMATION_CORRIDOR_SCOPE_THREE_VEHICLE_UNION_V1,
+            max_initials=3, max_seconds=20.0)
+        cls.map_request = g4.map_request(request, grid, planner=planner)
+        cls.result = solve(cls.map_request)
+        cls.snapshot = g5.snapshot_from_request(request)
+        cls.envelope = g5.envelope_for_result(
+            result=cls.result, request=cls.map_request.request,
+            context=cls.map_request.context(),
+            grid_sha256=cls.map_request.grid_sha256,
+            snapshot=cls.snapshot)
+
+    def _binding(self):
+        audit = self.result.formation_corridor_audit
+        rounds = self.result.search["corridor"]["rounds"]
+        return {
+            "scope": FORMATION_CORRIDOR_SCOPE_THREE_VEHICLE_UNION_V1,
+            "planning_context_sha256": self.result.planning_context_sha256,
+            "template": copy.deepcopy(audit["template"]),
+            "chain": copy.deepcopy(rounds[-1]["chain"]),
+            "certificate": copy.deepcopy(audit["certificate"]),
+        }
+
+    def _verify(self, binding="default"):
+        envelope = dict(self.envelope)
+        if binding != "absent":
+            envelope["expected_formation"] = (
+                self._binding() if binding == "default" else binding)
+        return verify_envelope_fields(envelope)
+
+    def _reject(self, binding="default", text=None):
+        with self.assertRaises(VirtualAContractError) as caught:
+            self._verify(binding)
+        self.assertEqual(caught.exception.reason,
+                         "PLAYBACK_VERIFICATION_FAILED")
+        if text is not None:
+            self.assertIn(text, str(caught.exception))
+        return caught.exception
+
+    def test_union_plan_requires_and_accepts_the_retained_binding(self):
+        self.assertEqual(self.result.status, "SUCCESS",
+                         self.result.as_dict())
+        self.assertEqual(self.result.formation_corridor_scope,
+                         FORMATION_CORRIDOR_SCOPE_THREE_VEHICLE_UNION_V1)
+        certificate = self.result.formation_certificate
+        self.assertEqual(certificate["status"], "VERIFIED")
+        verified = self._verify()
+        self.assertEqual(verified.model_sha256, self.result.model_sha256)
+
+    def test_missing_binding_is_rejected_for_a_union_plan(self):
+        self._reject("absent", "no retained formation corridor binding")
+
+    def test_v2_template_payload_rebuilds_in_the_retained_binding(self):
+        """The retained binding carries the sealed v2 F-region payload."""
+        template_payload = self.result.formation_corridor_audit["template"]
+        self.assertEqual(template_payload["schema_version"],
+                         FORMATION_CORRIDOR_TEMPLATE_SCHEMA)
+        self.assertEqual(template_payload["compiler_version"],
+                         FORMATION_CORRIDOR_COMPILER_VERSION)
+        self.assertTrue(template_payload["segments"])
+        for segment in template_payload["segments"]:
+            self.assertIn("f_region_index", segment)
+            self.assertGreaterEqual(int(segment["f_region_index"]), 0)
+        rebuilt = formation_template_from_payload(template_payload)
+        self.assertEqual(rebuilt.as_dict(), template_payload)
+        self.assertEqual(rebuilt.template_id,
+                         self.result.formation_template_id)
+        # The binding rebuild used by the playback verifier carries exactly
+        # the five keys and the sealed template identity.
+        binding = self._binding()
+        self.assertEqual(set(binding), {
+            "scope", "planning_context_sha256", "template", "chain",
+            "certificate"})
+        self.assertEqual(binding["template"]["template_id"],
+                         rebuilt.template_id)
+
+    def test_template_chain_and_certificate_are_bound(self):
+        mutations = (
+            ("template", lambda value: value.update(
+                {"margin_m": value["margin_m"] + 1e-6})),
+            ("chain", lambda value: value.update(
+                {"route_source": value["route_source"] + "_stale"})),
+            ("certificate", lambda value: value.update(
+                {"max_outward_residual_m": -1.0})),
+        )
+        for key, mutate in mutations:
+            binding = self._binding()
+            mutate(binding[key])
+            with self.subTest(key=key):
+                self._reject(binding)
+
+    def test_binding_context_must_match_the_admitted_context(self):
+        binding = self._binding()
+        binding["planning_context_sha256"] = "0" * 64
+        self._reject(binding, "planning context differs")
+
+    def test_binding_key_set_is_exact(self):
+        binding = self._binding()
+        binding["extra"] = True
+        self._reject(binding, "formation corridor binding keys")
 
 
 class FrameAndMarkerTest(unittest.TestCase):

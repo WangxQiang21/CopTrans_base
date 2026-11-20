@@ -1,0 +1,30 @@
+test_crossing_zero_increment_interval_contains_both_products (tests.test_virtual_a_formation_corridor.FormationHeadingIntervalReworkTests) ... ok
+test_dense_partial_integrals_stay_inside_the_heading_interval (tests.test_virtual_a_formation_corridor.FormationHeadingIntervalReworkTests) ... FAIL
+test_negative_curvature_increment_interval_contains_the_start (tests.test_virtual_a_formation_corridor.FormationHeadingIntervalReworkTests) ... ok
+test_positive_curvature_increment_interval_contains_the_start (tests.test_virtual_a_formation_corridor.FormationHeadingIntervalReworkTests) ... ok
+test_scalar_width_bound_would_exclude_the_dense_increments (tests.test_virtual_a_formation_corridor.FormationHeadingIntervalReworkTests)
+The pre-rework scalar-width bound misses the interval start. ... FAIL
+test_side_wall_peak_inside_cut_interval_is_not_verified (tests.test_virtual_a_formation_corridor.FormationHeadingIntervalReworkTests) ... ok
+test_side_wall_with_positive_clearance_is_verified (tests.test_virtual_a_formation_corridor.FormationHeadingIntervalReworkTests) ... ok
+
+======================================================================
+FAIL: test_dense_partial_integrals_stay_inside_the_heading_interval (tests.test_virtual_a_formation_corridor.FormationHeadingIntervalReworkTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/wq/whut_thesis/expv3_multi_virtual_a/tests/test_virtual_a_formation_corridor.py", line 2775, in test_dense_partial_integrals_stay_inside_the_heading_interval
+    self.assertGreaterEqual(
+AssertionError: 0.0038659793814432852 not greater than or equal to 0.37499999967998565 : positive s=0.7577319587628866 increment=0.0038659793814432852 heading=(0.37499999967998565, 0.7500000003200267)
+
+======================================================================
+FAIL: test_scalar_width_bound_would_exclude_the_dense_increments (tests.test_virtual_a_formation_corridor.FormationHeadingIntervalReworkTests)
+The pre-rework scalar-width bound misses the interval start.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/wq/whut_thesis/expv3_multi_virtual_a/tests/test_virtual_a_formation_corridor.py", line 2809, in test_scalar_width_bound_would_exclude_the_dense_increments
+    self.assertTrue(observed["crossing"])
+AssertionError: [] is not true
+
+----------------------------------------------------------------------
+Ran 7 tests in 1.940s
+
+FAILED (failures=2)

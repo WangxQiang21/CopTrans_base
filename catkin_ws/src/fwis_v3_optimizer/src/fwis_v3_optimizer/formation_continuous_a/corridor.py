@@ -1312,6 +1312,58 @@ def _coverage_witness_view(result):
     return view
 
 
+def _station_coverage_view(results, total_length_m):
+    """Bounded per-station diagnostic view used by TASK03 template builders.
+
+    It is still diagnostic only: statuses never certify a continuous path.
+    The guide pose is the same finite hint consumed by the static assessment,
+    and the per-vehicle region ids are the finite witnesses the template
+    builder may try to cover.
+    """
+    total = float(total_length_m)
+    view = []
+    for result in results:
+        meta = result.get("meta", {})
+        coverage = result.get("coverage", {})
+        vehicles = {}
+        for vehicle_id, entry in coverage.items():
+            vehicles[str(int(vehicle_id))] = {
+                "status": str(entry.get("status", "")),
+                "region_ids": [int(value) for value in
+                               (entry.get("region_ids") or [])],
+                "max_violation_m": (
+                    None if entry.get("max_violation_m") is None
+                    else float(entry.get("max_violation_m"))),
+                "reason": str(entry.get("reason", "") or ""),
+            }
+        s_m = float(meta.get("s_m", 0.0))
+        view.append({
+            "s_m": s_m,
+            "sigma": (None if total <= 0.0
+                      else float(min(max(s_m / total, 0.0), 1.0))),
+            "segment_index": int(meta.get("segment_index", 0)),
+            "window_indices": [int(value) for value in
+                               (meta.get("window_indices") or [])],
+            "guide_pose": {
+                "x": float(meta.get("x", 0.0)),
+                "y": float(meta.get("y", 0.0)),
+                "heading_rad": (
+                    None if meta.get("heading_hint_rad") is None
+                    else float(meta.get("heading_hint_rad"))),
+                "kappa": (
+                    None if meta.get("kappa_hint") is None
+                    else float(meta.get("kappa_hint"))),
+                "heading_source": str(meta.get("heading_source", "") or ""),
+                "kappa_source": str(meta.get("kappa_source", "") or ""),
+                "pose_reliable": bool(meta.get("pose_reliable", False)),
+            },
+            "map_status": str(result.get("map", {}).get("status", "")),
+            "map_reason": str(result.get("map", {}).get("reason", "") or ""),
+            "vehicles": vehicles,
+        })
+    return view
+
+
 def _evaluate_station(meta, chain, checker, model, vehicle_shapes, tol_m):
     """Map/vehicle SAT and coverage for one station, with separate statuses."""
     vehicle_ids = tuple(offset.vehicle_id for offset in model.offsets)
@@ -1970,6 +2022,8 @@ def assess_formation_guide(chain, points, checker, model, vehicle_shapes,
         "selected_guide_sha256": _guide_points_digest(values),
         "legacy_f_allocation": _allocation_view(allocation),
         "route_length_m": float(plan["total_length_m"]),
+        "station_coverage": _station_coverage_view(
+            results, plan["total_length_m"]),
     }
     payload.update(common)
     return payload

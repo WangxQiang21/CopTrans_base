@@ -1,0 +1,26 @@
+TASK03 Step 6 live run: negative_e04_map05_175_rework (negative)
+UTC start: 2026-11-20T02:00:33Z
+Worktree: /home/wq/whut_thesis/expv3_multi_virtual_a
+
+Environment:
+  ROS_MASTER_URI=http://127.0.0.1:11663 (task-private master)
+  ROS_HOME=/home/wq/whut_thesis/expv3_multi_virtual_a/work_flow/TASK03_REWORK_01_evidence/20261119T180735Z/live/negative_e04_map05_175_rework/ros_home
+  ROS_LOG_DIR=/home/wq/whut_thesis/expv3_multi_virtual_a/work_flow/TASK03_REWORK_01_evidence/20261119T180735Z/live/negative_e04_map05_175_rework/nodes_raw
+  DISPLAY=:1
+  PYTHONDONTWRITEBYTECODE=1
+
+Launch command (verbatim):
+  ./run_demo.sh --map map05 --scale 1.75 virtual_a_formation_corridor_scope:=three_vehicle_union_v1
+
+RViz-style inputs (same topics as a user):
+  reset 1.51,2.5,-1.5707963267948966
+  goal  1.51,0.5,-1.5707963267948966
+
+driver exit code: 0 (capture_driver.exit)
+
+Process control:
+  roscore -p 11663 pid 1012000
+  run_demo.sh session pid 1012113 pgid 1012113
+  stop: kill -INT -- -1012113; master stopped last
+  Other-session masters and roslaunch processes were never touched.
+UTC end: 2026-11-20T02:01:00Z

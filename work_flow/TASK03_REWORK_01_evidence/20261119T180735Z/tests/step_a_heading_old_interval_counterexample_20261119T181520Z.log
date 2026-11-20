@@ -1,0 +1,37 @@
+test_crossing_zero_increment_interval_contains_both_products (tests.test_virtual_a_formation_corridor.FormationHeadingIntervalReworkTests) ... ok
+test_dense_partial_integrals_stay_inside_the_heading_interval (tests.test_virtual_a_formation_corridor.FormationHeadingIntervalReworkTests) ... FAIL
+test_negative_curvature_increment_interval_contains_the_start (tests.test_virtual_a_formation_corridor.FormationHeadingIntervalReworkTests) ... FAIL
+test_positive_curvature_increment_interval_contains_the_start (tests.test_virtual_a_formation_corridor.FormationHeadingIntervalReworkTests) ... FAIL
+test_scalar_width_bound_would_exclude_the_dense_increments (tests.test_virtual_a_formation_corridor.FormationHeadingIntervalReworkTests)
+The pre-rework scalar-width bound misses the interval start. ... ok
+test_side_wall_peak_inside_cut_interval_is_not_verified (tests.test_virtual_a_formation_corridor.FormationHeadingIntervalReworkTests) ... ok
+test_side_wall_with_positive_clearance_is_verified (tests.test_virtual_a_formation_corridor.FormationHeadingIntervalReworkTests) ... ok
+
+======================================================================
+FAIL: test_dense_partial_integrals_stay_inside_the_heading_interval (tests.test_virtual_a_formation_corridor.FormationHeadingIntervalReworkTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/wq/whut_thesis/expv3_multi_virtual_a/tests/test_virtual_a_formation_corridor.py", line 2778, in test_dense_partial_integrals_stay_inside_the_heading_interval
+    self.assertGreaterEqual(
+AssertionError: 0.003865979381443299 not greater than or equal to 0.3749999996799735 : positive s=0.007731958762886598 increment=0.003865979381443299 heading=(0.3749999996799735, 0.37500000032002656)
+
+======================================================================
+FAIL: test_negative_curvature_increment_interval_contains_the_start (tests.test_virtual_a_formation_corridor.FormationHeadingIntervalReworkTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/wq/whut_thesis/expv3_multi_virtual_a/tests/test_virtual_a_formation_corridor.py", line 2738, in test_negative_curvature_increment_interval_contains_the_start
+    self.assertGreater(interval[1], 0.0)
+AssertionError: -0.039999999999999994 not greater than 0.0
+
+======================================================================
+FAIL: test_positive_curvature_increment_interval_contains_the_start (tests.test_virtual_a_formation_corridor.FormationHeadingIntervalReworkTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/wq/whut_thesis/expv3_multi_virtual_a/tests/test_virtual_a_formation_corridor.py", line 2732, in test_positive_curvature_increment_interval_contains_the_start
+    self.assertLess(interval[0], 0.0)
+AssertionError: 0.039999999999999994 not less than 0.0
+
+----------------------------------------------------------------------
+Ran 7 tests in 1.548s
+
+FAILED (failures=3)

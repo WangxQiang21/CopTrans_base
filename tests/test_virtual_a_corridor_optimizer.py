@@ -7,10 +7,12 @@ contains it; they exercise the same hard halfspaces, numeric residual and
 independent continuous audit that production uses.  This is reference
 geometry only: no test claims a three-vehicle executable path.
 """
+import inspect
 import json
 import math
 import unittest
 import xml.etree.ElementTree as ElementTree
+from dataclasses import replace
 from pathlib import Path
 from unittest import mock
 
@@ -62,11 +64,15 @@ from fwis_v3_optimizer.formation_continuous_a.optimizer import (
     _search_packet,
     solve_open_path_guided,
 )
+from fwis_v3_optimizer.formation_continuous_a.pipeline import (
+    _cached_clearance_field,
+)
 from tests.test_virtual_a_optimizer import (
     model_from_fixture,
     planner_config,
     request_from_fixture,
 )
+from virtual_a_g4_support import empty_grid
 
 ROOT = Path(__file__).resolve().parents[1]
 LAUNCH = ROOT / "catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch"
@@ -1053,6 +1059,134 @@ class CorridorOptimizerC2BTests(unittest.TestCase):
         self.assertAlmostEqual(
             _proxy_numeric_penalty(proxy, request, x, y, psi, kappa, sample),
             expected_penalty, places=12)
+
+
+class SoftClearanceAblationTests(unittest.TestCase):
+    """Step 5: the EDT proxy is a preference, never a certificate input."""
+
+    def test_zero_weight_is_the_exact_no_proxy_objective(self):
+        request = request_from_fixture("STRAIGHT_LINE")
+        config = planner_config(
+            guidance_mode="corridor", solver="ipopt", max_initials=1)
+        packet = _search_packet(request, config)
+        n = int(config.intervals)
+        collocation = int(config.collocation_points)
+        proxy = _proxy_for_field(
+            _asymmetric_clearance_field(), sample_count=n * collocation)
+        zero = _ClearanceProxy(
+            field=proxy.field, angles=proxy.angles,
+            target_m=proxy.target_m, weight=0.0)
+        z = _straight_vector(config)
+        without = _numeric_objective(
+            z, request, config, packet, collocation)
+        exact = _numeric_objective(
+            z, request, config, packet, collocation,
+            clearance_proxy=zero)
+        active = _numeric_objective(
+            z, request, config, packet, collocation,
+            clearance_proxy=proxy)
+        # No term is added at all for weight 0, so this is exact equality,
+        # not a tolerance: the soft preference cannot even perturb rounding.
+        self.assertEqual(exact, without)
+        self.assertGreater(active, without)
+
+        if casadi is None:
+            return
+        captured = {}
+
+        def build(proxy_value, tag):
+            def fake_nlpsol(name, plugin, nlp, options=None):
+                captured[tag] = nlp
+                return object()
+            with mock.patch.object(
+                    casadi, "nlpsol", side_effect=fake_nlpsol):
+                _build_casadi_nlp(
+                    request, config, packet,
+                    clearance_proxy=proxy_value)
+
+        build(None, "without")
+        build(zero, "zero")
+        build(proxy, "active")
+        second = z.copy()
+        second[1:1 + n + 1] = 0.03 * np.sin(0.4 * np.arange(n + 1))
+        second[1 + n + 1:] = 0.02 * np.cos(0.3 * np.arange(n + 1))
+        for vector in (z, second):
+            values = {}
+            for tag, nlp in captured.items():
+                function = casadi.Function(
+                    "clearance_ablation_" + tag,
+                    [nlp["x"]], [nlp["f"], nlp["g"]])
+                values[tag] = function(vector)
+            self.assertEqual(float(values["zero"][0]),
+                             float(values["without"][0]))
+            np.testing.assert_array_equal(
+                np.asarray(values["zero"][1], dtype=float),
+                np.asarray(values["without"][1], dtype=float))
+            self.assertGreater(
+                float(values["active"][0]),
+                float(values["without"][0]))
+
+    def test_clearance_field_has_no_corridor_wall_input(self):
+        grid = empty_grid()
+        ix0 = int(round((2.0 - grid.ox) / grid.res))
+        ix1 = int(round((4.0 - grid.ox) / grid.res))
+        iy0 = int(round((1.6 - grid.oy) / grid.res))
+        iy1 = int(round((2.2 - grid.oy) / grid.res))
+        grid.occ[iy0:iy1, ix0:ix1] = True
+        field = _cached_clearance_field(grid)
+        # Occupancy is the only wall source: an occupied coarse node is zero
+        # up to the bilinear interpolation round-off of the cached lattice.
+        self.assertLessEqual(field.value_at(2.025, 1.625), 1e-12)
+        # Free-space points on would-be artificial corridor edges keep their
+        # real distance to occupancy/map boundary instead of becoming walls.
+        for x, y in ((0.0, 1.0), (3.0, 1.0), (3.0, -1.0)):
+            self.assertGreater(field.value_at(x, y), 0.05)
+        parameters = list(inspect.signature(
+            _cached_clearance_field).parameters)
+        self.assertEqual(parameters, ["grid", "downsample"])
+        self.assertFalse(any("corridor" in name for name in parameters))
+
+    def test_soft_config_never_changes_the_certificate(self):
+        from fwis_v3_optimizer.formation_continuous_a.formation_certificate \
+            import certify_formation_path
+        from tests.test_virtual_a_formation_corridor import (
+            CONTEXT_SHA as FORMATION_CONTEXT_SHA,
+            _scene,
+            _slanted_wall_scene,
+        )
+
+        def certificate(scene, config):
+            return certify_formation_path(
+                scene["path"], scene["request"], scene["chain"],
+                scene["template"],
+                allocation=scene["allocation"], guide=scene["guide"],
+                planning_context_sha256=FORMATION_CONTEXT_SHA,
+                config=config)
+
+        arms = (
+            ("zero", dict(
+                corridor_clearance_weight=0.0,
+                corridor_clearance_target_m=0.0)),
+            ("default", dict(
+                corridor_clearance_weight=1.0,
+                corridor_clearance_target_m=0.05)),
+            ("test_high", dict(
+                corridor_clearance_weight=5.0,
+                corridor_clearance_target_m=0.6)),
+        )
+        for scene, expected in (
+                (_scene(), "VERIFIED"),
+                (_slanted_wall_scene(), "VIOLATED")):
+            certificates = [
+                certificate(scene, replace(scene["config"], **changes))
+                for _name, changes in arms]
+            self.assertEqual(
+                {item["status"] for item in certificates}, {expected})
+            # The payload has no soft-weight field, so the canonical hash is
+            # identical: soft guidance cannot verify or violate anything.
+            self.assertEqual(
+                len({item["certificate_sha256"]
+                     for item in certificates}), 1)
 
 
 if __name__ == "__main__":

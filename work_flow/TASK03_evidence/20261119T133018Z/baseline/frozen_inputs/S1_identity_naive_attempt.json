@@ -1,0 +1,129 @@
+{
+  "S1_context": {
+    "collision_config": {
+      "baseline_margin_floor_m": 0.05,
+      "baseline_margin_m": 0.05,
+      "max_corner_step_ceiling_m": 0.01,
+      "max_corner_step_m": 0.01,
+      "max_samples_per_segment": 200000,
+      "sample_budget_ceiling": 200000
+    },
+    "grid": {
+      "cell_count": 123518,
+      "height": 302,
+      "occupancy_sha256": "896d9d75b36950c942951c75753547c95c656656cf242add593867254e1f4307",
+      "occupied_cells": 102358,
+      "origin_x": -6.800000000000001,
+      "origin_y": -4.800000000000001,
+      "resolution_m": 0.05,
+      "width": 409
+    },
+    "planner_config": {
+      "allow_scipy_fallback": true,
+      "collocation_points": 9,
+      "curvature_margin": 0.02,
+      "eta_limit": 2.0,
+      "heading_tolerance_rad": 0.003490658503988659,
+      "intervals": 8,
+      "ipopt_tolerance": 1e-08,
+      "kappa_limit": 0.5524861878453039,
+      "max_initials": 6,
+      "max_iterations": 120,
+      "max_seconds": 30.0,
+      "position_tolerance_m": 0.005,
+      "rigidity_tolerance_m": 1e-06,
+      "scipy_maxiter": 120,
+      "scipy_tolerance": 1e-08,
+      "solver": "ipopt"
+    },
+    "request_sha256": "d44f9efeb70f636a1e0f24dbc367e7869366ce344d0d88bba020d4ad355c8a1a",
+    "schema": "virtual_rigid_a.g4.planning_context.v1",
+    "stage": "G4",
+    "timing_config": {
+      "geometry_audit_config": {
+        "angle_budget_rad": 1e-09,
+        "audit_max_subintervals_per_segment": 4096,
+        "audit_max_total_subintervals": 20000,
+        "audit_panel_width_m": 0.02,
+        "audit_position_budget_m": 5e-08,
+        "c2_second_tol": 1e-08,
+        "c2_slope_tol": 1e-09,
+        "c2_third_abs_limit": 1000000.0,
+        "c2_value_tol": 1e-09,
+        "heading_tolerance_rad": 0.003490658503988659,
+        "integration_budget_m": 1e-07,
+        "interval_curvature_tolerance": 1e-09,
+        "max_depth": 20,
+        "max_leaves": 200000,
+        "position_tolerance_m": 0.005,
+        "rigidity_tolerance_m": 1e-06,
+        "sample_points_per_segment": 9
+      },
+      "interval_subdivisions_per_segment": 8,
+      "max_rescalings": 8,
+      "max_subdivisions_per_segment": 4096,
+      "max_total_duration_s": 600.0,
+      "max_total_subdivisions": 200000,
+      "rescale_factor": 1.05,
+      "safety_factor": 1.01,
+      "timing_law": "virtual_rigid_a.timing.quintic_smoothstep.v1"
+    }
+  },
+  "S1_grid_sha256": "054cf5c77079536f9a098e33232732d6c181f0f624f07e3a446ebfab0266a10e",
+  "S1_map_meta": {
+    "format": "ROS occupancy grid PGM/YAML",
+    "free_thresh": 0.196,
+    "grid": {
+      "cell_count": 123518,
+      "height": 302,
+      "occupancy_sha256": "896d9d75b36950c942951c75753547c95c656656cf242add593867254e1f4307",
+      "occupied_cells": 102358,
+      "origin_x": -6.800000000000001,
+      "origin_y": -4.800000000000001,
+      "resolution_m": 0.05,
+      "width": 409
+    },
+    "grid_sha256": "054cf5c77079536f9a098e33232732d6c181f0f624f07e3a446ebfab0266a10e",
+    "image_path": "/tmp/task03-s1.aoV9qk/map.pgm",
+    "image_sha256": "0e975d9a49a2e1f2d6fc64f68f0536def44880587e0df4ff33f5fe4eac5175b8",
+    "image_size": [
+      302,
+      409
+    ],
+    "maxval": 255,
+    "negate": false,
+    "occupied_thresh": 0.65,
+    "origin": [
+      -6.800000000000001,
+      -4.800000000000001,
+      0.0
+    ],
+    "resolution_m": 0.05,
+    "schema": "virtual_rigid_a.g4.map.v1",
+    "unknown_cells_are": "occupied",
+    "yaml_path": "/tmp/task03-s1.aoV9qk/map.yaml",
+    "yaml_sha256": "5e64bf4e917c753e66280a0bb8d19bd7c6bd12506cdf9fd34af9c96d03e6b3d6"
+  },
+  "S1_model_sha256_request_canonical": "bbec0e1cb5202817dc26e364a1100660c911a91ececd77ba810fdc4e540f5706",
+  "S1_planner_config": {
+    "allow_scipy_fallback": true,
+    "collocation_points": 9,
+    "curvature_margin": 0.02,
+    "eta_limit": 2.0,
+    "heading_tolerance_rad": 0.003490658503988659,
+    "intervals": 8,
+    "ipopt_tolerance": 1e-08,
+    "kappa_limit": 0.5524861878453039,
+    "max_initials": 6,
+    "max_iterations": 120,
+    "max_seconds": 30.0,
+    "position_tolerance_m": 0.005,
+    "rigidity_tolerance_m": 1e-06,
+    "scipy_maxiter": 120,
+    "scipy_tolerance": 1e-08,
+    "solver": "ipopt"
+  },
+  "S1_planner_config_scope": null,
+  "S1_planning_context_sha256": "80f625e28f50901991661a97f90e55364c8f4bd8f3fe0d8e7eb7ea7e79106282",
+  "S1_request_sha256": "d44f9efeb70f636a1e0f24dbc367e7869366ce344d0d88bba020d4ad355c8a1a"
+}

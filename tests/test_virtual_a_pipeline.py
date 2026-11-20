@@ -11,12 +11,24 @@ from fwis_v3_optimizer.formation import FormationPose
 from fwis_v3_optimizer.formation_continuous_a import optimizer as optimizer_module
 from fwis_v3_optimizer.formation_continuous_a import pipeline as pipeline_module
 from fwis_v3_optimizer.formation_continuous_a.contracts import (
+    FORMATION_CORRIDOR_SCOPE_F_ONLY,
+    FORMATION_CORRIDOR_SCOPE_THREE_VEHICLE_UNION_V1,
     G4_EXECUTABLE_STATUSES,
     GuideRoute,
     PlannerConfig,
     RouteGuideConfig,
     grid_signature,
     request_fingerprint,
+    research_planner_config,
+)
+from fwis_v3_optimizer.formation_continuous_a.corridor import (
+    corridor_chain_from_payload,
+)
+from fwis_v3_optimizer.formation_continuous_a.formation_certificate import (
+    verify_formation_certificate,
+)
+from fwis_v3_optimizer.formation_continuous_a.formation_corridor import (
+    formation_template_from_payload,
 )
 from fwis_v3_optimizer.formation_continuous_a.pipeline import (
     make_route_guides,
@@ -412,6 +424,151 @@ class G4PipelineTests(unittest.TestCase):
         self.assertIsNone(result.path)
         self.assertEqual(
             result.search["budget"]["total_soft_budget_s"], 0.0)
+
+    def test_union_scope_certifies_the_f_obb_path_end_to_end(self):
+        """TASK03 Step 6: the explicit union scope is the only accepting gate.
+
+        The same empty-grid straight motion is solved through the real
+        pipeline with ``three_vehicle_union_v1``: the result must carry the
+        sealed template identity, the OBB constraint rows and a VERIFIED
+        certificate that re-verifies against the published path.
+        """
+        grid = empty_grid()
+        request = make_request(
+            FormationPose(0.0, 0.0, 0.0), FormationPose(6.0, 0.0, 0.0))
+        planner = research_planner_config(
+            guidance_mode="corridor", corridor_enforcement="hard",
+            formation_corridor_scope=
+                FORMATION_CORRIDOR_SCOPE_THREE_VEHICLE_UNION_V1,
+            max_initials=3, max_seconds=20.0)
+        result = plan_virtual_a(map_request(request, grid, planner=planner))
+        self.assertEqual(result.status, "SUCCESS", result.as_dict())
+        self.assertTrue(result.executable)
+        self.assertEqual(result.formation_corridor_scope,
+                         FORMATION_CORRIDOR_SCOPE_THREE_VEHICLE_UNION_V1)
+        audit = result.formation_corridor_audit
+        self.assertEqual(audit["scope"],
+                         FORMATION_CORRIDOR_SCOPE_THREE_VEHICLE_UNION_V1)
+        self.assertEqual(audit["status"], "VERIFIED")
+        self.assertEqual(audit["certification_claim"],
+                         "CONTINUOUS_F_OBB_CERTIFICATE")
+        self.assertEqual(audit["template_id"],
+                         result.formation_template_id)
+        self.assertGreater(result.formation_obb_constraint_count, 0)
+        self.assertTrue(audit["certificate_verification"]["passed"])
+        certificate = audit["certificate"]
+        self.assertEqual(certificate["status"], "VERIFIED")
+        self.assertEqual(certificate["certificate_sha256"],
+                         result.formation_certificate["certificate_sha256"])
+        self.assertEqual(
+            result.metrics["formation_certificate_verified"], True)
+        self.assertEqual(
+            result.metrics["corridor_containment_certified"], True)
+        # The certificate identity is rebuilt from the serialized result
+        # evidence, not from process memory.
+        chain = corridor_chain_from_payload(
+            result.search["corridor"]["rounds"][-1]["chain"])
+        template = formation_template_from_payload(audit["template"])
+        verification = verify_formation_certificate(
+            certificate, result.path, result.plan._request, chain, template,
+            planning_context_sha256=result.planning_context_sha256)
+        self.assertTrue(verification["passed"], verification)
+        payload = result.as_dict()
+        self.assertEqual(payload["formation_corridor_scope"],
+                         FORMATION_CORRIDOR_SCOPE_THREE_VEHICLE_UNION_V1)
+        self.assertEqual(payload["formation_template_id"],
+                         certificate["template_id"])
+        self.assertEqual(
+            payload["formation_obb_constraint_count"],
+            result.formation_obb_constraint_count)
+
+    def test_f_only_scope_keeps_the_historical_result_key_set(self):
+        """TASK03 Step 6: default scope must not change serialized history."""
+        grid = empty_grid()
+        request = make_request(
+            FormationPose(0.0, 0.0, 0.0), FormationPose(6.0, 0.0, 0.0))
+        planner = research_planner_config(
+            guidance_mode="corridor", corridor_enforcement="hard",
+            formation_corridor_scope=FORMATION_CORRIDOR_SCOPE_F_ONLY,
+            max_initials=3, max_seconds=20.0)
+        result = plan_virtual_a(map_request(request, grid, planner=planner))
+        self.assertEqual(result.status, "SUCCESS", result.as_dict())
+        self.assertEqual(result.formation_corridor_scope,
+                         FORMATION_CORRIDOR_SCOPE_F_ONLY)
+        payload = result.as_dict()
+        for key in ("formation_corridor_scope", "formation_corridor_audit",
+                    "formation_template_id",
+                    "formation_obb_constraint_count",
+                    "formation_certificate"):
+            self.assertNotIn(key, payload)
+        self.assertNotIn("formation_corridor_scope", result.search)
+        self.assertNotIn(
+            "formation_templates",
+            result.search["corridor"]["rounds"][-1])
+
+    def test_f_only_historical_model_and_context_hashes_are_unchanged(self):
+        """TASK03 rework Step B: the frozen f_only identity still rebuilds.
+
+        The TASK03 baseline froze the canonical request payload, the planning
+        context and the observed digests of the MAP05 straight ``f_only``
+        run.  Rebuilding those objects with the reworked source must
+        reproduce them exactly: the union-scope additions may not leak into
+        the default ``f_only`` serialization or its model/context identity.
+        """
+        import shutil
+        import tempfile
+
+        from fwis_v3_optimizer.core import Grid
+        from fwis_v3_optimizer.formation_continuous_a import contracts as contracts_module
+        from fwis_v3_optimizer.formation_continuous_a.collision import load_map
+
+        baseline = (Path(__file__).resolve().parents[1]
+                    / "work_flow/TASK03_evidence/20261119T133018Z/baseline")
+        payload = json.loads(
+            (baseline / "MAP05_straight_request_reconstructed.json").read_text(
+                encoding="utf-8"))
+        frozen_context = json.loads(
+            (baseline / "MAP05_straight_planning_context.json").read_text(
+                encoding="utf-8"))
+        identity = json.loads(
+            (baseline / "MAP05_straight_identity.json").read_text(
+                encoding="utf-8"))
+        observed = identity["observed"]
+
+        request = contracts_module.request_from_payload(payload)
+        self.assertEqual(contracts_module.request_payload(request), payload)
+        self.assertEqual(contracts_module.request_fingerprint(request),
+                         observed["request_sha256"])
+        self.assertEqual(
+            contracts_module.planning_context_sha256(frozen_context),
+            observed["planning_context_sha256"])
+
+        temp = tempfile.mkdtemp(prefix="task03-f-only-identity.")
+        try:
+            shutil.copy(baseline / "frozen_inputs/MAP05_straight_map.yaml",
+                        temp + "/map.yaml")
+            shutil.copy(baseline / "frozen_inputs/MAP05_straight_map.pgm",
+                        temp + "/map.pgm")
+            grid_from_pgm, _metadata = load_map(temp + "/map.yaml")
+        finally:
+            shutil.rmtree(temp)
+        grid = Grid(
+            grid_from_pgm.occ,
+            np.float32(frozen_context["grid"]["resolution_m"]),
+            grid_from_pgm.ox, grid_from_pgm.oy)
+        self.assertEqual(grid_signature(grid), observed["grid_sha256"])
+
+        planner = research_planner_config(
+            guidance_mode="corridor", corridor_enforcement="hard")
+        self.assertEqual(planner.formation_corridor_scope,
+                         FORMATION_CORRIDOR_SCOPE_F_ONLY)
+        context = contracts_module.planning_context(
+            request, grid, planner, contracts_module.TimingConfig(),
+            contracts_module.CollisionConfig())
+        self.assertEqual(context, frozen_context)
+        self.assertEqual(
+            contracts_module.planning_context_sha256(context),
+            observed["planning_context_sha256"])
 
 
 class RouteAndGuideSelectionTests(unittest.TestCase):

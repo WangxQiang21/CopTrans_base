@@ -1,0 +1,277 @@
+{
+  "direct_cover_geometry": {
+    "diagonal_one": [
+      {
+        "decomposition": "diagonal_1",
+        "region_indices": [
+          0,
+          1
+        ]
+      }
+    ],
+    "diagonal_zero": [
+      {
+        "decomposition": "diagonal_0",
+        "region_indices": [
+          1,
+          0
+        ]
+      }
+    ],
+    "e07_nonconvex_gap": {
+      "all_four_corners_in_union": true,
+      "center_in_union": false,
+      "finite_options": [],
+      "frame": {
+        "length_m": 0.738,
+        "vehicle_id": 1,
+        "width_m": 0.5
+      }
+    },
+    "long_axis_crossing": [],
+    "portal_theta_rad": 0.9753265316086438,
+    "rectangle_half_diagonal_angle_rad": 0.5954697951862528
+  },
+  "insufficient_scene": {
+    "assessment": {
+      "candidate_certification": "DIAGNOSTIC_ONLY",
+      "map_sample_counts": {
+        "clear": 47,
+        "map_collision": 0,
+        "sampled": 47,
+        "unconfirmed": 0,
+        "vehicle_collision": 0
+      },
+      "map_sample_status": "CLEAR_AT_SAMPLES"
+    },
+    "builder_failure": {
+      "detail": "COVER_TEMPLATE_INSUFFICIENT: station sigma=0.15726606955366723 vehicle 1 has no finite whole/diagonal cover in regions [0, 1]",
+      "is_physical_infeasibility": false,
+      "reason": "COVER_TEMPLATE_INSUFFICIENT"
+    },
+    "chain_audit": {
+      "passed": true,
+      "reason": "CORRIDOR_CHAIN_VERIFIED"
+    },
+    "note": "map samples are clear; finite whole/diagonal templates cannot express the union-covered pose, so the candidate is unknown, not physically infeasible"
+  },
+  "positive_scene": {
+    "assessment": {
+      "candidate_certification": "DIAGNOSTIC_ONLY",
+      "candidate_id": "dd41b2a92f6d97423bbbbf9ea58d912533b0cd0c78ce3b7c9c582381786f1481",
+      "continuously_certified": false,
+      "coverage_sample_counts": null,
+      "formation_obb_hard_constraints": false,
+      "map_sample_counts": {
+        "clear": 47,
+        "map_collision": 0,
+        "sampled": 47,
+        "unconfirmed": 0,
+        "vehicle_collision": 0
+      },
+      "map_sample_status": "CLEAR_AT_SAMPLES"
+    },
+    "candidate_set": {
+      "cuts": [
+        0.0,
+        0.19777098860641562,
+        0.3814162659269637,
+        0.8209235894179298,
+        1.0
+      ],
+      "per_segment_vehicle_option_counts": [
+        [
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          1,
+          1
+        ],
+        [
+          1,
+          1,
+          1
+        ]
+      ],
+      "station_count": 57,
+      "synthetic_station_count": 10,
+      "template_count": 1,
+      "template_ids": [
+        "f8def307537555a752de8a0b55679b7cfae4cb5a3b16cb6d7539db74811676db"
+      ],
+      "truncated_option_count": 0
+    },
+    "chain_audit": {
+      "passed": true,
+      "reason": "CORRIDOR_CHAIN_VERIFIED"
+    },
+    "dialect": "row counts are actual appended scalar inequalities only",
+    "first_internal_cut_double_sided": {
+      "body_regions": [
+        0,
+        1
+      ],
+      "covers_match_samples": true,
+      "sample_count": 8,
+      "segment_indices": [
+        0,
+        1
+      ],
+      "sigma": 0.19777098860641562,
+      "sources": [
+        "template_segment_boundary"
+      ]
+    },
+    "first_template": {
+      "segments": [
+        {
+          "covers": [
+            {
+              "decomposition": "whole",
+              "region_indices": [
+                0
+              ],
+              "vehicle_id": 1
+            },
+            {
+              "decomposition": "whole",
+              "region_indices": [
+                0
+              ],
+              "vehicle_id": 2
+            },
+            {
+              "decomposition": "diagonal_0",
+              "region_indices": [
+                1,
+                0
+              ],
+              "vehicle_id": 3
+            }
+          ],
+          "sigma_end": 0.19777098860641562,
+          "sigma_start": 0.0
+        },
+        {
+          "covers": [
+            {
+              "decomposition": "diagonal_0",
+              "region_indices": [
+                1,
+                0
+              ],
+              "vehicle_id": 1
+            },
+            {
+              "decomposition": "whole",
+              "region_indices": [
+                0
+              ],
+              "vehicle_id": 2
+            },
+            {
+              "decomposition": "whole",
+              "region_indices": [
+                1
+              ],
+              "vehicle_id": 3
+            }
+          ],
+          "sigma_end": 0.3814162659269637,
+          "sigma_start": 0.19777098860641562
+        },
+        {
+          "covers": [
+            {
+              "decomposition": "whole",
+              "region_indices": [
+                1
+              ],
+              "vehicle_id": 1
+            },
+            {
+              "decomposition": "whole",
+              "region_indices": [
+                0
+              ],
+              "vehicle_id": 2
+            },
+            {
+              "decomposition": "whole",
+              "region_indices": [
+                1
+              ],
+              "vehicle_id": 3
+            }
+          ],
+          "sigma_end": 0.8209235894179298,
+          "sigma_start": 0.3814162659269637
+        },
+        {
+          "covers": [
+            {
+              "decomposition": "whole",
+              "region_indices": [
+                1
+              ],
+              "vehicle_id": 1
+            },
+            {
+              "decomposition": "diagonal_0",
+              "region_indices": [
+                1,
+                0
+              ],
+              "vehicle_id": 2
+            },
+            {
+              "decomposition": "whole",
+              "region_indices": [
+                1
+              ],
+              "vehicle_id": 3
+            }
+          ],
+          "sigma_end": 1.0,
+          "sigma_start": 0.8209235894179298
+        }
+      ],
+      "template_id": "f8def307537555a752de8a0b55679b7cfae4cb5a3b16cb6d7539db74811676db"
+    },
+    "first_template_rows": {
+      "rows_by_vehicle": [
+        [
+          1,
+          1536
+        ],
+        [
+          2,
+          1520
+        ],
+        [
+          3,
+          1528
+        ]
+      ],
+      "sample_count": 312,
+      "scalar_row_count": 4584,
+      "segment_row_counts": [
+        952,
+        1008,
+        1728,
+        896
+      ],
+      "vehicle_count": 3
+    }
+  },
+  "role": "task03_step2_finite_portal_templates_measured",
+  "worktree": "/home/wq/whut_thesis/expv3_multi_virtual_a"
+}

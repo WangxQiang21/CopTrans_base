@@ -1,0 +1,78 @@
+{
+  "schema": "task03_rework02.delivery.v1",
+  "task": "TASK03 rework 02 - E09 gate migration acceptance",
+  "outcome": "BLOCKED_DESIGN_DECISION",
+  "e09_status": "NOT_REPRODUCIBLE",
+  "e09_contract_satisfied": false,
+  "reason": "After the full frozen budget of 30 deterministic production-pipeline scenes, no scene reached template construction, the NLP, the continuous certificate, or the migration gate. Every scene that formed two adjacent audited corridor regions (27 of 30) was rejected at the formation-guide assessment layer by a real three-vehicle map OBB collision; a bare-OBB recomputation of one witness confirms genuine penetration.",
+  "baseline": {
+    "head": "a3c709e57560b1060dcc422777f4131a3e558acf",
+    "branch": "feature/virtual-rigid-formation-a",
+    "git_status_entries_start": 32,
+    "git_status_entries_end": 32,
+    "task03_sources_changed": 0,
+    "source_diff_lines": 0
+  },
+  "scan_budget": {
+    "maximum_unique_combinations": 30,
+    "used_unique_combinations": 30,
+    "repeat_diagnostics": 2,
+    "stopped_at_limit": true
+  },
+  "scan_outcome": {
+    "combinations_total": 30,
+    "combination_counts": {
+      "no_route_guide": 1,
+      "single_region_chain": 2,
+      "two_region_chain": 27
+    },
+    "chain_portal_audit_passed": 27,
+    "assessment_clear": 0,
+    "templates_built": 0,
+    "nlp_attempts": 0,
+    "solver_captures": 0,
+    "continuous_certificates": 0,
+    "f_only_gate_migrated_any": 0,
+    "result_status_all": "NO_ACCEPTED_CANDIDATE",
+    "instrumented_runs": 24,
+    "collision_station_count_range": [13, 190],
+    "allocation_region0_last_cut_range": [0.4590572145708203, 0.9357104559089854]
+  },
+  "failure_layers": {
+    "route_generation": 1,
+    "guide_assessment_three_vehicle_map_obb": 29,
+    "template_build": 0,
+    "nlp_solver": 0,
+    "continuous_certificate": 0,
+    "old_allocation_audit_on_final_path": 0,
+    "migration_gate": 0,
+    "playback_receiver": 0
+  },
+  "witness_verification": {
+    "scene": "s30",
+    "station_sigma": 0.3170731707317073,
+    "station_s_m": 6.407694329814383,
+    "method": "independent SAT of each vehicle rectangle against the frozen occupancy wall cells; no production collision code used",
+    "vehicle_1_center": [7.3841, 0.5913],
+    "vehicle_1_bare_penetration_m": 0.1077,
+    "any_bare_collision": true,
+    "conclusion": "the assessment rejection is a genuine OBB collision, not a margin-only or checker artefact"
+  },
+  "protected_checks": {
+    "geometry_py_sha256": "f31b20bbd6333c44f12be4064c069e11143c870ab02b99d4839b9778317efc3d",
+    "test_virtual_a_geometry_sha256": "4f59e68ff5dc26468d42e131836078b0d2eef06853e998bfca5e168c77ddb4c7",
+    "protected_match_start": true,
+    "evaluation_git_tree_hash": "c2fa3efaa9f649c0b08c1f78bbe83344bcfe73e8f43e35fb861e8bd8fb5d5ae1",
+    "task01_evidence_tree_hash": "a89ff48c7af13e7a2cceb614e75ab1f51a54bb277bf011e4cad86e3eb08a9cdf",
+    "task02_evidence_tree_hash": "b9f73b8b830cab15c3ca51c8c428e40ca0e54ac9e23358392835f33ddbc0c00a",
+    "task03_evidence_tree_hash": "cccf514ef8fc6720d7f393a040db775ab535028d38bbd203fa50e1392772deb5",
+    "task03_rework01_evidence_tree_hash": "88f37756200abe8a8710f1f06b640d2adfef209886ce8ff317066c041c9e7168",
+    "all_protected_unchanged": true
+  },
+  "required_decisions": [
+    "Keep the current allocation definition and improve the initial-value / objective so a legal adjacent template can be found by the optimizer (research-backed change).",
+    "Define the switch time by actual optimizer-path region crossings instead of guide arc length (changes allocation semantics and template/optimizer coupling).",
+    "Keep the legacy F-only hard gate and explicitly drop the gate-migration / E09 target for this stage."
+  ],
+  "note": "Claude did not choose any of the three options; per the rework plan they belong to the user and ChatGPT."
+}

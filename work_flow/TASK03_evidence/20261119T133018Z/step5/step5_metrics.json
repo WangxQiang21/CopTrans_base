@@ -1,0 +1,644 @@
+{
+  "arms": {
+    "no_soft_context_default_target": {
+      "attempts": [
+        {
+          "constraint_residual": 1.7763568394002505e-15,
+          "detail": "Solve_Succeeded",
+          "iterations": 7,
+          "objective": 1.002064117002572,
+          "rejection_reason": "",
+          "solver": "ipopt",
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 7.860331400996074
+        }
+      ],
+      "certificate": {
+        "allocation_digest": "1d61efea6771531195fbf0bc45fbcebf15e05687580e495ff73e7cbebb846122",
+        "certificate_sha256": "bf073cf90ff26e96a729471e637e5dcd1b92361d3e8fa9b394324b940a05e2ff",
+        "chain_digest": "c2a7685e14241a3eb71aa537f0d1ff6c918705cb6a6ac63614c411309f1b5602",
+        "cut_check_count": 16,
+        "elapsed_s": 0.007875486044213176,
+        "guide_sha256": "197f37cfcaa9e0270252137ecbb8a01ca0682acd58d821026a665d8e29d67263",
+        "interval_limit_reached": false,
+        "intervals_checked": 8,
+        "intervals_verified": 8,
+        "limits": {
+          "definite_margin_m": 1e-09,
+          "evaluation_guard_m": 1e-12,
+          "max_depth": 24,
+          "max_intervals": 20000,
+          "max_seconds": 11.002601853804663,
+          "min_width_m": 1e-05
+        },
+        "max_depth_reached": 0,
+        "max_outward_residual_m": -0.4999899971639605,
+        "path_sha256": "72d318007482f196107fb343fb9e2f740c832bb5fc820cae9bc6419c5a6748f2",
+        "reason": "",
+        "schema": "virtual_a_formation_continuous_certificate_v1",
+        "status": "VERIFIED",
+        "timed_out": false
+      },
+      "certificate_verification": {
+        "certificate_sha256": "bf073cf90ff26e96a729471e637e5dcd1b92361d3e8fa9b394324b940a05e2ff",
+        "detail": "",
+        "passed": true,
+        "reason": "",
+        "status": "VERIFIED"
+      },
+      "config": {
+        "corridor_clearance_target_m": 0.05,
+        "corridor_clearance_weight": 0.0,
+        "max_initials": 1,
+        "max_seconds": 20.0,
+        "solver": "ipopt"
+      },
+      "corridor_halfspace_constraint_count": 352,
+      "detail": "best independently audited candidate; geometry only",
+      "edt_body_clearance": {
+        "clearance_m": 0.2966831249682711,
+        "edt_m": 0.6753540588692512,
+        "s_m": 1.78125,
+        "support_m": 0.37867093390098006,
+        "vehicle_id": 2
+      },
+      "endpoint": {
+        "psi": 0.0,
+        "x": 6.000000000000001,
+        "y": 2.262059631797383e-25
+      },
+      "formation_obb_constraint_count": 3888,
+      "formation_template_id": "d276bf4e1a6e99879016367ba190c7586cc00109faa12d9c90a057be95fa657b",
+      "geometry_audit": {
+        "check_count": 155,
+        "detail": "independent C2/interval/integration audit; geometry only, no timing/map/ROS/collision claim",
+        "passed": true,
+        "reason": null
+      },
+      "length_m": 6.0,
+      "max_abs_kappa": 1.2206795856046996e-15,
+      "path_is_none": false,
+      "reason": "",
+      "solver_used": "ipopt",
+      "status": "GEOMETRY_FEASIBLE",
+      "three_layer": {
+        "collision": {
+          "check_count": 3740,
+          "detail": "static start/goal plus unchanged analytic three-vehicle OBB sweep over the whole closed path; declared per-lambda bounds independently verified; conservative margin includes the numerical envelope; map and G4 context bound",
+          "passed": true,
+          "reason": null
+        },
+        "duration_s": 14.203125000000298,
+        "dynamics": {
+          "check_count": 909,
+          "detail": "independent raw-profile common-time dynamic audit; whole-domain interval certificate plus node/endpoint/inverse/differential checks; DYNAMIC_FEASIBLE; collision_checked=false; executable=false; no map/ROS",
+          "passed": true,
+          "reason": null
+        },
+        "timing_detail": "",
+        "timing_reason": "",
+        "timing_status": "DYNAMIC_FEASIBLE"
+      },
+      "wall_time_s": 9.035962261026725
+    },
+    "weight_one_default_target": {
+      "attempts": [
+        {
+          "constraint_residual": 1.7763568394002505e-15,
+          "detail": "Solve_Succeeded",
+          "iterations": 7,
+          "objective": 1.002064117002572,
+          "rejection_reason": "",
+          "solver": "ipopt",
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 7.474500156007707
+        }
+      ],
+      "certificate": {
+        "allocation_digest": "1d61efea6771531195fbf0bc45fbcebf15e05687580e495ff73e7cbebb846122",
+        "certificate_sha256": "954354809e7986c60f22c1be4a21bfb06c6c14c9fa8870328c4b47afea319d2c",
+        "chain_digest": "c2a7685e14241a3eb71aa537f0d1ff6c918705cb6a6ac63614c411309f1b5602",
+        "cut_check_count": 16,
+        "elapsed_s": 0.007757938001304865,
+        "guide_sha256": "197f37cfcaa9e0270252137ecbb8a01ca0682acd58d821026a665d8e29d67263",
+        "interval_limit_reached": false,
+        "intervals_checked": 8,
+        "intervals_verified": 8,
+        "limits": {
+          "definite_margin_m": 1e-09,
+          "evaluation_guard_m": 1e-12,
+          "max_depth": 24,
+          "max_intervals": 20000,
+          "max_seconds": 11.411378397839144,
+          "min_width_m": 1e-05
+        },
+        "max_depth_reached": 0,
+        "max_outward_residual_m": -0.49998999716396003,
+        "path_sha256": "07dbbc2c44926183d6ab9d41a130501a9e5159cf29a6325e7081f2bdda799ef0",
+        "reason": "",
+        "schema": "virtual_a_formation_continuous_certificate_v1",
+        "status": "VERIFIED",
+        "timed_out": false
+      },
+      "certificate_verification": {
+        "certificate_sha256": "954354809e7986c60f22c1be4a21bfb06c6c14c9fa8870328c4b47afea319d2c",
+        "detail": "",
+        "passed": true,
+        "reason": "",
+        "status": "VERIFIED"
+      },
+      "config": {
+        "corridor_clearance_target_m": 0.05,
+        "corridor_clearance_weight": 1.0,
+        "max_initials": 1,
+        "max_seconds": 20.0,
+        "solver": "ipopt"
+      },
+      "corridor_halfspace_constraint_count": 352,
+      "detail": "best independently audited candidate; geometry only",
+      "edt_body_clearance": {
+        "clearance_m": 0.29668312496826876,
+        "edt_m": 0.6753540588692504,
+        "s_m": 1.78125,
+        "support_m": 0.3786709339009816,
+        "vehicle_id": 2
+      },
+      "endpoint": {
+        "psi": -2.9582283945787943e-31,
+        "x": 6.000000000000001,
+        "y": 4.324365877326964e-24
+      },
+      "formation_obb_constraint_count": 3888,
+      "formation_template_id": "d276bf4e1a6e99879016367ba190c7586cc00109faa12d9c90a057be95fa657b",
+      "geometry_audit": {
+        "check_count": 155,
+        "detail": "independent C2/interval/integration audit; geometry only, no timing/map/ROS/collision claim",
+        "passed": true,
+        "reason": null
+      },
+      "length_m": 6.0,
+      "max_abs_kappa": 1.5272096082280373e-15,
+      "path_is_none": false,
+      "reason": "",
+      "solver_used": "ipopt",
+      "status": "GEOMETRY_FEASIBLE",
+      "three_layer": {
+        "collision": {
+          "check_count": 3740,
+          "detail": "static start/goal plus unchanged analytic three-vehicle OBB sweep over the whole closed path; declared per-lambda bounds independently verified; conservative margin includes the numerical envelope; map and G4 context bound",
+          "passed": true,
+          "reason": null
+        },
+        "duration_s": 14.203125000000302,
+        "dynamics": {
+          "check_count": 909,
+          "detail": "independent raw-profile common-time dynamic audit; whole-domain interval certificate plus node/endpoint/inverse/differential checks; DYNAMIC_FEASIBLE; collision_checked=false; executable=false; no map/ROS",
+          "passed": true,
+          "reason": null
+        },
+        "timing_detail": "",
+        "timing_reason": "",
+        "timing_status": "DYNAMIC_FEASIBLE"
+      },
+      "wall_time_s": 8.628630672115833
+    },
+    "weight_one_test_target": {
+      "attempts": [
+        {
+          "constraint_residual": 1.8474111129762605e-13,
+          "detail": "Solve_Succeeded",
+          "iterations": 36,
+          "objective": 1.0021419425153066,
+          "rejection_reason": "",
+          "solver": "ipopt",
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 13.540581548120826
+        }
+      ],
+      "certificate": {
+        "allocation_digest": "1d61efea6771531195fbf0bc45fbcebf15e05687580e495ff73e7cbebb846122",
+        "certificate_sha256": "d64c63d67a5b46d053eb195c505fb700d82b62623f85dc016dc1b8b3086f6c27",
+        "chain_digest": "c2a7685e14241a3eb71aa537f0d1ff6c918705cb6a6ac63614c411309f1b5602",
+        "cut_check_count": 16,
+        "elapsed_s": 0.008023894159123302,
+        "guide_sha256": "197f37cfcaa9e0270252137ecbb8a01ca0682acd58d821026a665d8e29d67263",
+        "interval_limit_reached": false,
+        "intervals_checked": 8,
+        "intervals_verified": 8,
+        "limits": {
+          "definite_margin_m": 1e-09,
+          "evaluation_guard_m": 1e-12,
+          "max_depth": 24,
+          "max_intervals": 20000,
+          "max_seconds": 5.289132568985224,
+          "min_width_m": 1e-05
+        },
+        "max_depth_reached": 0,
+        "max_outward_residual_m": -0.49956262041872884,
+        "path_sha256": "45f629fa9f0cd74f04bbf899020c721c729f27dd72edda934c713dee7d6b23cf",
+        "reason": "",
+        "schema": "virtual_a_formation_continuous_certificate_v1",
+        "status": "VERIFIED",
+        "timed_out": false
+      },
+      "certificate_verification": {
+        "certificate_sha256": "d64c63d67a5b46d053eb195c505fb700d82b62623f85dc016dc1b8b3086f6c27",
+        "detail": "",
+        "passed": true,
+        "reason": "",
+        "status": "VERIFIED"
+      },
+      "config": {
+        "corridor_clearance_target_m": 0.6,
+        "corridor_clearance_weight": 1.0,
+        "max_initials": 1,
+        "max_seconds": 20.0,
+        "solver": "ipopt"
+      },
+      "corridor_halfspace_constraint_count": 352,
+      "detail": "best independently audited candidate; geometry only",
+      "edt_body_clearance": {
+        "clearance_m": 0.296728492260405,
+        "edt_m": 0.6753575516557375,
+        "s_m": 1.7812500046669426,
+        "support_m": 0.37862905939533253,
+        "vehicle_id": 2
+      },
+      "endpoint": {
+        "psi": 1.6181717424346154e-17,
+        "x": 5.999999999999794,
+        "y": -1.4686209469675846e-11
+      },
+      "formation_obb_constraint_count": 3888,
+      "formation_template_id": "d276bf4e1a6e99879016367ba190c7586cc00109faa12d9c90a057be95fa657b",
+      "geometry_audit": {
+        "check_count": 155,
+        "detail": "independent C2/interval/integration audit; geometry only, no timing/map/ROS/collision claim",
+        "passed": true,
+        "reason": null
+      },
+      "length_m": 6.000000015720228,
+      "max_abs_kappa": 0.0013175771888136662,
+      "path_is_none": false,
+      "reason": "",
+      "solver_used": "ipopt",
+      "status": "GEOMETRY_FEASIBLE",
+      "three_layer": {
+        "collision": {
+          "check_count": 3740,
+          "detail": "static start/goal plus unchanged analytic three-vehicle OBB sweep over the whole closed path; declared per-lambda bounds independently verified; conservative margin includes the numerical envelope; map and G4 context bound",
+          "passed": true,
+          "reason": null
+        },
+        "duration_s": 14.203375989376259,
+        "dynamics": {
+          "check_count": 909,
+          "detail": "independent raw-profile common-time dynamic audit; whole-domain interval certificate plus node/endpoint/inverse/differential checks; DYNAMIC_FEASIBLE; collision_checked=false; executable=false; no map/ROS",
+          "passed": true,
+          "reason": null
+        },
+        "timing_detail": "",
+        "timing_reason": "",
+        "timing_status": "DYNAMIC_FEASIBLE"
+      },
+      "wall_time_s": 14.74962742603384
+    },
+    "weight_zero_default_target": {
+      "attempts": [
+        {
+          "constraint_residual": 1.7763568394002505e-15,
+          "detail": "Solve_Succeeded",
+          "iterations": 7,
+          "objective": 1.002064117002572,
+          "rejection_reason": "",
+          "solver": "ipopt",
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 7.455833151936531
+        }
+      ],
+      "certificate": {
+        "allocation_digest": "1d61efea6771531195fbf0bc45fbcebf15e05687580e495ff73e7cbebb846122",
+        "certificate_sha256": "b9893f864061564349c46f30550a53c17b7d4dbb62645af3b846e334a4efa484",
+        "chain_digest": "c2a7685e14241a3eb71aa537f0d1ff6c918705cb6a6ac63614c411309f1b5602",
+        "cut_check_count": 16,
+        "elapsed_s": 0.007959784008562565,
+        "guide_sha256": "197f37cfcaa9e0270252137ecbb8a01ca0682acd58d821026a665d8e29d67263",
+        "interval_limit_reached": false,
+        "intervals_checked": 8,
+        "intervals_verified": 8,
+        "limits": {
+          "definite_margin_m": 1e-09,
+          "evaluation_guard_m": 1e-12,
+          "max_depth": 24,
+          "max_intervals": 20000,
+          "max_seconds": 11.411279651103541,
+          "min_width_m": 1e-05
+        },
+        "max_depth_reached": 0,
+        "max_outward_residual_m": -0.4999899971639605,
+        "path_sha256": "72d318007482f196107fb343fb9e2f740c832bb5fc820cae9bc6419c5a6748f2",
+        "reason": "",
+        "schema": "virtual_a_formation_continuous_certificate_v1",
+        "status": "VERIFIED",
+        "timed_out": false
+      },
+      "certificate_verification": {
+        "certificate_sha256": "b9893f864061564349c46f30550a53c17b7d4dbb62645af3b846e334a4efa484",
+        "detail": "",
+        "passed": true,
+        "reason": "",
+        "status": "VERIFIED"
+      },
+      "config": {
+        "corridor_clearance_target_m": 0.05,
+        "corridor_clearance_weight": 0.0,
+        "max_initials": 1,
+        "max_seconds": 20.0,
+        "solver": "ipopt"
+      },
+      "corridor_halfspace_constraint_count": 352,
+      "detail": "best independently audited candidate; geometry only",
+      "edt_body_clearance": {
+        "clearance_m": 0.2966831249682711,
+        "edt_m": 0.6753540588692512,
+        "s_m": 1.78125,
+        "support_m": 0.37867093390098006,
+        "vehicle_id": 2
+      },
+      "endpoint": {
+        "psi": 0.0,
+        "x": 6.000000000000001,
+        "y": 2.262059631797383e-25
+      },
+      "formation_obb_constraint_count": 3888,
+      "formation_template_id": "d276bf4e1a6e99879016367ba190c7586cc00109faa12d9c90a057be95fa657b",
+      "geometry_audit": {
+        "check_count": 155,
+        "detail": "independent C2/interval/integration audit; geometry only, no timing/map/ROS/collision claim",
+        "passed": true,
+        "reason": null
+      },
+      "length_m": 6.0,
+      "max_abs_kappa": 1.2206795856046996e-15,
+      "path_is_none": false,
+      "reason": "",
+      "solver_used": "ipopt",
+      "status": "GEOMETRY_FEASIBLE",
+      "three_layer": {
+        "collision": {
+          "check_count": 3740,
+          "detail": "static start/goal plus unchanged analytic three-vehicle OBB sweep over the whole closed path; declared per-lambda bounds independently verified; conservative margin includes the numerical envelope; map and G4 context bound",
+          "passed": true,
+          "reason": null
+        },
+        "duration_s": 14.203125000000298,
+        "dynamics": {
+          "check_count": 909,
+          "detail": "independent raw-profile common-time dynamic audit; whole-domain interval certificate plus node/endpoint/inverse/differential checks; DYNAMIC_FEASIBLE; collision_checked=false; executable=false; no map/ROS",
+          "passed": true,
+          "reason": null
+        },
+        "timing_detail": "",
+        "timing_reason": "",
+        "timing_status": "DYNAMIC_FEASIBLE"
+      },
+      "wall_time_s": 8.626915202010423
+    },
+    "weight_zero_test_target": {
+      "attempts": [
+        {
+          "constraint_residual": 1.7763568394002505e-15,
+          "detail": "Solve_Succeeded",
+          "iterations": 7,
+          "objective": 1.002064117002572,
+          "rejection_reason": "",
+          "solver": "ipopt",
+          "solver_status": "Solve_Succeeded",
+          "status": "SOLVER_SUCCESS_AUDITED",
+          "wall_time_s": 7.541919642826542
+        }
+      ],
+      "certificate": {
+        "allocation_digest": "1d61efea6771531195fbf0bc45fbcebf15e05687580e495ff73e7cbebb846122",
+        "certificate_sha256": "0d957dc22a237a9402189ca98737374c72cb38faa2e76a33b0335e19a452f87b",
+        "chain_digest": "c2a7685e14241a3eb71aa537f0d1ff6c918705cb6a6ac63614c411309f1b5602",
+        "cut_check_count": 16,
+        "elapsed_s": 0.00779593107290566,
+        "guide_sha256": "197f37cfcaa9e0270252137ecbb8a01ca0682acd58d821026a665d8e29d67263",
+        "interval_limit_reached": false,
+        "intervals_checked": 8,
+        "intervals_verified": 8,
+        "limits": {
+          "definite_margin_m": 1e-09,
+          "evaluation_guard_m": 1e-12,
+          "max_depth": 24,
+          "max_intervals": 20000,
+          "max_seconds": 11.32508310303092,
+          "min_width_m": 1e-05
+        },
+        "max_depth_reached": 0,
+        "max_outward_residual_m": -0.4999899971639605,
+        "path_sha256": "72d318007482f196107fb343fb9e2f740c832bb5fc820cae9bc6419c5a6748f2",
+        "reason": "",
+        "schema": "virtual_a_formation_continuous_certificate_v1",
+        "status": "VERIFIED",
+        "timed_out": false
+      },
+      "certificate_verification": {
+        "certificate_sha256": "0d957dc22a237a9402189ca98737374c72cb38faa2e76a33b0335e19a452f87b",
+        "detail": "",
+        "passed": true,
+        "reason": "",
+        "status": "VERIFIED"
+      },
+      "config": {
+        "corridor_clearance_target_m": 0.6,
+        "corridor_clearance_weight": 0.0,
+        "max_initials": 1,
+        "max_seconds": 20.0,
+        "solver": "ipopt"
+      },
+      "corridor_halfspace_constraint_count": 352,
+      "detail": "best independently audited candidate; geometry only",
+      "edt_body_clearance": {
+        "clearance_m": 0.2966831249682711,
+        "edt_m": 0.6753540588692512,
+        "s_m": 1.78125,
+        "support_m": 0.37867093390098006,
+        "vehicle_id": 2
+      },
+      "endpoint": {
+        "psi": 0.0,
+        "x": 6.000000000000001,
+        "y": 2.262059631797383e-25
+      },
+      "formation_obb_constraint_count": 3888,
+      "formation_template_id": "d276bf4e1a6e99879016367ba190c7586cc00109faa12d9c90a057be95fa657b",
+      "geometry_audit": {
+        "check_count": 155,
+        "detail": "independent C2/interval/integration audit; geometry only, no timing/map/ROS/collision claim",
+        "passed": true,
+        "reason": null
+      },
+      "length_m": 6.0,
+      "max_abs_kappa": 1.2206795856046996e-15,
+      "path_is_none": false,
+      "reason": "",
+      "solver_used": "ipopt",
+      "status": "GEOMETRY_FEASIBLE",
+      "three_layer": {
+        "collision": {
+          "check_count": 3740,
+          "detail": "static start/goal plus unchanged analytic three-vehicle OBB sweep over the whole closed path; declared per-lambda bounds independently verified; conservative margin includes the numerical envelope; map and G4 context bound",
+          "passed": true,
+          "reason": null
+        },
+        "duration_s": 14.203125000000298,
+        "dynamics": {
+          "check_count": 909,
+          "detail": "independent raw-profile common-time dynamic audit; whole-domain interval certificate plus node/endpoint/inverse/differential checks; DYNAMIC_FEASIBLE; collision_checked=false; executable=false; no map/ROS",
+          "passed": true,
+          "reason": null
+        },
+        "timing_detail": "",
+        "timing_reason": "",
+        "timing_status": "DYNAMIC_FEASIBLE"
+      },
+      "wall_time_s": 8.713679275941104
+    }
+  },
+  "certificate_config_independence": {
+    "configs": {
+      "high_test_only": {
+        "certificate_sha256": "0f101dfb33226f40847bc82082bfc02c9d0a891f3f1b105907cdc40853de6edf",
+        "config": {
+          "corridor_clearance_target_m": 0.6,
+          "corridor_clearance_weight": 5.0
+        },
+        "status": "VERIFIED"
+      },
+      "zero_default": {
+        "certificate_sha256": "0f101dfb33226f40847bc82082bfc02c9d0a891f3f1b105907cdc40853de6edf",
+        "config": {
+          "corridor_clearance_target_m": 0.05,
+          "corridor_clearance_weight": 0.0
+        },
+        "status": "VERIFIED"
+      }
+    },
+    "hash_includes_sealed_limits": true,
+    "identical_certificate_sha256": true,
+    "per_arm_limits": {
+      "no_soft_context_default_target": {
+        "definite_margin_m": 1e-09,
+        "evaluation_guard_m": 1e-12,
+        "max_depth": 24,
+        "max_intervals": 20000,
+        "max_seconds": 11.002601853804663,
+        "min_width_m": 1e-05
+      },
+      "weight_one_default_target": {
+        "definite_margin_m": 1e-09,
+        "evaluation_guard_m": 1e-12,
+        "max_depth": 24,
+        "max_intervals": 20000,
+        "max_seconds": 11.411378397839144,
+        "min_width_m": 1e-05
+      },
+      "weight_one_test_target": {
+        "definite_margin_m": 1e-09,
+        "evaluation_guard_m": 1e-12,
+        "max_depth": 24,
+        "max_intervals": 20000,
+        "max_seconds": 5.289132568985224,
+        "min_width_m": 1e-05
+      },
+      "weight_zero_default_target": {
+        "definite_margin_m": 1e-09,
+        "evaluation_guard_m": 1e-12,
+        "max_depth": 24,
+        "max_intervals": 20000,
+        "max_seconds": 11.411279651103541,
+        "min_width_m": 1e-05
+      },
+      "weight_zero_test_target": {
+        "definite_margin_m": 1e-09,
+        "evaluation_guard_m": 1e-12,
+        "max_depth": 24,
+        "max_intervals": 20000,
+        "max_seconds": 11.32508310303092,
+        "min_width_m": 1e-05
+      }
+    },
+    "same_accepted_path": true,
+    "same_path_five_second_limit": {
+      "certificate_sha256": "6b52cdcc5f5eb1cf8a14dc0855945ab93e7f7fadce6de08c052e9c2300450d9c",
+      "config": {
+        "corridor_clearance_target_m": 0.05,
+        "corridor_clearance_weight": 0.0
+      },
+      "max_seconds": 5.0,
+      "status": "VERIFIED"
+    },
+    "unittest": "SoftClearanceAblationTests.test_soft_config_never_changes_the_certificate"
+  },
+  "comparisons": {
+    "one_vs_zero_default": {
+      "max_heading_rad": 4.161370082693241e-16,
+      "max_position_m": 5.233503256108515e-16
+    },
+    "one_vs_zero_test_target": {
+      "max_heading_rad": 0.0001837272620355787,
+      "max_position_m": 0.00016569325533659007
+    },
+    "zero_default_vs_zero_test_target": {
+      "max_heading_rad": 0.0,
+      "max_position_m": 0.0
+    },
+    "zero_vs_no_context_default": {
+      "max_heading_rad": 0.0,
+      "max_position_m": 0.0
+    }
+  },
+  "defaults": {
+    "collision_baseline_margin_m": 0.05,
+    "corridor_clearance_target_m": 0.05,
+    "corridor_clearance_weight": 1.0,
+    "target_or_weight_relaxed": false
+  },
+  "scene": {
+    "context_sha256": "d78b3cd2bd67e60ce0b6348a8bf70c13fd4525f07d59b89841d89defaec532d7",
+    "corridor_box": [
+      -2.0,
+      -2.5,
+      8.0,
+      2.5
+    ],
+    "edt_at_body_centres": {
+      "(3.0, -1.0)": 2.0,
+      "(3.0, 0.0)": 1.6250000000000002,
+      "(3.0, 1.0)": 0.6250000000000001
+    },
+    "field_downsample": 4,
+    "field_sha256": "0d70ae63b085511986bc5c28410b1bb5c3bd90757b1fdb4d689692e89fe32c27",
+    "grid_sha256": "9acdb54e4678c7a12e9b60562c4f62dbb5c586db5171a606aa1a6f64475c6d41",
+    "obstacle_box_xyxy": [
+      2.0,
+      4.0,
+      1.6,
+      2.2
+    ],
+    "request_sha256": "184f690b1c531f671e26907ad778fcd122eb90e67faa0102b948d6ab8a094816"
+  },
+  "schema": "task03_step5_soft_clearance_ablation_v1",
+  "zero_vs_no_context_profile": {
+    "bit_identical": true,
+    "knot_count": 9,
+    "max_abs_derivative_delta": 0.0,
+    "max_abs_value_delta": 0.0
+  }
+}

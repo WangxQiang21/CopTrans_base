@@ -1,0 +1,61 @@
+{
+  "schema": "codex_task02_targeted_review_repro_manifest_v1",
+  "review_date": "2026-11-19",
+  "repository": "/home/wq/whut_thesis/expv3_multi_virtual_a",
+  "branch": "feature/virtual-rigid-formation-a",
+  "head": "a3c709e57560b1060dcc422777f4131a3e558acf",
+  "head_equals_origin_feature_branch": true,
+  "worktree_dirty": [
+    "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/geometry.py",
+    "tests/test_virtual_a_geometry.py"
+  ],
+  "task01_dirty_hashes_verified": {
+    "catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/geometry.py": "f31b20bbd6333c44f12be4064c069e11143c870ab02b99d4839b9778317efc3d",
+    "tests/test_virtual_a_geometry.py": "4f59e68ff5dc26468d42e131836078b0d2eef06853e998bfca5e168c77ddb4c7"
+  },
+  "target_scenarios": [
+    {
+      "plan_id": 600001,
+      "claimed_signature": "CORRIDOR_AUDIT_WIDTH_LIMIT; selected=3/5; ONE_PORTAL_VARIANT_0; map_collisions=6; BOTH_ORDERS_GAP",
+      "status": "NOT_REPRODUCIBLE_FROM_AVAILABLE_INPUT",
+      "request_sha256": null,
+      "grid_sha256": null,
+      "planning_context_sha256": null,
+      "model_sha256": null,
+      "frozen_map_and_scale": null,
+      "launch_parameters": null,
+      "matching_quality_report": null,
+      "matching_planning_debug": null,
+      "note": "Plan ID 600001 occurs in older unrelated sessions with NO_ROUTE_GUIDE or ENVELOPE_INVALID; those records do not match the claimed failure."
+    },
+    {
+      "plan_id": 600002,
+      "claimed_signature": "CORRIDOR_AUDIT_WIDTH_LIMIT; selected=0/1; SINGLE_BASE_GUIDE; map_collisions=8; MAP_OBB_COLLISION samples",
+      "status": "NOT_REPRODUCIBLE_FROM_AVAILABLE_INPUT",
+      "request_sha256": null,
+      "grid_sha256": null,
+      "planning_context_sha256": null,
+      "model_sha256": null,
+      "frozen_map_and_scale": null,
+      "launch_parameters": null,
+      "matching_quality_report": null,
+      "matching_planning_debug": null,
+      "note": "The archived plan_request_00600002 belongs to an older S1 reset-recovery session whose plan 600002 was executable; it is not the claimed failed request."
+    }
+  ],
+  "nearest_distinct_task02_reproduction": {
+    "path": "work_flow/TASK02_evidence/20261119T054527Z/rework/live/s1_default/quality_report.json",
+    "plan_id": 600000,
+    "request_sha256": "591b4100355ab991d3b7dd5afeb95e203343ec185bf7187d025e2662b4afdd3b",
+    "grid_sha256": "6e94c751a40ec94431b495fcbff002945f09c975429c493c89060f0e7e2aa2a4",
+    "planning_context_sha256": "8a545c3f4c794f9f04c57f453c454612c54ca2d3fe31e4c6b887037d2d36604b",
+    "formation_id": "G4_S1/cargo_wedge",
+    "start_qf": [0.0, 0.0, 0.0],
+    "goal_qf": [8.819581504169413, 3.4858722492682084, 1.5707963267948968],
+    "goal_policy": "FREE",
+    "scale": "frozen S1 map, resolution 0.05 m; not the user's identified map because target identity is missing",
+    "status": "CORRIDOR_AUDIT_WIDTH_LIMIT; distinct historical S1 run"
+  },
+  "live_ros_reproduction": "NOT_RUN: target requests and exact map identity are absent; no ROS/RViz session was started",
+  "classification_for_the_two_user_reported_plans": "INSUFFICIENT_EVIDENCE"
+}

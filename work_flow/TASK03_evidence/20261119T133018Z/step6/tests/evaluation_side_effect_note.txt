@@ -1,0 +1,31 @@
+TASK03 Step 6 — evaluation/ side effect of the legacy regression group
+=======================================================================
+
+When: 2026-11-19T17:18:24Z–17:19:14Z (group `test_legacy_uniform_regression`,
+logs `test_legacy_uniform_regression.log`).
+
+Cause: running
+    python3 -m unittest test_formation_regression test_uniform_pipeline
+executes the FR04 regression harness, which rewrites its stored results in
+    evaluation/formation_refactor_v02/FR04/cases/F01..F19*.json
+    evaluation/formation_refactor_v02/FR04/pipeline_results.json
+with fresh run metadata.  This is existing harness behaviour, not a TASK03
+code change, but it made 20 tracked files dirty relative to HEAD.
+
+Verification before revert: every changed file was parsed as JSON and compared
+recursively with `git show HEAD:<path>`.  Ignoring the timing keys
+(`wall_time_s`, `audit_wall_time_s`, `search_elapsed_at_audit_s`,
+`collision_s`, `generation_s`, `elapsed_s`, `duration_s`), the only remaining
+difference is `pipeline_results.json`'s `generated_at_utc`.  No statuses,
+counts, paths or audit results changed.
+
+Action: the 20 files were restored to HEAD with a targeted
+    git checkout -- evaluation/formation_refactor_v02/FR04
+after `git status --porcelain evaluation/` showed no untracked content.
+At the TASK03 baseline these files were clean (baseline/git_status_porcelain.txt),
+so restoration returns them to the exact pre-TASK03 state.
+`git status --porcelain evaluation/` is empty after the restore.
+
+The legacy test results themselves (65 tests OK, 1.431 s; 34 tests OK,
+49.538 s; both exit 0) remain valid; only the stored timing metadata was
+reverted.

@@ -1,0 +1,61 @@
+[rospy.client][INFO] 2026-11-20 00:45:13,495: init_node, name[/formation_uniform_planner], pid[883080]
+[xmlrpc][INFO] 2026-11-20 00:45:13,496: XML-RPC server binding to 0.0.0.0:0
+[xmlrpc][INFO] 2026-11-20 00:45:13,496: Started XML-RPC server [http://wq-ubuntu:43749/]
+[rospy.init][INFO] 2026-11-20 00:45:13,496: ROS Slave URI: [http://wq-ubuntu:43749/]
+[rospy.impl.masterslave][INFO] 2026-11-20 00:45:13,496: _ready: http://wq-ubuntu:43749/
+[rospy.registration][INFO] 2026-11-20 00:45:13,497: Registering with master node http://127.0.0.1:11663
+[xmlrpc][INFO] 2026-11-20 00:45:13,497: xml rpc node: starting XML-RPC server
+[rospy.init][INFO] 2026-11-20 00:45:13,597: registered with master
+[rospy.rosout][INFO] 2026-11-20 00:45:13,597: initializing /rosout core topic
+[rospy.rosout][INFO] 2026-11-20 00:45:13,600: connected to core topic /rosout
+[rospy.simtime][INFO] 2026-11-20 00:45:13,600: /use_sim_time is not set, will not subscribe to simulated time [/clock] topic
+[rosout][INFO] 2026-11-20 00:45:13,617: [uniform planner] virtual_rigid_a validated planner config: guidance_mode=corridor corridor_enforcement=hard formation_corridor_scope=three_vehicle_union_v1 as_dict={'intervals': 8, 'max_initials': 6, 'max_seconds': 30.0, 'max_iterations': 120, 'solver': 'ipopt', 'allow_scipy_fallback': True, 'collocation_points': 9, 'curvature_margin': 0.02, 'eta_limit': 2.0, 'kappa_limit': 0.5524861878453039, 'position_tolerance_m': 0.005, 'heading_tolerance_rad': 0.003490658503988659, 'rigidity_tolerance_m': 1e-06, 'ipopt_tolerance': 1e-08, 'scipy_tolerance': 1e-08, 'scipy_maxiter': 120, 'guidance_mode': 'corridor', 'corridor_enforcement': 'hard', 'corridor_margin_m': 1e-05, 'corridor_margin_portal_fraction': 0.25, 'corridor_kappa_weight': 0.01, 'corridor_guide_weight': 0.1, 'corridor_clearance_weight': 1.0, 'corridor_clearance_target_m': 0.05, 'corridor_quadrature_points': 9, 'corridor_audit_position_margin_m': 5e-08, 'corridor_audit_max_depth': 20, 'corridor_audit_max_intervals': 20000, 'corridor_audit_min_width_m': 1e-05, 'corridor_box_padding_m': 2.0, 'formation_corridor_scope': 'three_vehicle_union_v1'}
+[rospy.internal][INFO] 2026-11-20 00:45:13,632: topic[/map] adding connection to [http://wq-ubuntu:36715/], count 0
+[rospy.internal][INFO] 2026-11-20 00:45:13,632: topic[/formation/plan_request] adding connection to [http://wq-ubuntu:44151/], count 0
+[rosout][INFO] 2026-11-20 00:45:13,632: [uniform planner] autonomous V0.2 planner ready; backend=virtual_rigid_a budget=10000 expansions / 30.0 s
+[rospy.internal][INFO] 2026-11-20 00:45:13,634: topic[/formation/playback_status] adding connection to [http://wq-ubuntu:43849/], count 0
+[rosout][INFO] 2026-11-20 00:45:13,643: [uniform planner] exact map 489x326 res=0.065 origin=(-8.36, -5.57) signature=5a9ab3f50546275a
+[rospy.internal][INFO] 2026-11-20 00:45:13,658: topic[/formation/optimizer_status] adding connection to [/formation_goal_bridge], count 0
+[rospy.internal][INFO] 2026-11-20 00:45:13,658: topic[/formation/job_state] adding connection to [/formation_goal_bridge], count 0
+[rospy.internal][INFO] 2026-11-20 00:45:13,661: topic[/formation/optimizer_status] adding connection to [/formation_playback], count 1
+[rospy.internal][INFO] 2026-11-20 00:45:13,667: topic[/formation/quality_report] adding connection to [/formation_playback], count 0
+[rospy.internal][INFO] 2026-11-20 00:45:13,667: topic[/formation/quality_report] adding connection to [/task03_step6_capture_882397_1795106711222], count 1
+[rospy.internal][INFO] 2026-11-20 00:45:13,668: topic[/formation/planning_debug] adding connection to [/formation_playback], count 0
+[rospy.internal][INFO] 2026-11-20 00:45:13,669: topic[/formation/playback_plan] adding connection to [/formation_playback], count 0
+[rospy.internal][INFO] 2026-11-20 00:45:13,669: topic[/formation/job_state] adding connection to [/task03_step6_capture_882397_1795106711222], count 1
+[rospy.internal][INFO] 2026-11-20 00:45:13,669: topic[/formation/job_state] adding connection to [/formation_playback], count 2
+[rospy.internal][INFO] 2026-11-20 00:45:13,669: topic[/formation/planning_debug] adding connection to [/task03_step6_capture_882397_1795106711222], count 1
+[rospy.internal][INFO] 2026-11-20 00:45:13,670: topic[/formation/playback_plan] adding connection to [/task03_step6_capture_882397_1795106711222], count 1
+[rospy.internal][INFO] 2026-11-20 00:45:13,670: topic[/formation/optimizer_status] adding connection to [/task03_step6_capture_882397_1795106711222], count 2
+[rospy.internal][INFO] 2026-11-20 00:45:13,854: topic[/rosout] adding connection to [/rosout], count 0
+[rospy.internal][INFO] 2026-11-20 00:45:14,559: topic[/initialpose] adding connection to [http://wq-ubuntu:39893/], count 0
+[rospy.internal][INFO] 2026-11-20 00:45:14,561: topic[/initialpose] adding connection to [http://wq-ubuntu:43175/], count 1
+[rosout][INFO] 2026-11-20 00:45:14,797: [uniform planner] explicit virtual experiment reset recorded at F=(2, 2, 0); this is a declared A-straight stationary initial state, not a physical wheel measurement
+[rospy.internal][INFO] 2026-11-20 00:45:14,919: topic[/initialpose] removing connection to http://wq-ubuntu:43175/
+[rospy.internal][INFO] 2026-11-20 00:45:14,965: topic[/initialpose] adding connection to [http://wq-ubuntu:43175/], count 1
+[rospy.internal][INFO] 2026-11-20 00:45:14,997: topic[/initialpose] removing connection to http://wq-ubuntu:39893/
+[rosout][WARNING] 2026-11-20 00:45:18,299: [uniform planner] plan 0 has no executable envelope (ADMITTED_PLANNING)
+[rosout][INFO] 2026-11-20 00:45:18,300: [uniform planner] plan 600000 admitted for virtual_rigid_a: start=(2.000, 2.000, 0.000) goal=(8.000, 2.000, 0.000) initial=rviz_reset/virtual-a-reset-None-1 policy=FREE
+[rosout][INFO] 2026-11-20 00:45:30,982: [uniform planner] virtual plan 600000 published: T_end=14.203 s model_sha256=e653238d55ed644286c8ba3676a3b2ac992d8112f9f8672de0712bebbd622cc9 samples=712 wall=11.616 s verification_to_stamp_delay=0.9774 s
+[rosout][ERROR] 2026-11-20 00:45:36,132: [uniform planner] plan 600000: playback did not confirm the atomic envelope within 5.0 s
+[rosout][WARNING] 2026-11-20 00:45:36,136: [uniform planner] plan 600000 has no executable envelope (PLAYBACK_START_TIMEOUT)
+[rospy.internal][INFO] 2026-11-20 00:45:49,121: topic[/formation/optimizer_status] removing connection to /task03_step6_capture_882397_1795106711222
+[rospy.internal][INFO] 2026-11-20 00:45:49,121: topic[/formation/quality_report] removing connection to /task03_step6_capture_882397_1795106711222
+[rospy.internal][INFO] 2026-11-20 00:45:49,122: topic[/formation/job_state] removing connection to /task03_step6_capture_882397_1795106711222
+[rospy.internal][INFO] 2026-11-20 00:45:49,122: topic[/formation/playback_plan] removing connection to /task03_step6_capture_882397_1795106711222
+[rospy.internal][INFO] 2026-11-20 00:45:49,122: topic[/formation/planning_debug] removing connection to /task03_step6_capture_882397_1795106711222
+[rospy.core][INFO] 2026-11-20 00:45:50,279: signal_shutdown [signal-2]
+[rospy.internal][INFO] 2026-11-20 00:45:50,286: topic[/formation/playback_status] removing connection to http://wq-ubuntu:43849/
+[rospy.internal][INFO] 2026-11-20 00:45:50,287: topic[/rosout] removing connection to /rosout
+[rospy.internal][INFO] 2026-11-20 00:45:50,287: topic[/map] removing connection to http://wq-ubuntu:36715/
+[rospy.internal][INFO] 2026-11-20 00:45:50,288: topic[/formation/optimizer_status] removing connection to /formation_goal_bridge
+[rospy.internal][INFO] 2026-11-20 00:45:50,288: topic[/formation/optimizer_status] removing connection to /formation_playback
+[rospy.internal][INFO] 2026-11-20 00:45:50,288: topic[/formation/plan_request] removing connection to http://wq-ubuntu:44151/
+[rospy.internal][INFO] 2026-11-20 00:45:50,288: topic[/formation/quality_report] removing connection to /formation_playback
+[rospy.internal][INFO] 2026-11-20 00:45:50,288: topic[/formation/job_state] removing connection to /formation_goal_bridge
+[rospy.internal][INFO] 2026-11-20 00:45:50,289: topic[/formation/job_state] removing connection to /formation_playback
+[rospy.internal][INFO] 2026-11-20 00:45:50,289: topic[/formation/playback_plan] removing connection to /formation_playback
+[rospy.internal][INFO] 2026-11-20 00:45:50,289: topic[/formation/planning_debug] removing connection to /formation_playback
+[rospy.internal][INFO] 2026-11-20 00:45:50,289: topic[/initialpose] removing connection to http://wq-ubuntu:43175/
+[rospy.impl.masterslave][INFO] 2026-11-20 00:45:50,289: signal-2
+[rospy.core][INFO] 2026-11-20 00:45:50,880: signal_shutdown [atexit]

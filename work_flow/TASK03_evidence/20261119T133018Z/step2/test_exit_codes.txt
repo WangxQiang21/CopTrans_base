@@ -1,0 +1,23 @@
+UTC window: 2026-11-19T14:30Z–14:39Z
+Worktree: /home/wq/whut_thesis/expv3_multi_virtual_a
+HEAD: a3c709e57560b1060dcc422777f4131a3e558acf
+PYTHONPATH: tests + catkin_ws/src/fwis_v3_optimizer/src after ROS Noetic setup
+
+py_compile=0
+test_virtual_a_formation_corridor=0   (23 tests, 15.375 s, 15.79 s wall)
+test_virtual_a_formation_assessment=0 (40 tests, 0.720 s, 0.99 s wall)
+test_virtual_a_corridor + test_virtual_a_corridor_optimizer=0
+                                      (52 tests, 9.811 s, 10.21 s wall)
+collect_step2_metrics.py=0            (0.50 s wall)
+
+Commands:
+  python3 -m py_compile formation_corridor.py test_virtual_a_formation_corridor.py
+  python3 -m unittest test_virtual_a_formation_corridor
+  python3 -m unittest test_virtual_a_formation_assessment
+  python3 -m unittest test_virtual_a_corridor test_virtual_a_corridor_optimizer
+  python3 collect_step2_metrics.py
+
+The unittest result lines are in the corresponding *.log files; wall clock
+and peak RSS are in *.time.log.  These are real exits, not inferred from a
+marker in the output.  The suite was rerun after the identity tightening in
+the final source hashes below.

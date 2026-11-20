@@ -1,0 +1,4 @@
+[expv3] 地图比例 2.625，中心点固定；栅格尺寸保持不变。
+[expv3] 编队发布后端 virtual_rigid_a（同一时刻只启动这一个发布后端）
+[expv3] 货物中心楔形编队，车体航向独立（新实验按配置策略初始化）；地图绝对比例 2.625
+roslaunch fwis_v3_demo formation_demo.launch map_dir:=/tmp/expv3-map-scale.EmNWpw/map05-p12-parking-row-env2 backend:=virtual_rigid_a virtual_a_guidance_mode:=corridor virtual_a_corridor_enforcement:=hard virtual_a_formation_corridor_scope:=f_only auto_goal:=false scene:=manual_map rviz_config:=/tmp/expv3-map-scale.EmNWpw/formation.rviz rviz:=true

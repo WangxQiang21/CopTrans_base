@@ -71,6 +71,11 @@ from fwis_v3_optimizer.formation_continuous_a.contracts import (
 )
 from fwis_v3_optimizer.transport_contract import load_contract
 
+
+def _reject_json_constant(value):
+    raise ValueError("non-finite JSON constant {!r}".format(value))
+
+
 MARKER_TOPIC = "/formation/markers"
 VEHICLE_PATH_TOPIC = "/formation/path/vehicle_{}"
 F_CANDIDATE_PATH_TOPIC = "/formation/path/f_candidate"
@@ -727,6 +732,21 @@ class FormationPlaybackNode:
             raise PlaybackValidationError(
                 "admitted geometry audit config is invalid: {}: {}".format(
                     type(exc).__name__, exc)) from exc
+        binding_json = str(
+            getattr(message, "formation_binding_json", "") or "").strip()
+        expected_formation = None
+        if binding_json:
+            try:
+                expected_formation = json.loads(
+                    binding_json, parse_constant=_reject_json_constant)
+            except (TypeError, ValueError) as exc:
+                raise PlaybackValidationError(
+                    "envelope formation_binding_json is not finite JSON: {}"
+                    .format(exc)) from exc
+            if not isinstance(expected_formation, Mapping):
+                raise PlaybackValidationError(
+                    "envelope formation_binding_json must decode to a JSON "
+                    "object")
         return verify_playback_plan(
             backend=message.backend,
             plan_id=plan_id,
@@ -740,6 +760,7 @@ class FormationPlaybackNode:
             expected_request=request,
             expected_context=context,
             expected_grid_sha256=grid_sha,
+            expected_formation=expected_formation,
             geometry_audit_config=geometry_config,
             position_tolerance=1e-9,
             angle_tolerance=1e-9,

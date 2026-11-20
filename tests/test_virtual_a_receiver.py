@@ -91,6 +91,8 @@ def envelope_message(envelope):
         model_sha256=envelope["model_sha256"],
         model_json=envelope["model_json"],
         certification=envelope["certification"],
+        formation_binding_json=envelope.get(
+            "formation_binding_json", ""),
         trajectory=SimpleNamespace())
 
 
@@ -302,6 +304,49 @@ class VirtualReceiverTest(unittest.TestCase):
             "1.0", "1.5", 1)
         with self.assertRaises(PlaybackValidationError):
             self._verify(envelope=envelope)
+
+    def test_envelope_formation_binding_is_forwarded_verbatim(self):
+        binding = {
+            "scope": "three_vehicle_union_v1",
+            "planning_context_sha256": "a" * 64,
+            "template": {"template_id": "t"},
+            "chain": {"digest": "c"},
+            "certificate": {"status": "VERIFIED"},
+        }
+        envelope = dict(self.envelope,
+                        formation_binding_json=json.dumps(binding))
+        captured = {}
+
+        def fake(**fields):
+            captured.update(fields)
+            return ("trajectory", "plan", "digest")
+
+        with mock.patch.object(
+                _NODE, "verify_playback_plan", side_effect=fake):
+            result = self._verify(envelope=envelope)
+        self.assertEqual(result, ("trajectory", "plan", "digest"))
+        self.assertEqual(captured["expected_formation"], binding)
+
+    def test_f_only_envelope_forwards_no_formation_binding(self):
+        captured = {}
+
+        def fake(**fields):
+            captured.update(fields)
+            return ("trajectory", "plan", "digest")
+
+        with mock.patch.object(
+                _NODE, "verify_playback_plan", side_effect=fake):
+            self._verify()
+        self.assertIsNone(captured["expected_formation"])
+
+    def test_malformed_envelope_formation_binding_is_rejected(self):
+        for payload in ("{", "[]", "NaN"):
+            envelope = dict(self.envelope,
+                            formation_binding_json=payload)
+            with self.subTest(payload=payload):
+                with self.assertRaises(PlaybackValidationError) as caught:
+                    self._verify(envelope=envelope)
+                self.assertIn("formation_binding_json", str(caught.exception))
 
     def test_busy_status_does_not_erase_the_playing_certification(self):
         node = self._node()

@@ -1,0 +1,151 @@
+[expv3] 地图比例 2.625，中心点固定；栅格尺寸保持不变。
+[expv3] 编队发布后端 virtual_rigid_a（同一时刻只启动这一个发布后端）
+[expv3] 货物中心楔形编队，车体航向独立（新实验按配置策略初始化）；地图绝对比例 2.625
+[expv3] 构建 ROS overlay...
+[expv3] 启动 Demo：virtual_a_formation_corridor_scope:=three_vehicle_union_v1 map_dir:=/tmp/expv3-map-scale.4XN7rq/map05-p12-parking-row-env2 backend:=virtual_rigid_a virtual_a_guidance_mode:=corridor virtual_a_corridor_enforcement:=hard auto_goal:=false scene:=manual_map rviz_config:=/tmp/expv3-map-scale.4XN7rq/formation.rviz rviz:=true
+[0m[INFO] [1795106713.264793938]: rviz version 1.14.26[0m
+[0m[INFO] [1795106713.264829557]: compiled against Qt version 5.12.8[0m
+[0m[INFO] [1795106713.264839056]: compiled against OGRE version 1.9.0 (Ghadamon)[0m
+[0m[INFO] [1795106713.268655040]: Forcing OpenGl version 0.[0m
+[0m[INFO] [1795106714.370615086]: Stereo is NOT SUPPORTED[0m
+[0m[INFO] [1795106714.370662578]: OpenGL device: NVIDIA GeForce RTX 4060 Laptop GPU/PCIe/SSE2[0m
+[0m[INFO] [1795106714.370678013]: OpenGl version: 4.6 (GLSL 4.6).[0m
+[0m[INFO] [1795106715.096815786]: Creating 1 swatches[0m
+[WARN] [1795106736.135913]: [formation goal bridge] plan 600000 status=REJECTED reason=PLAYBACK_START_TIMEOUT
+[INFO] [1795106713.668648]: [formation goal bridge] ready: formation=cargo_wedge offsets=((1.0, 0.0), (0.0, 1.0), (0.0, -1.0)), start=(10.000, 3.600, 0.000), goal topic=/move_base_simple/goal
+[INFO] [1795106714.796647]: [formation goal bridge] 2D Pose Estimate recorded; new experiment policy=cargo_heading headings={1: 0.0, 2: 0.0, 3: 0.0}
+[INFO] [1795106718.278097]: [formation goal bridge] plan 600000: start=(2.000, 2.000, 0.000) goal=(8.000, 2.000, 0.000) vehicles=3
+[INFO] [1795106718.279573]: [formation goal bridge] plan 600000 virtual_a_goal_policy=free goal_headings={1: 0.0, 2: 0.0, 3: 0.0}
+[INFO] [1795106718.280652]: [formation goal bridge] start from manual start; body headings {1: 0.0, 2: 0.0, 3: 0.0}
+[INFO] [1795106730.990193]: [formation goal bridge] plan 600000 FEASIBLE and published
+[ERROR] [1795106718.300226]: [formation playback] rejecting playback plan 0: no raw /formation/plan_request is retained for plan 0; the virtual envelope cannot be accepted
+[WARN] [1795106718.303501]: [formation playback] ignoring planning payload for plan 600000: current job is plan None
+[ERROR] [1795106730.978146]: [formation playback] rejecting playback plan 600000: union-scope plan has no retained formation corridor binding; the virtual envelope cannot be accepted
+[ERROR] [1795106736.139161]: [formation playback] rejecting playback plan 600000: unsupported certification ''; expected 'virtual_a_geometry_dynamics_collision/v1'
+[INFO] [1795106713.622784]: [formation playback] common-clock display ready; GEOMETRY_ONLY is shown until an independent FEASIBLE status is received
+[INFO] [1795106718.301938]: [formation playback] cleared: invalid playback plan: no raw /formation/plan_request is retained for plan 0; the virtual envelope cannot be accepted
+[INFO] [1795106718.307275]: [formation playback] planning display plan=600000 generation=1 stage=REQUEST_ADMITTED/0 layers=identity-only
+[INFO] [1795106718.335475]: [formation playback] planning display plan=600000 generation=1 stage=ASTAR_SEARCH/1 layers=identity-only
+[INFO] [1795106718.752960]: [formation playback] planning display plan=600000 generation=1 stage=ASTAR_SEARCH/1 layers=astar
+[INFO] [1795106718.755558]: [formation playback] planning display plan=600000 generation=1 stage=CORRIDOR_BUILD/2 layers=astar
+[INFO] [1795106718.766582]: [formation playback] planning display plan=600000 generation=1 stage=CORRIDOR_BUILD/2 layers=astar
+[INFO] [1795106718.770477]: [formation playback] planning display plan=600000 generation=1 stage=PORTAL_GUIDE/3 layers=astar
+[INFO] [1795106718.790878]: [formation playback] planning display plan=600000 generation=1 stage=PORTAL_GUIDE/3 layers=astar,corridors
+[INFO] [1795106718.796791]: [formation playback] planning display plan=600000 generation=1 stage=NLP_SOLVE/4 layers=astar,corridors
+[INFO] [1795106728.340812]: [formation playback] planning display plan=600000 generation=1 stage=NLP_SOLVE/4 layers=astar,candidates,corridors
+[INFO] [1795106728.354851]: [formation playback] planning display plan=600000 generation=1 stage=GEOMETRY_AUDIT/5 layers=astar,candidates,corridors
+[INFO] [1795106728.758704]: [formation playback] planning display plan=600000 generation=1 stage=GEOMETRY_AUDIT/5 layers=astar,candidates,corridors
+[INFO] [1795106728.771838]: [formation playback] planning display plan=600000 generation=1 stage=DYNAMICS_AUDIT/6 layers=astar,candidates,corridors
+[INFO] [1795106729.475210]: [formation playback] planning display plan=600000 generation=1 stage=DYNAMICS_AUDIT/6 layers=astar,candidates,corridors
+[INFO] [1795106729.486283]: [formation playback] planning display plan=600000 generation=1 stage=OBB_COLLISION_AUDIT/7 layers=astar,candidates,corridors
+[INFO] [1795106729.943709]: [formation playback] planning display plan=600000 generation=1 stage=OBB_COLLISION_AUDIT/7 layers=astar,candidates,corridors
+[INFO] [1795106730.979433]: [formation playback] cleared: invalid playback plan: union-scope plan has no retained formation corridor binding; the virtual envelope cannot be accepted
+[INFO] [1795106730.989419]: [formation playback] planning display plan=600000 generation=1 stage=PUBLISHED/8 layers=astar,candidates,corridors
+[INFO] [1795106736.140698]: [formation playback] cleared: invalid playback plan: unsupported certification ''; expected 'virtual_a_geometry_dynamics_collision/v1'
+[INFO] [1795106713.431380]: [fwis_map_publisher] /map published: 489x326, res=0.065 m
+[INFO] [1795106713.432354]: [fwis_map_publisher] start pose latched at (-5.73, 9.64, 0.00 rad)
+[WARN] [1795106718.299679]: [uniform planner] plan 0 has no executable envelope (ADMITTED_PLANNING)
+[ERROR] [1795106736.132887]: [uniform planner] plan 600000: playback did not confirm the atomic envelope within 5.0 s
+[WARN] [1795106736.136669]: [uniform planner] plan 600000 has no executable envelope (PLAYBACK_START_TIMEOUT)
+[INFO] [1795106713.617571]: [uniform planner] virtual_rigid_a validated planner config: guidance_mode=corridor corridor_enforcement=hard formation_corridor_scope=three_vehicle_union_v1 as_dict={'intervals': 8, 'max_initials': 6, 'max_seconds': 30.0, 'max_iterations': 120, 'solver': 'ipopt', 'allow_scipy_fallback': True, 'collocation_points': 9, 'curvature_margin': 0.02, 'eta_limit': 2.0, 'kappa_limit': 0.5524861878453039, 'position_tolerance_m': 0.005, 'heading_tolerance_rad': 0.003490658503988659, 'rigidity_tolerance_m': 1e-06, 'ipopt_tolerance': 1e-08, 'scipy_tolerance': 1e-08, 'scipy_maxiter': 120, 'guidance_mode': 'corridor', 'corridor_enforcement': 'hard', 'corridor_margin_m': 1e-05, 'corridor_margin_portal_fraction': 0.25, 'corridor_kappa_weight': 0.01, 'corridor_guide_weight': 0.1, 'corridor_clearance_weight': 1.0, 'corridor_clearance_target_m': 0.05, 'corridor_quadrature_points': 9, 'corridor_audit_position_margin_m': 5e-08, 'corridor_audit_max_depth': 20, 'corridor_audit_max_intervals': 20000, 'corridor_audit_min_width_m': 1e-05, 'corridor_box_padding_m': 2.0, 'formation_corridor_scope': 'three_vehicle_union_v1'}
+[INFO] [1795106713.632531]: [uniform planner] autonomous V0.2 planner ready; backend=virtual_rigid_a budget=10000 expansions / 30.0 s
+[INFO] [1795106713.643429]: [uniform planner] exact map 489x326 res=0.065 origin=(-8.36, -5.57) signature=5a9ab3f50546275a
+[INFO] [1795106714.797089]: [uniform planner] explicit virtual experiment reset recorded at F=(2, 2, 0); this is a declared A-straight stationary initial state, not a physical wheel measurement
+[INFO] [1795106718.300965]: [uniform planner] plan 600000 admitted for virtual_rigid_a: start=(2.000, 2.000, 0.000) goal=(8.000, 2.000, 0.000) initial=rviz_reset/virtual-a-reset-None-1 policy=FREE
+[INFO] [1795106730.982711]: [uniform planner] virtual plan 600000 published: T_end=14.203 s model_sha256=e653238d55ed644286c8ba3676a3b2ac992d8112f9f8672de0712bebbd622cc9 samples=712 wall=11.616 s verification_to_stamp_delay=0.9774 s
+... logging to /home/wq/whut_thesis/expv3_multi_virtual_a/work_flow/TASK03_evidence/20261119T133018Z/step6/live/union_map05_2625/nodes_raw/954a7374-e438-11f1-a57b-1b4c90db486b/roslaunch-wq-ubuntu-883050.log
+Checking log directory for disk usage. This may take a while.
+Press Ctrl-C to interrupt
+Done checking log file disk usage. Usage is <1GB.
+]2;/home/wq/whut_thesis/expv3_multi_virtual_a/catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch
+[1mstarted roslaunch server http://wq-ubuntu:44369/[0m
+
+SUMMARY
+========
+
+PARAMETERS
+ * /formation_goal_bridge/admission_backend: virtual_rigid_a
+ * /formation_goal_bridge/allow_reverse: True
+ * /formation_goal_bridge/body_length_m: 0.738
+ * /formation_goal_bridge/body_width_m: 0.5
+ * /formation_goal_bridge/formation_id: cargo_wedge
+ * /formation_goal_bridge/frame_id: map
+ * /formation_goal_bridge/goal_heading_free: True
+ * /formation_goal_bridge/initial_heading_policy: cargo_heading
+ * /formation_goal_bridge/initial_plan_id: 600000
+ * /formation_goal_bridge/job_state_timeout_s: 3.0
+ * /formation_goal_bridge/map_timeout_s: 8.0
+ * /formation_goal_bridge/offsets: [[1.0, 0.0], [0.0...
+ * /formation_goal_bridge/playback_tf_timeout_s: 0.5
+ * /formation_goal_bridge/start_theta: 0.0
+ * /formation_goal_bridge/start_x: 10.0
+ * /formation_goal_bridge/start_y: 3.6
+ * /formation_goal_bridge/vehicle_ids: [1, 2, 3]
+ * /formation_goal_bridge/virtual_a_goal_policy: free
+ * /formation_playback/allow_reverse: True
+ * /formation_playback/backend: virtual_rigid_a
+ * /formation_playback/body_length_m: 0.738
+ * /formation_playback/body_width_m: 0.5
+ * /formation_playback/formation_id: cargo_wedge
+ * /formation_playback/frame_id: map
+ * /formation_playback/goal_heading_free: True
+ * /formation_playback/hud_enabled: True
+ * /formation_playback/hud_height: 270
+ * /formation_playback/hud_left: 900
+ * /formation_playback/hud_top: 20
+ * /formation_playback/hud_width: 360
+ * /formation_playback/initial_heading_policy: cargo_heading
+ * /formation_playback/offsets: [[1.0, 0.0], [0.0...
+ * /formation_playback/publish_tf: True
+ * /formation_playback/rate: 25.0
+ * /formation_playback/show_cargo_reason: False
+ * /formation_playback/show_status_text: False
+ * /formation_playback/transport_ui: True
+ * /formation_playback/vehicle_ids: [1, 2, 3]
+ * /formation_uniform_planner/backend: virtual_rigid_a
+ * /formation_uniform_planner/collision_margin: 0.05
+ * /formation_uniform_planner/frame_id: map
+ * /formation_uniform_planner/goal_heading_tol: 0.017453292519943295
+ * /formation_uniform_planner/goal_psi_tol: 0.017453292519943295
+ * /formation_uniform_planner/goal_xy_tol: 0.02
+ * /formation_uniform_planner/max_expansions: 10000
+ * /formation_uniform_planner/max_publication_samples: 200001
+ * /formation_uniform_planner/max_seconds: 30.0
+ * /formation_uniform_planner/playback_finish_grace_s: 3.0
+ * /formation_uniform_planner/playback_start_timeout_s: 5.0
+ * /formation_uniform_planner/publication_dt: 0.02
+ * /formation_uniform_planner/sweep_spacing: 0.01
+ * /formation_uniform_planner/translation_step: 1.0
+ * /formation_uniform_planner/virtual_a_corridor_enforcement: hard
+ * /formation_uniform_planner/virtual_a_formation_corridor_scope: three_vehicle_uni...
+ * /formation_uniform_planner/virtual_a_goal_policy: free
+ * /formation_uniform_planner/virtual_a_guidance_mode: corridor
+ * /formation_uniform_planner/virtual_a_planning_budget_s: 60.0
+ * /formation_uniform_planner/virtual_a_planning_timeout_s: 75.0
+ * /fwis_map_publisher/map_dir: /tmp/expv3-map-sc...
+ * /rosdistro: noetic
+ * /rosversion: 1.17.4
+
+NODES
+  /
+    formation_goal_bridge (fwis_v3_demo/formation_goal_bridge.py)
+    formation_playback (fwis_v3_playback/formation_playback.py)
+    formation_uniform_planner (fwis_v3_optimizer/formation_uniform_planner_node.py)
+    fwis_map_publisher (fwis_map_server/map_publisher.py)
+    rviz (rviz/rviz)
+
+[1mROS_MASTER_URI=http://127.0.0.1:11663[0m
+]2;/home/wq/whut_thesis/expv3_multi_virtual_a/catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch http://127.0.0.1:11663
+[1mprocess[fwis_map_publisher-1]: started with pid [883079][0m
+[1mprocess[formation_uniform_planner-2]: started with pid [883080][0m
+[1mprocess[formation_playback-3]: started with pid [883081][0m
+[1mprocess[formation_goal_bridge-4]: started with pid [883082][0m
+[1mprocess[rviz-5]: started with pid [883083][0m
+[rviz-5] killing on exit
+[formation_goal_bridge-4] killing on exit
+[formation_playback-3] killing on exit
+[formation_uniform_planner-2] killing on exit
+[fwis_map_publisher-1] killing on exit
+shutting down processing monitor...
+... shutting down processing monitor complete
+[1mdone[0m

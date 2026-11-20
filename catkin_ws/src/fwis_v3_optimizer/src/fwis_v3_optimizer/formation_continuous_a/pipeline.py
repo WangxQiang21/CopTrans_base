@@ -20,6 +20,8 @@ from .collision import audit_collision
 from .contracts import (
     COLLISION_SCOPE,
     DYNAMICS_SCOPE,
+    FORMATION_CORRIDOR_SCOPE_F_ONLY,
+    FORMATION_CORRIDOR_SCOPE_THREE_VEHICLE_UNION_V1,
     PROGRESS_FAILED_STAGE,
     PROGRESS_SCHEMA,
     PROGRESS_STAGE_INDEX,
@@ -71,6 +73,8 @@ from .optimizer import (
     initial_guess_key,
     solve_open_path_guided,
 )
+from .formation_certificate import verify_formation_certificate
+from .formation_corridor import build_formation_template_candidates
 from .route_processing import segment_is_free, simplify_route
 from .timing import retime_path
 
@@ -359,7 +363,13 @@ def make_route_guides(grid, start_qf, goal_qf, config=None, *,
 def _empty_result(map_request, status, reason, detail, first_layer,
                   timings, wall, search, checks=0, metrics=None,
                   attempts=(), routes=None, geometry_audit=None,
-                  dynamic_audit=None, collision_audit=None):
+                  dynamic_audit=None, collision_audit=None,
+                  formation_scope=FORMATION_CORRIDOR_SCOPE_F_ONLY,
+                  formation_corridor_audit=None,
+                  formation_template_id="",
+                  formation_certificate=None,
+                  formation_f_constraint_count=None,
+                  formation_obb_constraint_count=None):
     """Build a failed result with all reached evidence, but no plan/path.
 
     The contract forbids publishing a candidate from a failed result.  Audit
@@ -385,7 +395,13 @@ def _empty_result(map_request, status, reason, detail, first_layer,
         wall_time_s=float(wall),
         timings=timings,
         metrics=dict(metrics or {}),
-        checks=int(checks))
+        checks=int(checks),
+        formation_corridor_scope=str(formation_scope),
+        formation_corridor_audit=dict(formation_corridor_audit or {}),
+        formation_template_id=str(formation_template_id or ""),
+        formation_f_constraint_count=formation_f_constraint_count,
+        formation_obb_constraint_count=formation_obb_constraint_count,
+        formation_certificate=dict(formation_certificate or {}))
 
 
 def _safe_context_sha(map_request):
@@ -1315,6 +1331,13 @@ def _plan_virtual_a_impl(map_request, progress):
         "corridor"
     corridor_enforcement = str(
         planner_config.corridor_enforcement).strip().lower()
+    # TASK03 Step 6: the scope is explicit input, never inferred from the
+    # presence of a template.  f_only keeps every historical path unchanged.
+    formation_scope = str(getattr(
+        planner_config, "formation_corridor_scope",
+        FORMATION_CORRIDOR_SCOPE_F_ONLY)).strip().lower()
+    union_scope = formation_scope == \
+        FORMATION_CORRIDOR_SCOPE_THREE_VEHICLE_UNION_V1
     # C3 rework 01: one request-wide initial pool.  The configured cap may be
     # stricter than six but can never exceed the contract's six.
     initial_limit = min(MAX_INITIALS, int(planner_config.max_initials))
@@ -1326,6 +1349,7 @@ def _plan_virtual_a_impl(map_request, progress):
             "corridor_allocation_s": 0.0,
             "corridor_containment_s": 0.0,
             "formation_assessment_s": 0.0,
+            "formation_template_build_s": 0.0,
         })
         search["corridor"] = {
             "guidance_mode": "corridor",
@@ -1333,6 +1357,8 @@ def _plan_virtual_a_impl(map_request, progress):
             "rounds": [],
             "route_assessments": [],
         }
+    if union_scope:
+        search["formation_corridor_scope"] = formation_scope
     try:
         context = map_request.context()
         context_sha = planning_context_sha256(context)
@@ -1361,6 +1387,21 @@ def _plan_virtual_a_impl(map_request, progress):
     # mandatory static map/vehicle check for such a request: the hold audit has
     # to run even when the start cell is blocked or has no allowed guide.
     hold_request = request.start_qf == request.goal_qf
+    if union_scope and (not corridor_mode or hold_request):
+        # There is no finite chain/template and therefore no continuous F+OBB
+        # certificate for these inputs.  The union scope never falls back to
+        # the historical F-only gate silently.
+        return _empty_result(
+            map_request, "INVALID_REQUEST" if not corridor_mode
+            else "NO_ACCEPTED_CANDIDATE",
+            "FORMATION_CORRIDOR_SCOPE_MISMATCH" if not corridor_mode
+            else "F_ONLY_GATE_BLOCKED",
+            "three_vehicle_union_v1 requires guidance_mode=corridor and a "
+            "motion request; no continuous certificate exists for a "
+            "zero-length hold" if hold_request else
+            "three_vehicle_union_v1 requires guidance_mode=corridor",
+            "REQUEST", timings, time.monotonic() - started, search,
+            formation_scope=formation_scope)
     search["budget"] = {
         "total_soft_budget_s": G4_TOTAL_SOFT_BUDGET_S,
         "max_recoveries": MAX_RECOVERIES,
@@ -1406,6 +1447,15 @@ def _plan_virtual_a_impl(map_request, progress):
     corridor_allocation = None
     corridor_round = None
     corridor_route_index = None
+    # TASK03 Step 6 union scheduling: at most three fixed templates built from
+    # the one selected assessment; each template gets one unused initial.
+    corridor_templates = ()
+    template_rank = 0
+    template_attempts = []
+    templates_not_tried_budget = []
+    accepted_template = None
+    accepted_certificate = {}
+    accepted_certificate_verification = {}
     containment = None
     all_attempts = []
     last_geometry_audit = None
@@ -1899,6 +1949,16 @@ def _plan_virtual_a_impl(map_request, progress):
                 }
                 search["corridor"]["rounds"].append(corridor_round)
                 corridor_route_index = route_index
+                # A new selected guide/chain/allocation invalidates every
+                # template identity, attempt and acceptance from the previous
+                # corridor round.
+                corridor_templates = ()
+                template_rank = 0
+                template_attempts = []
+                templates_not_tried_budget = []
+                accepted_template = None
+                accepted_certificate = {}
+                accepted_certificate_verification = {}
                 progress.emit(
                     "PORTAL_GUIDE",
                     metrics={
@@ -1987,6 +2047,76 @@ def _plan_virtual_a_impl(map_request, progress):
                 if not hold_request and routes and not endpoint_only else ()
             solve_chain = None
             solve_allocation = None
+        # TASK03 Step 6: the union scope consumes at most three fixed
+        # whole/diagonal templates built from the one selected assessment.
+        # Building happens once per selected corridor round; template failures
+        # are reported with their own reason and never fall back to f_only.
+        solve_template = None
+        if union_scope and not hold_request and solve_chain is not None:
+            if not corridor_templates:
+                if remaining() <= 1.0:
+                    return budget_stop("formation template build")
+                template_started = time.monotonic()
+                try:
+                    template_set = build_formation_template_candidates(
+                        request, chain, corridor_guide, corridor_allocation,
+                        corridor_assessment, planner_config,
+                        planning_context_sha256=context_sha,
+                        margin_m=corridor_effective_margin(
+                            chain, planner_config),
+                        margin_source="corridor_effective_margin",
+                        max_templates=3)
+                except VirtualAContractError as exc:
+                    timings["formation_template_build_s"] += \
+                        time.monotonic() - template_started
+                    corridor_round["formation_templates"] = {
+                        "status": "COVER_TEMPLATE_INSUFFICIENT",
+                        "reason": str(exc.reason),
+                        "detail": str(exc.detail),
+                        "template_ids": [],
+                    }
+                    record_failure("PLANNING", exc.reason)
+                    return _empty_result(
+                        map_request, "NO_ACCEPTED_CANDIDATE", exc.reason,
+                        exc.detail, "PLANNING", timings,
+                        time.monotonic() - started, search,
+                        formation_scope=formation_scope,
+                        formation_corridor_audit={
+                            "scope": formation_scope,
+                            "status": "TEMPLATE_BUILD_FAILED",
+                            "reason": str(exc.reason),
+                            "detail": str(exc.detail),
+                        })
+                timings["formation_template_build_s"] += \
+                    time.monotonic() - template_started
+                corridor_templates = tuple(template_set.templates)
+                corridor_round["formation_templates"] = {
+                    "status": "BUILT",
+                    "candidate_set": template_set.as_dict(),
+                    "template_ids": [
+                        template.template_id
+                        for template in corridor_templates],
+                    "templates": [
+                        template.as_dict() for template in corridor_templates],
+                }
+                if not corridor_templates:
+                    record_failure(
+                        "PLANNING", "COVER_TEMPLATE_INSUFFICIENT")
+                    return _empty_result(
+                        map_request, "NO_ACCEPTED_CANDIDATE",
+                        "COVER_TEMPLATE_INSUFFICIENT",
+                        "no finite whole/diagonal template expresses the "
+                        "selected guide", "PLANNING", timings,
+                        time.monotonic() - started, search,
+                        formation_scope=formation_scope,
+                        formation_corridor_audit={
+                            "scope": formation_scope,
+                            "status": "TEMPLATE_BUILD_FAILED",
+                            "reason": "COVER_TEMPLATE_INSUFFICIENT",
+                            "detail": "empty finite template set",
+                        })
+            solve_template = corridor_templates[min(
+                template_rank, len(corridor_templates) - 1)]
         # Step 3: one finite branch ordering per route/guide.  The preferred
         # branch is the default; only the winding recovery may advance by one.
         heading_branch = None
@@ -2047,8 +2177,15 @@ def _plan_virtual_a_impl(map_request, progress):
             heading_branch=heading_branch,
             guide_length_m=guide_length_m,
             excluded_initial_keys=tuple(used_initial_keys),
-            max_new_initials=remaining_initial_slots(),
-            stop_after_route_audit=bool(solve_routes))
+            # One fixed template first spends one unused initial identity;
+            # the solver's own at-most-one refinement may consume a second
+            # from the same request-wide pool.
+            max_new_initials=(1 if solve_template is not None
+                              else remaining_initial_slots()),
+            stop_after_route_audit=bool(solve_routes),
+            formation_template=solve_template,
+            formation_planning_context_sha256=(
+                context_sha if solve_template is not None else None))
         timings["geometry_solve_s"] += time.monotonic() - solve_started
         all_attempts.extend(geometry.attempts)
         last_geometry_audit = geometry.audit
@@ -2113,11 +2250,110 @@ def _plan_virtual_a_impl(map_request, progress):
             "obstacle_context": obstacle_context.as_dict()
             if obstacle_context is not None else None,
         }
-        if geometry.status not in ("GEOMETRY_FEASIBLE", "NO_MOTION"):
+        # TASK03 Step 6: the union certificate gate.  A feasible geometry
+        # candidate is accepted only with a VERIFIED certificate whose sealed
+        # identity matches this exact request/chain/template/allocation/path.
+        # The pipeline never re-derives or weakens the certificate.
+        geometry_ok = geometry.status in ("GEOMETRY_FEASIBLE", "NO_MOTION")
+        template_gate_passed = geometry_ok
+        gate_reason = ""
+        gate_detail = ""
+        if union_scope and solve_template is not None:
+            round_record["formation_template_id"] = \
+                solve_template.template_id
+            round_record["formation_f_constraint_count"] = int(
+                getattr(geometry, "formation_f_constraint_count", 0) or 0)
+            round_record["formation_obb_constraint_count"] = int(
+                getattr(geometry, "formation_obb_constraint_count", 0) or 0)
+            round_record["formation_f_max_residual_m"] = getattr(
+                geometry, "formation_f_max_residual_m", None)
+            round_record["formation_obb_max_residual_m"] = getattr(
+                geometry, "formation_obb_max_residual_m", None)
+            certificate = dict(getattr(
+                geometry, "formation_certificate", None) or {})
+            verification = {"passed": False, "reason": "MISSING_CERTIFICATE",
+                            "detail": ""}
+            if geometry_ok:
+                try:
+                    verification = verify_formation_certificate(
+                        certificate, geometry.path, request, chain,
+                        solve_template,
+                        allocation=corridor_allocation,
+                        guide=corridor_guide,
+                        planning_context_sha256=context_sha)
+                except Exception as exc:
+                    verification = {
+                        "passed": False,
+                        "reason": "CERTIFICATE_VERIFICATION_EXCEPTION",
+                        "detail": "{}: {}".format(
+                            type(exc).__name__, exc)}
+                round_record["formation_certificate_status"] = str(
+                    certificate.get("status", "MISSING"))
+                round_record["formation_certificate_sha256"] = str(
+                    certificate.get("certificate_sha256", ""))
+                round_record["formation_certificate_verification"] = dict(
+                    verification)
+            template_gate_passed = geometry_ok and bool(
+                verification.get("passed"))
+            if not template_gate_passed:
+                gate_reason = (
+                    "FORMATION_CERTIFICATE_GATE_FAILED"
+                    if geometry_ok else
+                    (geometry.reason or "NO_ACCEPTED_CANDIDATE"))
+                gate_detail = (
+                    "continuous certificate rejected: status={!r} reason={!r}"
+                    .format(certificate.get("status", "MISSING"),
+                            verification.get("reason", ""))
+                    if geometry_ok else (geometry.detail or ""))
+            template_attempts.append({
+                "template_id": solve_template.template_id,
+                "template_rank": int(template_rank),
+                "geometry_status": str(geometry.status),
+                "geometry_reason": str(geometry.reason or ""),
+                "certificate_status": str(certificate.get("status", "")),
+                "certificate_sha256": str(
+                    certificate.get("certificate_sha256", "")),
+                "certificate_verified": bool(verification.get("passed")),
+                "verification_reason": str(verification.get("reason", "")),
+                "accepted": bool(template_gate_passed),
+                "initial_count": int(geometry.initial_count),
+                "new_initial_count": int(new_initial_count),
+            })
+            round_record["formation_template_rank"] = int(template_rank)
+            round_record["formation_template_accepted"] = bool(
+                template_gate_passed)
+            if template_gate_passed:
+                accepted_template = solve_template
+                accepted_certificate = certificate
+                accepted_certificate_verification = dict(verification)
+            elif template_rank + 1 < len(corridor_templates) \
+                    and remaining() > 1.0 \
+                    and remaining_initial_slots() > 0:
+                # Spend at most one unused initial on the next fixed
+                # template.  This is template scheduling, not the single
+                # route/recovery action; every downstream audit still runs
+                # on whichever template finally certifies.
+                search["rounds"].append(round_record)
+                template_rank += 1
+                record_failure("GEOMETRY", gate_reason)
+                continue
+            else:
+                for index in range(
+                        template_rank + 1, len(corridor_templates)):
+                    templates_not_tried_budget.append({
+                        "template_id": corridor_templates[
+                            index].template_id,
+                        "template_rank": int(index),
+                        "reason": "NOT_TRIED_BUDGET",
+                    })
+        if not template_gate_passed:
             search["rounds"].append(round_record)
-            status = _timing_status_for_geometry(geometry.status)
+            status = _timing_status_for_geometry(
+                "NO_ACCEPTED_CANDIDATE" if geometry_ok
+                else geometry.status)
             record_failure(
-                "GEOMETRY", geometry.reason or "NO_ACCEPTED_CANDIDATE")
+                "GEOMETRY", gate_reason
+                or geometry.reason or "NO_ACCEPTED_CANDIDATE")
             if _winding_retry_allowed(geometry) \
                     and next_winding_branch(solve_routes):
                 # The preferred branch produced no audited candidate and the
@@ -2142,14 +2378,40 @@ def _plan_virtual_a_impl(map_request, progress):
                     continue
             return _empty_result(
                 map_request, status,
-                geometry.reason or "NO_ACCEPTED_CANDIDATE",
-                geometry.detail or "geometry solver produced no audited plan",
+                gate_reason or geometry.reason or "NO_ACCEPTED_CANDIDATE",
+                gate_detail or geometry.detail
+                or "geometry solver produced no audited plan",
                 "GEOMETRY", timings, time.monotonic() - started, search,
                 checks=_report_checks(geometry.audit),
                 attempts=all_attempts, routes=tuple(routes),
                 geometry_audit=geometry.audit,
                 metrics=(
-                    _corridor_evidence(geometry) if corridor_mode else None))
+                    _corridor_evidence(geometry) if corridor_mode else None),
+                formation_scope=formation_scope,
+                formation_corridor_audit=(
+                    {
+                        "scope": formation_scope,
+                        "status": "NO_VERIFIED_TEMPLATE",
+                        "template_id": (
+                            solve_template.template_id
+                            if solve_template is not None else ""),
+                        "template_attempts": template_attempts,
+                        "not_tried": templates_not_tried_budget,
+                        "certificate": accepted_certificate,
+                        "certificate_verification":
+                            accepted_certificate_verification,
+                    } if union_scope else None),
+                formation_template_id=(
+                    solve_template.template_id
+                    if union_scope and solve_template is not None else ""),
+                formation_certificate=(
+                    accepted_certificate if union_scope else None),
+                formation_f_constraint_count=(
+                    round_record.get("formation_f_constraint_count")
+                    if union_scope else None),
+                formation_obb_constraint_count=(
+                    round_record.get("formation_obb_constraint_count")
+                    if union_scope else None))
         if corridor_mode and not hold_request:
             if remaining() <= 0.0:
                 search["rounds"].append(round_record)
@@ -2181,7 +2443,28 @@ def _plan_virtual_a_impl(map_request, progress):
             round_record["corridor_containment_passed"] = bool(
                 containment["passed"])
             round_record["corridor_containment_reason"] = containment["reason"]
-            if not containment["passed"] and corridor_enforcement == "hard":
+            if not containment["passed"] and corridor_enforcement == "hard" \
+                    and union_scope:
+                # Section 3.7 migration: under three_vehicle_union_v1 the
+                # VERIFIED F+OBB continuous certificate is the authority and
+                # replaces the stricter F-only fixed-allocation gate.  The
+                # historical audit stays as diagnostic evidence, and this
+                # branch is reachable only after the certificate gate passed.
+                round_record["f_only_gate_migrated"] = True
+                round_record["f_only_containment_passed"] = False
+                corridor_round["f_only_gate_migration"] = {
+                    "migrated": True,
+                    "reason": "three_vehicle_union_v1_continuous_certificate",
+                    "f_only_containment_passed": False,
+                    "f_only_containment_reason": containment["reason"],
+                    "certificate_status": str(
+                        accepted_certificate.get("status", "")),
+                    "certificate_sha256": str(
+                        accepted_certificate.get(
+                            "certificate_sha256", "")),
+                }
+            if not containment["passed"] and corridor_enforcement == "hard" \
+                    and not union_scope:
                 # C3 rework 01: a hard fixed-sigma containment failure may
                 # spend the one recovery on a single adjacent-portal
                 # reallocation.  The candidate allocation is only a generator
@@ -2454,7 +2737,24 @@ def _plan_virtual_a_impl(map_request, progress):
                 _report_checks(dynamics),
                 attempts=all_attempts, routes=tuple(routes),
                 geometry_audit=last_geometry_audit,
-                dynamic_audit=dynamics)
+                dynamic_audit=dynamics,
+                formation_scope=formation_scope,
+                formation_corridor_audit=(
+                    {
+                        "scope": formation_scope,
+                        "status": "DYNAMICS_AUDIT_FAILED",
+                        "template_id": accepted_template.template_id
+                        if accepted_template is not None else "",
+                        "certificate": dict(accepted_certificate),
+                        "certificate_verification": dict(
+                            accepted_certificate_verification),
+                        "template_attempts": template_attempts,
+                    } if union_scope else None),
+                formation_template_id=(
+                    accepted_template.template_id
+                    if union_scope and accepted_template is not None else ""),
+                formation_certificate=(
+                    accepted_certificate if union_scope else None))
         if remaining() <= 0.0:
             search["rounds"].append(round_record)
             return budget_stop("collision audit")
@@ -2500,7 +2800,24 @@ def _plan_virtual_a_impl(map_request, progress):
                 "collision_margin_m": (
                     collision.metrics.get("margin")
                     if isinstance(collision.metrics, dict) else None),
-            })
+            },
+            formation_scope=formation_scope,
+            formation_corridor_audit=(
+                {
+                    "scope": formation_scope,
+                    "status": "COLLISION_AUDIT_FAILED",
+                    "template_id": accepted_template.template_id
+                    if accepted_template is not None else "",
+                    "certificate": dict(accepted_certificate),
+                    "certificate_verification": dict(
+                        accepted_certificate_verification),
+                    "template_attempts": template_attempts,
+                } if union_scope else None),
+            formation_template_id=(
+                accepted_template.template_id
+                if union_scope and accepted_template is not None else ""),
+            formation_certificate=(
+                accepted_certificate if union_scope else None))
         if hold_request or not can_recover():
             search["rounds"].append(round_record)
             return collision_failure
@@ -2598,6 +2915,71 @@ def _plan_virtual_a_impl(map_request, progress):
             "; continuous corridor containment certified"
             if corridor_metrics["corridor_containment_certified"] else
             "; corridor containment diagnostic only")
+    formation_corridor_audit = None
+    if union_scope:
+        if accepted_template is None or not accepted_certificate:
+            # The gate makes this unreachable; fail closed rather than build
+            # an executable result without a certified template.
+            record_failure("MODEL", "FORMATION_CERTIFICATE_GATE_FAILED")
+            return _empty_result(
+                map_request, "NUMERICAL_FAILURE",
+                "FORMATION_CERTIFICATE_GATE_FAILED",
+                "union scope reached result assembly without an accepted "
+                "certificate", "MODEL", timings,
+                time.monotonic() - started, search,
+                attempts=all_attempts, routes=tuple(routes),
+                geometry_audit=last_geometry_audit,
+                dynamic_audit=last_dynamic_audit,
+                collision_audit=last_collision_audit,
+                formation_scope=formation_scope)
+        formation_corridor_audit = {
+            "scope": formation_scope,
+            "status": "VERIFIED",
+            "template_id": accepted_template.template_id,
+            "template": accepted_template.as_dict(),
+            "chain_digest": chain.digest,
+            "grid_sha256": digest,
+            "allocation": [
+                list(entry) for entry in corridor_allocation],
+            "template_candidates": (
+                corridor_round.get("formation_templates", {})
+                if corridor_round is not None else {}),
+            "template_attempts": template_attempts,
+            "not_tried": templates_not_tried_budget,
+            "certificate": dict(accepted_certificate),
+            "certificate_verification": dict(
+                accepted_certificate_verification),
+            "f_only_gate_migrated": bool(
+                round_record.get("f_only_gate_migrated", False)),
+            "f_only_containment": containment,
+            "certification_claim": "CONTINUOUS_F_OBB_CERTIFICATE",
+        }
+        corridor_metrics.update({
+            "formation_corridor_scope": formation_scope,
+            "formation_template_id": accepted_template.template_id,
+            "formation_certificate_status": str(
+                accepted_certificate.get("status", "")),
+            "formation_certificate_sha256": str(
+                accepted_certificate.get("certificate_sha256", "")),
+            "formation_f_constraint_count": int(
+                getattr(geometry, "formation_f_constraint_count", 0) or 0),
+            "formation_obb_constraint_count": int(
+                getattr(geometry, "formation_obb_constraint_count", 0) or 0),
+            "formation_f_max_residual_m": getattr(
+                geometry, "formation_f_max_residual_m", None),
+            "formation_obb_max_residual_m": getattr(
+                geometry, "formation_obb_max_residual_m", None),
+            "formation_certificate_verified": bool(
+                accepted_certificate_verification.get("passed")),
+            # Under union scope the continuous F+OBB certificate, not the
+            # historical F-only allocation audit, is the certification.
+            "corridor_containment_certified": bool(
+                accepted_certificate_verification.get("passed")),
+        })
+        corridor_detail = (
+            "; continuous F+OBB formation certificate VERIFIED"
+            + ("" if containment is None or containment["passed"] else
+               " (F-only gate migrated under three_vehicle_union_v1)"))
     try:
         result = VirtualAResult(
             status=status,
@@ -2630,7 +3012,22 @@ def _plan_virtual_a_impl(map_request, progress):
                     if isinstance(last_collision_audit.metrics, dict) else None),
                 **corridor_metrics,
             },
-            checks=checks)
+            checks=checks,
+            formation_corridor_scope=formation_scope,
+            formation_corridor_audit=(
+                formation_corridor_audit if union_scope else None),
+            formation_template_id=(
+                accepted_template.template_id if union_scope else ""),
+            formation_f_constraint_count=(
+                int(getattr(
+                    geometry, "formation_f_constraint_count", 0) or 0)
+                if union_scope else None),
+            formation_obb_constraint_count=(
+                int(getattr(
+                    geometry, "formation_obb_constraint_count", 0) or 0)
+                if union_scope else None),
+            formation_certificate=(
+                accepted_certificate if union_scope else None))
     except VirtualAContractError as exc:
         record_failure("MODEL", "RESULT_ASSEMBLY_FAILURE")
         return _empty_result(
@@ -2639,7 +3036,15 @@ def _plan_virtual_a_impl(map_request, progress):
             attempts=all_attempts, routes=tuple(routes),
             geometry_audit=last_geometry_audit,
             dynamic_audit=last_dynamic_audit,
-            collision_audit=last_collision_audit)
+            collision_audit=last_collision_audit,
+            formation_scope=formation_scope,
+            formation_corridor_audit=(
+                formation_corridor_audit if union_scope else None),
+            formation_template_id=(
+                accepted_template.template_id
+                if union_scope and accepted_template is not None else ""),
+            formation_certificate=(
+                accepted_certificate if union_scope else None))
     timings["result_assembly_s"] = max(
         0.0, time.monotonic() - started - sum(
             value for key, value in timings.items()

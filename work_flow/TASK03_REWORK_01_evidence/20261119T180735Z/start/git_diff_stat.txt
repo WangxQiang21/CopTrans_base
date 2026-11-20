@@ -1,0 +1,19 @@
+ .../src/fwis_v3_demo/launch/formation_demo.launch  |   7 +
+ .../src/fwis_v3_msgs/msg/FormationPlaybackPlan.msg |   8 +-
+ .../scripts/formation_uniform_planner_node.py      |  37 +-
+ .../formation_continuous_a/contracts.py            | 674 +++++++++++++++-
+ .../formation_continuous_a/corridor.py             |  54 ++
+ .../formation_continuous_a/geometry.py             |   2 +-
+ .../formation_continuous_a/optimizer.py            | 893 ++++++++++++++++++++-
+ .../formation_continuous_a/pipeline.py             | 414 +++++++++-
+ .../formation_continuous_a/ros_adapter.py          |   7 +-
+ .../src/fwis_v3_optimizer/formation_playback.py    |  86 +-
+ .../fwis_v3_playback/scripts/formation_playback.py |  21 +
+ run_demo.sh                                        |  12 +
+ tests/test_formation_demo_assets.py                |  29 +-
+ tests/test_virtual_a_corridor_optimizer.py         | 134 ++++
+ tests/test_virtual_a_geometry.py                   |  91 +++
+ tests/test_virtual_a_pipeline.py                   |  93 +++
+ tests/test_virtual_a_playback.py                   | 108 +++
+ tests/test_virtual_a_receiver.py                   |  45 ++
+ 18 files changed, 2667 insertions(+), 48 deletions(-)

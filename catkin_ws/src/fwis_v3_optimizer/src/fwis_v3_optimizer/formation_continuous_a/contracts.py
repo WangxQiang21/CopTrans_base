@@ -83,6 +83,45 @@ RESEARCH_VEHICLE_IDS = (1, 2, 3)
 RESEARCH_OFFSETS = ((1, 1.0, 0.0), (2, 0.0, 1.0), (3, 0.0, -1.0))
 FORMATION_TOLERANCE_M = 1e-12
 
+# TASK03: versioned hard-corridor scope and finite OBB coverage templates.
+FORMATION_CORRIDOR_SCOPE_F_ONLY = "f_only"
+FORMATION_CORRIDOR_SCOPE_THREE_VEHICLE_UNION_V1 = "three_vehicle_union_v1"
+FORMATION_CORRIDOR_SCOPES = (
+    FORMATION_CORRIDOR_SCOPE_F_ONLY,
+    FORMATION_CORRIDOR_SCOPE_THREE_VEHICLE_UNION_V1,
+)
+# Template schema v2 adds the per-segment F reference-point region assignment.
+# The schema/compiler bump makes every v1 payload fail closed instead of being
+# silently reinterpreted as if it carried an F assignment.  The certificate
+# payload itself does not change; it binds the template id, which now covers
+# the F assignment as well.
+FORMATION_CORRIDOR_TEMPLATE_SCHEMA = "formation_corridor_template.v2"
+FORMATION_CORRIDOR_COMPILER_VERSION = "formation_corridor_rows.v2"
+FORMATION_CORRIDOR_CERTIFICATE_VERSION = "formation_corridor_certificate.v1"
+FORMATION_CORRIDOR_DECOMPOSITIONS = ("whole", "diagonal_0", "diagonal_1")
+FORMATION_CORRIDOR_STATUS_VERIFIED = "FORMATION_CORRIDOR_VERIFIED"
+FORMATION_CORRIDOR_STATUS_VIOLATED = "FORMATION_CORRIDOR_VIOLATED"
+FORMATION_CORRIDOR_STATUS_UNCONFIRMED = "FORMATION_CORRIDOR_UNCONFIRMED"
+FORMATION_CORRIDOR_STATUS_TEMPLATE_INSUFFICIENT = (
+    "FORMATION_CORRIDOR_TEMPLATE_INSUFFICIENT")
+FORMATION_CORRIDOR_STATUS_F_ONLY_GATE_BLOCKED = (
+    "FORMATION_CORRIDOR_F_ONLY_GATE_BLOCKED")
+# The OBB map requires the normal branch A>0 and D>0.  CasADi must not
+# silently evaluate a corner through atan2(0, 0) or a negative A.  Every OBB
+# scalar row carries this smooth guard (identical numeric/symbolic form), so a
+# degenerate vehicle state cannot satisfy the rows by accident.  The tiny
+# positive epsilon keeps the branch open; the penalty makes a violation
+# unambiguously infeasible without changing the row count.
+FORMATION_NORMAL_BRANCH_EPS = 1e-9
+FORMATION_NORMAL_BRANCH_PENALTY = 1.0e12
+FORMATION_CORRIDOR_STATUSES = (
+    FORMATION_CORRIDOR_STATUS_VERIFIED,
+    FORMATION_CORRIDOR_STATUS_VIOLATED,
+    FORMATION_CORRIDOR_STATUS_UNCONFIRMED,
+    FORMATION_CORRIDOR_STATUS_TEMPLATE_INSUFFICIENT,
+    FORMATION_CORRIDOR_STATUS_F_ONLY_GATE_BLOCKED,
+)
+
 
 class VirtualAContractError(ValueError):
     """Structured rejection of an invalid A-only contract value."""
@@ -810,6 +849,13 @@ class PlannerConfig:
     corridor_audit_max_intervals: int = 20000
     corridor_audit_min_width_m: float = 1e-5
     corridor_box_padding_m: float = 2.0
+    # TASK03 versioned hard-constraint scope.  ``f_only`` is the historical
+    # reference-point containment contract.  ``three_vehicle_union_v1`` adds
+    # complete three-vehicle OBB rows and the independent continuous
+    # certificate.  f_only is omitted from ``as_dict`` so every historical
+    # payload and planning-context digest is byte-identical; unknown values
+    # fail closed in validation.
+    formation_corridor_scope: str = "f_only"
 
     def as_dict(self):
         encoded = {
@@ -833,6 +879,12 @@ class PlannerConfig:
         corridor = _planner_corridor_dict(self)
         if corridor != _PLANNER_CORRIDOR_DEFAULTS:
             encoded.update(corridor)
+        scope = str(self.formation_corridor_scope).strip().lower()
+        if scope != FORMATION_CORRIDOR_SCOPE_F_ONLY:
+            # Union scope is an explicit, versioned planning-context input.
+            # f_only is the omitted historical default and keeps every old
+            # config/context SHA reproducible.
+            encoded["formation_corridor_scope"] = scope
         return encoded
 
 
@@ -991,6 +1043,22 @@ def validate_planner_config(config):
             "INVALID_CONFIG",
             "corridor_enforcement={!r} allowed=('hard','soft')".format(
                 config.corridor_enforcement))
+    formation_scope = str(config.formation_corridor_scope).strip().lower()
+    if formation_scope not in FORMATION_CORRIDOR_SCOPES:
+        return ValidationResult.fail(
+            "INVALID_CONFIG",
+            "formation_corridor_scope={!r} allowed={}".format(
+                config.formation_corridor_scope, FORMATION_CORRIDOR_SCOPES))
+    if formation_scope == FORMATION_CORRIDOR_SCOPE_THREE_VEHICLE_UNION_V1:
+        # The union scope is only meaningful with the corridor guidance and
+        # its hard rows.  Silently falling back to soft/legacy would make the
+        # certificate gate meaningless.
+        if guidance_mode != "corridor" or enforcement != "hard":
+            return ValidationResult.fail(
+                "INVALID_CONFIG",
+                "formation_corridor_scope={!r} requires "
+                "guidance_mode='corridor' and corridor_enforcement='hard'".format(
+                    formation_scope))
     if not (0.0 <= corridor_margin < 0.5):
         return ValidationResult.fail(
             "INVALID_CONFIG", "corridor_margin_m must be in [0, 0.5)")
@@ -1043,6 +1111,7 @@ def validate_planner_config(config):
         ipopt_tolerance=ipopt_tol, scipy_tolerance=scipy_tol,
         scipy_maxiter=scipy_iterations, guidance_mode=guidance_mode,
         corridor_enforcement=enforcement,
+        formation_corridor_scope=formation_scope,
         corridor_margin_m=corridor_margin,
         corridor_margin_portal_fraction=portal_fraction,
         corridor_kappa_weight=kappa_weight,
@@ -1058,15 +1127,18 @@ def validate_planner_config(config):
 
 
 def research_planner_config(guidance_mode="corridor",
-                            corridor_enforcement="hard", **overrides):
+                            corridor_enforcement="hard",
+                            formation_corridor_scope="f_only", **overrides):
     """Build the default virtual-A research planner configuration.
 
-    Only the two entry-point choices are preset.  Every historical
-    ``PlannerConfig`` default, ``as_dict`` echo and ``from_dict`` round trip
-    is unchanged: legacy callers that construct ``PlannerConfig()`` directly
-    still receive ``legacy_route``.  Guidance and enforcement are normalized
-    before validation, so the returned frozen config is exactly what the
-    planner consumes.  Unknown values fail here rather than at solve time.
+    The two historical entry-point choices are preset.  ``f_only`` remains the
+    scientific reference by default; ``three_vehicle_union_v1`` must be
+    requested explicitly so no existing run silently changes scope.  Every
+    historical ``PlannerConfig`` default, ``as_dict`` echo and ``from_dict``
+    round trip is unchanged: direct construction still receives
+    ``legacy_route``.  Guidance, enforcement and scope are normalized before
+    validation, so the returned frozen config is exactly what the planner
+    consumes.  Unknown values fail here rather than at solve time.
     """
     if not isinstance(guidance_mode, str):
         raise VirtualAContractError(
@@ -1077,11 +1149,18 @@ def research_planner_config(guidance_mode="corridor",
             "INVALID_CONFIG",
             "corridor_enforcement must be a string, got {!r}".format(
                 corridor_enforcement))
+    if not isinstance(formation_corridor_scope, str):
+        raise VirtualAContractError(
+            "INVALID_CONFIG",
+            "formation_corridor_scope must be a string, got {!r}".format(
+                formation_corridor_scope))
     guidance = guidance_mode.strip().lower()
     enforcement = corridor_enforcement.strip().lower()
+    scope = formation_corridor_scope.strip().lower()
     config = PlannerConfig(
         guidance_mode=guidance,
         corridor_enforcement=enforcement,
+        formation_corridor_scope=scope,
         **overrides)
     validation = validate_planner_config(config)
     if not validation.passed:
@@ -1534,6 +1613,25 @@ class GeometryResult:
     # attempts on failure).  ``None`` means no corridor was constructed.
     corridor_halfspace_constraint_count: int = None
     corridor_max_residual_m: float = None
+    # TASK03 Step 1: the finite complete-OBB templates are additional scalar
+    # rows in the same NLP.  These fields report what was actually compiled;
+    # they are not a continuous certificate.
+    formation_corridor_scope: str = "f_only"
+    formation_template_id: str = ""
+    # Template F reference-point rows and complete-OBB rows are reported
+    # separately; the OBB count never includes F rows.
+    formation_f_constraint_count: int = None
+    formation_obb_constraint_count: int = None
+    # TASK03 Step 3: independent finite sample audit and the at-most-one
+    # audit-directed cut.  These are evidence records, never a certificate.
+    formation_sample_audit: dict = field(default_factory=dict)
+    formation_refinement: dict = field(default_factory=dict)
+    formation_f_max_residual_m: float = None
+    formation_obb_max_residual_m: float = None
+    # TASK03 Step 4: an independent continuous F+OBB interval certificate.
+    # Only a VERIFIED certificate with a matching identity may pass the
+    # optimizer gate; the finite audit and row counts are never a certificate.
+    formation_certificate: dict = field(default_factory=dict)
 
     def __post_init__(self):
         if self.status not in GEOMETRY_STATUSES:
@@ -1557,7 +1655,7 @@ class GeometryResult:
             except Exception as exc:  # report never hides path construction
                 path_summary = {"summary_error": "{}: {}".format(
                     type(exc).__name__, exc)}
-        return {
+        payload = {
             "status": self.status,
             "reason": self.reason,
             "detail": self.detail,
@@ -1578,6 +1676,25 @@ class GeometryResult:
                 self.audit, "as_dict") else None,
             "attempts": [attempt.as_dict() for attempt in self.attempts],
         }
+        # f_only results keep their historical key set byte for byte.
+        if self.formation_corridor_scope != FORMATION_CORRIDOR_SCOPE_F_ONLY:
+            payload["formation_corridor_scope"] = self.formation_corridor_scope
+            payload["formation_template_id"] = self.formation_template_id
+            payload["formation_f_constraint_count"] = (
+                self.formation_f_constraint_count)
+            payload["formation_obb_constraint_count"] = (
+                self.formation_obb_constraint_count)
+            payload["formation_sample_audit"] = dict(
+                self.formation_sample_audit)
+            payload["formation_refinement"] = dict(
+                self.formation_refinement)
+            payload["formation_f_max_residual_m"] = (
+                self.formation_f_max_residual_m)
+            payload["formation_obb_max_residual_m"] = (
+                self.formation_obb_max_residual_m)
+            payload["formation_certificate"] = dict(
+                self.formation_certificate)
+        return payload
 
 
 def geometry_path_summary(path):
@@ -2341,6 +2458,427 @@ class CorridorChain:
         return payload
 
 
+def _formation_sha256_hex(value):
+    return isinstance(value, str) and len(value) == 64 and all(
+        character in "0123456789abcdef" for character in value)
+
+
+def _formation_finite(value, context):
+    return _finite(value, context)
+
+
+@dataclass(frozen=True)
+class FormationCorridorVehicleFrame:
+    """One vehicle's fixed offset and body rectangle for a corridor template.
+
+    The frame is copied from the request so a template can validate its own
+    local convex pieces without trusting a caller-supplied shape.  It is still
+    bound to the request by ``model_sha256``.
+    """
+
+    vehicle_id: int
+    offset_x: float
+    offset_y: float
+    length_m: float
+    width_m: float
+
+    def __post_init__(self):
+        if isinstance(self.vehicle_id, bool) or not isinstance(
+                self.vehicle_id, int):
+            raise VirtualAContractError(
+                "INVALID_FORMATION_CORRIDOR_TEMPLATE",
+                "vehicle_id must be an integer, got {!r}".format(
+                    self.vehicle_id))
+        object.__setattr__(self, "offset_x", _formation_finite(
+            self.offset_x, "frame.offset_x"))
+        object.__setattr__(self, "offset_y", _formation_finite(
+            self.offset_y, "frame.offset_y"))
+        length = _formation_finite(self.length_m, "frame.length_m")
+        width = _formation_finite(self.width_m, "frame.width_m")
+        if length <= 0.0 or width <= 0.0:
+            raise VirtualAContractError(
+                "INVALID_FORMATION_CORRIDOR_TEMPLATE",
+                "frame length/width must be positive")
+        object.__setattr__(self, "length_m", length)
+        object.__setattr__(self, "width_m", width)
+
+    @property
+    def local_corners(self):
+        half_length = 0.5 * self.length_m
+        half_width = 0.5 * self.width_m
+        return (
+            (-half_length, -half_width),
+            (half_length, -half_width),
+            (half_length, half_width),
+            (-half_length, half_width),
+        )
+
+    def as_dict(self):
+        return {
+            "vehicle_id": int(self.vehicle_id),
+            "offset_x": float(self.offset_x),
+            "offset_y": float(self.offset_y),
+            "length_m": float(self.length_m),
+            "width_m": float(self.width_m),
+        }
+
+
+@dataclass(frozen=True)
+class FormationCorridorPiece:
+    """One closed convex body-local piece assigned to one convex region."""
+
+    region_index: int
+    local_vertices: tuple
+
+    def __post_init__(self):
+        if isinstance(self.region_index, bool) or not isinstance(
+                self.region_index, int) or self.region_index < 0:
+            raise VirtualAContractError(
+                "INVALID_FORMATION_CORRIDOR_TEMPLATE",
+                "piece region_index must be a nonnegative integer")
+        try:
+            vertices = tuple(
+                (_formation_finite(vertex[0], "piece.vertex.x"),
+                 _formation_finite(vertex[1], "piece.vertex.y"))
+                for vertex in self.local_vertices)
+        except (TypeError, ValueError, IndexError) as exc:
+            raise VirtualAContractError(
+                "INVALID_FORMATION_CORRIDOR_TEMPLATE",
+                "piece vertices must be finite (x, y) pairs") from exc
+        if len(vertices) < 3:
+            raise VirtualAContractError(
+                "INVALID_FORMATION_CORRIDOR_TEMPLATE",
+                "a convex piece needs at least three vertices")
+        area = 0.5 * sum(
+            x0 * y1 - x1 * y0
+            for (x0, y0), (x1, y1) in zip(
+                vertices, vertices[1:] + vertices[:1]))
+        if not area > 0.0:
+            raise VirtualAContractError(
+                "INVALID_FORMATION_CORRIDOR_TEMPLATE",
+                "piece vertices must be counter-clockwise with positive area")
+        object.__setattr__(self, "local_vertices", vertices)
+
+    @property
+    def area_m2(self):
+        vertices = self.local_vertices
+        return 0.5 * sum(
+            x0 * y1 - x1 * y0
+            for (x0, y0), (x1, y1) in zip(
+                vertices, vertices[1:] + vertices[:1]))
+
+    def as_dict(self):
+        return {
+            "region_index": int(self.region_index),
+            "local_vertices": [
+                [float(x), float(y)] for x, y in self.local_vertices],
+            "area_m2": self.area_m2,
+        }
+
+
+@dataclass(frozen=True)
+class FormationCorridorVehicleCover:
+    """A finite decomposition of one vehicle rectangle into convex pieces."""
+
+    vehicle_id: int
+    decomposition: str
+    pieces: tuple
+
+    def __post_init__(self):
+        if isinstance(self.vehicle_id, bool) or not isinstance(
+                self.vehicle_id, int):
+            raise VirtualAContractError(
+                "INVALID_FORMATION_CORRIDOR_TEMPLATE",
+                "cover vehicle_id must be an integer")
+        if self.decomposition not in FORMATION_CORRIDOR_DECOMPOSITIONS:
+            raise VirtualAContractError(
+                "INVALID_FORMATION_CORRIDOR_TEMPLATE",
+                "cover decomposition={!r} allowed={}".format(
+                    self.decomposition, FORMATION_CORRIDOR_DECOMPOSITIONS))
+        pieces = tuple(self.pieces)
+        expected = 1 if self.decomposition == "whole" else 2
+        if len(pieces) != expected or any(
+                not isinstance(piece, FormationCorridorPiece)
+                for piece in pieces):
+            raise VirtualAContractError(
+                "INVALID_FORMATION_CORRIDOR_TEMPLATE",
+                "decomposition {!r} requires {} FormationCorridorPiece "
+                "entries".format(self.decomposition, expected))
+        object.__setattr__(self, "pieces", pieces)
+
+    def as_dict(self):
+        return {
+            "vehicle_id": int(self.vehicle_id),
+            "decomposition": str(self.decomposition),
+            "pieces": [piece.as_dict() for piece in self.pieces],
+        }
+
+
+def _formation_cover_canonical(cover, frame):
+    """Check exact finite-template coverage against one frame's rectangle."""
+    corners = frame.local_corners
+    if cover.decomposition == "whole":
+        expected = (corners,)
+    elif cover.decomposition == "diagonal_0":
+        expected = (
+            (corners[0], corners[1], corners[2]),
+            (corners[0], corners[2], corners[3]),
+        )
+    else:
+        expected = (
+            (corners[1], corners[2], corners[3]),
+            (corners[1], corners[3], corners[0]),
+        )
+    for piece, expected_vertices in zip(cover.pieces, expected):
+        if len(piece.local_vertices) != len(expected_vertices):
+            raise VirtualAContractError(
+                "INVALID_FORMATION_CORRIDOR_TEMPLATE",
+                "vehicle {} decomposition {!r} piece vertex count is not the "
+                "canonical one".format(cover.vehicle_id, cover.decomposition))
+        for actual, expected_vertex in zip(
+                piece.local_vertices, expected_vertices):
+            if abs(actual[0] - expected_vertex[0]) > FORMATION_TOLERANCE_M \
+                    or abs(actual[1] - expected_vertex[1]) > \
+                    FORMATION_TOLERANCE_M:
+                raise VirtualAContractError(
+                    "INVALID_FORMATION_CORRIDOR_TEMPLATE",
+                    "vehicle {} decomposition {!r} does not use the exact "
+                    "canonical corner decomposition".format(
+                        cover.vehicle_id, cover.decomposition))
+        # Every convex piece must be a strict subset of the rectangle: its
+        # vertices are canonical corners, so this also rules out invented
+        # pieces with the right area but the wrong shape.
+    region_indices = tuple(piece.region_index for piece in cover.pieces)
+    unique = sorted(set(region_indices))
+    if len(unique) > 2:
+        raise VirtualAContractError(
+            "INVALID_FORMATION_CORRIDOR_TEMPLATE",
+            "one vehicle cover references more than two regions")
+    if len(unique) == 2 and unique[1] - unique[0] != 1:
+        raise VirtualAContractError(
+            "INVALID_FORMATION_CORRIDOR_TEMPLATE",
+            "two-region cover must name adjacent regions, got {}".format(
+                unique))
+
+
+@dataclass(frozen=True)
+class FormationCorridorTemplateSegment:
+    """One contiguous sigma interval with fixed per-vehicle assignments.
+
+    ``f_region_index`` is the single convex Chain region assigned to the F
+    reference point for this whole open interval.  It is a finite template
+    decision exactly like the per-vehicle covers, not a certificate: the
+    continuous certificate re-checks the F point against this same region and
+    the two-sided cut checks require both neighbouring assignments to hold at
+    a shared boundary.  The contract validates the index range and adjacency
+    against the audited Chain in :func:`validate_formation_template`.
+    """
+
+    sigma_start: float
+    sigma_end: float
+    covers: tuple
+    f_region_index: int
+
+    def __post_init__(self):
+        start = _formation_finite(self.sigma_start, "segment.sigma_start")
+        end = _formation_finite(self.sigma_end, "segment.sigma_end")
+        if not (0.0 <= start < end <= 1.0):
+            raise VirtualAContractError(
+                "INVALID_FORMATION_CORRIDOR_TEMPLATE",
+                "template segment requires 0 <= sigma_start < sigma_end <= 1")
+        if isinstance(self.f_region_index, bool) \
+                or not isinstance(self.f_region_index, int) \
+                or self.f_region_index < 0:
+            raise VirtualAContractError(
+                "INVALID_FORMATION_CORRIDOR_TEMPLATE",
+                "segment f_region_index must be a nonnegative integer")
+        covers = tuple(self.covers)
+        if not covers or any(
+                not isinstance(cover, FormationCorridorVehicleCover)
+                for cover in covers):
+            raise VirtualAContractError(
+                "INVALID_FORMATION_CORRIDOR_TEMPLATE",
+                "segment covers must be a non-empty FormationCorridorVehicleCover "
+                "sequence")
+        ids = [cover.vehicle_id for cover in covers]
+        if len(ids) != len(set(ids)):
+            raise VirtualAContractError(
+                "INVALID_FORMATION_CORRIDOR_TEMPLATE",
+                "segment has duplicate vehicle covers")
+        object.__setattr__(self, "sigma_start", start)
+        object.__setattr__(self, "sigma_end", end)
+        object.__setattr__(self, "covers", covers)
+        object.__setattr__(self, "f_region_index", int(self.f_region_index))
+
+    def as_dict(self):
+        return {
+            "sigma_start": float(self.sigma_start),
+            "sigma_end": float(self.sigma_end),
+            "f_region_index": int(self.f_region_index),
+            "covers": [cover.as_dict() for cover in self.covers],
+        }
+
+
+@dataclass(frozen=True)
+class FormationCorridorTemplate:
+    """Immutable finite OBB coverage template and its complete identity.
+
+    The template is a conservative sufficient condition for an OBB to lie in
+    one convex region or the union of an adjacent pair.  It is never a claim
+    that the union containment problem has been solved generally.  Every
+    piece is a canonical part of the exact vehicle rectangle; the sigma
+    segments cover ``[0, 1]`` without gaps or overlaps.
+    """
+
+    request_sha256: str
+    grid_sha256: str
+    planning_context_sha256: str
+    model_sha256: str
+    chain_digest: str
+    route_index: int
+    candidate_index: int
+    guide_source: str
+    guide_sha256: str
+    allocation_digest: str
+    margin_m: float
+    margin_source: str
+    vehicle_frames: tuple
+    segments: tuple
+    schema_version: str = FORMATION_CORRIDOR_TEMPLATE_SCHEMA
+    compiler_version: str = FORMATION_CORRIDOR_COMPILER_VERSION
+    certificate_version: str = FORMATION_CORRIDOR_CERTIFICATE_VERSION
+
+    def __post_init__(self):
+        if self.schema_version != FORMATION_CORRIDOR_TEMPLATE_SCHEMA:
+            raise VirtualAContractError(
+                "INVALID_FORMATION_CORRIDOR_TEMPLATE",
+                "unknown schema_version={!r}".format(self.schema_version))
+        if self.compiler_version != FORMATION_CORRIDOR_COMPILER_VERSION:
+            raise VirtualAContractError(
+                "INVALID_FORMATION_CORRIDOR_TEMPLATE",
+                "unknown compiler_version={!r}".format(
+                    self.compiler_version))
+        if self.certificate_version != FORMATION_CORRIDOR_CERTIFICATE_VERSION:
+            raise VirtualAContractError(
+                "INVALID_FORMATION_CORRIDOR_TEMPLATE",
+                "unknown certificate_version={!r}".format(
+                    self.certificate_version))
+        for name, value in (
+                ("request_sha256", self.request_sha256),
+                ("grid_sha256", self.grid_sha256),
+                ("planning_context_sha256", self.planning_context_sha256),
+                ("model_sha256", self.model_sha256),
+                ("chain_digest", self.chain_digest),
+                ("guide_sha256", self.guide_sha256),
+                ("allocation_digest", self.allocation_digest)):
+            if not _formation_sha256_hex(value):
+                raise VirtualAContractError(
+                    "INVALID_FORMATION_CORRIDOR_TEMPLATE",
+                    "{} must be 64 lowercase hex characters".format(name))
+        for name, value in (
+                ("route_index", self.route_index),
+                ("candidate_index", self.candidate_index)):
+            if isinstance(value, bool) or not isinstance(value, int) \
+                    or value < 0:
+                raise VirtualAContractError(
+                    "INVALID_FORMATION_CORRIDOR_TEMPLATE",
+                    "{} must be a nonnegative integer".format(name))
+        if not isinstance(self.guide_source, str) or not self.guide_source:
+            raise VirtualAContractError(
+                "INVALID_FORMATION_CORRIDOR_TEMPLATE",
+                "guide_source must be a non-empty string")
+        margin = _formation_finite(self.margin_m, "template.margin_m")
+        if margin < 0.0:
+            raise VirtualAContractError(
+                "INVALID_FORMATION_CORRIDOR_TEMPLATE",
+                "margin_m must be nonnegative")
+        if not isinstance(self.margin_source, str) or not self.margin_source:
+            raise VirtualAContractError(
+                "INVALID_FORMATION_CORRIDOR_TEMPLATE",
+                "margin_source must be a non-empty string")
+        object.__setattr__(self, "margin_m", margin)
+        frames = tuple(self.vehicle_frames)
+        if not frames or any(
+                not isinstance(frame, FormationCorridorVehicleFrame)
+                for frame in frames):
+            raise VirtualAContractError(
+                "INVALID_FORMATION_CORRIDOR_TEMPLATE",
+                "vehicle_frames must be a non-empty frame sequence")
+        frame_ids = [frame.vehicle_id for frame in frames]
+        if len(frame_ids) != len(set(frame_ids)):
+            raise VirtualAContractError(
+                "INVALID_FORMATION_CORRIDOR_TEMPLATE",
+                "vehicle_frames contains duplicate vehicle ids")
+        object.__setattr__(self, "vehicle_frames", frames)
+        segments = tuple(self.segments)
+        if not segments or any(
+                not isinstance(segment, FormationCorridorTemplateSegment)
+                for segment in segments):
+            raise VirtualAContractError(
+                "INVALID_FORMATION_CORRIDOR_TEMPLATE",
+                "segments must be a non-empty template-segment sequence")
+        if abs(segments[0].sigma_start) > FORMATION_TOLERANCE_M:
+            raise VirtualAContractError(
+                "INVALID_FORMATION_CORRIDOR_TEMPLATE",
+                "template segments must start at sigma=0")
+        if abs(segments[-1].sigma_end - 1.0) > FORMATION_TOLERANCE_M:
+            raise VirtualAContractError(
+                "INVALID_FORMATION_CORRIDOR_TEMPLATE",
+                "template segments must end at sigma=1")
+        for previous, current in zip(segments, segments[1:]):
+            if abs(previous.sigma_end - current.sigma_start) > \
+                    FORMATION_TOLERANCE_M:
+                raise VirtualAContractError(
+                    "INVALID_FORMATION_CORRIDOR_TEMPLATE",
+                    "template sigma segments have a gap or overlap: "
+                    "{!r} -> {!r}".format(
+                        previous.sigma_end, current.sigma_start))
+        frame_by_id = {frame.vehicle_id: frame for frame in frames}
+        expected_ids = set(frame_by_id)
+        for segment in segments:
+            cover_ids = [cover.vehicle_id for cover in segment.covers]
+            if set(cover_ids) != expected_ids:
+                raise VirtualAContractError(
+                    "INVALID_FORMATION_CORRIDOR_TEMPLATE",
+                    "segment vehicle covers {} do not match frames {}".format(
+                        sorted(cover_ids), sorted(expected_ids)))
+            for cover in segment.covers:
+                _formation_cover_canonical(cover, frame_by_id[
+                    cover.vehicle_id])
+        object.__setattr__(self, "segments", segments)
+
+    def _payload(self):
+        return {
+            "schema_version": self.schema_version,
+            "compiler_version": self.compiler_version,
+            "certificate_version": self.certificate_version,
+            "request_sha256": self.request_sha256,
+            "grid_sha256": self.grid_sha256,
+            "planning_context_sha256": self.planning_context_sha256,
+            "model_sha256": self.model_sha256,
+            "chain_digest": self.chain_digest,
+            "route_index": int(self.route_index),
+            "candidate_index": int(self.candidate_index),
+            "guide_source": self.guide_source,
+            "guide_sha256": self.guide_sha256,
+            "allocation_digest": self.allocation_digest,
+            "margin_m": float(self.margin_m),
+            "margin_source": self.margin_source,
+            "vehicle_frames": [
+                frame.as_dict() for frame in self.vehicle_frames],
+            "segments": [segment.as_dict() for segment in self.segments],
+        }
+
+    @property
+    def template_id(self):
+        return _g4_sha256_json(self._payload())
+
+    def as_dict(self):
+        payload = self._payload()
+        payload["template_id"] = self.template_id
+        return payload
+
+
 @dataclass(frozen=True)
 class CachedClearanceField:
     """Coarse immutable clearance cache for the NLP guidance proxy.
@@ -2677,11 +3215,27 @@ class VirtualAResult:
     timings: dict = field(default_factory=dict)
     metrics: dict = field(default_factory=dict)
     checks: int = 0
+    # TASK03 Step 6: versioned formation corridor scope.  ``f_only`` keeps the
+    # historical serialized key set; a union result carries the finite
+    # template identity, the sealed continuous certificate that authorised it
+    # and the audit block that binds both to the accepted path.
+    formation_corridor_scope: str = FORMATION_CORRIDOR_SCOPE_F_ONLY
+    formation_corridor_audit: dict = field(default_factory=dict)
+    formation_template_id: str = ""
+    formation_f_constraint_count: int = None
+    formation_obb_constraint_count: int = None
+    formation_certificate: dict = field(default_factory=dict)
 
     def __post_init__(self):
         if self.status not in G4_RESULT_STATUSES:
             raise VirtualAContractError(
                 "INVALID_RESULT_STATUS", "status={!r}".format(self.status))
+        if self.formation_corridor_scope not in FORMATION_CORRIDOR_SCOPES:
+            raise VirtualAContractError(
+                "INVALID_RESULT",
+                "formation_corridor_scope={!r} allowed={}".format(
+                    self.formation_corridor_scope,
+                    FORMATION_CORRIDOR_SCOPES))
         object.__setattr__(self, "attempts", tuple(self.attempts))
         object.__setattr__(self, "routes", tuple(self.routes))
         object.__setattr__(self, "grid_summary",
@@ -2734,6 +3288,9 @@ class VirtualAResult:
                     self.plan, "kind", None) != "hold":
                 raise VirtualAContractError(
                     "INVALID_RESULT", "NO_MOTION requires a hold plan")
+            if self.formation_corridor_scope != \
+                    FORMATION_CORRIDOR_SCOPE_F_ONLY:
+                self._check_union_certificate()
         else:
             if self.plan is not None or self.path is not None:
                 raise VirtualAContractError(
@@ -2743,6 +3300,111 @@ class VirtualAResult:
                 raise VirtualAContractError(
                     "INVALID_RESULT",
                     "a failed result must not publish a projection")
+
+    def _check_union_certificate(self):
+        """Fail closed unless a VERIFIED identity-matched certificate seals it.
+
+        This mirrors the identity gate of
+        ``formation_certificate.verify_formation_certificate`` for the fields
+        that the contract itself owns (path, request, grid, context, model and
+        template), and recomputes the sealed body hash.  A non-``VERIFIED``,
+        stale or edited certificate can therefore never make a union result
+        executable.
+        """
+        certificate = self.formation_certificate
+        if not isinstance(certificate, dict) or not certificate:
+            raise VirtualAContractError(
+                "INVALID_RESULT",
+                "union scope requires a sealed continuous certificate")
+        if certificate.get(
+                "schema") != "virtual_a_formation_continuous_certificate_v1":
+            raise VirtualAContractError(
+                "INVALID_RESULT",
+                "union certificate schema={!r}".format(
+                    certificate.get("schema")))
+        if certificate.get("status") != "VERIFIED":
+            raise VirtualAContractError(
+                "INVALID_RESULT",
+                "union certificate status={!r} is not VERIFIED".format(
+                    certificate.get("status")))
+        if certificate.get("is_continuous_certificate") is not True:
+            raise VirtualAContractError(
+                "INVALID_RESULT",
+                "union certificate is not a continuous certificate")
+        maximum = certificate.get("max_outward_residual_m")
+        try:
+            maximum = float(maximum)
+        except (TypeError, ValueError) as exc:
+            raise VirtualAContractError(
+                "INVALID_RESULT",
+                "union certificate residual is unavailable") from exc
+        if not math.isfinite(maximum) or maximum > 0.0:
+            raise VirtualAContractError(
+                "INVALID_RESULT",
+                "union certificate max_outward_residual_m={!r}".format(
+                    maximum))
+        if int(certificate.get("unclosed_interval_count", -1)) != 0:
+            raise VirtualAContractError(
+                "INVALID_RESULT",
+                "union certificate has unclosed intervals")
+        if certificate.get("witness") is not None:
+            raise VirtualAContractError(
+                "INVALID_RESULT", "union certificate carries a witness")
+        template_id = str(certificate.get("template_id", ""))
+        if not template_id or template_id != self.formation_template_id:
+            raise VirtualAContractError(
+                "INVALID_RESULT",
+                "union certificate/template identity differs from the result")
+        stored_hash = certificate.get("certificate_sha256")
+        body = {key: value for key, value in certificate.items()
+                if key != "certificate_sha256" and key != "elapsed_s"}
+        if stored_hash != _g4_sha256_json(body):
+            raise VirtualAContractError(
+                "INVALID_RESULT",
+                "union certificate sealed hash does not match its body")
+        if certificate.get("request_sha256") != self.request_sha256:
+            raise VirtualAContractError(
+                "INVALID_RESULT",
+                "union certificate request identity differs")
+        if certificate.get("grid_sha256") != self.grid_sha256:
+            raise VirtualAContractError(
+                "INVALID_RESULT", "union certificate grid identity differs")
+        if certificate.get(
+                "planning_context_sha256") != self.planning_context_sha256:
+            raise VirtualAContractError(
+                "INVALID_RESULT",
+                "union certificate planning-context identity differs")
+        if certificate.get("identity", {}).get(
+                "model_sha256") != certificate.get("model_sha256"):
+            raise VirtualAContractError(
+                "INVALID_RESULT",
+                "union certificate model identity record differs")
+        path = self.path
+        path_payload = {
+            "kind": str(getattr(path, "kind", "")),
+            "numerics_version": str(getattr(path, "numerics_version", "")),
+            # The certificate hashes the path against the request model
+            # digest, not the timed-plan digest.  Use the sealed identity
+            # value and never trust a caller-supplied model sha.
+            "model_sha256": str(certificate.get("model_sha256", "")),
+            "length_m": float(path.length_m),
+            "start_qf": {
+                "x": float(path.start_qf.x),
+                "y": float(path.start_qf.y),
+                "psi": float(path.start_qf.psi),
+            },
+            "profile": path.profile.as_dict(),
+        }
+        if certificate.get("path_sha256") != _g4_sha256_json(path_payload):
+            raise VirtualAContractError(
+                "INVALID_RESULT",
+                "union certificate path identity differs from the result")
+        audit = self.formation_corridor_audit
+        if not isinstance(audit, dict) or \
+                audit.get("template_id") != template_id:
+            raise VirtualAContractError(
+                "INVALID_RESULT",
+                "union formation_corridor_audit is missing or stale")
 
     @property
     def feasible(self):
@@ -2815,7 +3477,7 @@ class VirtualAResult:
         model_summary = None
         if self.plan is not None and hasattr(self.plan, "model_summary"):
             model_summary = self.plan.model_summary()
-        return {
+        payload = {
             "status": self.status,
             "reason": self.reason,
             "detail": self.detail,
@@ -2843,6 +3505,18 @@ class VirtualAResult:
             if hasattr(self.collision_audit, "as_dict") else None,
             "projection": self.projection,
         }
+        # f_only results keep their historical key set byte for byte.
+        if self.formation_corridor_scope != FORMATION_CORRIDOR_SCOPE_F_ONLY:
+            payload["formation_corridor_scope"] = self.formation_corridor_scope
+            payload["formation_corridor_audit"] = dict(
+                self.formation_corridor_audit)
+            payload["formation_template_id"] = self.formation_template_id
+            payload["formation_f_constraint_count"] = (
+                self.formation_f_constraint_count)
+            payload["formation_obb_constraint_count"] = (
+                self.formation_obb_constraint_count)
+            payload["formation_certificate"] = dict(self.formation_certificate)
+        return payload
 
 
 # ---------------------------------------------------------------------------
@@ -2871,7 +3545,8 @@ def _exact_fields(payload, cls, name):
 def planner_config_from_dict(payload):
     values = _check_payload_keys(
         payload, PlannerConfig, "planner_config",
-        echoes=tuple(_PLANNER_CORRIDOR_DEFAULTS))
+        echoes=tuple(_PLANNER_CORRIDOR_DEFAULTS)
+        + ("formation_corridor_scope",))
     # Historical payloads omit every C2-B field; partial C2-B payloads fall
     # back to the dataclass default for any omitted field.  Unknown keys still
     # fail in _check_payload_keys.
@@ -2974,6 +3649,19 @@ __all__ = [
     "PROGRESS_STATES", "PROGRESS_FAILED_STAGE",
     "PlannerConfig", "research_planner_config", "HeadingBranch",
     "G4_RESULT_STATUSES", "G4_EXECUTABLE_STATUSES",
+    "FORMATION_CORRIDOR_SCOPE_F_ONLY",
+    "FORMATION_CORRIDOR_SCOPE_THREE_VEHICLE_UNION_V1",
+    "FORMATION_CORRIDOR_SCOPES", "FORMATION_CORRIDOR_TEMPLATE_SCHEMA",
+    "FORMATION_CORRIDOR_COMPILER_VERSION",
+    "FORMATION_CORRIDOR_CERTIFICATE_VERSION",
+    "FORMATION_CORRIDOR_DECOMPOSITIONS", "FORMATION_CORRIDOR_STATUSES",
+    "FORMATION_CORRIDOR_STATUS_VERIFIED", "FORMATION_CORRIDOR_STATUS_VIOLATED",
+    "FORMATION_CORRIDOR_STATUS_UNCONFIRMED",
+    "FORMATION_CORRIDOR_STATUS_TEMPLATE_INSUFFICIENT",
+    "FORMATION_CORRIDOR_STATUS_F_ONLY_GATE_BLOCKED",
+    "FormationCorridorVehicleFrame", "FormationCorridorPiece",
+    "FormationCorridorVehicleCover", "FormationCorridorTemplateSegment",
+    "FormationCorridorTemplate",
     "PLAYBACK_SEMANTIC_VERSION", "PLAYBACK_CERTIFICATION",
     "CollisionConfig", "RouteGuideConfig", "GuideRoute", "ObstacleContext",
     "ConvexCorridor", "CorridorChain", "CachedClearanceField",

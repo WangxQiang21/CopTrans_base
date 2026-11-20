@@ -1911,6 +1911,34 @@ class UniformPlannerNode(object):
             embedded = fields_from_timed_message(message)
             if embedded["stamp"] != fields["stamp"]:
                 raise ValueError("envelope stamp differs from its trajectory")
+            expected_formation = None
+            if str(getattr(result, "formation_corridor_scope", "f_only")) == \
+                    "three_vehicle_union_v1":
+                audit = dict(
+                    getattr(result, "formation_corridor_audit", None) or {})
+                search = result.search if isinstance(
+                    result.search, dict) else {}
+                corridor_search = search.get("corridor") or {}
+                rounds = (corridor_search.get("rounds")
+                          if isinstance(corridor_search, dict) else None)
+                if not rounds:
+                    raise ValueError(
+                        "union result carries no corridor round chain")
+                expected_formation = {
+                    "scope": "three_vehicle_union_v1",
+                    "planning_context_sha256":
+                        result.planning_context_sha256,
+                    "template": audit.get("template"),
+                    "chain": rounds[-1].get("chain"),
+                    "certificate": audit.get("certificate"),
+                }
+            # The sealed binding travels inside the atomic envelope: the
+            # receiver re-verifies it against this model and the admitted
+            # context, so it must not be a second message the transport can
+            # reorder or drop.
+            envelope.formation_binding_json = (
+                "" if expected_formation is None
+                else _json(expected_formation))
             verified = self._backend_hooks.verify_envelope_fields({
                 "plan_id": int(plan_id),
                 "formation_id": snapshot.formation_id,
@@ -1925,6 +1953,7 @@ class UniformPlannerNode(object):
                 "expected_context": self._virtual_context,
                 "expected_grid_sha256": self._virtual_grid_sha256,
                 "expected_admission": self._virtual_admission,
+                "expected_formation": expected_formation,
             })
             if verified.model_sha256 != digest:
                 raise ValueError("verifier returned a different model digest")
@@ -2449,12 +2478,16 @@ def main():
                 guidance_mode=str(rospy.get_param(
                     "~virtual_a_guidance_mode", "corridor")),
                 corridor_enforcement=str(rospy.get_param(
-                    "~virtual_a_corridor_enforcement", "hard")))
+                    "~virtual_a_corridor_enforcement", "hard")),
+                formation_corridor_scope=str(rospy.get_param(
+                    "~virtual_a_formation_corridor_scope", "f_only")))
             rospy.loginfo(
                 "[uniform planner] virtual_rigid_a validated planner config: "
-                "guidance_mode=%s corridor_enforcement=%s as_dict=%s",
+                "guidance_mode=%s corridor_enforcement=%s "
+                "formation_corridor_scope=%s as_dict=%s",
                 planner_config.guidance_mode,
                 planner_config.corridor_enforcement,
+                planner_config.formation_corridor_scope,
                 planner_config.as_dict())
             settings = VirtualABackendSettings(
                 planner_config=planner_config,

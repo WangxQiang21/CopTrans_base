@@ -1,0 +1,66 @@
+[rospy.client][INFO] 2026-11-20 00:55:34,829: init_node, name[/formation_goal_bridge], pid[893325]
+[xmlrpc][INFO] 2026-11-20 00:55:34,829: XML-RPC server binding to 0.0.0.0:0
+[xmlrpc][INFO] 2026-11-20 00:55:34,829: Started XML-RPC server [http://wq-ubuntu:37853/]
+[rospy.impl.masterslave][INFO] 2026-11-20 00:55:34,829: _ready: http://wq-ubuntu:37853/
+[rospy.registration][INFO] 2026-11-20 00:55:34,830: Registering with master node http://127.0.0.1:11663
+[xmlrpc][INFO] 2026-11-20 00:55:34,830: xml rpc node: starting XML-RPC server
+[rospy.init][INFO] 2026-11-20 00:55:34,830: ROS Slave URI: [http://wq-ubuntu:37853/]
+[rospy.init][INFO] 2026-11-20 00:55:34,830: registered with master
+[rospy.rosout][INFO] 2026-11-20 00:55:34,830: initializing /rosout core topic
+[rospy.rosout][INFO] 2026-11-20 00:55:34,833: connected to core topic /rosout
+[rospy.simtime][INFO] 2026-11-20 00:55:34,834: /use_sim_time is not set, will not subscribe to simulated time [/clock] topic
+[rospy.internal][INFO] 2026-11-20 00:55:34,844: topic[/tf_static] adding connection to [http://wq-ubuntu:45937/], count 0
+[rospy.internal][INFO] 2026-11-20 00:55:34,848: topic[/start_pose] adding connection to [http://wq-ubuntu:45937/], count 0
+[rospy.internal][INFO] 2026-11-20 00:55:34,849: topic[/map] adding connection to [http://wq-ubuntu:45937/], count 0
+[rospy.internal][INFO] 2026-11-20 00:55:34,857: topic impl's ref count is zero, deleting topic /map...
+[rospy.internal][INFO] 2026-11-20 00:55:34,857: topic[/map] removing connection to http://wq-ubuntu:45937/
+[rospy.internal][INFO] 2026-11-20 00:55:34,932: topic[/formation/plan_request] adding connection to [/task03_step6_capture_892641_1795107332507], count 0
+[rospy.internal][INFO] 2026-11-20 00:55:34,981: topic[/formation/plan_request] adding connection to [/formation_playback], count 1
+[rospy.internal][INFO] 2026-11-20 00:55:34,984: topic[/formation/display_pose] adding connection to [/formation_playback], count 0
+[rospy.internal][INFO] 2026-11-20 00:55:34,987: topic[/formation/plan_request] adding connection to [/formation_uniform_planner], count 2
+[rospy.internal][INFO] 2026-11-20 00:55:35,037: topic[/formation/optimizer_status] adding connection to [http://wq-ubuntu:35055/], count 0
+[rospy.internal][INFO] 2026-11-20 00:55:35,038: topic[/tf] adding connection to [http://wq-ubuntu:34173/], count 0
+[rospy.internal][INFO] 2026-11-20 00:55:35,038: topic[/formation/job_state] adding connection to [http://wq-ubuntu:35055/], count 0
+[rosout][INFO] 2026-11-20 00:55:35,041: [formation goal bridge] ready: formation=cargo_wedge offsets=((1.0, 0.0), (0.0, 1.0), (0.0, -1.0)), start=(10.000, 3.600, 0.000), goal topic=/move_base_simple/goal
+[rospy.internal][INFO] 2026-11-20 00:55:35,133: topic[/rosout] adding connection to [/rosout], count 0
+[rospy.internal][INFO] 2026-11-20 00:55:35,836: topic[/initialpose] adding connection to [http://wq-ubuntu:40183/], count 0
+[rospy.internal][INFO] 2026-11-20 00:55:36,188: topic[/initialpose] removing connection to http://wq-ubuntu:40183/
+[rospy.internal][INFO] 2026-11-20 00:55:36,240: topic[/initialpose] adding connection to [http://wq-ubuntu:40183/], count 0
+[rospy.internal][INFO] 2026-11-20 00:55:36,240: topic[/initialpose] adding connection to [http://wq-ubuntu:34931/], count 1
+[rospy.internal][INFO] 2026-11-20 00:55:36,242: topic[/initialpose] adding connection to [http://wq-ubuntu:34931/], count 2
+[rospy.internal][INFO] 2026-11-20 00:55:36,242: topic[/initialpose] removing connection to http://wq-ubuntu:34931/
+[rospy.internal][WARNING] 2026-11-20 00:55:36,242: Unknown error initiating TCP/IP socket to wq-ubuntu:46231 (http://wq-ubuntu:34931/): Traceback (most recent call last):
+  File "/opt/ros/noetic/lib/python3/dist-packages/rospy/impl/tcpros_base.py", line 569, in connect
+    self.read_header()
+  File "/opt/ros/noetic/lib/python3/dist-packages/rospy/impl/tcpros_base.py", line 664, in read_header
+    self._validate_header(read_ros_handshake_header(sock, self.read_buff, self.protocol.buff_size))
+  File "/opt/ros/noetic/lib/python3/dist-packages/rosgraph/network.py", line 357, in read_ros_handshake_header
+    d = sock.recv(buff_size)
+OSError: [Errno 9] Bad file descriptor
+
+[rospy.internal][INFO] 2026-11-20 00:55:36,262: topic[/move_base_simple/goal] adding connection to [http://wq-ubuntu:40183/], count 0
+[rosout][INFO] 2026-11-20 00:55:36,482: [formation goal bridge] 2D Pose Estimate recorded; new experiment policy=cargo_heading headings={1: 0.0, 2: 0.0, 3: 0.0}
+[rospy.internal][INFO] 2026-11-20 00:55:36,683: topic[/initialpose] removing connection to http://wq-ubuntu:34931/
+[rospy.internal][INFO] 2026-11-20 00:55:39,651: topic[/move_base_simple/goal] adding connection to [http://wq-ubuntu:34931/], count 1
+[rosout][INFO] 2026-11-20 00:55:39,885: [formation goal bridge] plan 600000: start=(2.000, 2.000, 0.000) goal=(8.000, 2.000, 0.000) vehicles=3
+[rosout][INFO] 2026-11-20 00:55:39,886: [formation goal bridge] plan 600000 virtual_a_goal_policy=free goal_headings={1: 0.0, 2: 0.0, 3: 0.0}
+[rosout][INFO] 2026-11-20 00:55:39,887: [formation goal bridge] start from manual start; body headings {1: 0.0, 2: 0.0, 3: 0.0}
+[rospy.internal][INFO] 2026-11-20 00:55:39,985: topic[/move_base_simple/goal] removing connection to http://wq-ubuntu:34931/
+[rosout][INFO] 2026-11-20 00:55:47,420: [formation goal bridge] plan 600000 FEASIBLE and published
+[rosout][INFO] 2026-11-20 00:56:01,611: [formation goal bridge] plan 600000 FEASIBLE and published
+[rospy.internal][INFO] 2026-11-20 00:56:16,064: topic[/formation/plan_request] removing connection to /task03_step6_capture_892641_1795107332507
+[rospy.core][INFO] 2026-11-20 00:56:17,116: signal_shutdown [signal-2]
+[rospy.internal][INFO] 2026-11-20 00:56:17,119: topic[/rosout] removing connection to /rosout
+[rospy.internal][INFO] 2026-11-20 00:56:17,119: topic[/formation/display_pose] removing connection to /formation_playback
+[rospy.internal][INFO] 2026-11-20 00:56:17,119: topic[/formation/plan_request] removing connection to /formation_playback
+[rospy.internal][INFO] 2026-11-20 00:56:17,119: topic[/formation/plan_request] removing connection to /formation_uniform_planner
+[rospy.internal][INFO] 2026-11-20 00:56:17,119: topic[/tf] removing connection to http://wq-ubuntu:34173/
+[rospy.internal][INFO] 2026-11-20 00:56:17,119: topic[/tf_static] removing connection to http://wq-ubuntu:45937/
+[rospy.internal][INFO] 2026-11-20 00:56:17,120: topic[/move_base_simple/goal] removing connection to http://wq-ubuntu:40183/
+[rospy.internal][INFO] 2026-11-20 00:56:17,120: topic[/initialpose] removing connection to http://wq-ubuntu:40183/
+[rospy.internal][INFO] 2026-11-20 00:56:17,120: topic[/formation/optimizer_status] removing connection to http://wq-ubuntu:35055/
+[rospy.internal][INFO] 2026-11-20 00:56:17,120: topic[/formation/job_state] removing connection to http://wq-ubuntu:35055/
+[rospy.internal][INFO] 2026-11-20 00:56:17,120: topic[/start_pose] removing connection to http://wq-ubuntu:45937/
+[rospy.internal][INFO] 2026-11-20 00:56:17,121: topic[/start_pose] removing connection to http://wq-ubuntu:45937/
+[rospy.impl.masterslave][INFO] 2026-11-20 00:56:17,121: signal-2
+[rospy.core][INFO] 2026-11-20 00:56:17,718: signal_shutdown [atexit]

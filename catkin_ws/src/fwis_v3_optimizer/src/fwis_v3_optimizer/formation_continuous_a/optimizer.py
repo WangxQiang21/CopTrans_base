@@ -18,6 +18,10 @@ from ..formation import FormationPose
 from .contracts import (
     CorridorChain,
     DEFAULT_INITIAL_LENGTH_MULTIPLIERS,
+    FORMATION_CORRIDOR_SCOPE_F_ONLY,
+    FORMATION_CORRIDOR_SCOPE_THREE_VEHICLE_UNION_V1,
+    FORMATION_NORMAL_BRANCH_EPS,
+    FORMATION_NORMAL_BRANCH_PENALTY,
     GEOMETRY_STATUSES,
     GeometryAuditConfig,
     GeometryResult,
@@ -54,6 +58,21 @@ from .corridor import (
     corridor_effective_margin,
     corridor_min_portal_radius,
     validate_corridor_allocation,
+)
+from .formation_certificate import (
+    FORMATION_CERTIFICATE_DEFAULT_MAX_SECONDS,
+    FORMATION_CERTIFICATE_VERIFIED,
+    certify_formation_path,
+    verify_formation_certificate,
+)
+from .formation_corridor import (
+    FORMATION_SAMPLE_AUDIT_CLEAR,
+    FORMATION_SAMPLE_AUDIT_UNCONFIRMED,
+    FORMATION_SAMPLE_AUDIT_VIOLATED,
+    FormationCorridorConstraint,
+    audit_formation_template_samples,
+    build_formation_corridor_constraint,
+    validate_formation_template,
 )
 from .geometry import C2CurvatureProfile, VirtualAPath
 from .audit import audit_geometry
@@ -567,22 +586,49 @@ class _CorridorConstraint:
     min_portal_radius_m: object
     quadrature_points: int
     enforcement: str
+    formation: object = None
 
     @property
     def halfspace_constraint_count(self):
-        """Number of actual scalar halfspaces sent to the NLP.
+        """Number of actual scalar F reference-point halfspaces.
 
         Every ``(q, rows, limits)`` entry contributes one constraint per
         outward row; this is the same count appended to the CasADi ``g``
         vector and to the numeric residual vector.  It is never inferred from
-        the display polygon.
+        the display polygon.  This historical count stays F-only; the TASK03
+        complete-OBB rows are reported separately below.
         """
         return sum(
             len(limits) for group in self.groups
             for _q, _rows, limits in group)
 
+    @property
+    def formation_obb_constraint_count(self):
+        if self.formation is None:
+            return 0
+        return int(self.formation.formation_obb_constraint_count)
+
+    @property
+    def formation_f_constraint_count(self):
+        """Actual template F reference-point halfspaces in the union NLP.
+
+        These are separate from the historical ``halfspace_constraint_count``
+        (which is 0 under union scope) and from the complete-OBB rows.  Under
+        ``f_only`` the historical allocation rows above are the only F rows and
+        this template count is 0.
+        """
+        if self.formation is None:
+            return 0
+        return int(self.formation.formation_reference_constraint_count)
+
+    @property
+    def total_halfspace_constraint_count(self):
+        return int(self.halfspace_constraint_count) \
+            + self.formation_f_constraint_count \
+            + self.formation_obb_constraint_count
+
     def as_dict(self):
-        return {
+        payload = {
             "role": "reference_point_convex_halfspaces",
             "enforcement": self.enforcement,
             "margin_m": float(self.margin_m),
@@ -592,13 +638,28 @@ class _CorridorConstraint:
             "sample_count": int(self.sample_count),
             "halfspace_constraint_count": int(
                 self.halfspace_constraint_count),
+            "formation_f_constraint_count": int(
+                self.formation_f_constraint_count),
+            "formation_obb_constraint_count": int(
+                self.formation_obb_constraint_count),
+            "total_halfspace_constraint_count": int(
+                self.total_halfspace_constraint_count),
             "allocation_count": len(self.allocation),
             "region_count": int(self.region_count),
+            "has_complete_obb_rows": bool(self.formation is not None),
             "is_three_vehicle_certificate": False,
+            "formation_obb_rows": (
+                None if self.formation is None
+                else self.formation.as_dict()),
         }
+        return payload
 
 
-def _build_corridor_constraint(chain, allocation, request, config):
+def _build_corridor_constraint(chain, allocation, request, config, *,
+                               formation_template=None,
+                               planning_context_sha256=None,
+                               formation_guide=None,
+                               extra_cuts_sigma=()):
     """Rotate both corridor halfspace sets into the request start frame."""
     if not isinstance(chain, CorridorChain):
         raise VirtualAContractError(
@@ -612,36 +673,48 @@ def _build_corridor_constraint(chain, allocation, request, config):
     margin = corridor_effective_margin(chain, config)
     groups = [[] for _ in range(n)]
     sample_count = 0
-    for left, right, corridor_index in allocation:
-        sigmas = [left]
-        sigmas.extend(left + (right - left) * float(node) for node in nodes)
-        sigmas.append(right)
-        region = chain.regions[corridor_index]
-        local_rows = tuple(
-            (float(row[0] * cosine + row[1] * sine),
-             float(-row[0] * sine + row[1] * cosine))
-            for row in region.A)
-        local_limits = tuple(
-            float(limit) - margin
-            - (float(row[0]) * start.x + float(row[1]) * start.y)
-            for row, limit in zip(region.A, region.b))
-        for sigma in sigmas:
-            if sigma <= 0.0:
-                piece, q = 0, 0.0
-            elif sigma >= 1.0:
-                piece, q = n - 1, 1.0
-            else:
-                scaled = float(sigma) * n
-                piece = int(math.floor(scaled))
-                q = scaled - piece
-                if piece >= n:
+    # Under union scope the template F assignment replaces the historical
+    # fixed-allocation F rows.  Keeping both would re-impose the old gate that
+    # the union certificate is explicitly allowed to migrate, so union builds
+    # compile every F row from the template instead.  ``f_only`` is unchanged.
+    if formation_template is None:
+        for left, right, corridor_index in allocation:
+            sigmas = [left]
+            sigmas.extend(left + (right - left) * float(node) for node in nodes)
+            sigmas.append(right)
+            region = chain.regions[corridor_index]
+            local_rows = tuple(
+                (float(row[0] * cosine + row[1] * sine),
+                 float(-row[0] * sine + row[1] * cosine))
+                for row in region.A)
+            local_limits = tuple(
+                float(limit) - margin
+                - (float(row[0]) * start.x + float(row[1]) * start.y)
+                for row, limit in zip(region.A, region.b))
+            for sigma in sigmas:
+                if sigma <= 0.0:
+                    piece, q = 0, 0.0
+                elif sigma >= 1.0:
                     piece, q = n - 1, 1.0
-                if q < 0.0:
-                    piece, q = max(0, piece - 1), 1.0
-                elif q > 1.0:
-                    piece, q = min(n - 1, piece + 1), 0.0
-            groups[piece].append((float(q), local_rows, local_limits))
-            sample_count += 1
+                else:
+                    scaled = float(sigma) * n
+                    piece = int(math.floor(scaled))
+                    q = scaled - piece
+                    if piece >= n:
+                        piece, q = n - 1, 1.0
+                    if q < 0.0:
+                        piece, q = max(0, piece - 1), 1.0
+                    elif q > 1.0:
+                        piece, q = min(n - 1, piece + 1), 0.0
+                groups[piece].append((float(q), local_rows, local_limits))
+                sample_count += 1
+    formation = None
+    if formation_template is not None:
+        formation = build_formation_corridor_constraint(
+            formation_template, request, chain, config,
+            allocation=allocation, guide=formation_guide,
+            planning_context_sha256=planning_context_sha256,
+            extra_cuts_sigma=extra_cuts_sigma)
     return _CorridorConstraint(
         margin_m=float(margin),
         portal_margin_fraction=float(
@@ -652,7 +725,8 @@ def _build_corridor_constraint(chain, allocation, request, config):
         region_count=len(chain.regions),
         min_portal_radius_m=corridor_min_portal_radius(chain),
         quadrature_points=quadrature,
-        enforcement=_corridor_margin_rule(config))
+        enforcement=_corridor_margin_rule(config),
+        formation=formation)
 
 
 @dataclass(frozen=True)
@@ -967,6 +1041,11 @@ def _numeric_constraint_vector(z, request, config, packet, collocation,
     h = S / n
     values = []
     corridor_values = []
+    formation_f_values = []
+    formation_values = []
+    formation = None
+    if corridor_constraint is not None:
+        formation = getattr(corridor_constraint, "formation", None)
     for j in range(1, n):
         c0l, c1l, c2l, c3l = _coeffs(h, kappas[j - 1], kappas[j],
                                      etas[j - 1], etas[j])
@@ -993,6 +1072,64 @@ def _numeric_constraint_vector(z, request, config, packet, collocation,
                 for row, limit in zip(rows, limits):
                     corridor_values.append(
                         row[0] * sample_x + row[1] * sample_y - limit)
+        if formation is not None:
+            # Template F reference-point rows come before the complete-OBB
+            # rows in the same fixed order as the CasADi ``g`` vector.
+            for sample in formation.f_groups[j]:
+                shifts, _headings = _piece_position_samples(
+                    h, (c0, c1, c2, c3), psi, [sample.q],
+                    math.sin, math.cos,
+                    quadrature_count=formation.quadrature_points)
+                dx, dy = shifts[0]
+                sample_x = x + dx
+                sample_y = y + dy
+                for halfspace in sample.halfspaces:
+                    formation_f_values.append(
+                        float(halfspace.row[0]) * sample_x
+                        + float(halfspace.row[1]) * sample_y
+                        - float(halfspace.limit))
+            for sample in formation.groups[j]:
+                shifts, headings = _piece_position_samples(
+                    h, (c0, c1, c2, c3), psi, [sample.q],
+                    math.sin, math.cos,
+                    quadrature_count=formation.quadrature_points)
+                dx, dy = shifts[0]
+                sample_x = x + dx
+                sample_y = y + dy
+                f_psi = headings[0]
+                q = float(sample.q)
+                kappa = c0 + q * (c1 + q * (c2 + q * c3))
+                a = float(sample.offset_x)
+                b = float(sample.offset_y)
+                A = 1.0 - b * kappa
+                B = a * kappa
+                D = A * A + B * B
+                # The normal branch A>0, D>0 is a hard precondition.  Add the
+                # same smooth guard to every OBB row instead of branching the
+                # row count: a degenerate state cannot satisfy the rows.
+                normal_guard = FORMATION_NORMAL_BRANCH_PENALTY * (
+                    min(1.0, max(0.0, (FORMATION_NORMAL_BRANCH_EPS - A)
+                               / FORMATION_NORMAL_BRANCH_EPS))
+                    + min(1.0, max(0.0, (FORMATION_NORMAL_BRANCH_EPS - D)
+                                   / FORMATION_NORMAL_BRANCH_EPS)))
+                theta = f_psi + math.atan2(B, A)
+                cosine = math.cos(f_psi)
+                sine = math.sin(f_psi)
+                center_x = sample_x + cosine * a - sine * b
+                center_y = sample_y + sine * a + cosine * b
+                corner_cosine = math.cos(theta)
+                corner_sine = math.sin(theta)
+                for vertex in sample.vertices:
+                    local_x, local_y = vertex.local_vertex
+                    vertex_x = (center_x + corner_cosine * local_x
+                                - corner_sine * local_y)
+                    vertex_y = (center_y + corner_sine * local_x
+                                + corner_cosine * local_y)
+                    for halfspace in vertex.halfspaces:
+                        formation_values.append(
+                            float(halfspace.row[0]) * vertex_x
+                            + float(halfspace.row[1]) * vertex_y
+                            - float(halfspace.limit) + normal_guard)
         for q, weight in zip(nodes, weights):
             local_psi = psi + h * q * (
                 c0 + q * (c1 / 2.0 + q * (c2 / 3.0 + q * c3 / 4.0)))
@@ -1022,6 +1159,8 @@ def _numeric_constraint_vector(z, request, config, packet, collocation,
                     values.append(
                         (kappa * D + a * eta) / math.pow(D, 1.5))
     values.extend(corridor_values)
+    values.extend(formation_f_values)
+    values.extend(formation_values)
     return np.asarray(values, dtype=float)
 
 
@@ -1038,6 +1177,10 @@ def _constraint_value_offsets(request, config, packet, corridor_constraint):
         corridor_end += sum(
             len(limits) for group in corridor_constraint.groups
             for _q, _rows, limits in group)
+        formation = getattr(corridor_constraint, "formation", None)
+        if formation is not None:
+            corridor_end += int(formation.f_scalar_row_count)
+            corridor_end += int(formation.scalar_row_count)
     return equality_end, signed_end, corridor_end
 
 
@@ -1238,7 +1381,15 @@ def _corridor_residual_diagnostic(z, request, config, packet,
             corridor_constraint=corridor_constraint)
         _equality_end, signed_end, corridor_end = _constraint_value_offsets(
             request, config, packet, corridor_constraint)
-        corridor_values = np.asarray(values[signed_end:corridor_end],
+        formation = getattr(corridor_constraint, "formation", None)
+        allocation_end = corridor_end
+        if formation is not None:
+            # This historical diagnostic is the fixed-allocation F-only row
+            # excess.  Under union scope those rows are not compiled at all;
+            # the template F rows and OBB rows have their own diagnostics.
+            allocation_end -= int(formation.f_scalar_row_count) \
+                + int(formation.scalar_row_count)
+        corridor_values = np.asarray(values[signed_end:allocation_end],
                                      dtype=float)
         residual = float(np.max(np.maximum(0.0, corridor_values))) \
             if corridor_values.size else 0.0
@@ -1248,6 +1399,303 @@ def _corridor_residual_diagnostic(z, request, config, packet,
     if not math.isfinite(residual) or residual < 0.0:
         return None, "corridor residual is invalid: {!r}".format(residual)
     return residual, ""
+
+
+def _append_detail(result, text):
+    """Append a semicolon-separated diagnostic without erasing prior text."""
+    prefix = str(result.get("detail", "")).rstrip("; ")
+    result["detail"] = "{}; {}".format(prefix, text) if prefix else str(text)
+
+
+def _formation_obb_residual_diagnostic(z, request, config, packet,
+                                       corridor_constraint):
+    """Maximum formation-only scalar row excess of one decision vector."""
+    formation = getattr(corridor_constraint, "formation", None)
+    if formation is None:
+        return None, ""
+    if z is None:
+        return None, "no decision vector"
+    try:
+        vector = np.asarray(z, dtype=float).reshape(-1)
+    except (TypeError, ValueError) as exc:
+        return None, "decision vector conversion failed: {}: {}".format(
+            type(exc).__name__, exc)
+    expected_size = 2 * int(packet["intervals"]) + 3
+    if vector.size != expected_size:
+        return None, "decision vector has {} values; expected {}".format(
+            vector.size, expected_size)
+    if not np.all(np.isfinite(vector)):
+        return None, "decision vector contains non-finite values"
+    try:
+        values = _numeric_constraint_vector(
+            vector, request, config, packet,
+            int(config.collocation_points),
+            corridor_constraint=corridor_constraint)
+        _equality_end, _signed_end, corridor_end = _constraint_value_offsets(
+            request, config, packet, corridor_constraint)
+        count = int(formation.scalar_row_count)
+        formation_values = np.asarray(
+            values[corridor_end - count:corridor_end], dtype=float)
+        if formation_values.size != count:
+            return None, "formation row slice has {} values; expected {}".format(
+                formation_values.size, count)
+        residual = float(np.max(np.maximum(0.0, formation_values))) \
+            if formation_values.size else 0.0
+    except Exception as exc:
+        return None, "formation residual computation failed: {}: {}".format(
+            type(exc).__name__, exc)
+    if not math.isfinite(residual) or residual < 0.0:
+        return None, "formation residual is invalid: {!r}".format(residual)
+    return residual, ""
+
+
+def _formation_f_residual_diagnostic(z, request, config, packet,
+                                     corridor_constraint):
+    """Maximum template F reference-point row excess of one decision vector."""
+    formation = getattr(corridor_constraint, "formation", None)
+    if formation is None or not int(formation.f_scalar_row_count):
+        return None, ""
+    if z is None:
+        return None, "no decision vector"
+    try:
+        vector = np.asarray(z, dtype=float).reshape(-1)
+    except (TypeError, ValueError) as exc:
+        return None, "decision vector conversion failed: {}: {}".format(
+            type(exc).__name__, exc)
+    expected_size = 2 * int(packet["intervals"]) + 3
+    if vector.size != expected_size:
+        return None, "decision vector has {} values; expected {}".format(
+            vector.size, expected_size)
+    if not np.all(np.isfinite(vector)):
+        return None, "decision vector contains non-finite values"
+    try:
+        values = _numeric_constraint_vector(
+            vector, request, config, packet,
+            int(config.collocation_points),
+            corridor_constraint=corridor_constraint)
+        _equality_end, _signed_end, corridor_end = _constraint_value_offsets(
+            request, config, packet, corridor_constraint)
+        f_count = int(formation.f_scalar_row_count)
+        obb_count = int(formation.scalar_row_count)
+        f_values = np.asarray(
+            values[corridor_end - obb_count - f_count:
+                   corridor_end - obb_count], dtype=float)
+        if f_values.size != f_count:
+            return None, "F row slice has {} values; expected {}".format(
+                f_values.size, f_count)
+        residual = float(np.max(np.maximum(0.0, f_values))) \
+            if f_values.size else 0.0
+    except Exception as exc:
+        return None, "F residual computation failed: {}: {}".format(
+            type(exc).__name__, exc)
+    if not math.isfinite(residual) or residual < 0.0:
+        return None, "F residual is invalid: {!r}".format(residual)
+    return residual, ""
+
+
+def _formation_station_sigmas(corridor_constraint):
+    formation = getattr(corridor_constraint, "formation", None)
+    if formation is None:
+        return set()
+    return {
+        round(float(sample.sigma), 12)
+        for group in formation.groups for sample in group} | {
+        round(float(sample.sigma), 12)
+        for group in formation.f_groups for sample in group}
+
+
+def _formation_sample_audit(path, template, chain):
+    """Indirection so the audit is an explicit, mockable solver step."""
+    return audit_formation_template_samples(path, template, chain)
+
+
+def _refined_initial_guess(guess, candidate_result, packet):
+    values = np.asarray(candidate_result.get("z"), dtype=float).reshape(-1)
+    n = int(packet["intervals"])
+    expected = 2 * n + 3
+    if values.size != expected or not np.all(np.isfinite(values)):
+        raise VirtualAContractError(
+            "FORMATION_CORRIDOR_AUDIT_UNCONFIRMED",
+            "refinement seed vector is malformed")
+    metadata = dict(getattr(guess, "metadata", None) or {})
+    metadata["formation_refinement_from"] = str(guess.label)
+    metadata["formation_refinement_seed"] = "previous_solver_vector"
+    return InitialGuess(
+        source="formation_refinement",
+        label="{}|targeted_cut".format(guess.label),
+        S=float(values[0]),
+        kappas=tuple(float(value) for value in values[1:1 + n + 1]),
+        etas=tuple(float(value) for value in values[1 + n + 1:expected]),
+        length_multiplier=float(guess.length_multiplier),
+        shape_sign=int(guess.shape_sign),
+        node_s=tuple(guess.node_s),
+        metadata=metadata)
+
+
+def _refine_formation_candidate(
+        request, config, packet, guess, candidate_result, cut_sigma,
+        corridor_constraint, formation_template, corridor_chain,
+        corridor_allocation, formation_guide, formation_context,
+        existing_extra_cuts, solver_kwargs, wall_limit_s):
+    """One audit-directed cut: rebuild, re-solve from the current vector.
+
+    Exactly one solver call is made; no second solver family is started on
+    timeout, and no audit relaxation is applied.  The returned decision also
+    carries the actual refined constraint and row count for evidence.
+    """
+    started = time.monotonic()
+    info = {
+        "outcome": "REJECTED",
+        "rejection": "FORMATION_CORRIDOR_REFINEMENT_FAILED",
+        "detail": "",
+        "cut_sigma": float(cut_sigma),
+        "solver": "",
+        "solver_status": "",
+        "wall_time_s": 0.0,
+        "constraint": None,
+        "formation_f_constraint_count": None,
+        "formation_obb_constraint_count": None,
+        "result": None,
+        "guess": None,
+        "path": None,
+        "audit": None,
+        "formation_f_residual_m": None,
+        "formation_obb_residual_m": None,
+    }
+    extra_cuts = tuple(float(value) for value in existing_extra_cuts) \
+        + (float(cut_sigma),)
+    try:
+        refined_constraint = _build_corridor_constraint(
+            corridor_chain, corridor_allocation, request, config,
+            formation_template=formation_template,
+            planning_context_sha256=formation_context,
+            formation_guide=formation_guide,
+            extra_cuts_sigma=extra_cuts)
+        info["constraint"] = refined_constraint
+        info["formation_f_constraint_count"] = int(
+            refined_constraint.formation_f_constraint_count)
+        info["formation_obb_constraint_count"] = int(
+            refined_constraint.formation_obb_constraint_count)
+        refined_guess = _refined_initial_guess(
+            guess, candidate_result, packet)
+    except VirtualAContractError as exc:
+        info["rejection"] = exc.reason
+        info["detail"] = str(exc)
+        info["wall_time_s"] = time.monotonic() - started
+        return info
+    except Exception as exc:
+        info["rejection"] = "FORMATION_CORRIDOR_REFINEMENT_FAILED"
+        info["detail"] = "{}: {}".format(type(exc).__name__, exc)
+        info["wall_time_s"] = time.monotonic() - started
+        return info
+    try:
+        kwargs = dict(solver_kwargs)
+        kwargs["corridor_constraint"] = refined_constraint
+        if str(candidate_result.get("solver", "")) == SOLVER_SCIPY:
+            refined_result = _solve_with_scipy(
+                request, config, packet, refined_guess,
+                wall_limit_s=wall_limit_s, **kwargs)
+        else:
+            refined_result = _solve_with_ipopt(
+                request, config, packet, refined_guess,
+                wall_limit_s=wall_limit_s, **kwargs)
+    except Exception as exc:
+        info["solver"] = str(candidate_result.get("solver", ""))
+        info["solver_status"] = "REFINEMENT_EXCEPTION"
+        info["detail"] = "{}: {}".format(type(exc).__name__, exc)
+        info["wall_time_s"] = time.monotonic() - started
+        return info
+    info["guess"] = refined_guess
+    info["result"] = refined_result
+    info["solver"] = str(refined_result.get("solver", ""))
+    info["solver_status"] = str(refined_result.get("solver_status", ""))
+    info["wall_time_s"] = float(refined_result.get(
+        "wall_time_s", time.monotonic() - started))
+    if refined_result.get("soft_deadline_triggered"):
+        info["outcome"] = "TIMEOUT"
+        info["rejection"] = "SOFT_BUDGET_EXHAUSTED"
+        info["detail"] = "refinement solver reached the soft wall budget"
+        return info
+    if not refined_result.get("success"):
+        info["rejection"] = "FORMATION_CORRIDOR_REFINEMENT_SOLVER_FAILED"
+        info["detail"] = str(refined_result.get("detail", ""))
+        return info
+    residual, residual_error = _constraint_residual_diagnostic(
+        refined_result.get("z"), request, config, packet,
+        corridor_constraint=refined_constraint)
+    refined_result["constraint_residual"] = residual
+    if residual_error or residual is None or residual > 1e-8:
+        info["rejection"] = "FORMATION_CORRIDOR_REFINEMENT_RESIDUAL"
+        info["detail"] = residual_error or (
+            "refined constraint residual {:.6e} exceeds 1e-8".format(
+                residual))
+        return info
+    corridor_residual, corridor_error = _corridor_residual_diagnostic(
+        refined_result.get("z"), request, config, packet, refined_constraint)
+    refined_result["corridor_residual_m"] = corridor_residual
+    formation_f_residual, formation_f_error = \
+        _formation_f_residual_diagnostic(
+            refined_result.get("z"), request, config, packet,
+            refined_constraint)
+    refined_result["formation_f_residual_m"] = formation_f_residual
+    info["formation_f_residual_m"] = formation_f_residual
+    formation_residual, formation_error = _formation_obb_residual_diagnostic(
+        refined_result.get("z"), request, config, packet, refined_constraint)
+    refined_result["formation_obb_residual_m"] = formation_residual
+    info["formation_obb_residual_m"] = formation_residual
+    if corridor_error or corridor_residual is None \
+            or corridor_residual > 1e-8:
+        info["rejection"] = "FORMATION_CORRIDOR_REFINEMENT_RESIDUAL"
+        info["detail"] = corridor_error or (
+            "refined corridor residual {:.6e} exceeds 1e-8".format(
+                corridor_residual))
+        return info
+    if formation_f_error or (formation_f_residual is not None
+                             and formation_f_residual > 1e-8):
+        info["rejection"] = "FORMATION_F_RESIDUAL"
+        info["detail"] = formation_f_error or (
+            "refined template F residual {:.6e} exceeds 1e-8".format(
+                formation_f_residual))
+        return info
+    if formation_error or formation_residual is None \
+            or formation_residual > 1e-8:
+        info["rejection"] = "FORMATION_OBB_RESIDUAL"
+        info["detail"] = formation_error or (
+            "refined formation residual {:.6e} exceeds 1e-8".format(
+                formation_residual))
+        return info
+    try:
+        refined_path = _candidate_path(request, refined_guess, refined_result)
+    except Exception as exc:
+        info["rejection"] = "CANDIDATE_CONSTRUCTION_FAILURE"
+        info["detail"] = "{}: {}".format(type(exc).__name__, exc)
+        return info
+    refined_result["candidate_path"] = refined_path
+    info["path"] = refined_path
+    try:
+        audit = _formation_sample_audit(
+            refined_path, formation_template, corridor_chain)
+    except Exception as exc:
+        info["rejection"] = "FORMATION_CORRIDOR_AUDIT_UNCONFIRMED"
+        info["detail"] = "{}: {}".format(type(exc).__name__, exc)
+        return info
+    info["audit"] = audit
+    refined_result["formation_audit"] = audit
+    status = str(audit.get("status", ""))
+    if status == FORMATION_SAMPLE_AUDIT_CLEAR:
+        info["outcome"] = "ACCEPTED"
+        info["rejection"] = ""
+        return info
+    if status == FORMATION_SAMPLE_AUDIT_VIOLATED:
+        info["rejection"] = "FORMATION_CORRIDOR_AUDIT_VIOLATION"
+        info["detail"] = "definite violation remains after one cut"
+        return info
+    info["rejection"] = "FORMATION_CORRIDOR_AUDIT_UNCONFIRMED"
+    if status != FORMATION_SAMPLE_AUDIT_UNCONFIRMED:
+        info["detail"] = "unexpected audit status={!r}".format(status)
+    else:
+        info["detail"] = str(audit.get("reason", ""))
+    return info
 
 
 def _attach_failure_residual(result, request, config, packet,
@@ -1344,6 +1792,11 @@ def _build_casadi_nlp(request, config, packet, wall_limit_s=None,
     clearance_proxy_penalty = 0.0
     collocation_sample = 0
     corridor_constraints = []
+    formation_f_constraints = []
+    formation_constraints = []
+    formation = None
+    if corridor_constraint is not None:
+        formation = getattr(corridor_constraint, "formation", None)
     for j in range(n):
         c0, c1, c2, c3 = coeffs(
             kappas[j], kappas[j + 1], etas[j], etas[j + 1])
@@ -1361,6 +1814,61 @@ def _build_casadi_nlp(request, config, packet, wall_limit_s=None,
                 for row, limit in zip(rows, limits):
                     corridor_constraints.append(
                         row[0] * sample_x + row[1] * sample_y - limit)
+        if formation is not None:
+            for sample in formation.f_groups[j]:
+                shifts, _headings = _piece_position_samples(
+                    h, (c0, c1, c2, c3), psi, [sample.q],
+                    ca.sin, ca.cos,
+                    quadrature_count=formation.quadrature_points)
+                dx, dy = shifts[0]
+                sample_x = x + dx
+                sample_y = y + dy
+                for halfspace in sample.halfspaces:
+                    formation_f_constraints.append(
+                        float(halfspace.row[0]) * sample_x
+                        + float(halfspace.row[1]) * sample_y
+                        - float(halfspace.limit))
+            for sample in formation.groups[j]:
+                shifts, headings = _piece_position_samples(
+                    h, (c0, c1, c2, c3), psi, [sample.q],
+                    ca.sin, ca.cos,
+                    quadrature_count=formation.quadrature_points)
+                dx, dy = shifts[0]
+                sample_x = x + dx
+                sample_y = y + dy
+                f_psi = headings[0]
+                q = float(sample.q)
+                kappa = c0 + q * (c1 + q * (c2 + q * c3))
+                a = float(sample.offset_x)
+                b = float(sample.offset_y)
+                A = 1.0 - b * kappa
+                B = a * kappa
+                D = A * A + B * B
+                normal_guard = FORMATION_NORMAL_BRANCH_PENALTY * (
+                    ca.fmin(1.0, ca.fmax(
+                        0.0, (FORMATION_NORMAL_BRANCH_EPS - A)
+                        / FORMATION_NORMAL_BRANCH_EPS))
+                    + ca.fmin(1.0, ca.fmax(
+                        0.0, (FORMATION_NORMAL_BRANCH_EPS - D)
+                        / FORMATION_NORMAL_BRANCH_EPS)))
+                theta = f_psi + ca.atan2(B, A)
+                cosine = ca.cos(f_psi)
+                sine = ca.sin(f_psi)
+                center_x = sample_x + cosine * a - sine * b
+                center_y = sample_y + sine * a + cosine * b
+                corner_cosine = ca.cos(theta)
+                corner_sine = ca.sin(theta)
+                for vertex in sample.vertices:
+                    local_x, local_y = vertex.local_vertex
+                    vertex_x = (center_x + corner_cosine * local_x
+                                - corner_sine * local_y)
+                    vertex_y = (center_y + corner_sine * local_x
+                                + corner_cosine * local_y)
+                    for halfspace in vertex.halfspaces:
+                        formation_constraints.append(
+                            float(halfspace.row[0]) * vertex_x
+                            + float(halfspace.row[1]) * vertex_y
+                            - float(halfspace.limit) + normal_guard)
         for q, weight, (dx, dy), local_psi in zip(
                 nodes, weights, displacements, headings):
             kappa = c0 + q * (c1 + q * (c2 + q * c3))
@@ -1442,6 +1950,26 @@ def _build_casadi_nlp(request, config, packet, wall_limit_s=None,
         constraints.append(value)
         lower.append(-np.inf)
         upper.append(0.0)
+    for value in formation_f_constraints:
+        constraints.append(value)
+        lower.append(-np.inf)
+        upper.append(0.0)
+    for value in formation_constraints:
+        constraints.append(value)
+        lower.append(-np.inf)
+        upper.append(0.0)
+    if formation is not None and len(formation_f_constraints) != int(
+            formation.f_scalar_row_count):
+        raise VirtualAContractError(
+            "FORMATION_CORRIDOR_ROW_COUNT_MISMATCH",
+            "compiled {} template F rows but the plan requires {}".format(
+                len(formation_f_constraints), formation.f_scalar_row_count))
+    if formation is not None and len(formation_constraints) != int(
+            formation.scalar_row_count):
+        raise VirtualAContractError(
+            "FORMATION_CORRIDOR_ROW_COUNT_MISMATCH",
+            "compiled {} formation rows but the plan requires {}".format(
+                len(formation_constraints), formation.scalar_row_count))
     l0 = packet["l0"]
     corridor_mode = _guidance_mode(config) == "corridor"
     objective = (S / l0 + 0.02 * l0 ** 3 * eta_integral
@@ -1798,11 +2326,24 @@ def _result(status, request=None, path=None, audit=None, attempts=(),
             config=None, solver_used="", branch=None, deadline=False,
             deadline_summary=None, initial_count=0,
             corridor_halfspace_constraint_count=None,
-            corridor_max_residual_m=None):
+            corridor_max_residual_m=None,
+            formation_corridor_scope=None,
+            formation_template_id="",
+            formation_f_constraint_count=None,
+            formation_obb_constraint_count=None,
+            formation_sample_audit=None,
+            formation_refinement=None,
+            formation_f_max_residual_m=None,
+            formation_obb_max_residual_m=None,
+            formation_certificate=None):
     summary = request_summary(request) if isinstance(
         request, VirtualARequest) else {
             "type": type(request).__name__ if request is not None else None,
             "valid": False}
+    if formation_corridor_scope is None:
+        formation_corridor_scope = str(getattr(
+            config, "formation_corridor_scope",
+            FORMATION_CORRIDOR_SCOPE_F_ONLY)).strip().lower()
     return GeometryResult(
         status=status,
         path=path,
@@ -1822,7 +2363,30 @@ def _result(status, request=None, path=None, audit=None, attempts=(),
         corridor_halfspace_constraint_count=(
             None if corridor_halfspace_constraint_count is None
             else int(corridor_halfspace_constraint_count)),
-        corridor_max_residual_m=corridor_max_residual_m)
+        corridor_max_residual_m=corridor_max_residual_m,
+        formation_corridor_scope=formation_corridor_scope,
+        formation_template_id=formation_template_id,
+        formation_f_constraint_count=(
+            None if formation_f_constraint_count is None
+            else int(formation_f_constraint_count)),
+        formation_obb_constraint_count=(
+            None if formation_obb_constraint_count is None
+            else int(formation_obb_constraint_count)),
+        formation_sample_audit=(
+            {} if formation_sample_audit is None
+            else dict(formation_sample_audit)),
+        formation_refinement=(
+            {} if formation_refinement is None
+            else dict(formation_refinement)),
+        formation_f_max_residual_m=(
+            None if formation_f_max_residual_m is None
+            else float(formation_f_max_residual_m)),
+        formation_obb_max_residual_m=(
+            None if formation_obb_max_residual_m is None
+            else float(formation_obb_max_residual_m)),
+        formation_certificate=(
+            {} if formation_certificate is None
+            else dict(formation_certificate)))
 
 
 def _audit_config(config, geometry_audit_config=None):
@@ -1846,6 +2410,9 @@ def solve_open_path_guided(request, config, *, route_guides=(),
                            geometry_audit_config=None,
                            corridor_chain=None,
                            corridor_allocation=None,
+                           formation_template=None,
+                           formation_planning_context_sha256=None,
+                           formation_extra_cuts_sigma=(),
                            excluded_initial_keys=(),
                            max_new_initials=None,
                            stop_after_route_audit=False,
@@ -1916,6 +2483,58 @@ def solve_open_path_guided(request, config, *, route_guides=(),
             request_sha256=validation.metrics["request_sha256"], config=config,
             branch=validation.metrics.get("goal_heading_branch_rad"))
     corridor_mode = _guidance_mode(config) == "corridor"
+    formation_scope = str(getattr(
+        config, "formation_corridor_scope",
+        FORMATION_CORRIDOR_SCOPE_F_ONLY)).strip().lower()
+    if formation_scope == FORMATION_CORRIDOR_SCOPE_THREE_VEHICLE_UNION_V1:
+        # Union scope is not a mode switch by itself: it is only meaningful
+        # with the complete-OBB template built for this exact selected
+        # guide/allocation, and the caller's canonical context digest.  Never
+        # silently fall back to the old F-only rows under the new scope.
+        if not corridor_mode:
+            return _result(
+                "INVALID_REQUEST", request=request,
+                reason="FORMATION_CORRIDOR_SCOPE_MISMATCH",
+                detail=(
+                    "formation_corridor_scope=three_vehicle_union_v1 requires "
+                    "guidance_mode=corridor"),
+                wall_time_s=time.monotonic() - started,
+                request_sha256=validation.metrics["request_sha256"],
+                config=config,
+                branch=validation.metrics.get("goal_heading_branch_rad"))
+        if formation_template is None:
+            return _result(
+                "INVALID_REQUEST", request=request,
+                reason="FORMATION_CORRIDOR_TEMPLATE_REQUIRED",
+                detail=(
+                    "formation_corridor_scope=three_vehicle_union_v1 requires "
+                    "the selected finite complete-OBB templates"),
+                wall_time_s=time.monotonic() - started,
+                request_sha256=validation.metrics["request_sha256"],
+                config=config,
+                branch=validation.metrics.get("goal_heading_branch_rad"))
+        if formation_planning_context_sha256 is None:
+            return _result(
+                "INVALID_REQUEST", request=request,
+                reason="FORMATION_CORRIDOR_CONTEXT_REQUIRED",
+                detail=(
+                    "formation_corridor_scope=three_vehicle_union_v1 requires "
+                    "the canonical planning-context digest"),
+                wall_time_s=time.monotonic() - started,
+                request_sha256=validation.metrics["request_sha256"],
+                config=config,
+                branch=validation.metrics.get("goal_heading_branch_rad"))
+    elif formation_template is not None:
+        return _result(
+            "INVALID_REQUEST", request=request,
+            reason="FORMATION_CORRIDOR_SCOPE_MISMATCH",
+            detail=(
+                "a formation corridor template was supplied while "
+                "formation_corridor_scope is f_only"),
+            wall_time_s=time.monotonic() - started,
+            request_sha256=validation.metrics["request_sha256"],
+            config=config,
+            branch=validation.metrics.get("goal_heading_branch_rad"))
     if not corridor_mode and (corridor_chain is not None
                               or corridor_allocation is not None):
         return _result(
@@ -2007,6 +2626,20 @@ def solve_open_path_guided(request, config, *, route_guides=(),
                 "corridor_allocation"),
             wall_time_s=time.monotonic() - started,
             request_sha256=fingerprint, config=config, branch=branch)
+    formation_guide = route_guides[0] if route_guides else None
+    if formation_template is not None:
+        try:
+            validate_formation_template(
+                formation_template, request, corridor_chain,
+                allocation=corridor_allocation,
+                guide=formation_guide,
+                planning_context_sha256=str(
+                    formation_planning_context_sha256).strip().lower())
+        except VirtualAContractError as exc:
+            return _result(
+                "INVALID_REQUEST", request=request, reason=exc.reason,
+                detail=exc.detail, wall_time_s=time.monotonic() - started,
+                request_sha256=fingerprint, config=config, branch=branch)
     if max_new_initials is not None:
         if isinstance(max_new_initials, bool) or not isinstance(
                 max_new_initials, numbers.Integral) \
@@ -2061,14 +2694,60 @@ def solve_open_path_guided(request, config, *, route_guides=(),
             initial_count=0)
     corridor_constraint = None
     corridor_halfspace_count = None
+    formation_f_count = None
+    formation_obb_count = None
+    formation_f_max_residual_seen = None
+    formation_obb_max_residual_seen = None
+    formation_refinement_used = False
+    formation_refinement_state = {
+        "used": False,
+        "schema": "virtual_a_formation_constraint_refinement_v1",
+        "attempts": 0,
+        "cuts_sigma": [],
+        "initial_f_constraint_count": None,
+        "final_f_constraint_count": None,
+        "initial_obb_constraint_count": None,
+        "final_obb_constraint_count": None,
+        "outcome": "NOT_NEEDED",
+        "solver": "",
+        "solver_status": "",
+        "wall_time_s": 0.0,
+        "detail": "",
+        "last_formation_obb_residual_m": None,
+        "last_sample_audit": None,
+        "last_certificate": None,
+        "is_continuous_certificate": True,
+    }
     if corridor_mode:
         try:
             corridor_constraint = _build_corridor_constraint(
-                corridor_chain, corridor_allocation, request, config)
+                corridor_chain, corridor_allocation, request, config,
+                formation_template=formation_template,
+                planning_context_sha256=formation_planning_context_sha256,
+                formation_guide=formation_guide,
+                extra_cuts_sigma=formation_extra_cuts_sigma)
             count = getattr(
                 corridor_constraint, "halfspace_constraint_count", None)
             corridor_halfspace_count = (
                 None if count is None else int(count))
+            formation_f_value = getattr(
+                corridor_constraint, "formation_f_constraint_count", None)
+            formation_f_count = (
+                None if formation_f_value is None
+                else int(formation_f_value))
+            formation_count = getattr(
+                corridor_constraint, "formation_obb_constraint_count", None)
+            formation_obb_count = (
+                None if formation_count is None else int(formation_count))
+            if formation_template is not None:
+                formation_refinement_state[
+                    "initial_f_constraint_count"] = formation_f_count
+                formation_refinement_state[
+                    "final_f_constraint_count"] = formation_f_count
+                formation_refinement_state[
+                    "initial_obb_constraint_count"] = formation_obb_count
+                formation_refinement_state[
+                    "final_obb_constraint_count"] = formation_obb_count
         except VirtualAContractError as exc:
             return _result(
                 "INVALID_REQUEST", request=request, reason=exc.reason,
@@ -2115,6 +2794,11 @@ def solve_open_path_guided(request, config, *, route_guides=(),
             mark_deadline("initial_boundary")
             break
         attempt_started = time.monotonic()
+        # The request-wide stop policy is decided by the guess this attempt
+        # started from.  A Step 3 refinement replaces ``guess`` with the
+        # refined seed; that must not turn a route initial into a different
+        # scheduling class and spend another initial after its audit.
+        attempt_initial_source = str(getattr(guess, "source", ""))
         # The corridor guide is an initial value and a weak preference for the
         # route-derived initial only.  Automatic endpoint initials must not be
         # pulled back onto the legacy route 0 topology; their feasibility comes
@@ -2317,6 +3001,49 @@ def solve_open_path_guided(request, config, *, route_guides=(),
                     corridor_rejection = (
                         "CORRIDOR_HALFSPACE_RESIDUAL: {:.6e} m exceeds "
                         "1e-8 m".format(corridor_residual))
+                if getattr(corridor_constraint, "formation", None) is not None:
+                    formation_f_residual, formation_f_error = \
+                        _formation_f_residual_diagnostic(
+                            candidate_result.get("z"), request, config, packet,
+                            corridor_constraint)
+                    candidate_result["formation_f_residual_m"] = \
+                        formation_f_residual
+                    if formation_f_residual is not None and (
+                            formation_f_max_residual_seen is None
+                            or formation_f_residual >
+                            formation_f_max_residual_seen):
+                        formation_f_max_residual_seen = \
+                            formation_f_residual
+                    if formation_f_error and not corridor_rejection:
+                        corridor_rejection = (
+                            "CONSTRAINT_RESIDUAL_FAILURE: " + formation_f_error)
+                    elif formation_f_residual is not None and \
+                            formation_f_residual > 1e-8 and \
+                            not corridor_rejection:
+                        corridor_rejection = (
+                            "FORMATION_F_RESIDUAL: {:.6e} m exceeds "
+                            "1e-8 m".format(formation_f_residual))
+                    formation_residual, formation_error = \
+                        _formation_obb_residual_diagnostic(
+                            candidate_result.get("z"), request, config, packet,
+                            corridor_constraint)
+                    candidate_result["formation_obb_residual_m"] = \
+                        formation_residual
+                    if formation_residual is not None and (
+                            formation_obb_max_residual_seen is None
+                            or formation_residual >
+                            formation_obb_max_residual_seen):
+                        formation_obb_max_residual_seen = \
+                            formation_residual
+                    if formation_error and not corridor_rejection:
+                        corridor_rejection = (
+                            "CONSTRAINT_RESIDUAL_FAILURE: " + formation_error)
+                    elif formation_residual is not None and \
+                            formation_residual > 1e-8 and \
+                            not corridor_rejection:
+                        corridor_rejection = (
+                            "FORMATION_OBB_RESIDUAL: {:.6e} m exceeds "
+                            "1e-8 m".format(formation_residual))
             if residual_error or corridor_rejection:
                 rejection = (
                     "CONSTRAINT_RESIDUAL_FAILURE: " + residual_error
@@ -2326,7 +3053,11 @@ def solve_open_path_guided(request, config, *, route_guides=(),
                     if residual_error else corridor_rejection)
                 rejection_status = (
                     "CONSTRAINT_RESIDUAL_FAILURE" if residual_error else
-                    "CORRIDOR_HALFSPACE_RESIDUAL")
+                    ("FORMATION_F_RESIDUAL"
+                     if rejection.startswith("FORMATION_F_RESIDUAL") else
+                     ("FORMATION_OBB_RESIDUAL"
+                      if rejection.startswith("FORMATION_OBB_RESIDUAL")
+                      else "CORRIDOR_HALFSPACE_RESIDUAL")))
                 prefix = str(candidate_result.get("detail", "")).rstrip("; ")
                 candidate_result["detail"] = (
                     "{}; {}".format(prefix, detail_rejection)
@@ -2339,6 +3070,298 @@ def solve_open_path_guided(request, config, *, route_guides=(),
                     candidate = _candidate_path(
                         request, guess, candidate_result)
                     candidate_result["candidate_path"] = candidate
+                    # Step 3: independent finite-sample audit.  Only a
+                    # definite violation may direct one extra compiled cut;
+                    # UNCONFIRMED never invents a point, and the refinement
+                    # makes exactly one same-family solver call.
+                    if getattr(corridor_constraint, "formation", None) \
+                            is not None:
+                        try:
+                            sample_audit = _formation_sample_audit(
+                                candidate, formation_template,
+                                corridor_chain)
+                        except Exception as exc:
+                            sample_audit = {
+                                "schema": (
+                                    "virtual_a_formation_sample_audit_v1"),
+                                "template_id": str(getattr(
+                                    formation_template, "template_id", "")),
+                                "status": (
+                                    FORMATION_SAMPLE_AUDIT_UNCONFIRMED),
+                                "reason": (
+                                    "audit exception {}: {}".format(
+                                        type(exc).__name__, exc)),
+                                "cut_sigma": None,
+                                "is_continuous_certificate": False,
+                            }
+                        candidate_result["formation_audit"] = sample_audit
+                        formation_refinement_state["last_sample_audit"] = \
+                            sample_audit
+                        audit_status = str(
+                            sample_audit.get("status", ""))
+                        if audit_status == \
+                                FORMATION_SAMPLE_AUDIT_CLEAR:
+                            pass
+                        elif audit_status != \
+                                FORMATION_SAMPLE_AUDIT_VIOLATED:
+                            audit_reason = str(
+                                sample_audit.get("reason", ""))
+                            _append_detail(
+                                candidate_result,
+                                "formation sample audit UNCONFIRMED: "
+                                + audit_reason)
+                            formation_refinement_state["outcome"] = (
+                                "UNCONFIRMED_NO_CUT")
+                            formation_refinement_state["detail"] = \
+                                audit_reason
+                            attempts.append(_attempt_record(
+                                index, guess, candidate_result, None,
+                                "FORMATION_CORRIDOR_AUDIT_UNCONFIRMED",
+                                "SOLVER_SUCCESS_FORMATION_AUDIT_UNCONFIRMED"))
+                            continue
+                        else:
+                            cut_sigma = sample_audit.get("cut_sigma")
+                            existing_sigmas = _formation_station_sigmas(
+                                corridor_constraint)
+                            decline = ""
+                            decline_detail = ""
+                            if formation_refinement_used:
+                                decline = (
+                                    "FORMATION_CORRIDOR_AUDIT_VIOLATION")
+                                decline_detail = (
+                                    "definite violation remains after the "
+                                    "single allowed refinement")
+                            elif isinstance(cut_sigma, bool) or not \
+                                    isinstance(cut_sigma, (int, float)) \
+                                    or not math.isfinite(
+                                        float(cut_sigma)):
+                                decline = (
+                                    "FORMATION_CORRIDOR_AUDIT_UNCONFIRMED")
+                                decline_detail = (
+                                    "definite audit produced no finite "
+                                    "cut sigma")
+                            elif round(float(cut_sigma), 12) in \
+                                    existing_sigmas:
+                                decline = (
+                                    "FORMATION_CORRIDOR_AUDIT_VIOLATION")
+                                decline_detail = (
+                                    "audit cut sigma {!r} is already a "
+                                    "compiled station".format(cut_sigma))
+                            if decline:
+                                _append_detail(
+                                    candidate_result,
+                                    "formation sample audit: "
+                                    + decline_detail)
+                                formation_refinement_state["outcome"] = (
+                                    "CUT_ALREADY_PRESENT"
+                                    if "already a compiled station"
+                                    in decline_detail
+                                    else "REFINEMENT_LIMIT_REACHED")
+                                formation_refinement_state["detail"] = \
+                                    decline_detail
+                                if not decline.endswith(
+                                        "AUDIT_VIOLATION"):
+                                    formation_refinement_state[
+                                        "outcome"] = "UNCONFIRMED_NO_CUT"
+                                attempts.append(_attempt_record(
+                                    index, guess, candidate_result, None,
+                                    decline,
+                                    "SOLVER_SUCCESS_FORMATION_AUDIT_"
+                                    "REJECTED"))
+                                continue
+                            if remaining_budget() <= 0.0:
+                                mark_deadline(
+                                    "formation_refinement_boundary")
+                                formation_refinement_state["outcome"] = (
+                                    "BUDGET_EXHAUSTED")
+                                attempts.append(_attempt_record(
+                                    index, guess, candidate_result, None,
+                                    "SOFT_BUDGET_EXHAUSTED",
+                                    "SOLVER_SUCCESS_FORMATION_AUDIT_"
+                                    "REJECTED"))
+                                break
+                            formation_refinement_used = True
+                            formation_refinement_state["used"] = True
+                            formation_refinement_state["attempts"] = int(
+                                formation_refinement_state["attempts"]) + 1
+                            formation_refinement_state[
+                                "cuts_sigma"].append(float(cut_sigma))
+                            witness = sample_audit.get("witness") or {}
+                            _append_detail(
+                                candidate_result,
+                                "formation sample audit DEFINITE_VIOLATION "
+                                "sigma={} vehicle={} residual={}; one "
+                                "audit-directed cut".format(
+                                    witness.get("sigma"),
+                                    witness.get("vehicle_id"),
+                                    witness.get("residual_m")))
+                            attempts.append(_attempt_record(
+                                index, guess, candidate_result, None, "",
+                                "SOLVER_SUCCESS_FORMATION_REFINEMENT"))
+                            info = _refine_formation_candidate(
+                                request, config, packet, guess,
+                                candidate_result, float(cut_sigma),
+                                corridor_constraint, formation_template,
+                                corridor_chain, corridor_allocation,
+                                formation_guide,
+                                formation_planning_context_sha256,
+                                formation_extra_cuts_sigma,
+                                solver_kwargs, remaining_budget())
+                            formation_refinement_state["outcome"] = str(
+                                info["outcome"])
+                            formation_refinement_state["solver"] = str(
+                                info["solver"])
+                            formation_refinement_state["solver_status"] = (
+                                str(info["solver_status"]))
+                            formation_refinement_state["wall_time_s"] = (
+                                float(formation_refinement_state[
+                                    "wall_time_s"])
+                                + float(info["wall_time_s"]))
+                            formation_refinement_state["detail"] = str(
+                                info["detail"])
+                            formation_refinement_state[
+                                "last_sample_audit"] = info["audit"]
+                            if info["formation_obb_residual_m"] is not \
+                                    None:
+                                formation_refinement_state[
+                                    "last_formation_obb_residual_m"] = (
+                                        float(info[
+                                            "formation_obb_residual_m"]))
+                            if info["outcome"] == "TIMEOUT":
+                                result_for_record = info["result"]
+                                mark_deadline(
+                                    "formation_refinement_timeout",
+                                    info["solver_status"])
+                                deadline_info["timeout_solver_status"] = (
+                                    str(info["solver_status"]))
+                                deadline_info["timeout_iterations"] = int(
+                                    result_for_record.get(
+                                        "iterations", 0))
+                                attempts.append(_attempt_record(
+                                    index, guess, result_for_record, None,
+                                    "SOFT_BUDGET_EXHAUSTED",
+                                    "SOLVER_TIMEOUT"))
+                                break
+                            if info["outcome"] != "ACCEPTED":
+                                result_for_record = info["result"]
+                                if result_for_record is None:
+                                    result_for_record = _solver_failure(
+                                        info["solver"]
+                                        or candidate_result["solver"],
+                                        info["rejection"],
+                                        info["detail"],
+                                        attempt_started,
+                                        remaining_budget())
+                                else:
+                                    _append_detail(
+                                        result_for_record,
+                                        "refinement rejected: "
+                                        + str(info["detail"]))
+                                attempts.append(_attempt_record(
+                                    index, info["guess"] or guess,
+                                    result_for_record, None,
+                                    info["rejection"],
+                                    "SOLVER_SUCCESS_FORMATION_AUDIT_"
+                                    "REJECTED"))
+                                continue
+                            corridor_constraint = info["constraint"]
+                            formation_f_count = info[
+                                "formation_f_constraint_count"]
+                            formation_refinement_state[
+                                "final_f_constraint_count"] = (
+                                    formation_f_count)
+                            formation_obb_count = info[
+                                "formation_obb_constraint_count"]
+                            formation_refinement_state[
+                                "final_obb_constraint_count"] = (
+                                    formation_obb_count)
+                            formation_extra_cuts_sigma = tuple(
+                                float(value) for value in
+                                formation_extra_cuts_sigma) + (
+                                    float(cut_sigma),)
+                            candidate_result = info["result"]
+                            guess = info["guess"]
+                            candidate = info["path"]
+                            solver_used = str(info["solver"])
+                            if info["formation_f_residual_m"] is not None:
+                                formation_f_max_residual_seen = max(
+                                    formation_f_max_residual_seen
+                                    or info["formation_f_residual_m"],
+                                    info["formation_f_residual_m"])
+                            if info["formation_obb_residual_m"] is not \
+                                    None:
+                                formation_obb_max_residual_seen = max(
+                                    formation_obb_max_residual_seen
+                                    or info["formation_obb_residual_m"],
+                                    info["formation_obb_residual_m"])
+                            _append_detail(
+                                candidate_result,
+                                "formation refinement accepted at cut "
+                                "sigma={!r}".format(float(cut_sigma)))
+                    # Step 4: an independent continuous F+OBB interval
+                    # certificate is the gate before the historical geometry
+                    # audit and every downstream layer.  A missing,
+                    # non-VERIFIED or stale certificate never becomes a
+                    # feasible candidate.
+                    if getattr(corridor_constraint, "formation", None) \
+                            is not None:
+                        certificate_wall_s = min(
+                            FORMATION_CERTIFICATE_DEFAULT_MAX_SECONDS,
+                            max(0.0, remaining_budget()))
+                        certificate = certify_formation_path(
+                            candidate, request, corridor_chain,
+                            formation_template,
+                            allocation=corridor_allocation,
+                            guide=formation_guide,
+                            planning_context_sha256=(
+                                formation_planning_context_sha256),
+                            config=config,
+                            max_seconds=certificate_wall_s)
+                        candidate_result["formation_certificate"] = \
+                            certificate
+                        certificate_status = str(
+                            certificate.get("status", ""))
+                        certificate_reason = str(
+                            certificate.get("reason", ""))
+                        formation_refinement_state[
+                            "last_certificate"] = certificate
+                        verification = {"passed": False, "reason": (
+                            "status={!r}".format(certificate_status))}
+                        if certificate_status == \
+                                FORMATION_CERTIFICATE_VERIFIED:
+                            verification = verify_formation_certificate(
+                                certificate, candidate, request,
+                                corridor_chain, formation_template,
+                                allocation=corridor_allocation,
+                                guide=formation_guide,
+                                planning_context_sha256=(
+                                    formation_planning_context_sha256))
+                        if not verification.get("passed"):
+                            certificate_detail = (
+                                "continuous F+OBB certificate rejected: "
+                                "status={} reason={}".format(
+                                    certificate_status or "MISSING",
+                                    certificate_reason
+                                    or verification.get("reason", "")))
+                            _append_detail(
+                                candidate_result, certificate_detail)
+                            certificate_rejection = (
+                                "FORMATION_CERTIFICATE_VERIFICATION_FAILED"
+                                if certificate_status ==
+                                FORMATION_CERTIFICATE_VERIFIED else
+                                "FORMATION_CERTIFICATE_" + (
+                                    certificate_status or "MISSING"))
+                            attempts.append(_attempt_record(
+                                index, guess, candidate_result, None,
+                                certificate_rejection,
+                                "SOLVER_SUCCESS_FORMATION_CERTIFICATE_"
+                                "REJECTED"))
+                            if bool(certificate.get("timed_out")) or \
+                                    remaining_budget() <= 0.0:
+                                mark_deadline(
+                                    "formation_certificate_timeout")
+                                break
+                            continue
                     audit = audit_geometry(request, candidate, audit_config)
                     if audit.passed:
                         endpoint = candidate.endpoint()
@@ -2362,8 +3385,8 @@ def solve_open_path_guided(request, config, *, route_guides=(),
                                 "result": candidate_result,
                                 "guess": guess,
                             }
-                        if stop_after_route_audit and getattr(
-                                guess, "source", "") == "map_route_guide":
+                        if stop_after_route_audit and \
+                                attempt_initial_source == "map_route_guide":
                             # The route initial already has an independently
                             # audited geometry.  Preserve the endpoint-shape
                             # identities for the request-wide recovery rather
@@ -2431,7 +3454,27 @@ def solve_open_path_guided(request, config, *, route_guides=(),
             corridor_halfspace_constraint_count=corridor_halfspace_count,
             corridor_max_residual_m=(
                 None if best["result"].get("corridor_residual_m") is None
-                else float(best["result"]["corridor_residual_m"])))
+                else float(best["result"]["corridor_residual_m"])),
+            formation_template_id=(
+                formation_template.template_id
+                if formation_template is not None else ""),
+            formation_f_constraint_count=formation_f_count,
+            formation_obb_constraint_count=formation_obb_count,
+            formation_sample_audit=(
+                best["result"].get("formation_audit")
+                if formation_template is not None else None),
+            formation_refinement=(
+                formation_refinement_state
+                if formation_template is not None else None),
+            formation_f_max_residual_m=(
+                best["result"].get("formation_f_residual_m")
+                if formation_template is not None else None),
+            formation_obb_max_residual_m=(
+                best["result"].get("formation_obb_residual_m")
+                if formation_template is not None else None),
+            formation_certificate=(
+                best["result"].get("formation_certificate")
+                if formation_template is not None else None))
     audit_rejections = [
         attempt for attempt in attempts
         if attempt.status == "SOLVER_SUCCESS_AUDIT_REJECTED"]
@@ -2488,7 +3531,27 @@ def solve_open_path_guided(request, config, *, route_guides=(),
         deadline=deadline_exhausted, deadline_summary=deadline_info,
         initial_count=len(guesses),
         corridor_halfspace_constraint_count=corridor_halfspace_count,
-        corridor_max_residual_m=corridor_max_residual)
+        corridor_max_residual_m=corridor_max_residual,
+        formation_template_id=(
+            formation_template.template_id
+            if formation_template is not None else ""),
+        formation_f_constraint_count=formation_f_count,
+        formation_obb_constraint_count=formation_obb_count,
+        formation_sample_audit=(
+            formation_refinement_state["last_sample_audit"]
+            if formation_template is not None else None),
+        formation_refinement=(
+            formation_refinement_state
+            if formation_template is not None else None),
+        formation_f_max_residual_m=(
+            formation_f_max_residual_seen
+            if formation_template is not None else None),
+        formation_obb_max_residual_m=(
+            formation_obb_max_residual_seen
+            if formation_template is not None else None),
+        formation_certificate=(
+            formation_refinement_state.get("last_certificate")
+            if formation_template is not None else None))
 
 
 def solve_open_path(request, config, **kwargs):

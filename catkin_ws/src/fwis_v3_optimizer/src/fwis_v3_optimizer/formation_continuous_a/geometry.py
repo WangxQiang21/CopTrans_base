@@ -736,9 +736,9 @@ class VirtualAPath:
                         "INVALID_PROFILE",
                         "segment {} needs four Hermite coefficients".format(
                             index), index=index)
-            max_kappa = max(max_kappa, piece_bounds["k"][1])
             kappa_envelope = max(
                 abs(piece_bounds["k"][0]), abs(piece_bounds["k"][1]))
+            max_kappa = max(max_kappa, kappa_envelope)
             if coefficients is not None:
                 coefficient_magnitude = sum(
                     abs(value) for value in coefficients)

@@ -44,6 +44,8 @@ class FormationLaunchTest(unittest.TestCase):
         self.assertEqual(args["backend"], "virtual_rigid_a")
         self.assertEqual(args["virtual_a_guidance_mode"], "corridor")
         self.assertEqual(args["virtual_a_corridor_enforcement"], "hard")
+        self.assertEqual(
+            args["virtual_a_formation_corridor_scope"], "f_only")
         nodes = {node.get("name"): node for node in root.findall("node")}
         legacy = ("formation_planner", "formation_optimizer")
         uniform = "formation_uniform_planner"
@@ -84,8 +86,12 @@ class FormationLaunchTest(unittest.TestCase):
                          "$(arg virtual_a_guidance_mode)")
         self.assertEqual(params["virtual_a_corridor_enforcement"][0],
                          "$(arg virtual_a_corridor_enforcement)")
+        self.assertEqual(
+            params["virtual_a_formation_corridor_scope"][0],
+            "$(arg virtual_a_formation_corridor_scope)")
         for name in ("virtual_a_guidance_mode",
-                     "virtual_a_corridor_enforcement"):
+                     "virtual_a_corridor_enforcement",
+                     "virtual_a_formation_corridor_scope"):
             self.assertIn("arg('backend') == 'virtual_rigid_a'",
                           params[name][1])
         for legacy_name in ("formation_planner", "formation_optimizer"):
@@ -94,6 +100,8 @@ class FormationLaunchTest(unittest.TestCase):
                     "param")}
             self.assertNotIn("virtual_a_guidance_mode", legacy_params)
             self.assertNotIn("virtual_a_corridor_enforcement", legacy_params)
+            self.assertNotIn(
+                "virtual_a_formation_corridor_scope", legacy_params)
 
     def test_launch_never_starts_single_vehicle_nodes_or_extra_planners(self):
         nodes = self._nodes()
@@ -113,6 +121,8 @@ class FormationLaunchTest(unittest.TestCase):
         source = UNIFORM_PLANNER.read_text(encoding="utf-8")
         self.assertIn('"~virtual_a_guidance_mode", "corridor"', source)
         self.assertIn('"~virtual_a_corridor_enforcement", "hard"', source)
+        self.assertIn(
+            '"~virtual_a_formation_corridor_scope", "f_only"', source)
         self.assertIn("research_planner_config(", source)
         self.assertIn("planner_config.guidance_mode", source)
         self.assertIn("planner_config.corridor_enforcement", source)
@@ -255,11 +265,14 @@ class RunDemoBackendTest(unittest.TestCase):
         self.assertIn("backend:=virtual_rigid_a", result.stdout)
         self.assertIn("virtual_a_guidance_mode:=corridor", result.stdout)
         self.assertIn("virtual_a_corridor_enforcement:=hard", result.stdout)
+        self.assertIn(
+            "virtual_a_formation_corridor_scope:=f_only", result.stdout)
         self.assertIn("auto_goal:=false", result.stdout)
         self.assertNotIn("backend:=uniform_v02", result.stdout)
         self.assertNotIn("backend:=legacy", result.stdout)
         for name in ("backend:=", "virtual_a_guidance_mode:=",
-                     "virtual_a_corridor_enforcement:=", "auto_goal:="):
+                     "virtual_a_corridor_enforcement:=",
+                     "virtual_a_formation_corridor_scope:=", "auto_goal:="):
             self.assertEqual(result.stdout.count(name), 1, name)
 
     def test_explicit_research_parameters_are_preserved(self):
@@ -267,13 +280,18 @@ class RunDemoBackendTest(unittest.TestCase):
             "--map", "map04",
             "virtual_a_guidance_mode:=legacy_route",
             "virtual_a_corridor_enforcement:=soft",
+            "virtual_a_formation_corridor_scope:=three_vehicle_union_v1",
             "auto_goal:=true")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("virtual_a_guidance_mode:=legacy_route", result.stdout)
         self.assertIn("virtual_a_corridor_enforcement:=soft", result.stdout)
+        self.assertIn("virtual_a_formation_corridor_scope:=three_vehicle_union_v1",
+                      result.stdout)
         self.assertIn("auto_goal:=true", result.stdout)
         self.assertNotIn("virtual_a_guidance_mode:=corridor", result.stdout)
         self.assertNotIn("virtual_a_corridor_enforcement:=hard", result.stdout)
+        self.assertNotIn("virtual_a_formation_corridor_scope:=f_only",
+                         result.stdout)
         self.assertNotIn("auto_goal:=false", result.stdout)
 
     def test_duplicate_research_parameters_are_rejected(self):
@@ -284,6 +302,9 @@ class RunDemoBackendTest(unittest.TestCase):
             ("virtual_a_corridor_enforcement:=hard",
              "virtual_a_corridor_enforcement:=soft",
              "virtual_a_corridor_enforcement:= 只能指定一次"),
+            ("virtual_a_formation_corridor_scope:=f_only",
+             "virtual_a_formation_corridor_scope:=three_vehicle_union_v1",
+             "virtual_a_formation_corridor_scope:= 只能指定一次"),
             ("auto_goal:=false", "auto_goal:=false",
              "auto_goal:= 只能指定一次"),
         )
@@ -299,6 +320,8 @@ class RunDemoBackendTest(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertNotIn("virtual_a_guidance_mode:=", result.stdout)
             self.assertNotIn("virtual_a_corridor_enforcement:=", result.stdout)
+            self.assertNotIn(
+                "virtual_a_formation_corridor_scope:=", result.stdout)
             # map04 has scene_meta, so the historical manual-map policy still
             # enables the preset goal for both old backends.
             self.assertIn("auto_goal:=true", result.stdout)
@@ -311,6 +334,8 @@ class RunDemoBackendTest(unittest.TestCase):
             self.assertEqual(result.stdout.count("backend:="), 1)
             self.assertNotIn("virtual_a_guidance_mode:=", result.stdout)
             self.assertNotIn("virtual_a_corridor_enforcement:=", result.stdout)
+            self.assertNotIn(
+                "virtual_a_formation_corridor_scope:=", result.stdout)
 
     def test_conflicting_or_unknown_backends_are_rejected(self):
         for args in (("--backend", "legacy", "backend:=uniform_v02"),

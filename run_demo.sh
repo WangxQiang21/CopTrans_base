@@ -25,6 +25,8 @@ enforcement=hard、auto_goal=false；同一原子 /formation/playback_plan 信�
 2D Pose Estimate 明确新实验，virtual_a_goal_policy:=free|straight 选择终点策略）；
 virtual_a_guidance_mode:=corridor|legacy_route 与
 virtual_a_corridor_enforcement:=hard|soft 可显式覆盖默认研究入口；
+virtual_a_formation_corridor_scope:=f_only|three_vehicle_union_v1 显式选择走廊
+范围（默认 f_only，保持历史 F-only gate；union 为 TASK03 显式实验入口）；
 backend:=uniform_v02 启动 V0.2 自主统一规划；--backend legacy 或
 backend:=legacy 仅启动旧 C++ 前端与旧优化器用于对照。
 同一时刻只会启动一个规划发布后端，不会同时发布两套轨迹。
@@ -410,6 +412,7 @@ if [[ "$demo_kind" == formation ]]; then
   if [[ "${formation_backend}" == "virtual_rigid_a" ]]; then
     guidance_seen=0
     enforcement_seen=0
+    formation_scope_seen=0
     virtual_auto_goal_seen=0
     for arg in "${launch_args[@]}"; do
       case "${arg}" in
@@ -418,6 +421,9 @@ if [[ "$demo_kind" == formation ]]; then
           ;;
         virtual_a_corridor_enforcement:=*)
           enforcement_seen=$((enforcement_seen + 1))
+          ;;
+        virtual_a_formation_corridor_scope:=*)
+          formation_scope_seen=$((formation_scope_seen + 1))
           ;;
         auto_goal:=*)
           virtual_auto_goal_seen=$((virtual_auto_goal_seen + 1))
@@ -432,12 +438,18 @@ if [[ "$demo_kind" == formation ]]; then
       echo "错误：virtual_a_corridor_enforcement:= 只能指定一次。" >&2
       exit 2
     fi
+    if (( formation_scope_seen > 1 )); then
+      echo "错误：virtual_a_formation_corridor_scope:= 只能指定一次。" >&2
+      exit 2
+    fi
     if (( virtual_auto_goal_seen > 1 )); then
       echo "错误：auto_goal:= 只能指定一次。" >&2
       exit 2
     fi
     (( guidance_seen == 1 )) || launch_args+=("virtual_a_guidance_mode:=corridor")
     (( enforcement_seen == 1 )) || launch_args+=("virtual_a_corridor_enforcement:=hard")
+    # TASK03: f_only stays the default until the union delivery is accepted.
+    (( formation_scope_seen == 1 )) || launch_args+=("virtual_a_formation_corridor_scope:=f_only")
     (( virtual_auto_goal_seen == 1 )) || launch_args+=("auto_goal:=false")
   fi
   echo "[expv3] 编队发布后端 ${formation_backend}（同一时刻只启动这一个发布后端）"

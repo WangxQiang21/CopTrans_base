@@ -1,0 +1,242 @@
+{
+  "schema": "codex_task02_geometry_recheck_v1",
+  "target_user_plans": [
+    {
+      "plan_id": 600001,
+      "status": "NOT_REPRODUCIBLE_FROM_AVAILABLE_INPUT",
+      "map_sha256": null,
+      "request_sha256": null,
+      "grid_sha256": null,
+      "planning_context_sha256": null,
+      "recheck": "NOT_RUN"
+    },
+    {
+      "plan_id": 600002,
+      "status": "NOT_REPRODUCIBLE_FROM_AVAILABLE_INPUT",
+      "map_sha256": null,
+      "request_sha256": null,
+      "grid_sha256": null,
+      "planning_context_sha256": null,
+      "recheck": "NOT_RUN"
+    }
+  ],
+  "historical_s1_comparison": {
+    "scope": "separate frozen TASK02 S1 plan 600000; not either user-reported plan",
+    "request_sha256": "591b4100355ab991d3b7dd5afeb95e203343ec185bf7187d025e2662b4afdd3b",
+    "grid_sha256": "6e94c751a40ec94431b495fcbff002945f09c975429c493c89060f0e7e2aa2a4",
+    "planning_context_sha256": "8a545c3f4c794f9f04c57f453c454612c54ca2d3fe31e4c6b887037d2d36604b",
+    "route_assessments": [
+      {
+        "route_index": 0,
+        "route_length_m": 9.744793363039314,
+        "map_sample_status": "COLLISION_OBSERVED",
+        "map_sample_counts": {
+          "clear": 4,
+          "map_collision": 8,
+          "sampled": 12,
+          "unconfirmed": 0,
+          "vehicle_collision": 0
+        }
+      },
+      {
+        "route_index": 1,
+        "route_length_m": 9.672026840474805,
+        "map_sample_status": "COLLISION_OBSERVED",
+        "map_sample_counts": {
+          "clear": 4,
+          "map_collision": 8,
+          "sampled": 12,
+          "unconfirmed": 0,
+          "vehicle_collision": 0
+        }
+      },
+      {
+        "route_index": 2,
+        "route_length_m": 9.864056195339257,
+        "map_sample_status": "COLLISION_OBSERVED",
+        "map_sample_counts": {
+          "clear": 4,
+          "map_collision": 8,
+          "sampled": 12,
+          "unconfirmed": 0,
+          "vehicle_collision": 0
+        }
+      }
+    ],
+    "route_attempt_order": [
+      1,
+      0,
+      2
+    ],
+    "guide_rounds": [
+      {
+        "round_index": 0,
+        "route_index": 1,
+        "chain_digest": "0ddd65e0931e8ee68844ec927d39704dfca81f08efffc701a70c05bad1ef47a1",
+        "region_count": 2,
+        "candidate_count": 5,
+        "selected_candidate_index": 1,
+        "selected_candidate_origin": "CHEBYSHEV_CENTRE_GUIDE",
+        "selected_guide_source": "corridor_candidate_chebyshev"
+      },
+      {
+        "round_index": 1,
+        "route_index": 0,
+        "chain_digest": "c2882091a0857c4280981f17d2df70ab2ef516ed31425c283fb2f989cdb2dc72",
+        "region_count": 2,
+        "candidate_count": 5,
+        "selected_candidate_index": 2,
+        "selected_candidate_origin": "ONE_PORTAL_VARIANT_0",
+        "selected_guide_source": "corridor_candidate_portal_0"
+      }
+    ],
+    "final_geometry_and_collision": [
+      {
+        "solver_round_index": 0,
+        "route_index": 1,
+        "corridor_round_index": 0,
+        "chain_digest": "0ddd65e0931e8ee68844ec927d39704dfca81f08efffc701a70c05bad1ef47a1",
+        "selected_candidate_index": 1,
+        "selected_guide_source": "corridor_candidate_chebyshev",
+        "selected_candidate_origin": "CHEBYSHEV_CENTRE_GUIDE",
+        "allocation_sha256": "72fad3d514915e2424d09dbad169144be3675c93bb5cd63853607b54cf36d2d9",
+        "allocation": [
+          [
+            0.0,
+            0.125,
+            0
+          ],
+          [
+            0.125,
+            0.25,
+            0
+          ],
+          [
+            0.25,
+            0.375,
+            0
+          ],
+          [
+            0.375,
+            0.5,
+            0
+          ],
+          [
+            0.5,
+            0.625,
+            0
+          ],
+          [
+            0.625,
+            0.75,
+            0
+          ],
+          [
+            0.75,
+            0.875,
+            0
+          ],
+          [
+            0.875,
+            0.9129731424913019,
+            0
+          ],
+          [
+            0.9129731424913019,
+            1.0,
+            1
+          ]
+        ],
+        "corridor_containment_passed": true,
+        "corridor_containment_reason": "CORRIDOR_CONTAINMENT_VERIFIED",
+        "geometry_status": "GEOMETRY_FEASIBLE",
+        "timing_status": "DYNAMIC_FEASIBLE",
+        "dynamics_passed": true,
+        "collision_passed": false,
+        "collision_reason": "MAP_OBB_COLLISION",
+        "collision_first_failure": {
+          "constraint": "COLLISION",
+          "other_vehicle_id": null,
+          "qf": [
+            2.63158139276237,
+            0.2540272568572692,
+            0.28246039399858436
+          ],
+          "reason": "MAP_OBB_COLLISION",
+          "sample_index": 16,
+          "segment_index": 2,
+          "stage": "analytic_sweep",
+          "station": 2.654537127411632,
+          "time_s": 10.106617823516249,
+          "vehicle_id": 2
+        }
+      },
+      {
+        "solver_round_index": 1,
+        "route_index": 0,
+        "corridor_round_index": 1,
+        "chain_digest": "c2882091a0857c4280981f17d2df70ab2ef516ed31425c283fb2f989cdb2dc72",
+        "selected_candidate_index": 2,
+        "selected_guide_source": "corridor_candidate_portal_0",
+        "selected_candidate_origin": "ONE_PORTAL_VARIANT_0",
+        "allocation_sha256": "ca02545335a7af1c821cdc603bc2c77d27ce4dbf8fdaa809fd65fa98ab89f4c8",
+        "allocation": [
+          [
+            0.0,
+            0.125,
+            0
+          ],
+          [
+            0.125,
+            0.25,
+            0
+          ],
+          [
+            0.25,
+            0.375,
+            0
+          ],
+          [
+            0.375,
+            0.5,
+            0
+          ],
+          [
+            0.5,
+            0.625,
+            0
+          ],
+          [
+            0.625,
+            0.75,
+            0
+          ],
+          [
+            0.75,
+            0.875,
+            0
+          ],
+          [
+            0.875,
+            0.8922137322096971,
+            0
+          ],
+          [
+            0.8922137322096971,
+            1.0,
+            1
+          ]
+        ],
+        "corridor_containment_passed": false,
+        "corridor_containment_reason": "CORRIDOR_AUDIT_WIDTH_LIMIT",
+        "geometry_status": "GEOMETRY_FEASIBLE",
+        "timing_status": null,
+        "dynamics_passed": null,
+        "collision_passed": null,
+        "collision_reason": null,
+        "collision_first_failure": null
+      }
+    ]
+  },
+  "interpretation": "Guide map collision samples, corridor coverage gaps, continuous F containment, and final three-vehicle OBB sweep are different checks."
+}

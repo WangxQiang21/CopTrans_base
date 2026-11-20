@@ -16,3 +16,9 @@ string model_sha256            # digest of model_json
 string model_json              # complete versioned UniformTimedPlan model
 string certification           # copied from the model; informational only
 fwis_v3_msgs/FormationTimedTrajectory trajectory
+# Optional sealed formation-corridor binding for the three_vehicle_union_v1
+# scope (canonical JSON object; empty for f_only and uniform_v02 plans).  It
+# travels inside the atomic envelope so the receiver can re-verify the
+# template, corridor chain and continuous certificate against this model
+# without a second channel or a message-ordering race.
+string formation_binding_json
