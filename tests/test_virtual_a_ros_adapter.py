@@ -109,6 +109,8 @@ class VirtualGoalBridgeTest(unittest.TestCase):
             initial_heading_policy="cargo_heading")
         positions = []
         node._publish_preview = positions.append
+        endpoint_messages = []
+        node._endpoint_pub = SimpleNamespace(publish=endpoint_messages.append)
         confirmed = {
             "state": "IDLE", "backend": "virtual_rigid_a",
             "initial_reset_ready": True,
@@ -117,10 +119,16 @@ class VirtualGoalBridgeTest(unittest.TestCase):
                 "qf": {"x": 2.0, "y": 3.0, "psi": 0.0},
             },
         }
-        node.on_job_state(SimpleNamespace(data=json.dumps(confirmed)))
-        node.on_job_state(SimpleNamespace(data=json.dumps(confirmed)))
+        ros_time = self.bridge_module.rospy.Time
+        with patch.object(ros_time, "now", return_value=ros_time(0)):
+            node.on_job_state(SimpleNamespace(data=json.dumps(confirmed)))
+            node.on_job_state(SimpleNamespace(data=json.dumps(confirmed)))
         self.assertEqual(node._start_pose()[0], (2.0, 3.0, 0.0))
         self.assertEqual(positions, [(2.0, 3.0, 0.0)])
+        self.assertEqual(len(endpoint_messages), 1)
+        self.assertEqual(len(endpoint_messages[0].markers), 1)
+        marker = endpoint_messages[0].markers[0]
+        self.assertEqual(marker.action, marker.DELETEALL)
 
 
 def _reject(testcase, reason, function, *args, **kwargs):

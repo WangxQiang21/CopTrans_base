@@ -549,7 +549,8 @@ class MessageFreezeContracts(unittest.TestCase):
                 "string formation_id", "geometry_msgs/Pose2D formation_start",
                 "geometry_msgs/Pose2D formation_goal",
                 "fwis_v3_msgs/FormationVehicleSpec[] vehicles",
-                "bool allow_reverse"),
+                "bool allow_reverse", "uint32 continuation_plan_id",
+                "string continuation_model_sha256"),
             "FormationTimedTrajectory.msg": (
                 "geometry_msgs/Pose2D[] formation_poses",
                 "duration[] times_from_start",
@@ -592,7 +593,7 @@ class GeneratedMessageContracts(unittest.TestCase):
             "FormationPlanRequest": [
                 "std_msgs/Header", "uint32", "string",
                 "geometry_msgs/Pose2D", "geometry_msgs/Pose2D",
-                "fwis_v3_msgs/FormationVehicleSpec[]", "bool"],
+                "fwis_v3_msgs/FormationVehicleSpec[]", "bool", "uint32", "string"],
             "FormationPrimitive": [
                 "uint8", "float64", "float64", "float64",
                 "float64", "float64"],
@@ -654,10 +655,14 @@ class GeneratedMessageContracts(unittest.TestCase):
             formation_goal=Pose2D(x=QF_GOAL[0], y=QF_GOAL[1],
                                   theta=QF_GOAL[2]),
             vehicles=specs,
-            allow_reverse=False)
+            allow_reverse=False,
+            continuation_plan_id=16,
+            continuation_model_sha256="a" * 64)
 
         decoded = self._assert_roundtrip(message)
         self.assertEqual(decoded.plan_id, 17)
+        self.assertEqual(decoded.continuation_plan_id, 16)
+        self.assertEqual(decoded.continuation_model_sha256, "a" * 64)
         self.assertEqual([vehicle.vehicle_id for vehicle in decoded.vehicles],
                          [0, 1, 2])
         result = validate_formation_request(decoded)

@@ -1,55 +1,76 @@
-# expv3
+# expv3 · 4WIS 三车刚性运输编队
 
-## 当前多车运输入口（2026-11-11）
+开发分支 `4wis_mutil_mode_plan01` 基于 ROS Noetic，在静态占据栅格上规划三车刚性运输编队，并在 RViz 中回放经过审核的轨迹。货物参考位姿记为 `q_F = (x_F, y_F, ψ_F)`。每辆车的中心由刚性关系 `p_i = p_F + R(ψ_F) r_i` 决定，车体航向 `θ_i` 独立计算。默认楔形编队 `cargo_wedge` 的三个偏移为 `(1, 0)`、`(0, 1)`、`(0, −1)` m，车身为 `0.738 × 0.500` m。几何和航向策略由 [运输编队配置](catkin_ws/src/fwis_v3_demo/config/transport_formation.yaml) 统一读取。
 
-本仓库 `run_demo.sh` 默认启动货物中心楔形编队。权威运输配置为
-`catkin_ws/src/fwis_v3_demo/config/transport_formation.yaml`：
-车辆 id 1/2/3 相对货物原点的 offset 为 `(1,0)/(0,1)/(0,-1)` 米，
-车身 0.738×0.5 米；`p_i = p_F + R(ψ_F) r_i` 是刚性硬约束，
-`θ_i` 是独立运动学变量。默认 `require_cargo_heading=false`、
-`goal_heading_free=true`；新实验的初始航向策略为 `cargo_heading`
-（三车与货物同向），连续目标从播放 TF 读取实际车体航向，不重置。
-下方历史单车说明中的启动命令需加 `--single` 才沿用原单车行为。
+## 启动当前编队算法
+
+在仓库根目录运行。
 
 ```bash
-cd /home/wq/whut_thesis/expv3_multi
-bash run_demo.sh --map map04 auto_goal:=false
-# 与单车相同：2D Pose Estimate 设置货物起点和航向；2D Nav Goal 设置货物终点和航向。
-# 地图预设任务：省略 auto_goal:=false，或显式 auto_goal:=true。
-bash run_demo.sh --map map16 --scale 2.6 auto_goal:=false
-bash run_demo.sh --map map04 --dry-run    # 仅查看启动配置
-bash run_demo.sh --single --map map04   # 原单车流程与默认地图比例
+# 本轮 RViz 复测使用的统一 A/O/S 规划器，开启直连和连续 A 细化
+bash run_demo.sh --map map05 --backend uniform_v02 \
+  uniform_direct_goal_translation:=true uniform_continuous_a:=true \
+  auto_goal:=false rviz:=true
+
+# 默认入口使用连续 A 研究后端，默认手动选点
+bash run_demo.sh --map map05
+
+# 覆盖默认地图倍率
+bash run_demo.sh --map map05 --backend uniform_v02 --scale 1.8 auto_goal:=false
 ```
 
-编队默认倍率按 [地图索引](maps/map_index.tsv) 中每张地图的复测值设置。`--scale` 可覆盖绝对比例。
-起终点随临时地图统一变换，车辆尺寸与偏移保持米制；RViz 视角自动适配地图范围。
-设置起点立即显示队形；规划失败保留静止车体并显示原因，清除旧路径。
+用 **2D Pose Estimate** 设置货物参考点的起点及朝向，再用 **2D Nav Goal** 设置终点。选好两点后会显示起终点包络、三车车身和静态摆放结果。统一后端通过脚本启动时默认放开编队终点航向，指定停靠朝向可加 `uniform_goal_formation_heading_free:=false`。搜索期间重新设置起点，会取消尚未发布的统一后端任务并清理旧包络。回放到达 `HOLD_END` 后，直接点下一目标可以从确认的终态续接，保留各车当前航向。
 
-**T1 已验证：** 货物 `(10,10,0)→(10,10,π/2)` 的请求在起点采用切向航向
-`θ=(π/2,π,0)` 时返回 `FEASIBLE`，发布轨迹并在回放中保持三车不同航向；
-连续目标使用回放中的真实航向。
+默认地图是 map16。各图的编队倍率见 [地图索引](maps/map_index.tsv)，地图缩放时保持三车尺寸和刚性偏移的米制数值。
 
-**T4 已验证：** 同一货物旋转、起点三车航向均为 0 时，规划器在货物位姿与
-三车中心全部固定的事件中让需要转向的车辆原地 Spin 到各自目标车体航向，
-不转的车辆保持 A 模式静止；所有车辆共用一条时间轴，事件完成后再进入绕货物
-的 A 运动。货物 ±90°（`(10,10,0)→(10,10,±π/2)`）均能在空地完成，
-终止航向为逐车 θ，而不是强制等于货物航向。旧的 `CARGO_HEADING_MISMATCH` /
-`CARGO_ROTATION_REQUIRES_GENERAL_4WIS` 只会在显式受限实验
-`require_cargo_heading:=true` 下出现。几何前端找到旋转路径不等于可执行。
-现有 `--collect-data` 标注网页仍用于 `--single`；编队并未接入该单车采集器。
+## 当前架构
 
-配置一致性、足迹数值、可复现测试和证据见
-[T1 报告](evaluation/wedge_fix_2026-11-11/T1/T1_REPORT.md) 与
-[T4 报告](evaluation/wedge_fix_2026-11-11/T4/T4_REPORT.md)。
+```mermaid
+flowchart LR
+    Map[占据栅格地图] --> Bridge[起终点桥接与静态包络]
+    RViz[RViz 起终点] --> Bridge
+    Bridge --> Node[规划节点]
+    Map --> Node
+    Node --> Uniform[统一 A/O/S 搜索]
+    Node --> Virtual[连续 A 研究后端]
+    Uniform --> Audit[后端独立轨迹审核]
+    Virtual --> Audit
+    Audit --> Playback[解析轨迹回放]
+    Playback --> Display[路径、车体、走廊与 HUD]
+    Playback -->|终态回执| Node
+```
 
-## 本分支：模式一致的连续轨迹与段级时间求解
+| 层 | 当前实现 |
+|---|---|
+| 地图与请求 | `fwis_map_server` 发布 `/map` 与预设起点。[目标桥接节点](catkin_ws/src/fwis_v3_demo/scripts/formation_goal_bridge.py) 将 RViz 位姿转成 `FormationPlanRequest`，通过 `/formation/plan_request` 发布编队位姿、车辆配置及续接身份。端点包络走 `/formation/endpoints`，用于静态摆放检查。 |
+| 后端选择 | [编队启动文件](catkin_ws/src/fwis_v3_demo/launch/formation_demo.launch) 每次启动选一个规划后端。`uniform_v02` 和 `virtual_rigid_a` 通过同一 [ROS 规划节点](catkin_ws/src/fwis_v3_optimizer/scripts/formation_uniform_planner_node.py) 接入。`legacy` 保留历史编队对照入口。 |
+| 统一 A/O/S | [搜索模块](catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_search.py) 根据地图、当前队形和轮系状态，在 A 直行或转弯、O 斜移或横移、S 车体原地转向之间生成并筛选候选。三车在同一运动段共用模式和时钟。搜索可尝试直连、固定航向绕障和航向过渡，用户只需指定起终点。 |
+| 连续 A 研究 | [连续 A 流程](catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/formation_continuous_a/pipeline.py) 从栅格路线和走廊生成连续曲率轨迹，支持 `footprint_seed` 引导。统一后端另有 [局部连续 A 细化](catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_curve_refinement.py)，启用后可在同一条 A/O/S 时间轴上替换可改善的转弯段。 |
+| 计时与审核 | [统一规划流水线](catkin_ws/src/fwis_v3_optimizer/src/fwis_v3_optimizer/uniform_pipeline.py) 按共同时间轴生成运动和静止调舵事件，再重建并审核选中轨迹。检查覆盖终点与刚性关系、车辆动态约束、车体对地图及车间的扫掠碰撞。走廊和端点静态预览提供几何诊断。 |
+| 发布与回放 | 规划器发布审核结果 `/formation/quality_report`，通过审核的模型送到 `/formation/playback_plan`。[回放节点](catkin_ws/src/fwis_v3_playback/scripts/formation_playback.py) 验证计划身份后解析取样，输出三车路径、TF 和 HUD，并经 `/formation/playback_status` 回传执行状态。 |
 
-本分支 `continuous-mode-path` 运行 `mode_path_v2`。参考论文 12：Runjiao Bao 等，
+## 场景采集与回归
+
+```bash
+bash run_demo.sh --map map05 --collect-cases
+python3 tools/run_formation_cases.py list
+python3 tools/run_formation_cases.py run --jobs 6 \
+  --planner uniform_continuous_a:=true \
+  --planner uniform_goal_formation_heading_free:=true
+```
+
+冻结测试集已通过 43/43，包含 map05 长、短回头弯。回归沿用各用例保存的地图倍率和起终位姿，核验审核结果、终点误差及回放终态。[用例、采集方法与通过标准](work_flow/test_scenarios/README.md)
+
+早期编队实验验证了货物原地旋转和三车的独立航向预对齐。[T1 旋转](evaluation/wedge_fix_2026-11-11/T1/T1_REPORT.md) · [T4 原地调向](evaluation/wedge_fix_2026-11-11/T4/T4_REPORT.md)
+
+## 历史单车连续规划
+
+历史单车分支 `continuous-mode-path` 运行 `mode_path_v2`。参考论文 12：Runjiao Bao 等，
 *From Multi-Modal Paths to Executable Trajectories: A Trajectory Planning Framework for 4WIS Robots*
 （[本地论文](papers/12_Bao_4WIS_Executable_Trajectories_2026.pdf)，
 [arXiv:2608.29108](https://arxiv.org/abs/2608.29108)）。
 主要借鉴前端模式路径与后端可执行轨迹衔接、按模式一致的连续段处理、切换时保持静止三个思路。
-本分支用连续曲率/斜移角描述段内控制，连续速度与加速度可以跨过普通控制节点；
+该单车后端用连续曲率/斜移角描述段内控制，连续速度与加速度可以跨过普通控制节点；
 模式事件才添加静止重配置，候选最终按独立整车扫掠与动态审核结果竞争。
 
 本次把重复的整路径时间计算拆成可复用的模式段局部求解。
@@ -71,7 +92,7 @@ map04真实ROS配对中，重定时耗时从0.807秒降至0.298秒，执行时�
 
 本文档列出 `run_demo.sh` 的完整用法。地图目录及预览见[地图总索引](maps/README.md)，可运行地图与旧名称的对应关系见 [`maps/map_index.tsv`](maps/map_index.tsv)。
 
-## 人工采集与二次筛选（2026-11-08）
+## 历史单车人工采集与二次筛选（2026-11-08）
 
 ### 1. 切换算法分支
 
@@ -95,7 +116,7 @@ git switch continuous-mode-path
 ### 2. 启动采集
 
 ```bash
-bash run_demo.sh --map map04 --collect-data
+bash run_demo.sh --single --map map04 --collect-data
 ```
 
 打开 RViz 和本地标注网页。若浏览器没有自动打开，复制终端里 `[采集] 打开 http://127.0.0.1:端口/` 的地址。
@@ -112,16 +133,16 @@ bash run_demo.sh --map map04 --collect-data
 
 ```bash
 # 明确使用地图预设起终点，便于跨分支执行同一个任务
-bash run_demo.sh --map map04 --collect-data auto_goal:=true
+bash run_demo.sh --single --map map04 --collect-data auto_goal:=true
 
 # 修改地图比例；车辆不缩放
-bash run_demo.sh --map map01 --scale 0.75 --collect-data
+bash run_demo.sh --single --map map01 --scale 0.75 --collect-data
 
 # 自定义仓库外数据目录
-bash run_demo.sh --map map04 --collect-data --data-root /home/wq/whut_thesis/my_teacher_data
+bash run_demo.sh --single --map map04 --collect-data --data-root /home/wq/whut_thesis/my_teacher_data
 
 # 不自动打开浏览器；地址仍打印到终端
-bash run_demo.sh --map map04 --collect-data collection_open_browser:=false
+bash run_demo.sh --single --map map04 --collect-data collection_open_browser:=false
 ```
 
 采集模式默认关闭自动目标；普通 Demo 的预设目标行为保留。若规划一直未完成，可点击“记录等待超时”，再标为参考或剔除；此按钮仅记录超时，不取消规划，继续下一条前请等待当前规划结束或停止并重新启动 Demo。
@@ -193,12 +214,10 @@ python3 tools/review_collected_data.py --export-reviewed \
 Legacy 的最终恒定控制几何通过精确分段表示接入公共计时，不进行隐式平滑或末端拟合；其几何优化本身采用更严格的末端求解容差，为共同终点审核保留数值余量。V1 保留原分段优化，恒定原语回退结果也接入公共计时。V2 保留连续段后端。三个分支发布前均检查实际显示插值的整车扫掠。
 
 
-## 快速开始
+## 选图与启动选项
 
 ```bash
-cd /home/wq/whut_thesis/expv3
-
-# 启动默认地图（S09 地下车库），自动规划默认目标
+# 打开默认地图 map16，手动设置编队起终点
 bash run_demo.sh
 
 # 查看所有地图及其旧名称
@@ -208,9 +227,9 @@ bash run_demo.sh --list-maps
 bash run_demo.sh --help
 ```
 
-启动脚本会加载 ROS Noetic、构建 `catkin_ws`，再启动 Demo。三个算法分支各自锁定对应后端；切换算法请切换 Git 分支。检测到图形桌面时打开 RViz；无图形桌面时自动关闭 RViz。
+启动脚本会加载 ROS Noetic、构建 `catkin_ws`，再启动 Demo。检测到图形桌面时打开 RViz，无图形桌面时自动关闭 RViz。
 
-模式切换时间是车辆配置，不属于某个规划后端：当前 Ranger Mini 2 仿真值统一设为 0.3 秒，来自 [`ranger_mini_2.yaml`](catkin_ws/src/fwis_common/config/ranger_mini_2.yaml)。三个后端在相同配置下使用同一切换事件；受限动态配置只有在转向执行时间更长时才延长事件。搜索评分中的换模惩罚与这段执行时间分开计算。
+单车历史对照的 Ranger Mini 2 仿真切换驻留为 0.3 秒，来自 [`ranger_mini_2.yaml`](catkin_ws/src/fwis_common/config/ranger_mini_2.yaml)。三个后端在相同配置下使用同一切换事件；受限动态配置只有在转向执行时间更长时才延长事件。搜索评分中的换模惩罚与这段执行时间分开计算。
 
 ## 选择地图
 
@@ -233,7 +252,7 @@ bash run_demo.sh --map maps/map05-p12-parking-row-env2
 bash run_demo.sh --map /absolute/path/to/map_directory
 ```
 
-也可写成 `--map=map01` 或使用短选项 `-m map01`。选图后设置 `scene:=manual_map`，并默认读取地图 `scene_meta.yaml` 中的预设起点和终点自动规划。地图起终点表示车体中心位姿；若要手动指定，可加 `auto_goal:=false`，再在 RViz 中用 **2D Pose Estimate** 设置起点、用 **2D Nav Goal** 设置终点。
+也可写成 `--map=map01` 或使用短选项 `-m map01`。选图后设置 `scene:=manual_map`。地图预设起终位姿存放在 `scene_meta.yaml`，可用 `auto_goal:=true` 运行预设任务。手动测试使用 `auto_goal:=false`。编队模式中的输入位姿指货物参考点，单车模式中指车体中心。
 
 ## 地图缩放
 
@@ -246,11 +265,11 @@ bash run_demo.sh --map P12_env2 --scale 1.0
 bash run_demo.sh --map-scale=0.8 map_dir:=maps/map01-p11-narrow-case-a
 ```
 
-未手动指定比例时，默认值为：map01 `0.75`、map03 `0.7`、map04 `0.5`、map05 `0.7`、map07 `0.8`、map08 `1.2`、map15 `0.8`；map02、map06、map09、map16 为 `1.0`。显式传入比例会覆盖地图默认值。缩放选项需要有效的 `--map` 或 `map_dir:=` 地图目录。
+编队使用 [地图索引](maps/map_index.tsv) 的 `formation_scale` 列。`--single` 的默认值为 map01 `0.75`、map03 `0.7`、map04 `0.5`、map05 `0.7`、map07 `0.8`、map08 `1.2`、map15 `0.8`；map02、map06、map09、map16 为 `1.0`。显式传入比例会覆盖地图默认值。缩放选项需要有效的 `--map` 或 `map_dir:=` 地图目录。
 
-## 启动参数
+## 历史单车启动参数
 
-地图选项解析后，其他参数会原样传给 `roslaunch fwis_v3_demo demo.launch`。下表列出 Demo 定义的常用参数：
+`--single` 模式解析地图选项后，会将其他参数转给 `roslaunch fwis_v3_demo demo.launch`。
 
 | 参数 | 可用值/格式 | 作用与默认行为 |
 |---|---|---|
@@ -270,19 +289,19 @@ bash run_demo.sh --map-scale=0.8 map_dir:=maps/map01-p11-narrow-case-a
 ```bash
 # 三个算法分支的 run_demo.sh 各自运行绑定后端
 git switch mode-path-constant-primitive
-bash run_demo.sh --map map01
+bash run_demo.sh --single --map map01
 
 git switch multimodal-hybrid-astar
-bash run_demo.sh --map map01
+bash run_demo.sh --single --map map01
 
 git switch continuous-mode-path
-bash run_demo.sh --map map05 target_v:=1.5 direction_policy:=forward_only
+bash run_demo.sh --single --map map05 target_v:=1.5 direction_policy:=forward_only
 
 # 使用受限动态配置
-bash run_demo.sh --map P12_env1 config_file:=/home/wq/whut_thesis/expv3/catkin_ws/src/fwis_v3_demo/config/params_restricted.yaml
+bash run_demo.sh --single --map P12_env1 config_file:=/home/wq/whut_thesis/expv3/catkin_ws/src/fwis_v3_demo/config/params_restricted.yaml
 
 # 不开 RViz；地图和场景也可以直接通过 roslaunch 参数传入
-bash run_demo.sh map_dir:=maps/map16-s09-underground-garage scene:=S09_underground_garage auto_goal:=true rviz:=false
+bash run_demo.sh --single map_dir:=maps/map16-s09-underground-garage scene:=S09_underground_garage auto_goal:=true rviz:=false
 ```
 
 除上表参数外，也可传递 `demo.launch` 接受的其他 `name:=value` 参数。未知参数会交由 `roslaunch` 校验。
@@ -298,9 +317,9 @@ bash run_demo.sh map_dir:=maps/map16-s09-underground-garage scene:=S09_undergrou
 
 更多节点、话题和架构说明见 [`catkin_ws/README.md`](catkin_ws/README.md)；项目方案和实验记录集中在 [`plan/`](plan/README.md)。
 
-## Algorithm branches
+## 历史单车算法分支
 
-The three algorithm branches lock `run_demo.sh` to one backend each:
+历史单车对照分支各自绑定单车后端。
 
 | Branch | Backend |
 |---|---|
@@ -308,4 +327,4 @@ The three algorithm branches lock `run_demo.sh` to one backend each:
 | `mode-path-constant-primitive` | `mode_path_v1` |
 | `continuous-mode-path` | `mode_path_v2` |
 
-Switch branches to compare methods; a mismatched `planning_backend:=...` override is rejected. `main` remains the shared project snapshot. The branch and paper development plan is in [`plan/24_单仓库整合与四方法论文开发计划_20261024.md`](plan/24_单仓库整合与四方法论文开发计划_20261024.md).
+可切换分支比较单车方案。项目分支与论文开发计划见 [`plan/24_单仓库整合与四方法论文开发计划_20261024.md`](plan/24_单仓库整合与四方法论文开发计划_20261024.md).
