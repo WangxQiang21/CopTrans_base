@@ -7,7 +7,7 @@ an executable polyline.  The final authority is always the old analytic
 three-vehicle swept checker bound to the same planning context as the timed
 model.
 """
-from dataclasses import replace
+from dataclasses import dataclass, replace
 import heapq
 import math
 import time
@@ -20,6 +20,7 @@ from .collision import audit_collision
 from .contracts import (
     COLLISION_SCOPE,
     DYNAMICS_SCOPE,
+    FOOTPRINT_GUIDANCE,
     FORMATION_CORRIDOR_SCOPE_F_ONLY,
     FORMATION_CORRIDOR_SCOPE_THREE_VEHICLE_UNION_V1,
     PROGRESS_FAILED_STAGE,
@@ -75,7 +76,13 @@ from .optimizer import (
 )
 from .formation_certificate import verify_formation_certificate
 from .formation_corridor import build_formation_template_candidates
-from .route_processing import segment_is_free, simplify_route
+from .footprint_seed import solve_footprint_seed, straight_a_length
+from .route_processing import (
+    build_occupied_index,
+    segment_is_free,
+    segment_min_clearance,
+    simplify_route,
+)
 from .timing import retime_path
 
 
@@ -84,6 +91,12 @@ G4_TOTAL_SOFT_BUDGET_S = 60.0
 # retries.  No stacked loop outside the single planning loop.
 MAX_RECOVERIES = 1
 G4_ROUTE_CLEARANCE_WEIGHT = 2.0
+# A-0 evidence (work_flow/A_evidence/00_baseline/audit_pre_change.json) found
+# an exact AABB minimum of 1.21 m over every historical SOLVED raw A* segment,
+# so a 0.10 m strict F-point guide clearance changes no recorded free segment.
+# It is a guide-only geometric margin, never a vehicle collision margin.
+A_ROUTE_CLEARANCE_M = 0.10
+ROUTE_CLEARANCE_TOL_M = 1e-12
 ROUTE_NEIGHBOURS = (
     (-1, -1, math.sqrt(2.0)), (-1, 0, 1.0), (-1, 1, math.sqrt(2.0)),
     (0, -1, 1.0), (0, 1, 1.0),
@@ -95,7 +108,8 @@ ROUTE_NEIGHBOURS = (
 # Route guidance: finite 8-neighbour A* on the authoritative grid
 # ---------------------------------------------------------------------------
 
-def _clearance_field(grid):
+def _clearance_components(grid):
+    """Cell-centre EDT obstacle distance and map-boundary distance in metres."""
     from scipy.ndimage import distance_transform_edt
     occupied = np.asarray(grid.occ, dtype=bool)
     free = ~occupied
@@ -110,8 +124,13 @@ def _clearance_field(grid):
     boundary = np.minimum(
         np.minimum(xs[None, :] - grid.ox, right - xs[None, :]),
         np.minimum(ys[:, None] - grid.oy, top - ys[:, None]))
+    return obstacle_distance, boundary
+
+
+def _clearance_field(grid):
+    obstacle_distance, boundary = _clearance_components(grid)
     clearance = np.minimum(obstacle_distance, boundary)
-    clearance[~free] = 0.0
+    clearance[np.asarray(grid.occ, dtype=bool)] = 0.0
     return clearance
 
 
@@ -151,9 +170,25 @@ def _cell_of(grid, x, y):
     return iy, ix
 
 
-def _allowed_mask(grid, clearance, blocked_radius, blocked_points):
-    allowed = np.asarray(grid.occ, dtype=bool) == False  # noqa: E712
-    allowed &= np.asarray(clearance, dtype=float) >= float(blocked_radius)
+def _allowed_mask(grid, obstacle_distance, boundary, route_clearance_m,
+                  blocked_radius, blocked_points):
+    """Conservative node pre-screen; every route edge is re-checked exactly.
+
+    The cell-centre EDT bound ``D_center - sqrt(2) r / 2`` is a sufficient
+    lower bound on the distance from that centre to an occupied AABB.  Only a
+    lower bound strictly above ``route_clearance_m`` is accepted, so a cell
+    that might be too close is rejected rather than assumed safe.  The map
+    boundary is checked directly at the cell centre; the exact segment test
+    still covers both endpoint connections and every edge.
+    """
+    occupied = np.asarray(grid.occ, dtype=bool)
+    allowed = ~occupied
+    half_diagonal = 0.5 * math.sqrt(2.0) * float(grid.res)
+    allowed &= (
+        np.asarray(obstacle_distance, dtype=float) - half_diagonal) > (
+            float(route_clearance_m) + ROUTE_CLEARANCE_TOL_M)
+    allowed &= np.asarray(boundary, dtype=float) > (
+        float(route_clearance_m) + ROUTE_CLEARANCE_TOL_M)
     for x, y in blocked_points:
         iy, ix = _cell_of(grid, x, y)
         if iy is None:
@@ -172,33 +207,145 @@ def _allowed_mask(grid, clearance, blocked_radius, blocked_points):
     return allowed
 
 
+@dataclass(frozen=True)
+class AStarSearchResult:
+    """Finite A* outcome; failure identity is explicit, never ``None``."""
+
+    status: str
+    cells: tuple = ()
+    expansions: int = 0
+    search_time_s: float = 0.0
+    path_length_m: float = None
+    min_clearance_m: float = None
+    detail: str = ""
+    endpoint: str = ""
+    edge_checks: int = 0
+    edge_cache_hits: int = 0
+
+
+@dataclass(frozen=True)
+class RouteGuideSearchResult:
+    """Bounded A* attempts plus the accepted F-point topology hints.
+
+    ``routes`` is the only executable-adjacent surface and remains the same
+    ``GuideRoute`` sequence as before.  Sequence access is kept so existing
+    callers/tests that only consume the tuple keep working; the diagnostics
+    live in ``attempts``/``stop_reason`` and never affect safety.
+    """
+
+    routes: tuple
+    attempts: tuple
+    stop_reason: str
+    route_clearance_m: float
+    direct_los: dict
+
+    def __iter__(self):
+        return iter(self.routes)
+
+    def __len__(self):
+        return len(self.routes)
+
+    def __getitem__(self, index):
+        return self.routes[index]
+
+
+def _cell_centre(grid, cell):
+    iy, ix = cell
+    return (grid.ox + (ix + 0.5) * grid.res,
+            grid.oy + (iy + 0.5) * grid.res)
+
+
+def _octile_heuristic_m(grid, cell, goal):
+    """Octile 8-neighbour lower bound in metres to the exact goal point."""
+    centre_x, centre_y = _cell_centre(grid, cell)
+    dx = abs(goal[0] - centre_x) / float(grid.res)
+    dy = abs(goal[1] - centre_y) / float(grid.res)
+    return float(grid.res) * (
+        max(dx, dy) + (math.sqrt(2.0) - 1.0) * min(dx, dy))
+
+
+def _route_edge_cost(grid, step_grid, clearance_m, reuse, config):
+    """Metre cost, visible for tests and diagnostics.
+
+    ``clearance_m`` is the cell clearance ``D``; ``reuse`` is the
+    dimensionless per-cell ``V`` band value.  Both penalties are non-negative
+    multipliers on the true metric step, so they can never shorten an edge or
+    rewrite the clearance field.
+    """
+    cap = max(float(config.clearance_cap_m), 1e-12)
+    clearance_penalty = max(0.0, cap - float(clearance_m)) / cap
+    return float(grid.res) * float(step_grid) * (
+        1.0 + float(config.clearance_weight) * clearance_penalty
+        + float(reuse))
+
+
 def _astar_route(grid, allowed, cost_field, start, goal, config,
-                 deadline):
+                 deadline, *, reuse_field=None, route_clearance_m=0.0,
+                 occupied_index=None, edge_cache=None):
+    """One bounded metric A* search with exact guide-geometry edges.
+
+    ``g`` accumulates metres; ``h`` is the octile metric in metres.  Every
+    edge and both exact endpoint connections are re-checked with the shared
+    exact segment primitive at ``route_clearance_m``.  ``edge_cache`` is an
+    exact memoization of that same primitive for one margin; it never stores a
+    conservative approximation.  Failure identity is explicit: ``NO_PATH``
+    only means the OPEN queue was exhausted.
+    """
+    started = time.monotonic()
+
+    def failed(status, detail="", endpoint=""):
+        return AStarSearchResult(
+            status=status,
+            search_time_s=time.monotonic() - started,
+            detail=detail, endpoint=endpoint)
+
     start_cell = _cell_of(grid, start[0], start[1])
     goal_cell = _cell_of(grid, goal[0], goal[1])
-    if start_cell is None or goal_cell is None:
-        return None
-    if not allowed[start_cell] or not allowed[goal_cell]:
-        return None
+    if start_cell is None:
+        return failed("INVALID_ENDPOINT", "START_OUT_OF_MAP", "start")
+    if goal_cell is None:
+        return failed("INVALID_ENDPOINT", "GOAL_OUT_OF_MAP", "goal")
+    if not allowed[start_cell]:
+        return failed("INVALID_ENDPOINT",
+                      "START_CELL_BLOCKED_BY_CLEARANCE_OR_BLOCKED_POINT",
+                      "start")
+    if not allowed[goal_cell]:
+        return failed("INVALID_ENDPOINT",
+                      "GOAL_CELL_BLOCKED_BY_CLEARANCE_OR_BLOCKED_POINT",
+                      "goal")
+    margin = float(route_clearance_m)
+    start_centre = _cell_centre(grid, start_cell)
+    goal_centre = _cell_centre(grid, goal_cell)
+    if not segment_is_free(grid, start, start_centre, margin):
+        return failed("INVALID_ENDPOINT",
+                      "START_CONNECTION_BLOCKED", "start")
+    if not segment_is_free(grid, goal_centre, goal, margin):
+        return failed("INVALID_ENDPOINT",
+                      "GOAL_CONNECTION_BLOCKED", "goal")
+    if time.monotonic() >= deadline:
+        return failed("TIMEOUT", "DEADLINE_BEFORE_SEARCH")
     height, width = allowed.shape
-    start_ix = start_cell[1], start_cell[0]
-    goal_ix = goal_cell[1], goal_cell[0]
     open_heap = []
     tie = 0
+    # ``f = g + h`` is the sole optimality key.  Equal f values are ordered by
+    # push sequence, which is deterministic for a fixed grid and endpoints.
     heapq.heappush(open_heap, (
-        math.hypot(goal[0] - start[0], goal[1] - start[1]),
-        0.0, tie, start_cell, None))
+        _octile_heuristic_m(grid, start_cell, goal), tie, start_cell, None))
     g_score = {start_cell: 0.0}
     closed = set()
     parent = {}
     expansions = 0
+    edge_checks = 0
+    edge_cache_hits = 0
     maximum = int(config.max_expansions)
     while open_heap:
-        if expansions >= maximum:
-            return None
         if time.monotonic() >= deadline:
-            return None
-        _, g, _, cell, predecessor = heapq.heappop(open_heap)
+            return AStarSearchResult(
+                status="TIMEOUT", expansions=expansions,
+                search_time_s=time.monotonic() - started,
+                detail="DEADLINE_DURING_SEARCH",
+                edge_checks=edge_checks, edge_cache_hits=edge_cache_hits)
+        _, _, cell, predecessor = heapq.heappop(open_heap)
         if cell in closed:
             continue
         closed.add(cell)
@@ -210,9 +357,36 @@ def _astar_route(grid, allowed, cost_field, start, goal, config,
                 path.append(cursor)
                 cursor = parent.get(cursor)
             path.reverse()
-            return path
+            cells = tuple(path)
+            points = _route_points_from_cells(grid, cells, start, goal)
+            length = float(sum(
+                math.hypot(b[0] - a[0], b[1] - a[1])
+                for a, b in zip(points, points[1:])))
+            clearances = [
+                segment_min_clearance(
+                    grid, a, b, occupied_index=occupied_index)
+                for a, b in zip(points, points[1:])]
+            if not clearances:
+                clearances = [segment_min_clearance(
+                    grid, start, goal,
+                    occupied_index=occupied_index)]
+            minimum = (None if any(value is None for value in clearances)
+                       else min(float(value) for value in clearances))
+            return AStarSearchResult(
+                status="FOUND", cells=cells, expansions=expansions,
+                search_time_s=time.monotonic() - started,
+                path_length_m=length, min_clearance_m=minimum,
+                edge_checks=edge_checks, edge_cache_hits=edge_cache_hits)
+        if expansions >= maximum:
+            return AStarSearchResult(
+                status="EXPANSION_LIMIT", expansions=expansions,
+                search_time_s=time.monotonic() - started,
+                detail="MAX_EXPANSIONS_REACHED",
+                edge_checks=edge_checks, edge_cache_hits=edge_cache_hits)
         expansions += 1
+        g = g_score[cell]
         iy, ix = cell
+        centre = _cell_centre(grid, cell)
         for dy, dx, step in ROUTE_NEIGHBOURS:
             jy, jx = iy + dy, ix + dx
             if jy < 0 or jx < 0 or jy >= height or jx >= width:
@@ -225,21 +399,40 @@ def _astar_route(grid, allowed, cost_field, start, goal, config,
             neighbour = (jy, jx)
             if neighbour in closed:
                 continue
-            step_cost = step * (1.0 + float(config.clearance_weight) * (
-                max(0.0, float(config.clearance_cap_m) - float(
-                    cost_field[jy, jx])) / max(
-                        float(config.clearance_cap_m), 1e-12)))
-            candidate = g + step_cost
+            neighbour_centre = _cell_centre(grid, neighbour)
+            if edge_cache is None:
+                edge_free = segment_is_free(
+                    grid, centre, neighbour_centre, margin)
+                edge_checks += 1
+            else:
+                edge_key = (cell, neighbour) if cell < neighbour else (
+                    neighbour, cell)
+                if edge_key in edge_cache:
+                    edge_free = edge_cache[edge_key]
+                    edge_cache_hits += 1
+                else:
+                    edge_free = segment_is_free(
+                        grid, centre, neighbour_centre, margin)
+                    edge_cache[edge_key] = edge_free
+                    edge_checks += 1
+            if not edge_free:
+                continue
+            reuse = 0.0 if reuse_field is None else float(
+                reuse_field[jy, jx])
+            candidate = g + _route_edge_cost(
+                grid, step, cost_field[jy, jx], reuse, config)
             if candidate >= g_score.get(neighbour, math.inf):
                 continue
             g_score[neighbour] = candidate
-            h = math.hypot(
-                goal[0] - (grid.ox + (jx + 0.5) * grid.res),
-                goal[1] - (grid.oy + (jy + 0.5) * grid.res))
+            h = _octile_heuristic_m(grid, neighbour, goal)
             tie += 1
             heapq.heappush(open_heap, (
-                candidate + h, candidate, tie, neighbour, cell))
-    return None
+                candidate + h, tie, neighbour, cell))
+    return AStarSearchResult(
+        status="NO_PATH", expansions=expansions,
+        search_time_s=time.monotonic() - started,
+        detail="OPEN_EXHAUSTED",
+        edge_checks=edge_checks, edge_cache_hits=edge_cache_hits)
 
 
 def _route_points_from_cells(grid, cells, start, goal):
@@ -262,35 +455,42 @@ def _route_points_from_cells(grid, cells, start, goal):
     return tuple(points)
 
 
-def _routes_shortcut_equivalent(grid, first, second):
+def _routes_shortcut_equivalent(grid, first, second, margin_m=0.0):
     """First-version route-diversity screen, not a homotopy classification.
 
     Two simplified guides are treated as the same candidate when every pair
-    of their vertices is exactly mutually visible.  Each pair then admits a
-    two-point shortcut inside the same free region, so the difference is only
-    a slight dogleg.  A blocked cross pair means the guides are separated by
-    obstacles (for example the two sides of one box) and both are retained.
-    This screen can merge non-equivalent routes in principle; it makes no
-    completeness claim and only schedules initial values.
+    of their vertices is mutually visible above ``margin_m``.  Each pair then
+    admits a two-point shortcut inside the same free region, so the difference
+    is only a slight dogleg.  A blocked cross pair means the guides are
+    separated by obstacles (for example the two sides of one box) and both are
+    retained.  This screen can merge non-equivalent routes in principle; it
+    makes no completeness claim and only schedules initial values.
     """
     return all(
-        segment_is_free(grid, first_point, second_point)
+        segment_is_free(grid, first_point, second_point, margin_m)
         for first_point in first for second_point in second)
 
 
 def make_route_guides(grid, start_qf, goal_qf, config=None, *,
                       blocked_points=()):
-    """Return up to ``max_routes`` finite A* F-point guides.
+    """Return up to ``max_routes`` finite A* F-point guides plus diagnostics.
 
     The search uses the authoritative occupancy grid, a non-negative EDT
-    clearance cost and deterministic eight-neighbour moves.  It is a topology
-    hint only: it contains no vehicle path, curvature reference or known-good
-    solution.
+    clearance cost and deterministic eight-neighbour metric moves.  It is a
+    topology hint only: it contains no vehicle path, curvature reference or
+    known-good solution.
 
-    C3 candidate scheduling: each A* route is screened by its greedy
-    simplification, and an exact start-goal line-of-sight route joins the
-    same bounded capacity when it is distinct.  The screen merges slight
-    doglegs, keeps obstacle-separated sides, and adds no extra A* search.
+    Every node is pre-screened conservatively from the EDT, but every accepted
+    edge, exact endpoint connection, greedy shortcut and direct line-of-sight
+    test is re-checked with the shared exact AABB primitive at the same
+    ``route_clearance_m``.  The alternative-route penalty is a non-negative
+    dimensionless band value added to the edge cost; it never rewrites the
+    clearance field.  The screen merges slight doglegs, keeps
+    obstacle-separated sides, and adds no extra A* search.
+
+    The returned object keeps sequence access to ``routes`` for existing
+    consumers; diagnostics are ``attempts``, ``stop_reason``, ``direct_los``
+    and ``route_clearance_m``.
     """
     if config is None:
         config = RouteGuideConfig()
@@ -300,60 +500,152 @@ def make_route_guides(grid, start_qf, goal_qf, config=None, *,
             validation.reason, validation.detail, **validation.location)
     start = (float(start_qf.x), float(start_qf.y))
     goal = (float(goal_qf.x), float(goal_qf.y))
+    margin = float(config.route_clearance_m)
     digest = grid_signature(grid)
-    clearance = _clearance_field(grid)
+    obstacle_distance, boundary = _clearance_components(grid)
+    clearance = np.minimum(obstacle_distance, boundary)
+    clearance[np.asarray(grid.occ, dtype=bool)] = 0.0
     blocked = tuple((float(x), float(y)) for x, y in blocked_points)
     allowed = _allowed_mask(
-        grid, clearance, config.blocked_radius_m, blocked)
-    base_cost = clearance
+        grid, obstacle_distance, boundary, margin,
+        config.blocked_radius_m, blocked)
+    occupied_index = build_occupied_index(grid)
+    # Exact edge memoization shared by all bounded attempts of this call.  The
+    # key is the unordered cell pair and the margin is fixed for the call, so a
+    # hit is byte-for-byte the same strict segment_is_free answer.
+    edge_cache = {}
     penalty = np.zeros_like(clearance, dtype=float)
     deadline = time.monotonic() + max(0.0, float(config.max_seconds))
+    max_routes = int(config.max_routes)
     kept = []
     seen = set()
-    for index in range(int(config.max_routes)):
-        if time.monotonic() >= deadline:
-            break
-        route_penalty = 1.0 + penalty
-        cost_field = base_cost / np.maximum(route_penalty, 1.0)
-        cells = _astar_route(
-            grid, allowed, cost_field, start, goal, config, deadline)
-        if cells is None:
-            break
-        signature = tuple(cells)
-        if signature in seen:
-            break
-        seen.add(signature)
-        points = _route_points_from_cells(grid, cells, start, goal)
-        candidate = GuideRoute(
-            points=points,
-            source="astar_primary" if index == 0 else
-            "astar_alternative_{}".format(index),
-            grid_sha256=digest)
-        shape = simplify_route(grid, candidate).points
-        if not any(_routes_shortcut_equivalent(grid, shape, other)
-                   for _, other in kept):
-            kept.append((candidate, shape))
-        # Penalise a small band around the previous guide so the next search
-        # explores a genuinely different topology.  This is not an executable
-        # path and never enters the final certificate.
+    attempts = []
+    stop_reason = None
+
+    def add_band(cells):
+        # Non-negative V increment for every cell on this guide and its
+        # two-cell band.  Only the edge multiplier sees it; clearance is
+        # untouched.
         for iy, ix in cells:
-            y0, y1 = max(0, iy - 2), min(
-                grid.occ.shape[0], iy + 3)
-            x0, x1 = max(0, ix - 2), min(
-                grid.occ.shape[1], ix + 3)
+            y0, y1 = max(0, iy - 2), min(grid.occ.shape[0], iy + 3)
+            x0, x1 = max(0, ix - 2), min(grid.occ.shape[1], ix + 3)
             penalty[y0:y1, x0:x1] += float(config.alternative_penalty)
-    if not blocked and math.hypot(goal[0] - start[0], goal[1] - start[1]) > 0.0 \
-            and segment_is_free(grid, start, goal):
-        # An exact C1 line-of-sight is only a topology candidate, never a
-        # three-vehicle certificate.  A collision local-block regeneration
-        # deliberately omits it so the real blocked position stays in charge.
-        direct = GuideRoute(
-            points=(start, goal), source="open_direct_los",
-            grid_sha256=digest)
-        if not any(_routes_shortcut_equivalent(
-                grid, direct.points, other) for _, other in kept):
-            kept.append((direct, direct.points))
-    return tuple(guide for guide, _ in kept[:int(config.max_routes)])
+
+    for index in range(max_routes):
+        if time.monotonic() >= deadline:
+            stop_reason = "DEADLINE"
+            break
+        source = "astar_primary" if index == 0 else \
+            "astar_alternative_{}".format(index)
+        result = _astar_route(
+            grid, allowed, clearance, start, goal, config, deadline,
+            reuse_field=penalty, route_clearance_m=margin,
+            occupied_index=occupied_index, edge_cache=edge_cache)
+        attempt = {
+            "attempt_index": int(index),
+            "kind": "astar",
+            "source": source,
+            "status": str(result.status),
+            "detail": str(result.detail),
+            "endpoint": str(result.endpoint),
+            "expansions": int(result.expansions),
+            "search_time_s": float(result.search_time_s),
+            "edge_checks": int(result.edge_checks),
+            "edge_cache_hits": int(result.edge_cache_hits),
+            "cell_count": len(result.cells),
+            "path_length_m": result.path_length_m,
+            "min_clearance_m": result.min_clearance_m,
+            "candidate_duplicate": False,
+            "deduplicated_by": None,
+            "accepted": False,
+        }
+        if result.status != "FOUND":
+            stop_reason = result.status
+            attempts.append(attempt)
+            break
+        signature = tuple(result.cells)
+        if signature in seen:
+            # Bounded retry: the same cell path now carries an extra band
+            # penalty, so the next search can still discover another topology.
+            attempt["candidate_duplicate"] = True
+            attempts.append(attempt)
+            add_band(result.cells)
+            continue
+        seen.add(signature)
+        points = _route_points_from_cells(grid, result.cells, start, goal)
+        attempt["raw_point_count"] = len(points)
+        candidate = GuideRoute(points=points, source=source,
+                               grid_sha256=digest)
+        shape = simplify_route(
+            grid, candidate, margin_m=margin).points
+        attempt["simplified_point_count"] = len(shape)
+        deduplicated_by = None
+        for kept_candidate, other in kept:
+            if _routes_shortcut_equivalent(
+                    grid, shape, other, margin_m=margin):
+                deduplicated_by = kept_candidate.source
+                break
+        if deduplicated_by is None:
+            kept.append((candidate, shape))
+            attempt["accepted"] = True
+            if len(kept) >= max_routes:
+                stop_reason = "MAX_ROUTES"
+                add_band(result.cells)
+                attempts.append(attempt)
+                break
+        else:
+            attempt["deduplicated_by"] = deduplicated_by
+        attempts.append(attempt)
+        add_band(result.cells)
+
+    direct_los = {
+        "considered": False,
+        "free": False,
+        "accepted": False,
+        "deduplicated_by": None,
+        "rejected": None,
+        "length_m": None,
+        "min_clearance_m": None,
+    }
+    if not blocked and math.hypot(
+            goal[0] - start[0], goal[1] - start[1]) > 0.0:
+        direct_los["considered"] = True
+        direct_los["free"] = bool(
+            segment_is_free(grid, start, goal, margin))
+        if direct_los["free"]:
+            # An exact C1 line-of-sight is only a topology candidate, never a
+            # three-vehicle certificate.  A collision local-block regeneration
+            # deliberately omits it so the real blocked position stays in
+            # charge.
+            direct_los["length_m"] = math.hypot(
+                goal[0] - start[0], goal[1] - start[1])
+            direct_los["min_clearance_m"] = segment_min_clearance(
+                grid, start, goal, occupied_index=occupied_index)
+            direct = GuideRoute(
+                points=(start, goal), source="open_direct_los",
+                grid_sha256=digest)
+            deduplicated_by = None
+            for kept_candidate, other in kept:
+                if _routes_shortcut_equivalent(
+                        grid, direct.points, other, margin_m=margin):
+                    deduplicated_by = kept_candidate.source
+                    break
+            if deduplicated_by is not None:
+                direct_los["deduplicated_by"] = deduplicated_by
+            elif len(kept) >= max_routes:
+                direct_los["rejected"] = "MAX_ROUTES"
+            else:
+                kept.append((direct, direct.points))
+                direct_los["accepted"] = True
+    if stop_reason is None:
+        stop_reason = (
+            "MAX_ROUTES" if len(kept) >= max_routes else "MAX_ATTEMPTS")
+    return RouteGuideSearchResult(
+        routes=tuple(guide for guide, _ in kept[:max_routes]),
+        attempts=tuple(attempts),
+        stop_reason=str(stop_reason),
+        route_clearance_m=float(margin),
+        direct_los=direct_los)
 
 
 # ---------------------------------------------------------------------------
@@ -1329,6 +1621,8 @@ def _plan_virtual_a_impl(map_request, progress):
                 time.monotonic() - started, search)
     corridor_mode = str(planner_config.guidance_mode).strip().lower() == \
         "corridor"
+    footprint_mode = str(planner_config.guidance_mode).strip().lower() == FOOTPRINT_GUIDANCE
+    corridor_frontend = corridor_mode or footprint_mode
     corridor_enforcement = str(
         planner_config.corridor_enforcement).strip().lower()
     # TASK03 Step 6: the scope is explicit input, never inferred from the
@@ -1342,7 +1636,7 @@ def _plan_virtual_a_impl(map_request, progress):
     # stricter than six but can never exceed the contract's six.
     initial_limit = min(MAX_INITIALS, int(planner_config.max_initials))
     search["initial_limit"] = initial_limit
-    if corridor_mode:
+    if corridor_frontend:
         timings.update({
             "corridor_build_s": 0.0,
             "corridor_guide_s": 0.0,
@@ -1387,6 +1681,17 @@ def _plan_virtual_a_impl(map_request, progress):
     # mandatory static map/vehicle check for such a request: the hold audit has
     # to run even when the start cell is blocked or has no allowed guide.
     hold_request = request.start_qf == request.goal_qf
+    if footprint_mode and any(_cell_of(grid, pose.x, pose.y) is None
+                              for pose in (request.start_qf, request.goal_qf)):
+        return _empty_result(
+            map_request, "INVALID_REQUEST", "FOOTPRINT_ENDPOINT_OUT_OF_MAP",
+            "formation start or goal lies outside the authoritative map",
+            "REQUEST", timings, time.monotonic() - started, search)
+    direct_footprint_seed = footprint_mode and not hold_request and (
+        straight_a_length(request) is not None
+        or segment_is_free(
+            grid, (request.start_qf.x, request.start_qf.y),
+            (request.goal_qf.x, request.goal_qf.y), A_ROUTE_CLEARANCE_M))
     if union_scope and (not corridor_mode or hold_request):
         # There is no finite chain/template and therefore no continuous F+OBB
         # certificate for these inputs.  The union scope never falls back to
@@ -1408,7 +1713,8 @@ def _plan_virtual_a_impl(map_request, progress):
         "planner_config_max_seconds": float(planner_config.max_seconds),
         "route_config": replace(
             RouteGuideConfig(),
-            clearance_weight=G4_ROUTE_CLEARANCE_WEIGHT).as_dict(),
+            clearance_weight=G4_ROUTE_CLEARANCE_WEIGHT,
+            route_clearance_m=A_ROUTE_CLEARANCE_M).as_dict(),
         "hard_real_time_guarantee": False,
     }
     if corridor_mode:
@@ -1427,6 +1733,7 @@ def _plan_virtual_a_impl(map_request, progress):
         geometry_config = planner_config
 
     routes = ()
+    route_clearance_m = float(A_ROUTE_CLEARANCE_M)
     simplified_by_route = {}
     assessment_checker = None
     route_attempt_order = ()
@@ -1599,7 +1906,7 @@ def _plan_virtual_a_impl(map_request, progress):
         containment = None
         if remaining() <= 0.0:
             return budget_stop("route generation/solve")
-        if not routes and not hold_request:
+        if not routes and not hold_request and not direct_footprint_seed:
             progress.emit("ASTAR_SEARCH", metrics={"phase": "running"})
             route_started = time.monotonic()
             if clearance_field is None:
@@ -1616,12 +1923,16 @@ def _plan_virtual_a_impl(map_request, progress):
             route_config = replace(
                 RouteGuideConfig(),
                 clearance_weight=G4_ROUTE_CLEARANCE_WEIGHT,
+                route_clearance_m=A_ROUTE_CLEARANCE_M,
                 max_seconds=min(8.0, max(0.001, remaining())))
             try:
-                routes = make_route_guides(
+                route_search = make_route_guides(
                     grid, request.start_qf, request.goal_qf, route_config,
                     blocked_points=tuple(
                         getattr(obstacle_context, "blocked_points", ())))
+                routes = route_search.routes
+                route_clearance_m = float(
+                    route_search.route_clearance_m)
             except Exception as exc:
                 record_failure("PLANNING", "ROUTE_GENERATION_FAILED")
                 return _empty_result(
@@ -1649,18 +1960,65 @@ def _plan_virtual_a_impl(map_request, progress):
                 "goal": route.goal,
                 "grid_sha256": route.grid_sha256,
             } for route in routes)
+            accepted_attempts = {
+                attempt["source"]: attempt
+                for attempt in route_search.attempts
+                if attempt.get("accepted")}
+            route_diagnostics = []
+            for route in routes:
+                diagnostic = {
+                    "source": route.source,
+                    "point_count": len(route.points),
+                    "length_m": float(route.length_m),
+                    "raw_path_length_m": None,
+                    "raw_min_clearance_m": None,
+                    "simplified_point_count": None,
+                }
+                attempt = accepted_attempts.get(route.source)
+                if attempt is not None:
+                    diagnostic["raw_path_length_m"] = attempt.get(
+                        "path_length_m")
+                    diagnostic["raw_min_clearance_m"] = attempt.get(
+                        "min_clearance_m")
+                    diagnostic["simplified_point_count"] = attempt.get(
+                        "simplified_point_count")
+                elif route.source == "open_direct_los":
+                    diagnostic["raw_path_length_m"] = (
+                        route_search.direct_los.get("length_m"))
+                    diagnostic["raw_min_clearance_m"] = (
+                        route_search.direct_los.get("min_clearance_m"))
+                    diagnostic["simplified_point_count"] = len(route.points)
+                route_diagnostics.append(diagnostic)
+            search["astar"] = {
+                "route_clearance_m": float(
+                    route_search.route_clearance_m),
+                "stop_reason": str(route_search.stop_reason),
+                "attempts": [dict(attempt)
+                             for attempt in route_search.attempts],
+                "direct_los": dict(route_search.direct_los),
+                "route_diagnostics": route_diagnostics,
+            }
             if not routes:
                 record_failure("PLANNING", "NO_ROUTE_GUIDE")
+                last_attempt = (
+                    route_search.attempts[-1]
+                    if route_search.attempts else {})
+                detail = (
+                    "A* generated no finite guide: stop_reason={}; "
+                    "last_status={}; detail={}; endpoint={}".format(
+                        route_search.stop_reason,
+                        last_attempt.get("status", "NOT_STARTED"),
+                        last_attempt.get("detail", ""),
+                        last_attempt.get("endpoint", "")))
                 return _empty_result(
                     map_request, "NO_ACCEPTED_CANDIDATE",
-                    "NO_ROUTE_GUIDE",
-                    "A* found no finite guide on the authoritative grid",
+                    "NO_ROUTE_GUIDE", detail,
                     "PLANNING", timings, time.monotonic() - started, search,
                     attempts=all_attempts,
                     geometry_audit=last_geometry_audit,
                     dynamic_audit=last_dynamic_audit,
                     collision_audit=last_collision_audit)
-            if corridor_mode:
+            if corridor_frontend:
                 # Step C: one request-level checker over the real model,
                 # shapes, grid and baseline margin.  Coarse route samples are
                 # diagnostic only and never claim a chain that was not built.
@@ -1685,7 +2043,9 @@ def _plan_virtual_a_impl(map_request, progress):
                     try:
                         simplified = simplified_by_route.get(index)
                         if simplified is None:
-                            simplified = simplify_route(grid, route)
+                            simplified = simplify_route(
+                                grid, route,
+                                margin_m=route_clearance_m)
                             simplified_by_route[index] = simplified
                         curvature = tuple(
                             float(value) for value in
@@ -1731,14 +2091,21 @@ def _plan_virtual_a_impl(map_request, progress):
                         float(route.length_m) for route in routes],
                     "route_point_counts": [
                         len(route.points) for route in routes],
+                    "route_clearance_m": float(route_clearance_m),
+                    "astar_stop_reason": str(route_search.stop_reason),
+                    "astar_attempt_statuses": [
+                        str(attempt["status"])
+                        for attempt in route_search.attempts],
+                    "route_min_clearances_m": [
+                        diagnostic["raw_min_clearance_m"]
+                        for diagnostic in route_diagnostics],
                 },
                 route_index=route_index, route_count=len(routes),
                 diagnostic_display={
                     "astar": _progress_astar_display(routes)})
         if remaining() <= 0.0:
             return budget_stop("corridor build/solve")
-        if corridor_mode and not hold_request \
-                and corridor_route_index != route_index:
+        if corridor_frontend and routes and corridor_route_index != route_index:
             route = routes[route_index]
             route_failure = None
             guide_candidates = ()
@@ -1751,7 +2118,8 @@ def _plan_virtual_a_impl(map_request, progress):
             try:
                 simplified = simplified_by_route.get(route_index)
                 if simplified is None:
-                    simplified = simplify_route(grid, route)
+                    simplified = simplify_route(
+                        grid, route, margin_m=route_clearance_m)
                     simplified_by_route[route_index] = simplified
                 chain = build_corridor_chain(
                     grid, simplified,
@@ -1963,6 +2331,7 @@ def _plan_virtual_a_impl(map_request, progress):
                     "PORTAL_GUIDE",
                     metrics={
                         "phase": "complete",
+                        "reference_only": footprint_mode,
                         "guide_source": str(corridor_guide.source),
                         "guide_point_count": len(corridor_guide.points),
                         "guide_length_m": _progress_polyline_length(
@@ -2020,21 +2389,26 @@ def _plan_virtual_a_impl(map_request, progress):
                 if can_recover() and next_index is not None:
                     route_switch(reason, next_index)
                     continue
-                return _empty_result(
-                    map_request, "NO_ACCEPTED_CANDIDATE", reason, detail,
-                    "PLANNING", timings, time.monotonic() - started, search,
-                    attempts=all_attempts, routes=tuple(routes),
-                    geometry_audit=last_geometry_audit,
-                    dynamic_audit=last_dynamic_audit,
-                    collision_audit=last_collision_audit)
+                if not footprint_mode:
+                    return _empty_result(
+                        map_request, "NO_ACCEPTED_CANDIDATE", reason, detail,
+                        "PLANNING", timings, time.monotonic() - started, search,
+                        attempts=all_attempts, routes=tuple(routes),
+                        geometry_audit=last_geometry_audit,
+                        dynamic_audit=last_dynamic_audit,
+                        collision_audit=last_collision_audit)
+                # An A* guide can still seed a valid swept path when its
+                # reference corridor fails to build or allocate.
+                corridor_route_index = route_index
+                chain = None
         if not isinstance(geometry_config, type(planner_config)):
             geometry_config = planner_config
         geometry_config = replace(
             planner_config,
             max_seconds=min(float(planner_config.max_seconds), remaining()))
-        if corridor_mode and not hold_request:
-            # The endpoint-only recovery keeps the corridor halfspaces but
-            # drops the corridor guide as a high-weight route target.
+        if corridor_frontend and routes and chain is not None:
+            # The routed footprint seed uses the same allocated reference
+            # corridor before constructing the three vehicle regions.
             solve_routes = () if endpoint_only else (corridor_guide,)
             solve_chain = chain
             solve_allocation = corridor_allocation
@@ -2126,7 +2500,7 @@ def _plan_virtual_a_impl(map_request, progress):
             # The guide identity includes the exact selected points: a route
             # rebuild or a different selected candidate must recompute the
             # finite heading branches instead of reusing stale ones.
-            guide_key = (int(route_index), bool(corridor_mode),
+            guide_key = (int(route_index), bool(solve_chain is not None),
                          str(getattr(guide, "source", "") or ""),
                          tuple(guide.points))
             if guide_key != winding_guide_key:
@@ -2155,37 +2529,63 @@ def _plan_virtual_a_impl(map_request, progress):
         }
         if remaining() <= 0.0:
             return budget_stop("geometry solve")
-        progress.emit(
-            "NLP_SOLVE",
-            metrics={
-                "phase": "running",
-                "route_guided": bool(solve_routes),
-                "endpoint_only": bool(endpoint_only),
-                "corridor_guided": bool(solve_chain is not None),
-                **_winding_evidence(heading_branch, guide_length_m),
-            },
-            route_index=route_index if routes else None,
-            route_count=len(routes),
-            round_index=len(search["rounds"]))
         solve_started = time.monotonic()
-        geometry = solve_open_path_guided(
-            request, geometry_config, route_guides=solve_routes,
-            obstacle_context=obstacle_context,
-            geometry_audit_config=audit_config,
-            corridor_chain=solve_chain,
-            corridor_allocation=solve_allocation,
-            heading_branch=heading_branch,
-            guide_length_m=guide_length_m,
-            excluded_initial_keys=tuple(used_initial_keys),
-            # One fixed template first spends one unused initial identity;
-            # the solver's own at-most-one refinement may consume a second
-            # from the same request-wide pool.
-            max_new_initials=(1 if solve_template is not None
-                              else remaining_initial_slots()),
-            stop_after_route_audit=bool(solve_routes),
-            formation_template=solve_template,
-            formation_planning_context_sha256=(
-                context_sha if solve_template is not None else None))
+        if footprint_mode and not hold_request:
+            evidence = {}
+            search["footprint_cover"] = evidence
+
+            def show_footprint_regions(seed):
+                stage = "NLP_SOLVE" if solve_chain is not None else "CORRIDOR_BUILD"
+                progress.emit(
+                    stage, metrics={
+                        "phase": "running" if solve_chain is not None else "complete",
+                        "guidance_mode": FOOTPRINT_GUIDANCE,
+                        "footprint_region_count": evidence["region_count"],
+                        "footprint_obb_rows": evidence["obb_rows"],
+                    }, diagnostic_path=seed,
+                    diagnostic_display={
+                        "result": _progress_result_view(progress, search, routes)},
+                    route_index=route_index if routes else None,
+                    route_count=len(routes), round_index=len(search["rounds"]))
+
+            geometry = solve_footprint_seed(
+                map_request, geometry_config, routes=solve_routes,
+                obstacle_context=obstacle_context, audit_config=audit_config,
+                dynamic_config=dynamic_config,
+                heading_branch=heading_branch, guide_length_m=guide_length_m,
+                corridor_chain=solve_chain, corridor_allocation=solve_allocation,
+                allow_straight=direct_footprint_seed,
+                excluded_initial_keys=tuple(used_initial_keys),
+                initial_limit=remaining_initial_slots(),
+                evidence=evidence, on_regions=show_footprint_regions)
+        else:
+            progress.emit(
+                "NLP_SOLVE",
+                metrics={
+                    "phase": "running",
+                    "route_guided": bool(solve_routes),
+                    "endpoint_only": bool(endpoint_only),
+                    "corridor_guided": bool(solve_chain is not None),
+                    **_winding_evidence(heading_branch, guide_length_m),
+                },
+                route_index=route_index if routes else None,
+                route_count=len(routes), round_index=len(search["rounds"]))
+            geometry = solve_open_path_guided(
+                request, geometry_config, route_guides=solve_routes,
+                obstacle_context=obstacle_context,
+                geometry_audit_config=audit_config,
+                corridor_chain=solve_chain,
+                corridor_allocation=solve_allocation,
+                heading_branch=heading_branch,
+                guide_length_m=guide_length_m,
+                excluded_initial_keys=tuple(used_initial_keys),
+                # Each finite template first spends one unused initial.
+                max_new_initials=(1 if solve_template is not None
+                                  else remaining_initial_slots()),
+                stop_after_route_audit=bool(solve_routes),
+                formation_template=solve_template,
+                formation_planning_context_sha256=(
+                    context_sha if solve_template is not None else None))
         timings["geometry_solve_s"] += time.monotonic() - solve_started
         all_attempts.extend(geometry.attempts)
         last_geometry_audit = geometry.audit
@@ -2354,6 +2754,23 @@ def _plan_virtual_a_impl(map_request, progress):
             record_failure(
                 "GEOMETRY", gate_reason
                 or geometry.reason or "NO_ACCEPTED_CANDIDATE")
+            if footprint_mode and geometry.reason in (
+                    "FOOTPRINT_SEED_SWEEP_REJECTED", "FOOTPRINT_BOX_UNCONFIRMED",
+                    "FOOTPRINT_REGION_LIMIT", "SOLVER_NOT_CONVERGED",
+                    "ALL_ATTEMPTS_NUMERICAL_FAILURE") and can_recover():
+                if direct_footprint_seed:
+                    direct_footprint_seed = False
+                    recovery_count += 1
+                    search["recovery_count"] = recovery_count
+                    search["recoveries"].append({
+                        "action": "footprint_routed_seed",
+                        "reason": geometry.reason,
+                    })
+                    continue
+                next_index = untried_route_index()
+                if next_index is not None:
+                    route_switch(geometry.reason, next_index)
+                    continue
             if _winding_retry_allowed(geometry) \
                     and next_winding_branch(solve_routes):
                 # The preferred branch produced no audited candidate and the
@@ -2899,6 +3316,15 @@ def _plan_virtual_a_impl(map_request, progress):
         last_dynamic_audit) + _report_checks(last_collision_audit)
     corridor_metrics = {}
     corridor_detail = ""
+    if footprint_mode and not hold_request:
+        cover = search["footprint_cover"]
+        corridor_metrics = {
+            "footprint_region_count": cover["region_count"],
+            "footprint_obb_rows": cover["obb_rows"],
+            "footprint_selected": cover["selected"],
+            "footprint_containment_passed": True,
+        }
+        corridor_detail = "; per-vehicle footprint regions continuously checked"
     if corridor_mode and containment is not None:
         corridor_metrics = {
             "corridor_effective_margin_m": corridor_effective_margin(
@@ -3054,9 +3480,12 @@ def _plan_virtual_a_impl(map_request, progress):
 
 
 __all__ = [
+    "A_ROUTE_CLEARANCE_M",
+    "AStarSearchResult",
     "G4_ROUTE_CLEARANCE_WEIGHT",
     "G4_TOTAL_SOFT_BUDGET_S",
     "MAX_RECOVERIES",
+    "RouteGuideSearchResult",
     "PROGRESS_SCHEMA",
     "PROGRESS_STAGES",
     "PROGRESS_STAGE_INDEX",

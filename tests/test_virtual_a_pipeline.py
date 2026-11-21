@@ -7,6 +7,7 @@ from unittest import mock
 
 import numpy as np
 
+from fwis_v3_optimizer.core import Grid
 from fwis_v3_optimizer.formation import FormationPose
 from fwis_v3_optimizer.formation_continuous_a import optimizer as optimizer_module
 from fwis_v3_optimizer.formation_continuous_a import pipeline as pipeline_module
@@ -17,9 +18,15 @@ from fwis_v3_optimizer.formation_continuous_a.contracts import (
     GuideRoute,
     PlannerConfig,
     RouteGuideConfig,
+    VirtualAContractError,
     grid_signature,
     request_fingerprint,
     research_planner_config,
+)
+from fwis_v3_optimizer.formation_continuous_a.route_processing import (
+    build_occupied_index,
+    segment_is_free,
+    simplify_route,
 )
 from fwis_v3_optimizer.formation_continuous_a.corridor import (
     corridor_chain_from_payload,
@@ -31,6 +38,7 @@ from fwis_v3_optimizer.formation_continuous_a.formation_corridor import (
     formation_template_from_payload,
 )
 from fwis_v3_optimizer.formation_continuous_a.pipeline import (
+    RouteGuideSearchResult,
     make_route_guides,
     plan_virtual_a,
 )
@@ -55,6 +63,95 @@ TIMING_KEYS = (
 
 def _wrap(angle):
     return math.atan2(math.sin(angle), math.cos(angle))
+
+
+def _micro_grid(occ, resolution=0.1, origin=(0.0, 0.0)):
+    return Grid(np.asarray(occ, dtype=bool), float(resolution),
+                float(origin[0]), float(origin[1]))
+
+
+def _clearance_fields(grid, margin, blocked=()):
+    obstacle, boundary = pipeline_module._clearance_components(grid)
+    clearance = np.minimum(obstacle, boundary)
+    clearance[np.asarray(grid.occ, dtype=bool)] = 0.0
+    allowed = pipeline_module._allowed_mask(
+        grid, obstacle, boundary, margin, 0.15, blocked)
+    return allowed, clearance
+
+
+def _run_astar(grid, start, goal, config, *, margin=0.10, allowed=None,
+               clearance=None, deadline=None, max_seconds=5.0):
+    if allowed is None or clearance is None:
+        allowed, clearance = _clearance_fields(grid, margin)
+    if deadline is None:
+        import time
+        deadline = time.monotonic() + float(max_seconds)
+    return pipeline_module._astar_route(
+        grid, allowed, clearance, start, goal, config, deadline,
+        route_clearance_m=margin,
+        occupied_index=build_occupied_index(grid))
+
+
+def _dijkstra_cost(grid, allowed, clearance, start, goal, config,
+                   margin):
+    """Zero-heuristic reference cost with the same edges and exact rule."""
+    import heapq
+    start_cell = pipeline_module._cell_of(grid, start[0], start[1])
+    goal_cell = pipeline_module._cell_of(grid, goal[0], goal[1])
+    start_centre = pipeline_module._cell_centre(grid, start_cell)
+    heap = [(0.0, 0, start_cell, None)]
+    best = {start_cell: 0.0}
+    tie = 0
+    height, width = allowed.shape
+    while heap:
+        cost, _, cell, predecessor = heapq.heappop(heap)
+        if cost > best.get(cell, math.inf):
+            continue
+        if cell == goal_cell:
+            return cost
+        iy, ix = cell
+        centre = pipeline_module._cell_centre(grid, cell)
+        for dy, dx, step in pipeline_module.ROUTE_NEIGHBOURS:
+            jy, jx = iy + dy, ix + dx
+            if jy < 0 or jx < 0 or jy >= height or jx >= width:
+                continue
+            if not allowed[jy, jx]:
+                continue
+            if dx and dy and (
+                    not allowed[iy, jx] or not allowed[jy, ix]):
+                continue
+            neighbour = (jy, jx)
+            neighbour_centre = pipeline_module._cell_centre(
+                grid, neighbour)
+            if not segment_is_free(
+                    grid, centre, neighbour_centre, margin):
+                continue
+            candidate = cost + pipeline_module._route_edge_cost(
+                grid, step, clearance[neighbour], 0.0, config)
+            if candidate < best.get(neighbour, math.inf):
+                best[neighbour] = candidate
+                tie += 1
+                heapq.heappush(heap, (candidate, tie, neighbour, cell))
+    return None
+
+
+def _astar_constant_wall(resolution):
+    occupancy = np.zeros((15, 15), dtype=bool)
+    occupancy[5, 2:10] = True
+    occupancy[5:11, 9] = True
+    return _micro_grid(occupancy, resolution)
+
+
+def _channel_grid():
+    """Two 1.5 m channels around one slender wall, 6 m x 6 m."""
+    occupancy = np.zeros((60, 60), dtype=bool)
+    occupancy[15:45, 29:31] = True
+    return _micro_grid(occupancy, 0.1)
+
+
+def _guide(grid, points, source="unit"):
+    return GuideRoute(points=tuple(points), source=source,
+                      grid_sha256=grid_signature(grid))
 
 
 class G4PipelineTests(unittest.TestCase):
@@ -624,9 +721,12 @@ class RouteAndGuideSelectionTests(unittest.TestCase):
             })
             return self._failure_result(solver_request, config)
 
+        route_search = RouteGuideSearchResult(
+            routes=tuple(routes), attempts=(), stop_reason="MAX_ROUTES",
+            route_clearance_m=0.10, direct_los={})
         with mock.patch.object(
                 pipeline_module, "make_route_guides",
-                return_value=routes), \
+                return_value=route_search), \
                 mock.patch.object(
                     pipeline_module, "solve_open_path_guided",
                     side_effect=solver_spy):
@@ -949,6 +1049,333 @@ class SDomainSearchEvidenceTests(unittest.TestCase):
                 round_record["upper_active"],
                 abs(round_record["S_solution_m"]
                     - round_record["S_upper_m"]) <= 1e-6)
+
+
+class AAStarContractTests(unittest.TestCase):
+    """Targeted A remediation contracts: metric, clearance, status, dedup."""
+
+    def test_metric_g_and_octile_h_agree_with_dijkstra_at_three_resolutions(
+            self):
+        for resolution in (0.05, 0.10, 0.20):
+            grid = _astar_constant_wall(resolution)
+            margin = 0.10
+            allowed, clearance = _clearance_fields(grid, margin)
+            start_cell = (2, 2)
+            goal_cell = (12, 12)
+            start = pipeline_module._cell_centre(grid, start_cell)
+            goal = pipeline_module._cell_centre(grid, goal_cell)
+            config = RouteGuideConfig(
+                clearance_weight=0.0, clearance_cap_m=1.0,
+                max_expansions=100000, max_seconds=5.0,
+                route_clearance_m=margin)
+            result = _run_astar(
+                grid, start, goal, config, margin=margin,
+                allowed=allowed, clearance=clearance)
+            self.assertEqual(result.status, "FOUND", result)
+            reference = _dijkstra_cost(
+                grid, allowed, clearance, start, goal, config, margin)
+            self.assertIsNotNone(reference)
+            self.assertAlmostEqual(
+                result.path_length_m, reference, places=9,
+                msg="resolution {}".format(resolution))
+            travelled = 0.0
+            for (iy, ix), (jy, jx) in zip(
+                    result.cells, result.cells[1:]):
+                step = math.sqrt(2.0) if (
+                    iy != jy and ix != jx) else 1.0
+                travelled += pipeline_module._route_edge_cost(
+                    grid, step, clearance[jy, jx], 0.0, config)
+            self.assertAlmostEqual(
+                travelled, result.path_length_m, places=9)
+            self.assertEqual(
+                pipeline_module._octile_heuristic_m(
+                    grid, goal_cell, goal), 0.0)
+            expected_start_h = resolution * 10.0 * math.sqrt(2.0)
+            self.assertAlmostEqual(
+                pipeline_module._octile_heuristic_m(
+                    grid, start_cell, goal), expected_start_h, places=9)
+            height, width = allowed.shape
+            for iy in range(height):
+                for ix in range(width):
+                    if not allowed[iy, ix]:
+                        continue
+                    cell = (iy, ix)
+                    h_value = pipeline_module._octile_heuristic_m(
+                        grid, cell, goal)
+                    centre = pipeline_module._cell_centre(grid, cell)
+                    for dy, dx, step in pipeline_module.ROUTE_NEIGHBOURS:
+                        jy, jx = iy + dy, ix + dx
+                        if jy < 0 or jx < 0 or jy >= height or jx >= width:
+                            continue
+                        if not allowed[jy, jx]:
+                            continue
+                        if dx and dy and (
+                                not allowed[iy, jx]
+                                or not allowed[jy, ix]):
+                            continue
+                        neighbour = (jy, jx)
+                        if not segment_is_free(
+                                grid, centre,
+                                pipeline_module._cell_centre(
+                                    grid, neighbour), margin):
+                            continue
+                        edge = pipeline_module._route_edge_cost(
+                            grid, step, clearance[jy, jx], 0.0, config)
+                        slack = edge + \
+                            pipeline_module._octile_heuristic_m(
+                                grid, neighbour, goal) - h_value
+                        self.assertGreaterEqual(
+                            slack, -1e-12,
+                            "resolution {} edge {}->{} slack {}".format(
+                                resolution, cell, neighbour, slack))
+
+    def test_same_physical_room_at_three_resolutions_reports_legal_metric_routes(
+            self):
+        margin = 0.20
+        lengths = []
+        point_counts = []
+        for resolution in (0.05, 0.10, 0.20):
+            cells = int(round(6.0 / resolution))
+            xs = (np.arange(cells) + 0.5) * resolution
+            ys = (np.arange(cells) + 0.5) * resolution
+            occupancy = (
+                (xs[None, :] >= 2.5) & (xs[None, :] <= 3.0)
+                & (ys[:, None] >= 1.0) & (ys[:, None] <= 5.0))
+            grid = _micro_grid(occupancy, resolution)
+            config = RouteGuideConfig(
+                clearance_weight=1.0, clearance_cap_m=1.0,
+                max_routes=2, max_expansions=100000, max_seconds=8.0,
+                alternative_penalty=2.0, route_clearance_m=margin)
+            search = make_route_guides(
+                grid, FormationPose(0.8, 3.0, 0.0),
+                FormationPose(5.2, 3.0, 0.0), config)
+            self.assertGreaterEqual(
+                len(search), 1,
+                "resolution {} stop_reason {}".format(
+                    resolution, search.stop_reason))
+            route = search.routes[0]
+            for first, second in zip(route.points, route.points[1:]):
+                self.assertTrue(
+                    segment_is_free(grid, first, second, margin),
+                    "resolution {} raw segment below margin".format(
+                        resolution))
+            attempt = search.attempts[0]
+            self.assertGreaterEqual(
+                attempt["min_clearance_m"], margin - 1e-12)
+            lengths.append(float(attempt["path_length_m"]))
+            point_counts.append(int(attempt["cell_count"]))
+        self.assertLess(
+            max(lengths) / min(lengths), 1.25,
+            "metric route lengths differ too much: {} cells {}".format(
+                lengths, point_counts))
+
+    def test_band_penalty_is_positive_and_opens_the_other_channel(self):
+        grid = _channel_grid()
+        config = RouteGuideConfig(
+            clearance_weight=1.0, clearance_cap_m=0.5,
+            alternative_penalty=2.0, max_routes=2,
+            max_expansions=100000, max_seconds=8.0,
+            route_clearance_m=0.10)
+        base = pipeline_module._route_edge_cost(
+            grid, 1.0, 1.0, 0.0, config)
+        reused = pipeline_module._route_edge_cost(
+            grid, 1.0, 1.0, 2.0, config)
+        self.assertGreater(reused, base)
+        self.assertAlmostEqual(
+            reused - base, float(grid.res) * 2.0, places=12)
+        search = make_route_guides(
+            grid, FormationPose(1.0, 3.0, 0.0),
+            FormationPose(5.0, 3.0, 0.0), config)
+        self.assertGreaterEqual(
+            len(search), 2,
+            "stop_reason {} attempts {}".format(
+                search.stop_reason, search.attempts))
+        simplified = [
+            simplify_route(
+                grid, route, margin_m=0.10).points
+            for route in search.routes]
+        side_of_middle = []
+        for points in simplified:
+            middle = points[len(points) // 2]
+            side_of_middle.append(
+                "below" if middle[1] < 3.0 else "above")
+        self.assertEqual(
+            set(side_of_middle[:2]), {"below", "above"},
+            "both candidates used the same channel: {}".format(
+                side_of_middle))
+
+    def test_shortcut_screen_keeps_channels_and_u_turns_but_merges_doglegs(
+            self):
+        channel = _channel_grid()
+        left = [(1.0, 3.0), (2.0, 3.0)]
+        right = [(4.0, 3.0), (5.0, 3.0)]
+        self.assertFalse(pipeline_module._routes_shortcut_equivalent(
+            channel, left, right, 0.10))
+
+        u_grid = _micro_grid(np.zeros((30, 30), dtype=bool), 0.1)
+        u_grid.occ[10:12, 10:20] = True
+        u_grid.occ[10:20, 10:12] = True
+        u_grid.occ[10:20, 18:20] = True
+        inside = [(1.5, 1.5), (1.5, 1.8)]
+        outside = [(2.5, 1.5), (2.5, 1.8)]
+        self.assertFalse(pipeline_module._routes_shortcut_equivalent(
+            u_grid, inside, outside, 0.05))
+
+        empty = _micro_grid(np.zeros((20, 20), dtype=bool), 0.1)
+        dogleg = [(0.5, 0.5), (1.0, 0.65), (1.5, 0.5)]
+        direct = [(0.5, 0.5), (1.5, 0.5)]
+        self.assertTrue(pipeline_module._routes_shortcut_equivalent(
+            empty, dogleg, direct, 0.0))
+
+    def test_simplify_keeps_the_intermediate_point_when_direct_los_below_margin(
+            self):
+        grid = _micro_grid(np.zeros((40, 40), dtype=bool), 0.1)
+        grid.occ[16:20, 20:24] = True
+        start = (1.0, 1.52)
+        middle = (2.2, 1.3)
+        goal = (3.0, 1.52)
+        self.assertTrue(segment_is_free(grid, start, goal, 0.0))
+        self.assertFalse(segment_is_free(grid, start, goal, 0.10))
+        self.assertTrue(segment_is_free(grid, start, middle, 0.10))
+        self.assertTrue(segment_is_free(grid, middle, goal, 0.10))
+        route = _guide(grid, (start, middle, goal))
+        zero_margin = simplify_route(grid, route, margin_m=0.0)
+        self.assertEqual(zero_margin.points, (start, goal))
+        kept = simplify_route(grid, route, margin_m=0.10)
+        self.assertEqual(kept.points, (start, middle, goal))
+        with self.assertRaises(VirtualAContractError) as raised:
+            simplify_route(
+                grid, _guide(grid, (start, goal)), margin_m=0.10)
+        self.assertEqual(raised.exception.reason, "ROUTE_SEGMENT_BLOCKED")
+
+    def test_boundary_corner_unknown_out_of_map_and_blocked_points(self):
+        grid = _micro_grid(np.zeros((5, 5), dtype=bool), 1.0)
+        grid.occ[2, 2] = True
+        self.assertFalse(segment_is_free(
+            grid, (2.0, 2.2), (2.0, 2.8), 0.0))  # box edge touch
+        self.assertFalse(segment_is_free(
+            grid, (1.0, 3.0), (3.0, 1.0), 0.0))  # box corner touch
+        self.assertTrue(segment_is_free(
+            grid, (1.9, 2.2), (1.9, 2.8), 0.0))
+        self.assertFalse(segment_is_free(
+            grid, (1.9, 2.2), (1.9, 2.8), 0.10))  # strict > margin
+        self.assertFalse(segment_is_free(
+            grid, (-0.01, 0.5), (1.0, 0.5), 0.0))
+        self.assertFalse(segment_is_free(
+            grid, (2.2, 2.2), (2.8, 2.8), 0.0))  # through unknown/occupied
+
+        blocked_grid = _micro_grid(np.zeros((11, 11), dtype=bool), 0.1)
+        obstacle = np.full((11, 11), 10.0)
+        boundary = np.full((11, 11), 10.0)
+        blocked = ((0.55, 0.55),)
+        allowed = pipeline_module._allowed_mask(
+            blocked_grid, obstacle, boundary, 0.10, 0.15, blocked)
+        self.assertFalse(bool(allowed[5, 5]))
+        self.assertTrue(bool(allowed[5, 8]))
+
+        corner_cut = _micro_grid(np.zeros((5, 5), dtype=bool), 1.0)
+        allowed = np.ones((5, 5), dtype=bool)
+        allowed[0, 1] = False
+        allowed[1, 0] = False
+        clearance = np.full((5, 5), 10.0)
+        config = RouteGuideConfig(
+            clearance_weight=0.0, max_expansions=1000, max_seconds=2.0,
+            route_clearance_m=0.0)
+        result = pipeline_module._astar_route(
+            corner_cut, allowed, clearance, (0.5, 0.5), (1.5, 1.5),
+            config, __import__("time").monotonic() + 2.0,
+            route_clearance_m=0.0,
+            occupied_index=build_occupied_index(corner_cut))
+        self.assertEqual(result.status, "NO_PATH", result)
+        self.assertEqual(result.detail, "OPEN_EXHAUSTED")
+
+    def test_failure_statuses_are_distinct_and_carry_diagnostics(self):
+        grid = _micro_grid(np.zeros((7, 7), dtype=bool), 1.0)
+        allowed, clearance = _clearance_fields(grid, 0.0)
+        start = (0.5, 3.5)
+        goal = (6.5, 3.5)
+        config = RouteGuideConfig(
+            clearance_weight=0.0, max_expansions=1000, max_seconds=2.0,
+            route_clearance_m=0.0)
+        deadline = __import__("time").monotonic() + 2.0
+
+        out_of_map = pipeline_module._astar_route(
+            grid, allowed, clearance, (-0.1, 3.5), goal, config, deadline,
+            route_clearance_m=0.0)
+        self.assertEqual(out_of_map.status, "INVALID_ENDPOINT")
+        self.assertEqual(out_of_map.detail, "START_OUT_OF_MAP")
+
+        denied = np.array(allowed, copy=True)
+        denied[3, 0] = False
+        blocked_start = pipeline_module._astar_route(
+            grid, denied, clearance, start, goal, config, deadline,
+            route_clearance_m=0.0)
+        self.assertEqual(blocked_start.status, "INVALID_ENDPOINT")
+        self.assertEqual(
+            blocked_start.detail,
+            "START_CELL_BLOCKED_BY_CLEARANCE_OR_BLOCKED_POINT")
+
+        connection_grid = _micro_grid(np.zeros((7, 7), dtype=bool), 1.0)
+        connection_grid.occ[3, 3] = True
+        connection_allowed = np.ones((7, 7), dtype=bool)
+        connection_clearance = np.full((7, 7), 10.0)
+        blocked_connection = pipeline_module._astar_route(
+            connection_grid, connection_allowed, connection_clearance,
+            (3.5, 3.5), (0.5, 0.5), config, deadline,
+            route_clearance_m=0.0)
+        self.assertEqual(blocked_connection.status, "INVALID_ENDPOINT")
+        self.assertEqual(
+            blocked_connection.detail, "START_CONNECTION_BLOCKED")
+
+        wall_grid = _micro_grid(np.zeros((7, 7), dtype=bool), 1.0)
+        wall_grid.occ[:, 3] = True
+        wall_allowed, wall_clearance = _clearance_fields(wall_grid, 0.0)
+        no_path = pipeline_module._astar_route(
+            wall_grid, wall_allowed, wall_clearance,
+            (0.5, 3.5), (6.5, 3.5), config, deadline,
+            route_clearance_m=0.0)
+        self.assertEqual(no_path.status, "NO_PATH")
+        self.assertEqual(no_path.detail, "OPEN_EXHAUSTED")
+
+        before = mock.patch.object(
+            pipeline_module.time, "monotonic", return_value=10.0)
+        with before:
+            timeout_before = pipeline_module._astar_route(
+                grid, allowed, clearance, start, goal, config, 5.0,
+                route_clearance_m=0.0)
+        self.assertEqual(timeout_before.status, "TIMEOUT")
+        self.assertEqual(
+            timeout_before.detail, "DEADLINE_BEFORE_SEARCH")
+        self.assertGreaterEqual(timeout_before.search_time_s, 0.0)
+
+        clock = mock.patch.object(
+            pipeline_module.time, "monotonic",
+            side_effect=[0.0, 0.0, 10.0, 10.0, 10.0])
+        with clock:
+            timeout_during = pipeline_module._astar_route(
+                grid, allowed, clearance, start, goal, config, 5.0,
+                route_clearance_m=0.0)
+        self.assertEqual(timeout_during.status, "TIMEOUT")
+        self.assertEqual(
+            timeout_during.detail, "DEADLINE_DURING_SEARCH")
+
+        big_grid = _micro_grid(np.zeros((60, 60), dtype=bool), 0.1)
+        big_grid.occ[5:55, 30] = True
+        big_allowed, big_clearance = _clearance_fields(big_grid, 0.10)
+        limited = RouteGuideConfig(
+            clearance_weight=0.0, max_expansions=100, max_seconds=2.0,
+            route_clearance_m=0.10)
+        expansion = pipeline_module._astar_route(
+            big_grid, big_allowed, big_clearance,
+            (0.55, 2.95), (5.45, 2.95), limited,
+            __import__("time").monotonic() + 2.0,
+            route_clearance_m=0.10)
+        self.assertEqual(expansion.status, "EXPANSION_LIMIT")
+        self.assertGreaterEqual(expansion.expansions, 100)
+        for outcome in (out_of_map, blocked_start, blocked_connection,
+                        no_path, timeout_before, timeout_during, expansion):
+            self.assertIsInstance(outcome.expansions, int)
+            self.assertGreaterEqual(outcome.search_time_s, 0.0)
 
 
 if __name__ == "__main__":

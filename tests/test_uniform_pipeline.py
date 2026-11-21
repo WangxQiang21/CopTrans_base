@@ -27,7 +27,7 @@ Run from the V0.2 worktree root::
     OPENBLAS_NUM_THREADS=1 python3 -m unittest discover -s tests \
         -p 'test_uniform_pipeline.py' -v
 """
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -75,6 +75,7 @@ from fwis_v3_optimizer.uniform_search import (
     GraphSearchConfig,
     SuccessorConfig,
 )
+from fwis_v3_optimizer.uniform_timing import MotionTiming
 from fwis_v3_optimizer.uniform_trajectory import UniformTimedPlan
 
 OFFSETS = ((1, 1.0, 0.0), (2, 0.0, 1.0), (3, 0.0, -1.0))
@@ -160,6 +161,42 @@ def self_audit(plan, request):
 
 class UniformPipelineTest(unittest.TestCase):
     maxDiff = None
+
+    def test_continuation_reuses_stopped_oblique_wheels_for_reversal_and_hold(self):
+        model = formation_model()
+        start, goal = FormationPose(0, 0, 0), FormationPose(1, 2.5, 0)
+        request = UniformPlanningRequest(
+            empty_grid(), model, BODY_SHAPES, start, START_HEADINGS, goal,
+            search_config=GraphSearchConfig(direct_goal_translation=True))
+        first = plan_uniform(request)
+        self.assertTrue(first.executable, first.detail)
+        incoming = first.plan.edges[-1]
+        continuation = replace(request, start_qf=goal, goal_qf=start, initial_edge=incoming)
+        reverse = plan_uniform(continuation)
+        self.assertTrue(reverse.executable, reverse.detail)
+        rebuilt = UniformTimedPlan.from_model_json(reverse.plan.to_model_json())
+        self.assertEqual(rebuilt.model_sha256(), reverse.plan.model_sha256())
+        self.assertEqual(tuple(p.kind for p in rebuilt.phases), ("motion",))
+        self.assertTrue(all(d == -1 for _, d in rebuilt.edges[0].directions))
+        self.assertTrue(all(d == 1 for _, d in rebuilt.initial_edge.directions))
+        stopped = first.plan.state_at(first.plan.duration_s)
+        restart = rebuilt.state_at(0.0)
+        for old, new in zip(stopped.vehicles, restart.vehicles):
+            np.testing.assert_allclose(old.wheel_angles, new.wheel_angles, atol=1e-9)
+            self.assertEqual(old.wheel_rolling_speeds, (0.0,) * 4)
+            self.assertEqual(new.wheel_rolling_speeds, (0.0,) * 4)
+        hold = plan_uniform(replace(continuation, goal_qf=goal))
+        self.assertTrue(hold.executable, hold.detail)
+        self.assertEqual(hold.status, SEARCH_NO_MOTION)
+        latest = UniformTimedPlan.from_model_json(hold.plan.to_model_json()).state_at(0.0)
+        self.assertEqual(latest.mode, "O")
+        for old, new in zip(stopped.vehicles, latest.vehicles):
+            np.testing.assert_allclose(old.wheel_angles, new.wheel_angles, atol=1e-9)
+            self.assertEqual(old.direction, new.direction)
+
+        wrong_boundary = plan_uniform(replace(continuation, start_qf=FormationPose(2, 2.5, 0)))
+        self.assertFalse(wrong_boundary.executable)
+        self.assertEqual(wrong_boundary.reason, "INVALID_CONTINUATION")
 
     @classmethod
     def tearDownClass(cls):
@@ -300,27 +337,72 @@ class UniformPipelineTest(unittest.TestCase):
         self._success("F04_lateral", result)
         self.assertGreater(result.plan.goal_qf.y, result.plan.start_qf.y)
 
+    def test_free_goal_uses_local_spin_before_straight_approach(self):
+        resolution = 0.05
+        y, x = np.indices((240, 360))
+        center_y = (y + 0.5) * resolution
+        occupied = ((x + 0.5) * resolution >= 8.0) & (
+            (center_y <= 4.65) | (center_y >= 7.35))
+        grid = Grid(occupied, resolution, 0.0, 0.0)
+        request = UniformPlanningRequest(
+            grid, formation_model(), BODY_SHAPES,
+            FormationPose(3, 6, 0), dict.fromkeys(VEHICLE_IDS, math.pi / 2),
+            FormationPose(13, 6, math.pi),
+            successor_config=SuccessorConfig(goal_formation_heading_free=True),
+            search_config=GraphSearchConfig(direct_goal_translation=True))
+        result = plan_uniform(request)
+        self.assertTrue(result.executable, result.detail)
+        self.assertEqual([edge.mode for edge in result.plan.edges], ["S", "A"])
+        self.assertEqual(result.plan.goal_qf, FormationPose(13, 6, 0))
+        self.assertTrue(self_audit(result.plan, request).feasible)
+
+    def test_free_goal_turns_the_formation_to_fit_a_narrow_corridor(self):
+        resolution = 0.05
+        y, x = np.indices((240, 360))
+        center_y = (y + 0.5) * resolution
+        occupied = ((x + 0.5) * resolution >= 8.0) & (
+            (center_y <= 5.45) | (center_y >= 7.40))
+        grid = Grid(occupied, resolution, 0.0, 0.0)
+        request = UniformPlanningRequest(
+            grid, formation_model(), BODY_SHAPES,
+            FormationPose(3, 6, 0), START_HEADINGS, FormationPose(13, 6, 0),
+            successor_config=SuccessorConfig(goal_formation_heading_free=True),
+            search_config=GraphSearchConfig(direct_goal_translation=True))
+        result = plan_uniform(request)
+        self.assertTrue(result.executable, result.detail)
+        self.assertGreater(abs(wrap(result.plan.goal_qf.psi)), math.pi / 4)
+        self.assertEqual(result.plan.goal_qf.x, 13.0)
+        self.assertEqual(result.plan.goal_qf.y, 6.0)
+        self.assertTrue(any(edge.primitive == PRIMITIVE_A_ARC for edge in result.plan.edges))
+        self.assertTrue(self_audit(result.plan, request).feasible)
+
     def test_f05_diagonal(self):
         result = self._run("F05_diagonal", "diagonal (13,12,0)",
                            make_request(FormationPose(13, 12, 0), plan_id=5))
         self._success("F05_diagonal", result)
 
     def _in_place_rotation(self, case_id, psi, plan_id):
-        result = self._run(case_id, "cargo in-place rotation", make_request(
-            FormationPose(10, 10, psi), plan_id=plan_id))
+        request = make_request(FormationPose(10, 10, psi), plan_id=plan_id)
+        result = self._run(case_id, "cargo in-place rotation", request)
         self._success(case_id, result)
-        rejected = [audit for audit in result.search.terminal_audits
-                    if not audit["accepted"]]
-        self.assertTrue(rejected)
-        self.assertTrue(any(audit.get("failure_code") ==
-                            UNIFORM_DYNAMIC_UNCONFIRMED
-                            for audit in rejected))
-        self.assertGreater(result.search.terminal_rejection_histogram.get(
-            UNIFORM_DYNAMIC_UNCONFIRMED, 0), 0)
-        self.assertTrue(any(
-            edge.primitive == PRIMITIVE_A_ARC
-            and math.hypot(edge.control.pivot_x, edge.control.pivot_y) > 0.0
-            for edge in result.search.edges))
+        self.assertEqual(result.search.edges[-1].primitive, PRIMITIVE_A_ARC)
+        self.assertEqual(result.plan.start_qf.x, result.plan.goal_qf.x)
+        self.assertEqual(result.plan.start_qf.y, result.plan.goal_qf.y)
+        nominal = UniformTimedPlan.from_edges(
+            result.search.edges, request.vehicle_shapes,
+            plan_id=request.plan_id, formation_id=request.formation_id,
+            timing_limits=request.successor_config.timing_limits)
+        unaudited_clock = self_audit(nominal, request)
+        self.assertEqual(unaudited_clock.reason, UNIFORM_DYNAMIC_UNCONFIRMED)
+        factors = result.evaluation.metrics["audit_retiming_factors"]
+        self.assertEqual(set(factors), {len(result.search.edges) - 1})
+        for before, after in zip(nominal.phases, result.plan.phases):
+            factor = (factors.get(before.edge_index, 1.0)
+                      if isinstance(before, MotionTiming) else 1.0)
+            self.assertAlmostEqual(after.duration_s, before.duration_s * factor)
+        self.assertGreater(result.plan.duration_s, nominal.duration_s)
+        self.assertTrue(result.evaluation.metrics["dynamic_continuous_certificate"])
+        self.assertTrue(result.search.terminal_audits[0]["accepted"])
         return result
 
     def test_f06_in_place_positive_90(self):

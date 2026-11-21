@@ -210,14 +210,21 @@ def _actual_corridor_case():
     if _V2_CASE:
         return _V2_CASE
     grid = _arc_grid()
+    # The display fixture only needs one real, certified corridor plan.  The
+    # historical request put both endpoints on the 7 m band centreline, where
+    # its success depended on a zero-margin simplification shortcut that
+    # A-3's shared route margin now rejects.  With the corrected metric and
+    # margin, an endpoint radius of 5.6 m gives the same two-region/one-portal
+    # arc plan without touching any corridor audit or production margin.
+    endpoint_radius = 5.6
     angle = -math.pi / 3.0
     start = g4.FormationPose(
-        7.0 * math.cos(angle), 7.0 * math.sin(angle),
-        angle + math.pi / 2.0)
+        endpoint_radius * math.cos(angle),
+        endpoint_radius * math.sin(angle), angle + math.pi / 2.0)
     angle = math.pi / 3.0
     goal = g4.FormationPose(
-        7.0 * math.cos(angle), 7.0 * math.sin(angle),
-        angle + math.pi / 2.0)
+        endpoint_radius * math.cos(angle),
+        endpoint_radius * math.sin(angle), angle + math.pi / 2.0)
     request = g4.make_request(
         start, goal,
         start_headings={1: start.psi, 2: start.psi, 3: start.psi})
@@ -1442,11 +1449,15 @@ class V2GuideCallbackTest(unittest.TestCase):
         node.corridor_pub = _Publisher()
         node.guide_pub = _Publisher()
         node.guide_path_pubs = {
-            "/formation/path/astar_raw_0": _Publisher(),
-            "/formation/path/portal_guide_0": _Publisher(),
+            "/formation/path/astar_raw_{}".format(route_id): _Publisher()
+            for route_id in range(3)}
+        node.guide_path_pubs.update({
+            "/formation/path/portal_guide_{}".format(route_id): _Publisher()
+            for route_id in range(3)})
+        node.guide_path_pubs.update({
             "/formation/path/astar_active": _Publisher(),
             "/formation/path/portal_guide_active": _Publisher(),
-        }
+        })
         node.candidate_path_pubs = {}
         return node
 
@@ -1895,6 +1906,7 @@ class ProgressiveLayerLifecycleTest(unittest.TestCase):
         cls.case = _actual_corridor_case()
         cls.plan_id = cls.case["identity"]["plan_id"]
         cls.identity = cls.case["identity"]
+        cls.route_id = cls.case["display"]["route_id"]
         cls.candidate = sample_candidate_path(
             cls.case["result"].path,
             cls.case["map_request"].request.vehicle_shapes,
@@ -1961,7 +1973,8 @@ class ProgressiveLayerLifecycleTest(unittest.TestCase):
                 self.identity["planning_context_sha256"],
             "model_sha256": None,
             "stage": "PORTAL_GUIDE", "stage_index": 3,
-            "elapsed_s": 1.0, "route_index": 0, "route_count": 1,
+            "elapsed_s": 1.0, "route_index": self.route_id,
+            "route_count": len(self.case["result"].routes),
             "round_index": 0, "reason": "", "detail": "", "metrics": {},
             "astar": self._astar(),
             "corridors": [corridor],
@@ -1970,7 +1983,7 @@ class ProgressiveLayerLifecycleTest(unittest.TestCase):
         return document
 
     def _astar(self):
-        return [{"route_id": 0,
+        return [{"route_id": self.route_id,
                  "points": [[float(point[0]), float(point[1])]
                             for point in self.case["route"].points]}]
 
@@ -2059,18 +2072,22 @@ class ProgressiveLayerLifecycleTest(unittest.TestCase):
         self.assertTrue(any(marker.ns == PLANNING_ASTAR_NAMESPACE
                             and marker.type == Marker.TEXT_VIEW_FACING
                             for marker in markers))
-        astar_pub = node.guide_path_pubs["/formation/path/astar_raw_0"]
+        astar_pub = node.guide_path_pubs[
+            "/formation/path/astar_raw_{}".format(self.route_id)]
         self.assertTrue(astar_pub.messages[-1].poses)
         self.assertEqual(
             len(astar_pub.messages[-1].poses),
             len(self.case["route"].points))
-        for route_id in (1, 2):
+        for route_id in range(3):
+            if route_id == self.route_id:
+                continue
             self.assertFalse(
                 node.guide_path_pubs[
                     "/formation/path/astar_raw_{}".format(route_id)
                 ].messages[-1].poses)
         self.assertFalse(
-            node.guide_path_pubs["/formation/path/portal_guide_0"]
+            node.guide_path_pubs[
+                "/formation/path/portal_guide_{}".format(self.route_id)]
             .messages[-1].poses)
 
     def test_active_aliases_follow_real_route_index(self):
@@ -2177,10 +2194,12 @@ class ProgressiveLayerLifecycleTest(unittest.TestCase):
             and marker.ns.endswith("_obb_candidate")
             for marker in markers))
         self.assertTrue(
-            node.guide_path_pubs["/formation/path/astar_raw_0"]
+            node.guide_path_pubs[
+                "/formation/path/astar_raw_{}".format(self.route_id)]
             .messages[-1].poses)
         self.assertTrue(
-            node.guide_path_pubs["/formation/path/portal_guide_0"]
+            node.guide_path_pubs[
+                "/formation/path/portal_guide_{}".format(self.route_id)]
             .messages[-1].poses)
 
     def test_null_corridors_clears_corridor_and_repaints_astar(self):
@@ -2202,10 +2221,12 @@ class ProgressiveLayerLifecycleTest(unittest.TestCase):
             and marker.type == Marker.TEXT_VIEW_FACING
             for marker in markers))
         self.assertTrue(
-            node.guide_path_pubs["/formation/path/astar_raw_0"]
+            node.guide_path_pubs[
+                "/formation/path/astar_raw_{}".format(self.route_id)]
             .messages[-1].poses)
         self.assertFalse(
-            node.guide_path_pubs["/formation/path/portal_guide_0"]
+            node.guide_path_pubs[
+                "/formation/path/portal_guide_{}".format(self.route_id)]
             .messages[-1].poses)
 
     def test_null_candidates_with_failure_draws_only_the_failure_layer(self):

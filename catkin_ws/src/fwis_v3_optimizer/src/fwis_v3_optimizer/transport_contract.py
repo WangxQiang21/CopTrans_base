@@ -11,8 +11,8 @@ The transport contract fixes the geometry only.  Body headings ``theta_i``
 are independent variables: the configured ``initial_heading_policy`` is used
 when an experiment starts (a manual ``2D Pose Estimate`` or the configured
 fallback), while later goals keep whatever heading the playback actually
-shows.  ``goal_heading_free`` releases only the terminal ``theta_i``; cargo
-``psi_F`` and the rigid centres remain constraints.
+shows.  ``goal_heading_free`` controls terminal ``theta_i``. The selected
+planning backend determines the terminal policy for cargo ``psi_F``.
 """
 import math
 from dataclasses import dataclass

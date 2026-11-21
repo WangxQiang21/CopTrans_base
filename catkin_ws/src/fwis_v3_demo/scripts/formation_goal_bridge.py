@@ -17,18 +17,32 @@ of a trajectory is not treated as arrival; the live playback pose is.
 """
 import json
 import math
+import sys
+import tempfile
+import threading
 import time as _time
+from datetime import datetime, timezone
+from pathlib import Path
+from uuid import uuid4
 
 import rospy
 import tf2_ros
+import yaml
 from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped
 from nav_msgs.msg import OccupancyGrid
 from std_msgs.msg import String
+from std_srvs.srv import Trigger
+from visualization_msgs.msg import MarkerArray
 
 from fwis_v3_msgs.msg import FormationPlanRequest, FormationVehicleSpec
 from fwis_v3_optimizer.formation import (
     FormationModel, FormationPose, VehicleOffset)
-from fwis_v3_optimizer.formation_playback import tf_frame_prefix
+from fwis_v3_optimizer.formation_collision import (
+    FormationCollisionChecker, VehicleShape, grid_from_occupancy_grid)
+from fwis_v3_optimizer.formation_playback import (
+    PlaybackMarkerOptions, build_endpoint_markers, clear_marker_specs, tf_frame_prefix)
+from fwis_v3_optimizer.formation_request import validate_formation_request
+from fwis_v3_optimizer.formation_ros_markers import marker_array
 from fwis_v3_optimizer.transport_contract import (
     TransportContractError, load_contract)
 from tf2_ros import LookupException, ConnectivityException, ExtrapolationException
@@ -38,6 +52,7 @@ INITIAL_POSE_TOPIC = "/initialpose"
 REQUEST_TOPIC = "/formation/plan_request"
 STATUS_TOPIC = "/formation/optimizer_status"
 JOB_STATE_TOPIC = "/formation/job_state"
+ENDPOINTS_TOPIC = "/formation/endpoints"
 PLAYBACK_PLAN_BACKEND = "uniform_v02"
 VIRTUAL_BACKEND = "virtual_rigid_a"
 ADMISSION_BACKENDS = ("legacy", PLAYBACK_PLAN_BACKEND, VIRTUAL_BACKEND)
@@ -52,6 +67,18 @@ def quaternion_to_yaw(quaternion):
     cosy_cosp = 1.0 - 2.0 * (
         quaternion.y * quaternion.y + quaternion.z * quaternion.z)
     return math.atan2(siny_cosp, cosy_cosp)
+
+
+def canonical_virtual_goal(start, goal):
+    """Remove only floating-point roundoff from a repeated RViz goal."""
+    rounding = 4 * sys.float_info.epsilon
+    if not all(math.isfinite(value) for value in (*start, *goal)):
+        return goal
+    if (all(abs(a - b) <= rounding * max(1.0, abs(a), abs(b))
+            for a, b in zip(start[:2], goal[:2]))
+            and abs(math.remainder(goal[2] - start[2], math.tau)) <= rounding):
+        return start
+    return goal
 
 
 class FormationGoalBridge(object):
@@ -89,6 +116,17 @@ class FormationGoalBridge(object):
             raise ValueError(
                 "~admission_backend must be one of {}, got {!r}".format(
                     ADMISSION_BACKENDS, self.admission_backend))
+        if self.admission_backend == PLAYBACK_PLAN_BACKEND:
+            self._cancel_pending_plan = rospy.ServiceProxy(
+                "/formation/cancel_pending_plan", Trigger)
+        case_dir = rospy.get_param("~case_collection_dir", "")
+        self._case_dir = Path(case_dir) if case_dir else None
+        if self._case_dir is not None:
+            profile = Path(self._text_param("~case_collection_profile", ""))
+            self._case_profile = json.loads(profile.read_text(encoding="utf-8"))
+            self._case_dir.mkdir(parents=True, exist_ok=True)
+            self._case_saved_pub = rospy.Publisher(
+                "/formation/case_saved_goal", PoseStamped, queue_size=1, latch=True)
         self.virtual_a_goal_policy = None
         if self.admission_backend == VIRTUAL_BACKEND:
             policy = str(rospy.get_param(
@@ -125,13 +163,27 @@ class FormationGoalBridge(object):
         self._fallback_start = (self.start_x, self.start_y,
                                 self.start_theta)
         self._start_override = None
+        self._confirmed_reset_id = None
+        self._start_lock = threading.RLock()
         self._map_ready = False
         self._manual_start = False
         self._preview_pub = rospy.Publisher(
             "/formation/display_pose", PoseStamped, queue_size=1, latch=True)
+        self._endpoint_margin = float(rospy.get_param("~endpoint_collision_margin", 0.05))
+        self._endpoint_body_height = float(
+            rospy.get_param("~body_height_m", PlaybackMarkerOptions.body_height_m))
+        self._endpoint_shapes = {
+            i: VehicleShape(self.body_length_m, self.body_width_m)
+            for i in self.vehicle_ids}
+        self._endpoint_checker = None
+        self._endpoint_request = None
+        self._endpoint_pub = rospy.Publisher(
+            ENDPOINTS_TOPIC, MarkerArray, queue_size=1, latch=True)
+        self._publish_endpoints()
 
         self._request_pub = rospy.Publisher(
             REQUEST_TOPIC, FormationPlanRequest, queue_size=1, latch=True)
+        rospy.Subscriber("/map", OccupancyGrid, self.on_endpoint_map, queue_size=1)
         rospy.Subscriber(GOAL_TOPIC, PoseStamped, self.on_goal, queue_size=1)
         rospy.Subscriber(
             INITIAL_POSE_TOPIC, PoseWithCovarianceStamped,
@@ -167,6 +219,8 @@ class FormationGoalBridge(object):
             "start=(%.3f, %.3f, %.3f), goal topic=%s",
             self.formation_id, self.offsets, self.start_x, self.start_y,
             self.start_theta, GOAL_TOPIC)
+        if self._case_dir is not None:
+            rospy.loginfo("[case collection] ready. Set a start and goal in RViz")
 
     # ---- parameters ---------------------------------------------------
 
@@ -189,8 +243,25 @@ class FormationGoalBridge(object):
         state = document.get("state")
         if state not in ("IDLE", "PLANNING", "PLAYING", "HOLD_END", "FAILED"):
             return
-        self._job_state = document
-        self._job_state_received = _time.monotonic()
+        with self._start_lock:
+            if (self.admission_backend == VIRTUAL_BACKEND
+                    and document.get("backend") == VIRTUAL_BACKEND
+                    and state not in BUSY_STATES
+                    and document.get("initial_reset_ready") is True):
+                context = document.get("initial_context")
+                if isinstance(context, dict) and context.get("source") == "rviz_reset":
+                    identity = context.get("context_id")
+                    pose = context.get("qf")
+                    if (isinstance(identity, str) and identity
+                            and identity != self._confirmed_reset_id
+                            and isinstance(pose, dict)):
+                        start = tuple(pose.get(key) for key in ("x", "y", "psi"))
+                        if all(type(value) in (int, float) and math.isfinite(value)
+                               for value in start):
+                            self._confirmed_reset_id = identity
+                            self._record_manual_start(start)
+            self._job_state = document
+            self._job_state_received = _time.monotonic()
 
     def _admission_busy(self):
         """Return True/False for a fresh uniform job, None when unavailable.
@@ -281,11 +352,29 @@ class FormationGoalBridge(object):
 
     def _start_pose(self):
         """Return ``(start, body_headings, source, consume_override)``."""
+        if self._case_dir is not None and not self._manual_start:
+            raise TransportContractError("case collection requires 2D Pose Estimate first")
         if self._start_override is not None:
             start = self._start_override
             return (start,
                     self.contract.headings_for_policy(start[2]),
-                    "manual start", True)
+                    "manual start", self._case_dir is None)
+        job = self._job_state or {}
+        if (self.admission_backend == PLAYBACK_PLAN_BACKEND
+                and job.get("state") == "HOLD_END"):
+            terminal = job.get("uniform_terminal")
+            if (job.get("backend") != PLAYBACK_PLAN_BACKEND
+                    or job.get("formation_id") != self.formation_id or not terminal
+                    or not job.get("plan_id") or not job.get("model_sha256")):
+                raise TransportContractError("no confirmed uniform terminal state; set a new start pose")
+            try:
+                start = tuple(float(value) for value in terminal["qf"])
+                headings = {i: float(terminal["headings"][str(i)]) for i in self.vehicle_ids}
+            except (KeyError, TypeError, ValueError) as exc:
+                raise TransportContractError("invalid confirmed uniform terminal state") from exc
+            if len(start) != 3 or not all(math.isfinite(value) for value in (*start, *headings.values())):
+                raise TransportContractError("invalid confirmed uniform terminal pose or headings")
+            return start, headings, "confirmed terminal", False
         snapshot = self._playback_snapshot()
         if snapshot is not None:
             return snapshot[0], snapshot[1], "current playback", False
@@ -295,23 +384,49 @@ class FormationGoalBridge(object):
                 "configured fallback", False)
 
     def on_initial_pose(self, message):
+        if self.admission_backend == VIRTUAL_BACKEND:
+            # The planner confirms or rejects this command in job_state.
+            return
         if message.header.frame_id not in ("", self.frame_id):
             rospy.logwarn(
                 "[formation goal bridge] ignoring initial pose frame %r",
                 message.header.frame_id)
             return
-        if self._refuse_when_busy("2D Pose Estimate"):
-            return
         pose = message.pose.pose
-        self._start_override = (
+        start = (
             float(pose.position.x), float(pose.position.y),
             quaternion_to_yaw(pose.orientation))
+        if not all(math.isfinite(value) for value in start):
+            rospy.logwarn("[formation goal bridge] ignoring nonfinite initial pose")
+            return
+        with self._start_lock:
+            job = self._job_state or {}
+            if (self.admission_backend == PLAYBACK_PLAN_BACKEND and self._admission_busy()
+                    and job.get("state") == "PLANNING"):
+                try:
+                    response = self._cancel_pending_plan()
+                except rospy.ServiceException as exc:
+                    rospy.logwarn("[formation goal bridge] reset service unavailable: %s", exc)
+                    return
+                if not response.success:
+                    rospy.logwarn("[formation goal bridge] refusing reset: %s", response.message)
+                    return
+                self._job_state = dict(job, state="IDLE")
+                self._job_state_received = _time.monotonic()
+            elif self._refuse_when_busy("2D Pose Estimate"):
+                return
+            self._record_manual_start(start)
+
+    def _record_manual_start(self, start):
+        self._start_override = start
         self._manual_start = True
         self._fallback_start = self._start_override
         # A manual reset starts a new experiment.  Statuses for the previous
         # plan must not be mistaken for this experiment, and the preview
         # below clears any old executable trajectory from the display.
         self._current_plan = None
+        self._endpoint_request = None
+        self._publish_endpoints()
         self._publish_preview(self._start_override)
         rospy.loginfo(
             "[formation goal bridge] 2D Pose Estimate recorded; new "
@@ -320,16 +435,17 @@ class FormationGoalBridge(object):
             self.contract.headings_for_policy(self._start_override[2]))
 
     def on_map_start(self, message):
-        if self._manual_start or self._current_plan is not None:
-            return
         if message.header.frame_id not in ("", self.frame_id):
             return
         pose = message.pose
         start = (float(pose.position.x), float(pose.position.y),
                  quaternion_to_yaw(pose.orientation))
-        self._fallback_start = start
-        self._start_override = start
-        self._publish_preview(start)
+        with self._start_lock:
+            if self._manual_start or self._current_plan is not None:
+                return
+            self._fallback_start = start
+            self._start_override = start
+            self._publish_preview(start)
 
     def _publish_preview(self, start):
         message = PoseStamped()
@@ -339,6 +455,27 @@ class FormationGoalBridge(object):
         message.pose.orientation.z = math.sin(start[2] / 2)
         message.pose.orientation.w = math.cos(start[2] / 2)
         self._preview_pub.publish(message)
+
+    def on_endpoint_map(self, message):
+        grid, _ = grid_from_occupancy_grid(message)
+        checker = (FormationCollisionChecker(
+            grid, self._model, self._endpoint_shapes, self._endpoint_margin)
+            if grid is not None else None)
+        with self._start_lock:
+            self._endpoint_checker = checker
+            if self._endpoint_request is not None:
+                self._publish_endpoints()
+
+    def _publish_endpoints(self):
+        specs = clear_marker_specs(self.frame_id)
+        if self._endpoint_request is not None:
+            try:
+                specs = build_endpoint_markers(
+                    self._endpoint_request, self._endpoint_checker, self.frame_id,
+                    body_height_m=self._endpoint_body_height)
+            except (ValueError, OverflowError) as exc:
+                rospy.logwarn("[formation goal bridge] endpoint display failed: %s", exc)
+        self._endpoint_pub.publish(marker_array(specs, rospy.Time.now()))
 
     def on_goal(self, message):
         if message.header.frame_id not in ("", self.frame_id):
@@ -361,16 +498,23 @@ class FormationGoalBridge(object):
         goal_y = float(message.pose.position.y)
         goal_theta = quaternion_to_yaw(message.pose.orientation)
         try:
-            start, body_headings, source, consume_override = self._start_pose()
+            with self._start_lock:
+                start, body_headings, source, consume_override = self._start_pose()
+                continuation = ((self._job_state["plan_id"], self._job_state["model_sha256"])
+                                if source == "confirmed terminal" else None)
         except (TransportContractError, ValueError) as exc:
             rospy.logerr(
                 "[formation goal bridge] refusing goal: %s", exc)
             return
-        if not self._publish_request(
-                start, (goal_x, goal_y, goal_theta), body_headings):
+        goal = (goal_x, goal_y, goal_theta)
+        if self.admission_backend == VIRTUAL_BACKEND:
+            goal = canonical_virtual_goal(start, goal)
+        if not self._publish_request(start, goal, body_headings, continuation=continuation):
             return
         if consume_override:
-            self._start_override = None
+            with self._start_lock:
+                if self._start_override is start:
+                    self._start_override = None
         rospy.loginfo(
             "[formation goal bridge] start from %s; body headings %s",
             source, {vehicle_id: round(body_headings[vehicle_id], 6)
@@ -383,7 +527,7 @@ class FormationGoalBridge(object):
         self._plan_id = 1 if plan_id >= PLAN_ID_LIMIT else plan_id + 1
         return plan_id
 
-    def _publish_request(self, start, goal, body_headings):
+    def _publish_request(self, start, goal, body_headings, *, continuation=None):
         try:
             start_centers = self._model.centers(FormationPose(*start))
             goal_centers = self._model.centers(FormationPose(*goal))
@@ -411,6 +555,8 @@ class FormationGoalBridge(object):
         request.formation_goal.y = float(goal[1])
         request.formation_goal.theta = float(goal[2])
         request.allow_reverse = self.allow_reverse
+        if continuation is not None:
+            request.continuation_plan_id, request.continuation_model_sha256 = continuation
         for vehicle_id in self.vehicle_ids:
             spec = FormationVehicleSpec()
             spec.vehicle_id = vehicle_id
@@ -425,30 +571,88 @@ class FormationGoalBridge(object):
             spec.start_center.theta = float(body_headings[vehicle_id])
             spec.goal_center.x = float(goal_center[0])
             spec.goal_center.y = float(goal_center[1])
-            # Placeholder only when goal_heading_free is true; the backend
-            # still checks cargo psi_F and the rigid goal centres.  STRAIGHT
-            # uses the same cargo heading as an explicit fixed heading, so
-            # the adapter can verify kT=etaT=0 without editing the request.
+            # The arrow sets the nominal body heading for display. STRAIGHT
+            # also uses it as the fixed terminal body heading.
             spec.goal_center.theta = float(goal[2])
             spec.goal_heading_free = goal_heading_free
             spec.body_length_m = self.body_length_m
             spec.body_width_m = self.body_width_m
             request.vehicles.append(spec)
 
-        self._current_plan = plan_id
-        self._last_goal = goal
-        self._request_pub.publish(request)
-        rospy.loginfo(
-            "[formation goal bridge] plan %d: start=(%.3f, %.3f, %.3f) "
-            "goal=(%.3f, %.3f, %.3f) vehicles=%d",
-            plan_id, start[0], start[1], start[2],
-            goal[0], goal[1], goal[2], len(self.vehicle_ids))
-        if self.virtual_a_goal_policy is not None:
+        if self._case_dir is not None:
+            if not self._save_case(request):
+                return False
+        else:
+            self._current_plan = plan_id
+            self._last_goal = goal
+            self._request_pub.publish(request)
             rospy.loginfo(
-                "[formation goal bridge] plan %d virtual_a_goal_policy=%s "
-                "goal_headings=%s", plan_id, self.virtual_a_goal_policy,
-                {vehicle_id: round(goal[2], 6)
-                 for vehicle_id in self.vehicle_ids})
+                "[formation goal bridge] plan %d: start=(%.3f, %.3f, %.3f) "
+                "goal=(%.3f, %.3f, %.3f) vehicles=%d",
+                plan_id, start[0], start[1], start[2],
+                goal[0], goal[1], goal[2], len(self.vehicle_ids))
+            if self.virtual_a_goal_policy is not None:
+                rospy.loginfo(
+                    "[formation goal bridge] plan %d virtual_a_goal_policy=%s "
+                    "goal_headings=%s", plan_id, self.virtual_a_goal_policy,
+                    {vehicle_id: round(goal[2], 6)
+                     for vehicle_id in self.vehicle_ids})
+        with self._start_lock:
+            if self._manual_start:
+                self._endpoint_request = validate_formation_request(request).snapshot
+                self._publish_endpoints()
+        return True
+
+    def _save_case(self, request):
+        with self._start_lock:
+            job = self._job_state or {}
+            signature = job.get("map_signature")
+        if not job.get("map_ready") or not signature or job.get("backend") != self.admission_backend:
+            rospy.logwarn("[case collection] planner map is not ready. Send the goal again")
+            return False
+
+        created = datetime.now(timezone.utc)
+        map_name = Path(self._case_profile["map"]["directory"]).name
+        case_id = "{}_{}_{}".format(
+            map_name.split("-")[0], created.strftime("%Y%m%dT%H%M%S%fZ"),
+            uuid4().hex[:8])
+        path = self._case_dir / (case_id + ".json")
+        fields = yaml.safe_load(str(request))
+        del fields["plan_id"], fields["header"]["seq"], fields["header"]["stamp"]
+        document = {
+            **self._case_profile,
+            "case_id": case_id,
+            "name": case_id,
+            "notes": "",
+            "captured_at_utc": created.isoformat(),
+            "map": {**self._case_profile["map"], "grid_sha256": signature},
+            "request": fields,
+            "expect": {"outcome": "success"},
+        }
+        temporary = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                    mode="w", encoding="utf-8", suffix=".tmp",
+                    dir=self._case_dir, delete=False) as stream:
+                temporary = Path(stream.name)
+                json.dump(document, stream, indent=2, ensure_ascii=False, allow_nan=False)
+                stream.write("\n")
+            temporary.replace(path)
+        except (OSError, ValueError) as exc:
+            if temporary is not None and temporary.exists():
+                temporary.unlink()
+            rospy.logerr("[case collection] could not save %s: %s", path, exc)
+            return False
+        rospy.loginfo("[case collection] saved %s", path)
+        goal = request.formation_goal
+        marker = PoseStamped()
+        marker.header = request.header
+        marker.pose.position.x = goal.x
+        marker.pose.position.y = goal.y
+        marker.pose.position.z = 0.07
+        marker.pose.orientation.z = math.sin(goal.theta / 2)
+        marker.pose.orientation.w = math.cos(goal.theta / 2)
+        self._case_saved_pub.publish(marker)
         return True
 
     def on_optimizer_status(self, message):

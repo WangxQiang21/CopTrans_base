@@ -1,0 +1,143 @@
+{
+  "schema": "formation_scenario/v1",
+  "backend": "uniform_v02",
+  "map": {
+    "directory": "maps/map03-p11-narrow-case-c",
+    "scale": 2.625,
+    "grid_sha256": "1480bd43803045feb25e354e41e23f035fe1b453ebea861ebbf5b1f4f8887981"
+  },
+  "planner": {
+    "max_expansions": "10000",
+    "uniform_max_seconds": "30.0",
+    "uniform_translation_step": "1.0",
+    "uniform_direct_goal_translation": "true",
+    "uniform_global_translation_route": "true",
+    "uniform_heading_aligned_route": "true",
+    "uniform_collision_margin": "0.05",
+    "uniform_sweep_spacing": "0.01",
+    "uniform_publication_dt": "0.02",
+    "uniform_goal_xy_tol": "0.02",
+    "uniform_goal_psi_tol": "0.017453292519943295",
+    "playback_start_timeout_s": "5.0",
+    "playback_finish_grace_s": "3.0"
+  },
+  "transport": {
+    "formation_id": "cargo_wedge",
+    "vehicle_ids": [
+      1,
+      2,
+      3
+    ],
+    "offsets": [
+      [
+        1.0,
+        0.0
+      ],
+      [
+        0.0,
+        1.0
+      ],
+      [
+        0.0,
+        -1.0
+      ]
+    ],
+    "body_length_m": 0.738,
+    "body_width_m": 0.5,
+    "body_height_m": 0.338,
+    "allow_reverse": true,
+    "goal_heading_free": true,
+    "initial_heading_policy": "cargo_heading"
+  },
+  "case_id": "map03_20261121T094253785891Z_e05985b3",
+  "name": "map03_20261121T094253785891Z_e05985b3",
+  "notes": "",
+  "captured_at_utc": "2026-11-21T09:42:53.785891+00:00",
+  "request": {
+    "header": {
+      "frame_id": "map"
+    },
+    "formation_id": "cargo_wedge",
+    "formation_start": {
+      "x": 1.6756248474121094,
+      "y": 3.3939507007598877,
+      "theta": -0.009389424696564674
+    },
+    "formation_goal": {
+      "x": 12.468387603759766,
+      "y": 3.5157148838043213,
+      "theta": -3.1209771633148193
+    },
+    "vehicles": [
+      {
+        "vehicle_id": 1,
+        "offset_in_formation": {
+          "x": 1.0,
+          "y": 0.0,
+          "z": 0.0
+        },
+        "start_center": {
+          "x": 2.675580767087893,
+          "y": 3.38456141402669,
+          "theta": -0.009389424696564674
+        },
+        "goal_center": {
+          "x": 11.468600095453525,
+          "y": 3.495100853756849,
+          "theta": -3.1209771633148193
+        },
+        "goal_heading_free": true,
+        "body_length_m": 0.738,
+        "body_width_m": 0.5
+      },
+      {
+        "vehicle_id": 2,
+        "offset_in_formation": {
+          "x": 0.0,
+          "y": 1.0,
+          "z": 0.0
+        },
+        "start_center": {
+          "x": 1.685014134145307,
+          "y": 4.393906620435671,
+          "theta": -0.009389424696564674
+        },
+        "goal_center": {
+          "x": 12.489001633807238,
+          "y": 2.51592737549808,
+          "theta": -3.1209771633148193
+        },
+        "goal_heading_free": true,
+        "body_length_m": 0.738,
+        "body_width_m": 0.5
+      },
+      {
+        "vehicle_id": 3,
+        "offset_in_formation": {
+          "x": 0.0,
+          "y": -1.0,
+          "z": 0.0
+        },
+        "start_center": {
+          "x": 1.6662355606789117,
+          "y": 2.3939947810841042,
+          "theta": -0.009389424696564674
+        },
+        "goal_center": {
+          "x": 12.447773573712293,
+          "y": 4.515502392110562,
+          "theta": -3.1209771633148193
+        },
+        "goal_heading_free": true,
+        "body_length_m": 0.738,
+        "body_width_m": 0.5
+      }
+    ],
+    "allow_reverse": true,
+    "continuation_plan_id": 0,
+    "continuation_model_sha256": ""
+  },
+  "expect": {
+    "outcome": "success"
+  }
+}

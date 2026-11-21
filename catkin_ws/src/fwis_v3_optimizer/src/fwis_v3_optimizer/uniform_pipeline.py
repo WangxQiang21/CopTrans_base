@@ -6,12 +6,12 @@ FR01 edges.  The search's terminal validator is the real FR02 audit, and a
 returned SUCCESS is rebuilt and independently audited once more before the
 pipeline marks it feasible.  A geometric goal path alone is never executable.
 """
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, replace
 import hashlib
 import json
 import math
 import time
-from typing import Mapping, Optional
+from typing import Callable, Mapping, Optional
 
 from .core import Grid
 from .formation import FormationModel, FormationPose, FormationValidationError
@@ -21,8 +21,11 @@ from .formation_quality import (
     FormationEvaluationFailure,
     REJECTED,
 )
+from .formation_retiming import _DYNAMIC_LIMITS
 from .uniform_motion import UniformMotionEdge
-from .uniform_quality import UniformAuditRequest, audit_uniform_timed_plan
+from .uniform_quality import (
+    UNIFORM_DYNAMIC_UNCONFIRMED, UniformAuditRequest, audit_uniform_timed_plan,
+)
 from .uniform_search import (
     GraphSearchConfig,
     SEARCH_AUDIT_REJECTED,
@@ -35,7 +38,8 @@ from .uniform_search import (
     UniformGraphSearchResult,
     initial_state,
 )
-from .uniform_trajectory import UniformTimedPlan
+from .uniform_trajectory import UniformTimedPlan, _edge_record, _validate_initial_edge
+from .uniform_timing import MotionTiming
 
 PIPELINE_REQUEST_REJECTED = "REQUEST_REJECTED"
 
@@ -74,6 +78,8 @@ class UniformPlanningRequest:
     formation_id: str = "uniform_v02"
     successor_config: SuccessorConfig = field(default_factory=SuccessorConfig)
     search_config: GraphSearchConfig = field(default_factory=GraphSearchConfig)
+    initial_edge: Optional[UniformMotionEdge] = None
+    cancelled: Optional[Callable[[], bool]] = None
 
 
 @dataclass
@@ -157,6 +163,21 @@ def request_fingerprint(request):
          "length_m": request.vehicle_shapes[vehicle_id].length_m,
          "width_m": request.vehicle_shapes[vehicle_id].width_m}
         for vehicle_id in sorted(request.vehicle_shapes)]
+    search_config = asdict(request.search_config)
+    if not search_config["continuous_a_refinement"]:
+        del search_config["continuous_a_refinement"]
+    if not search_config["direct_goal_translation"]:
+        # Preserve the fingerprint of requests using the original search.
+        del search_config["direct_goal_translation"]
+        del search_config["global_translation_route"]
+        del search_config["preview_checks"]
+    if not search_config.get("global_translation_route", False):
+        del search_config["heading_aligned_route"]
+        del search_config["heading_transition_route"]
+        del search_config["formation_raster"]
+    successor_config = asdict(request.successor_config)
+    if not successor_config["goal_formation_heading_free"]:
+        del successor_config["goal_formation_heading_free"]
     inputs = {
         "plan_id": request.plan_id,
         "formation_id": request.formation_id,
@@ -167,9 +188,11 @@ def request_fingerprint(request):
         "grid": grid_payload,
         "model": model_payload,
         "vehicle_shapes": shape_payload,
-        "successor_config": asdict(request.successor_config),
-        "search_config": asdict(request.search_config),
+        "successor_config": successor_config,
+        "search_config": search_config,
     }
+    if request.initial_edge is not None:
+        inputs["previous_terminal_edge"] = _edge_record(request.initial_edge)
     return _sha256_text(_canonical_json(inputs)), inputs
 
 
@@ -291,7 +314,7 @@ def _check_goal_tolerance(request, expected_goal_qf):
                     request.goal_qf.x, request.goal_qf.y,
                     config.goal_xy_tol_m))
     psi_error = abs(_wrap_angle(expected_goal_qf.psi - request.goal_qf.psi))
-    if psi_error > config.goal_psi_tol_rad:
+    if not config.goal_formation_heading_free and psi_error > config.goal_psi_tol_rad:
         raise _ContractError(
             "REQUEST_GOAL_TOLERANCE_EXCEEDED", "goal_qf.psi",
             "expected endpoint psi={:.17g} is {:.6g} rad from the requested "
@@ -384,7 +407,7 @@ def _expected_contract(request, edges, zero_motion):
         goal_qf=expected_goal_qf,
         goal_headings=dict(expected_goal_headings),
         timing_limits=config.timing_limits,
-        allow_reverse=config.allow_reverse)
+        allow_reverse=config.allow_reverse, initial_edge=request.initial_edge)
     return _ExpectedContract(
         audit_request=audit_request, edges=edges,
         zero_motion=bool(zero_motion), goal_qf=expected_goal_qf,
@@ -445,6 +468,9 @@ def _verify_plan(plan, contract, request):
                   "PLAN_START_MISMATCH")
     _require_headings(plan.start_headings, request.start_headings,
                       "plan.start_headings", "PLAN_START_MISMATCH")
+    if plan.initial_edge != request.initial_edge:
+        raise _ContractError("PLAN_START_MISMATCH", "plan.initial_edge",
+                             "plan changed the confirmed initial wheel state")
     _require_pose(plan.goal_qf, contract.goal_qf, "plan.goal_qf",
                   "PLAN_GOAL_MISMATCH")
     _require_headings(plan.goal_headings, contract.goal_headings,
@@ -494,6 +520,37 @@ def _contract_failure(request, exc):
         checks=0)
 
 
+def _retime_unconfirmed_phases(plan, evaluation):
+    """Scale only affected motion clocks using the independent audit bounds."""
+    if evaluation.reason != UNIFORM_DYNAMIC_UNCONFIRMED:
+        return None, {}
+    orders = {name: order for name, _, order in _DYNAMIC_LIMITS}
+    factors = {}
+    for row in evaluation.metrics.get("dynamic_confirmation", {}).get("unconfirmed", ()):
+        index = row["block_index"]
+        ratio = row["adopted_bound"] / row["limit"]
+        order = orders.get(row["constraint"])
+        if order is None or not math.isfinite(ratio) or ratio <= 1.0:
+            return None, {}
+        scale = 1.0001 * ratio ** (1.0 / order)
+        factors[index] = max(scale, factors.get(index, 1.0))
+    if not factors:
+        return None, {}
+
+    phases = []
+    time_s = 0.0
+    for phase in plan.phases:
+        duration = phase.duration_s
+        if isinstance(phase, MotionTiming) and phase.edge_index in factors:
+            duration *= factors[phase.edge_index]
+            if duration > plan.limits.max_block_duration_s:
+                return None, {}
+        shifted = replace(phase, t0_s=time_s, duration_s=duration)
+        phases.append(shifted)
+        time_s = shifted.end_time
+    return replace(plan, phases=tuple(phases), duration_s=time_s), factors
+
+
 def _build_and_audit(edges, request, zero_motion=False):
     """Construct and audit under a contract fixed before construction.
 
@@ -522,7 +579,7 @@ def _build_and_audit(edges, request, zero_motion=False):
                 model=request.model, start_qf=request.start_qf,
                 start_headings=_headings_dict(request.start_headings),
                 expected_end_qf=contract.goal_qf,
-                expected_end_headings=dict(contract.goal_headings))
+                expected_end_headings=dict(contract.goal_headings), initial_edge=request.initial_edge)
         else:
             plan = UniformTimedPlan.from_edges(
                 contract.edges, request.vehicle_shapes,
@@ -532,7 +589,7 @@ def _build_and_audit(edges, request, zero_motion=False):
                 model=request.model, start_qf=request.start_qf,
                 start_headings=_headings_dict(request.start_headings),
                 expected_end_qf=contract.goal_qf,
-                expected_end_headings=dict(contract.goal_headings))
+                expected_end_headings=dict(contract.goal_headings), initial_edge=request.initial_edge)
     except _ContractError as exc:
         return None, None, _contract_failure(request, exc)
     except FormationValidationError as exc:
@@ -545,6 +602,19 @@ def _build_and_audit(edges, request, zero_motion=False):
         projection = plan.sample()
         evaluation = audit_uniform_timed_plan(
             contract.audit_request, plan, projection, request.grid)
+        retimed, factors = _retime_unconfirmed_phases(plan, evaluation)
+        if retimed is not None:
+            _verify_plan(retimed, contract, request)
+            new_projection = retimed.sample()
+            recertification = audit_uniform_timed_plan(
+                contract.audit_request, retimed, new_projection, request.grid)
+            if recertification.feasible:
+                evaluation = replace(
+                    recertification,
+                    metrics=dict(recertification.metrics, audit_retiming_factors=factors))
+            else:
+                evaluation = recertification
+            plan, projection = retimed, new_projection
     except _ContractError as exc:
         return None, None, _contract_failure(request, exc)
     except FormationValidationError as exc:
@@ -589,12 +659,13 @@ def plan_uniform(request):
             "start static check failed: vehicle_id={} detail={}".format(
                 start_report.vehicle_id, start_report.detail))
 
-    if _goal_center_outside(request.grid, request.model, request.goal_qf):
+    fixed_goal_heading = not request.successor_config.goal_formation_heading_free
+    if fixed_goal_heading and _goal_center_outside(request.grid, request.model, request.goal_qf):
         return result(
             PIPELINE_REQUEST_REJECTED, False, "GOAL_CENTER_OUT_OF_BOUNDS",
             "request", "at least one rigid goal vehicle centre is outside the map")
 
-    if request.goal_headings is not None:
+    if fixed_goal_heading and request.goal_headings is not None:
         goal_report = checker.static_check(
             request.goal_qf, request.goal_headings)
         if not goal_report.success:
@@ -604,9 +675,16 @@ def plan_uniform(request):
                 "goal static check failed: vehicle_id={} detail={}".format(
                     goal_report.vehicle_id, goal_report.detail))
 
+    if request.initial_edge is not None:
+        try:
+            _validate_initial_edge(request.initial_edge, request.model, request.start_qf,
+                                   tuple(sorted(request.start_headings.items())),
+                                   request.successor_config.timing_limits)
+        except FormationValidationError as exc:
+            return result(PIPELINE_REQUEST_REJECTED, False, "INVALID_CONTINUATION", "request", str(exc))
     initial = initial_state(
         request.model, request.start_qf, request.start_headings,
-        config=request.successor_config, goal_qf=request.goal_qf)
+        config=request.successor_config, goal_qf=request.goal_qf, initial_edge=request.initial_edge)
     search = UniformGraphSearch(
         request.model, checker, request.successor_config,
         request.search_config)
@@ -617,7 +695,7 @@ def plan_uniform(request):
 
     search_result = search.search(
         initial, request.goal_qf, terminal_validator=terminal_validator,
-        goal_headings=request.goal_headings)
+        goal_headings=request.goal_headings, cancelled=request.cancelled)
 
     if search_result.status == SEARCH_SUCCESS:
         # Rebuild and independently re-audit the returned path.  The search
@@ -633,6 +711,20 @@ def plan_uniform(request):
                 "audit", "final rebuilt-path audit rejected a path that the "
                 "terminal screen had accepted", search_result,
                 plan, projection, evaluation)
+        if request.search_config.continuous_a_refinement:
+            from .uniform_curve_refinement import refine_turn
+
+            refinement_request = request
+            if not fixed_goal_heading:
+                refinement_request = replace(request, goal_qf=FormationPose(
+                    request.goal_qf.x, request.goal_qf.y, plan.goal_qf.psi))
+            improved = refine_turn(refinement_request, plan, _build_and_audit,
+                                   started + request.search_config.max_seconds)
+            if improved is not None:
+                plan, projection, evaluation = improved
+                return result(SEARCH_SUCCESS, True, evaluation.reason, "none",
+                              "continuous A refined and audited on the common A/O/S timeline",
+                              search_result, plan, projection, evaluation)
         return result(
             SEARCH_SUCCESS, True, evaluation.reason, "none",
             "autonomous path rebuilt and independently audited FEASIBLE",

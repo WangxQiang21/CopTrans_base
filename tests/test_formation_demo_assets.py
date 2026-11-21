@@ -203,7 +203,7 @@ class FormationLaunchTest(unittest.TestCase):
         self.assertEqual(args["hud_left"], "900")
         self.assertEqual(args["hud_top"], "20")
         self.assertEqual(args["hud_width"], "360")
-        self.assertEqual(args["hud_height"], "270")
+        self.assertEqual(args["hud_height"], "460")
         node = next(node for node in root.findall("node")
                     if node.get("name") == "formation_playback")
         params = {param.get("name"): param.get("value")
@@ -263,6 +263,9 @@ class RunDemoBackendTest(unittest.TestCase):
         result = self._run("--map", "map04")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("backend:=virtual_rigid_a", result.stdout)
+        self.assertIn("backend=virtual_rigid_a scale=1.8", result.stdout)
+        self.assertIn("resolution_m=", result.stdout)
+        self.assertIn("show_footprints=false", result.stdout)
         self.assertIn("virtual_a_guidance_mode:=corridor", result.stdout)
         self.assertIn("virtual_a_corridor_enforcement:=hard", result.stdout)
         self.assertIn(
@@ -416,7 +419,7 @@ class FormationRvizTest(unittest.TestCase):
         self.assertEqual(hud["left"], 900)
         self.assertEqual(hud["top"], 20)
         self.assertEqual(hud["width"], 360)
-        self.assertEqual(hud["height"], 270)
+        self.assertEqual(hud["height"], 460)
         self.assertTrue(hud["Overtake Position Properties"])
         corridor = next(
             item for item in displays

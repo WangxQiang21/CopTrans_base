@@ -15,11 +15,16 @@ Visualization Manager:
       Value: true
     - Class: rviz/MarkerArray
       Enabled: true
-      Name: Convex workspace corridors (F point only)
+      Name: Corridors and swept footprints
       Marker Topic: /formation/corridors
       Namespaces:
         formation/planning/corridor_f_only/fill: true
         formation/planning/corridor_f_only/edge: true
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Name: Start and goal envelopes
+      Marker Topic: /formation/endpoints
       Value: true
     - Class: rviz/Path
       Enabled: true
@@ -197,7 +202,7 @@ Visualization Manager:
       Topic: /formation/hud
       Value: true
       font: DejaVu Sans Mono
-      height: 270
+      height: 460
       left: 900
       line width: 2
       text size: 13
@@ -230,3 +235,6 @@ Visualization Manager:
       X: 6
       Y: 4
       Angle: 0
+Window Geometry:
+  Width: 1680
+  Height: 900

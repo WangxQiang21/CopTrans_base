@@ -672,7 +672,7 @@ def _make_setup(previous, current_edge, previous_edge, edge_index, t0_s,
         common_steer_accel_peak_radps2=accel_peak)
 
 
-def schedule_uniform_edges(edges, limits=None):
+def schedule_uniform_edges(edges, limits=None, *, initial_edge=None):
     """Return common initial/setup/motion timing for a manual edge sequence."""
     if limits is None:
         limits = FormationTimingLimits()
@@ -699,9 +699,9 @@ def schedule_uniform_edges(edges, limits=None):
 
     phases = []
     time_s = 0.0
-    previous_descriptors = _initial_descriptors(
-        sequence[0], motion_limits)
-    previous_edge = None
+    previous_descriptors = (_initial_descriptors(sequence[0], motion_limits)
+                            if initial_edge is None else _edge_descriptors(initial_edge, at_end=True))
+    previous_edge = initial_edge
     for index, (edge, item) in enumerate(zip(sequence, analyzed)):
         setup = _make_setup(
             previous_descriptors, edge, previous_edge, index, time_s,

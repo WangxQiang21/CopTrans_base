@@ -29,6 +29,8 @@
   <arg name="optimizer" default="true"/>
   <arg name="playback" default="true"/>
   <arg name="goal_bridge" default="true"/>
+  <arg name="case_collection_dir" default=""/>
+  <arg name="case_collection_profile" default=""/>
   <arg name="goal_start_x" default="10.0"/>
   <arg name="goal_start_y" default="3.6"/>
   <arg name="goal_start_theta" default="0.0"/>
@@ -46,6 +48,7 @@
   <arg name="require_cargo_heading" default="false"/>
   <arg name="playback_rate" default="25.0"/>
   <arg name="playback_publish_tf" default="true"/>
+  <arg name="show_footprints" default="false"/>
   <!-- Fixed pixel panel for a standard 1280x720 render viewport.  These are
        render pixels, not window pixels: the RViz side panels reduce the 3D
        viewport, so a resized window is configured explicitly, never inferred. -->
@@ -53,7 +56,7 @@
   <arg name="hud_left" default="900"/>
   <arg name="hud_top" default="20"/>
   <arg name="hud_width" default="360"/>
-  <arg name="hud_height" default="270"/>
+  <arg name="hud_height" default="460"/>
   <!-- FR05 autonomous uniform planner budgets.  These are search/audit
        budgets, not certified timing limits; T_end always comes from FR02.
        The defaults are the frozen FR04 contract: 10000 expansions / 30 s and
@@ -63,12 +66,20 @@
   <arg name="max_expansions" default="10000"/>
   <arg name="uniform_max_seconds" default="30.0"/>
   <arg name="uniform_translation_step" default="1.0"/>
+  <arg name="uniform_direct_goal_translation" default="false"/>
+  <arg name="uniform_global_translation_route" default="true"/>
+  <arg name="uniform_heading_aligned_route" default="true"/>
+  <arg name="uniform_heading_transition_route" default="true"/>
+  <arg name="uniform_continuous_a" default="false"/>
+  <arg name="uniform_formation_raster" default="true"/>
+  <arg name="uniform_preview_checks" default="true"/>
   <arg name="uniform_collision_margin" default="0.05"/>
   <arg name="uniform_sweep_spacing" default="0.01"/>
   <!-- Common publication grid of the sample carrier.  The model stays the
        authority; playback re-evaluates it analytically at every tick. -->
   <arg name="uniform_publication_dt" default="0.02"/>
   <arg name="uniform_goal_xy_tol" default="0.02"/>
+  <arg name="uniform_goal_formation_heading_free" default="false"/>
   <arg name="uniform_goal_psi_tol" default="0.017453292519943295"/>
   <arg name="playback_start_timeout_s" default="5.0"/>
   <arg name="playback_finish_grace_s" default="3.0"/>
@@ -110,10 +121,18 @@
     <param name="max_expansions" value="$(arg max_expansions)"/>
     <param name="max_seconds" value="$(arg uniform_max_seconds)"/>
     <param name="translation_step" value="$(arg uniform_translation_step)"/>
+    <param name="direct_goal_translation" value="$(arg uniform_direct_goal_translation)"/>
+    <param name="global_translation_route" value="$(arg uniform_global_translation_route)"/>
+    <param name="heading_aligned_route" value="$(arg uniform_heading_aligned_route)"/>
+    <param name="heading_transition_route" value="$(arg uniform_heading_transition_route)"/>
+    <param name="continuous_a_refinement" value="$(arg uniform_continuous_a)"/>
+    <param name="formation_raster" value="$(arg uniform_formation_raster)"/>
+    <param name="preview_checks" value="$(arg uniform_preview_checks)"/>
     <param name="collision_margin" value="$(arg uniform_collision_margin)"/>
     <param name="sweep_spacing" value="$(arg uniform_sweep_spacing)"/>
     <param name="publication_dt" value="$(arg uniform_publication_dt)"/>
     <param name="goal_xy_tol" value="$(arg uniform_goal_xy_tol)"/>
+    <param name="goal_formation_heading_free" value="$(arg uniform_goal_formation_heading_free)"/>
     <param name="goal_psi_tol" value="$(arg uniform_goal_psi_tol)"/>
     <param name="goal_heading_tol" value="$(arg uniform_goal_psi_tol)"/>
     <param name="playback_start_timeout_s"
@@ -163,6 +182,7 @@
     <param name="frame_id" value="map"/>
     <param name="rate" value="$(arg playback_rate)"/>
     <param name="publish_tf" value="$(arg playback_publish_tf)"/>
+    <param name="show_footprints" value="$(arg show_footprints)" type="bool"/>
     <param name="transport_ui" value="true"/>
     <!-- legacy subscribes /formation/timed_trajectory; uniform_v02 subscribes
          the atomic /formation/playback_plan plus /formation/job_state. -->
@@ -191,6 +211,10 @@
     <param name="map_timeout_s" value="8.0"/>
     <param name="playback_tf_timeout_s" value="0.5"/>
     <param name="admission_backend" value="$(arg backend)"/>
+    <param name="endpoint_collision_margin"
+           value="$(eval arg('uniform_collision_margin') if arg('backend') == 'uniform_v02' else 0.05)"/>
+    <param name="case_collection_dir" value="$(arg case_collection_dir)" type="str"/>
+    <param name="case_collection_profile" value="$(arg case_collection_profile)" type="str"/>
     <param name="virtual_a_goal_policy" value="$(arg virtual_a_goal_policy)"/>
     <param name="job_state_timeout_s" value="$(arg job_state_timeout_s)"/>
     <rosparam command="load" file="$(arg transport_config)"/>

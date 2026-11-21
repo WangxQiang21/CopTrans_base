@@ -29,7 +29,8 @@ from fwis_v3_optimizer.formation_collision import VehicleShape
 from fwis_v3_optimizer.formation_playback import (
     PLAYBACK_PLAN_BACKEND, PLAYBACK_PLAN_SCHEMA, HOLD_END, HOLD_START,
     PLAYING, PlaybackValidationError,
-    build_markers, fields_from_timed_message, frame_at, status_document,
+    build_markers, build_uniform_sweep_markers, fields_from_timed_message,
+    frame_at, status_document,
     trajectory_from_fields, verify_uniform_playback_plan)
 from fwis_v3_optimizer.uniform_motion import (
     a_arc_edge, a_arc_required_headings, a_straight_edge,
@@ -299,6 +300,31 @@ class EnvelopeAcceptanceTest(unittest.TestCase):
         with self.assertRaises(PlaybackValidationError):
             verify(plan, fields=dict(fields, times_from_start=tuple(times)))
 
+    def test_terminal_timestamp_can_round_up_to_ros_tick(self):
+        plan = straight_plan(distance_m=1.25)
+        fields = envelope_fields(plan)
+        secs, nsecs = divmod(round(plan.duration_s * 1e9), 1000000000)
+        wire_end = secs + nsecs / 1e9
+        self.assertGreater(wire_end, plan.duration_s)
+
+        def set_terminal_time(time_s):
+            fields["times_from_start"] = fields["times_from_start"][:-1] + (time_s,)
+            for vehicle in fields["trajectories"]:
+                points = vehicle["points"]
+                vehicle["points"] = points[:-1] + ((time_s,) + points[-1][1:],)
+
+        set_terminal_time(wire_end)
+        verified, _, _ = verify(plan, fields=fields)
+        self.assertEqual(verified.duration, wire_end)
+        held = frame_at(verified, wire_end + 1.0)
+        self.assertEqual(held.state, HOLD_END)
+        self.assertEqual(held.formation_x, plan.goal_qf.x)
+        self.assertTrue(all(vehicle.center_speed_mps == 0.0
+                            for vehicle in held.vehicles))
+        set_terminal_time(wire_end + 2e-9)
+        with self.assertRaisesRegex(PlaybackValidationError, "trajectory duration"):
+            verify(plan, fields=fields)
+
     def test_metadata_mismatches_are_rejected(self):
         plan = planar_plan()
         base = envelope_fields(plan)
@@ -371,6 +397,16 @@ class EnvelopeAcceptanceTest(unittest.TestCase):
 
 
 class AnalyticFrameTest(unittest.TestCase):
+
+    def test_straight_sweep_covers_the_full_vehicle_footprint(self):
+        trajectory, _, _ = verify(straight_plan())
+        markers = build_uniform_sweep_markers(trajectory)
+        fills = [marker for marker in markers if marker.marker_type == "TRIANGLE_LIST"]
+        self.assertEqual(len(fills), 3)
+        for marker, spec in zip(fills, trajectory.vehicles):
+            xs, ys, _ = zip(*marker.points)
+            self.assertAlmostEqual(max(xs) - min(xs), 1.5 + spec.body_length_m)
+            self.assertAlmostEqual(max(ys) - min(ys), spec.body_width_m)
 
     def test_frame_matches_the_model_and_not_linear_interpolation(self):
         plan = planar_plan()

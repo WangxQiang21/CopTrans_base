@@ -9,6 +9,9 @@ import json
 import math
 import sys
 import unittest
+from types import SimpleNamespace
+
+import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "catkin_ws/src/fwis_v3_optimizer/src"))
@@ -24,7 +27,9 @@ from fwis_v3_optimizer.formation_playback import (  # noqa: E402
     PlaybackMarkerOptions,
     PlaybackValidationError,
     SPIN,
+    build_endpoint_markers,
     build_markers,
+    sample_candidate_path,
     clear_marker_specs,
     frame_at,
     normalize_formation_id,
@@ -35,6 +40,9 @@ from fwis_v3_optimizer.formation_playback import (  # noqa: E402
     vehicle_namespace,
     vehicle_path_samples,
 )
+from fwis_v3_optimizer.core import Grid
+from fwis_v3_optimizer.formation import FormationModel, FormationPose, VehicleOffset
+from fwis_v3_optimizer.formation_collision import FormationCollisionChecker, VehicleShape
 
 
 def point(time, x, y, theta, mode=ACKERMANN, control=0.0, speed=1.0):
@@ -303,23 +311,57 @@ class PlaybackMarkerTest(unittest.TestCase):
         self.assertIn("formation/wedge_3/links", names)
         self.assertIn("formation/wedge_3/status", names)
 
-    def test_obb_uses_the_body_heading_not_the_formation_heading(self):
+    def test_body_and_optional_footprint_use_the_authoritative_heading(self):
         model = trajectory()
         frame = frame_at(model, 0.0)
-        markers, _, _, _ = build_markers(model, frame)
+        markers, _, _, _ = build_markers(
+            model, frame, PlaybackMarkerOptions(show_footprints=True))
         namespace = vehicle_namespace("wedge_3", 1)
         body = next(
             marker for marker in markers
-            if marker.namespace == namespace
-            and marker.marker_type == "LINE_STRIP"
-            and len(marker.points) == 5
-            and abs(marker.points[0][0] - marker.points[4][0]) < 1e-12
-            and abs(marker.points[0][1] - marker.points[4][1]) < 1e-12)
-        # Vehicle 1 is at (0, 1.2) with body yaw pi/2: its OBB is long in y.
-        ys = [value[1] for value in body.points]
-        xs = [value[0] for value in body.points]
+            if marker.namespace == namespace and marker.marker_type == "CUBE")
+        self.assertEqual(body.position[:2], (0.0, 1.2))
+        self.assertAlmostEqual(body.position[2], 0.338 / 2 + 0.005)
+        self.assertAlmostEqual(body.yaw, math.pi / 2)
+        self.assertEqual(body.scale, (0.738, 0.500, 0.338))
+        self.assertEqual(body.color[3], 1.0)
+        top = body.position[2] + body.scale[2] / 2
+        arrow = next(m for m in markers
+                     if m.namespace == namespace and m.marker_type == "ARROW")
+        label = next(m for m in markers
+                     if m.namespace == namespace and m.marker_type == "TEXT_VIEW_FACING")
+        self.assertGreater(min(p[2] for p in arrow.points), top)
+        self.assertGreater(label.position[2], top)
+        footprint = next(m for m in markers if m.namespace == namespace + "/footprint")
+        self.assertEqual(footprint.marker_type, "LINE_STRIP")
+        self.assertEqual(footprint.points[0], footprint.points[-1])
+        ys = [value[1] for value in footprint.points]
+        xs = [value[0] for value in footprint.points]
         self.assertAlmostEqual(max(ys) - min(ys), 0.738, places=6)
         self.assertAlmostEqual(max(xs) - min(xs), 0.5, places=6)
+
+    def test_oblique_and_spin_labels_follow_the_same_frame_as_the_cube(self):
+        samples = {
+            0: (point(0.0, 0.0, 0.0, 0.0, ACKERMANN),
+                point(1.0, 1.0, 0.0, 0.5, OBLIQUE),
+                point(2.0, 2.0, 0.0, 1.0, SPIN)),
+            1: fields()["trajectories"][1]["points"],
+        }
+        model = trajectory(samples=samples)
+        namespace = vehicle_namespace("wedge_3", 0)
+        for elapsed, mode in ((1.0, OBLIQUE), (2.0, SPIN)):
+            with self.subTest(elapsed=elapsed):
+                frame = frame_at(model, elapsed)
+                state = frame.vehicle_map()[0]
+                markers, _, _, _ = build_markers(model, frame)
+                ours = [m for m in markers if m.namespace == namespace]
+                body = next(m for m in ours if m.marker_type == "CUBE")
+                label = next(m for m in ours if m.marker_type == "TEXT_VIEW_FACING")
+                self.assertEqual(state.mode, mode)
+                self.assertEqual(body.position[:2], (state.center_x, state.center_y))
+                self.assertEqual(body.yaw, state.theta)
+                self.assertIn(" | {} | ".format(state.mode_name), label.text)
+                self.assertFalse(any(m.namespace.endswith("/footprint") for m in markers))
 
     def test_vehicle_path_samples_keep_every_authoritative_sample(self):
         samples = {
@@ -347,6 +389,21 @@ class PlaybackMarkerTest(unittest.TestCase):
             marker for marker in markers if marker.namespace == namespace]
         self.assertEqual(len(vehicle_markers), 4)
         self.assertFalse(any(marker.colors for marker in vehicle_markers))
+
+    def test_candidate_sampling_uses_exact_terminal_station(self):
+        length = 0.9999999999999996
+        visited = []
+
+        def state_at_s(station):
+            self.assertGreaterEqual(station, 0.0)
+            self.assertLessEqual(station, length)
+            visited.append(station)
+            return SimpleNamespace(qf=SimpleNamespace(x=station, y=0.0))
+
+        sample_candidate_path(
+            SimpleNamespace(length_m=length, state_at_s=state_at_s), {})
+        self.assertEqual(visited[0], 0.0)
+        self.assertEqual(visited[-1], length)
 
     def test_audited_status_allows_feasible_label(self):
         model = trajectory()
@@ -392,6 +449,54 @@ class PlaybackMarkerTest(unittest.TestCase):
         self.assertTrue(invalid["geometry_only"])
         for document in (cleared, invalid):
             json.dumps(document, sort_keys=True, allow_nan=False)
+
+
+class EndpointDisplayTests(unittest.TestCase):
+    def setUp(self):
+        model = FormationModel([
+            VehicleOffset(1, 1, 0), VehicleOffset(2, 0, 1), VehicleOffset(3, 0, -1)])
+        shapes = dict.fromkeys(model.vehicle_ids, VehicleShape(0.738, 0.500))
+        self.snapshot = SimpleNamespace(
+            model=model, vehicle_ids=model.vehicle_ids, vehicle_shapes=shapes,
+            start=FormationPose(2, 3, -math.pi / 2), goal=FormationPose(5, 3, 0),
+            start_headings=dict.fromkeys(model.vehicle_ids, -math.pi / 2),
+            goal_headings=dict.fromkeys(model.vehicle_ids, 0.0),
+            goal_heading_free=dict.fromkeys(model.vehicle_ids, True))
+
+    def checker(self, blocked_column):
+        occupied = np.zeros((160, 160), dtype=bool)
+        occupied[52:68, blocked_column:blocked_column + 7] = True
+        # The start envelope covers this cell between the vehicle bodies.
+        occupied[60, 40] = True
+        return FormationCollisionChecker(
+            Grid(occupied, 0.05, 0.0, 0.0),
+            self.snapshot.model, self.snapshot.vehicle_shapes, 0.05)
+
+    def test_adjacent_wall_can_be_avoided_by_one_car_turn(self):
+        checker = self.checker(126)
+        headings = self.snapshot.goal_headings
+        self.assertFalse(checker.static_check(self.snapshot.goal, headings).success)
+        layout = checker.sample_static_headings(self.snapshot.goal, headings, (1, 2, 3))
+        self.assertTrue(checker.static_check(self.snapshot.goal, layout).success)
+        self.assertAlmostEqual(abs(layout[1]), math.pi / 2)
+        self.assertEqual((layout[2], layout[3]), (0.0, 0.0))
+        markers = build_endpoint_markers(self.snapshot, checker)
+        self.assertEqual(markers[0].action, "DELETEALL")
+        self.assertTrue(any(m.text == "START  |  STATIC FIT" for m in markers))
+        self.assertTrue(any("GOAL  |  FIT WITH CAR TURNS" in m.text for m in markers))
+        self.assertTrue(any(m.namespace.endswith("goal/car1/original") for m in markers))
+        box = next(m for m in markers if m.namespace == "formation/endpoints/start"
+                   and m.marker_type == "TRIANGLE_LIST")
+        xs, ys, _ = zip(*box.points)
+        self.assertAlmostEqual(max(xs) - min(xs), 2.550)
+        self.assertAlmostEqual(max(ys) - min(ys), 1.788)
+
+    def test_inside_obstacle_stays_blocked_and_can_be_unchecked_without_a_map(self):
+        markers = build_endpoint_markers(self.snapshot, self.checker(117))
+        self.assertTrue(any(m.text == "GOAL  |  BLOCKED\ncar1 | No sampled fit"
+                            for m in markers))
+        markers = build_endpoint_markers(self.snapshot)
+        self.assertTrue(any(m.text == "GOAL  |  MAP UNAVAILABLE" for m in markers))
 
 
 if __name__ == "__main__":

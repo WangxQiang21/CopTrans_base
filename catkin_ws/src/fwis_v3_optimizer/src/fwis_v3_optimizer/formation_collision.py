@@ -12,13 +12,55 @@ from numbers import Real
 from types import MappingProxyType
 from typing import Callable, Mapping, Optional
 
+import numpy as np
+
 from .core import Grid, Pose
 from .formation import (FormationModel, FormationPose,
-                        FormationValidationError)
+                        FormationValidationError, VehiclePose)
 from .quality import FootprintDistance
 
 
 UINT32_MAX = 2**32 - 1
+
+
+def grid_from_occupancy_grid(message):
+    """Convert ``nav_msgs/OccupancyGrid`` into the shared collision grid."""
+    try:
+        info = message.info
+        frame_id = getattr(message.header, "frame_id", "")
+        width = int(info.width)
+        height = int(info.height)
+        resolution = float(info.resolution)
+        origin = info.origin
+        ox = float(origin.position.x)
+        oy = float(origin.position.y)
+        qx = float(origin.orientation.x)
+        qy = float(origin.orientation.y)
+        qz = float(origin.orientation.z)
+        qw = float(origin.orientation.w)
+        if frame_id != "map":
+            return None, "map frame_id must be 'map', got {!r}".format(frame_id)
+        if width <= 0 or height <= 0:
+            return None, "map dimensions must be positive"
+        if not math.isfinite(resolution) or resolution <= 0.0:
+            return None, "map resolution must be positive and finite"
+        if not (math.isfinite(ox) and math.isfinite(oy)):
+            return None, "map origin must be finite"
+        norm = math.sqrt(qx * qx + qy * qy + qz * qz + qw * qw)
+        if not math.isfinite(norm) or norm <= 0.0:
+            return None, "map origin quaternion is invalid"
+        yaw = math.atan2(2.0 * (qw * qz + qx * qy),
+                         1.0 - 2.0 * (qy * qy + qz * qz))
+        if not math.isfinite(yaw) or abs(yaw) > 1e-7:
+            return None, "rotated map origins are not supported"
+        data = np.asarray(message.data, dtype=np.int8)
+        if data.size != width * height:
+            return None, "map data length does not match its dimensions"
+        # Unobserved cells are occupied in each formation collision check.
+        occupied = data.reshape(height, width) != 0
+        return Grid(occupied, resolution, ox, oy), None
+    except Exception as exc:
+        return None, "invalid map message: {!r}".format(exc)
 
 
 def _finite_number(value, context, positive=False, nonnegative=False):
@@ -367,11 +409,8 @@ class FormationCollisionChecker:
         distances = self._distance_objects(padding_m)
         for vehicle_pose in vehicle_poses:
             self._stats["map_queries"] += 1
-            distance = distances[vehicle_pose.vehicle_id].distance(
-                Pose(vehicle_pose.x, vehicle_pose.y, vehicle_pose.theta))
-            # Existing Grid also rejects clear poses exactly on its boundary.
-            # Strict positivity makes touching map/cell boundaries conservative.
-            if not distance > 0.0:
+            if not distances[vehicle_pose.vehicle_id].pose_clear(
+                    Pose(vehicle_pose.x, vehicle_pose.y, vehicle_pose.theta)):
                 return self._failure(
                     "MAP_OBB_COLLISION", segment_index, sample_index, qf,
                     vehicle_id=vehicle_pose.vehicle_id)
@@ -421,6 +460,109 @@ class FormationCollisionChecker:
                 vehicle_id=getattr(exc, "vehicle_id", None),
                 detail=str(exc))
         return self._check_state(qf, headings, 0.0)
+
+    def sample_static_headings(self, qf, body_headings, free_ids):
+        """Find a static fit at fixed centres, sampling body rectangles every 5°."""
+        centers = self.model.centers(qf)
+        headings = self._checked_headings(body_headings)
+        free_ids = set(free_ids)
+        # A rectangle repeats after pi. Try the closest heading first.
+        offsets = [0.0]
+        for angle in range(5, 90, 5):
+            offsets.extend((math.radians(angle), math.radians(-angle)))
+        offsets.append(math.pi / 2.0)
+        options = {}
+        for vehicle_id, (x, y) in centers.items():
+            allowed = offsets if vehicle_id in free_ids else (0.0,)
+            yaws = (headings[vehicle_id] + offset for offset in allowed)
+            options[vehicle_id] = [
+                VehiclePose(vehicle_id, x, y, yaw) for yaw in yaws
+                if self._base_distances[vehicle_id].pose_clear(Pose(x, y, yaw))]
+            if not options[vehicle_id]:
+                return None
+
+        order = sorted(options, key=lambda vehicle_id: len(options[vehicle_id]))
+        chosen = {}
+        halves = self._base_half_extents
+
+        def place(index):
+            if index == len(order):
+                return True
+            vehicle_id = order[index]
+            for pose in options[vehicle_id]:
+                if any(self._obb_overlap(pose, halves[vehicle_id], other, halves[other_id])
+                       for other_id, other in chosen.items()):
+                    continue
+                chosen[vehicle_id] = pose
+                if place(index + 1):
+                    return True
+                del chosen[vehicle_id]
+            return False
+
+        if place(0):
+            return {vehicle_id: pose.theta for vehicle_id, pose in chosen.items()}
+        return None
+
+    def fixed_heading_blocked_cells(self, formation_yaw, body_headings, padding_m=0.0):
+        """Conservatively mark map collisions for translating fixed OBBs.
+
+        Each free cell permits any F position inside it at these headings.
+        The two half-cell allowances cover both the motion of F within the
+        cell and the occupied cell's extent. Pairwise vehicle separation is
+        independent of XY and is checked at the start and by the final sweep.
+        """
+        padding = _finite_number(padding_m, "configuration padding", nonnegative=True)
+        headings = self._checked_headings(body_headings)
+        centers = self.model.centers(FormationPose(0.0, 0.0, formation_yaw))
+        grid = self.grid
+        blocked = np.zeros_like(grid.occ, dtype=bool)
+        occupied_prefix = np.zeros((grid.height, grid.width + 1), dtype=np.int32)
+        np.cumsum(grid.occ, axis=1, dtype=np.int32, out=occupied_prefix[:, 1:])
+        for vehicle_id in self._vehicle_ids:
+            center_x, center_y = centers[vehicle_id]
+            c = math.cos(headings[vehicle_id])
+            s = math.sin(headings[vehicle_id])
+            half_l, half_w = self._base_half_extents[vehicle_id]
+            half_l += padding
+            half_w += padding
+            half_x = abs(c) * half_l + abs(s) * half_w + grid.res
+            half_y = abs(s) * half_l + abs(c) * half_w + grid.res
+            cols = math.ceil((abs(center_x) + half_x) / grid.res)
+            rows = math.ceil((abs(center_y) + half_y) / grid.res)
+            if cols >= grid.width or rows >= grid.height:
+                # Skip the conservative raster route when its padding
+                # reaches across the map. The exact checker still runs.
+                blocked.fill(True)
+                return blocked
+            x = grid.res * np.arange(-cols, cols + 1)[None, :] - center_x
+            y = grid.res * np.arange(-rows, rows + 1)[:, None] - center_y
+            obb_pad = grid.res * (abs(c) + abs(s)) + 1e-12
+            kernel = ((np.abs(x) <= half_x + 1e-12) & (np.abs(y) <= half_y + 1e-12)
+                      & (np.abs(c * x + s * y) <= half_l + obb_pad)
+                      & (np.abs(-s * x + c * y) <= half_w + obb_pad))
+            # The intersection of the SAT strips is convex, so each
+            # stencil row touches one interval. Query those intervals with
+            # row prefix sums, keeping memory proportional to the map area.
+            support_y, support_x = np.nonzero(kernel)
+            first_row = max(0, rows - int(support_y.min()))
+            last_row = min(grid.height, grid.height + rows - int(support_y.max()))
+            first_col = max(0, cols - int(support_x.min()))
+            last_col = min(grid.width, grid.width + cols - int(support_x.max()))
+            if first_row >= last_row or first_col >= last_col:
+                blocked.fill(True)
+                return blocked
+            blocked[:first_row] = blocked[last_row:] = True
+            blocked[:, :first_col] = blocked[:, last_col:] = True
+            interior = blocked[first_row:last_row, first_col:last_col]
+            for kernel_row in np.unique(support_y):
+                positions = support_x[support_y == kernel_row]
+                left = int(positions[0]) - cols
+                right = int(positions[-1]) - cols + 1
+                shift = int(kernel_row) - rows
+                prefix = occupied_prefix[first_row + shift:last_row + shift]
+                interior |= (prefix[:, first_col + left:last_col + left]
+                             != prefix[:, first_col + right:last_col + right])
+        return blocked
 
     @staticmethod
     def _normalise_policy(policy):

@@ -81,19 +81,17 @@ map_number_of() {
 list_maps() {
   printf '%-4s %-40s %-32s %-10s %-12s\n' \
     '编号' '目录' '旧名称' '单车默认' '编队默认'
-  while IFS=$'\t' read -r folder legacy_name category; do
+  while IFS=$'\t' read -r folder legacy_name category formation; do
     [[ -z "${folder}" || "${folder}" == \#* ]] && continue
     [[ -f "${map_root}/${folder}/map.yaml" ]] || continue
-    local number single formation
+    local number single
     number="$(map_number_of "${folder}")"
     single="$(default_scale_for "${folder}")"
-    formation="$(python3 -c 'print(float(__import__("sys").argv[1]) * 3.75)' "${single}")"
     printf '%-4s %-40s %-32s %-10s %-12s\n' \
       "${number}" "${folder}" "${legacy_name}" "${single}" "${formation}"
   done < "${map_index}"
   echo
-  echo "编队默认 = 单车默认 x 3.75（run_demo.sh 的旧策略，尚待按新构型重新验收）。"
-  echo "显式 --scale 为绝对比例，不会再乘 3.75。"
+  echo "编队默认读取地图索引的复测倍率。显式 --scale 设置绝对比例。"
 }
 
 resolve_map_dir() {
@@ -112,8 +110,8 @@ resolve_map_dir() {
     printf '%s\n' "${map_root}/${query}"
     return 0
   fi
-  local folder legacy_name category
-  while IFS=$'\t' read -r folder legacy_name category; do
+  local folder legacy_name category formation
+  while IFS=$'\t' read -r folder legacy_name category formation; do
     [[ -z "${folder}" || "${folder}" == \#* ]] && continue
     if [[ "${folder}" == "${key}" || "${folder}" == "${key}-"* || \
           "${legacy_name}" == "${query}" ]]; then

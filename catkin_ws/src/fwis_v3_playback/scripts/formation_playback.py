@@ -16,13 +16,14 @@ from types import SimpleNamespace
 import rospy
 from std_msgs.msg import String
 from nav_msgs.msg import Path
-from visualization_msgs.msg import Marker, MarkerArray
-from geometry_msgs.msg import Point, Quaternion, TransformStamped, Vector3, PoseStamped
+from visualization_msgs.msg import MarkerArray
+from geometry_msgs.msg import Point, Quaternion, TransformStamped, PoseStamped
 from std_msgs.msg import ColorRGBA
 from tf.transformations import quaternion_from_euler
 from tf2_ros import TransformBroadcaster
 from fwis_v3_msgs.msg import (
     FormationPlaybackPlan, FormationTimedTrajectory, FormationPlanRequest)
+from fwis_v3_optimizer.formation_ros_markers import marker_array
 
 from fwis_v3_optimizer.formation_playback import (
     CLEARED,
@@ -38,6 +39,7 @@ from fwis_v3_optimizer.formation_playback import (
     PlaybackValidationError,
     build_candidate_display,
     build_corridor_markers,
+    build_uniform_sweep_markers,
     build_guide_display,
     build_markers,
     clear_marker_specs,
@@ -142,6 +144,7 @@ class FormationPlaybackNode:
     # Defaults used by the ROS-independent test harness, which constructs the
     # instance with __new__.  __init__ overwrites every mutable display field.
     show_cargo_reason = True
+    options = PlaybackMarkerOptions()
     hud_pub = None
     _job_state = "IDLE"
     _job_state_plan = None
@@ -205,6 +208,9 @@ class FormationPlaybackNode:
             text_height_m=float(rospy.get_param("~text_height", 0.35)),
             arrow_head_length_m=float(
                 rospy.get_param("~arrow_head_length", 0.08)),
+            body_height_m=float(rospy.get_param("~body_height_m",
+                                               self.options.body_height_m)),
+            show_footprints=rospy.get_param("~show_footprints", False),
             show_status_text=bool(
                 rospy.get_param("~show_status_text", True)))
         self.show_cargo_reason = bool(
@@ -225,6 +231,7 @@ class FormationPlaybackNode:
         self._virtual_terminals = {}
         self._planning_progress = None
         self.trajectory = None
+        self._last_frame = None
         self.optimizer_status = None
         self._optimizer_status_by_plan = {}
         self.quality_report = None
@@ -253,7 +260,9 @@ class FormationPlaybackNode:
                 "without the HUD. Real HUD GUI verification is NOT_RUN.",
                 _hud_import_error)
         self.marker_pub = rospy.Publisher(
-            MARKER_TOPIC, MarkerArray, queue_size=1)
+            MARKER_TOPIC, MarkerArray, queue_size=1, latch=True)
+        self.marker_pub.publish(self._marker_array(
+            clear_marker_specs(self.frame_id), rospy.Time.now()))
         # One latched nav_msgs/Path per vehicle: RViz Path displays can change
         # colour and line width, unlike a MarkerArray LINE_STRIP.  The topics
         # start empty so a restart cannot leave a stale path on screen.
@@ -271,9 +280,10 @@ class FormationPlaybackNode:
         self.corridor_pub = None
         self.guide_pub = None
         self.candidate_pub = None
-        if self.backend == VIRTUAL_PLAYBACK_BACKEND:
+        if self.backend in (PLAYBACK_PLAN_BACKEND, VIRTUAL_PLAYBACK_BACKEND):
             self.corridor_pub = rospy.Publisher(
-                CORRIDOR_TOPIC, MarkerArray, queue_size=1)
+                CORRIDOR_TOPIC, MarkerArray, queue_size=1, latch=True)
+        if self.backend == VIRTUAL_PLAYBACK_BACKEND:
             self.guide_pub = rospy.Publisher(
                 GUIDES_TOPIC, MarkerArray, queue_size=1)
             self.candidate_pub = rospy.Publisher(
@@ -345,6 +355,14 @@ class FormationPlaybackNode:
             "[formation playback] common-clock display ready; "
             "GEOMETRY_ONLY is shown until an independent FEASIBLE status "
             "is received")
+        if self.contract is not None:
+            rospy.loginfo(
+                "[formation playback] backend=%s formation=%s body_m=%.3fx%.3fx%.3f "
+                "initial_heading_policy=%s show_footprints=%s",
+                self.backend, self.contract.formation_id,
+                self.contract.body_length_m, self.contract.body_width_m,
+                self.options.body_height_m, self.contract.initial_heading_policy,
+                self.options.show_footprints)
 
     # ---- subscriptions -------------------------------------------------
 
@@ -538,6 +556,12 @@ class FormationPlaybackNode:
                         "envelope backend {!r} differs from the node's "
                         "configured {!r}".format(
                             message.backend, PLAYBACK_PLAN_BACKEND))
+                if (message.semantic_version == PLAYBACK_PLAN_SCHEMA
+                        and not (message.model_json or message.model_sha256 or message.certification
+                                 or fields["times_from_start"] or fields["trajectories"]
+                                 or fields["formation_poses"] or fields["vehicles"])):
+                    self._clear("planner published no executable model", freeze=False)
+                    return
                 trajectory, plan, digest = verify_uniform_playback_plan(
                     plan_id=int(message.plan_id),
                     formation_id=message.formation_id,
@@ -582,6 +606,14 @@ class FormationPlaybackNode:
             trajectory.duration)
         self._publish_paths(trajectory)
         self._publish_tick()
+        if (self.backend == PLAYBACK_PLAN_BACKEND and self.corridor_pub is not None
+                and self.trajectory is trajectory):
+            try:
+                markers = build_uniform_sweep_markers(trajectory)
+                self.corridor_pub.publish(self._marker_array(markers, rospy.Time.now()))
+            except (PlaybackValidationError, ValueError) as exc:
+                rospy.logwarn("[formation playback] cannot draw uniform sweep: %s", exc)
+                self._clear_corridors()
 
     @staticmethod
     def _wrap(angle):
@@ -1105,6 +1137,7 @@ class FormationPlaybackNode:
             and previous.get("round_index") == document.get("round_index"))
         view_has_data = isinstance(view, dict) and (
             view.get("guide_source") is not None
+            or view.get("footprint_region_count") is not None
             or isinstance(view.get("assessment"), Mapping))
         if isinstance(view, dict) and not view_has_data and same_context:
             retained = previous.get("diagnostics")
@@ -1250,7 +1283,7 @@ class FormationPlaybackNode:
             reason = "{}: {}".format(prefix, frontend["reason"])
         specs = build_hold_markers(
             formation_id, qf, vehicles, reason, self.frame_id,
-            self.show_cargo_reason)
+            self.show_cargo_reason, options=self.options)
         if clear:
             # A DELETEALL sent as its own marker message can be dropped by the
             # queue_size=1 publisher when the static hold follows immediately,
@@ -1440,6 +1473,7 @@ class FormationPlaybackNode:
                 "[formation playback] cannot build playback frame: %s", exc)
             self._clear("playback frame failed: {}".format(exc))
             return
+        self._last_frame = (trajectory, frame)
         center_error = heading_error = None
         if frame.terminal:
             center_error, heading_error = terminal_errors(trajectory, frame)
@@ -1513,39 +1547,27 @@ class FormationPlaybackNode:
                           z=values[2], w=values[3])
 
     def _marker_array(self, specs, stamp):
-        array = MarkerArray()
-        for spec in specs:
-            marker = Marker()
-            marker.header.frame_id = spec.frame_id
-            marker.header.stamp = stamp
-            marker.ns = spec.namespace
-            marker.id = int(spec.marker_id)
-            marker.type = getattr(Marker, spec.marker_type)
-            marker.action = getattr(Marker, spec.action)
-            marker.pose.position = Point(*spec.position)
-            marker.pose.orientation = self._quaternion(spec.yaw)
-            marker.scale = Vector3(*spec.scale)
-            marker.color = ColorRGBA(*spec.color)
-            marker.points = [Point(x=x, y=y, z=z) for x, y, z in spec.points]
-            marker.colors = [ColorRGBA(*color) for color in spec.colors]
-            marker.text = "Cargo" if self.transport_ui and spec.text == "F" else spec.text
-            marker.lifetime = rospy.Duration(0)
-            array.markers.append(marker)
-        return array
+        return marker_array(specs, stamp)
 
     def _clear(self, reason, freeze=True, hold_reason=None):
         if (freeze and self.transport_ui and self.trajectory is not None and
                 self.hold is None):
             trajectory = self.trajectory
             elapsed = (rospy.Time.now() - rospy.Time(*trajectory.stamp)).to_sec()
-            frame = frame_at(trajectory, elapsed)
-            specs = trajectory.vehicle_map()
-            self.hold = (trajectory.formation_id,
-                         (frame.formation_x, frame.formation_y, frame.formation_psi),
-                         tuple((specs[v.vehicle_id], v.center_x, v.center_y, v.theta)
-                               for v in frame.vehicles))
-            self._hold_reason = hold_reason or "CLEARED"
+            try:
+                frame = frame_at(trajectory, elapsed)
+            except PlaybackValidationError:
+                frame = (self._last_frame[1] if self._last_frame is not None
+                         and self._last_frame[0] is trajectory else None)
+            if frame is not None:
+                specs = trajectory.vehicle_map()
+                self.hold = (trajectory.formation_id,
+                             (frame.formation_x, frame.formation_y, frame.formation_psi),
+                             tuple((specs[v.vehicle_id], v.center_x, v.center_y, v.theta)
+                                   for v in frame.vehicles))
+                self._hold_reason = hold_reason or "CLEARED"
         self.trajectory = None
+        self._last_frame = None
         self._clear_markers_pending = False
         self._last_state = CLEARED
         now = rospy.Time.now()
@@ -1562,6 +1584,8 @@ class FormationPlaybackNode:
         # Path layers are tied to this playback trajectory, so they are
         # emptied here rather than left on screen.
         self._clear_paths()
+        if self.backend == PLAYBACK_PLAN_BACKEND:
+            self._clear_corridors()
         rospy.loginfo("[formation playback] cleared: %s", reason)
         if self.transport_ui and freeze and self.hold is not None:
             self._publish_hold(clear=True, stamp=now)

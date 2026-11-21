@@ -37,6 +37,7 @@ from fwis_v3_optimizer.formation_continuous_a.optimizer import (
     solve_open_path_guided,
 )
 from fwis_v3_optimizer.formation_continuous_a.pipeline import (
+    RouteGuideSearchResult,
     _guide_segment_tangents,
     _heading_branch_candidates,
     _winding_retry_allowed,
@@ -810,7 +811,10 @@ class RecoverySchedulingTests(unittest.TestCase):
 
         def slow_generation(*args, **kwargs):
             time.sleep(0.3)
-            return guides
+            return RouteGuideSearchResult(
+                routes=tuple(guides), attempts=(),
+                stop_reason="MAX_ROUTES", route_clearance_m=0.10,
+                direct_los={})
 
         def counting_solver(*args, **kwargs):
             solver_calls.append(1)

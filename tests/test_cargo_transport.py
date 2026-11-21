@@ -144,7 +144,14 @@ class StaticPreviewTest(unittest.TestCase):
                           a, b, 0.0) for i, (a, b) in enumerate(OFFSETS))
         markers = build_hold_markers("cargo_wedge", (0, 0, 0), vehicles,
                                      "GOAL_FORMATION_COLLISION")
-        self.assertEqual(sum(m.marker_type == "LINE_STRIP" for m in markers), 3)
+        bodies = [m for m in markers if m.marker_type == "CUBE"]
+        self.assertEqual(len(bodies), 3)
+        self.assertFalse(any(m.marker_type == "LINE_STRIP" for m in markers))
+        for body, (_spec, x, y, theta) in zip(bodies, vehicles):
+            self.assertEqual(body.scale, (0.738, 0.500, 0.338))
+            self.assertEqual(body.position[:2], (x, y))
+            self.assertEqual(body.yaw, theta)
+            self.assertEqual(body.color[3], 1.0)
         self.assertEqual(len({m.marker_id for m in markers}), len(markers))
         self.assertTrue(any("STATIC" in m.text for m in markers))
         self.assertTrue(any("GOAL_FORMATION_COLLISION" in m.text
@@ -154,14 +161,16 @@ class StaticPreviewTest(unittest.TestCase):
 class MapScaleEntryTest(unittest.TestCase):
 
     def test_map_default_and_explicit_override(self):
-        # 3.75 is the legacy single-default factor pending T7 re-evaluation.
-        for args, scale in ((["--map", "map04"], "1.875"),
+        for args, scale in ((["--map", "map02"], "2.56"),
+                            (["--map", "map04"], "1.8"),
+                            (["--map", "map08"], "3.5"),
+                            ([], "2.6"),
                             (["--map", "map16", "--scale", "2.0"], "2.0")):
             result = subprocess.run(
                 ["bash", str(ROOT / "run_demo.sh"), "--dry-run", *args],
                 cwd=ROOT, capture_output=True, text=True, check=True)
             self.assertIn("formation_demo.launch", result.stdout)
-            self.assertIn("地图绝对比例 " + scale, result.stdout)
+            self.assertIn(" scale=" + scale + " ", result.stdout)
             self.assertNotIn("planning_backend:=", result.stdout)
 
 

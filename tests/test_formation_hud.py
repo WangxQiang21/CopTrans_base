@@ -23,6 +23,7 @@ from fwis_v3_optimizer.formation_playback import (  # noqa: E402
     build_markers,
     frame_at,
     hud_text,
+    planning_diagnostics_view,
     quality_identity_matches,
     status_document,
     vehicle_namespace,
@@ -167,11 +168,11 @@ class CompactVehicleLabelTest(unittest.TestCase):
         self.assertIn("car1 | STATIC | v=0.00 m/s", text)
         self.assertIn("car2 | STATIC | v=0.00 m/s", text)
         self.assertIn("car3 | STATIC | v=0.00 m/s", text)
-        self.assertIn("Cargo", text)
+        self.assertIn("\nF\n", text)
         self.assertIn("STATIC / no executable trajectory", text)
         self.assertIn("AUDIT geometry=UNKNOWN", text)
 
-    def test_hud_repeats_the_cargo_hold_text_and_reason_switch(self):
+    def test_hud_repeats_the_f_hold_text_and_reason_switch(self):
         document = {
             "state": "STATIC", "plan_id": 4,
             "formation_id": "cargo_wedge",
@@ -181,14 +182,14 @@ class CompactVehicleLabelTest(unittest.TestCase):
             "vehicles": [{"vehicle_id": 1}],
         }
         shown = hud_text(document, "PLANNING", None)
-        self.assertIn("Cargo | PLANNING", shown)
+        self.assertIn("F | PLANNING", shown)
         self.assertIn("STATIC / no executable trajectory", shown)
         compact = hud_text(document, "PLANNING", None, False)
-        self.assertIn("\nCargo\n", compact)
-        self.assertNotIn("Cargo | PLANNING", compact)
+        self.assertIn("\nF\n", compact)
+        self.assertNotIn("F | PLANNING", compact)
         self.assertIn("STATIC / no executable trajectory", compact)
         playing = playback_document()
-        self.assertNotIn("Cargo", hud_text(playing, "PLAYING", None))
+        self.assertNotIn("\nF\n", hud_text(playing, "PLAYING", None))
         with self.assertRaises(PlaybackValidationError):
             hud_text(document, "PLANNING", None, "no")
 
@@ -224,6 +225,24 @@ class HUDTextTest(unittest.TestCase):
         self.assertEqual(column(text, "geometry"), "PASS")
         self.assertEqual(column(text, "dynamics"), "PASS")
         self.assertEqual(column(text, "collision"), "PASS")
+
+    def test_uniform_steering_transition_shows_the_matching_joint_audit(self):
+        document = dict(playback_document(), backend=PLAYBACK_PLAN_BACKEND,
+                        executable=True, setup_transition=["A", "O"])
+        quality = quality_document(backend=PLAYBACK_PLAN_BACKEND)
+        quality["evaluation"] = dict(feasible=True, independent_audit=True,
+                                     collision_certificate=True)
+        text = hud_text(document, "PLAYING", quality)
+        self.assertIn("Steering setup A -> O | stopped", text)
+        self.assertIn("FR02 PASS | sweep PASS", text)
+        wrong_identity = dict(quality, plan_id=8)
+        self.assertIn("FR02 audit UNKNOWN", hud_text(document, "PLAYING", wrong_identity))
+
+    def test_uniform_spin_hud_displays_authoritative_yaw_rate(self):
+        document = dict(playback_document(), backend=PLAYBACK_PLAN_BACKEND,
+                        vehicles=[dict(vehicle_id=1, mode_name="S", center_speed_mps=0.0,
+                                       yaw_rate_radps=-0.42)])
+        self.assertIn("car1 | S | yaw=-0.42 rad/s", hud_text(document, "PLAYING", None))
 
     def test_old_or_wrong_identity_quality_never_shows_pass(self):
         document = playback_document()
@@ -270,6 +289,16 @@ class HUDTextTest(unittest.TestCase):
         self.assertEqual(column(text, "dynamics"), "PENDING")
         self.assertEqual(column(text, "collision"), "PENDING")
 
+    def test_footprint_hud_shows_regions_rows_and_selected_path(self):
+        progress = {"stage": "PUBLISHED", "diagnostics": {
+            "footprint_region_count": 24, "footprint_obb_rows": 4224,
+            "footprint_selected": "refined",
+        }}
+        text = hud_text(playback_document(), "PLAYING", None, progress=progress)
+        self.assertIn("footprint_seed | regions=24", text)
+        self.assertIn("OBB rows=4224 | selected=refined", text)
+        self.assertNotIn("guide=unknown", text)
+
     def test_failed_job_without_quality_is_unknown(self):
         text = hud_text(playback_document(), "FAILED", None)
         self.assertEqual(column(text, "geometry"), "UNKNOWN")
@@ -286,6 +315,14 @@ class HUDTextTest(unittest.TestCase):
 
 class PlanningProgressHUDTest(unittest.TestCase):
     """TASK 01 Step 1: the HUD states the real planning stage and elapsed."""
+
+    def test_footprint_reference_guide_is_labelled_before_footprint_regions(self):
+        metrics = {"reference_only": True, "guide_source": "corridor_candidate_chebyshev"}
+        view = planning_diagnostics_view({"metrics": metrics})
+        progress = {"stage": "PORTAL_GUIDE", "diagnostics": view}
+        text = hud_text(playback_document(), "PLANNING", None, progress=progress)
+        self.assertIn("F reference corridor | guide=corridor_candidate_chebyshev", text)
+        self.assertNotIn("footprint_seed | regions=", text)
 
     def test_stage_step_route_round_and_elapsed_are_reported(self):
         progress = {
@@ -485,9 +522,9 @@ class DisplaySwitchTest(unittest.TestCase):
             "cargo_wedge", (0.0, 0.0, 0.0), vehicles,
             "GOAL_FORMATION_COLLISION", show_cargo_reason=False)
         full_text = next(marker.text for marker in full
-                         if marker.text.startswith("Cargo"))
+                         if marker.text.startswith("F"))
         compact_text = next(marker.text for marker in compact
-                            if marker.text.startswith("Cargo"))
+                            if marker.text.startswith("F"))
         self.assertIn("GOAL_FORMATION_COLLISION", full_text)
         self.assertNotIn("GOAL_FORMATION_COLLISION", compact_text)
         self.assertIn("STATIC / no executable trajectory", full_text)

@@ -17,10 +17,12 @@ vehicle_ids: [1, 2, 3]
 offsets: [[1.0, 0.0], [0.0, 1.0], [0.0, -1.0]]
 body_length_m: 0.738
 body_width_m: 0.500
+# RViz height only, from the shared Ranger Mini 2 geometry.
+body_height_m: 0.338
 allow_reverse: true
 
-# Terminal body headings only.  The cargo goal psi_F and the rigid centre
-# positions always remain hard constraints.
+# Terminal body headings only. The planning backend selects the cargo
+# heading policy independently of this setting.
 goal_heading_free: true
 
 # Heading initialisation for a new experiment (manual 2D Pose Estimate or the

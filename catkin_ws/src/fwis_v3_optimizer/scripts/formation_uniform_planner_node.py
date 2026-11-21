@@ -19,14 +19,15 @@ HOLD_END) or by an explicit failure -- not by "a trajectory was published".
 from collections.abc import Mapping
 from dataclasses import replace
 import json
+import hashlib
 import math
 import threading
 import time as _time
 
-import numpy as np
 import rospy
 from geometry_msgs.msg import Point, Pose2D, PoseWithCovarianceStamped
 from nav_msgs.msg import OccupancyGrid
+from std_srvs.srv import Trigger, TriggerResponse
 from std_msgs.msg import String
 
 from fwis_v3_msgs.msg import (
@@ -38,7 +39,7 @@ from fwis_v3_msgs.msg import (
     FormationVehicleTrajectory,
 )
 
-from fwis_v3_optimizer.core import Grid
+from fwis_v3_optimizer.formation_collision import grid_from_occupancy_grid
 from fwis_v3_optimizer.formation import FormationModel
 from fwis_v3_optimizer.formation_continuous_a.contracts import (
     PROGRESS_FAILED_STAGE,
@@ -105,6 +106,7 @@ HOLD_END = "HOLD_END"
 FAILED = "FAILED"
 STATES = (IDLE, PLANNING, PLAYING, HOLD_END, FAILED)
 BUSY_STATES = (PLANNING, PLAYING)
+MAX_VIRTUAL_PLAYBACK_GRACE_S = 30.0
 
 _PIPELINE_TO_STATUS = {
     SEARCH_SUCCESS: "FEASIBLE",
@@ -147,45 +149,6 @@ def _finite(value, context):
     if not math.isfinite(result):
         raise ValueError("{} must be finite: {!r}".format(context, value))
     return result
-
-
-def grid_from_occupancy_grid(message):
-    """Convert ``nav_msgs/OccupancyGrid`` into the exact FR04 ``Grid``."""
-    try:
-        info = message.info
-        frame_id = getattr(message.header, "frame_id", "")
-        width = int(info.width)
-        height = int(info.height)
-        resolution = float(info.resolution)
-        origin = info.origin
-        ox = float(origin.position.x)
-        oy = float(origin.position.y)
-        qx = float(origin.orientation.x)
-        qy = float(origin.orientation.y)
-        qz = float(origin.orientation.z)
-        qw = float(origin.orientation.w)
-        if frame_id != "map":
-            return None, "map frame_id must be 'map', got {!r}".format(frame_id)
-        if width <= 0 or height <= 0:
-            return None, "map dimensions must be positive"
-        if not math.isfinite(resolution) or resolution <= 0.0:
-            return None, "map resolution must be positive and finite"
-        if not (math.isfinite(ox) and math.isfinite(oy)):
-            return None, "map origin must be finite"
-        norm = math.sqrt(qx * qx + qy * qy + qz * qz + qw * qw)
-        if not math.isfinite(norm) or norm <= 0.0:
-            return None, "map origin quaternion is invalid"
-        yaw = math.atan2(2.0 * (qw * qz + qx * qy),
-                         1.0 - 2.0 * (qy * qy + qz * qz))
-        if not math.isfinite(yaw) or abs(yaw) > 1e-7:
-            return None, "rotated map origins are not supported"
-        data = np.asarray(message.data, dtype=np.int8)
-        if data.size != width * height:
-            return None, "map data length does not match its dimensions"
-        occupied = data.reshape(height, width) != 0
-        return Grid(occupied, resolution, ox, oy), None
-    except Exception as exc:
-        return None, "invalid map message: {!r}".format(exc)
 
 
 def timed_trajectory_fields(snapshot, timed, stamp, goal_qf=None,
@@ -398,6 +361,7 @@ class UniformPlannerNode(object):
             # instead of repeating the numbers in this node.
             goal_xy_tol_m=float(rospy.get_param(
                 "~goal_xy_tol", SuccessorConfig.goal_xy_tol_m)),
+            goal_formation_heading_free=rospy.get_param("~goal_formation_heading_free", False),
             goal_psi_tol_rad=float(rospy.get_param(
                 "~goal_psi_tol", SuccessorConfig.goal_psi_tol_rad)),
             goal_heading_tol_rad=float(rospy.get_param(
@@ -416,7 +380,14 @@ class UniformPlannerNode(object):
                 "~max_seconds", GraphSearchConfig.max_seconds)),
             heuristic_weight=float(rospy.get_param(
                 "~heuristic_weight", 3.0)),
-            rotation_weight=float(rospy.get_param("~rotation_weight", 3.0)))
+            rotation_weight=float(rospy.get_param("~rotation_weight", 3.0)),
+            direct_goal_translation=rospy.get_param("~direct_goal_translation", False),
+            global_translation_route=rospy.get_param("~global_translation_route", True),
+            heading_aligned_route=rospy.get_param("~heading_aligned_route", True),
+            heading_transition_route=rospy.get_param("~heading_transition_route", True),
+            continuous_a_refinement=rospy.get_param("~continuous_a_refinement", False),
+            formation_raster=rospy.get_param("~formation_raster", True),
+            preview_checks=rospy.get_param("~preview_checks", True))
         self.playback_start_timeout_s = float(rospy.get_param(
             "~playback_start_timeout_s", 5.0))
         self.playback_finish_grace_s = float(rospy.get_param(
@@ -534,6 +505,9 @@ class UniformPlannerNode(object):
             # claims to have observed a manual reset.
             rospy.Subscriber("/initialpose", PoseWithCovarianceStamped,
                              self.on_initial_pose, queue_size=1)
+        else:
+            self._cancel_planning_service = rospy.Service(
+                "/formation/cancel_pending_plan", Trigger, self.cancel_pending_plan)
         self.timer = rospy.Timer(rospy.Duration(self.watchdog_s),
                                  self.on_timer)
         self._publish_job_state("ready")
@@ -584,7 +558,8 @@ class UniformPlannerNode(object):
             "detail": detail,
             "requests_seen": int(self._requests_seen),
             "busy_rejections": int(self._busy_rejections),
-            "model_version": getattr(self, "model_version", MODEL_VERSION),
+            "model_version": (getattr(self, "_active_model_version", None)
+                              or getattr(self, "model_version", MODEL_VERSION)),
             "model_sha256": self._active_model_sha256,
             "semantic_version": getattr(
                 self, "semantic_version", PLAYBACK_PLAN_SCHEMA),
@@ -612,7 +587,8 @@ class UniformPlannerNode(object):
             "executable": bool(executable),
             "trajectory_published": bool(published),
             "playback_confirmed": bool(self._playback_seen),
-            "model_version": getattr(self, "model_version", MODEL_VERSION),
+            "model_version": (getattr(self, "_active_model_version", None)
+                              or getattr(self, "model_version", MODEL_VERSION)),
             "model_sha256": self._active_model_sha256,
             "semantic_version": getattr(
                 self, "semantic_version", PLAYBACK_PLAN_SCHEMA),
@@ -668,10 +644,21 @@ class UniformPlannerNode(object):
     def _display_from_corridor_round(identity, result):
         """Build the V2 display from the actual C2 round the solver used."""
         from fwis_v3_optimizer.formation_continuous_a.corridor import (
+            CORRIDOR_DISPLAY_STATE,
             corridor_chain_from_payload,
             corridor_display_fields,
             corridor_portal_diagnostics,
         )
+        footprint_cover = result.search.get("footprint_cover")
+        regions = (footprint_cover.get("regions")
+                   if isinstance(footprint_cover, dict) else None)
+        if regions:
+            return dict(
+                identity, state=CORRIDOR_DISPLAY_STATE, route_id=0,
+                route_source="footprint_seed", corridor_used=True,
+                chain_digest=hashlib.sha256(_json(regions).encode()).hexdigest(),
+                regions=[dict(region, region_id=index)
+                         for index, region in enumerate(regions)])
         corridor = result.search.get("corridor")
         rounds = (corridor.get("rounds")
                   if isinstance(corridor, dict) else None)
@@ -1170,11 +1157,18 @@ class UniformPlannerNode(object):
                 "wall_time_s": wall_time_s,
             },
         })
+        metrics = getattr(result, "metrics", {})
+        if "footprint_region_count" in metrics:
+            for name in ("footprint_region_count", "footprint_obb_rows",
+                         "footprint_selected"):
+                document["metrics"][name] = metrics[name]
         layers = self._progress_layers_for(generation)
         if layers["astar"] is not None:
             document["astar"] = layers["astar"]
-        displays = self._corridor_displays(
-            generation, plan_id, snapshot, result, identity)
+        displays = None
+        if getattr(result, "status", None) != "NO_MOTION":
+            displays = self._corridor_displays(
+                generation, plan_id, snapshot, result, identity)
         document["corridors"] = displays
         layers["corridors"] = displays
         candidates = None
@@ -1219,6 +1213,13 @@ class UniformPlannerNode(object):
             "detail": detail,
         }
         document.update(self._map_payload())
+        plan = getattr(getattr(self, "_last_result", None), "plan", None)
+        if self.backend == PLAYBACK_PLAN_BACKEND and self._state == HOLD_END and plan is not None:
+            terminal = plan.goal_qf
+            document["uniform_terminal"] = {
+                "qf": [terminal.x, terminal.y, terminal.psi],
+                "headings": dict(plan.goal_headings),
+            }
         if getattr(self, "_backend_hooks", None) is not None:
             context = getattr(self, "_initial_context", None)
             settings = getattr(self._backend_hooks, "settings", None)
@@ -1266,42 +1267,35 @@ class UniformPlannerNode(object):
         self._last_heartbeat = _time.monotonic()
 
     def _publication_times(self, plan):
-        """Common publication grid: interior samples plus both endpoints.
-
-        Times never sit on an interior phase boundary.  ROS ``Duration``
-        stores whole nanoseconds and truncates, so a boundary value would
-        move a few nanoseconds into the previous phase and its A/O/S mode
-        word would no longer match ``state_at`` on the receiver.  Staying
-        ``EPSILON`` inside each phase makes the projected mode stable.
-        """
+        """Choose ROS nanoseconds before evaluating the analytic samples."""
         if plan.duration_s <= 0.0:
-            return (0.0,)
+            return (0,), (0.0,)
         epsilon = 1e-6
         duration = float(plan.duration_s)
-        values = [0.0]
+        times_ns = [0]
         for phase in plan.phases:
             t0 = min(max(float(phase.t0_s), 0.0), duration)
             end = min(max(float(phase.end_time), 0.0), duration)
             if end - t0 <= 2.0 * epsilon:
                 continue
+            # Keep each sample inside its phase after quantization.
             value = t0 + epsilon
             while value < end - epsilon:
-                values.append(value)
+                tick = int(round(value * 1e9))
+                if tick - times_ns[-1] > 1:
+                    times_ns.append(tick)
                 value += self.publication_dt
-        values.append(duration)
-        values.sort()
-        times = []
-        for value in values:
-            value = min(max(value, 0.0), duration)
-            if not times or value - times[-1] > 1e-9:
-                times.append(value)
-        if len(times) > self.max_publication_samples:
+        times_ns.append(int(round(duration * 1e9)))
+        if len(times_ns) > self.max_publication_samples:
             raise ValueError(
                 "publication grid has {} samples at dt={} s, above the "
                 "{} sample limit".format(
-                    len(times), self.publication_dt,
+                    len(times_ns), self.publication_dt,
                     self.max_publication_samples))
-        return tuple(times)
+        times = [secs + nsecs / 1e9 for secs, nsecs in
+                 (divmod(tick, 1000000000) for tick in times_ns)]
+        times[-1] = min(times[-1], duration)
+        return tuple(times_ns), tuple(times)
 
     # ---- map -----------------------------------------------------------
 
@@ -1445,6 +1439,52 @@ class UniformPlannerNode(object):
 
     # ---- request admission --------------------------------------------
 
+    def _uniform_continuation(self, message, snapshot):
+        parent_id = getattr(message, "continuation_plan_id", 0)
+        digest = getattr(message, "continuation_model_sha256", "")
+        if not parent_id and not digest:
+            return snapshot, None
+        plan = getattr(getattr(self, "_last_result", None), "plan", None)
+        if (not parent_id or not digest or plan is None or self._state != HOLD_END
+                or parent_id != self._state_plan or parent_id != plan.plan_id
+                or digest != self._active_model_sha256
+                or snapshot.formation_id != plan.formation_id
+                or snapshot.model.offsets != plan.model.offsets
+                or dict(snapshot.vehicle_shapes) != dict(plan.vehicle_shapes)):
+            raise ValueError("continuation must identify the current confirmed terminal plan and formation")
+
+        terminal = plan.goal_qf
+        headings = dict(plan.goal_headings)
+
+        def angle_error(a, b):
+            return abs(math.atan2(math.sin(a - b), math.cos(a - b)))
+
+        if (math.hypot(snapshot.start.x - terminal.x, snapshot.start.y - terminal.y) > 1e-7
+                or angle_error(snapshot.start.psi, terminal.psi) > 1e-7
+                or any(angle_error(snapshot.start_headings[i], headings[i]) > 1e-7
+                       for i in plan.vehicle_ids)):
+            raise ValueError("continuation start does not match the confirmed terminal pose and headings")
+        edge = plan.edges[-1] if plan.edges else plan.initial_edge
+        return replace(snapshot, start=terminal, start_headings=headings), edge
+
+    def cancel_pending_plan(self, _request):
+        """Allow an explicit RViz reset to supersede an unpublished search."""
+        with self._lock:
+            if self._state == PLAYING or (
+                    self._state == PLANNING and self._published_wall is not None):
+                return TriggerResponse(False, "playback has already been published")
+            if self._state != PLANNING:
+                return TriggerResponse(True, "no pending plan")
+            plan_id = self._state_plan
+            self._planning_cancel.set()
+            self._generation += 1
+            self._state = IDLE
+            self._request_map_signature = None
+            self._publish_no_envelope(plan_id, self._active_formation_id, "MANUAL_RESET")
+            self._publish_job_state("MANUAL_RESET", "operator reset cancelled the pending search")
+            rospy.loginfo("[uniform planner] cancelled pending plan %s on manual reset", plan_id)
+            return TriggerResponse(True, "pending plan cancelled")
+
     def on_request(self, message):
         with self._lock:
             self._requests_seen += 1
@@ -1542,23 +1582,34 @@ class UniformPlannerNode(object):
                 self._state_plan = plan_id
                 detail = self._map_error or "no exact /map has been received"
                 self._publish_status(self._base_status(
-                    "MAP_UNAVAILABLE", "INVALID", "INVALID_REQUEST", detail,
+                    "MAP_UNAVAILABLE", "INVALID", "MAP_UNAVAILABLE", detail,
                     plan_id=plan_id, formation_id=snapshot.formation_id,
                     extra={"admitted": False, "valid": True,
                            "planning_started": False}))
                 self._publish_quality(self._base_quality(
-                    "map", "INVALID", "INVALID_REQUEST", detail,
+                    "map", "INVALID", "MAP_UNAVAILABLE", detail,
                     plan_id=plan_id, formation_id=snapshot.formation_id,
                     extra={"admitted": False}))
-                self._publish_job_state("INVALID_REQUEST", detail)
+                self._publish_no_envelope(plan_id, snapshot.formation_id,
+                                          "MAP_UNAVAILABLE")
+                self._publish_job_state("MAP_UNAVAILABLE", detail)
                 return
 
             all_free = all(free_flags.values())
+            try:
+                snapshot, initial_edge = self._uniform_continuation(message, snapshot)
+            except ValueError as exc:
+                self._publish_status(self._base_status(
+                    "REQUEST_REJECTED", "INVALID", "INVALID_CONTINUATION", str(exc),
+                    plan_id=plan_id, formation_id=snapshot.formation_id,
+                    extra={"admitted": False, "planning_started": False}))
+                return
             successor_config = replace(
                 self.successor_template,
                 allow_reverse=snapshot.allow_reverse,
                 goal_heading_free=all_free,
                 timing_limits=self.timing_limits)
+            self._planning_cancel = threading.Event()
             planning_request = UniformPlanningRequest(
                 grid=self._grid,
                 model=snapshot.model,
@@ -1571,7 +1622,8 @@ class UniformPlannerNode(object):
                 plan_id=plan_id,
                 formation_id=snapshot.formation_id,
                 successor_config=successor_config,
-                search_config=self.search_config)
+                search_config=self.search_config, initial_edge=initial_edge,
+                cancelled=self._planning_cancel.is_set)
 
             self._generation += 1
             generation = self._generation
@@ -1580,6 +1632,7 @@ class UniformPlannerNode(object):
             self._last_accepted_plan = plan_id
             self._request_map_signature = self._map_signature
             self._active_model_sha256 = None
+            self._active_model_version = None
             self._active_request_sha256 = None
             self._active_formation_id = snapshot.formation_id
             self._active_status_word = None
@@ -1603,6 +1656,7 @@ class UniformPlannerNode(object):
                 plan_id=plan_id, formation_id=snapshot.formation_id,
                 extra={"admitted": True, "valid": True,
                        "planning_started": True,
+                       "continuation_plan_id": getattr(message, "continuation_plan_id", 0),
                        "wall_time_s": None}))
             self._publish_quality(self._base_quality(
                 "request", "PLANNING", "OK",
@@ -1632,8 +1686,7 @@ class UniformPlannerNode(object):
                     "[uniform planner] discarding result for stale job %s",
                     plan_id)
                 return
-            if (self._map_signature is not None and
-                    self._request_map_signature is not None and
+            if (self._request_map_signature is not None and
                     self._map_signature != self._request_map_signature):
                 self._finish_failure(
                     plan_id, snapshot, result, started,
@@ -1816,8 +1869,7 @@ class UniformPlannerNode(object):
                     "[uniform planner] discarding virtual result for stale "
                     "job %s", plan_id)
                 return
-            if (self._map_signature is not None and
-                    self._request_map_signature is not None and
+            if (self._request_map_signature is not None and
                     self._map_signature != self._request_map_signature):
                 self._finish_virtual_failure(
                     plan_id, snapshot, result, started,
@@ -1880,6 +1932,7 @@ class UniformPlannerNode(object):
     def _finish_virtual_success(self, generation, plan_id, snapshot, result,
                                 started):
         plan = result.plan
+        verification_started = _time.monotonic()
         try:
             provisional = self._now()
             fields = self._backend_hooks.publication_fields(
@@ -1984,6 +2037,11 @@ class UniformPlannerNode(object):
         self._active_status_word = self._virtual_status_word(result.status)
         self._last_result = result
         self._published_wall = _time.monotonic()
+        # The receiver independently rebuilds and checks the same trajectory.
+        # Allow time for that work and ROS transport, bounded per publication.
+        self._virtual_confirmation_grace_s = min(
+            MAX_VIRTUAL_PLAYBACK_GRACE_S,
+            2 * (self._published_wall - verification_started))
         self._published_duration = float(plan.duration_s)
         self._published_stamp = fields["stamp"]
         self._playback_seen = False
@@ -2011,6 +2069,7 @@ class UniformPlannerNode(object):
                 "certification": self.certification,
                 "content_verified": True,
                 "stamp_set_at_publication": True,
+                "playback_confirmation_window_s": self._playback_confirmation_window(),
                 "verification_to_publication_stamp_delay_s":
                     getattr(self, "_publication_delay_s", None),
             },
@@ -2146,10 +2205,14 @@ class UniformPlannerNode(object):
             # through the first phase (sample construction and model
             # verification take a measurable fraction of a second).
             provisional = self._now()
-            projection = plan.sample(self._publication_times(plan))
+            times_ns, times = self._publication_times(plan)
+            projection = plan.sample(times)
             fields = timed_trajectory_fields(
                 snapshot, projection.timed_trajectory, provisional,
                 goal_qf=plan.goal_qf, goal_headings=plan.goal_headings)
+            fields["times_ns"] = times_ns
+            for vehicle in fields["trajectories"]:
+                vehicle["point_times_ns"] = times_ns
             message = timed_message(fields)
             validation = validate_formation_timed_trajectory(message)
             if not validation.valid:
@@ -2165,7 +2228,7 @@ class UniformPlannerNode(object):
             envelope.formation_id = plan.formation_id
             envelope.backend = self.backend
             envelope.semantic_version = PLAYBACK_PLAN_SCHEMA
-            envelope.model_version = MODEL_VERSION
+            envelope.model_version = projection.model_version
             envelope.model_sha256 = digest
             envelope.model_json = model_json
             envelope.certification = CERTIFICATION
@@ -2178,7 +2241,7 @@ class UniformPlannerNode(object):
                 formation_id=plan.formation_id,
                 backend=self.backend,
                 semantic_version=PLAYBACK_PLAN_SCHEMA,
-                model_version=MODEL_VERSION,
+                model_version=envelope.model_version,
                 model_sha256=digest,
                 model_json=model_json,
                 certification=CERTIFICATION,
@@ -2209,6 +2272,7 @@ class UniformPlannerNode(object):
                 "{!r}".format(exc), layer="envelope")
             return
         self._active_model_sha256 = verified_digest
+        self._active_model_version = envelope.model_version
         self._active_request_sha256 = result.request_sha256
         self._active_digest = verified_digest
         self._active_status_word = _status_word(result.status)
@@ -2408,6 +2472,10 @@ class UniformPlannerNode(object):
 
     # ---- watchdog ------------------------------------------------------
 
+    def _playback_confirmation_window(self):
+        return max(self.playback_start_timeout_s,
+                   getattr(self, "_virtual_confirmation_grace_s", 0.0))
+
     def on_timer(self, _event=None):
         with self._lock:
             now = _time.monotonic()
@@ -2415,14 +2483,14 @@ class UniformPlannerNode(object):
                 self._publish_job_state()
             if self._state == PLANNING:
                 if self._published_wall is not None:
+                    start_window = self._playback_confirmation_window()
                     if (not self._playback_seen and
-                            now - self._published_wall >
-                            self.playback_start_timeout_s):
+                            now - self._published_wall > start_window):
                         self._playback_failure(
                             "PLAYBACK_START_TIMEOUT",
                             "playback did not confirm the atomic envelope "
                             "within {:.1f} s".format(
-                                self.playback_start_timeout_s))
+                                start_window))
                 elif now - self._plan_started_wall > self.planning_timeout_s:
                     self._state = FAILED
                     self._generation += 1
@@ -2431,10 +2499,15 @@ class UniformPlannerNode(object):
                     self._publish_status(self._base_status(
                         "PLANNING_TIMEOUT", "REJECTED",
                         "PLANNING_TIMEOUT", detail,
+                        formation_id=self._active_formation_id,
                         extra={"admitted": True, "planning_started": True}))
                     self._publish_quality(self._base_quality(
                         "plan", "REJECTED", "PLANNING_TIMEOUT", detail,
+                        formation_id=self._active_formation_id,
                         extra={"admitted": True}))
+                    self._publish_no_envelope(
+                        self._state_plan, self._active_formation_id,
+                        "PLANNING_TIMEOUT")
                     self._publish_job_state("PLANNING_TIMEOUT", detail)
                     rospy.logerr("[uniform planner] %s", detail)
             elif self._state == PLAYING:

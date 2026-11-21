@@ -230,6 +230,7 @@ class UniformAuditRequest:
     timing_limits: FormationTimingLimits = field(
         default_factory=FormationTimingLimits)
     allow_reverse: bool = False
+    initial_edge: Optional[UniformMotionEdge] = None
 
     def __post_init__(self):
         if isinstance(self.plan_id, bool) or not isinstance(
@@ -316,7 +317,7 @@ class UniformAuditRequest:
             goal_qf=plan.goal_qf,
             goal_headings=_headings_record(plan.goal_headings),
             timing_limits=plan.limits,
-            allow_reverse=allow_reverse)
+            allow_reverse=allow_reverse, initial_edge=plan.initial_edge)
 
 
 class _UniformAuditor(_IndependentEvaluator):
@@ -581,6 +582,9 @@ class _UniformAuditor(_IndependentEvaluator):
             _headings_record(plan.start_headings),
             _headings_record(request.start_headings), "plan.start_headings",
             UNIFORM_MODEL_MISMATCH)
+        if plan.initial_edge != request.initial_edge:
+            self._fail(UNIFORM_MODEL_MISMATCH, "initial wheel state differs from the request",
+                       field="plan.initial_edge")
         self._compare_heading_map(
             _headings_record(plan.goal_headings),
             _headings_record(request.goal_headings), "plan.goal_headings",
@@ -1123,6 +1127,17 @@ class _UniformAuditor(_IndependentEvaluator):
 
     # -- phase axis ----------------------------------------------------
     def _initial_descriptors(self):
+        if self.request.initial_edge is not None:
+            edge = self.request.initial_edge
+            directions = _pair_map(edge.directions)
+            descriptors = {}
+            for vehicle_id in self.vehicle_ids:
+                control = self._edge_control_value(edge, vehicle_id)
+                angles, _ = wheel_configuration(
+                    Action(_MODE_TO_LEGACY[edge.mode], 0.0, control), self.motion_limits)
+                descriptors[vehicle_id] = {"mode": edge.mode, "direction": directions[vehicle_id],
+                                           "control": control, "angles": tuple(angles)}
+            return descriptors
         angles, factors = wheel_configuration(
             Action(ACKERMANN, 0.0, 0.0), self.motion_limits)
         return {
@@ -1888,21 +1903,21 @@ class _UniformAuditor(_IndependentEvaluator):
     def _expected_hold_state(self, time_s):
         centers = _centers(self.plan.start_qf, self.model.offsets)
         headings = _headings_record(self.plan.start_headings)
-        angles, _ = wheel_configuration(
-            Action(ACKERMANN, 0.0, 0.0), self.motion_limits)
+        descriptors = self._initial_descriptors()
+        mode = descriptors[self.vehicle_ids[0]]["mode"]
         vehicles = tuple(self._zero_vehicle(
-            vehicle_id, centers[vehicle_id], headings[vehicle_id], 1, 0.0,
-            tuple(float(value) for value in angles))
-            for vehicle_id in self.vehicle_ids)
+            vehicle_id, centers[vehicle_id], headings[vehicle_id], descriptor["direction"],
+            descriptor["control"], descriptor["angles"])
+            for vehicle_id, descriptor in descriptors.items())
         return UniformTimeState(
             time_s=time_s, phase_id="hold", phase_kind="hold",
-            phase_index=-1, edge_index=None, mode=MODE_A,
+            phase_index=-1, edge_index=None, mode=mode,
             qf=self.plan.start_qf, vehicles=vehicles, progress=0.0,
             progress_unit="m", progress_rate=0.0,
             progress_acceleration=0.0, progress_jerk=0.0,
             qf_velocity=(0.0, 0.0, 0.0),
             qf_acceleration=(0.0, 0.0, 0.0), qf_jerk=(0.0, 0.0, 0.0),
-            from_mode=MODE_A, to_mode=MODE_A)
+            from_mode=mode, to_mode=mode)
 
     def _phase_position(self, phase):
         for index, item in enumerate(self.plan.phases):
@@ -2261,50 +2276,34 @@ class _UniformAuditor(_IndependentEvaluator):
         duration = phase.duration_s
         if duration <= 0.0:
             return
+        tau_step = 2e-4
+        h = tau_step * duration
+
+        def derivative(values):
+            a, b, _, d, e = values
+            return (8.0 * (d - b) - (e - a)) / (12.0 * h)
+
         for tau in (0.25, 0.5, 0.75):
-            h = 2e-4 * duration
             center = phase.t0_s + tau * duration
-            times = (center - 2.0 * h, center - h, center,
-                     center + h, center + 2.0 * h)
-            if times[0] < phase.t0_s or times[-1] > phase.end_time:
-                continue
-            positions = {vehicle_id: [] for vehicle_id in self.vehicle_ids}
-            headings = {vehicle_id: [] for vehicle_id in self.vehicle_ids}
-            for time_s in times:
-                state = self._expected_motion_state(time_s, phase)
-                for vehicle in state.vehicles:
-                    positions[vehicle.vehicle_id].append(
-                        (vehicle.x, vehicle.y))
-                    headings[vehicle.vehicle_id].append(vehicle.theta)
-            expected = self._expected_motion_state(center, phase)
-            for vehicle in expected.vehicles:
+            fractions = tuple(tau + offset * tau_step for offset in (-2, -1, 0, 1, 2))
+            states = [self._expected_motion_state(
+                phase.t0_s + fraction * duration, phase, tau_override=fraction)
+                for fraction in fractions]
+            for vehicle in states[2].vehicles:
                 vehicle_id = vehicle.vehicle_id
-                points = positions[vehicle_id]
-                velocity = tuple(
-                    (points[0][index] - 8.0 * points[1][index]
-                     + 8.0 * points[3][index] - points[4][index])
-                    / (12.0 * h) for index in range(2))
-                acceleration = tuple(
-                    (-points[0][index] + 16.0 * points[1][index]
-                     - 30.0 * points[2][index] + 16.0 * points[3][index]
-                     - points[4][index]) / (12.0 * h * h)
-                    for index in range(2))
-                jerk = tuple(
-                    (-points[0][index] + 2.0 * points[1][index]
-                     - 2.0 * points[3][index] + points[4][index])
-                    / (2.0 * h ** 3) for index in range(2))
-                theta_values = headings[vehicle_id]
-                yaw_rate = (
-                    theta_values[0] - 8.0 * theta_values[1]
-                    + 8.0 * theta_values[3] - theta_values[4]) / (12.0 * h)
-                yaw_acceleration = (
-                    -theta_values[0] + 16.0 * theta_values[1]
-                    - 30.0 * theta_values[2] + 16.0 * theta_values[3]
-                    - theta_values[4]) / (12.0 * h * h)
-                yaw_jerk = (
-                    -theta_values[0] + 2.0 * theta_values[1]
-                    - 2.0 * theta_values[3] + theta_values[4]) / (
-                        2.0 * h ** 3)
+                samples = [state.vehicle(vehicle_id) for state in states]
+                # Differentiating absolute positions three times amplifies
+                # coordinate roundoff by h**-3 on short phases. Check each
+                # derivative against its independently rebuilt predecessor.
+                velocity = tuple(derivative([getattr(item, axis) for item in samples])
+                                 for axis in ("x", "y"))
+                acceleration = tuple(derivative([item.velocity[axis] for item in samples])
+                                     for axis in range(2))
+                jerk = tuple(derivative([item.acceleration[axis] for item in samples])
+                             for axis in range(2))
+                yaw_rate = derivative([item.theta for item in samples])
+                yaw_acceleration = derivative([item.yaw_rate_radps for item in samples])
+                yaw_jerk = derivative([item.yaw_acceleration_radps2 for item in samples])
                 for name, actual_values, expected_values in (
                         ("velocity", velocity, vehicle.velocity),
                         ("acceleration", acceleration,

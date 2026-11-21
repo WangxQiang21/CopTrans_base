@@ -300,6 +300,35 @@ class FootprintDistance:
             best = min(best, float(np.min(self._cell_distances(pose, self.centers[ids]))))
         return best
 
+    def pose_clear(self, pose):
+        """Test the map boundary and SAT overlap without computing clearance."""
+        c, s = math.cos(pose.th), math.sin(pose.th)
+        rx = self.hl * abs(c) + self.hw * abs(s)
+        ry = self.hl * abs(s) + self.hw * abs(c)
+        g = self.grid
+        if min(pose.x - rx - g.ox, pose.y - ry - g.oy,
+               g.ox + g.width * g.res - pose.x - rx,
+               g.oy + g.height * g.res - pose.y - ry) <= 0:
+            return False
+        if self.tree is None:
+            return True
+        ix = math.floor((pose.x - g.ox) / g.res)
+        iy = math.floor((pose.y - g.oy) / g.res)
+        if g.occ[iy, ix]:
+            return False
+        radius = self.corner + g.res / math.sqrt(2.0) + 1e-10
+        indices = self.tree.query_ball_point((pose.x, pose.y), radius)
+        if not indices:
+            return True
+        dx, dy = (self.centers[indices] - (pose.x, pose.y)).T
+        h = g.res / 2.0
+        pad = h * (abs(c) + abs(s))
+        return not np.any(
+            (np.abs(dx * c + dy * s) <= self.hl + pad)
+            & (np.abs(-dx * s + dy * c) <= self.hw + pad)
+            & (np.abs(dx) <= h + rx)
+            & (np.abs(dy) <= h + ry))
+
     @staticmethod
     def _pose_array(poses):
         if isinstance(poses, np.ndarray):

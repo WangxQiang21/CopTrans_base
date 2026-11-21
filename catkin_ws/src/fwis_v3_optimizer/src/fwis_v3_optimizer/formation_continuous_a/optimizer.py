@@ -18,6 +18,7 @@ from ..formation import FormationPose
 from .contracts import (
     CorridorChain,
     DEFAULT_INITIAL_LENGTH_MULTIPLIERS,
+    FOOTPRINT_GUIDANCE,
     FORMATION_CORRIDOR_SCOPE_F_ONLY,
     FORMATION_CORRIDOR_SCOPE_THREE_VEHICLE_UNION_V1,
     FORMATION_NORMAL_BRANCH_EPS,
@@ -1797,6 +1798,8 @@ def _build_casadi_nlp(request, config, packet, wall_limit_s=None,
     formation = None
     if corridor_constraint is not None:
         formation = getattr(corridor_constraint, "formation", None)
+    adaptive_footprint = (formation is not None and formation.scope == FOOTPRINT_GUIDANCE
+                          and formation.segment_count > n * len(request.model.offsets))
     for j in range(n):
         c0, c1, c2, c3 = coeffs(
             kappas[j], kappas[j + 1], etas[j], etas[j + 1])
@@ -1828,16 +1831,19 @@ def _build_casadi_nlp(request, config, packet, wall_limit_s=None,
                         float(halfspace.row[0]) * sample_x
                         + float(halfspace.row[1]) * sample_y
                         - float(halfspace.limit))
+            positions = {}
             for sample in formation.groups[j]:
-                shifts, headings = _piece_position_samples(
-                    h, (c0, c1, c2, c3), psi, [sample.q],
-                    ca.sin, ca.cos,
-                    quadrature_count=formation.quadrature_points)
-                dx, dy = shifts[0]
-                sample_x = x + dx
-                sample_y = y + dy
-                f_psi = headings[0]
                 q = float(sample.q)
+                if q in positions:
+                    sample_x, sample_y, f_psi = positions[q]
+                else:
+                    shifts, headings = _piece_position_samples(
+                        h, (c0, c1, c2, c3), psi, [q], ca.sin, ca.cos,
+                        quadrature_count=formation.quadrature_points)
+                    dx, dy = shifts[0]
+                    sample_x, sample_y, f_psi = x + dx, y + dy, headings[0]
+                    if adaptive_footprint:
+                        positions[q] = (sample_x, sample_y, f_psi)
                 kappa = c0 + q * (c1 + q * (c2 + q * c3))
                 a = float(sample.offset_x)
                 b = float(sample.offset_y)
@@ -2021,6 +2027,9 @@ def _build_casadi_nlp(request, config, packet, wall_limit_s=None,
     if wall_limit_s is not None:
         options["ipopt"]["max_wall_time"] = max(
             1e-9, float(wall_limit_s))
+    if adaptive_footprint:
+        # Avoid compiling the Hessian of all footprint rows on long routes.
+        options["ipopt"]["hessian_approximation"] = "limited-memory"
     solver = ca.nlpsol("g2_ipopt", "ipopt", nlp, options)
     lower_x = [packet["S_lower"], 0.0] + [-packet["kappa_limit"]] * n + [0.0] + [
         -packet["eta_limit"]] * n

@@ -19,7 +19,7 @@ sys.path.insert(0, str(ROOT / "catkin_ws/src/fwis_v3_optimizer/scripts"))
 sys.path.insert(0, str(ROOT / "catkin_ws/src/fwis_v3_optimizer/src"))
 
 from formation_uniform_planner_node import (  # noqa: E402
-    HOLD_END, PLANNING, PLAYING, UniformPlannerNode)
+    HOLD_END, IDLE, PLANNING, PLAYING, UniformPlannerNode)
 
 
 class _ExplicitNull:
@@ -98,6 +98,33 @@ class FeedbackIdentityTest(unittest.TestCase):
         self.assertTrue(statuses[-1]["feasible"])
         self.assertTrue(statuses[-1]["executable"])
         self.assertTrue(statuses[-1]["published"])
+
+    def test_manual_reset_invalidates_the_pending_generation(self):
+        node = self._prepublication_node()
+        node._generation = 4
+        node._planning_cancel = threading.Event()
+        node._request_map_signature = "bound-map"
+        node._publish_no_envelope = lambda *args: self.events.append(("clear", args))
+
+        response = node.cancel_pending_plan(None)
+
+        self.assertTrue(response.success)
+        self.assertTrue(node._planning_cancel.is_set())
+        self.assertEqual((node._state, node._generation), (IDLE, 5))
+        self.assertIsNone(node._request_map_signature)
+        self.assertEqual(self.events, [
+            ("clear", (self.PLAN_ID, self.FORMATION, "MANUAL_RESET")),
+            ("job", IDLE),
+        ])
+
+    def test_manual_reset_cannot_interrupt_published_playback(self):
+        for state in (PLAYING, PLANNING):
+            with self.subTest(state=state):
+                node = self._node()
+                node._state = state
+                self.assertFalse(node.cancel_pending_plan(None).success)
+                self.assertEqual(node._state, state)
+                self.assertFalse(self.events)
 
     def test_wrong_digest_terminal_does_not_release_busy(self):
         node = self._node()

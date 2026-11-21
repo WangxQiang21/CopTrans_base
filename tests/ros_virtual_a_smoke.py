@@ -22,6 +22,9 @@ Scenarios
              ``/formation/playback_plan`` and mutated at the receiver only:
              unknown versions, wrong digest, position/heading/speed and time
              changes.  Every mutation must be rejected and clear the display.
+``uturn``    the map05 parking-row U-turn with short and long approach lanes
+             at scale 2.625. Both cases require certified playback and a
+             terminal hold. Failed plans are recorded without aborting the set.
 
 The driver independently rebuilds the expected request from the raw
 ``/formation/plan_request`` and the planner-published admission/job record,
@@ -78,6 +81,7 @@ from fwis_v3_optimizer.formation_playback import (
     HOLD_END,
     HOLD_START,
     PLAYING,
+    PlaybackValidationError,
     VIRTUAL_CERTIFICATION,
     VIRTUAL_PLAYBACK_BACKEND,
     VIRTUAL_PLAYBACK_SEMANTIC_VERSION,
@@ -99,6 +103,11 @@ RIGIDITY_TOL_M = 1e-6
 TERMINAL_POSITION_TOL_M = 0.005
 TERMINAL_ANGLE_TOL_RAD = math.radians(0.2)
 DISPLAY_MIN_SAMPLES = 100
+MAP05_UTURN_MAP_SIGNATURE = "5a9ab3f50546275ad9b47ed0524e76431e2096c4c4f753dcf37243e4b293451f"
+MAP05_UTURN_CASES = (
+    ("short_approach", (10.841, 12.071, 0.000), (10.153, 2.076, -3.126)),
+    ("long_approach", (-3.625, 11.771, -0.022), (-2.490, 2.309, 3.102)),
+)
 JOB_TOPIC = "/formation/job_state"
 STATUS_TOPIC = "/formation/optimizer_status"
 PLAYBACK_STATUS_TOPIC = "/formation/playback_status"
@@ -154,9 +163,9 @@ def write_json(path, document):
     temporary.replace(path)
 
 
-def note(checks, name, ok, detail=""):
+def note(checks, name, ok, detail="", *, required=True):
     checks[name] = {"ok": bool(ok), "detail": json_safe(detail)}
-    if not ok:
+    if required and not ok:
         raise SmokeError("{}: {}".format(name, detail))
 
 
@@ -1201,10 +1210,14 @@ def wait_ready(session, timeout=30.0):
 
 def confirm_reset(session, pose, checks, prefix):
     before = session.request_count()
+    with session.lock:
+        previous_contexts = {document.get("initial_context_id")
+                             for _, document in session.job_states}
     publish_initial_pose(*pose)
     job = session.wait_job(
         lambda d: d.get("initial_reset_ready") is True and
-        isinstance(d.get("initial_context_id"), str), 5.0,
+        isinstance(d.get("initial_context_id"), str) and
+        d["initial_context_id"] not in previous_contexts, 5.0,
         "explicit virtual reset confirmation")
     note(checks, prefix + "reset_context_id",
          isinstance(job.get("initial_context_id"), str),
@@ -1813,12 +1826,124 @@ def scenario_tamper(session, checks, args, evidence_dir):
     return tamper_experiment(session, checks, document, evidence_dir)
 
 
+def map05_uturn_case(session, start, goal, checks, prefix, args,
+                     evidence_dir, capture_dir):
+    reset = confirm_reset(session, start, checks, prefix)
+    before = session.request_count()
+    publish_goal(*goal)
+    request = session.wait_request_after(before, 5.0)
+    plan_id = int(request.plan_id)
+    planning = session.wait_job(
+        lambda d: d.get("plan_id") == plan_id and d.get("state") == "PLANNING",
+        10.0, "U-turn planning job")
+    note(checks, prefix + "reset_used",
+         planning.get("initial_context_id") == reset["initial_context_id"],
+         planning.get("initial_context_id"))
+    terminal = session.wait_job(
+        lambda d: d.get("plan_id") == plan_id and
+        d.get("state") in ("PLAYING", "HOLD_END", "FAILED"),
+        args.planning_timeout, "U-turn publication or rejection")
+    # The job and optimizer status use separate topics. Read the latched
+    # result after the job transition instead of racing the recorder callback.
+    status = json.loads(rospy.wait_for_message(STATUS_TOPIC, String, timeout=5.0).data)
+    note(checks, prefix + "status_plan_id", status.get("plan_id") == plan_id,
+         status.get("plan_id"))
+    virtual = status.get("virtual_result") or {}
+    audits = virtual.get("audits") or {}
+    result = {
+        "start_f_m_rad": start,
+        "goal_f_m_rad": goal,
+        "plan_id": plan_id,
+        "grid_sha256": planning.get("grid_sha256"),
+        "guidance": planning["planning_context"]["planner_config"]["guidance_mode"],
+        "job_state": terminal["state"],
+        "status": status.get("status"),
+        "pipeline_status": status.get("pipeline_status"),
+        "trajectory_published": status.get("trajectory_published"),
+        "reason": terminal.get("reason") or status.get("reason"),
+        "detail": terminal.get("detail") or status.get("detail"),
+        "first_failure_layer": status.get("first_failure_layer"),
+        "planning_wall_time_s": status.get("wall_time_s"),
+        "audits_passed": {name: None if audit is None else audit["passed"]
+                          for name, audit in audits.items()},
+    }
+    cover = virtual.get("search", {}).get("footprint_cover")
+    if cover:
+        result["footprint_cover"] = {key: value for key, value in cover.items()
+                                     if key != "regions"}
+    verification = status.get("verification")
+    if verification:
+        result["playback_confirmation_window_s"] = verification.get("playback_confirmation_window_s")
+    print("{} {} {}".format(prefix, result["job_state"], result["reason"]),
+          flush=True)
+    note(checks, prefix + "certified_turn", terminal["state"] != "FAILED",
+         result["reason"] or result["status"], required=False)
+    if terminal["state"] == "FAILED":
+        envelope = rospy.wait_for_message(PLAN_TOPIC, FormationPlaybackPlan, timeout=5.0)
+        with session.lock:
+            envelopes = [m for _, m in session.envelope_records if m.plan_id == plan_id]
+        note(checks, prefix + "failure_no_executable_envelope",
+             envelope.plan_id == plan_id and not any(
+                 m.model_json or m.trajectory.times_from_start for m in [*envelopes, envelope]),
+             {"latched_plan_id": envelope.plan_id, "failed_plan_id": plan_id})
+        note(checks, prefix + "failure_no_playback", not any(
+            d.get("executable") or d.get("state") in (PLAYING, HOLD_START, HOLD_END)
+            for _, d in session.playback_history(plan_id)))
+        if capture_dir is not None:
+            result["capture"] = screenshot(capture_dir / (prefix + "failed.png"))
+        return result
+
+    message = session.wait_envelope(plan_id, 10.0)
+    wait_playing(session, plan_id, message)
+    if capture_dir is not None:
+        result["capture"] = screenshot(capture_dir / (prefix + "playing.png"))
+    verified = analyze_envelope(
+        session, request, planning, message, checks, prefix,
+        evidence_dir / "envelopes", evidence_dir / "requests")
+    hold, job_hold = wait_hold_end(session, plan_id, verified["plan"].duration_s + 15.0)
+    note(checks, prefix + "terminal_hold",
+         hold.get("executable") is True and
+         hold.get("model_sha256") == job_hold.get("model_sha256") == message.model_sha256,
+         hold.get("state"))
+    summary = verified["summary"]
+    yaw_error = abs(wrap(summary["terminal_qf"][2] - goal[2]))
+    note(checks, prefix + "terminal_f_heading", yaw_error <= TERMINAL_ANGLE_TOL_RAD,
+         yaw_error)
+    result.update(job_state=job_hold["state"], playback_state=hold["state"],
+                  duration_s=summary["T_end_s"], terminal_f=summary["terminal_qf"],
+                  terminal_f_yaw_error_rad=yaw_error, model_sha256=message.model_sha256)
+    note(checks, prefix + "all_audits", result["audits_passed"] ==
+         {"geometry": True, "dynamics": True, "collision": True}, result["audits_passed"])
+    return result
+
+
+def scenario_uturn(session, checks, args, evidence_dir, capture_dir):
+    ready = session.wait_job(
+        lambda d: d.get("backend") == VIRTUAL_PLAYBACK_BACKEND and
+        d.get("state") == "IDLE" and d.get("map_ready"), 45.0,
+        "Virtual A planner and map05 grid")
+    if ready.get("map_signature") != MAP05_UTURN_MAP_SIGNATURE:
+        raise SmokeError("U-turn benchmark requires map05 at scale 2.625")
+    if str(ready.get("virtual_a_goal_policy", "")).lower() != "free":
+        raise SmokeError("U-turn benchmark requires virtual_a_goal_policy:=free")
+    results = {}
+    for name, start, goal in MAP05_UTURN_CASES:
+        try:
+            results[name] = map05_uturn_case(
+                session, start, goal, checks, name + "_", args, evidence_dir, capture_dir)
+        except (SmokeError, PlaybackValidationError, rospy.ROSException) as exc:
+            results[name] = {"start_f_m_rad": start, "goal_f_m_rad": goal,
+                             "error": str(exc)}
+            note(checks, name + "_completed", False, exc, required=False)
+    return results
+
+
 def parse_args():
     parser = argparse.ArgumentParser(
         description="G5-B real ROS virtual_rigid_a smoke driver")
-    parser.add_argument("--scene-manifest", required=True)
+    parser.add_argument("--scene-manifest")
     parser.add_argument("--scene-key", default="S1")
-    parser.add_argument("--scenario", choices=("main", "failure", "tamper"),
+    parser.add_argument("--scenario", choices=("main", "failure", "tamper", "uturn"),
                         required=True)
     parser.add_argument("--goal-policy", choices=("free", "straight"),
                         default=None)
@@ -1831,7 +1956,10 @@ def parse_args():
     parser.add_argument("--free-continuation-goal", default="")
     parser.add_argument("--valid-goal", default="")
     parser.add_argument("--failure-goal", default="")
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.scenario != "uturn" and not args.scene_manifest:
+        parser.error("--scene-manifest is required for this scenario")
+    return args
 
 
 def parsed_goal(value, default):
@@ -1861,7 +1989,8 @@ def main():
     capture_dir = (Path(args.capture_dir).resolve()
                    if args.capture_dir else evidence_dir / "images")
     evidence_dir.mkdir(parents=True, exist_ok=True)
-    bundle = scene_bundle(args.scene_manifest, args.scene_key)
+    bundle = (None if args.scenario == "uturn" else
+              scene_bundle(args.scene_manifest, args.scene_key))
     defaults = {
         "S1": {
             "main": (8.819581504169413, 3.4858722492682084,
@@ -1898,17 +2027,20 @@ def main():
     report = {
         "schema": "virtual_rigid_a.g5.real_smoke.v1",
         "ros_master_uri": master,
-        "scene_key": args.scene_key,
-        "scene_manifest": str(Path(args.scene_manifest).resolve()),
-        "scene_manifest_sha256": __import__("hashlib").sha256(
-            Path(args.scene_manifest).read_bytes()).hexdigest(),
-        "scene_manifest_entry": bundle["entry"],
-        "scene_input_dir": str(bundle["scene_dir"]),
         "scenario": args.scenario,
-        "goal_policy": args.goal_policy,
+        "goal_policy": args.goal_policy if bundle is not None else "free",
         "started_epoch_s": started,
         "checks": checks,
     }
+    if bundle is None:
+        report.update(scene_key="map05", map_scale=2.625)
+    else:
+        report.update(
+            scene_key=args.scene_key,
+            scene_manifest=str(Path(args.scene_manifest).resolve()),
+            scene_manifest_sha256=__import__("hashlib").sha256(
+                Path(args.scene_manifest).read_bytes()).hexdigest(),
+            scene_manifest_entry=bundle["entry"], scene_input_dir=str(bundle["scene_dir"]))
     rospy.sleep(1.0)
     try:
         if args.scenario == "main":
@@ -1917,6 +2049,9 @@ def main():
         elif args.scenario == "failure":
             result = scenario_failure(
                 session, bundle, checks, args, evidence_dir, capture_dir)
+        elif args.scenario == "uturn":
+            result = scenario_uturn(session, checks, args, evidence_dir,
+                                    capture_dir if args.capture_dir else None)
         else:
             result = scenario_tamper(session, checks, args, evidence_dir)
         report["result"] = result

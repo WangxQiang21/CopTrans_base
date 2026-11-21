@@ -45,6 +45,7 @@ from .uniform_motion import (
     PRIMITIVE_A_STRAIGHT,
     PRIMITIVE_O_TRANSLATION,
     PRIMITIVE_S_SPIN,
+    UniformMotionEdge,
     UniformMotionError,
     a_arc_edge,
     a_straight_edge,
@@ -66,6 +67,7 @@ from .uniform_timing import (
     schedule_uniform_edges,
     timing_motion_limits,
     validate_uniform_edge_sequence,
+    _edge_descriptors,
 )
 
 MODEL_VERSION = "uniform_timed_plan.v1"
@@ -579,6 +581,7 @@ class UniformTimedPlan:
     goal_qf: FormationPose
     goal_headings: Tuple[Tuple[int, float], ...]
     duration_s: float
+    initial_edge: Optional[UniformMotionEdge] = None
 
     def __post_init__(self):
         _integer(self.plan_id, "plan_id", minimum=0, maximum=UINT32_MAX)
@@ -611,7 +614,7 @@ class UniformTimedPlan:
     def from_edges(cls, edges, vehicle_shapes, plan_id=0,
                    formation_id="uniform_v02", timing_limits=None, model=None,
                    start_qf=None, start_headings=None, expected_end_qf=None,
-                   expected_end_headings=None):
+                   expected_end_headings=None, *, initial_edge=None):
         """Build and time a manual sequence, or an explicit zero-motion hold."""
         try:
             sequence = tuple(edges)
@@ -643,14 +646,17 @@ class UniformTimedPlan:
                              if expected_end_headings is None else _heading_input(
                                  expected_end_headings, model.vehicle_ids,
                                  "expected_end_headings"))
-            schedule = schedule_uniform_edges(sequence, timing_limits)
+            if initial_edge is not None:
+                _validate_initial_edge(initial_edge, model, initial_qf, initial_headings,
+                                       timing_limits)
+            schedule = schedule_uniform_edges(sequence, timing_limits, initial_edge=initial_edge)
             plan = cls(
                 plan_id=plan_id, formation_id=formation_id, model=model,
                 vehicle_shapes=vehicle_shapes, edges=schedule.edges,
                 phases=schedule.phases, limits=timing_limits,
                 motion_limits=schedule.motion_limits, start_qf=initial_qf,
                 start_headings=initial_headings, goal_qf=goal_qf,
-                goal_headings=goal_headings, duration_s=schedule.duration)
+                goal_headings=goal_headings, duration_s=schedule.duration, initial_edge=initial_edge)
         else:
             if not isinstance(model, FormationModel):
                 raise UniformTrajectoryError(
@@ -674,7 +680,7 @@ class UniformTimedPlan:
                 limits=timing_limits,
                 motion_limits=timing_motion_limits(timing_limits),
                 start_qf=initial_qf, start_headings=initial_headings,
-                goal_qf=goal_qf, goal_headings=goal_headings, duration_s=0.0)
+                goal_qf=goal_qf, goal_headings=goal_headings, duration_s=0.0, initial_edge=initial_edge)
         _validate_plan_structure(plan)
         return plan
 
@@ -776,20 +782,20 @@ class UniformTimedPlan:
     def _hold_state(self, time_s):
         centers = self.model.centers(self.start_qf)
         headings = _pair_map(self.start_headings)
-        angles, _ = wheel_configuration(
-            Action(ACKERMANN, 0.0, 0.0), self.motion_limits)
+        descriptors = _start_descriptors(self)
+        mode = descriptors[self.vehicle_ids[0]]["mode"]
         vehicles = tuple(self._zero_vehicle(
-            vehicle_id, centers[vehicle_id], headings[vehicle_id], 1, 0.0,
-            tuple(float(value) for value in angles))
-            for vehicle_id in self.vehicle_ids)
+            vehicle_id, centers[vehicle_id], headings[vehicle_id], descriptor["direction"],
+            descriptor["control"], descriptor["angles"])
+            for vehicle_id, descriptor in descriptors.items())
         return UniformTimeState(
             time_s=time_s, phase_id="hold", phase_kind="hold", phase_index=-1,
-            edge_index=None, mode=MODE_A, qf=self.start_qf, vehicles=vehicles,
+            edge_index=None, mode=mode, qf=self.start_qf, vehicles=vehicles,
             progress=0.0, progress_unit="m", progress_rate=0.0,
             progress_acceleration=0.0, progress_jerk=0.0,
             qf_velocity=(0.0, 0.0, 0.0),
             qf_acceleration=(0.0, 0.0, 0.0), qf_jerk=(0.0, 0.0, 0.0),
-            from_mode=MODE_A, to_mode=MODE_A)
+            from_mode=mode, to_mode=mode)
 
     def _setup_state(self, time_s, phase, phase_index):
         centers = self.model.centers(phase.qf)
@@ -1095,6 +1101,10 @@ class UniformTimedPlan:
             states=states, timed_trajectory=timed)
 
     def _initial_wheel_records(self):
+        if self.initial_edge is not None:
+            return [{"vehicle_id": c.vehicle_id, "wheel_angles_rad": list(c.angles),
+                     "wheel_factors": list(c.factors)}
+                    for c in self.initial_edge.wheel_configurations(at_end=True)]
         angles, factors = wheel_configuration(
             Action(ACKERMANN, 0.0, 0.0), self.motion_limits)
         return [{
@@ -1122,8 +1132,10 @@ class UniformTimedPlan:
             "initial_state": {
                 "qf": _pose_list(self.start_qf),
                 "headings": _heading_records(self.start_headings),
-                "mode": MODE_A,
+                "mode": MODE_A if self.initial_edge is None else self.initial_edge.mode,
                 "wheel_configurations": self._initial_wheel_records(),
+                **({"previous_terminal_edge": _edge_record(self.initial_edge)}
+                   if self.initial_edge is not None else {}),
             },
             "requested_goal": {
                 "qf": _pose_list(self.goal_qf),
@@ -1233,6 +1245,8 @@ class UniformTimedPlan:
             start_headings = _headings(
                 _pick(initial_values, "headings", "initial_state"),
                 model.vehicle_ids, "initial.headings")
+            initial_edge = (_decode_edge(initial_values["previous_terminal_edge"], model)
+                            if "previous_terminal_edge" in initial_values else None)
             goal_values = _pick(values, "requested_goal", "model")
             goal_qf = _pose(
                 _pick(goal_values, "qf", "requested_goal"), "goal.qf")
@@ -1266,7 +1280,7 @@ class UniformTimedPlan:
                 start_headings=start_headings, goal_qf=goal_qf,
                 goal_headings=goal_headings,
                 duration_s=_finite(_pick(values, "duration_s", "model"),
-                                   "model.duration_s"))
+                                   "model.duration_s"), initial_edge=initial_edge)
             _validate_plan_structure(plan)
             _compare_json(plan.to_model_dict(), values, "model")
             return plan
@@ -1536,6 +1550,22 @@ def _check_heading_continuity(actual, expected, context):
                     context, vehicle_id), vehicle_id=vehicle_id)
 
 
+def _start_descriptors(plan):
+    if plan.initial_edge is not None:
+        return _edge_descriptors(plan.initial_edge, at_end=True)
+    angles, _ = wheel_configuration(Action(ACKERMANN, 0.0, 0.0), plan.motion_limits)
+    return {i: {"mode": MODE_A, "direction": 1, "control": 0.0, "angles": tuple(angles)}
+            for i in plan.vehicle_ids}
+
+
+def _validate_initial_edge(edge, model, qf, headings, limits):
+    validate_uniform_edge_sequence((edge,), limits)
+    if edge.model.offsets != model.offsets:
+        raise UniformTrajectoryError("INITIAL_EDGE_MODEL_MISMATCH", "terminal edge offsets differ")
+    _check_pose_continuity(edge.end_qf, qf, "previous terminal position")
+    _check_heading_continuity(edge.end_headings, headings, "previous terminal headings")
+
+
 def _validate_setup(plan, phase, phase_index):
     edge = plan.edges[phase.edge_index]
     if (len(phase.headings) != len(plan.vehicle_ids) or
@@ -1555,26 +1585,9 @@ def _validate_setup(plan, phase, phase_index):
     if phase.qf != edge.start_qf:
         _check_pose_continuity(phase.qf, edge.start_qf, "setup.qf")
     _check_heading_continuity(phase.headings, edge.start_headings, "setup")
-    if phase.initial:
-        previous_mode = MODE_A
-        previous_segments = None
-        angles, _ = wheel_configuration(
-            Action(ACKERMANN, 0.0, 0.0), plan.motion_limits)
-        previous_angles = {vehicle_id: tuple(float(value) for value in angles)
-                           for vehicle_id in plan.vehicle_ids}
-        previous_directions = {vehicle_id: 1 for vehicle_id in plan.vehicle_ids}
-        previous_controls = {vehicle_id: 0.0 for vehicle_id in plan.vehicle_ids}
-    else:
-        previous = plan.edges[phase.edge_index - 1]
-        previous_mode = previous.mode
-        previous_segments = {segment.vehicle_id: segment
-                             for segment in previous.segments}
-        previous_angles = {configuration.vehicle_id: configuration.angles
-                           for configuration in previous.wheel_configurations(
-                               at_end=True)}
-        previous_directions = _pair_map(previous.directions)
-        previous_controls = {vehicle_id: segment.control
-                             for vehicle_id, segment in previous_segments.items()}
+    previous = (_start_descriptors(plan) if phase.initial else
+                _edge_descriptors(plan.edges[phase.edge_index - 1], at_end=True))
+    previous_mode = previous[plan.vehicle_ids[0]]["mode"]
     current_angles = {configuration.vehicle_id: configuration.angles
                       for configuration in edge.wheel_configurations(at_end=False)}
     current_directions = _pair_map(edge.directions)
@@ -1591,19 +1604,20 @@ def _validate_setup(plan, phase, phase_index):
             phase_id=phase.phase_id)
     any_change = previous_mode != edge.mode
     for vehicle_id, demand in demands.items():
+        before = previous[vehicle_id]
         expected_deltas = tuple(
             _wrap(end - start) for start, end in zip(
-                previous_angles[vehicle_id], current_angles[vehicle_id]))
+                before["angles"], current_angles[vehicle_id]))
         delta = max(abs(value) for value in expected_deltas)
         any_change = any_change or delta > 1e-9
         expected_event = mode_switch_event(delta, plan.motion_limits)
         expected = VehicleSetupDemand(
             vehicle_id=vehicle_id, from_mode=previous_mode, to_mode=edge.mode,
-            from_direction=previous_directions[vehicle_id],
+            from_direction=before["direction"],
             to_direction=current_directions[vehicle_id],
-            from_control=previous_controls[vehicle_id],
+            from_control=before["control"],
             to_control=current_controls[vehicle_id],
-            wheel_angles_start=tuple(previous_angles[vehicle_id]),
+            wheel_angles_start=tuple(before["angles"]),
             wheel_angles_end=tuple(current_angles[vehicle_id]),
             wheel_angle_deltas=expected_deltas,
             max_wheel_angle_delta_rad=delta,
@@ -1646,6 +1660,9 @@ def _validate_plan_structure(plan):
             tuple(vehicle_id for vehicle_id, _ in plan.goal_headings) != ids):
         raise UniformTrajectoryError(
             "INVALID_VEHICLE_ID_SET", "start/goal heading IDs differ")
+    if plan.initial_edge is not None:
+        _validate_initial_edge(plan.initial_edge, plan.model, plan.start_qf, plan.start_headings,
+                               plan.limits)
     if not plan.edges:
         if plan.phases or plan.duration_s != 0.0:
             raise UniformTrajectoryError(
@@ -1733,6 +1750,16 @@ def _validate_plan_structure(plan):
                 raise UniformTrajectoryError(
                     "MOTION_EDGE_IDENTITY", "motion does not reference its edge",
                     phase_id=phase.phase_id)
+            if index == 0 and plan.initial_edge is not None:
+                before = _start_descriptors(plan)
+                after = _edge_descriptors(phase.edge, at_end=False)
+                if any(before[i]["mode"] != after[i]["mode"] or any(
+                        abs(_wrap(end - start)) > 1e-9
+                        for start, end in zip(before[i]["angles"], after[i]["angles"]))
+                       for i in ids):
+                    raise UniformTrajectoryError(
+                        "MISSING_INITIAL_SETUP", "inherited wheel configuration requires setup",
+                        phase_id=phase.phase_id)
             expected_edge += 1
             setup_allowed = True
         else:

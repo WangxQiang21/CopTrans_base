@@ -8,9 +8,41 @@ from pathlib import Path
 import yaml
 
 
+def describe_formation_context(map_dir, scale, args):
+    values = dict(arg.split(":=", 1) for arg in args if ":=" in arg)
+    metadata = yaml.safe_load((map_dir / "map.yaml").read_text(encoding="utf-8"))
+    backend = values["backend"]
+    print(
+        "[expv3] 编队地图={} backend={} scale={} resolution_m={:.12g} "
+        "origin_xy=({:.12g},{:.12g}) auto_goal={} show_footprints={}".format(
+            map_dir.name, backend, scale, float(metadata["resolution"]),
+            *map(float, metadata["origin"][:2]), values["auto_goal"],
+            values.get("show_footprints", "false")))
+    if backend == "virtual_rigid_a":
+        guidance = values["virtual_a_guidance_mode"]
+        cover = ("cover=per_vehicle_rectangles" if guidance == "footprint_seed"
+                 else "scope=" + values["virtual_a_formation_corridor_scope"])
+        print("[expv3] Virtual-A guidance={} enforcement={} {} goal_policy={}"
+              .format(guidance, values["virtual_a_corridor_enforcement"], cover,
+                      values.get("virtual_a_goal_policy", "free")))
+    elif backend == "uniform_v02":
+        direct = values.get("uniform_direct_goal_translation", "false")
+        global_flag = values.get("uniform_global_translation_route", "true")
+        if direct.lower() != "true":
+            global_flag = "false"
+        aligned = values.get("uniform_heading_aligned_route", "true")
+        if global_flag.lower() != "true":
+            aligned = "false"
+        print(("[expv3] Uniform A/O/S direct_goal_translation={} global_translation_route={} "
+               "heading_aligned_route={}").format(direct, global_flag, aligned))
+    return 0
+
+
 def main(argv):
     if len(argv) < 4:
         raise SystemExit("usage: describe_run_context.py ROOT MAP_DIR SCALE [ROS_ARGS...]")
+    if argv[1] == "--formation":
+        return describe_formation_context(Path(argv[2]), argv[3], argv[4:])
     demo = Path(argv[1]).resolve()
     map_dir = Path(argv[2]).resolve() if argv[2] else None
     scale = argv[3]

@@ -16,12 +16,12 @@ cd /home/wq/whut_thesis/expv3_multi
 bash run_demo.sh --map map04 auto_goal:=false
 # 与单车相同：2D Pose Estimate 设置货物起点和航向；2D Nav Goal 设置货物终点和航向。
 # 地图预设任务：省略 auto_goal:=false，或显式 auto_goal:=true。
-bash run_demo.sh --map map16 --scale 3.75 auto_goal:=false
+bash run_demo.sh --map map16 --scale 2.6 auto_goal:=false
 bash run_demo.sh --map map04 --dry-run    # 仅查看启动配置
 bash run_demo.sh --single --map map04   # 原单车流程与默认地图比例
 ```
 
-默认地图比例 = 原单车比例 × 3.75，`--scale` 指定绝对比例。
+编队默认倍率按 [地图索引](maps/map_index.tsv) 中每张地图的复测值设置。`--scale` 可覆盖绝对比例。
 起终点随临时地图统一变换，车辆尺寸与偏移保持米制；RViz 视角自动适配地图范围。
 设置起点立即显示队形；规划失败保留静止车体并显示原因，清除旧路径。
 

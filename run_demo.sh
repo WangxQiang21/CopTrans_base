@@ -18,19 +18,29 @@ usage() {
   if [[ "$demo_kind" == formation ]]; then
     cat <<'EOF'
 用法：./run_demo.sh [--map map01] [--scale 比例] [--backend uniform_v02|virtual_rigid_a|legacy] [auto_goal:=false] [rviz:=true]
-默认启动货物中心楔形编队：car1(1,0)、car2(0,1)、car3(0,-1)，单位米。
-2D Pose Estimate 设置货物起点与航向，2D Nav Goal 设置货物终点与航向。
+默认启动三车楔形编队：car1(1,0)、car2(0,1)、car3(0,-1)，单位米。
+2D Pose Estimate 设置编队参考点 F 的起点与航向，2D Nav Goal 设置 F 的终点与航向。
+--collect-cases 采集编队回归用例，保存到 work_flow/test_scenarios/cases。
+采集时每次指定终点即保存，用 --cases-dir 指定其他用例目录。
+车身默认以实心长方体显示；show_footprints:=true 可叠加足迹轮廓。
 编队后端默认 virtual_rigid_a（G5 虚拟刚性 A 研究入口，guidance=corridor、
 enforcement=hard、auto_goal=false；同一原子 /formation/playback_plan 信封，需先做
 2D Pose Estimate 明确新实验，virtual_a_goal_policy:=free|straight 选择终点策略）；
-virtual_a_guidance_mode:=corridor|legacy_route 与
+virtual_a_guidance_mode:=corridor|legacy_route|footprint_seed 与
 virtual_a_corridor_enforcement:=hard|soft 可显式覆盖默认研究入口；
 virtual_a_formation_corridor_scope:=f_only|three_vehicle_union_v1 显式选择走廊
 范围（默认 f_only，保持历史 F-only gate；union 为 TASK03 显式实验入口）；
-backend:=uniform_v02 启动 V0.2 自主统一规划；--backend legacy 或
+backend:=uniform_v02 启动 V0.2 自主统一规划；uniform_direct_goal_translation:=true
+启用可审核的 A/O 连接（含固定航向跨走廊）及 S 对齐、A 枢轴连接。
+uniform_global_translation_route:=false 可关闭固定航向跨走廊候选用于对照。
+uniform_heading_aligned_route:=false 将全局栅格搜索限制在地图坐标轴，用于对照斜向通行。
+uniform_heading_transition_route:=false 关闭跨编队航向的转弯连接。
+uniform_continuous_a:=true 启用统一时钟中的变曲率 A 局部细化。
+uniform_goal_formation_heading_free:=false 可要求编队停靠时匹配目标箭头朝向。
+--backend legacy 或
 backend:=legacy 仅启动旧 C++ 前端与旧优化器用于对照。
 同一时刻只会启动一个规划发布后端，不会同时发布两套轨迹。
-编队默认比例为原单车比例 × 3.75（旧策略，尚待按新构型重新验收）；--scale 指定绝对比例。
+编队默认比例见 maps/map_index.tsv，可用 --scale 指定绝对比例。
 --list-maps 查看地图。--single 使用原单车流程（含 --collect-data）。
 EOF
     return
@@ -89,6 +99,8 @@ EOF
 
 collect_data=false
 data_root=""
+collect_cases=false
+cases_dir=""
 requested_map=""
 requested_map_scale=""
 requested_backend=""
@@ -108,6 +120,18 @@ while (($#)); do
     --collect-data)
       collect_data=true
       shift
+      ;;
+    --collect-cases)
+      collect_cases=true
+      shift
+      ;;
+    --cases-dir)
+      if (($# < 2)) || [[ -z "$2" ]]; then
+        echo "错误：--cases-dir 需要保存目录。" >&2
+        exit 2
+      fi
+      cases_dir="$2"
+      shift 2
       ;;
     --data-root)
       if (($# < 2)) || [[ -z "$2" ]]; then
@@ -218,6 +242,11 @@ if [[ "$demo_kind" == formation && "$collect_data" == true ]]; then
   echo "错误：现有 --collect-data 采集器仅支持单车，请加 --single。编队规划诊断见 /formation/quality_report。" >&2
   exit 2
 fi
+if [[ "$collect_cases" == true && "$demo_kind" != formation ]] ||
+   [[ -n "$cases_dir" && "$collect_cases" != true ]]; then
+  echo "错误：--collect-cases 只用于编队。--cases-dir 需与它一起使用。" >&2
+  exit 2
+fi
 if [[ "$demo_kind" == single && -n "${requested_backend}" ]]; then
   echo "错误：--backend 仅用于编队 demo；单车流程固定使用 ${branch_backend}。" >&2
   exit 2
@@ -233,7 +262,7 @@ fi
 
 if [[ "${list_maps}" == true ]]; then
   echo "地图编号（目录名；括号内依次为三位编号写法和兼容旧名称）："
-  while IFS=$'\t' read -r map_folder legacy_name category; do
+  while IFS=$'\t' read -r map_folder legacy_name category formation_scale; do
     [[ -z "${map_folder}" || "${map_folder}" == \#* ]] && continue
     [[ -f "${map_root}/${map_folder}/map.yaml" ]] || continue
     if [[ "${map_folder}" =~ ^map([0-9]{2})- ]]; then
@@ -262,7 +291,7 @@ if [[ -n "${requested_map}" ]]; then
   elif [[ -d "${map_root}/${requested_map}" ]]; then
     selected_map_dir="${map_root}/${requested_map}"
   else
-    while IFS=$'\t' read -r map_folder legacy_name category; do
+    while IFS=$'\t' read -r map_folder legacy_name category formation_scale; do
       [[ -z "${map_folder}" || "${map_folder}" == \#* ]] && continue
       if [[ "${requested_map}" == "${legacy_name}" ]] || \
          [[ "${map_lookup_name}" =~ ^map[0-9]{2}$ && "${map_folder}" == "${map_lookup_name}-"* ]]; then
@@ -293,6 +322,15 @@ for arg in "${launch_args[@]}"; do
   fi
 done
 
+if [[ "$demo_kind" == formation && -z "$selected_map_dir" ]]; then
+  selected_map_dir="$map_root/map16-s09-underground-garage"
+  launch_args+=("map_dir:=$selected_map_dir")
+fi
+
+source_map_dir=""
+if [[ "$collect_cases" == true ]]; then
+  source_map_dir="$(realpath -- "$selected_map_dir")"
+fi
 runtime_map_parent=""
 cleanup_runtime_map() {
   if [[ -n "${runtime_map_parent}" ]]; then
@@ -302,8 +340,18 @@ cleanup_runtime_map() {
 trap cleanup_runtime_map EXIT
 
 effective_map_scale="${requested_map_scale:-1.0}"
-if [[ -z "${requested_map_scale}" && -n "${selected_map_dir}" ]]; then
-  case "$(basename -- "${selected_map_dir%/}")" in
+if [[ -z "$requested_map_scale" && -n "$selected_map_dir" ]]; then
+  selected_folder="$(basename -- "${selected_map_dir%/}")"
+  if [[ "$demo_kind" == formation ]]; then
+    effective_map_scale="3.75"
+    while IFS=$'\t' read -r map_folder legacy_name category formation_scale; do
+      if [[ "$map_folder" == "$selected_folder" ]]; then
+        effective_map_scale="$formation_scale"
+        break
+      fi
+    done < "$map_index"
+  else
+    case "$selected_folder" in
     map01-p11-narrow-case-a) effective_map_scale="0.75" ;;
     map03-p11-narrow-case-c) effective_map_scale="0.7" ;;
     map04-p12-maze-env1) effective_map_scale="0.5" ;;
@@ -311,13 +359,8 @@ if [[ -z "${requested_map_scale}" && -n "${selected_map_dir}" ]]; then
     map07-p12-obstacle-field-env4) effective_map_scale="0.8" ;;
     map08-p16-complex-parking) effective_map_scale="1.2" ;;
     map15-n06-two-stage-offset-passage) effective_map_scale="0.8" ;;
-  esac
-fi
-if [[ "$demo_kind" == formation && -z "$requested_map_scale" ]]; then
-  # Legacy "single-vehicle default x 3.75" factor from the old formation
-  # contract.  It is not yet re-derived from the current wedge envelope;
-  # T7 must re-evaluate it after the empty-map tasks pass.
-  effective_map_scale="$(python3 -c 'import sys; print(float(sys.argv[1])*3.75)' "$effective_map_scale")"
+    esac
+  fi
 fi
 if [[ -n "${requested_map_scale}" || "${effective_map_scale}" != "1.0" ]]; then
   if [[ -z "${selected_map_dir}" || ! -d "${selected_map_dir}" ]]; then
@@ -397,6 +440,7 @@ if [[ "$demo_kind" == formation ]]; then
   fi
   if [[ -z "${formation_backend}" ]]; then
     formation_backend="virtual_rigid_a"
+    [[ "$collect_cases" != true ]] || formation_backend="uniform_v02"
   fi
   if [[ "${formation_backend}" != "uniform_v02" && "${formation_backend}" != "virtual_rigid_a" && "${formation_backend}" != "legacy" ]]; then
     echo "错误：formation backend 只能是 uniform_v02、virtual_rigid_a 或 legacy，收到 ${formation_backend}。" >&2
@@ -452,7 +496,41 @@ if [[ "$demo_kind" == formation ]]; then
     (( formation_scope_seen == 1 )) || launch_args+=("virtual_a_formation_corridor_scope:=f_only")
     (( virtual_auto_goal_seen == 1 )) || launch_args+=("auto_goal:=false")
   fi
-  echo "[expv3] 编队发布后端 ${formation_backend}（同一时刻只启动这一个发布后端）"
+fi
+
+if [[ "$demo_kind" == formation && "$formation_backend" == uniform_v02 ]]; then
+  goal_heading_policy_seen=false
+  for arg in "${launch_args[@]}"; do
+    [[ "$arg" == uniform_goal_formation_heading_free:=* ]] && goal_heading_policy_seen=true
+  done
+  [[ "$goal_heading_policy_seen" == true ]] || launch_args+=("uniform_goal_formation_heading_free:=true")
+fi
+
+if [[ "$collect_cases" == true ]]; then
+  if [[ "$formation_backend" == legacy ]]; then
+    echo "错误：编队采集支持 uniform_v02 和 virtual_rigid_a。" >&2
+    exit 2
+  fi
+  collection_args=()
+  for arg in "${launch_args[@]}"; do
+    case "$arg" in
+      auto_goal:=false) continue ;;
+      planner:=true|goal_bridge:=true|start_map:=true) ;;
+      auto_goal:=*|planner:=*|goal_bridge:=*|start_map:=*|case_collection_*)
+        echo "错误：参数 $arg 与编队采集模式冲突。" >&2
+        exit 2
+        ;;
+    esac
+    collection_args+=("$arg")
+  done
+  launch_args=("${collection_args[@]}" "auto_goal:=false")
+  if [[ "$formation_backend" == uniform_v02 ]]; then
+    direct_seen=false
+    for arg in "${launch_args[@]}"; do
+      [[ "$arg" == uniform_direct_goal_translation:=* ]] && direct_seen=true
+    done
+    [[ "$direct_seen" == true ]] || launch_args+=("uniform_direct_goal_translation:=true")
+  fi
 fi
 
 if [[ "${collect_data}" == true ]]; then
@@ -503,6 +581,9 @@ if [[ "$demo_kind" == single ]]; then
   demo_launch="demo.launch"
 else
   demo_launch="formation_demo.launch"
+  view_map_dir="${runtime_map_dir:-$selected_map_dir}"
+  python3 "${demo_dir}/tools/describe_run_context.py" --formation \
+    "$view_map_dir" "$effective_map_scale" "${launch_args[@]}"
   has_rviz_config=false
   for arg in "${launch_args[@]}"; do
     [[ "$arg" == rviz_config:=* ]] && has_rviz_config=true
@@ -511,15 +592,26 @@ else
     if [[ -z "$runtime_map_parent" ]]; then
       runtime_map_parent="$(mktemp -d "${TMPDIR:-/tmp}/expv3-formation-view.XXXXXX")"
     fi
-    # selected_map_dir is the original path; the runtime copy is used when scaled.
-    view_map_dir="${runtime_map_dir:-$selected_map_dir}"
+    view_options=()
+    [[ "$collect_cases" != true ]] || view_options+=("--collect-cases")
     python3 "${demo_dir}/tools/configure_formation_view.py" "$view_map_dir" \
       "${overlay_dir}/src/fwis_v3_demo/rviz/formation_demo.rviz" \
-      "${runtime_map_parent}/formation.rviz"
+      "${runtime_map_parent}/formation.rviz" "${view_options[@]}"
     launch_args+=("rviz_config:=${runtime_map_parent}/formation.rviz")
   fi
   [[ "$has_rviz" == true || -z "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]] || launch_args+=("rviz:=true")
-  echo "[expv3] 货物中心楔形编队，车体航向独立（新实验按配置策略初始化）；地图绝对比例 ${effective_map_scale}"
+  if [[ "$collect_cases" == true ]]; then
+    if [[ -z "$runtime_map_parent" ]]; then
+      runtime_map_parent="$(mktemp -d "${TMPDIR:-/tmp}/expv3-scenario.XXXXXX")"
+    fi
+    profile="${runtime_map_parent}/scenario_profile.json"
+    python3 "${demo_dir}/tools/run_formation_cases.py" _profile "$profile" \
+      "$source_map_dir" "$effective_map_scale" "${launch_args[@]}"
+    cases_dir="$(realpath -m -- "${cases_dir:-${demo_dir}/work_flow/test_scenarios/cases}")"
+    launch_args+=("case_collection_dir:=${cases_dir}" "case_collection_profile:=${profile}")
+    echo "[expv3] 编队用例采集：先用 2D Pose Estimate 设置起点，再用 2D Nav Goal 保存用例。"
+    echo "[expv3] 用例目录：${cases_dir}"
+  fi
 fi
 
 if [[ "$dry_run" == true ]]; then

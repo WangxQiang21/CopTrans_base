@@ -18,14 +18,12 @@ import math
 import time as _time
 from typing import Mapping, Optional, Tuple
 
-import numpy as np
-
 from fwis_v3_optimizer.core import Grid
 from fwis_v3_optimizer.formation import (
     FormationModel,
     FormationValidationError,
 )
-from fwis_v3_optimizer.formation_collision import SweepPolicy
+from fwis_v3_optimizer.formation_collision import SweepPolicy, grid_from_occupancy_grid
 from fwis_v3_optimizer.formation_geometry import (
     FormationContinuousPlan,
     FormationPlanBuild,
@@ -1407,49 +1405,6 @@ class FormationNodeCore:
 
 
 # ---- ROS adapter --------------------------------------------------------
-
-
-def grid_from_occupancy_grid(message):
-    """Convert an ``OccupancyGrid`` into the exact ``core.Grid`` used by S9."""
-    try:
-        info = message.info
-        frame_id = getattr(message.header, "frame_id", "")
-        width = int(info.width)
-        height = int(info.height)
-        resolution = float(info.resolution)
-        origin = info.origin
-        ox = float(origin.position.x)
-        oy = float(origin.position.y)
-        qx = float(origin.orientation.x)
-        qy = float(origin.orientation.y)
-        qz = float(origin.orientation.z)
-        qw = float(origin.orientation.w)
-        if frame_id != "map":
-            return None, "map frame_id must be 'map', got {!r}".format(
-                frame_id)
-        if width <= 0 or height <= 0:
-            return None, "map dimensions must be positive"
-        if not math.isfinite(resolution) or resolution <= 0.0:
-            return None, "map resolution must be positive and finite"
-        if not (math.isfinite(ox) and math.isfinite(oy)):
-            return None, "map origin must be finite"
-        norm = math.sqrt(qx * qx + qy * qy + qz * qz + qw * qw)
-        if not math.isfinite(norm) or norm <= 0.0:
-            return None, "map origin quaternion is invalid"
-        yaw = math.atan2(
-            2.0 * (qw * qz + qx * qy),
-            1.0 - 2.0 * (qy * qy + qz * qz))
-        if not math.isfinite(yaw) or abs(yaw) > 1e-7:
-            return None, "rotated map origins are not supported"
-        data = np.asarray(message.data, dtype=np.int8)
-        if data.size != width * height:
-            return None, "map data length does not match its dimensions"
-        # Unknown (-1) is conservatively treated as occupied, matching the
-        # exact-grid contract: no unchecked cell is ever assumed free.
-        occupied = data.reshape(height, width) != 0
-        return Grid(occupied, resolution, ox, oy), None
-    except Exception as exc:
-        return None, "invalid map message: {!r}".format(exc)
 
 
 try:  # ROS is optional for the ROS-independent pipeline tests.

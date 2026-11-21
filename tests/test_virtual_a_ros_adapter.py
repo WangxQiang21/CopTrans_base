@@ -6,6 +6,7 @@ through the same normalised ``FormationRequestSnapshot`` the ROS bridge
 produces, and every rejection is asserted to be structured and non-mutating.
 """
 import json
+import importlib.util
 import math
 from pathlib import Path
 from types import SimpleNamespace
@@ -75,6 +76,51 @@ from formation_uniform_planner_node import (  # noqa: E402
 
 
 S2 = "S2"
+
+
+class VirtualGoalBridgeTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        spec = importlib.util.spec_from_file_location(
+            "formation_goal_bridge_test",
+            ROOT / "catkin_ws/src/fwis_v3_demo/scripts/formation_goal_bridge.py")
+        cls.bridge_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cls.bridge_module)
+
+    def test_repeated_pose_only_collapses_representation_roundoff(self):
+        canonical = self.bridge_module.canonical_virtual_goal
+        start = (8.0, 1.9999999999999998, 0.0)
+        self.assertIs(canonical(start, (8.0, 2.0, 0.0)), start)
+        for goal in ((8.000001, 2.0, 0.0), (8.0, 2.0, 1e-6)):
+            self.assertIs(canonical(start, goal), goal)
+
+    def test_reset_confirmation_before_bridge_ready_is_used_once(self):
+        node = self.bridge_module.FormationGoalBridge.__new__(
+            self.bridge_module.FormationGoalBridge)
+        node.admission_backend = "virtual_rigid_a"
+        node._start_lock = threading.RLock()
+        node._case_dir = None
+        node._confirmed_reset_id = None
+        node._job_state = None
+        node._start_override = (99.0, 99.0, 0.0)
+        node.frame_id = "map"
+        node.contract = SimpleNamespace(
+            headings_for_policy=lambda yaw: {1: yaw, 2: yaw, 3: yaw},
+            initial_heading_policy="cargo_heading")
+        positions = []
+        node._publish_preview = positions.append
+        confirmed = {
+            "state": "IDLE", "backend": "virtual_rigid_a",
+            "initial_reset_ready": True,
+            "initial_context": {
+                "source": "rviz_reset", "context_id": "test-reset",
+                "qf": {"x": 2.0, "y": 3.0, "psi": 0.0},
+            },
+        }
+        node.on_job_state(SimpleNamespace(data=json.dumps(confirmed)))
+        node.on_job_state(SimpleNamespace(data=json.dumps(confirmed)))
+        self.assertEqual(node._start_pose()[0], (2.0, 3.0, 0.0))
+        self.assertEqual(positions, [(2.0, 3.0, 0.0)])
 
 
 def _reject(testcase, reason, function, *args, **kwargs):
@@ -996,6 +1042,34 @@ class PlannerBusyAndResetTest(_NodeHarness):
 
 class PlannerFeedbackTest(_NodeHarness):
 
+    def test_planning_watchdog_invalidates_latched_model_and_generation(self):
+        node = self._node(state=PLANNING)
+        node._published_wall = None
+        node._last_heartbeat = 80.0
+        node.job_state_heartbeat_s = 1.0
+        node._publish_no_envelope = lambda *args: self.events.append(("clear", *args))
+        with patch.object(self.module._time, "monotonic", return_value=80.0):
+            with patch.object(self.module.rospy, "logerr"):
+                node.on_timer()
+        self.assertEqual(node._generation, 1)
+        self.assertEqual(node._state, "FAILED")
+        self.assertIn(("clear", self.PLAN_ID, self.FORMATION, "PLANNING_TIMEOUT"), self.events)
+        self.assertEqual(self._statuses()[-1]["formation_id"], self.FORMATION)
+
+    def test_watchdog_respects_the_virtual_envelope_verification_window(self):
+        node = self._node(state=PLANNING, backend_hooks=VirtualABackendHooks())
+        node.playback_start_timeout_s = 5.0
+        node._virtual_confirmation_grace_s = 14.0
+        node._last_heartbeat = 123.0
+        node.job_state_heartbeat_s = 1.0
+        node._playback_failure = lambda reason, detail: self.events.append((reason, detail))
+        with patch.object(self.module._time, "monotonic", side_effect=(129.0, 138.0)):
+            node.on_timer()
+            self.assertFalse(any(event[0] == "PLAYBACK_START_TIMEOUT" for event in self.events))
+            node.on_timer()
+        self.assertEqual(self.events[-1][0], "PLAYBACK_START_TIMEOUT")
+        self.assertIn("14.0 s", self.events[-1][1])
+
     def test_wrong_digest_terminal_does_not_release_busy(self):
         node = self._node(backend_hooks=VirtualABackendHooks())
         self._deliver(node, model_sha256="c" * 64)
@@ -1224,6 +1298,7 @@ class VirtualEnvelopePublicationTest(unittest.TestCase):
         node.semantic_version = hooks.semantic_version
         node.certification = hooks.certification
         node.publication_dt = 0.02
+        node.playback_start_timeout_s = 5.0
         node.frame_id = "map"
         node._state = PLANNING
         node._state_plan = self.request.plan_id

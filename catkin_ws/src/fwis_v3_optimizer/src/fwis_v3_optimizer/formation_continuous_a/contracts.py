@@ -48,6 +48,7 @@ GEOMETRY_SCOPE = "GEOMETRY"
 DYNAMICS_SCOPE = "DYNAMICS"
 COLLISION_SCOPE = "COLLISION"
 BACKEND = "virtual_rigid_a"
+FOOTPRINT_GUIDANCE = "footprint_seed"
 TIMED_MODEL_VERSION = "virtual_rigid_a.timed.v1"
 PATH_MODEL_VERSION = "virtual_rigid_a.path.v1"
 PLAYBACK_SEMANTIC_VERSION = "virtual_rigid_a.playback.v1"
@@ -1032,10 +1033,10 @@ def validate_planner_config(config):
         return ValidationResult.fail(
             "INVALID_CONFIG", "scipy_maxiter must be >= 1")
     guidance_mode = str(config.guidance_mode).strip().lower()
-    if guidance_mode not in ("legacy_route", "corridor"):
+    if guidance_mode not in ("legacy_route", "corridor", FOOTPRINT_GUIDANCE):
         return ValidationResult.fail(
             "INVALID_CONFIG",
-            "guidance_mode={!r} allowed=('legacy_route','corridor')".format(
+            "guidance_mode={!r} allowed=('legacy_route','corridor','footprint_seed')".format(
                 config.guidance_mode))
     enforcement = str(config.corridor_enforcement).strip().lower()
     if enforcement not in ("hard", "soft"):
@@ -1043,6 +1044,9 @@ def validate_planner_config(config):
             "INVALID_CONFIG",
             "corridor_enforcement={!r} allowed=('hard','soft')".format(
                 config.corridor_enforcement))
+    if guidance_mode == FOOTPRINT_GUIDANCE and enforcement != "hard":
+        return ValidationResult.fail(
+            "INVALID_CONFIG", "footprint_seed requires hard corridor enforcement")
     formation_scope = str(config.formation_corridor_scope).strip().lower()
     if formation_scope not in FORMATION_CORRIDOR_SCOPES:
         return ValidationResult.fail(
@@ -2185,6 +2189,9 @@ class RouteGuideConfig:
     clearance_cap_m: float = 2.0
     alternative_penalty: float = 2.0
     blocked_radius_m: float = 0.15
+    # F-point guide geometry only.  This is never a vehicle/cargo collision
+    # margin and is deliberately independent of ``blocked_radius_m``.
+    route_clearance_m: float = 0.10
 
     def as_dict(self):
         return {
@@ -2194,7 +2201,14 @@ class RouteGuideConfig:
             "clearance_weight": float(self.clearance_weight),
             "clearance_cap_m": float(self.clearance_cap_m),
             "alternative_penalty": float(self.alternative_penalty),
+            "alternative_penalty_definition": (
+                "dimensionless V increment per previous-guide cell band; "
+                "edge factor = 1 + clearance_weight*P(D) + V"),
             "blocked_radius_m": float(self.blocked_radius_m),
+            "route_clearance_m": float(self.route_clearance_m),
+            "route_clearance_definition": (
+                "strict F-point guide clearance to occupied cells and the "
+                "map boundary; not a vehicle collision margin"),
             "algorithm": "eight_neighbour_astar_distance_field",
             "guide_is_executable_path": False,
         }
@@ -2217,7 +2231,8 @@ def validate_route_guide_config(config):
                 "{}={} outside [{}, {}]".format(name, value, minimum, maximum),
                 field=name)
     for name in ("max_seconds", "clearance_weight", "clearance_cap_m",
-                 "alternative_penalty", "blocked_radius_m"):
+                 "alternative_penalty", "blocked_radius_m",
+                 "route_clearance_m"):
         value = getattr(config, name)
         if isinstance(value, bool) or not isinstance(value, numbers.Real):
             return ValidationResult.fail(
@@ -2244,6 +2259,10 @@ def validate_route_guide_config(config):
         return ValidationResult.fail(
             "INVALID_ROUTE_CONFIG", "blocked_radius_m too large",
             field="blocked_radius_m")
+    if float(config.route_clearance_m) > 5.0:
+        return ValidationResult.fail(
+            "INVALID_ROUTE_CONFIG", "route_clearance_m too large",
+            field="route_clearance_m")
     return ValidationResult.ok(**{
         "max_routes": int(config.max_routes),
         "max_expansions": int(config.max_expansions),
@@ -2252,6 +2271,7 @@ def validate_route_guide_config(config):
         "clearance_cap_m": float(config.clearance_cap_m),
         "alternative_penalty": float(config.alternative_penalty),
         "blocked_radius_m": float(config.blocked_radius_m),
+        "route_clearance_m": float(config.route_clearance_m),
     })
 
 

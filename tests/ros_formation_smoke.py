@@ -866,35 +866,28 @@ def check_markers(summary, array, terminal, trajectory_message):
         for marker in markers:
             by_type.setdefault(marker.type, []).append(marker)
         if (len(markers) != 4 or
-                len(by_type.get(Marker.LINE_STRIP, [])) != 2 or
+                len(by_type.get(Marker.CUBE, [])) != 1 or
+                len(by_type.get(Marker.LINE_STRIP, [])) != 1 or
                 len(by_type.get(Marker.ARROW, [])) != 1 or
                 len(by_type.get(Marker.TEXT_VIEW_FACING, [])) != 1):
             type_errors.append((vehicle_id, len(markers), {
                 int(marker_type): len(items)
                 for marker_type, items in by_type.items()}))
             continue
-        line_strips = by_type[Marker.LINE_STRIP]
-        obb = next((marker for marker in line_strips
-                    if len(marker.points) == 5 and
-                    abs(marker.scale.x - 0.03) <= 1e-9), None)
-        history = next((marker for marker in line_strips
-                        if abs(marker.scale.x - 0.015) <= 1e-9), None)
-        if obb is None or history is None:
-            type_errors.append(
-                (vehicle_id, len(markers), "missing OBB/history"))
-            continue
-        corners = obb.points
-        edge_lengths = [
-            math.hypot(second.x - first.x, second.y - first.y)
-            for first, second in zip(corners, corners[1:])]
-        expected_edges = (BODY_LENGTH_M, BODY_WIDTH_M,
-                          BODY_LENGTH_M, BODY_WIDTH_M)
-        edge_error = max(abs(value - expected) for value, expected in
-                         zip(edge_lengths, expected_edges))
-        if abs(corners[0].x - corners[-1].x) > 1e-9 or abs(
-                corners[0].y - corners[-1].y) > 1e-9:
-            edge_error = max(edge_error, 1.0)
-        obb_errors.append(edge_error)
+        body = by_type[Marker.CUBE][0]
+        history = by_type[Marker.LINE_STRIP][0]
+        terminal_vehicle = terminal_by_vehicle[vehicle_id]
+        x, y = terminal_vehicle["center"]
+        q = body.pose.orientation
+        yaw = math.atan2(2 * (q.w * q.z + q.x * q.y),
+                         1 - 2 * (q.y ** 2 + q.z ** 2))
+        obb_errors.append(max(
+            abs(body.scale.x - BODY_LENGTH_M),
+            abs(body.scale.y - BODY_WIDTH_M),
+            abs(body.scale.z - 0.338),
+            abs(body.color.a - 1.0),
+            math.hypot(body.pose.position.x - x, body.pose.position.y - y),
+            abs(_wrap(yaw - float(terminal_vehicle["theta"])))))
 
         arrow = by_type[Marker.ARROW][0]
         if len(arrow.points) != 2:

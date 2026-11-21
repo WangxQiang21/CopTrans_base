@@ -682,6 +682,8 @@ def fields_from_timed_message(message):
     """
     if not hasattr(message, "header"):
         raise PlaybackValidationError("message has no header")
+    times = tuple(message.times_from_start)
+    exact_times = bool(times) and all(hasattr(value, "to_nsec") for value in times)
     vehicles = []
     for vehicle in message.vehicles:
         offset = vehicle.offset_in_formation
@@ -710,11 +712,15 @@ def fields_from_timed_message(message):
                 float(point.center_speed_mps),
                 float(point.center_yaw_rate_radps),
                 int(point.mode), float(point.mode_control)))
-        trajectories.append({
+        row = {
             "vehicle_id": int(trajectory.vehicle_id),
             "points": tuple(points),
-        })
-    return {
+        }
+        if exact_times:
+            row["point_times_ns"] = tuple(
+                point.time_from_start.to_nsec() for point in trajectory.points)
+        trajectories.append(row)
+    fields = {
         "frame_id": message.header.frame_id,
         "stamp": (int(message.header.stamp.secs),
                   int(message.header.stamp.nsecs)),
@@ -724,10 +730,45 @@ def fields_from_timed_message(message):
         "formation_poses": tuple(
             (float(pose.x), float(pose.y), float(pose.theta))
             for pose in message.formation_poses),
-        "times_from_start": tuple(
-            _message_seconds(value) for value in message.times_from_start),
+        "times_from_start": tuple(_message_seconds(value) for value in times),
         "trajectories": tuple(trajectories),
     }
+    if exact_times:
+        fields["times_ns"] = tuple(value.to_nsec() for value in times)
+    return fields
+
+
+def _verify_virtual_time_axis(fields, times):
+    """Check the integer ROS clock and its binary64 seconds representation."""
+    declared = fields.get("times_ns")
+    if declared is None:
+        try:
+            nanoseconds = tuple(round(value * 1e9) for value in times)
+        except OverflowError as exc:
+            raise PlaybackValidationError("sample time exceeds the ROS duration range") from exc
+    else:
+        nanoseconds = _sequence(declared, "times_ns")
+        if len(nanoseconds) != len(times):
+            raise PlaybackValidationError("times_ns count differs from the common time axis")
+        for item in fields["trajectories"]:
+            point_times = _sequence(item.get("point_times_ns"), "point_times_ns")
+            if point_times != nanoseconds or any(type(value) is not int for value in point_times):
+                raise PlaybackValidationError(
+                    "vehicle {} point_times_ns differs from times_ns".format(item["vehicle_id"]))
+    for index, (value, ns) in enumerate(zip(times, nanoseconds)):
+        if type(ns) is not int or not 0 <= ns < (2 ** 31) * 1000000000:
+            raise PlaybackValidationError("times_ns[{}] is outside the ROS duration range".format(index))
+        seconds, fraction_ns = divmod(ns, 1000000000)
+        # ROS and the publisher both split the duration before converting.
+        # A valid float can multiply back to a fractional nanosecond at 64 s.
+        if (value not in (seconds + fraction_ns / 1e9, seconds + fraction_ns * 1e-9)
+                and abs(value - ns / 1e9) > 5e-15):
+            raise PlaybackValidationError(
+                "sample {} time {:.17g} is not the integer-nanosecond time {}"
+                .format(index, value, ns))
+    if any(a >= b for a, b in zip(nanoseconds, nanoseconds[1:])):
+        raise PlaybackValidationError("sample times are not strictly increasing")
+    return nanoseconds
 
 
 def _check_close(actual, expected, context, tolerance):
@@ -758,6 +799,7 @@ def verify_uniform_playback_plan(*, plan_id, formation_id, backend,
     table alone are not accepted.
     """
     from .uniform_trajectory import MODEL_VERSION, UniformTimedPlan
+    from .uniform_mixed_trajectory import MIXED_MODEL_VERSION, UniformMixedTimedPlan
 
     if backend != PLAYBACK_PLAN_BACKEND:
         raise PlaybackValidationError(
@@ -767,10 +809,9 @@ def verify_uniform_playback_plan(*, plan_id, formation_id, backend,
         raise PlaybackValidationError(
             "unsupported playback semantic_version {!r}; expected {!r}"
             .format(semantic_version, PLAYBACK_PLAN_SCHEMA))
-    if model_version != MODEL_VERSION:
+    if model_version not in (MODEL_VERSION, MIXED_MODEL_VERSION):
         raise PlaybackValidationError(
-            "unsupported model_version {!r}; expected {!r}".format(
-                model_version, MODEL_VERSION))
+            "unsupported uniform model_version {!r}".format(model_version))
     if not isinstance(model_sha256, str) or len(model_sha256) != 64:
         raise PlaybackValidationError("model_sha256 must be 64 hex digits")
     if not isinstance(model_json, str) or not model_json.strip():
@@ -788,7 +829,8 @@ def verify_uniform_playback_plan(*, plan_id, formation_id, backend,
             .format(formation_id, trajectory_fields.get("formation_id")))
 
     try:
-        plan = UniformTimedPlan.from_model_json(model_json)
+        model_type = UniformMixedTimedPlan if model_version == MIXED_MODEL_VERSION else UniformTimedPlan
+        plan = model_type.from_model_json(model_json)
     except (ValueError, TypeError, KeyError) as exc:
         raise PlaybackValidationError(
             "model_json does not rebuild a UniformTimedPlan: {}".format(exc)
@@ -916,7 +958,10 @@ def verify_uniform_playback_plan(*, plan_id, formation_id, backend,
                 sorted(raw_points), sorted(model_offsets)))
     times = trajectory.times_from_start
     for index, time_s in enumerate(times):
-        state = plan.state_at(time_s)
+        # The checked terminal ROS timestamp can round up by half a tick.
+        model_time = (min(time_s, plan.duration_s) if index == len(times) - 1
+                      else time_s)
+        state = plan.state_at(model_time)
         _check_close(state.qf.x, trajectory.formation_poses[index][0],
                      "formation_poses[{}].x".format(index),
                      position_tolerance)
@@ -1309,12 +1354,13 @@ def verify_virtual_a_playback_plan(*, plan_id, formation_id, backend,
             "virtual trajectory frame_id={!r}; expected 'map'".format(
                 trajectory.frame_id))
     times = trajectory.times_from_start
+    times_ns = _verify_virtual_time_axis(trajectory_fields, times)
     duration_t = plan.duration_s
     if plan.kind == "hold":
         if plan.total_S_m != 0.0 or duration_t != 0.0:
             raise PlaybackValidationError(
                 "hold model must have S=T=0")
-        if len(times) != 1 or abs(times[0]) > 1e-12:
+        if times_ns != (0,):
             raise PlaybackValidationError(
                 "a hold plan publishes exactly one sample at t=0")
     else:
@@ -1325,49 +1371,6 @@ def verify_virtual_a_playback_plan(*, plan_id, formation_id, backend,
                 "trajectory duration {:.17g} is not the smallest integer-"
                 "nanosecond endpoint of T={:.17g}".format(
                     times[-1], duration_t))
-        for index, value in enumerate(times):
-            scaled = value * 1e9
-            if not math.isfinite(scaled) or \
-                    abs(scaled - round(scaled)) > 5e-6:
-                raise PlaybackValidationError(
-                    "sample {} time {:.17g} is not an integer-nanosecond "
-                    "time".format(index, value))
-            if index > 0 and not times[index] > times[index - 1]:
-                raise PlaybackValidationError(
-                    "sample times are not strictly increasing")
-    for index, value in enumerate(times):
-        scaled = value * 1e9
-        if not math.isfinite(scaled) or \
-                abs(scaled - round(scaled)) > 5e-6:
-            raise PlaybackValidationError(
-                "sample {} time {:.17g} is not an integer-nanosecond time"
-                .format(index, value))
-    declared_ns = trajectory_fields.get("times_ns")
-    if declared_ns is not None:
-        declared_ns = tuple(declared_ns)
-        if len(declared_ns) != len(times):
-            raise PlaybackValidationError(
-                "times_ns count differs from the common time axis")
-        for index, (value, declared) in enumerate(zip(times, declared_ns)):
-            if isinstance(declared, bool) or not isinstance(declared, int):
-                raise PlaybackValidationError(
-                    "times_ns[{}] is not an integer".format(index))
-            if declared < 0 or declared != int(round(value * 1e9)):
-                raise PlaybackValidationError(
-                    "times_ns[{}]={} differs from the actual quantised time "
-                    "{:.17g}".format(index, declared, value))
-        for item in trajectory_fields.get("trajectories", ()):
-            vehicle_id = int(item["vehicle_id"])
-            point_ns = item.get("point_times_ns")
-            if point_ns is None:
-                raise PlaybackValidationError(
-                    "vehicle {} has times_ns but no point_times_ns"
-                    .format(vehicle_id))
-            point_ns = tuple(point_ns)
-            if point_ns != declared_ns:
-                raise PlaybackValidationError(
-                    "vehicle {} point_times_ns differs from times_ns"
-                    .format(vehicle_id))
 
     model_offsets = {
         offset.vehicle_id: (float(offset.x), float(offset.y))
@@ -1572,6 +1575,10 @@ class PlaybackVehicleState:
     offset_y: float
     body_length_m: float
     body_width_m: float
+    yaw_rate_radps: Optional[float] = None
+    gear_direction: Optional[int] = None
+    wheel_angles_rad: Optional[Tuple[float, ...]] = None
+    wheel_rolling_speeds_mps: Optional[Tuple[float, ...]] = None
 
     @property
     def mode_name(self):
@@ -1597,6 +1604,8 @@ class PlaybackFrame:
     formation_y: float
     formation_psi: float
     vehicles: Tuple[PlaybackVehicleState, ...]
+    setup_transition: Optional[Tuple[str, str]] = None
+    continuous_a: bool = False
 
     @property
     def terminal(self):
@@ -1730,12 +1739,16 @@ def _uniform_frame_at(trajectory, elapsed):
             fraction = 0.0
         state_name = PLAYING
         clamped = elapsed
+    model = trajectory.uniform_plan
+    # The ROS sample clock rounds the terminal timestamp to a whole tick.
+    model_time = (model.duration_s if state_name == HOLD_END else
+                  min(clamped, model.duration_s))
     try:
-        state = trajectory.uniform_plan.state_at(clamped)
+        state = model.state_at(model_time)
     except Exception as exc:
         raise PlaybackValidationError(
             "authoritative model cannot evaluate t={:.17g}: {}".format(
-                clamped, exc)) from exc
+                model_time, exc)) from exc
     if state.qf is None:
         raise PlaybackValidationError("model state has no formation pose")
     specs = trajectory.vehicle_map()
@@ -1755,6 +1768,10 @@ def _uniform_frame_at(trajectory, elapsed):
             mode=mode,
             mode_control=float(vehicle.mode_control),
             center_speed_mps=float(vehicle.center_speed_mps),
+            yaw_rate_radps=float(vehicle.yaw_rate_radps),
+            gear_direction=int(vehicle.direction) if mode != SPIN else None,
+            wheel_angles_rad=vehicle.wheel_angles,
+            wheel_rolling_speeds_mps=vehicle.wheel_rolling_speeds,
             offset_x=spec.offset_x,
             offset_y=spec.offset_y,
             body_length_m=spec.body_length_m,
@@ -1774,7 +1791,11 @@ def _uniform_frame_at(trajectory, elapsed):
         formation_x=float(state.qf.x),
         formation_y=float(state.qf.y),
         formation_psi=float(state.qf.psi),
-        vehicles=tuple(states))
+        vehicles=tuple(states),
+        continuous_a=(state_name == PLAYING and state.phase_id == "continuous_A"),
+        setup_transition=((state.from_mode, state.to_mode)
+                          if state_name == PLAYING and state.phase_kind in ("initial_setup", "setup")
+                          else None))
 
 
 def _virtual_frame_at(trajectory, elapsed):
@@ -1887,18 +1908,27 @@ class PlaybackMarkerOptions:
     # obscures the fixed-corner HUD on a 1280x720 render viewport.  Both
     # switches default to the historical full display.
     show_status_text: bool = True
+    body_height_m: float = 0.338
+    show_footprints: bool = False
 
     def __post_init__(self):
         for name in (
                 "band_width_m", "history_width_m", "body_width_m",
                 "heading_width_m", "link_width_m", "reference_scale_m",
                 "text_size_m", "status_text_size_m", "text_height_m",
-                "arrow_head_length_m"):
+                "arrow_head_length_m", "body_height_m"):
             object.__setattr__(self, name, _positive(
                 getattr(self, name), "PlaybackMarkerOptions." + name))
         if not isinstance(self.show_status_text, bool):
             raise PlaybackValidationError(
                 "PlaybackMarkerOptions.show_status_text must be a bool")
+        if not isinstance(self.show_footprints, bool):
+            raise PlaybackValidationError(
+                "PlaybackMarkerOptions.show_footprints must be a bool")
+
+    @property
+    def body_top_m(self):
+        return self.body_height_m + 0.005
 
 
 @dataclass(frozen=True)
@@ -1932,6 +1962,32 @@ def _marker(namespace, marker_id, marker_type, frame_id, **values):
     return MarkerSpec(
         namespace=namespace, marker_id=marker_id,
         marker_type=marker_type, frame_id=frame_id, **values)
+
+
+def _body_specs(namespace, spec, x, y, theta, body_color, options):
+    yield namespace, "CUBE", {
+        "position": (x, y, options.body_top_m - options.body_height_m / 2),
+        "yaw": theta,
+        "color": (*body_color[:3], 1.0),
+        "scale": (spec.body_length_m, spec.body_width_m, options.body_height_m),
+    }
+    if options.show_footprints:
+        # Project the collision rectangle above the roof so it remains visible.
+        yield namespace + "/footprint", "LINE_STRIP", {
+            "points": tuple((px, py, options.body_top_m + 0.008)
+                            for px, py, _ in spec.obb_corners(x, y, theta)),
+            "color": WHITE,
+            "scale": (options.body_width_m, 0.0, 0.0),
+        }
+    length = 0.65 * spec.body_length_m
+    z = options.body_top_m + 2 * options.heading_width_m
+    yield namespace, "ARROW", {
+        "points": ((x, y, z),
+                   (x + length * math.cos(theta), y + length * math.sin(theta), z)),
+        "color": WHITE,
+        "scale": (options.heading_width_m, 2.5 * options.heading_width_m,
+                  options.arrow_head_length_m),
+    }
 
 
 def _mode_text(state):
@@ -2131,9 +2187,16 @@ def _hud_vehicle_line(vehicle, static=False):
                 "HUD mode_name must be A, O or S")
         speed = _finite(vehicle.get("center_speed_mps"),
                         "HUD center_speed_mps")
+    if mode == "S" and vehicle.get("yaw_rate_radps") is not None:
+        yaw_rate = _finite(vehicle["yaw_rate_radps"], "HUD yaw_rate_radps")
+        return "car{} | S | yaw={:.2f} rad/s".format(
+            vehicle_id, yaw_rate if abs(yaw_rate) >= 0.005 else 0.0)
     if abs(speed) < 0.005:
         speed = 0.0
-    return "car{} | {} | v={:.2f} m/s".format(vehicle_id, mode, speed)
+    line = "car{} | {} | v={:.2f} m/s".format(vehicle_id, mode, speed)
+    if mode in ("A", "O") and vehicle.get("gear_direction") == -1:
+        line += " | R"
+    return line
 
 
 def _hud_diagnostic_count(value):
@@ -2155,7 +2218,17 @@ def planning_diagnostics_view(document):
     metrics = document.get("metrics")
     if not isinstance(metrics, Mapping):
         return None
+    region_count = _hud_diagnostic_count(metrics.get("footprint_region_count"))
+    rows = _hud_diagnostic_count(metrics.get("footprint_obb_rows"))
+    if region_count is not None and rows is not None:
+        return {
+            "footprint_region_count": region_count,
+            "footprint_obb_rows": rows,
+            "footprint_selected": metrics.get("footprint_selected"),
+        }
     view = {}
+    if metrics.get("reference_only") is True:
+        view["reference_only"] = True
     source = metrics.get("guide_source")
     if isinstance(source, str) and source:
         view["guide_source"] = source[:80]
@@ -2199,7 +2272,14 @@ def _hud_diagnostics_line(diagnostics):
     if not isinstance(diagnostics, Mapping):
         raise PlaybackValidationError(
             "HUD diagnostics must be an object or null")
+    if "footprint_region_count" in diagnostics:
+        text = "footprint_seed | regions={}\nOBB rows={}".format(
+            diagnostics["footprint_region_count"], diagnostics["footprint_obb_rows"])
+        selection = diagnostics.get("footprint_selected")
+        return text + " | selected=" + selection if selection in ("seed", "refined") else text
     source = diagnostics.get("guide_source")
+    label = ("F reference corridor" if diagnostics.get("reference_only") is True
+             else "diagnostics")
     parts = ["guide={}".format(
         source if isinstance(source, str) and source else "unknown")]
     origin = diagnostics.get("selected_candidate_origin")
@@ -2218,7 +2298,7 @@ def _hud_diagnostics_line(diagnostics):
     assessment = diagnostics.get("assessment")
     if isinstance(assessment, Mapping) and \
             assessment.get("available") is True:
-        parts = ["diagnostics | " + " | ".join(parts)]
+        parts = [label + " | " + " | ".join(parts)]
         parts.append(
             "samples={} | map_collisions={} | "
             "single={} | union={} | gap={} | unknown={} | status={}".format(
@@ -2230,7 +2310,7 @@ def _hud_diagnostics_line(diagnostics):
                 _unknown_count(assessment.get("union_unknown_count")),
                 assessment.get("map_sample_status") or "UNKNOWN"))
         return "\n".join(parts)
-    parts = ["diagnostics | " + " | ".join(parts)]
+    parts = [label + " | " + " | ".join(parts)]
     parts.append(
         "samples=unknown | map_collisions=unknown | "
         "single=unknown | union=unknown | gap=unknown | unknown=unknown")
@@ -2295,7 +2375,7 @@ def hud_text(playback_status, job_state, quality, show_cargo_reason=True,
     quality block is used only for the three audit columns and only after
     :func:`quality_identity_matches` accepts its full identity.
 
-    A STATIC hold repeats the white Cargo label in the fixed corner.  The
+    A STATIC hold repeats the white F label in the fixed corner.  The
     optional reason follows the existing :func:`build_hold_markers` switch so
     the HUD and the map label show the same text in the interactive demo.
     """
@@ -2330,6 +2410,12 @@ def hud_text(playback_status, job_state, quality, show_cargo_reason=True,
             float(duration),
             float(elapsed) if isinstance(elapsed, (int, float)) and
             not isinstance(elapsed, bool) else 0.0))
+    transition = playback_status.get("setup_transition")
+    if (isinstance(transition, (list, tuple)) and len(transition) == 2
+            and all(mode in ("A", "O", "S") for mode in transition)):
+        lines.append("Steering setup {} -> {} | stopped".format(*transition))
+    if playback_status.get("continuous_a"):
+        lines.append("Continuous A | variable curvature")
 
     certification = playback_status.get("certification") or "AUDIT_PENDING"
     if playback_status.get("executable") is True:
@@ -2349,12 +2435,25 @@ def hud_text(playback_status, job_state, quality, show_cargo_reason=True,
         lines.append("STATIC | v=0.00 m/s")
 
     if state == "STATIC":
-        cargo_text = "Cargo"
+        reference_text = "F"
         reason = playback_status.get("reason")
         if show_cargo_reason and reason:
-            cargo_text += " | " + str(reason)
-        lines.append(cargo_text)
+            reference_text += " | " + str(reason)
+        lines.append(reference_text)
         lines.append("STATIC / no executable trajectory")
+
+    if backend == PLAYBACK_PLAN_BACKEND:
+        # FR02 publishes one joint audit after rebuilding the plan.
+        evaluation = quality.get("evaluation") if quality_identity_matches(
+            playback_status, quality) else None
+        audited = (playback_status.get("executable") is True
+                   and isinstance(evaluation, Mapping)
+                   and evaluation.get("feasible") is True
+                   and evaluation.get("independent_audit") is True
+                   and evaluation.get("collision_certificate") is True)
+        lines.append("FR02 PASS | sweep PASS" if audited
+                     else "FR02 audit UNKNOWN")
+        return "\n".join(lines)
 
     columns = _audit_columns(playback_status, quality)
     if (quality is None and plan_id is not None and
@@ -2401,30 +2500,16 @@ def build_markers(trajectory, frame, options=None, status=None):
         markers.append(_marker(
             namespace, marker_id, marker_type, frame_id, **values))
 
-    specification = trajectory.vehicle_map()
     states = frame.vehicle_map()
     for vehicle in trajectory.vehicles:
         state = states[vehicle.vehicle_id]
         namespace = vehicle_namespace(
             formation_id, vehicle.vehicle_id)
         mode_color = MODE_COLORS[state.mode]
-        # Current body OBB outline.
-        add(namespace, "LINE_STRIP",
-            points=vehicle.obb_corners(
-                state.center_x, state.center_y, state.theta),
-            color=mode_color,
-            scale=(options.body_width_m, 0.0, 0.0))
-        # Body-heading arrow, never the formation heading.
-        heading_length = 0.65 * vehicle.body_length_m
-        add(namespace, "ARROW",
-            points=((state.center_x, state.center_y, 0.03),
-                    (state.center_x + heading_length * math.cos(state.theta),
-                     state.center_y + heading_length * math.sin(state.theta),
-                     0.03)),
-            color=WHITE,
-            scale=(options.heading_width_m,
-                   2.5 * options.heading_width_m,
-                   options.arrow_head_length_m))
+        for ns, marker_type, values in _body_specs(
+                namespace, vehicle, state.center_x, state.center_y,
+                state.theta, mode_color, options):
+            add(ns, marker_type, **values)
         # The full path is published separately as nav_msgs/Path per vehicle
         # so RViz can control its colour and line width.  A MarkerArray
         # LINE_STRIP cannot expose either property.
@@ -2447,7 +2532,8 @@ def build_markers(trajectory, frame, options=None, status=None):
             speed = 0.0
         add(namespace, "TEXT_VIEW_FACING",
             position=(state.center_x, state.center_y,
-                      options.text_height_m),
+                      max(options.text_height_m,
+                          options.body_top_m + options.text_size_m)),
             text="car{} | {} | v={:.2f} m/s".format(
                 state.vehicle_id, state.mode_name, speed),
             color=mode_color,
@@ -2538,6 +2624,113 @@ def clear_marker_specs(frame_id="map"):
     return (_marker(
         _NS_ROOT, 0, "DELETEALL", _text(frame_id, "frame_id"),
         action="DELETEALL"),)
+
+
+def _endpoint_envelope(pose, footprints):
+    """Bound every vehicle corner in the selected formation's local axes."""
+    c, s = math.cos(pose.psi), math.sin(pose.psi)
+    local = [(c * (x - pose.x) + s * (y - pose.y),
+              -s * (x - pose.x) + c * (y - pose.y))
+             for footprint in footprints for x, y, _ in footprint]
+    xs, ys = zip(*local)
+    return [(pose.x + c * x - s * y, pose.y + s * x + c * y, 0.05)
+            for x, y in ((max(xs), max(ys)), (min(xs), max(ys)),
+                         (min(xs), min(ys)), (max(xs), min(ys)))]
+
+
+def _dashed_rectangle(corners):
+    points = []
+    for first, last in zip(corners, corners[1:] + corners[:1]):
+        distance = math.dist(first, last)
+        count = max(1, math.ceil(distance / 0.22))
+        for index in range(count):
+            for fraction in (index / count, (index + 0.58) / count):
+                points.append(tuple(a + fraction * (b - a) for a, b in zip(first, last)))
+    return tuple(points)
+
+
+def build_endpoint_markers(snapshot, checker=None, frame_id="map", *, body_height_m=0.0):
+    """Draw the requested placements and a static alternative when available."""
+    markers = list(clear_marker_specs(frame_id))
+    for role, pose, requested in (("START", snapshot.start, snapshot.start_headings),
+                                  ("GOAL", snapshot.goal, snapshot.goal_headings)):
+        namespace = "formation/endpoints/" + role.lower()
+        headings = requested
+        status = "MAP UNAVAILABLE"
+        note = ""
+        rgb = (0.55, 0.40, 0.06)
+        if checker is not None:
+            report = checker.static_check(pose, requested)
+            if report.success:
+                status = "STATIC FIT"
+                rgb = (0.04, 0.36, 0.72) if role == "START" else (0.04, 0.52, 0.19)
+            else:
+                status = "BLOCKED"
+                rgb = (0.76, 0.14, 0.11)
+                if report.vehicle_id is not None:
+                    note = "car{}".format(report.vehicle_id)
+                if report.other_vehicle_id is not None:
+                    note += " / car{}".format(report.other_vehicle_id)
+                free_ids = [i for i, free in snapshot.goal_heading_free.items() if free]
+                if role == "GOAL" and free_ids:
+                    alternative = checker.sample_static_headings(pose, requested, free_ids)
+                    if alternative is None:
+                        note = " | ".join(filter(None, (note, "No sampled fit")))
+                    else:
+                        headings = alternative
+                        status = "FIT WITH CAR TURNS"
+                        rgb = (0.04, 0.52, 0.19)
+                        note = ", ".join(
+                            "car{} {:+.0f} deg".format(i, math.degrees(headings[i] - requested[i]))
+                            for i in snapshot.vehicle_ids if headings[i] != requested[i])
+        color = rgb + (0.98,)
+        outline_z = body_height_m + 0.06
+        arrow_z = outline_z + 0.02
+        margin = checker.margin_m if checker is not None else 0.0
+        outer_corners = []
+        for vehicle in snapshot.model.vehicle_poses(pose, headings):
+            i, x, y, theta = vehicle.vehicle_id, vehicle.x, vehicle.y, vehicle.theta
+            shape = snapshot.vehicle_shapes[i]
+            spec = PlaybackVehicleSpec(i, 0.0, 0.0, shape.length_m, shape.width_m)
+            padded = replace(spec, body_length_m=shape.length_m + margin,
+                             body_width_m=shape.width_m + margin)
+            outer_corners.append(padded.obb_corners(x, y, theta))
+            prefix = "{}/car{}".format(namespace, i)
+            markers.append(_marker(prefix, 0, "LINE_STRIP", frame_id,
+                                   points=tuple((px, py, outline_z)
+                                                for px, py, _ in spec.obb_corners(x, y, theta)),
+                                   color=color, scale=(0.032, 0.0, 0.0)))
+            if theta != requested[i]:
+                markers.append(_marker(
+                    prefix + "/original", 0, "LINE_STRIP", frame_id,
+                    points=tuple((px, py, outline_z - 0.005)
+                                 for px, py, _ in spec.obb_corners(x, y, requested[i])),
+                    color=(0.76, 0.14, 0.11, 0.84), scale=(0.026, 0.0, 0.0)))
+            c, s = math.cos(theta), math.sin(theta)
+            tip = (x + c * shape.length_m * 0.39, y + s * shape.length_m * 0.39, arrow_z)
+            markers.append(_marker(prefix, 1, "ARROW", frame_id,
+                                   points=((x, y, arrow_z), tip), color=color,
+                                   scale=(0.025, 0.067, 0.062)))
+            markers.append(_marker(prefix, 2, "TEXT_VIEW_FACING", frame_id,
+                                   position=(x - 0.12 * c, y - 0.12 * s, arrow_z + 0.03),
+                                   color=color, scale=(0.0, 0.0, 0.16), text="car{}".format(i)))
+        box = _endpoint_envelope(pose, outer_corners)
+        markers.append(_marker(namespace, 0, "TRIANGLE_LIST", frame_id,
+                               points=tuple(box[i] for i in (0, 1, 2, 0, 2, 3)),
+                               color=rgb + (0.13,), scale=(1.0, 1.0, 1.0)))
+        markers.append(_marker(namespace, 1, "LINE_LIST", frame_id,
+                               points=_dashed_rectangle(box), color=color,
+                               scale=(0.048, 0.0, 0.0)))
+        edge_y = max(y for _, y, _ in box) + 0.33 if role == "START" else min(
+            y for _, y, _ in box) - 0.33
+        markers.append(_marker(namespace, 2, "TEXT_VIEW_FACING", frame_id,
+                               position=(pose.x, edge_y, 0.28), color=color,
+                               scale=(0.0, 0.0, 0.25),
+                               text="\n".join(filter(None, ("{}  |  {}".format(role, status), note)))))
+        markers.append(_marker(namespace, 3, "SPHERE", frame_id,
+                               position=(pose.x, pose.y, 0.12),
+                               color=color, scale=(0.12, 0.12, 0.05)))
+    return tuple(markers)
 
 
 CORRIDOR_FILL_Z_M = 0.005
@@ -2770,6 +2963,15 @@ def build_corridor_markers(document, frame_id="map"):
                 "corridor route needs at least one region")
         for region in regions:
             region_id, points = _corridor_region(region)
+            fill_color = CORRIDOR_FILL_COLOR + (CORRIDOR_FILL_ALPHA,)
+            edge_color = CORRIDOR_EDGE_COLOR + (CORRIDOR_EDGE_ALPHA,)
+            source = corridor.get("route_source")
+            if source in ("footprint_seed", "uniform_sweep"):
+                palette = {1: (0.1, 0.5, 0.95), 2: (0.95, 0.55, 0.1),
+                           3: (0.18, 0.74, 0.36)}
+                rgb = palette.get(region.get("vehicle_id"), CORRIDOR_FILL_COLOR)
+                fill_color = rgb + ((0.12 if source == "uniform_sweep" else 0.025),)
+                edge_color = rgb + (0.68,)
             # The stable namespace is shared by every route in a document;
             # ids stay unique when more than one route is displayed.
             marker_id = route_id * 1000 + region_id
@@ -2781,7 +2983,7 @@ def build_corridor_markers(document, frame_id="map"):
                 CORRIDOR_FILL_NAMESPACE, marker_id, "TRIANGLE_LIST",
                 frame_id,
                 points=tuple(triangles),
-                color=CORRIDOR_FILL_COLOR + (CORRIDOR_FILL_ALPHA,),
+                color=fill_color,
                 # RViz scales triangle-list points by Marker.scale; the
                 # default 0.1 would shrink every corridor to 10% at the
                 # origin instead of drawing the audited vertices.
@@ -2792,9 +2994,67 @@ def build_corridor_markers(document, frame_id="map"):
             markers.append(_marker(
                 CORRIDOR_EDGE_NAMESPACE, marker_id, "LINE_STRIP", frame_id,
                 points=edge,
-                color=CORRIDOR_EDGE_COLOR + (CORRIDOR_EDGE_ALPHA,),
-                scale=(0.013, 0.0, 0.0)))
+                color=edge_color,
+                scale=((0.035 if source == "uniform_sweep" else 0.013), 0.0, 0.0)))
     return tuple(markers)
+
+
+def _footprint_hull(points):
+    """Counter-clockwise convex hull of the two endpoint rectangles."""
+    ordered = sorted(set(points))
+    halves = []
+    for sequence in (ordered, reversed(ordered)):
+        hull = []
+        for x, y in sequence:
+            while len(hull) >= 2:
+                ax, ay = hull[-2]
+                bx, by = hull[-1]
+                if (bx - ax) * (y - ay) - (by - ay) * (x - ax) > 0.0:
+                    break
+                hull.pop()
+            hull.append((x, y))
+        halves.extend(hull[:-1])
+    return halves
+
+
+def build_uniform_sweep_markers(trajectory):
+    """Show the adopted model's exact translation sweeps and turning samples."""
+    from .uniform_motion import PRIMITIVE_A_STRAIGHT, PRIMITIVE_O_TRANSLATION
+
+    model = trajectory.uniform_plan
+    regions = []
+    specs = trajectory.vehicle_map()
+
+    def footprint(vehicle):
+        corners = specs[vehicle.vehicle_id].obb_corners(vehicle.x, vehicle.y, vehicle.theta)
+        return [(x, y) for x, y, _ in corners[:-1]]
+
+    def append(vehicle, points):
+        regions.append({"region_id": len(regions), "vehicle_id": vehicle.vehicle_id,
+                        "vertices": points})
+
+    for phase in model.phases:
+        if phase.kind != "motion":
+            continue
+        edge = getattr(phase, "edge", None)
+        if edge is not None and edge.primitive in (PRIMITIVE_A_STRAIGHT, PRIMITIVE_O_TRANSLATION):
+            start = model.state_at(phase.t0_s).vehicles
+            end = model.state_at(phase.end_time, side="left").vehicles
+            for first, last in zip(start, end):
+                append(first, _footprint_hull(footprint(first) + footprint(last)))
+        else:
+            count = max(1, min(28, math.ceil(phase.duration_s / 0.75)))
+            for index in range(count + 1):
+                time_s = min(phase.end_time, phase.t0_s + phase.duration_s * index / count)
+                for vehicle in model.state_at(time_s).vehicles:
+                    append(vehicle, footprint(vehicle))
+    if not regions:
+        return clear_marker_specs(trajectory.frame_id)
+    return build_corridor_markers({
+        "state": PLANNING_PUBLISHED_STATE,
+        "formation_id": trajectory.formation_id,
+        "corridors": [{"route_id": 0, "route_source": "uniform_sweep", "regions": regions}],
+    }, trajectory.frame_id)
 
 
 PLANNING_ASTAR_NAMESPACE = "formation/planning/astar_raw"
@@ -3330,11 +3590,9 @@ def sample_candidate_path(path, vehicle_shapes,
     else:
         count = min(point_limit, max(
             2, int(math.ceil(length / CANDIDATE_SAMPLE_SPACING_M)) + 1))
-    if count == 2:
-        stations = (0.0, length)
-    else:
-        stations = tuple(
-            length * index / float(count - 1) for index in range(count))
+    # Preserve the exact endpoints. Rounding length * n / n can exceed S.
+    stations = (0.0, *(length * (index / (count - 1))
+                       for index in range(1, count - 1)), length)
     obb_count = min(obb_limit, count)
     if obb_count == 1:
         obb_indices = (0,)
@@ -3715,47 +3973,48 @@ def build_candidate_markers(document, frame_id="map"):
 
 
 def build_hold_markers(formation_id, qf, vehicles, reason, frame_id="map",
-                       show_cargo_reason=True):
-    """Static bodies and cargo reference only; never an executable path.
+                       show_cargo_reason=True, *, options=None):
+    """Static bodies and formation reference.
 
     ``vehicles`` contains (PlaybackVehicleSpec, x, y, body_heading) tuples.
     Caller must clear obsolete path markers before showing this static state.
     The compact labelling used by the normal HUD also reports the static speed
     as exactly zero; there is no model, so no wheel or mode confirmation is
-    invented.  The historical cargo reason remains the default display.
+    invented.
     """
     if not isinstance(show_cargo_reason, bool):
         raise PlaybackValidationError(
             "build_hold_markers.show_cargo_reason must be a bool")
+    options = options or PlaybackMarkerOptions()
+    if not isinstance(options, PlaybackMarkerOptions):
+        raise PlaybackValidationError("expected PlaybackMarkerOptions")
     markers = []
     color = (0.65, 0.75, 0.85, 1.0)
     for spec, x, y, theta in vehicles:
         ns = vehicle_namespace(formation_id, spec.vehicle_id)
-        markers.append(_marker(ns, len(markers) + 1, "LINE_STRIP", frame_id,
-            points=spec.obb_corners(x, y, theta), color=color,
-            scale=(0.035, 0.0, 0.0)))
-        markers.append(_marker(ns, len(markers) + 1, "ARROW", frame_id,
-            points=((x, y, 0.04), (x + 0.5 * math.cos(theta),
-                                    y + 0.5 * math.sin(theta), 0.04)),
-            color=color, scale=(0.025, 0.06, 0.08)))
+        for marker_ns, marker_type, values in _body_specs(
+                ns, spec, x, y, theta, color, options):
+            markers.append(_marker(
+                marker_ns, len(markers) + 1, marker_type, frame_id, **values))
         markers.append(_marker(ns, len(markers) + 1, "TEXT_VIEW_FACING", frame_id,
-            position=(x, y, 0.4),
+            position=(x, y, max(options.text_height_m,
+                                options.body_top_m + options.text_size_m)),
             text="car{} | STATIC | v=0.00 m/s".format(spec.vehicle_id),
-            color=color, scale=(0.0, 0.0, 0.18)))
+            color=color, scale=(0.0, 0.0, options.text_size_m)))
     x, y, yaw = qf
-    ns = shared_namespace(formation_id, "cargo")
+    ns = shared_namespace(formation_id, "reference")
     markers.append(_marker(ns, len(markers) + 1, "SPHERE", frame_id,
         position=(x, y, 0.1), color=WHITE, scale=(0.16, 0.16, 0.16)))
     markers.append(_marker(ns, len(markers) + 1, "ARROW", frame_id,
         points=((x, y, 0.06), (x + 0.7 * math.cos(yaw),
                                 y + 0.7 * math.sin(yaw), 0.06)),
         color=WHITE, scale=(0.035, 0.08, 0.12)))
-    cargo_text = "Cargo"
+    reference_text = "F"
     if show_cargo_reason:
-        cargo_text += " | " + reason
-    cargo_text += "\nSTATIC / no executable trajectory"
+        reference_text += " | " + reason
+    reference_text += "\nSTATIC / no executable trajectory"
     markers.append(_marker(ns, len(markers) + 1, "TEXT_VIEW_FACING", frame_id,
-        position=(x, y, 0.85), text=cargo_text,
+        position=(x, y, 0.85), text=reference_text,
         color=WHITE, scale=(0.0, 0.0, 0.20)))
     return tuple(markers)
 
@@ -3853,6 +4112,9 @@ def status_document(trajectory=None, frame=None, status=None, *,
         "upper_index": frame.upper_index,
         "fraction": frame.fraction,
         "sample_count": trajectory.sample_count,
+        **({"setup_transition": list(frame.setup_transition)}
+           if frame.setup_transition is not None else {}),
+        **({"continuous_a": True} if frame.continuous_a else {}),
         "vehicle_ids": list(trajectory.vehicle_ids),
         "vehicles": [
             {
@@ -3863,6 +4125,12 @@ def status_document(trajectory=None, frame=None, status=None, *,
                 "mode_name": state.mode_name,
                 "mode_control": state.mode_control,
                 "center_speed_mps": state.center_speed_mps,
+                **({"yaw_rate_radps": state.yaw_rate_radps}
+                   if state.yaw_rate_radps is not None else {}),
+                **({"gear_direction": state.gear_direction} if state.gear_direction is not None else {}),
+                **({"wheel_angles_rad": list(state.wheel_angles_rad),
+                    "wheel_rolling_speeds_mps": list(state.wheel_rolling_speeds_mps)}
+                   if state.wheel_angles_rad is not None else {}),
                 "namespace": vehicle_namespace(
                     trajectory.formation_id, state.vehicle_id),
             }

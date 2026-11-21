@@ -46,6 +46,7 @@ from fwis_v3_optimizer.formation_playback import (  # noqa: E402
     HOLD_START,
     PLAYING,
     PlaybackValidationError,
+    _verify_virtual_time_axis,
     build_markers,
     frame_at,
     status_document,
@@ -53,6 +54,21 @@ from fwis_v3_optimizer.formation_playback import (  # noqa: E402
     vehicle_namespace,
     virtual_a_request_from_raw_request,
 )
+
+
+class VirtualTimeAxisTest(unittest.TestCase):
+    def test_long_ros_duration_round_trips_without_rounding_away_a_nanosecond(self):
+        times = (0.0, 64 + 20000000 / 1e9)
+        nanoseconds = (0, 64020000000)
+        fields = {"times_ns": nanoseconds, "trajectories": (
+            {"vehicle_id": 1, "point_times_ns": nanoseconds},)}
+        self.assertEqual(_verify_virtual_time_axis(fields, times), nanoseconds)
+        self.assertEqual(_verify_virtual_time_axis({}, times), nanoseconds)
+        fields["trajectories"][0]["point_times_ns"] = (0, 64020000001)
+        with self.assertRaisesRegex(PlaybackValidationError, "point_times_ns"):
+            _verify_virtual_time_axis(fields, times)
+        with self.assertRaisesRegex(PlaybackValidationError, "integer-nanosecond"):
+            _verify_virtual_time_axis({}, (0.0, 64.0200000004))
 
 
 class EnvelopeTest(unittest.TestCase):

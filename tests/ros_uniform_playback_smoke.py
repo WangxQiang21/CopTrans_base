@@ -21,6 +21,10 @@ Scenarios
              ``/formation/playback_plan`` and then mutated (unknown
              semantic/model version, digest, model JSON, samples, stamps);
              playback must reject every mutation and clear the display.
+``b03``      map05, scale 2.625, a fixed 3 m lateral goal and terminal hold.
+             With the direct connector enabled this uses one audited O edge.
+``b04``      map05, scale 2.625, a blocked diagonal with a verified A-to-O
+             switch in one common-clock plan.
 
 Every scenario verifies, for each admitted plan:
 
@@ -99,6 +103,9 @@ FROZEN_GOAL_XY_TOL_M = 0.02
 FROZEN_GOAL_PSI_TOL_RAD = math.radians(1.0)
 FROZEN_MAX_EXPANSIONS = 10000
 FROZEN_MAX_SECONDS = 30.0
+MAP05_SIGNATURE = "5a9ab3f50546275ad9b47ed0524e76431e2096c4c4f753dcf37243e4b293451f"
+MAP15_SIGNATURE = "28f52629b8d298f7c4e4f72004402c02f02e6509d087781217f8c3f4fb59ff23"
+MAP16_OBLIQUE_SIGNATURE = "1d64b50c64777f47a56de00968bbaa853c61678ac4dd0125401c68e0b9a01915"
 JOB_TOPIC = "/formation/job_state"
 STATUS_TOPIC = "/formation/optimizer_status"
 PLAYBACK_STATUS_TOPIC = "/formation/playback_status"
@@ -284,17 +291,18 @@ class Session(object):
             rospy.sleep(0.02)
         raise SmokeError("timeout waiting for {}".format(description))
 
-    def wait_envelope(self, plan_id, timeout):
+    def wait_envelope(self, plan_id, timeout, *, executable=True):
         deadline = rospy.Time.now().to_sec() + timeout
         while rospy.Time.now().to_sec() < deadline:
             with self.lock:
                 message = self.envelopes.get(plan_id)
-            if message is not None and message.model_json and (
-                    len(message.trajectory.times_from_start) > 0):
+            if message is not None and (not executable or (
+                    message.model_json and len(message.trajectory.times_from_start) > 0)):
                 return message
             rospy.sleep(0.02)
         raise SmokeError(
-            "timeout waiting for executable envelope plan {}".format(plan_id))
+            "timeout waiting for {}envelope plan {}".format(
+                "executable " if executable else "", plan_id))
 
     def wait_request_after(self, count, timeout):
         deadline = rospy.Time.now().to_sec() + timeout
@@ -841,7 +849,7 @@ def check_shared_identity(checks, session, plan_id):
 
 def run_experiment(session, checks, name, goal, initial=None,
                    busy_probe=False, planning_timeout=150.0,
-                   envelope_dir=None, evidence=None):
+                   envelope_dir=None, evidence=None, *, allow_planning_failure=False):
     result = {"name": name, "goal": list(goal)}
     with session.lock:
         mark_tf = len(session.transforms)
@@ -849,6 +857,8 @@ def run_experiment(session, checks, name, goal, initial=None,
     if initial is not None:
         publish_initial_pose(*initial)
         result["initial_pose"] = list(initial)
+    with session.lock:
+        mark_playback = len(session.playback)
     request_count = len(session.requests)
     result["request_count_before"] = request_count
     goal_time = rospy.Time.now().to_sec()
@@ -862,9 +872,33 @@ def run_experiment(session, checks, name, goal, initial=None,
     session.wait_job(lambda d: d.get("plan_id") == plan_id and
                      d.get("state") == "PLANNING", 5.0,
                      "job PLANNING for plan {}".format(plan_id))
-    envelope = session.wait_envelope(plan_id, planning_timeout)
+    envelope = session.wait_envelope(plan_id, planning_timeout,
+                                     executable=not allow_planning_failure)
     envelope_time = rospy.Time.now().to_sec()
     result["planning_wall_s"] = envelope_time - goal_time
+    if allow_planning_failure and not envelope.model_json:
+        failed = session.wait_job(lambda d: d.get("plan_id") == plan_id
+                                  and d.get("state") == "FAILED", 5.0, "job FAILED")
+        cleared = session.wait_playback(
+            lambda d: d.get("state") == "CLEARED"
+            and str(d.get("reason", "")).startswith("invalid playback plan:"),
+            5.0, "playback CLEARED", mark=mark_playback)
+        with session.lock:
+            status = next(d for _, d in reversed(session.statuses)
+                          if d.get("plan_id") == plan_id and d.get("node_state") == "REJECTED")
+        note(checks, name + "_admitted_planning_failure", status.get("admitted") is True
+             and status.get("pipeline_status") in ("BUDGET_EXHAUSTED", "NO_SOLUTION", "AUDIT_REJECTED"),
+             status.get("reason"))
+        note(checks, name + "_no_executable_plan_or_playback",
+             not envelope.model_sha256 and not envelope.trajectory.times_from_start
+             and cleared.get("executable") is False and status.get("executable") is False
+             and not any(d.get("state") in (PLAYING, HOLD_END)
+                         for _, d in session.playback_history(plan_id)), cleared.get("state"))
+        result.update(failure=failed, search=status["search"], reason=status["reason"],
+                      planner_wall_time_s=status["wall_time_s"])
+        if evidence is not None:
+            evidence.setdefault("experiments", []).append(result)
+        return result
     stamp = int(envelope.header.stamp.secs) + (
         int(envelope.header.stamp.nsecs) * 1e-9)
     result["stamp_to_receipt_s"] = envelope_time - stamp
@@ -1717,11 +1751,431 @@ def scenario_tamper(session, evidence, checks, baseline_document):
 
 # ---- orchestration ----------------------------------------------------
 
+def fixed_map_experiment(session, evidence, envelope_dir, checks, name, start, goal,
+                         planning_timeout, *, map_signature=MAP05_SIGNATURE,
+                         allow_planning_failure=False):
+    ready = session.wait_job(lambda d: d.get("state") == "IDLE" and d.get("map_ready"),
+                             15.0, "ready planner for fixed map")
+    note(checks, name + "_fixed_map", ready.get("map_signature") == map_signature,
+         ready.get("map_signature"))
+    result = run_experiment(
+        session, checks, name, goal, initial=start,
+        planning_timeout=planning_timeout, envelope_dir=envelope_dir, evidence=evidence,
+        allow_planning_failure=allow_planning_failure)
+    if "failure" in result:
+        return result
+    with session.lock:
+        status = next(document for _, document in reversed(session.statuses)
+                      if document.get("plan_id") == result["plan_id"]
+                      and document.get("node_state") == "PUBLISHED")
+    search = status["search"]
+    evaluation = status["evaluation"]
+    result["search"] = search
+    result["evaluation"] = evaluation
+    note(checks, name + "_independent_rigid_and_swept_audit",
+         evaluation.get("independent_audit") is True
+         and evaluation.get("collision_certificate") is True
+         and evaluation["metrics"]["max_rigidity_error_m"] <= POSITION_TOL_M,
+         evaluation["status"])
+    return result
+
+
+def scenario_b03(session, evidence, envelope_dir, checks, planning_timeout):
+    result = fixed_map_experiment(
+        session, evidence, envelope_dir, checks, "b03_lateral",
+        (2.0, 0.0, 0.0), (2.0, 3.0, 0.0), planning_timeout)
+    envelope = result["envelope"]
+    headings = envelope["goal_headings"]
+    note(checks, "b03_heading_preserved", headings == envelope["start_headings"], headings)
+    edges = envelope["edges"]
+    note(checks, "b03_uses_o", bool(edges) and
+         all(edge["primitive"] == "O_TRANSLATION" for edge in edges), edges)
+    search = result["search"]
+    if evidence["params"]["uniform_planner"].get("direct_goal_translation"):
+        note(checks, "b03_one_direct_edge", len(edges) == 1 and search["expansions"] == 0
+             and (search.get("direct_goal_translation") or "").startswith("O_direct_goal"), search)
+
+
+def scenario_b04(session, evidence, envelope_dir, checks, planning_timeout):
+    result = fixed_map_experiment(
+        session, evidence, envelope_dir, checks, "b04_switch",
+        (-3.0, 2.5, 0.0), (2.0, -1.0, 0.0), planning_timeout)
+    search = result["search"]
+    note(checks, "b04_goal_connector", search["direct_goal_translation"] == "A_then_O_direct_goal"
+         and search["expansions"] == 0, search)
+    note(checks, "b04_direct_diagonal_blocked",
+         search["rejection_histogram"].get("MAP_OBB_COLLISION", 0) > 0,
+         search["rejection_histogram"])
+    envelope = json.loads(Path(result["envelope_path"]).read_text())
+    plan = UniformTimedPlan.from_model_json(envelope["model_json"])
+    note(checks, "b04_phase_order", [(phase.kind, phase.mode) for phase in plan.phases]
+         == [("motion", "A"), ("setup", "A"), ("motion", "O")], phase_summary(plan))
+    setup = plan.phases[1]
+    midpoint = (float(setup.t0_s) + float(setup.end_time)) / 2
+    before = plan.state_at(float(setup.t0_s), side="left")
+    during = plan.state_at(midpoint)
+    after = plan.state_at(float(setup.end_time), side="right")
+    for name, state in (("before", before), ("during", during), ("after", after)):
+        note(checks, "b04_stationary_" + name, state.qf == FormationPose(2.0, 2.5, 0.0)
+             and all(vehicle.center_speed_mps <= 1e-9 and abs(vehicle.theta) <= 1e-9
+                     and max(map(abs, vehicle.wheel_rolling_speeds)) <= 1e-9
+                     for vehicle in state.vehicles), state.as_dict())
+    note(checks, "b04_steering_reconfigured_at_stop",
+         during.from_mode == "A" and during.to_mode == "O" and all(
+             max(map(abs, middle.wheel_angular_rates)) > 0.0
+             and all(abs(abs(wrap(a - b)) - math.pi / 2) <= 1e-9
+                     for a, b in zip(old.wheel_angles, new.wheel_angles))
+             for old, middle, new in zip(before.vehicles, during.vehicles, after.vehicles)),
+         during.as_dict())
+    transition_ticks = [document for _, document in session.playback_history(result["plan_id"])
+                        if document.get("setup_transition") == ["A", "O"]]
+    note(checks, "b04_live_transition", bool(transition_ticks) and all(
+         all(vehicle["center_speed_mps"] <= 1e-9 for vehicle in document["vehicles"])
+         for document in transition_ticks), len(transition_ticks))
+
+
+def scenario_b07(session, evidence, envelope_dir, checks, planning_timeout):
+    start = (0.0, 2.5, 0.0)
+    goal = (math.sqrt(3.0), 3.5, math.pi / 3.0)
+    enabled = evidence["params"]["uniform_planner"].get("direct_goal_translation")
+    result = fixed_map_experiment(session, evidence, envelope_dir, checks, "b07_pivot",
+                                  start, goal, planning_timeout, allow_planning_failure=not enabled)
+    if not enabled:
+        return
+    search = result["search"]
+    note(checks, "b07_exact_goal_connector", search["expansions"] == 0
+         and search["direct_goal_translation"] == "S_then_A_arc_direct_goal", search)
+    envelope = json.loads(Path(result["envelope_path"]).read_text())
+    plan = UniformTimedPlan.from_model_json(envelope["model_json"])
+    note(checks, "b07_phase_order", [(phase.kind, phase.mode) for phase in plan.phases]
+         == [("initial_setup", "A"), ("motion", "S"), ("setup", "S"), ("motion", "A")],
+         phase_summary(plan))
+    spin, arc = plan.edges
+    note(checks, "b07_off_center_arc", spin.primitive == "S_SPIN" and arc.primitive == "A_ARC"
+         and abs(arc.control.pivot_x) <= 1e-9 and abs(arc.control.pivot_y - 2.0) <= 1e-9,
+         result["envelope"]["edges"])
+    spin_phase, switch, arc_phase = plan.phases[1:]
+    spin_start = plan.state_at(float(spin_phase.t0_s), side="right")
+    spinning = plan.state_at((float(spin_phase.t0_s) + float(spin_phase.end_time)) / 2.0)
+    stopped = plan.state_at((float(switch.t0_s) + float(switch.end_time)) / 2.0)
+    driving = plan.state_at((float(arc_phase.t0_s) + float(arc_phase.end_time)) / 2.0)
+    note(checks, "b07_spin_has_fixed_centers_and_actual_yaw", spin_start.qf == spinning.qf
+         and all(math.hypot(a.x - b.x, a.y - b.y) <= 1e-9 and b.center_speed_mps <= 1e-9
+                 for a, b in zip(spin_start.vehicles, spinning.vehicles))
+         and any(abs(vehicle.yaw_rate_radps) > 0.1 for vehicle in spinning.vehicles),
+         spinning.as_dict())
+    note(checks, "b07_switch_stops_body_motion", stopped.from_mode == "S" and stopped.to_mode == "A"
+         and all(vehicle.center_speed_mps <= 1e-9 and abs(vehicle.yaw_rate_radps) <= 1e-9
+                 and max(map(abs, vehicle.wheel_rolling_speeds)) <= 1e-9
+                 for vehicle in stopped.vehicles), stopped.as_dict())
+    note(checks, "b07_a_arc_moves_every_center", all(
+         math.hypot(a.x - b.x, a.y - b.y) > 0.1 and b.center_speed_mps > 0.1
+         for a, b in zip(stopped.vehicles, driving.vehicles)), driving.as_dict())
+    live = [document for _, document in session.playback_history(result["plan_id"])
+            if document.get("state") == PLAYING and not document.get("setup_transition")]
+    note(checks, "b07_live_spin_has_yaw_rate", any(
+         vehicle["mode_name"] == "S" and abs(vehicle.get("yaw_rate_radps", 0.0)) > 0.1
+         and vehicle["center_speed_mps"] <= 1e-9
+         for document in live for vehicle in document["vehicles"]), len(live))
+
+
+def scenario_map15_offset(session, evidence, envelope_dir, checks, planning_timeout):
+    enabled = evidence["params"]["uniform_planner"].get("direct_goal_translation")
+    start, goal = (-5.5, 0.16, 0.0), (14.0, 7.1, 0.0)
+    result = fixed_map_experiment(
+        session, evidence, envelope_dir, checks, "map15_offset", start, goal,
+        planning_timeout, map_signature=MAP15_SIGNATURE, allow_planning_failure=not enabled)
+    if not enabled:
+        return
+    search = result["search"]
+    note(checks, "map15_offset_connector",
+         search["direct_goal_translation"] == "A_then_O_then_A_direct_goal"
+         and search["expansions"] == 0 and search["offset_preview_rejections"] > 0
+         and search["rejection_histogram"].get("MAP_OBB_COLLISION", 0) >= 3, search)
+    envelope = json.loads(Path(result["envelope_path"]).read_text())
+    plan = UniformTimedPlan.from_model_json(envelope["model_json"])
+    note(checks, "map15_offset_phase_order", [(phase.kind, phase.mode) for phase in plan.phases]
+         == [("motion", "A"), ("setup", "A"), ("motion", "O"), ("setup", "O"), ("motion", "A")],
+         phase_summary(plan))
+    first, crossing, final = plan.edges
+    note(checks, "map15_fixed_headings_and_exact_crossing",
+         first.start_headings == crossing.start_headings == final.end_headings
+         and abs(crossing.start_qf.x - crossing.end_qf.x) < 1e-9
+         and abs(crossing.start_qf.y - start[1]) < 1e-9
+         and abs(crossing.end_qf.y - goal[1]) < 1e-9,
+         {name: [pose.x, pose.y, pose.psi] for name, pose in (
+             ("start_f", first.start_qf), ("cross_f", crossing.start_qf),
+             ("second_entry_f", final.start_qf))})
+    # Nominal wall ends at this scale. Count the footprint padding so all
+    # vehicles finish preparation outside the respective narrow lane.
+    front_padding_m = (0.738 + 0.05) / 2
+    for index, transition in ((1, ("A", "O")), (3, ("O", "A"))):
+        phase = plan.phases[index]
+        setup = plan.state_at((float(phase.t0_s) + float(phase.end_time)) / 2)
+        xmin = min(vehicle.x for vehicle in setup.vehicles) - front_padding_m
+        xmax = max(vehicle.x for vehicle in setup.vehicles) + front_padding_m
+        note(checks, "map15_setup_{}_{}_in_open_area".format(*transition),
+             -1.68 < xmin <= xmax < 3.90 and (setup.from_mode, setup.to_mode) == transition
+             and all(abs(v.yaw_rate_radps) <= 1e-9 and v.center_speed_mps <= 1e-9
+                     and max(map(abs, v.wheel_rolling_speeds)) <= 1e-9
+                     for v in setup.vehicles)
+             and any(max(map(abs, v.wheel_angular_rates)) > 0.0 for v in setup.vehicles),
+             {"padded_formation_x_m": [xmin, xmax], "state": setup.as_dict()})
+    live = [document for _, document in session.playback_history(result["plan_id"])
+            if document.get("setup_transition")]
+    note(checks, "map15_live_setups", {tuple(d["setup_transition"]) for d in live}
+         == {("A", "O"), ("O", "A")} and all(
+             all(v["center_speed_mps"] <= 1e-9 for v in d["vehicles"]) for d in live), len(live))
+
+
+def scenario_map15_preparation(session, evidence, envelope_dir, checks, planning_timeout):
+    from nav_msgs.msg import OccupancyGrid
+    from formation_uniform_planner_node import grid_from_occupancy_grid
+    from fwis_v3_optimizer.formation_collision import FormationCollisionChecker
+
+    enabled = evidence["params"]["uniform_planner"].get("direct_goal_translation")
+    yaw = math.radians(20.0)
+    start, goal = (1.0, 3.0, yaw), (10.0, 7.3, yaw)
+    result = fixed_map_experiment(
+        session, evidence, envelope_dir, checks, "map15_preparation", start, goal,
+        planning_timeout, map_signature=MAP15_SIGNATURE, allow_planning_failure=not enabled)
+    if not enabled:
+        return
+
+    search = result["search"]
+    note(checks, "map15_preparation_connector", search["expansions"] == 0
+         and search["direct_goal_translation"] == "O_then_S_then_A_direct_goal"
+         and search["straight_preparation_probes"] > 0, search)
+    model_json = json.loads(Path(result["envelope_path"]).read_text())["model_json"]
+    plan = UniformTimedPlan.from_model_json(model_json)
+    note(checks, "map15_preparation_phase_order", [(p.kind, p.mode) for p in plan.phases]
+         == [("initial_setup", "A"), ("motion", "O"), ("setup", "O"),
+             ("motion", "S"), ("setup", "S"), ("motion", "A")], phase_summary(plan))
+    incoming, spin, outgoing = plan.edges
+    prep = spin.start_qf
+    note(checks, "map15_approach_stops_and_aligns_on_lane_axis",
+         incoming.end_qf == prep == spin.end_qf == outgoing.start_qf
+         and abs(prep.x - start[0]) < 1e-9 and abs(prep.y - goal[1]) < 1e-9
+         and abs(prep.psi - yaw) < 1e-9 and abs(outgoing.end_qf.psi - yaw) < 1e-9
+         and all(abs(wrap(a - yaw)) < 1e-9 for _, a in spin.start_headings)
+         and all(abs(wrap(a)) < 1e-9 for _, a in spin.end_headings), [prep.x, prep.y, prep.psi])
+    for index, transition in ((2, ("O", "S")), (4, ("S", "A"))):
+        phase = plan.phases[index]
+        state = plan.state_at((float(phase.t0_s) + float(phase.end_time)) / 2.0)
+        note(checks, "map15_stationary_setup_{}_{}".format(*transition), state.qf == prep
+             and (state.from_mode, state.to_mode) == transition
+             and all(abs(v.yaw_rate_radps) <= 1e-9 and v.center_speed_mps <= 1e-9
+                     and max(map(abs, v.wheel_rolling_speeds)) <= 1e-9 for v in state.vehicles),
+             state.as_dict())
+    phase = plan.phases[3]
+    spinning = plan.state_at((float(phase.t0_s) + float(phase.end_time)) / 2.0)
+    margin = result["evaluation"]["metrics"]["collision_margin_m"]
+    note(checks, "map15_body_spin_takes_place_before_entrance", spinning.qf == prep
+         and all(v.center_speed_mps <= 1e-9 and abs(v.yaw_rate_radps) > 0.1
+                 for v in spinning.vehicles)
+         and all(v.x + math.hypot((plan.vehicle_shapes[v.vehicle_id].length_m + margin) / 2,
+                                  (plan.vehicle_shapes[v.vehicle_id].width_m + margin) / 2) < 3.90
+                 for v in spinning.vehicles), spinning.as_dict())
+
+    grid, error = grid_from_occupancy_grid(rospy.wait_for_message("/map", OccupancyGrid, timeout=5.0))
+    note(checks, "map15_independent_raster_loaded", grid is not None, error)
+    obstacles = FormationCollisionChecker(grid, plan.model, plan.vehicle_shapes, margin)
+    unaligned = obstacles.static_check(plan.goal_qf, dict(plan.start_headings))
+    aligned = obstacles.static_check(plan.goal_qf, dict(plan.goal_headings))
+    note(checks, "map15_incoming_body_orientation_blocked_at_goal",
+         unaligned.reason == "MAP_OBB_COLLISION" and aligned.success,
+         {"blocked_vehicle": unaligned.vehicle_id, "incoming_poses_clear": unaligned.success,
+          "aligned_poses_clear": aligned.success})
+    live = [document for _, document in session.playback_history(result["plan_id"])
+            if document.get("state") == PLAYING and not document.get("setup_transition")]
+    note(checks, "map15_playback_displays_stationary_body_spin", any(
+         all(vehicle["mode_name"] == "S" and abs(vehicle.get("yaw_rate_radps", 0)) > .1
+             and vehicle["center_speed_mps"] <= 1e-9 for vehicle in doc["vehicles"])
+         for doc in live), len(live))
+
+
+def scenario_b09(session, evidence, envelope_dir, checks, planning_timeout):
+    yaw = math.pi / 3
+    arc_goal = (math.sqrt(3), 3.5, yaw)
+    reverse_goal = (arc_goal[0] - 1.0, arc_goal[1] - 1.0, yaw)
+    results = [fixed_map_experiment(session, evidence, envelope_dir, checks, "b09_arc",
+                                    (0.0, 2.5, 0.0), arc_goal, planning_timeout)]
+    for name, goal in (("b09_reverse", reverse_goal), ("b09_forward", arc_goal)):
+        rospy.sleep(0.5)
+        results.append(run_experiment(session, checks, name, goal, planning_timeout=planning_timeout,
+                                      envelope_dir=envelope_dir, evidence=evidence))
+    plans = [UniformTimedPlan.from_model_json(json.loads(Path(item["envelope_path"]).read_text())["model_json"])
+             for item in results]
+    arc, reverse, forward = plans
+    note(checks, "b09_arc_terminal_is_not_canonical", arc.initial_edge is None
+         and arc.edges[-1].primitive == "A_ARC"
+         and any(abs(wrap(theta - arc.goal_qf.psi)) > 0.1 for _, theta in arc.goal_headings),
+         arc.goal_headings)
+    for index, gear in ((1, -1), (2, 1)):
+        prior, plan = plans[index - 1:index + 1]
+        name = results[index]["name"]
+        with session.lock:
+            request = next(m for _, m in session.requests if m.plan_id == plan.plan_id)
+            status = next(d for _, d in reversed(session.statuses)
+                          if d.get("plan_id") == plan.plan_id and d.get("node_state") == "PUBLISHED")
+        note(checks, name + "_binds_confirmed_predecessor",
+             request.continuation_plan_id == prior.plan_id
+             and request.continuation_model_sha256 == prior.model_sha256()
+             and plan.initial_edge is not None and plan.initial_edge.primitive == prior.edges[-1].primitive
+             and plan.start_qf == prior.goal_qf and plan.start_headings == prior.goal_headings,
+             request.continuation_plan_id)
+        stopped = prior.state_at(prior.duration_s)
+        restart = plan.state_at(0.0)
+        note(checks, name + "_inherits_stopped_wheels", restart.qf == stopped.qf and all(
+            abs(a.theta - b.theta) <= 1e-9 and a.center_speed_mps <= 1e-9 and b.center_speed_mps <= 1e-9
+            and max(map(abs, a.wheel_rolling_speeds)) <= 1e-9
+            and max(map(abs, b.wheel_rolling_speeds)) <= 1e-9
+            and all(abs(wrap(x - y)) <= 1e-9 for x, y in zip(a.wheel_angles, b.wheel_angles))
+            for a, b in zip(stopped.vehicles, restart.vehicles)), restart.as_dict())
+        note(checks, name + "_audited_signed_drive", len(plan.edges) == 1
+             and plan.edges[0].primitive == "O_TRANSLATION"
+             and all(direction == gear for _, direction in plan.edges[0].directions)
+             and status["evaluation"].get("collision_certificate") is True,
+             dict(plan.edges[0].directions))
+        live = [d for _, d in session.playback_history(plan.plan_id) if d.get("state") == PLAYING]
+        note(checks, name + "_live_signed_wheel_speeds", any(all(
+            v.get("gear_direction") == gear
+            and all(gear * speed > 0.1 for speed in v.get("wheel_rolling_speeds_mps", ()))
+            and len(v.get("wheel_rolling_speeds_mps", ())) == 4 for v in d["vehicles"])
+            for d in live), len(live))
+        results[index]["continuation"] = {"plan_id": request.continuation_plan_id,
+                                          "model_sha256": request.continuation_model_sha256}
+        results[index]["search"] = status["search"]
+    note(checks, "b09_setup_from_actual_arc_wheels", len(reverse.phases) == 2
+         and reverse.phases[0].kind == "initial_setup"
+         and all(d.from_mode == "A" and d.to_mode == "O" and d.to_direction == -1
+                 for d in reverse.phases[0].demands), phase_summary(reverse))
+    note(checks, "b09_no_redundant_setup_on_same_angles_after_reverse",
+         len(forward.phases) == 1 and forward.phases[0].kind == "motion"
+         and forward.initial_edge.directions == reverse.edges[-1].directions,
+         phase_summary(forward))
+
+    stale = copy.deepcopy(request)
+    stale.header.stamp = rospy.Time.now()
+    stale.plan_id = forward.plan_id + 100
+    publisher = rospy.Publisher(REQUEST_TOPIC, FormationPlanRequest, queue_size=1)
+    rospy.sleep(0.3)
+    publisher.publish(stale)
+    deadline = time.monotonic() + 5.0
+    rejection = None
+    while time.monotonic() < deadline:
+        with session.lock:
+            rejection = next((d for _, d in reversed(session.statuses)
+                              if d.get("plan_id") == stale.plan_id), None)
+        if rejection is not None:
+            break
+        rospy.sleep(0.02)
+    publisher.unregister()
+    job = session.latest_job()
+    note(checks, "b09_stale_predecessor_rejected_without_releasing_hold",
+         rejection is not None and rejection.get("reason") == "INVALID_CONTINUATION"
+         and rejection.get("admitted") is False and stale.plan_id not in session.envelopes
+         and job.get("plan_id") == forward.plan_id and job.get("state") == HOLD_END,
+         rejection)
+
+
+def scenario_map15_global(session, evidence, envelope_dir, checks, planning_timeout):
+    params = evidence["params"]["uniform_planner"]
+    enabled = params.get("direct_goal_translation") and params.get("global_translation_route")
+    start, goal = (-5.5, 0.16, 0.0), (12.0, 10.8, 0.0)
+    result = fixed_map_experiment(
+        session, evidence, envelope_dir, checks, "map15_global", start, goal,
+        planning_timeout, map_signature=MAP15_SIGNATURE, allow_planning_failure=not enabled)
+    if not enabled:
+        return
+    search = result["search"]
+    route = search["global_route"]
+    note(checks, "map15_whole_formation_global_route_found",
+         search["direct_goal_translation"] == "fixed_heading_global_route"
+         and search["expansions"] == 0 and route["status"] == "FOUND"
+         and route["expansions"] > 0 and search["offset_preview_rejections"] > 0,
+         route)
+    model = json.loads(Path(result["envelope_path"]).read_text())["model_json"]
+    plan = UniformTimedPlan.from_model_json(model)
+    note(checks, "map15_global_mixes_a_o_and_final_reverse",
+         tuple(edge.mode for edge in plan.edges) == ("A", "O", "A", "O", "A")
+         and all(direction < 0 for _, direction in plan.edges[-1].directions)
+         and all(edge.start_headings == plan.start_headings == edge.end_headings
+                 and edge.start_qf.psi == edge.end_qf.psi == 0.0 for edge in plan.edges),
+         result["envelope"]["edges"])
+    actual = [plan.start_qf] + [edge.end_qf for edge in plan.edges]
+    note(checks, "map15_exact_route_reaches_second_passage_far_exit",
+         len(route["waypoints"]) == len(actual)
+         and all(math.hypot(x - pose.x, y - pose.y) <= 1e-9
+                 for (x, y), pose in zip(route["waypoints"], actual))
+         and 5.62 < actual[3].y < 8.59 and actual[3].x > 18.75
+         and actual[4].y > 8.59 and actual[-1].x < actual[4].x, route["waypoints"])
+    setup_count = 0
+    for phase in plan.phases:
+        if phase.kind != "setup":
+            continue
+        setup_count += 1
+        state = plan.state_at(float(phase.t0_s + phase.end_time) / 2.0)
+        note(checks, "map15_global_parked_" + phase.phase_id,
+             state.from_mode == phase.from_mode and state.to_mode == phase.to_mode
+             and all(abs(vehicle.center_speed_mps) <= 1e-9
+                     and max(map(abs, vehicle.wheel_rolling_speeds)) <= 1e-9
+                     and max(map(abs, vehicle.wheel_angular_rates)) > 0.0
+                     for vehicle in state.vehicles), state.as_dict())
+    note(checks, "map15_global_four_checked_switches", setup_count == 4, setup_count)
+
+
+def scenario_map16_oblique(session, evidence, envelope_dir, checks, planning_timeout):
+    params = evidence["params"]["uniform_planner"]
+    heading_aligned = params.get("heading_aligned_route", True)
+    yaw = 3 * math.pi / 4
+    result = fixed_map_experiment(
+        session, evidence, envelope_dir, checks, "map16_oblique",
+        (-1.0, 0.0, yaw), (4.62, 14.65, yaw), planning_timeout,
+        map_signature=MAP16_OBLIQUE_SIGNATURE)
+    search = result["search"]
+    route = search["global_route"]
+    note(checks, "map16_selects_an_audited_global_route", route["status"] == "FOUND"
+         and search["expansions"] == 0 and search["direct_goal_translation"] == "fixed_heading_global_route",
+         search)
+    model = json.loads(Path(result["envelope_path"]).read_text())["model_json"]
+    plan = UniformTimedPlan.from_model_json(model)
+    modes = tuple(edge.mode for edge in plan.edges)
+    note(checks, "map16_body_headings_unchanged", all(
+        abs(wrap(edge.start_qf.psi - yaw)) <= 1e-9 and abs(wrap(edge.end_qf.psi - yaw)) <= 1e-9
+        and edge.start_headings == plan.start_headings == edge.end_headings for edge in plan.edges),
+        result["envelope"]["edges"])
+    if not heading_aligned:
+        note(checks, "map16_axis_control_uses_o", route["frame_angle_rad"] == 0.0
+             and modes == ("O",) * 4 and route["a_distance_m"] == 0.0, route)
+        return
+    native = next(candidate for candidate in route["alternatives"] if candidate["frame_angle_rad"] == 0.0)
+    note(checks, "map16_heading_aligned_candidate_wins", abs(route["frame_angle_rad"]) > 0.1
+         and native["status"] == "FOUND" and route["score_m"] < native["score_m"]
+         and route["length_m"] < native["length_m"] and route["a_distance_m"] > 6.0, route)
+    late = plan.edges[-1]
+    bearing = math.atan2(late.end_qf.y - late.start_qf.y, late.end_qf.x - late.start_qf.x)
+    note(checks, "map16_enters_diagonal_bay_in_a", modes == ("O", "A", "O", "A")
+         and abs(wrap(bearing - yaw)) <= 1e-9
+         and all(gear == 1 for _, gear in late.directions)
+         and late.start_qf.y < 14.0 < late.end_qf.y, {"modes": modes, "bearing_rad": bearing})
+    note(checks, "map16_both_mode_changes_parked", any(
+        phase.kind == "setup" and (phase.from_mode, phase.to_mode) == ("O", "A")
+        for phase in plan.phases) and any(
+            phase.kind == "setup" and (phase.from_mode, phase.to_mode) == ("A", "O")
+            for phase in plan.phases) and all(
+                abs(v.center_speed_mps) <= 1e-9
+                and max(map(abs, v.wheel_rolling_speeds)) <= 1e-9
+                for phase in plan.phases if phase.kind == "setup"
+                for v in plan.state_at((phase.t0_s + phase.end_time) / 2).vehicles), phase_summary(plan))
+
+
 def parse_args():
     parser = argparse.ArgumentParser(
         description="FR05 live uniform playback acceptance driver")
     parser.add_argument(
-        "--scenario", choices=("main", "failure", "tamper", "near_goal"),
+        "--scenario", choices=("main", "failure", "tamper", "near_goal", "b03", "b04", "b07",
+                               "map15_offset", "map15_preparation", "map15_global", "map16_oblique", "b09"),
         required=True)
     parser.add_argument("--output", required=True,
                         help="strict-JSON report path")
@@ -1774,6 +2228,27 @@ def main():
                                arguments.planning_timeout)
         elif arguments.scenario == "failure":
             scenario_failure(session, evidence, envelope_dir, checks)
+        elif arguments.scenario == "b03":
+            scenario_b03(session, evidence, envelope_dir, checks,
+                         arguments.planning_timeout)
+        elif arguments.scenario == "b04":
+            scenario_b04(session, evidence, envelope_dir, checks,
+                         arguments.planning_timeout)
+        elif arguments.scenario == "b07":
+            scenario_b07(session, evidence, envelope_dir, checks,
+                         arguments.planning_timeout)
+        elif arguments.scenario == "map15_offset":
+            scenario_map15_offset(session, evidence, envelope_dir, checks,
+                                  arguments.planning_timeout)
+        elif arguments.scenario == "map15_preparation":
+            scenario_map15_preparation(session, evidence, envelope_dir, checks,
+                                       arguments.planning_timeout)
+        elif arguments.scenario == "map15_global":
+            scenario_map15_global(session, evidence, envelope_dir, checks, arguments.planning_timeout)
+        elif arguments.scenario == "map16_oblique":
+            scenario_map16_oblique(session, evidence, envelope_dir, checks, arguments.planning_timeout)
+        elif arguments.scenario == "b09":
+            scenario_b09(session, evidence, envelope_dir, checks, arguments.planning_timeout)
         else:
             if not arguments.baseline_envelope:
                 raise SmokeError(

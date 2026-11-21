@@ -1995,6 +1995,19 @@ class UniformQualityAcceptance(unittest.TestCase):
                              UNIFORM_DYNAMIC_UNCONFIRMED)
             self.assertIsNone(unconfirmed_decision.trajectory)
             self.assertTrue(unconfirmed_decision.clear)
+            from fwis_v3_optimizer.uniform_pipeline import _retime_unconfirmed_phases
+
+            recovered, factors = _retime_unconfirmed_phases(unconfirmed_plan, unconfirmed)
+            self.assertEqual(set(factors), {0})
+            self.assertEqual(recovered.edges, unconfirmed_plan.edges)
+            self.assertGreater(recovered.duration_s, unconfirmed_plan.duration_s)
+            self.assertEqual(recovered.phases[0].duration_s,
+                             unconfirmed_plan.phases[0].duration_s)
+            rebuilt = UniformTimedPlan.from_model_json(recovered.to_model_json())
+            self.assertEqual(rebuilt.model_sha256(), recovered.model_sha256())
+            confirmed = audit(rebuilt, rebuilt.sample())
+            self.assertTrue(confirmed.feasible, confirmed.detail)
+            self.assertTrue(confirmed.metrics["dynamic_continuous_certificate"])
             passed(record, "unconfirmed_arc_is_not_publishable",
                    model_input_file=unconfirmed_file,
                    timing_limits={"jerk_max": limits.jerk_max},

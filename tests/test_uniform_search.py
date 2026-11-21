@@ -81,9 +81,12 @@ from fwis_v3_optimizer.uniform_quality import (
     audit_uniform_timed_plan,
 )
 from fwis_v3_optimizer.uniform_search import (
+    GraphSearchConfig,
     RepresentativeTable,
+    SEARCH_SUCCESS,
     SuccessorConfig,
     SuccessorGenerator,
+    UniformGraphSearch,
     UniformSearchState,
     a_capability_labels,
     analytic_sweep_segment,
@@ -97,6 +100,7 @@ from fwis_v3_optimizer.uniform_search import (
 )
 from fwis_v3_optimizer.uniform_timing import timing_motion_limits
 from fwis_v3_optimizer.uniform_trajectory import UniformTimedPlan
+from fwis_v3_optimizer.uniform_translation_route import fixed_heading_route
 
 OFFSETS = ((1, 1.0, 0.0), (2, 0.0, 1.0), (3, 0.0, -1.0))
 BODY_SHAPES = {vehicle_id: VehicleShape(0.738, 0.500)
@@ -290,6 +294,218 @@ def successor_summary(item):
             for vehicle_id, theta in item.edge.end_headings},
         "continuity": continuity_error(item.next_state.parent, item),
     }
+
+
+class DirectGoalTranslationTest(unittest.TestCase):
+    def search(self, goal, grid, validator, start_qf=None, start_headings=None):
+        mdl = model()
+        planner = UniformGraphSearch(mdl, checker(grid, mdl), search_config=GraphSearchConfig(
+            direct_goal_translation=True))
+        start = initial_state(mdl, start_qf or FormationPose(0, 0, 0),
+                              start_headings or headings(), goal_qf=goal)
+        return planner.search(start, goal, terminal_validator=validator)
+
+    def test_one_edge_lateral_translation_and_forward_a_priority(self):
+        for goal, mode in ((FormationPose(0, 3, 0), MODE_O),
+                           (FormationPose(3, 0, 0), MODE_A)):
+            with self.subTest(mode=mode):
+                result = self.search(goal, empty_grid(), lambda edges: (True, {}))
+                self.assertEqual(result.status, SEARCH_SUCCESS)
+                self.assertEqual(result.expansions, 0)
+                self.assertEqual(len(result.edges), 1)
+                self.assertEqual(result.edges[0].mode, mode)
+                self.assertEqual(result.edges[0].end_qf, goal)
+                self.assertEqual(dict(result.edges[0].end_headings), headings())
+
+    def test_rejected_direct_audit_falls_back_to_the_lattice(self):
+        result = self.search(FormationPose(0, 3, 0), empty_grid(),
+                             lambda edges: (len(edges) > 1 and all(
+                                 edge.mode == MODE_O for edge in edges), {}))
+        self.assertEqual(result.status, SEARCH_SUCCESS)
+        self.assertIsNone(result.direct_goal_translation)
+        self.assertFalse(result.terminal_audits[0]["accepted"])
+        self.assertGreater(result.expansions, 0)
+
+    def test_occupied_mid_sweep_rejects_direct_o_with_clear_endpoints(self):
+        mdl = model()
+        start, goal = FormationPose(0, 0, 0), FormationPose(0, 3, 0)
+        occupancy = grid_with(((1.025, 1.525),))
+        collision = checker(occupancy, mdl)
+        self.assertTrue(collision.static_check(start, headings()).success)
+        self.assertTrue(collision.static_check(goal, headings()).success)
+        generated = SuccessorGenerator(mdl, collision).generate(
+            initial_state(mdl, start, headings()), goal, direct_goal_translation=True)
+        self.assertFalse(generated.successors)
+        self.assertGreater(generated.rejection_histogram().get("MAP_OBB_COLLISION", 0), 0)
+
+    def test_blocked_diagonal_uses_a_swept_mode_switch_route(self):
+        goal = FormationPose(3, 3, 0)
+        diagonal_obstacle = (2.525, 1.525)
+        for obstacles, expected_modes in (
+                ((diagonal_obstacle,), (MODE_A, MODE_O)),
+                ((diagonal_obstacle, (2.525, 0.025)), (MODE_O, MODE_A))):
+            with self.subTest(expected_modes=expected_modes):
+                result = self.search(goal, grid_with(obstacles), lambda edges: (True, {}))
+                self.assertEqual(result.status, SEARCH_SUCCESS)
+                self.assertEqual(result.expansions, 0)
+                self.assertEqual(tuple(edge.mode for edge in result.edges), expected_modes)
+                self.assertEqual(result.edges[0].end_qf, result.edges[1].start_qf)
+                self.assertEqual(result.edges[-1].end_qf, goal)
+                self.assertEqual(result.rejection_histogram.get("MAP_OBB_COLLISION", 0),
+                                 len(obstacles))
+
+    def test_offset_crossing_checks_the_whole_sweep_after_placement_preview(self):
+        start, goal = FormationPose(-4, 0, 0), FormationPose(8, 4, 0)
+        wall = [((i + 0.5) * MAP_RES, 2.025) for i in range(-290, 290)
+                if i < -20 or i >= 33]
+        for obstruction, expected_x in (([], 0.0), ([(1.025, 0.475)], -0.5)):
+            with self.subTest(obstruction=obstruction):
+                grid = grid_with(wall + obstruction)
+                self.assertTrue(generator(grid).crossing_samples_clear(
+                    FormationPose(0, 0, 0), FormationPose(0, 4, 0), headings()))
+                result = self.search(goal, grid, lambda edges: (True, {}), start_qf=start)
+                self.assertEqual(result.status, SEARCH_SUCCESS)
+                self.assertEqual(result.expansions, 0)
+                self.assertEqual(result.direct_goal_translation, "A_then_O_then_A_direct_goal")
+                self.assertGreater(result.offset_preview_rejections, 0)
+                first, crossing, final = result.edges
+                self.assertEqual(crossing.mode, MODE_O)
+                self.assertAlmostEqual(first.end_qf.x, expected_x)
+                self.assertEqual(crossing.start_qf, first.end_qf)
+                self.assertEqual(crossing.end_qf, final.start_qf)
+                self.assertEqual(final.end_qf, goal)
+
+    def test_prepares_body_heading_before_narrow_straight(self):
+        start, goal = FormationPose(0, -2, 0), FormationPose(6, 0, 0)
+        incoming = headings(math.radians(20.0))
+        walls = [((i + 0.5) * MAP_RES, y) for i in range(55, 240)
+                 for y in (-1.325, 1.325)]
+        grid = grid_with(walls)
+        collision = checker(grid)
+        self.assertFalse(collision.static_check(goal, incoming).success)
+        self.assertTrue(collision.static_check(goal, headings()).success)
+        result = self.search(goal, grid, lambda edges: (True, {}), start, incoming)
+        self.assertEqual(result.status, SEARCH_SUCCESS)
+        self.assertEqual(result.expansions, 0)
+        self.assertEqual(result.direct_goal_translation, "O_then_S_then_A_direct_goal")
+        approach, spin, straight = result.edges
+        self.assertEqual(tuple(edge.mode for edge in result.edges), (MODE_O, MODE_S, MODE_A))
+        self.assertEqual(approach.start_headings, approach.end_headings)
+        self.assertEqual(approach.end_qf, FormationPose(0, 0, 0))
+        self.assertEqual(spin.start_qf, spin.end_qf)
+        self.assertEqual(spin.end_headings, straight.start_headings)
+        self.assertEqual(dict(straight.end_headings), headings())
+        self.assertEqual(straight.end_qf, goal)
+
+    def test_global_route_crosses_walls_with_openings_on_opposite_sides(self):
+        start, goal = FormationPose(0, -3, 0), FormationPose(0, 7, 0)
+        walls = [((i + 0.5) * MAP_RES, 0.025) for i in range(-300, 75)]
+        walls.extend(((i + 0.5) * MAP_RES, 4.025) for i in range(5, 300))
+        result = self.search(goal, grid_with(walls), lambda edges: (True, {}), start_qf=start)
+        self.assertEqual(result.status, SEARCH_SUCCESS)
+        self.assertEqual(result.direct_goal_translation, "fixed_heading_global_route")
+        self.assertEqual(result.global_route["status"], "FOUND")
+        self.assertGreater(result.global_route["expansions"], 0)
+        self.assertEqual(tuple(e.mode for e in result.edges), (MODE_A, MODE_O, MODE_A, MODE_O, MODE_A))
+        self.assertGreater(result.edges[0].end_qf.x, 3.75)
+        self.assertLess(result.edges[2].end_qf.x, 0.0)
+        self.assertEqual(result.edges[-1].end_qf, goal)
+
+    def test_global_route_tries_other_passage_after_first_certificate_rejection(self):
+        occupied = np.zeros((240, 240), dtype=bool)
+        occupied[56:184, 120:122] = True
+        grid = Grid(occupied, 0.05, -6.0, -6.0)
+        start = FormationPose(-4, -0.2, 0)
+        goal = FormationPose(4, -0.2, 0)
+
+        def validator(edges):
+            uses_upper_passage = max(edge.end_qf.y for edge in edges) > 3.0
+            return uses_upper_passage, {"reason": "LOWER_PASSAGE_FIXTURE_REJECTED"}
+
+        result = self.search(goal, grid, validator, start_qf=start)
+        self.assertEqual(result.status, SEARCH_SUCCESS)
+        self.assertEqual(result.direct_goal_translation, "fixed_heading_alternate_topology")
+        self.assertFalse(result.terminal_audits[0]["accepted"])
+        self.assertTrue(result.terminal_audits[-1]["accepted"])
+        self.assertTrue(result.global_route["avoids_first_route"])
+        self.assertEqual(result.expansions, 0)
+
+    def test_configuration_raster_preserves_empty_space_between_vehicles(self):
+        grid = grid_with(((0.025, 0.025),))
+        collision = checker(grid)
+        occupied = collision.fixed_heading_blocked_cells(0.0, headings())
+        center = int(-MAP_ORIGIN / MAP_RES)
+        front_hits = center - int(1.0 / MAP_RES)
+        self.assertTrue(grid.occ[center, center])
+        self.assertTrue(collision.static_check(FormationPose(0, 0, 0), headings()).success)
+        self.assertFalse(occupied[center, center])
+        self.assertTrue(occupied[center, front_hits])
+
+    def test_heading_aligned_route_checks_oblique_segments_in_original_raster(self):
+        start, goal = (0.025, 0.025), (3.025, 3.025)
+        for grid, expected in ((empty_grid(), "FOUND"),
+                               (grid_with(((1.025, 1.025),)), "NO_ROUTE_IN_RASTER")):
+            with self.subTest(expected=expected):
+                route = fixed_heading_route(
+                    grid, grid.occ, start, goal, ((0, 1),), grid_step_m=0.4,
+                    turn_cost_m=1.0, deadline=math.inf, max_expansions=200,
+                    frame_angle_rad=math.pi / 4)
+                self.assertEqual(route.status, expected)
+                self.assertEqual(route.points, (start, goal) if expected == "FOUND" else ())
+
+    def test_exact_off_library_arc_for_both_turn_directions(self):
+        mdl = model()
+        start = FormationPose(1.4, -2.0, 2.9)
+        for turn, pivot in ((0.7, (0.35, 2.6)), (-0.7, (0.35, -2.6))):
+            with self.subTest(turn=turn):
+                tangent = a_arc_required_headings(mdl, start, turn, pivot, directions())
+                goal = a_arc_edge(mdl, start, tangent, turn, pivot, directions()).end_qf
+                seen = []
+
+                def accept(edges):
+                    seen.append(tuple(edge.primitive for edge in edges))
+                    return True, {}
+
+                result = self.search(goal, empty_grid(), accept, start, headings(start.psi))
+                self.assertEqual(result.status, SEARCH_SUCCESS)
+                self.assertEqual(result.expansions, 0)
+                self.assertEqual(result.direct_goal_translation, "S_then_A_arc_direct_goal")
+                self.assertEqual(seen, [("S_SPIN", "A_ARC")])
+                spin, arc = result.edges
+                self.assertEqual(spin.start_qf, spin.end_qf)
+                self.assertEqual(spin.end_headings, arc.start_headings)
+                self.assertAlmostEqual(arc.control.pivot_x, pivot[0])
+                self.assertAlmostEqual(arc.control.pivot_y, pivot[1])
+                self.assertAlmostEqual(arc.end_qf.x, goal.x)
+                self.assertAlmostEqual(arc.end_qf.y, goal.y)
+                self.assertAlmostEqual(wrap_angle(arc.end_qf.psi - goal.psi), 0.0)
+
+    def test_already_aligned_arc_needs_no_spin(self):
+        mdl = model()
+        start = FormationPose(0, 0, 0)
+        pivot, turn = (0.0, 2.5), 0.6
+        tangent = a_arc_required_headings(mdl, start, turn, pivot, directions())
+        goal = a_arc_edge(mdl, start, tangent, turn, pivot, directions()).end_qf
+        result = self.search(goal, empty_grid(), lambda edges: (True, {}), start, tangent)
+        self.assertEqual(result.direct_goal_translation, "A_arc_direct_goal")
+        self.assertEqual(tuple(edge.primitive for edge in result.edges), ("A_ARC",))
+
+    def test_arc_connector_rejects_collision_inside_spin_with_clear_endpoints(self):
+        mdl = model()
+        start = FormationPose(0, 0, 0)
+        pivot, turn = (0.0, -2.5), 0.6
+        tangent = a_arc_required_headings(mdl, start, turn, pivot, directions())
+        goal = a_arc_edge(mdl, start, tangent, turn, pivot, directions()).end_qf
+        gen = generator(grid_with(((1.025, 0.425),)), config(allow_reverse=False))
+        self.assertTrue(gen.checker.static_check(start, headings()).success)
+        self.assertTrue(gen.checker.static_check(start, tangent).success)
+        branches = list(gen.arc_goal_connectors(initial_state(mdl, start, headings()), goal))
+        self.assertEqual(len(branches), 1)
+        self.assertFalse(branches[0].successors)
+        self.assertEqual(branches[0].candidate_count, 1)
+        rejection, = branches[0].rejections
+        self.assertTrue(rejection["label"].startswith("S_to_A_arc"))
+        self.assertEqual(rejection["reason"], "MAP_OBB_COLLISION")
 
 
 class UniformSearchAcceptance(unittest.TestCase):
