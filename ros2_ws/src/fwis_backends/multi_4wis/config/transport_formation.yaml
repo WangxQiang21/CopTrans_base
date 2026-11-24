@@ -1,0 +1,33 @@
+# Authoritative cargo-transport formation contract for the S10 demo.
+#
+# formation_demo.launch loads this file into the goal bridge and the playback
+# node as private parameters.  formation_goal_bridge.py,
+# fwis_v3_playback/scripts/formation_playback.py and
+# tools/transport_footprint.py all interpret it through
+# fwis_v3_optimizer.transport_contract.  Do not duplicate these values in
+# launch files, scripts or tools; edit this file instead.
+#
+# Geometry: the cargo reference point is the cargo-frame origin.  Offsets are
+# body centres in that frame, zipped with vehicle_ids in order.  With the
+# values below d12=d13=sqrt(2) m, d23=2 m and every centre is 1 m from the
+# cargo reference.  Ids must not be swapped, the wedge must not be mirrored,
+# and the cargo point is not the three-body centroid.
+formation_id: cargo_wedge
+vehicle_ids: [1, 2, 3]
+offsets: [[1.0, 0.0], [0.0, 1.0], [0.0, -1.0]]
+body_length_m: 0.738
+body_width_m: 0.500
+# RViz height only, from the shared Ranger Mini 2 geometry.
+body_height_m: 0.338
+allow_reverse: true
+
+# Terminal body headings only. The planning backend selects the cargo
+# heading policy independently of this setting.
+goal_heading_free: true
+
+# Heading initialisation for a new experiment (manual 2D Pose Estimate or the
+# configured start fallback).  "cargo_heading" sets theta_i(0)=psi_F(0);
+# "tangent" points each body along its counter-clockwise tangent about the
+# cargo reference.  Continuous goals never re-apply this policy: they keep
+# the headings read from the live playback state.
+initial_heading_policy: cargo_heading

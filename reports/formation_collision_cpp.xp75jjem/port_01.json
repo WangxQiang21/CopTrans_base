@@ -1,0 +1,86 @@
+{
+  "scenario": "port_01",
+  "variant": "default",
+  "task": "formation",
+  "start": [
+    4.0,
+    8.4,
+    0.0
+  ],
+  "goal": [
+    28.7,
+    23.8,
+    1.5707963267948966
+  ],
+  "map_matches_generated": true,
+  "gazebo_start_matches": null,
+  "occupancy_sha256": "e2d1f080c194220a8466692c0be1fb5e27d86fdb65fefd5fcc6e3879cc068f31",
+  "planner_wall_seconds": 5.097,
+  "status": {
+    "/formation/optimizer_status": "{\"T_end\": 548.5003139738991, \"admitted\": true, \"audit_projection\": {\"formation_poses\": [[4.0, 8.4, 0.0], [2.4, 8.4, 0.0], [2.75, 8.4, 0.0], [5.899999999095936, 11.549999999095938, 1.5707963267948968], [5.9, 18.725000279024243, 1.5707963267948968], [5.9, 18.725000279024243, 1.5707963267948968], [14.412500170804561, 18.725000279024243, 1.5707963267948968], [22.92500034160912, 18.725000279024243, 1.5707963267948968], [22.92500034160912, 18.725000279024243, 1.5707963267948968], [22.92500034160912, 18.375000273808837, 1.5707963267948968], [22.92500034160912, 18.375000273808837, 1.5707963267948968], [28.7, 18.375000273808837, 1.5707963267948968], [28.7, 18.375000273808837, 1.5707963267948968], [28.7, 23.8, 1.5707963267948968]], \"model_sha256\": \"67694616b07a3a1c3c6aac577ee073acf2c169afb07ca00d1a60190e3d8f517d\", \"model_version\": \"uniform_trajectory.c2_span/v1\", \"sample_count\": 14, \"semantic_version\": \"uniform_v02_signed_center_speed.v1\", \"times_from_start\": [0.0, 18.843749999999996, 22.965820312499996, 112.13405921420222, 196.6365039172641, 200.46805780818963, 300.7226984916887, 400.9773391751877, 404.8088930661132, 408.93096344003686, 412.7625173309624, 480.77667346396436, 484.6082273548899, 548.5003139738991]}, \"backend\": \"uniform_v02\", \"busy_rejections\": 0, \"detail\": \"continuous A refined and audited on the common A/O/S timeline\", \"duration_s\": 548.5003139738991, \"evaluation\": {\"certification\": \"FEASIBLE\", \"checks\": 39073, \"collision_certificate\": true, \"detail\": \"prefix and suffix FR02 audits, continuous A geometry, dynamics, collision, and stopped joins passed\", \"executable\": true, \"failure\": null, \"feasible\": true, \"formation_id\": \"cargo_wedge\", \"independent_audit\": true, \"metrics\": {\"cargo_footprint\": {\"length_m\": 1.95, \"offset_x_m\": 0.5, \"offset_y_m\": 0.0, \"width_m\": 2.7}, \"continuous_a_duration_s\": 89.16823890170222, \"continuous_a_length_m\": 5.241328188693585, \"duration_s\": 548.5003139738991, \"map_version_checked\": true, \"model_sha256\": \"67694616b07a3a1c3c6aac577ee073acf2c169afb07ca00d1a60190e3d8f517d\", \"model_version\": \"uniform_trajectory.c2_span/v1\", \"phase_totals\": {\"initial_setup_s\": 0, \"inter_edge_setup_s\": 15.326215563702153, \"motion_s\": 533.174098410197}, \"stopped_join_count\": 2}, \"plan_id\": 710001, \"reason\": \"OK\", \"schema\": \"formation_evaluation/v1\", \"status\": \"FEASIBLE\", \"trajectory_published\": false}, \"executable\": true, \"feasible\": true, \"first_failure_layer\": \"none\", \"formation_id\": \"cargo_wedge\", \"job_state\": \"PLANNING\", \"map_error\": null, \"map_frame_id\": \"map\", \"map_ready\": true, \"map_signature\": \"ebd61f7d84b7b30a2cea0cf0b2fd44c16d2801829a326fa8c0e7c5b1051fef5e\", \"model_sha256\": \"67694616b07a3a1c3c6aac577ee073acf2c169afb07ca00d1a60190e3d8f517d\", \"model_version\": \"uniform_trajectory.c2_span/v1\", \"node_state\": \"PUBLISHED\", \"pipeline_status\": \"SUCCESS\", \"plan_id\": 710001, \"planning_started\": true, \"playback_confirmed\": false, \"projection\": {\"model_sha256\": \"67694616b07a3a1c3c6aac577ee073acf2c169afb07ca00d1a60190e3d8f517d\", \"model_version\": \"uniform_trajectory.c2_span/v1\", \"phase_count\": 13, \"publication_dt_s\": 0.05, \"sample_count\": 10979, \"semantic_version\": \"uniform_v02_signed_center_speed.v1\", \"source\": \"FR02 plan.sample over the publication grid\"}, \"reason\": \"OK\", \"request_map_signature\": \"ebd61f7d84b7b30a2cea0cf0b2fd44c16d2801829a326fa8c0e7c5b1051fef5e\", \"request_sha256\": \"40ebc3d04d5cc04ba477cc853ddb1c195bc8afa79f982663c6d68afc880fb636\", \"requests_seen\": 1, \"schema\": \"formation_optimizer_status/v1\", \"search\": {\"accepted_successors\": 0, \"candidate_count\": 9, \"collision_s\": 0.052618730027461424, \"detail\": \"goal path accepted by the terminal validator\", \"direct_goal_translation\": \"heading_transition_global_route\", \"duplicate_key_rejections\": 0, \"expansions\": 0, \"first_failure_layer\": \"none\", \"generation_s\": 0.00388721794297453, \"global_route\": null, \"goal_qf\": [28.7, 23.8, 1.5707963267948966], \"goal_state\": {\"a_labels\": [], \"edge_primitive\": \"O_TRANSLATION\", \"g\": 283.4027426892929, \"has_parent\": true, \"headings\": [{\"theta\": 2.05527425583192, \"vehicle_id\": 1}, {\"theta\": 1.570796326794898, \"vehicle_id\": 2}, {\"theta\": 1.570796326794897, \"vehicle_id\": 3}], \"mode\": \"O\", \"qf\": [28.7, 23.8, 1.5707963267948966], \"wheel\": [{\"control\": -0.48447792903702336, \"direction\": 1, \"mode\": \"O\", \"vehicle_id\": 1, \"wheel_angles_rad\": [-0.48447792903702336, -0.48447792903702336, -0.48447792903702336, -0.48447792903702336]}, {\"control\": -1.3322676295501878e-15, \"direction\": 1, \"mode\": \"O\", \"vehicle_id\": 2, \"wheel_angles_rad\": [-1.3322676295501878e-15, -1.3322676295501878e-15, -1.3322676295501878e-15, -1.3322676295501878e-15]}, {\"control\": -4.440892098500626e-16, \"direction\": 1, \"mode\": \"O\", \"vehicle_id\": 3, \"wheel_angles_rad\": [-4.440892098500626e-16, -4.440892098500626e-16, -4.440892098500626e-16, -4.440892098500626e-16]}]}, \"heading_transition_probes\": 1, \"offset_preview_probes\": 0, \"offset_preview_rejections\": 0, \"open_size\": 1, \"reason\": \"TERMINAL_AUDIT_ACCEPTED\", \"redundant_s_pruned\": 0, \"rejection_histogram\": {\"CARGO_OBB_COLLISION\": 1}, \"stale_heap_entries\": 0, \"status\": \"SUCCESS\", \"straight_preparation_probes\": 0, \"terminal_rejection_histogram\": {}, \"wall_time_s\": 0.5247103020083159}, \"semantic_version\": \"uniform_playback_plan/v1\", \"status\": \"FEASIBLE\", \"trajectory_published\": true, \"trajectory_stamp\": {\"nsecs\": 880400441, \"secs\": 1795519585}, \"verification\": {\"certification\": \"GEOMETRY_ONLY_NO_S9_NO_COLLISION\", \"content_verified\": true, \"model_sha256\": \"67694616b07a3a1c3c6aac577ee073acf2c169afb07ca00d1a60190e3d8f517d\", \"samples\": 10979, \"stamp_set_at_publication\": true, \"verification_to_publication_stamp_delay_s\": 2.486971855163574}, \"wall_time_s\": 1.9485968249937287}"
+  },
+  "playback_confirmed": true,
+  "playback_confirmation_seconds": 6.571,
+  "result": "trajectory_received",
+  "samples": 10979,
+  "start_error_m": 0.0,
+  "goal_error_m": 0.0,
+  "goal_yaw_error_rad": 2.220446049250313e-16,
+  "duration_s": 548.500313974,
+  "planar_length_m": 42.9413275669058,
+  "sampled_clearance": {
+    "robot1": {
+      "distance_m": 0.555999726191164,
+      "obstacle": "crane_left_02",
+      "reference": [
+        24.15326,
+        18.375,
+        1.5708
+      ]
+    },
+    "robot2": {
+      "distance_m": 0.5360002790242433,
+      "obstacle": "back_container_40",
+      "reference": [
+        8.80214,
+        18.725,
+        1.5708
+      ]
+    },
+    "robot3": {
+      "distance_m": 0.5360002790242433,
+      "obstacle": "back_container_40",
+      "reference": [
+        6.80247,
+        18.725,
+        1.5708
+      ]
+    },
+    "cargo": {
+      "distance_m": 0.1600776648788513,
+      "obstacle": "crane_left_02",
+      "reference": [
+        22.925,
+        18.725,
+        1.5708
+      ]
+    }
+  },
+  "sampled_collision_free": true,
+  "planner_backend": "uniform_v02",
+  "planner_certification": "GEOMETRY_ONLY_NO_S9_NO_COLLISION",
+  "vehicle_modes": {
+    "1": [
+      "Ackermann",
+      "Oblique"
+    ],
+    "2": [
+      "Ackermann",
+      "Oblique"
+    ],
+    "3": [
+      "Ackermann",
+      "Oblique"
+    ]
+  }
+}

@@ -1,0 +1,15 @@
+cmake_minimum_required(VERSION 3.8)
+project(ranger_mini_gz)
+find_package(ament_cmake REQUIRED)
+find_package(ament_cmake_python REQUIRED)
+ament_python_install_package(${PROJECT_NAME})
+install(DIRECTORY config launch scenarios worlds DESTINATION share/${PROJECT_NAME})
+install(PROGRAMS scripts/model_pose_tf scripts/scene_map scripts/twist_motion_test DESTINATION lib/${PROJECT_NAME})
+if(BUILD_TESTING)
+  find_package(ament_cmake_pytest REQUIRED)
+  ament_add_pytest_test(body_response test/test_body_response.py
+    APPEND_ENV "PYTHONPATH=${CMAKE_CURRENT_SOURCE_DIR}")
+  ament_add_pytest_test(scenes test/test_scenes.py
+    APPEND_ENV "PYTHONPATH=${CMAKE_CURRENT_SOURCE_DIR}")
+endif()
+ament_package()

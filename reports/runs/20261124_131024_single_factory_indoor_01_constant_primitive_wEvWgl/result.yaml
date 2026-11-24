@@ -1,0 +1,89 @@
+status: passed
+reason: all_trackers_complete
+phase_at_end: running
+scenario: factory_indoor_01
+task: single
+experiment: short_turn
+planner: single_constant_primitive
+controller: nonlinear_feedback
+formation: null
+formation_offsets_m: null
+map_matches_generated: true
+observed_spawn:
+  1:
+  - 4.0
+  - 5.6
+  - 0.0
+plan_received: true
+planner_wall_s: 9.025422835009522
+plan_duration_s: 11.650334377
+routed_plan_keys:
+  1:
+  - 1
+  - 9704000000
+planner_status:
+  /plan/status: success id=1 source=mode_path_v1 nodes=6 time=7.74s common_score=13.400065
+    quality_profile=quality_cost_v2_prototype_uncalibrated validity=FEASIBLE candidate_source=planner_strict_primary
+    candidates=3 nlp_calls=0 min_body_clearance=1.7113 oblique_updates=0 duration=11.650
+  /plan/search_status: search_success id=1 direction_policy=bidirectional_shared_cost
+    allow_shunting=0 reverse_search_competed=1 reverse_fallback_tried=1 reverse_fallback_used=0
+    selected_has_reverse=0 reverse_fallback_iterations=90000 reverse_fallback_seconds=1.260644
+    actions=3 iterations=95000 seconds=1.298741 modes=A3/1.565153m,O0/0.000000m,S0/0.000000rad,switches=0
+    steer_changes=2 curvature_tv=2.222222 oblique_tv=0.000000 reverse=0.000000m budget_hit=0
+    incumbent_budget_hit=1 selected=guided auxiliary_shunting_proposal=1 guided_cost=2.459042
+    cost_parts={distance:1.565153,spin:0.000000,mode_switch:0.000000,low_curvature_switch:0.000000,reverse:0.000000,reverse_early:0.000000,reverse_start:0.000000,reverse_yaw_early:0.000000,direction:0.000000,steer_tv:0.888889,curvature:0.005000,oblique_tv:0.000000,oblique_event:0.000000,oblique_use:0.000000,oblique_cruise:0.000000,sum:2.459042}
+    baseline_cost=inf route2d=feasible route2d_cost=2.459042 route2d_seconds=0.015988
+    ackermann_probe=unavailable ackermann_probe_cost=inf ackermann_probe_iterations=0
+    ackermann_probe_seconds=0.000000 route2d_reason=route_candidate xy_routes=1 duplicate_routes=3
+    duplicate_waypoint_variants=0 heuristic_headings=0 start_spin_blocked=0 start_spin_ok=0
+    heuristic_route_ok=0 route_edge_blocked=0 terminal_spin_blocked=0 terminal_pose_rejected=0
+    dp_terminal_states=29 dp_max_reachable_waypoint=10 dp_waypoint_count=11 dp_terminal_spin_blocked=0
+    dp_pose_rejected=0 mixed_calls=2 mixed_successes=1 ackermann_calls=2 ackermann_successes=1
+    ackermann_expansions=9 mixed_expansions=26 mixed_budget_hit=0 cell_astar_seconds=0.002480
+    route_heuristic_seconds=0.000000 route_dp_seconds=0.011294 route_graph_wall_seconds=0.011294
+    mixed_search_seconds=0.004211 route_details=floor:0.000000,weight:0.000000,sampling:base,path_m:1.703911,wps:3,dense_wps:0,intermediate_wps:1,sparse_wps:8,forced_wps:8,forced_corner:1,forced_curv_sign:1,forced_curv_extrema:4,forced_curv_rate_extrema:0,forced_clearance_min:3,base_wps:1,dp_states:1458,candidate_edges:63,feasible_edges:35,max_turn:0.628798,dp:2,mixed:2,expanded:7,dp_x:5.522379,dp_y:5.948435|floor:0.000000,weight:0.000000,sampling:adaptive,path_m:1.703911,wps:11,dense_wps:0,intermediate_wps:1,sparse_wps:8,forced_wps:8,forced_corner:1,forced_curv_sign:1,forced_curv_extrema:4,forced_curv_rate_extrema:0,forced_clearance_min:3,base_wps:1,dp_states:5346,candidate_edges:3933,feasible_edges:2263,max_turn:0.628798,dp:10,mixed:6,expanded:10,dp_x:5.522379,dp_y:5.948435
+    mode_policy=shared_cost_all_modes fallback_lattice_scale=1.000000 guided_modes=A3/O0/S0/sw0
+    baseline_modes=none start=(4.000000,5.600000,0.000000) goal=(5.522379,5.948435,0.450000)
+controller_status:
+  1:
+    phase: COMPLETE
+    reasons: []
+admitted:
+- 1
+complete:
+- 1
+final_cmd_vel:
+  1:
+  - 0.0
+  - 0.0
+  - 0.0
+last_odom_twist:
+  1:
+  - 0.0
+  - 0.0
+  - 0.0
+last_ground_truth_step_m:
+  1: 0.0
+metrics:
+  vehicles:
+    '1':
+      travel_from_spawn_m: 1.569138840047294
+      terminal_position_error_m: 0.0073982381803093964
+      terminal_yaw_error_deg: 0.27615750476198564
+      position_rmse_m: 0.0032471828252726965
+      max_position_error_m: 0.008019635572130108
+      yaw_rmse_deg: 0.24078722894981308
+      max_yaw_error_deg: 0.6012888218165173
+      mean_control_ms: 0.21859021959642957
+  actual_samples: 220
+  min_environment_clearance:
+    robot1:
+      m: 1.7762354119919899
+      obstacle: cnc_01
+      stamp_s: 21.214000000000002
+  first_tracking_s:
+    1: 9.722000000000001
+  requested_goal_position_error_m: 0.007394531747217984
+  requested_goal_yaw_error_deg: 0.2761530325321955
+exit_code: 0
+launch_exit_code: 0

@@ -1,0 +1,116 @@
+#!/usr/bin/env python3
+"""Publish the scene map and display the parked or observed payload geometry."""
+
+from array import array
+import math
+from pathlib import Path
+
+from nav_msgs.msg import OccupancyGrid, Odometry
+import rclpy
+from rclpy.executors import ExternalShutdownException
+from rclpy.node import Node
+from rclpy.qos import DurabilityPolicy, QoSProfile, ReliabilityPolicy
+from visualization_msgs.msg import Marker, MarkerArray
+
+from ranger_mini_gz.scene_generator import read_map, read_yaml
+from ranger_mini_gz.scene_geometry import local_pose
+
+
+class SceneMap(Node):
+    def __init__(self):
+        super().__init__("scene_map")
+        folder = Path(self.declare_parameter("directory", "").value)
+        metadata, grid = read_map(folder / "map.yaml")
+        scene = read_yaml(folder / "scene_meta.yaml")
+        qos = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL,
+                         reliability=ReliabilityPolicy.RELIABLE)
+        self.maps = self.create_publisher(OccupancyGrid, "/map", qos)
+        self.markers = self.create_publisher(MarkerArray, "/scene/markers", qos)
+        self.map = OccupancyGrid()
+        self.map.header.frame_id = "map"
+        self.map.info.height, self.map.info.width = grid.shape
+        self.map.info.resolution = metadata["resolution"]
+        self.map.info.origin.orientation.w = 1.
+        self.map.data = array("b", grid.tobytes())
+        self.scene = scene
+        live = self.declare_parameter("live_cargo", False).value
+        now = self.get_clock().now().to_msg()
+        self.map.header.stamp = self.map.info.map_load_time = now
+        self.maps.publish(self.map)
+        self.get_logger().info(
+            f"Published {self.map.info.width} × {self.map.info.height} cells on /map")
+        if scene["task"] == "formation":
+            self.cargo_pose = tuple(scene["experiments"]["formation"]["start"])
+            self.publish_payload(self.cargo_pose, now)
+            if live:
+                from gz.transport13 import Node as TransportNode
+                self.transport = TransportNode()
+                self.create_subscription(Odometry, "/cargo/odom", self.on_cargo, 1)
+        else:
+            self.markers.publish(MarkerArray())
+
+    def on_cargo(self, odom):
+        from gz.msgs10.boolean_pb2 import Boolean
+        from gz.msgs10.pose_pb2 import Pose
+
+        p, q = odom.pose.pose.position, odom.pose.pose.orientation
+        yaw = 2 * math.atan2(q.z, q.w)
+        if odom.header.frame_id != "map" or not all(map(math.isfinite, (p.x, p.y, yaw))):
+            return
+        if (math.hypot(p.x - self.cargo_pose[0], p.y - self.cargo_pose[1]) < .0001
+                and abs(math.remainder(yaw - self.cargo_pose[2], math.tau)) < .0001):
+            return
+        reference = (p.x, p.y, yaw)
+        self.publish_payload(reference, odom.header.stamp)
+        # Only the visual assembly moves here. Each vehicle is driven by its Twist.
+        request = Pose(name=self.scene["cargo"]["id"])
+        request.position.x, request.position.y, request.position.z = p.x, p.y, self.scene["cargo"]["bottom_m"]
+        request.orientation.z, request.orientation.w = q.z, q.w
+        succeeded, applied = self.transport.request(
+            f'/world/{self.scene["scenario"]}/set_pose/blocking', request, Pose, Boolean, 200)
+        if succeeded and applied.data:
+            self.cargo_pose = reference
+        else:
+            self.get_logger().warning("Gazebo did not update the Cargo model", throttle_duration_sec=2.)
+
+    def publish_payload(self, reference, stamp):
+        scene = self.scene
+        cargo = scene["cargo"]
+        x, y, yaw = local_pose(reference, cargo["offset_m"])
+        size = cargo["size_m"]
+        box = Marker(ns="cargo", type=Marker.CUBE)
+        box.header.frame_id, box.header.stamp = "map", stamp
+        box.pose.position.x, box.pose.position.y = x, y
+        box.pose.position.z = cargo["bottom_m"] + size[2] / 2
+        box.pose.orientation.z, box.pose.orientation.w = math.sin(yaw / 2), math.cos(yaw / 2)
+        box.scale.x, box.scale.y, box.scale.z = size
+        box.color.r, box.color.g, box.color.b, box.color.a = .36, .56, .61, cargo["opacity"]
+        markers = [box]
+        for index, offset in enumerate(scene["formation_offsets_m"], 1):
+            x, y, _yaw = local_pose(reference, offset)
+            mount = Marker(ns="cargo_mounts", id=index, type=Marker.CYLINDER)
+            mount.header.frame_id, mount.header.stamp = "map", stamp
+            mount.pose.position.x, mount.pose.position.y = x, y
+            mount.pose.position.z = cargo["bottom_m"] - cargo["mount_height_m"] / 2
+            mount.pose.orientation.w = 1.
+            mount.scale.x = mount.scale.y = cargo["mount_diameter_m"]
+            mount.scale.z = cargo["mount_height_m"]
+            mount.color.r, mount.color.g, mount.color.b, mount.color.a = .72, .75, .77, 1.
+            markers.append(mount)
+        self.markers.publish(MarkerArray(markers=markers))
+
+
+def main():
+    rclpy.init()
+    node = SceneMap()
+    try:
+        rclpy.spin(node)
+    except (KeyboardInterrupt, ExternalShutdownException):
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.try_shutdown()
+
+
+if __name__ == "__main__":
+    main()

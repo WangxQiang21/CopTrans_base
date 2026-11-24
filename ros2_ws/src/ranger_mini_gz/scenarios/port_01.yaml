@@ -1,0 +1,41 @@
+name: port_01
+size: [42.0, 30.0]
+resolution: 0.05
+boundary_height: 0.55
+ground_color: [0.31, 0.35, 0.39]
+camera:
+  eye: [-6.0, -5.5, 34.0]
+  target: [20.0, 13.0, 0.4]
+obstacles:
+  - {id: sea_container_40, pose: [13.095, 5.6, 1.295, 0], size: [12.19, 2.44, 2.59], style: container, color: [0.48, 0.27, 0.19]}
+  - {id: sea_container_20, pose: [22.49, 5.6, 1.295, 0], size: [6.06, 2.44, 2.59], style: container, color: [0.23, 0.40, 0.56]}
+  - {id: quay_container_40, pose: [14.095, 11.72, 1.295, 0], size: [12.19, 2.44, 2.59], style: container, color: [0.18, 0.35, 0.50]}
+  - {id: quay_container_20, pose: [23.40, 11.72, 1.295, 0], size: [6.06, 2.44, 2.59], style: container, color: [0.59, 0.39, 0.22]}
+  - {id: back_container_40, pose: [14.145, 16.6, 1.295, 0], size: [12.19, 2.44, 2.59], style: container, color: [0.38, 0.46, 0.38]}
+  - {id: service_trailer, pose: [35.6, 16.0, 0.65, 1.5707963267948966], size: [6.0, 2.5, 1.30], style: trailer}
+  - {id: tool_cabinet, pose: [23.3, 23.0, 0.85, 0], size: [2.6, 0.85, 1.70], style: cabinet}
+  - {id: crane_left_01, pose: [24.8, 16.0, 2.5, 0], size: [0.8, 0.8, 5.0], style: column, color: [0.79, 0.37, 0.14]}
+  - {id: crane_right_01, pose: [32.7, 16.0, 2.5, 0], size: [0.8, 0.8, 5.0], style: column, color: [0.79, 0.37, 0.14]}
+  - {id: crane_left_02, pose: [24.8, 20.7, 2.5, 0], size: [0.8, 0.8, 5.0], style: column, color: [0.79, 0.37, 0.14]}
+  - {id: crane_right_02, pose: [32.7, 20.7, 2.5, 0], size: [0.8, 0.8, 5.0], style: column, color: [0.79, 0.37, 0.14]}
+  - {id: bollard_s, type: cylinder, pose: [18.8, 10.25, 0.4, 0], radius: 0.22, height: 0.8, style: bollard}
+  - {id: bollard_e, type: cylinder, pose: [32.0, 13.1, 0.4, 0], radius: 0.22, height: 0.8, style: bollard}
+  - {id: bollard_ne, type: cylinder, pose: [32, 25.4, 0.4, 0], radius: 0.22, height: 0.8, style: bollard}
+  - {id: staging_fence, type: wall, pose: [19.4, 25.6, 0.65, 0], size: [5.0, 0.10, 1.30], style: fence}
+  - id: quay_barrier
+    type: polygon
+    pose: [35.0, 23.0, 0.45, 0.30]
+    vertices: [[-0.7, -0.45], [0.65, -0.45], [0.9, 0], [0.65, 0.45], [-0.7, 0.45]]
+    height: 0.9
+    style: column
+decorations:
+  - {id: water, pose: [21.0, 34.0, -0.06, 0], size: [42.0, 8.0, 0.04], color: [0.11, 0.29, 0.42]}
+  - {id: gantry_beam_01, pose: [28.75, 16.0, 4.80, 0], size: [8.70, 0.78, 0.74], color: [0.71, 0.32, 0.12]}
+  - {id: gantry_beam_02, pose: [28.75, 20.7, 4.80, 0], size: [8.70, 0.78, 0.74], color: [0.71, 0.32, 0.12]}
+  - {id: maintenance_bay, pose: [28.7, 23.8, 0.004, 1.5707963267948966], size: [3.6, 3.2, 0.008], color: [0.23, 0.39, 0.39]}
+experiments:
+  single: {start: [4.0, 8.4, 0], goal: [28.7, 23.8, 1.5707963267948966]}
+  formation:
+    start: [4.0, 8.4, 0]
+    goal: [28.7, 23.8, 1.5707963267948966]
+    waypoints: [[28.7, 8.4, 0], [28.7, 8.4, 1.5707963267948966]]

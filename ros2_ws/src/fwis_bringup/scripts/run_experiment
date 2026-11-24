@@ -1,0 +1,549 @@
+#!/usr/bin/env python3
+"""Start a measured experiment and coordinate the three existing trackers."""
+
+from array import array
+from bisect import bisect_right
+from dataclasses import replace
+from functools import partial
+import json
+from math import cos, degrees, dist, hypot, isfinite, sin
+from pathlib import Path
+from time import monotonic
+
+from builtin_interfaces.msg import Time
+from fwis_v3_msgs.msg import (FormationExecutionPermit, FormationPlanRequest, FormationPlaybackPlan,
+                             FormationVehicleSpec, TimedTrajectory)
+from geometry_msgs.msg import Point, Pose2D, PoseStamped, PoseWithCovarianceStamped, Twist
+from nav_msgs.msg import OccupancyGrid, Odometry
+import rclpy
+from rclpy.clock import Clock, ClockType
+from rclpy.executors import ExternalShutdownException
+from rclpy.node import Node
+from rclpy.qos import DurabilityPolicy, QoSProfile
+from rclpy.serialization import serialize_message
+from rclpy.signals import SignalHandlerOptions
+from std_msgs.msg import Float64, Int32, String
+import yaml
+
+from fwis_bringup.formation_route import PERMIT_TOPIC, fit_reference, make_routes, pose_matches, pose_tuple
+from fwis_bringup.run_metrics import RunMetrics
+from fwis_bringup.test_config import read_config
+from fwis_backends.multi_4wis.formation_playback import PLAYBACK_PLAN_BACKEND
+from fwis_control.config import load
+from fwis_control.model import Mode, Pose, between, wrap
+from fwis_control.ros_state import planar_pose, stamp_ns
+from ranger_mini_gz.scene_generator import installed_paths, load_scene, read_map
+from ranger_mini_gz.scene_geometry import local_pose
+
+
+DURABLE = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
+NSEC = 10**9
+
+
+def string_topics(multi):
+    return ("/formation/optimizer_status",) if multi else ("/plan/search_status", "/plan/status")
+
+
+def pose2d(values):
+    return Pose2D(x=float(values[0]), y=float(values[1]), theta=float(values[2]))
+
+
+class RunExperiment(Node):
+    def __init__(self):
+        super().__init__("coptrans_test_run")
+        path = Path(self.declare_parameter("run_config", "").value)
+        self.directory = path.parent
+        self.config = read_config(path)
+        paths = installed_paths()
+        self.task = self.config["scene_task"]
+        self.multi = self.task == "formation"
+        self.formation_backend = self.config["coordination"]["implementation"] if self.multi else None
+        scene = load_scene(self.config["scenario"], paths=paths)
+        experiment = {key: tuple(self.config[key]) for key in ("start", "goal", "waypoints")}
+        self.scene = replace(scene, experiments={**scene.experiments, self.task: experiment})
+        self.spawns = self.scene.spawn_poses(self.task)
+        self.contract = read_config(paths[2] / "config" / "multi_4wis" / "transport_formation.yaml")
+        self.timing = load(self.declare_parameter("controller_config", "").value).timing
+        _, cells = read_map(self.directory / "scene" / "map.yaml")
+        self.map_shape = cells.shape
+        self.map_bytes = array("b", cells.tobytes())
+        self.map_matches = False
+
+        self.boot_wall = monotonic()
+        self.measure_wall = self.boot_wall
+        self.previous_measurement = None
+        self.previous_cargo_pose = None
+        self.last_ground_truth_step = {}
+        self.odom, self.truth, self.modes, self.commands, self.controller_age = {}, {}, {}, {}, {}
+        self.initial = self.plan_keys = self.arm_stamp = self.request = None
+        self.formation_plan = self.formation_routes = None
+        self.cargo_plan_times = ()
+        self.job = {}
+        self.goals, self.planner_status, self.controller_status = {}, {}, {}
+        self.plan_started = self.plan_wall = self.duration = self.end_wall = None
+        self.admitted, self.complete, self.moved = set(), set(), set()
+        self.phase = "waiting_for_simulation"
+        self.result = None
+        self.metrics = RunMetrics(self.directory, self.scene, self.task)
+        self.planner_log = (self.directory / "planner.log").open("w", buffering=1)
+        self.controller_log = (self.directory / "controller.log").open("w", buffering=1)
+
+        self.create_subscription(OccupancyGrid, "/map", self.on_map, DURABLE)
+        for index in self.spawns:
+            prefix = f"/robot{index}"
+            self.create_subscription(Odometry, f"{prefix}/odom", partial(self.on_odom, index), 5)
+            self.create_subscription(PoseStamped, f"{prefix}/ground_truth_pose",
+                                     partial(self.on_truth, index), 5)
+            self.create_subscription(Int32, f"{prefix}/motion_state", partial(self.on_mode, index), 5)
+            self.create_subscription(Twist, f"{prefix}/cmd_vel", partial(self.on_command, index), 5)
+            self.create_subscription(String, f"{prefix}/controller_status",
+                                     partial(self.on_controller, index), 30)
+        for topic in string_topics(self.multi):
+            self.create_subscription(String, topic, partial(self.on_planner, topic), DURABLE)
+        if self.multi:
+            self.start_pub = (None if self.formation_backend == PLAYBACK_PLAN_BACKEND else
+                              self.create_publisher(PoseWithCovarianceStamped, "/initialpose", 10))
+            self.goal_pub = self.create_publisher(FormationPlanRequest, "/formation/plan_request", 10)
+            self.create_subscription(FormationPlaybackPlan, "/formation/playback_plan",
+                                     self.on_formation, DURABLE)
+            self.create_subscription(String, "/formation/job_state", self.on_job, DURABLE)
+            self.routes = {i: self.create_publisher(TimedTrajectory, f"/robot{i}/trajectory", DURABLE)
+                           for i in self.spawns}
+            self.permit_pub = self.create_publisher(FormationExecutionPermit, PERMIT_TOPIC, 1)
+            self.cargo_pub = self.create_publisher(Odometry, "/cargo/odom", 5)
+            self.mount_pub = self.create_publisher(Float64, "/cargo/constraint_error", 5)
+            self.cargo_status_pub = self.create_publisher(String, "/cargo/controller_status", 30)
+        else:
+            self.start_pub = self.create_publisher(PoseStamped, "/start_pose", 10)
+            self.goal_pub = self.create_publisher(PoseStamped, "/move_base_simple/goal", 10)
+            self.create_subscription(TimedTrajectory, "/plan/timed_trajectory", self.on_single, DURABLE)
+        self.create_timer(.04, self.tick, clock=Clock(clock_type=ClockType.STEADY_TIME))
+
+    def now(self):
+        return self.get_clock().now().nanoseconds * 1e-9
+
+    def on_map(self, grid):
+        origin = grid.info.origin
+        self.map_matches = (grid.header.frame_id == "map"
+                            and (grid.info.height, grid.info.width) == self.map_shape
+                            and abs(grid.info.resolution - self.scene.resolution) < 1e-6
+                            and (origin.position.x, origin.position.y, origin.orientation.w) == (0., 0., 1.)
+                            and grid.data == self.map_bytes)
+        if not self.map_matches:
+            self.finish("failed", "map_differs_from_scene")
+
+    def on_odom(self, index, msg):
+        pose = planar_pose(msg.pose.pose)
+        v = msg.twist.twist
+        velocity = (v.linear.x, v.linear.y, v.angular.z)
+        stamp = stamp_ns(msg.header.stamp)
+        if (msg.header.frame_id != "map" or msg.child_frame_id != f"robot{index}/base_link"
+                or pose is None or stamp <= 0 or not all(map(isfinite, velocity))):
+            self.odom.pop(index, None)
+        else:
+            self.odom[index] = (stamp * 1e-9, monotonic(), pose_tuple(pose), velocity)
+
+    def on_truth(self, index, msg):
+        pose = planar_pose(msg.pose)
+        if msg.header.frame_id != "map" or pose is None:
+            self.truth.pop(index, None)
+        else:
+            self.truth[index] = (monotonic(), pose_tuple(pose))
+
+    def on_mode(self, index, msg):
+        if msg.data in tuple(Mode):
+            self.modes[index] = (self.now(), monotonic(), msg.data)
+        else:
+            self.modes.pop(index, None)
+
+    def on_command(self, index, msg):
+        values = (msg.linear.x, msg.linear.y, msg.angular.z)
+        if not all(map(isfinite, values)):
+            self.finish("stopped", f"robot{index}_invalid_twist")
+            return
+        self.commands[index] = values
+        if max(map(abs, values)) > 1e-4:
+            self.moved.add(index)
+
+    def feedback_fresh(self, index, now, wall):
+        odom, mode, truth = (cache.get(index) for cache in (self.odom, self.modes, self.truth))
+        timing = self.timing
+        # The wall bound also catches a paused or disconnected source.
+        return (odom and mode and truth
+                and -timing.clock_tolerance <= now - odom[0] <= timing.state_timeout
+                and -timing.clock_tolerance <= now - mode[0] <= timing.mode_timeout
+                and max(wall - odom[1], wall - mode[1], wall - truth[0]) <= 1.)
+
+    def stamped_pose(self, values):
+        x, y, yaw = values
+        msg = PoseStamped()
+        msg.header.frame_id = "map"
+        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.pose.position.x, msg.pose.position.y = float(x), float(y)
+        msg.pose.orientation.z, msg.pose.orientation.w = sin(yaw / 2), cos(yaw / 2)
+        return msg
+
+    def initialize_planner(self):
+        poses = {i: self.truth[i][1] for i in self.spawns}
+        for i, pose in poses.items():
+            if dist(pose[:2], self.spawns[i][:2]) > .003 or abs(wrap(pose[2] - self.spawns[i][2])) > .003:
+                self.finish("failed", f"robot{i}_spawn_pose_mismatch")
+                return
+        self.initial = poses
+        self.reference = (fit_reference(self.scene.offsets, [poses[i] for i in self.spawns])
+                          if self.multi else poses[1])
+        if self.start_pub is not None:
+            initial = self.stamped_pose(self.reference)
+            if self.multi:
+                reset = PoseWithCovarianceStamped(header=initial.header)
+                reset.pose.pose = initial.pose
+                self.start_pub.publish(reset)
+            else:
+                self.start_pub.publish(initial)
+        self.request_after = monotonic() + .50
+        self.phase = "initializing_planner"
+
+    def publish_goal(self):
+        goal = self.stamped_pose(self.config["goal"])
+        self.plan_started = monotonic()
+        self.phase = "planning"
+        if not self.multi:
+            self.goal_pub.publish(goal)
+            return
+        self.request = FormationPlanRequest(header=goal.header, plan_id=1,
+                                            formation_id=self.scene.formation_id,
+                                            allow_reverse=self.contract["allow_reverse"])
+        self.request.formation_start = pose2d(self.reference)
+        self.request.formation_goal = pose2d(self.config["goal"])
+        for index, offset in zip(self.spawns, self.scene.offsets, strict=True):
+            self.request.vehicles.append(FormationVehicleSpec(
+                vehicle_id=index, goal_heading_free=self.contract["goal_heading_free"],
+                offset_in_formation=Point(x=offset[0], y=offset[1]), start_center=pose2d(self.initial[index]),
+                goal_center=pose2d(local_pose(self.config["goal"], offset)),
+                body_length_m=self.scene.vehicle_size[0], body_width_m=self.scene.vehicle_size[1]))
+        self.goal_pub.publish(self.request)
+
+    def on_single(self, msg):
+        if self.phase != "planning" or not msg.points:
+            return
+        self.save_plan(msg, {1: msg})
+        self.phase = "running"
+
+    def on_formation(self, msg):
+        if (self.phase not in ("planning", "waiting_for_playback", "arming", "running")
+                or msg.plan_id != self.request.plan_id):
+            return
+        if self.formation_plan is not None:
+            if not msg.trajectory.trajectories or msg.model_sha256 != self.model_sha256:
+                self.finish("stopped", "formation_plan_invalidated")
+            return
+        if not msg.trajectory.trajectories:
+            return  # The planner clears previous data before publishing a new result.
+        try:
+            routes = make_routes(msg, self.request, msg.header.stamp,
+                                 expected_backend=self.formation_backend)
+        except ValueError as error:
+            self.get_logger().error(str(error))
+            self.finish("stopped", "invalid_formation_trajectory")
+            return
+        self.model_sha256 = msg.model_sha256
+        self.formation_plan, self.formation_routes = msg, routes
+        self.cargo_plan_times = tuple(stamp_ns(point) for point in msg.trajectory.times_from_start)
+        self.plan_wall = monotonic() - self.plan_started
+        (self.directory / "trajectories" / "planner.cdr").write_bytes(serialize_message(msg))
+        self.phase = "waiting_for_playback"
+
+    def on_job(self, msg):
+        self.job = json.loads(msg.data)
+
+    def arm_formation(self):
+        lead = self.config["coordination"]["lead_s"]
+        start_ns = self.get_clock().now().nanoseconds + round(lead * NSEC)
+        sec, nanosec = divmod(start_ns, NSEC)
+        self.arm_stamp = Time(sec=sec, nanosec=nanosec)
+        msg, routes = self.formation_plan, self.formation_routes
+        for route in routes.values():
+            route.header.stamp = self.arm_stamp
+        self.save_plan(msg, routes)
+        self.phase = "arming"
+        for index, route in routes.items():
+            self.routes[index].publish(route)
+        self.get_logger().info(f"Routed plan {msg.plan_id} to {sorted(routes)} at common time {start_ns} ns")
+
+    def save_plan(self, msg, routes):
+        if self.plan_wall is None:
+            self.plan_wall = monotonic() - self.plan_started
+        self.plan_keys = {i: (route.plan_id, stamp_ns(route.header.stamp)) for i, route in routes.items()}
+        self.duration = stamp_ns(next(iter(routes.values())).points[-1].time_from_start) / NSEC
+        path = self.directory / "trajectories"
+        if not self.multi:
+            (path / "planner.cdr").write_bytes(serialize_message(msg))
+        for i, route in routes.items():
+            (path / f"robot{i}.cdr").write_bytes(serialize_message(route))
+            last = route.points[-1].center_pose
+            self.goals[i] = (last.x, last.y, last.theta)
+
+    def on_planner(self, topic, msg):
+        self.planner_log.write(json.dumps({"topic": topic, "wall_s": monotonic() - self.boot_wall,
+                                           "message": msg.data}, ensure_ascii=False) + "\n")
+        if self.multi:
+            status = json.loads(msg.data)
+            self.planner_status[topic] = {k: status[k] for k in (
+                "plan_id", "node_state", "status", "code", "reason", "detail", "trajectory_published",
+                "first_failure_layer", "duration_s") if k in status}
+            if (self.phase in ("planning", "waiting_for_playback", "arming", "running") and self.request is not None
+                    and status.get("plan_id") == self.request.plan_id
+                    and (status.get("node_state") in ("FAILED", "REJECTED")
+                         or status.get("status") in ("REJECTED", "FAILED", "INVALID"))):
+                self.finish("stopped" if self.plan_keys else "failed",
+                            status.get("reason") or status.get("code") or "formation_planning_failed")
+        else:
+            self.planner_status[topic] = msg.data
+            if self.phase == "planning" and msg.data.startswith((
+                "search_no_path", "search_budget_exhausted", "action_policy_rejected",
+                "missing_map_or_start ", "invalid_goal_frame ",
+                "rejected ", "frontend_rejected ", "geometry_only ", "reverse_coarse_seed_rejected ",
+            )):
+                self.finish("failed", msg.data)
+
+    def on_controller(self, index, msg):
+        row = json.loads(msg.data)
+        self.controller_log.write(json.dumps(dict(row, vehicle_id=index)) + "\n")
+        key = (row.get("plan_id"), row.get("trajectory_stamp_ns"))
+        if self.plan_keys is None or self.plan_keys.get(index) != key or row.get("result") == "CLEARED":
+            return
+        self.controller_age[index] = (self.now(), monotonic())
+        phase = row.get("phase")
+        if row["kind"] == "admission":
+            if row.get("result") in ("PASS", "WARN") and phase in ("TRACKING", "WAIT_START"):
+                self.admitted.add(index)
+            else:
+                self.finish("stopped", f"robot{index}_trajectory_{phase or row.get('result')}")
+        if index in self.admitted:
+            self.metrics.controller(index, row)
+            if phase == "COMPLETE":
+                self.complete.add(index)
+            elif phase in ("STOPPED", "REJECTED", "STALE_TRAJECTORY"):
+                reasons = ",".join(row.get("reasons", ())) or phase
+                self.finish("stopped", f"robot{index}:{reasons}")
+        self.controller_status[index] = {k: row[k] for k in ("phase", "result", "reasons") if k in row}
+
+    def permit(self, enabled):
+        if self.arm_stamp is not None and rclpy.ok():
+            self.permit_pub.publish(FormationExecutionPermit(
+                stamp=self.get_clock().now().to_msg(), start=self.arm_stamp,
+                plan_id=self.request.plan_id, enabled=enabled))
+
+    def tick(self):
+        wall = monotonic()
+        now = self.now()
+        stale = [i for i in self.spawns if not self.feedback_fresh(i, now, wall)]
+        can_measure = not stale or (self.result is not None and all(
+            i in self.truth and wall - self.truth[i][0] <= 1. for i in self.spawns))
+        if can_measure and self.initial and wall - self.measure_wall >= .1:
+            self.measurement(now)
+            self.measure_wall = wall
+        if self.result:
+            self.permit(False)
+            return
+        if wall - self.boot_wall >= self.config["timeout_s"]:
+            self.finish("timed_out", self.phase)
+            return
+        if self.phase == "waiting_for_simulation":
+            if now > 0. and self.map_matches and not stale and self.commands.keys() == self.spawns.keys():
+                self.phase = "waiting_for_planner"
+                print("COPTRANS_SIMULATION_READY", flush=True)
+        elif self.phase == "waiting_for_planner":
+            if (not stale and (self.start_pub is None or self.start_pub.get_subscription_count() >= 1)
+                    and self.goal_subscribers_ready()):
+                self.initialize_planner()
+        elif self.phase == "initializing_planner":
+            if not stale and wall >= self.request_after and self.planner_ready():
+                self.publish_goal()
+        elif self.phase == "waiting_for_playback":
+            if (not stale and self.job.get("state") in ("PLAYING", "HOLD_END")
+                    and self.job.get("plan_id") == self.request.plan_id
+                    and self.job.get("model_sha256") == self.model_sha256):
+                self.arm_formation()
+        elif self.phase in ("arming", "running"):
+            self.execute(now, wall, stale)
+
+    def goal_subscribers_ready(self):
+        if not self.multi:
+            return self.goal_pub.get_subscription_count() >= 1
+        endpoints = self.get_subscriptions_info_by_topic(self.goal_pub.topic_name)
+        listeners = {endpoint.node_name for endpoint in endpoints}
+        if self.formation_backend == PLAYBACK_PLAN_BACKEND:
+            # Uniform playback verifies the atomic envelope and does not
+            # retain the original request when its transport UI is disabled.
+            return "formation_uniform_planner" in listeners
+        return {"formation_uniform_planner", "formation_playback"} <= listeners
+
+    def planner_ready(self):
+        if self.multi:
+            return (self.job.get("backend") == self.formation_backend
+                    and self.job.get("map_ready") and self.job.get("map_frame_id") == "map"
+                    and (self.start_pub is None or self.job.get("initial_reset_ready")))
+        height, width = self.map_shape
+        ready = f"map_ready {width}x{height}"
+        return all(self.planner_status.get(topic) == ready for topic in string_topics(False))
+
+    def execute(self, now, wall, stale):
+        if stale:
+            self.finish("stopped", f"robot{stale[0]}_stale_or_invalid_feedback")
+            return
+        if self.phase == "arming":
+            deadline = stamp_ns(self.arm_stamp) / NSEC - self.config["coordination"]["release_margin_s"]
+            if now >= deadline:
+                self.finish("stopped", "formation_admission_deadline")
+            elif self.admitted == self.spawns.keys():
+                self.phase = "running"
+                self.permit(True)
+            return
+        if self.complete == self.spawns.keys():
+            self.check_result()
+        elif self.multi:
+            for i in self.spawns:
+                stamp, received = self.controller_age[i]
+                if now - stamp > self.timing.state_timeout or wall - received > 1.:
+                    self.finish("stopped", f"robot{i}_controller_status_timeout")
+                    return
+            self.permit(True)
+
+    def measurement(self, stamp):
+        poses = {i: self.truth[i][1] for i in self.spawns}
+        if self.previous_measurement is not None:
+            self.last_ground_truth_step = {i: dist(poses[i][:2], self.previous_measurement[i][:2])
+                                           for i in self.spawns}
+        self.previous_measurement = poses
+        reference = self.metrics.sample(stamp, poses, self.commands)
+        if self.multi:
+            self.publish_cargo_feedback(stamp, reference)
+            mount = max(dist(poses[i][:2], local_pose(reference, offset)[:2])
+                        for i, offset in zip(self.spawns, self.scene.offsets, strict=True))
+            self.mount_pub.publish(Float64(data=mount))
+
+    def publish_cargo_feedback(self, stamp, reference):
+        stamp_nsec = round(stamp * NSEC)
+        seconds, nanoseconds = divmod(stamp_nsec, NSEC)
+        msg = self.stamped_pose(reference)
+        msg.header.stamp = Time(sec=seconds, nanosec=nanoseconds)
+        msg.pose.position.z = self.scene.cargo.bottom
+        cargo = Odometry(header=msg.header, child_frame_id="cargo/base_link")
+        cargo.pose.pose = msg.pose
+        pose = Pose(*reference)
+        if self.previous_cargo_pose is not None:
+            previous_stamp, previous_pose = self.previous_cargo_pose
+            if stamp > previous_stamp:
+                twist = between(previous_pose, pose, stamp - previous_stamp)
+                cargo.twist.twist.linear.x, cargo.twist.twist.linear.y = twist.vx, twist.vy
+                cargo.twist.twist.angular.z = twist.wz
+        self.previous_cargo_pose = stamp, pose
+        self.cargo_pub.publish(cargo)
+
+        if self.arm_stamp is None or self.phase != "running":
+            return
+        start_nsec = stamp_ns(self.arm_stamp)
+        elapsed = stamp_nsec - start_nsec
+        if elapsed < 0:
+            return
+        # The archived planner stamp describes playback. The trackers start on
+        # the coordinated arm stamp, with the same relative time axis.
+        trajectory = self.formation_plan.trajectory
+        upper = bisect_right(self.cargo_plan_times, elapsed)
+        first = trajectory.formation_poses[upper - 1]
+        target = Pose(first.x, first.y, first.theta)
+        if upper < len(self.cargo_plan_times):
+            second = trajectory.formation_poses[upper]
+            lower_time = self.cargo_plan_times[upper - 1]
+            fraction = (elapsed - lower_time) / (self.cargo_plan_times[upper] - lower_time)
+            target = Pose(first.x + fraction * (second.x - first.x),
+                          first.y + fraction * (second.y - first.y),
+                          first.theta + fraction * wrap(second.theta - first.theta))
+        phase = "COMPLETE" if self.complete == self.spawns.keys() else "TRACKING"
+        if self.result and self.result["status"] != "passed":
+            phase = "STOPPED"
+        status = {"kind": "execution", "plan_id": trajectory.plan_id, "trajectory_stamp_ns": start_nsec,
+                  "stamp": stamp, "phase": phase, "body_error": pose.error_to(target)}
+        self.cargo_status_pub.publish(String(data=json.dumps(status, allow_nan=False)))
+
+    def check_result(self):
+        self.measurement(self.now())
+        limits = self.config["acceptance"]
+        summary = self.summary()
+        errors = summary["vehicles"].values()
+        if (self.moved != self.spawns.keys() or any(
+            r["terminal_position_error_m"] > limits["terminal_position_m"]
+            or r["terminal_yaw_error_deg"] > degrees(limits["terminal_yaw_rad"])
+            or r["travel_from_spawn_m"] < .01 for r in errors
+        )):
+            self.finish("failed", "terminal_tracking_error_or_no_motion")
+        elif any(row["m"] <= 0. for row in summary["min_environment_clearance"].values()):
+            self.finish("failed", "sampled_environment_contact")
+        elif not self.multi and (summary["requested_goal_position_error_m"] > limits["terminal_position_m"]
+                                 or summary["requested_goal_yaw_error_deg"] > degrees(limits["terminal_yaw_rad"])):
+            self.finish("failed", "requested_goal_error")
+        elif self.multi and (summary["min_vehicle_footprint_gap_m"] <= 0.
+                             or summary["max_mount_error_m"] > limits["max_mount_error_m"]
+                             or summary["terminal_formation_position_error_m"] > limits["terminal_position_m"]
+                             or summary["terminal_formation_yaw_error_deg"] > degrees(limits["terminal_yaw_rad"])):
+            self.finish("failed", "formation_tracking_or_clearance_error")
+        else:
+            self.finish("passed", "all_trackers_complete")
+
+    def finish(self, status, reason):
+        if self.result is not None:
+            return
+        self.get_logger().info(f"Experiment {status} ({reason})")
+        if self.plan_wall is None and self.plan_started is not None:
+            self.plan_wall = monotonic() - self.plan_started
+        self.result = {"status": status, "reason": reason, "phase_at_end": self.phase}
+        self.permit(False)
+        dwell = self.config["observation_s"] if status == "passed" or (self.multi and self.arm_stamp) else 0.
+        self.end_wall = monotonic() + dwell
+
+    def summary(self):
+        final = {i: row[1] for i, row in self.truth.items()}
+        return self.metrics.summary(self.initial or {}, final, self.goals, self.config["goal"])
+
+    def write_result(self):
+        if self.result is None:
+            self.finish("cancelled", "launch_shutdown_before_completion")
+        data = dict(self.result, scenario=self.scene.name, task=self.config["task"],
+                    experiment=self.config["experiment"], planner=self.config["planner_backend"],
+                    controller=self.config["controller_backend"], formation=self.config["formation"],
+                    formation_offsets_m=self.scene.offsets if self.multi else None,
+                    map_matches_generated=self.map_matches, observed_spawn=self.initial,
+                    plan_received=self.plan_keys is not None or self.formation_plan is not None,
+                    planner_wall_s=self.plan_wall,
+                    plan_duration_s=self.duration, routed_plan_keys=self.plan_keys,
+                    planner_status=self.planner_status, controller_status=self.controller_status,
+                    admitted=sorted(self.admitted), complete=sorted(self.complete),
+                    final_cmd_vel=self.commands, last_odom_twist={i: row[3] for i, row in self.odom.items()},
+                    last_ground_truth_step_m=self.last_ground_truth_step,
+                    metrics=self.summary())
+        path = self.directory / "result.yaml"
+        temp = path.with_suffix(".partial")
+        temp.write_text(yaml.safe_dump(data, sort_keys=False))
+        temp.replace(path)
+
+
+def main():
+    rclpy.init(signal_handler_options=SignalHandlerOptions.SIGTERM)
+    node = RunExperiment()
+    try:
+        while rclpy.ok() and (node.end_wall is None or monotonic() < node.end_wall):
+            rclpy.spin_once(node, timeout_sec=.08)
+    except (KeyboardInterrupt, ExternalShutdownException):
+        pass
+    except Exception as error:
+        node.finish("failed", f"runtime_error:{type(error).__name__}: {error}")
+        raise
+    finally:
+        node.write_result()
+        node.destroy_node()
+        rclpy.try_shutdown()
+
+
+if __name__ == "__main__":
+    main()

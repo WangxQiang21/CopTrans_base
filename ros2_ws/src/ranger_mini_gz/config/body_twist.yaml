@@ -1,0 +1,15 @@
+# Simulation parameters for low-speed experiments. Response constants,
+# acceleration and mode-confirmation delay await physical calibration.
+plant:
+  frequency: 50.0
+  linear_tau: 0.075
+  angular_tau: 0.095
+  max_accel: 0.65
+  max_yaw_accel: 0.90
+  max_speed: 0.28
+  max_yaw_rate: 0.55
+  switch_radius: 0.47644  # ROS 1/archive and existing Gazebo mode classifier
+  switch_delay: 0.10
+  command_timeout: 0.25
+  stopped_speed: 0.010
+  stopped_yaw_rate: 0.016

@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+"""Publish root TF and optional ROS ground truth from a Gazebo model pose."""
+
+import math
+
+from geometry_msgs.msg import PoseStamped, TransformStamped
+from nav_msgs.msg import Odometry
+import rclpy
+from rclpy.executors import ExternalShutdownException
+from rclpy.node import Node
+from tf2_ros import TransformBroadcaster
+
+
+class ModelPoseTF(Node):
+    def __init__(self):
+        super().__init__("model_pose_tf")
+        self.parent = self.declare_parameter("parent_frame", "world").value
+        self.child = self.declare_parameter("child_frame", "robot1/base_link").value
+        self.broadcaster = TransformBroadcaster(self)
+        self.subscription = self.create_subscription(PoseStamped, "gz_pose", self.on_pose, 10)
+        self.ground_truth = self.declare_parameter("ground_truth", False).value
+        pose_odometry = self.declare_parameter("pose_odometry", True).value
+        self.previous = None
+        self.odom = None
+        if self.ground_truth:
+            self.pose = self.create_publisher(PoseStamped, "ground_truth_pose", 5)
+            if pose_odometry:
+                self.odom = self.create_publisher(Odometry, "odom", 5)
+
+    def on_pose(self, message):
+        transform = TransformStamped()
+        transform.header.stamp = message.header.stamp
+        transform.header.frame_id = self.parent
+        transform.child_frame_id = self.child
+        transform.transform.translation.x = message.pose.position.x
+        transform.transform.translation.y = message.pose.position.y
+        transform.transform.translation.z = message.pose.position.z
+        transform.transform.rotation = message.pose.orientation
+        self.broadcaster.sendTransform(transform)
+        if self.ground_truth:
+            message.header.frame_id = self.parent
+            self.pose.publish(message)
+        if self.odom is not None:
+            self.publish_odometry(message)
+
+    def publish_odometry(self, message):
+        q, position = message.pose.orientation, message.pose.position
+        yaw = math.atan2(2 * (q.w * q.z + q.x * q.y), 1 - 2 * (q.y * q.y + q.z * q.z))
+        stamp = message.header.stamp
+        stamp_ns = stamp.sec * 10**9 + stamp.nanosec
+        odom = Odometry(header=message.header, child_frame_id=self.child)
+        odom.pose.pose = message.pose
+        if self.previous:
+            previous_ns, x, y, z, heading = self.previous
+            dt = (stamp_ns - previous_ns) * 1e-9
+            if 0 < dt <= 1:
+                c, s = math.cos(yaw), math.sin(yaw)
+                dx, dy = position.x - x, position.y - y
+                twist = odom.twist.twist
+                twist.linear.x = (c * dx + s * dy) / dt
+                twist.linear.y = (-s * dx + c * dy) / dt
+                twist.linear.z = (position.z - z) / dt
+                twist.angular.z = math.remainder(yaw - heading, math.tau) / dt
+        self.previous = (stamp_ns, position.x, position.y, position.z, yaw)
+        self.odom.publish(odom)
+
+
+def main():
+    rclpy.init()
+    node = ModelPoseTF()
+    try:
+        rclpy.spin(node)
+    except (KeyboardInterrupt, ExternalShutdownException):
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.try_shutdown()
+
+
+if __name__ == "__main__":
+    main()

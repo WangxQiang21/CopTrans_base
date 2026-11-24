@@ -1,0 +1,113 @@
+Panels:
+- Class: rviz_common/Displays
+  Name: Displays
+Visualization Manager:
+  Class: ''
+  Displays:
+  - Class: rviz_default_plugins/Map
+    Name: Occupancy grid
+    Enabled: true
+    Topic:
+      Value: /map
+      Depth: 5
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Transient Local
+  - Class: rviz_default_plugins/MarkerArray
+    Name: Formation
+    Enabled: true
+    Topic:
+      Value: /formation/markers
+      Depth: 5
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Transient Local
+  - Class: rviz_default_plugins/MarkerArray
+    Name: Endpoints
+    Enabled: true
+    Topic:
+      Value: /formation/endpoints
+      Depth: 5
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Transient Local
+  - Class: rviz_default_plugins/Path
+    Name: Vehicle 1
+    Enabled: true
+    Topic:
+      Value: /formation/path/vehicle_1
+      Depth: 5
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Transient Local
+    Color: 47; 181; 221
+  - Class: rviz_default_plugins/Path
+    Name: Vehicle 2
+    Enabled: true
+    Topic:
+      Value: /formation/path/vehicle_2
+      Depth: 5
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Transient Local
+    Color: 255; 179; 28
+  - Class: rviz_default_plugins/Path
+    Name: Vehicle 3
+    Enabled: true
+    Topic:
+      Value: /formation/path/vehicle_3
+      Depth: 5
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Transient Local
+    Color: 111; 218; 142
+  Global Options:
+    Fixed Frame: map
+    Frame Rate: 30
+  Tools:
+  - Class: rviz_default_plugins/Interact
+  - Class: rviz_default_plugins/MoveCamera
+  - Class: rviz_default_plugins/SetInitialPose
+    Topic:
+      Value: /initialpose
+      Depth: 5
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Volatile
+  - Class: rviz_default_plugins/SetGoal
+    Topic:
+      Value: /move_base_simple/goal
+      Depth: 5
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Volatile
+  Views:
+    Current:
+      Class: rviz_default_plugins/TopDownOrtho
+      Scale: 35
+      X: 4.0
+      Y: 4.0
+    Saved:
+    - Class: rviz_default_plugins/Orbit
+      Name: Cargo overview
+      Target Frame: formation_cargo_wedge_reference
+      Distance: 4.0
+      Focal Point:
+        X: 0.5
+        Y: 0.0
+        Z: 0.22
+      Pitch: 1.0
+      Yaw: 3.30
+    - Class: rviz_default_plugins/Orbit
+      Name: Cargo side
+      Target Frame: formation_cargo_wedge_reference
+      Distance: 4.2
+      Focal Point:
+        X: 0.5
+        Y: 0.0
+        Z: 0.25
+      Pitch: 0.31
+      Yaw: 4.17
+Window Geometry:
+  Width: 1120
+  Height: 740

@@ -1,0 +1,72 @@
+<?xml version="1.0"?>
+<robot name="ranger_mini_v2" xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:arg name="mesh_uri" default="package://ranger_mini_description/meshes"/>
+  <xacro:arg name="shell_color" default=""/>
+  <xacro:arg name="body_twist_settings" default=""/>
+  <xacro:arg name="managed_switching" default="false"/>
+  <xacro:property name="mesh_uri" value="$(arg mesh_uri)"/>
+  <xacro:property name="shell_color" value="$(arg shell_color)"/>
+  <xacro:property name="body_twist_settings" value="$(arg body_twist_settings)"/>
+
+  <!-- Visual and joint origins follow AgileX's Ranger Mini V2 xacro. -->
+  <link name="base_link">
+    <inertial>
+      <mass value="40"/>
+      <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="1.57 0 3.14"/>
+      <geometry><mesh filename="${mesh_uri}/ranger_base.dae"/></geometry>
+    </visual>
+    <xacro:if value="${shell_color != ''}">
+      <visual name="body_shell">
+        <origin xyz="0 0 0" rpy="1.57 0 3.14"/>
+        <geometry><mesh filename="${mesh_uri}/shell_${shell_color}.dae"/></geometry>
+      </visual>
+    </xacro:if>
+    <collision>
+      <origin xyz="0 0 0.008"/>
+      <geometry><box size="0.738 0.500 0.210"/></geometry>
+    </collision>
+  </link>
+
+  <xacro:macro name="wheel" params="name x y mesh y_visual">
+    <joint name="${name}_wheel_joint" type="fixed">
+      <origin xyz="${x} ${y} -0.1"/>
+      <parent link="base_link"/>
+      <child link="${name}_wheel_link"/>
+    </joint>
+    <link name="${name}_wheel_link">
+      <visual>
+        <origin xyz="0.23 ${y_visual} 0.1" rpy="1.57 0 0"/>
+        <geometry><mesh filename="${mesh_uri}/${mesh}.dae"/></geometry>
+      </visual>
+      <collision>
+        <origin rpy="1.57079632679 0 0"/>
+        <geometry><cylinder length="0.1" radius="0.1"/></geometry>
+      </collision>
+    </link>
+  </xacro:macro>
+  <xacro:wheel name="fl" x="0.23" y="0.206" mesh="fr" y_visual="-0.2"/>
+  <xacro:wheel name="fr" x="0.23" y="-0.206" mesh="fl" y_visual="0.2"/>
+  <xacro:wheel name="rl" x="-0.23" y="0.206" mesh="fr" y_visual="-0.2"/>
+  <xacro:wheel name="rr" x="-0.23" y="-0.206" mesh="fl" y_visual="0.2"/>
+
+  <gazebo>
+    <static>true</static>
+    <plugin filename="gz-sim-pose-publisher-system" name="gz::sim::systems::PosePublisher">
+      <publish_link_pose>false</publish_link_pose>
+      <publish_model_pose>true</publish_model_pose>
+      <publish_nested_model_pose>false</publish_nested_model_pose>
+      <use_pose_vector_msg>false</use_pose_vector_msg>
+      <update_frequency>30</update_frequency>
+    </plugin>
+    <xacro:if value="${body_twist_settings != ''}">
+      <plugin filename="gz-sim-python-system-loader-system" name="gz::sim::systems::PythonSystemLoader">
+        <module_name>ranger_mini_gz.body_system</module_name>
+        <settings>${body_twist_settings}</settings>
+        <managed_switching>$(arg managed_switching)</managed_switching>
+      </plugin>
+    </xacro:if>
+  </gazebo>
+</robot>

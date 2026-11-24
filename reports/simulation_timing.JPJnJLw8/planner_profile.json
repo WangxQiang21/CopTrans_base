@@ -1,0 +1,3585 @@
+{
+  "run": "/home/wq/Whut/CopTrans_base/reports/runs/20261124_193134_multi_factory_indoor_01_multi_4wis_HE6epU",
+  "native_extension": "/home/wq/Whut/CopTrans_base/ros2_ws/install/fwis_backends/local/lib/python3.10/dist-packages/fwis_backends/multi_4wis/_formation_collision_native.cpython-310-x86_64-linux-gnu.so",
+  "trials_per_variant": 5,
+  "expected_model_sha256": "ef0fee2f4dfc318459278e4d6fee73ca2d5b52045685a295be413fabc7a8c9ea",
+  "all_trajectory_models_identical": true,
+  "analysis_only_reuse": "Use the accepted result again only for the same request and same edge objects.",
+  "summary": {
+    "default": {
+      "planning_wall_median_s": 2.1725035440031206,
+      "stage_medians_s": {
+        "planner/search/sweep": 0.0031902940099826083,
+        "planner/search/build_and_audit/time_law/peak_table": 0.009669427992776036,
+        "planner/search/build_and_audit/time_law": 0.011415957007557154,
+        "planner/search/build_and_audit/sample": 0.001706160997855477,
+        "planner/search/build_and_audit/uniform_audit/peak_table": 0.009608876003767364,
+        "planner/search/build_and_audit/uniform_audit/dynamic_peak_audit": 0.021479571994859725,
+        "planner/search/build_and_audit/uniform_audit/sweep_audit/sweep": 0.005291826004395261,
+        "planner/search/build_and_audit/uniform_audit/sweep_audit": 0.0054046209988882765,
+        "planner/search/build_and_audit/uniform_audit": 0.06196080399968196,
+        "planner/search/build_and_audit": 0.07522777198755648,
+        "planner/search": 0.07935960100439843,
+        "planner/build_and_audit/time_law/peak_table": 0.009694362001027912,
+        "planner/build_and_audit/time_law": 0.011464636991149746,
+        "planner/build_and_audit/sample": 0.0016076140018412843,
+        "planner/build_and_audit/uniform_audit/peak_table": 0.009827339992625639,
+        "planner/build_and_audit/uniform_audit/dynamic_peak_audit": 0.02147363500262145,
+        "planner/build_and_audit/uniform_audit/sweep_audit/sweep": 0.005313198998919688,
+        "planner/build_and_audit/uniform_audit/sweep_audit": 0.005440239998279139,
+        "planner/build_and_audit/uniform_audit": 0.06200948599143885,
+        "planner/build_and_audit": 0.0752170890045818,
+        "planner/refinement/candidate/build_and_audit/time_law/peak_table": 0.026814143027877435,
+        "planner/refinement/candidate/build_and_audit/time_law": 0.030903228995157406,
+        "planner/refinement/candidate/build_and_audit/sample": 0.00362128799315542,
+        "planner/refinement/candidate/build_and_audit/uniform_audit/peak_table": 0.02696967902011238,
+        "planner/refinement/candidate/build_and_audit/uniform_audit/dynamic_peak_audit": 0.06248797099397052,
+        "planner/refinement/candidate/build_and_audit/uniform_audit/sweep_audit/sweep": 0.010391310002887622,
+        "planner/refinement/candidate/build_and_audit/uniform_audit/sweep_audit": 0.010690512019209564,
+        "planner/refinement/candidate/build_and_audit/uniform_audit": 0.15885574799904134,
+        "planner/refinement/candidate/build_and_audit": 0.19388130598235875,
+        "planner/refinement/candidate/curve_fit": 0.04033400901244022,
+        "planner/refinement/candidate/curve_geometry": 0.05894148400693666,
+        "planner/refinement/candidate/curve_retime/curve_selection_bounds": 0.3037190820032265,
+        "planner/refinement/candidate/curve_retime/curve_certify_bounds": 0.3017101589939557,
+        "planner/refinement/candidate/curve_retime": 0.6691793179925298,
+        "planner/refinement/candidate/curve_dynamics": 0.9244419970200397,
+        "planner/refinement/candidate/curve_collision": 0.09237486400525086,
+        "planner/refinement/candidate": 2.0144753540080274,
+        "planner/refinement": 2.014514534996124,
+        "planner": 2.17249879600422
+      }
+    },
+    "without_c2": {
+      "planning_wall_median_s": 0.15785009699175134,
+      "stage_medians_s": {
+        "planner/search/sweep": 0.003162986016832292,
+        "planner/search/build_and_audit/time_law/peak_table": 0.009611250992747955,
+        "planner/search/build_and_audit/time_law": 0.011306724001769908,
+        "planner/search/build_and_audit/sample": 0.0016990360018098727,
+        "planner/search/build_and_audit/uniform_audit/peak_table": 0.009706236000056379,
+        "planner/search/build_and_audit/uniform_audit/dynamic_peak_audit": 0.021358465994126163,
+        "planner/search/build_and_audit/uniform_audit/sweep_audit/sweep": 0.0053333840041887015,
+        "planner/search/build_and_audit/uniform_audit/sweep_audit": 0.005452113997307606,
+        "planner/search/build_and_audit/uniform_audit": 0.06208784700720571,
+        "planner/search/build_and_audit": 0.07525152098969556,
+        "planner/search": 0.07936910100397654,
+        "planner/build_and_audit/time_law/peak_table": 0.00972998198994901,
+        "planner/build_and_audit/time_law": 0.01144326600478962,
+        "planner/build_and_audit/sample": 0.0015850549971219152,
+        "planner/build_and_audit/uniform_audit/peak_table": 0.00964568299241364,
+        "planner/build_and_audit/uniform_audit/dynamic_peak_audit": 0.021417832002043724,
+        "planner/build_and_audit/uniform_audit/sweep_audit/sweep": 0.005289452994475141,
+        "planner/build_and_audit/uniform_audit/sweep_audit": 0.005411746009485796,
+        "planner/build_and_audit/uniform_audit": 0.06209259900788311,
+        "planner/build_and_audit": 0.07508885799325071,
+        "planner": 0.15784534699923825
+      }
+    },
+    "without_c2_reuse": {
+      "planning_wall_median_s": 0.08285740700375754,
+      "stage_medians_s": {
+        "planner/search/sweep": 0.0031772340007591993,
+        "planner/search/build_and_audit/time_law/peak_table": 0.009627871986594982,
+        "planner/search/build_and_audit/time_law": 0.011342344005242921,
+        "planner/search/build_and_audit/sample": 0.0017097219970310107,
+        "planner/search/build_and_audit/uniform_audit/peak_table": 0.009625496983062476,
+        "planner/search/build_and_audit/uniform_audit/dynamic_peak_audit": 0.021606612994219176,
+        "planner/search/build_and_audit/uniform_audit/sweep_audit/sweep": 0.005317947987350635,
+        "planner/search/build_and_audit/uniform_audit/sweep_audit": 0.005428367992863059,
+        "planner/search/build_and_audit/uniform_audit": 0.06199642299907282,
+        "planner/search/build_and_audit": 0.07525626799906604,
+        "planner/search": 0.07929904799675569,
+        "planner": 0.08285384500049986
+      }
+    }
+  },
+  "trials": {
+    "default": [
+      {
+        "wall_s": 2.194144522989518,
+        "search_s": 0.07937384700926486,
+        "reuse_count": 0,
+        "model_sha256": "ef0fee2f4dfc318459278e4d6fee73ca2d5b52045685a295be413fabc7a8c9ea",
+        "expansions": 0,
+        "candidates": 2,
+        "stages": {
+          "planner/search/sweep": [
+            {
+              "wall_s": 0.00023508700542151928
+            },
+            {
+              "wall_s": 0.0029813280125381425
+            }
+          ],
+          "planner/search/build_and_audit/time_law/peak_table": [
+            {
+              "wall_s": 0.004155574992182665
+            },
+            {
+              "wall_s": 0.005550661007873714
+            }
+          ],
+          "planner/search/build_and_audit/time_law": [
+            {
+              "wall_s": 0.011429017002228647
+            }
+          ],
+          "planner/search/build_and_audit/sample": [
+            {
+              "wall_s": 0.0016847880033310503
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/peak_table": [
+            {
+              "wall_s": 0.004073650008649565
+            },
+            {
+              "wall_s": 0.00559340299514588
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/dynamic_peak_audit": [
+            {
+              "wall_s": 0.02148907000082545
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/sweep_audit/sweep": [
+            {
+              "wall_s": 0.0003051370003959164
+            },
+            {
+              "wall_s": 0.004986689003999345
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/sweep_audit": [
+            {
+              "wall_s": 0.0054046209988882765
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit": [
+            {
+              "wall_s": 0.06205341200984549,
+              "feasible": true
+            }
+          ],
+          "planner/search/build_and_audit": [
+            {
+              "wall_s": 0.07527763799589593
+            }
+          ],
+          "planner/search": [
+            {
+              "wall_s": 0.07939165600691922
+            }
+          ],
+          "planner/build_and_audit/time_law/peak_table": [
+            {
+              "wall_s": 0.004104519990505651
+            },
+            {
+              "wall_s": 0.00557440600823611
+            }
+          ],
+          "planner/build_and_audit/time_law": [
+            {
+              "wall_s": 0.011376775990356691
+            }
+          ],
+          "planner/build_and_audit/sample": [
+            {
+              "wall_s": 0.0015055050025694072
+            }
+          ],
+          "planner/build_and_audit/uniform_audit/peak_table": [
+            {
+              "wall_s": 0.004034469006001018
+            },
+            {
+              "wall_s": 0.005555409996304661
+            }
+          ],
+          "planner/build_and_audit/uniform_audit/dynamic_peak_audit": [
+            {
+              "wall_s": 0.02157099400938023
+            }
+          ],
+          "planner/build_and_audit/uniform_audit/sweep_audit/sweep": [
+            {
+              "wall_s": 0.00031701099942438304
+            },
+            {
+              "wall_s": 0.004996187999495305
+            }
+          ],
+          "planner/build_and_audit/uniform_audit/sweep_audit": [
+            {
+              "wall_s": 0.005440239998279139
+            }
+          ],
+          "planner/build_and_audit/uniform_audit": [
+            {
+              "wall_s": 0.06240366799465846,
+              "feasible": true
+            }
+          ],
+          "planner/build_and_audit": [
+            {
+              "wall_s": 0.0753939940041164
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit/time_law/peak_table": [
+            {
+              "wall_s": 0.0044690240029012784
+            },
+            {
+              "wall_s": 0.0044927700073458254
+            },
+            {
+              "wall_s": 0.004431029999977909
+            },
+            {
+              "wall_s": 0.004459524992853403
+            },
+            {
+              "wall_s": 0.004479708994040266
+            },
+            {
+              "wall_s": 0.004476147994864732
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit/time_law": [
+            {
+              "wall_s": 0.010292765000485815
+            },
+            {
+              "wall_s": 9.61720070336014e-05
+            },
+            {
+              "wall_s": 0.010201341996435076
+            },
+            {
+              "wall_s": 0.010238147995551117
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit/sample": [
+            {
+              "wall_s": 0.0010115860059158877
+            },
+            {
+              "wall_s": 0.00031582301016896963
+            },
+            {
+              "wall_s": 0.0010697640100261196
+            },
+            {
+              "wall_s": 0.001095885003451258
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit/uniform_audit/peak_table": [
+            {
+              "wall_s": 0.004516515997238457
+            },
+            {
+              "wall_s": 0.00448327099729795
+            },
+            {
+              "wall_s": 0.004446464998181909
+            },
+            {
+              "wall_s": 0.004450027001439594
+            },
+            {
+              "wall_s": 0.004444089994649403
+            },
+            {
+              "wall_s": 0.004502267998759635
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit/uniform_audit/dynamic_peak_audit": [
+            {
+              "wall_s": 0.020605713012628257
+            },
+            {
+              "wall_s": 4.155599162913859e-05
+            },
+            {
+              "wall_s": 0.02068170100392308
+            },
+            {
+              "wall_s": 0.020693573998869397
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit/uniform_audit/sweep_audit/sweep": [
+            {
+              "wall_s": 0.0026560059923212975
+            },
+            {
+              "wall_s": 0.0006102759944042191
+            },
+            {
+              "wall_s": 0.001846261991886422
+            },
+            {
+              "wall_s": 0.0006375829980242997
+            },
+            {
+              "wall_s": 0.003924049000488594
+            },
+            {
+              "wall_s": 0.0005853430047864094
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit/uniform_audit/sweep_audit": [
+            {
+              "wall_s": 0.0033707649999996647
+            },
+            {
+              "wall_s": 2.374988980591297e-06
+            },
+            {
+              "wall_s": 0.0025717070093378425
+            },
+            {
+              "wall_s": 0.0046269350132206455
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit/uniform_audit": [
+            {
+              "wall_s": 0.05133915398619138,
+              "feasible": true
+            },
+            {
+              "wall_s": 0.0042968640045728534,
+              "feasible": true
+            },
+            {
+              "wall_s": 0.05020765100198332,
+              "feasible": true
+            },
+            {
+              "wall_s": 0.05227475300489459,
+              "feasible": true
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit": [
+            {
+              "wall_s": 0.06274798700178508
+            },
+            {
+              "wall_s": 0.004797907997271977
+            },
+            {
+              "wall_s": 0.0615879889955977
+            },
+            {
+              "wall_s": 0.06370970699936152
+            }
+          ],
+          "planner/refinement/candidate/curve_fit": [
+            {
+              "wall_s": 0.010352129000239074,
+              "path_returned": true
+            },
+            {
+              "wall_s": 0.008799133007414639,
+              "path_returned": true
+            },
+            {
+              "wall_s": 0.008733830007258803,
+              "path_returned": true
+            },
+            {
+              "wall_s": 0.012319497996941209,
+              "path_returned": true
+            }
+          ],
+          "planner/refinement/candidate/curve_geometry": [
+            {
+              "wall_s": 0.013916424999479204,
+              "status": null,
+              "reason": null,
+              "passed": true
+            },
+            {
+              "wall_s": 0.01682057800644543,
+              "status": null,
+              "reason": null,
+              "passed": true
+            },
+            {
+              "wall_s": 0.012086784990970045,
+              "status": null,
+              "reason": null,
+              "passed": true
+            },
+            {
+              "wall_s": 0.01637652599310968,
+              "status": null,
+              "reason": null,
+              "passed": true
+            }
+          ],
+          "planner/refinement/candidate/curve_retime/curve_selection_bounds": [
+            {
+              "wall_s": 0.0762464810104575
+            },
+            {
+              "wall_s": 0.08997887399164028
+            },
+            {
+              "wall_s": 0.07573356400826015
+            },
+            {
+              "wall_s": 0.07667866100382525
+            }
+          ],
+          "planner/refinement/candidate/curve_retime/curve_certify_bounds": [
+            {
+              "wall_s": 0.075582776000374
+            },
+            {
+              "wall_s": 0.07626310299383476
+            },
+            {
+              "wall_s": 0.07529307300865185
+            },
+            {
+              "wall_s": 0.07528238800296094
+            }
+          ],
+          "planner/refinement/candidate/curve_retime": [
+            {
+              "wall_s": 0.16686412499984726,
+              "status": "DYNAMIC_FEASIBLE",
+              "reason": "",
+              "passed": null
+            },
+            {
+              "wall_s": 0.18416793800133746,
+              "status": "DYNAMIC_FEASIBLE",
+              "reason": "",
+              "passed": null
+            },
+            {
+              "wall_s": 0.1642912319948664,
+              "status": "DYNAMIC_FEASIBLE",
+              "reason": "",
+              "passed": null
+            },
+            {
+              "wall_s": 0.16959255799883977,
+              "status": "DYNAMIC_FEASIBLE",
+              "reason": "",
+              "passed": null
+            }
+          ],
+          "planner/refinement/candidate/curve_dynamics": [
+            {
+              "wall_s": 0.24015421100193635,
+              "status": null,
+              "reason": null,
+              "passed": true
+            },
+            {
+              "wall_s": 0.21675120400323067,
+              "status": null,
+              "reason": null,
+              "passed": true
+            },
+            {
+              "wall_s": 0.20473209499323275,
+              "status": null,
+              "reason": null,
+              "passed": true
+            },
+            {
+              "wall_s": 0.2717603260098258,
+              "status": null,
+              "reason": null,
+              "passed": true
+            }
+          ],
+          "planner/refinement/candidate/curve_collision": [
+            {
+              "wall_s": 0.024773160999757238,
+              "status": null,
+              "reason": "CARGO_OBB_COLLISION",
+              "passed": false
+            },
+            {
+              "wall_s": 0.018923299008747563,
+              "status": null,
+              "reason": "COLLISION_NUMERICAL_FAILURE",
+              "passed": false
+            },
+            {
+              "wall_s": 0.024747039991780184,
+              "status": null,
+              "reason": "CARGO_OBB_COLLISION",
+              "passed": false
+            },
+            {
+              "wall_s": 0.02467105200048536,
+              "status": null,
+              "reason": "CARGO_OBB_COLLISION",
+              "passed": false
+            }
+          ],
+          "planner/refinement/candidate": [
+            {
+              "wall_s": 0.5270325140008936,
+              "padding": [
+                1.25,
+                1.25
+              ],
+              "accepted": false
+            },
+            {
+              "wall_s": 0.4578220180119388,
+              "padding": [
+                0.0,
+                1.75
+              ],
+              "accepted": false
+            },
+            {
+              "wall_s": 0.4844687480072025,
+              "padding": [
+                0.75,
+                0.75
+              ],
+              "accepted": false
+            },
+            {
+              "wall_s": 0.5664214300049935,
+              "padding": [
+                2.0,
+                2.0
+              ],
+              "accepted": false
+            }
+          ],
+          "planner/refinement": [
+            {
+              "wall_s": 2.035785077998298
+            }
+          ],
+          "planner": [
+            {
+              "wall_s": 2.1941373990121065
+            }
+          ]
+        }
+      },
+      {
+        "wall_s": 2.168859669996891,
+        "search_s": 0.07934179100266192,
+        "reuse_count": 0,
+        "model_sha256": "ef0fee2f4dfc318459278e4d6fee73ca2d5b52045685a295be413fabc7a8c9ea",
+        "expansions": 0,
+        "candidates": 2,
+        "stages": {
+          "planner/search/sweep": [
+            {
+              "wall_s": 0.00023152500216383487
+            },
+            {
+              "wall_s": 0.0029694550030399114
+            }
+          ],
+          "planner/search/build_and_audit/time_law/peak_table": [
+            {
+              "wall_s": 0.00413657799072098
+            },
+            {
+              "wall_s": 0.005618337003397755
+            }
+          ],
+          "planner/search/build_and_audit/time_law": [
+            {
+              "wall_s": 0.011436141998274252
+            }
+          ],
+          "planner/search/build_and_audit/sample": [
+            {
+              "wall_s": 0.001706160997855477
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/peak_table": [
+            {
+              "wall_s": 0.004030907002743334
+            },
+            {
+              "wall_s": 0.0055126670049503446
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/dynamic_peak_audit": [
+            {
+              "wall_s": 0.021587616007309407
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/sweep_audit/sweep": [
+            {
+              "wall_s": 0.000322948006214574
+            },
+            {
+              "wall_s": 0.004926137000438757
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/sweep_audit": [
+            {
+              "wall_s": 0.00536187800753396
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit": [
+            {
+              "wall_s": 0.06196080399968196,
+              "feasible": true
+            }
+          ],
+          "planner/search/build_and_audit": [
+            {
+              "wall_s": 0.07522777198755648
+            }
+          ],
+          "planner/search": [
+            {
+              "wall_s": 0.07935960100439843
+            }
+          ],
+          "planner/build_and_audit/time_law/peak_table": [
+            {
+              "wall_s": 0.004152011999394745
+            },
+            {
+              "wall_s": 0.005619524003122933
+            }
+          ],
+          "planner/build_and_audit/time_law": [
+            {
+              "wall_s": 0.011508565992699005
+            }
+          ],
+          "planner/build_and_audit/sample": [
+            {
+              "wall_s": 0.0016183000116143376
+            }
+          ],
+          "planner/build_and_audit/uniform_audit/peak_table": [
+            {
+              "wall_s": 0.004119956007343717
+            },
+            {
+              "wall_s": 0.006067139009246603
+            }
+          ],
+          "planner/build_and_audit/uniform_audit/dynamic_peak_audit": [
+            {
+              "wall_s": 0.02176927399705164
+            }
+          ],
+          "planner/build_and_audit/uniform_audit/sweep_audit/sweep": [
+            {
+              "wall_s": 0.00042505600140430033
+            },
+            {
+              "wall_s": 0.005338132003089413
+            }
+          ],
+          "planner/build_and_audit/uniform_audit/sweep_audit": [
+            {
+              "wall_s": 0.00590329100668896
+            }
+          ],
+          "planner/build_and_audit/uniform_audit": [
+            {
+              "wall_s": 0.06383081300009508,
+              "feasible": true
+            }
+          ],
+          "planner/build_and_audit": [
+            {
+              "wall_s": 0.07707403399399482
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit/time_law/peak_table": [
+            {
+              "wall_s": 0.004444089994649403
+            },
+            {
+              "wall_s": 0.0045972520019859076
+            },
+            {
+              "wall_s": 0.004419156000949442
+            },
+            {
+              "wall_s": 0.004447651997907087
+            },
+            {
+              "wall_s": 0.004458337993128225
+            },
+            {
+              "wall_s": 0.004433403999428265
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit/time_law": [
+            {
+              "wall_s": 0.010361628999817185
+            },
+            {
+              "wall_s": 9.735899220686406e-05
+            },
+            {
+              "wall_s": 0.010238147995551117
+            },
+            {
+              "wall_s": 0.01018353199469857
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit/sample": [
+            {
+              "wall_s": 0.0010282080038450658
+            },
+            {
+              "wall_s": 0.0003348199970787391
+            },
+            {
+              "wall_s": 0.0011267539957771078
+            },
+            {
+              "wall_s": 0.0010590780002530664
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit/uniform_audit/peak_table": [
+            {
+              "wall_s": 0.004425093007739633
+            },
+            {
+              "wall_s": 0.00442390599346254
+            },
+            {
+              "wall_s": 0.0045105790050001815
+            },
+            {
+              "wall_s": 0.004455962989595719
+            },
+            {
+              "wall_s": 0.004561634006677195
+            },
+            {
+              "wall_s": 0.004391848997329362
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit/uniform_audit/dynamic_peak_audit": [
+            {
+              "wall_s": 0.020659141999203712
+            },
+            {
+              "wall_s": 4.511699080467224e-05
+            },
+            {
+              "wall_s": 0.021242110000457615
+            },
+            {
+              "wall_s": 0.020733942990773357
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit/uniform_audit/sweep_audit/sweep": [
+            {
+              "wall_s": 0.002810356003465131
+            },
+            {
+              "wall_s": 0.000600776998908259
+            },
+            {
+              "wall_s": 0.0018379510001977906
+            },
+            {
+              "wall_s": 0.000624523003352806
+            },
+            {
+              "wall_s": 0.0039098020060919225
+            },
+            {
+              "wall_s": 0.0006079009908717126
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit/uniform_audit/sweep_audit": [
+            {
+              "wall_s": 0.003508492009132169
+            },
+            {
+              "wall_s": 2.3750035325065255e-06
+            },
+            {
+              "wall_s": 0.002544399001635611
+            },
+            {
+              "wall_s": 0.004635246004909277
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit/uniform_audit": [
+            {
+              "wall_s": 0.05098058900330216,
+              "feasible": true
+            },
+            {
+              "wall_s": 0.004257683001924306,
+              "feasible": true
+            },
+            {
+              "wall_s": 0.050732442003209144,
+              "feasible": true
+            },
+            {
+              "wall_s": 0.05229137600690592,
+              "feasible": true
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit": [
+            {
+              "wall_s": 0.062471344994264655
+            },
+            {
+              "wall_s": 0.004780098999617621
+            },
+            {
+              "wall_s": 0.06221963699499611
+            },
+            {
+              "wall_s": 0.06364084300003015
+            }
+          ],
+          "planner/refinement/candidate/curve_fit": [
+            {
+              "wall_s": 0.010320072993636131,
+              "path_returned": true
+            },
+            {
+              "wall_s": 0.008769450010731816,
+              "path_returned": true
+            },
+            {
+              "wall_s": 0.008789633997366764,
+              "path_returned": true
+            },
+            {
+              "wall_s": 0.012503530000685714,
+              "path_returned": true
+            }
+          ],
+          "planner/refinement/candidate/curve_geometry": [
+            {
+              "wall_s": 0.013814318008371629,
+              "status": null,
+              "reason": null,
+              "passed": true
+            },
+            {
+              "wall_s": 0.01650119300757069,
+              "status": null,
+              "reason": null,
+              "passed": true
+            },
+            {
+              "wall_s": 0.012085598995327018,
+              "status": null,
+              "reason": null,
+              "passed": true
+            },
+            {
+              "wall_s": 0.016490507012349553,
+              "status": null,
+              "reason": null,
+              "passed": true
+            }
+          ],
+          "planner/refinement/candidate/curve_retime/curve_selection_bounds": [
+            {
+              "wall_s": 0.07601020799484104
+            },
+            {
+              "wall_s": 0.0760125819942914
+            },
+            {
+              "wall_s": 0.07551391399465501
+            },
+            {
+              "wall_s": 0.07555903198954184
+            }
+          ],
+          "planner/refinement/candidate/curve_retime/curve_certify_bounds": [
+            {
+              "wall_s": 0.07604938899748959
+            },
+            {
+              "wall_s": 0.07549491600366309
+            },
+            {
+              "wall_s": 0.07506036199629307
+            },
+            {
+              "wall_s": 0.07491432401002385
+            }
+          ],
+          "planner/refinement/candidate/curve_retime": [
+            {
+              "wall_s": 0.16705291000835132,
+              "status": "DYNAMIC_FEASIBLE",
+              "reason": "",
+              "passed": null
+            },
+            {
+              "wall_s": 0.16918056400027126,
+              "status": "DYNAMIC_FEASIBLE",
+              "reason": "",
+              "passed": null
+            },
+            {
+              "wall_s": 0.16383649600902572,
+              "status": "DYNAMIC_FEASIBLE",
+              "reason": "",
+              "passed": null
+            },
+            {
+              "wall_s": 0.16803718799201306,
+              "status": "DYNAMIC_FEASIBLE",
+              "reason": "",
+              "passed": null
+            }
+          ],
+          "planner/refinement/candidate/curve_dynamics": [
+            {
+              "wall_s": 0.23216245201183483,
+              "status": null,
+              "reason": null,
+              "passed": true
+            },
+            {
+              "wall_s": 0.2166111050028121,
+              "status": null,
+              "reason": null,
+              "passed": true
+            },
+            {
+              "wall_s": 0.20444002200383693,
+              "status": null,
+              "reason": null,
+              "passed": true
+            },
+            {
+              "wall_s": 0.27122841800155584,
+              "status": null,
+              "reason": null,
+              "passed": true
+            }
+          ],
+          "planner/refinement/candidate/curve_collision": [
+            {
+              "wall_s": 0.024432402991806157,
+              "status": null,
+              "reason": "CARGO_OBB_COLLISION",
+              "passed": false
+            },
+            {
+              "wall_s": 0.018755889002932236,
+              "status": null,
+              "reason": "COLLISION_NUMERICAL_FAILURE",
+              "passed": false
+            },
+            {
+              "wall_s": 0.02428636499098502,
+              "status": null,
+              "reason": "CARGO_OBB_COLLISION",
+              "passed": false
+            },
+            {
+              "wall_s": 0.024697174012544565,
+              "status": null,
+              "reason": "CARGO_OBB_COLLISION",
+              "passed": false
+            }
+          ],
+          "planner/refinement/candidate": [
+            {
+              "wall_s": 0.5182215179956984,
+              "padding": [
+                1.25,
+                1.25
+              ],
+              "accepted": false
+            },
+            {
+              "wall_s": 0.44190854800399393,
+              "padding": [
+                0.0,
+                1.75
+              ],
+              "accepted": false
+            },
+            {
+              "wall_s": 0.48379199199553113,
+              "padding": [
+                0.75,
+                0.75
+              ],
+              "accepted": false
+            },
+            {
+              "wall_s": 0.5649289940047311,
+              "padding": [
+                2.0,
+                2.0
+              ],
+              "accepted": false
+            }
+          ],
+          "planner/refinement": [
+            {
+              "wall_s": 2.008889046002878
+            }
+          ],
+          "planner": [
+            {
+              "wall_s": 2.1688549209939083
+            }
+          ]
+        }
+      },
+      {
+        "wall_s": 2.1725035440031206,
+        "search_s": 0.07954244699794799,
+        "reuse_count": 0,
+        "model_sha256": "ef0fee2f4dfc318459278e4d6fee73ca2d5b52045685a295be413fabc7a8c9ea",
+        "expansions": 0,
+        "candidates": 2,
+        "stages": {
+          "planner/search/sweep": [
+            {
+              "wall_s": 0.00021727698913309723
+            },
+            {
+              "wall_s": 0.0029552079940913245
+            }
+          ],
+          "planner/search/build_and_audit/time_law/peak_table": [
+            {
+              "wall_s": 0.004079587000887841
+            },
+            {
+              "wall_s": 0.005589840991888195
+            }
+          ],
+          "planner/search/build_and_audit/time_law": [
+            {
+              "wall_s": 0.011391022999305278
+            }
+          ],
+          "planner/search/build_and_audit/sample": [
+            {
+              "wall_s": 0.001707347997580655
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/peak_table": [
+            {
+              "wall_s": 0.00411164500110317
+            },
+            {
+              "wall_s": 0.005791684001451358
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/dynamic_peak_audit": [
+            {
+              "wall_s": 0.021479571994859725
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/sweep_audit/sweep": [
+            {
+              "wall_s": 0.0003455059922998771
+            },
+            {
+              "wall_s": 0.004939196995110251
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/sweep_audit": [
+            {
+              "wall_s": 0.005395124011556618
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit": [
+            {
+              "wall_s": 0.06225763099791948,
+              "feasible": true
+            }
+          ],
+          "planner/search/build_and_audit": [
+            {
+              "wall_s": 0.0754711710033007
+            }
+          ],
+          "planner/search": [
+            {
+              "wall_s": 0.07956025601015426
+            }
+          ],
+          "planner/build_and_audit/time_law/peak_table": [
+            {
+              "wall_s": 0.004089085006853566
+            },
+            {
+              "wall_s": 0.005530476002604701
+            }
+          ],
+          "planner/build_and_audit/time_law": [
+            {
+              "wall_s": 0.01132809701084625
+            }
+          ],
+          "planner/build_and_audit/sample": [
+            {
+              "wall_s": 0.001575556001625955
+            }
+          ],
+          "planner/build_and_audit/uniform_audit/peak_table": [
+            {
+              "wall_s": 0.0041223299922421575
+            },
+            {
+              "wall_s": 0.005705010000383481
+            }
+          ],
+          "planner/build_and_audit/uniform_audit/dynamic_peak_audit": [
+            {
+              "wall_s": 0.021389335990534164
+            }
+          ],
+          "planner/build_and_audit/uniform_audit/sweep_audit/sweep": [
+            {
+              "wall_s": 0.00031344899616669863
+            },
+            {
+              "wall_s": 0.0049997500027529895
+            }
+          ],
+          "planner/build_and_audit/uniform_audit/sweep_audit": [
+            {
+              "wall_s": 0.005428368007414974
+            }
+          ],
+          "planner/build_and_audit/uniform_audit": [
+            {
+              "wall_s": 0.06189312899368815,
+              "feasible": true
+            }
+          ],
+          "planner/build_and_audit": [
+            {
+              "wall_s": 0.07490957500704098
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit/time_law/peak_table": [
+            {
+              "wall_s": 0.00449276999279391
+            },
+            {
+              "wall_s": 0.004572318997816183
+            },
+            {
+              "wall_s": 0.004470211002626456
+            },
+            {
+              "wall_s": 0.004435778988408856
+            },
+            {
+              "wall_s": 0.00454263600113336
+            },
+            {
+              "wall_s": 0.004592503988533281
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit/time_law": [
+            {
+              "wall_s": 0.010375875994213857
+            },
+            {
+              "wall_s": 9.37979930313304e-05
+            },
+            {
+              "wall_s": 0.010282078990712762
+            },
+            {
+              "wall_s": 0.010499355994397774
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit/sample": [
+            {
+              "wall_s": 0.0010400809987913817
+            },
+            {
+              "wall_s": 0.0003039510047528893
+            },
+            {
+              "wall_s": 0.0011196309933438897
+            },
+            {
+              "wall_s": 0.0011576249962672591
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit/uniform_audit/peak_table": [
+            {
+              "wall_s": 0.004505830002017319
+            },
+            {
+              "wall_s": 0.004512954008532688
+            },
+            {
+              "wall_s": 0.004435780007042922
+            },
+            {
+              "wall_s": 0.004505830002017319
+            },
+            {
+              "wall_s": 0.0044464639940997586
+            },
+            {
+              "wall_s": 0.004562821006402373
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit/uniform_audit/dynamic_peak_audit": [
+            {
+              "wall_s": 0.02083486400078982
+            },
+            {
+              "wall_s": 4.749199433717877e-05
+            },
+            {
+              "wall_s": 0.020693573998869397
+            },
+            {
+              "wall_s": 0.020572469002217986
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit/uniform_audit/sweep_audit/sweep": [
+            {
+              "wall_s": 0.002648882000357844
+            },
+            {
+              "wall_s": 0.0005841550009790808
+            },
+            {
+              "wall_s": 0.0018438880069879815
+            },
+            {
+              "wall_s": 0.00976441300008446
+            },
+            {
+              "wall_s": 0.003922863004845567
+            },
+            {
+              "wall_s": 0.0005924660072196275
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit/uniform_audit/sweep_audit": [
+            {
+              "wall_s": 0.0033327709970762953
+            },
+            {
+              "wall_s": 2.3750035325065255e-06
+            },
+            {
+              "wall_s": 0.011749590004910715
+            },
+            {
+              "wall_s": 0.004625747998943552
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit/uniform_audit": [
+            {
+              "wall_s": 0.0512453590054065,
+              "feasible": true
+            },
+            {
+              "wall_s": 0.004256496002199128,
+              "feasible": true
+            },
+            {
+              "wall_s": 0.05957550500170328,
+              "feasible": true
+            },
+            {
+              "wall_s": 0.05227000500599388,
+              "feasible": true
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit": [
+            {
+              "wall_s": 0.06276342400815338
+            },
+            {
+              "wall_s": 0.004746853999677114
+            },
+            {
+              "wall_s": 0.07109832001151517
+            },
+            {
+              "wall_s": 0.06404571598977782
+            }
+          ],
+          "planner/refinement/candidate/curve_fit": [
+            {
+              "wall_s": 0.010282078990712762,
+              "path_returned": true
+            },
+            {
+              "wall_s": 0.008641220993013121,
+              "path_returned": true
+            },
+            {
+              "wall_s": 0.008740955003304407,
+              "path_returned": true
+            },
+            {
+              "wall_s": 0.012375300997518934,
+              "path_returned": true
+            }
+          ],
+          "planner/refinement/candidate/curve_geometry": [
+            {
+              "wall_s": 0.013816692007821985,
+              "status": null,
+              "reason": null,
+              "passed": true
+            },
+            {
+              "wall_s": 0.016448950991616584,
+              "status": null,
+              "reason": null,
+              "passed": true
+            },
+            {
+              "wall_s": 0.012169897003332153,
+              "status": null,
+              "reason": null,
+              "passed": true
+            },
+            {
+              "wall_s": 0.01628985301067587,
+              "status": null,
+              "reason": null,
+              "passed": true
+            }
+          ],
+          "planner/refinement/candidate/curve_retime/curve_selection_bounds": [
+            {
+              "wall_s": 0.07539162199827842
+            },
+            {
+              "wall_s": 0.07552697499340866
+            },
+            {
+              "wall_s": 0.07637471301131882
+            },
+            {
+              "wall_s": 0.07592828500492033
+            }
+          ],
+          "planner/refinement/candidate/curve_retime/curve_certify_bounds": [
+            {
+              "wall_s": 0.07453319900378119
+            },
+            {
+              "wall_s": 0.07531207299325615
+            },
+            {
+              "wall_s": 0.07580718000826892
+            },
+            {
+              "wall_s": 0.07506036398990545
+            }
+          ],
+          "planner/refinement/candidate/curve_retime": [
+            {
+              "wall_s": 0.1649264440056868,
+              "status": "DYNAMIC_FEASIBLE",
+              "reason": "",
+              "passed": null
+            },
+            {
+              "wall_s": 0.16841475298861042,
+              "status": "DYNAMIC_FEASIBLE",
+              "reason": "",
+              "passed": null
+            },
+            {
+              "wall_s": 0.1655189120065188,
+              "status": "DYNAMIC_FEASIBLE",
+              "reason": "",
+              "passed": null
+            },
+            {
+              "wall_s": 0.16854654600319918,
+              "status": "DYNAMIC_FEASIBLE",
+              "reason": "",
+              "passed": null
+            }
+          ],
+          "planner/refinement/candidate/curve_dynamics": [
+            {
+              "wall_s": 0.22981752299529035,
+              "status": null,
+              "reason": null,
+              "passed": true
+            },
+            {
+              "wall_s": 0.21545585899730213,
+              "status": null,
+              "reason": null,
+              "passed": true
+            },
+            {
+              "wall_s": 0.20581848800065927,
+              "status": null,
+              "reason": null,
+              "passed": true
+            },
+            {
+              "wall_s": 0.27160361100686714,
+              "status": null,
+              "reason": null,
+              "passed": true
+            }
+          ],
+          "planner/refinement/candidate/curve_collision": [
+            {
+              "wall_s": 0.024375412991503254,
+              "status": null,
+              "reason": "CARGO_OBB_COLLISION",
+              "passed": false
+            },
+            {
+              "wall_s": 0.01864071999443695,
+              "status": null,
+              "reason": "COLLISION_NUMERICAL_FAILURE",
+              "passed": false
+            },
+            {
+              "wall_s": 0.024357603993848898,
+              "status": null,
+              "reason": "CARGO_OBB_COLLISION",
+              "passed": false
+            },
+            {
+              "wall_s": 0.02437422600632999,
+              "status": null,
+              "reason": "CARGO_OBB_COLLISION",
+              "passed": false
+            }
+          ],
+          "planner/refinement/candidate": [
+            {
+              "wall_s": 0.5141146290116012,
+              "padding": [
+                1.25,
+                1.25
+              ],
+              "accepted": false
+            },
+            {
+              "wall_s": 0.4395944940042682,
+              "padding": [
+                0.0,
+                1.75
+              ],
+              "accepted": false
+            },
+            {
+              "wall_s": 0.4955985799897462,
+              "padding": [
+                0.75,
+                0.75
+              ],
+              "accepted": false
+            },
+            {
+              "wall_s": 0.5651676510024117,
+              "padding": [
+                2.0,
+                2.0
+              ],
+              "accepted": false
+            }
+          ],
+          "planner/refinement": [
+            {
+              "wall_s": 2.014514534996124
+            }
+          ],
+          "planner": [
+            {
+              "wall_s": 2.17249879600422
+            }
+          ]
+        }
+      },
+      {
+        "wall_s": 2.166903053992428,
+        "search_s": 0.07866146598826163,
+        "reuse_count": 0,
+        "model_sha256": "ef0fee2f4dfc318459278e4d6fee73ca2d5b52045685a295be413fabc7a8c9ea",
+        "expansions": 0,
+        "candidates": 2,
+        "stages": {
+          "planner/search/sweep": [
+            {
+              "wall_s": 0.00021727700368501246
+            },
+            {
+              "wall_s": 0.0029635179962497205
+            }
+          ],
+          "planner/search/build_and_audit/time_law/peak_table": [
+            {
+              "wall_s": 0.004034470010083169
+            },
+            {
+              "wall_s": 0.005500794010004029
+            }
+          ],
+          "planner/search/build_and_audit/time_law": [
+            {
+              "wall_s": 0.011153562998515554
+            }
+          ],
+          "planner/search/build_and_audit/sample": [
+            {
+              "wall_s": 0.0017417789931641892
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/peak_table": [
+            {
+              "wall_s": 0.003989351011114195
+            },
+            {
+              "wall_s": 0.0054794220050098374
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/dynamic_peak_audit": [
+            {
+              "wall_s": 0.02138340000237804
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/sweep_audit/sweep": [
+            {
+              "wall_s": 0.00032413500593975186
+            },
+            {
+              "wall_s": 0.004987877007806674
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/sweep_audit": [
+            {
+              "wall_s": 0.005422431000624783
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit": [
+            {
+              "wall_s": 0.061590366007294506,
+              "feasible": true
+            }
+          ],
+          "planner/search/build_and_audit": [
+            {
+              "wall_s": 0.07459019099769648
+            }
+          ],
+          "planner/search": [
+            {
+              "wall_s": 0.07868165100808255
+            }
+          ],
+          "planner/build_and_audit/time_law/peak_table": [
+            {
+              "wall_s": 0.004173384004388936
+            },
+            {
+              "wall_s": 0.005520977996638976
+            }
+          ],
+          "planner/build_and_audit/time_law": [
+            {
+              "wall_s": 0.011467011005152017
+            }
+          ],
+          "planner/build_and_audit/sample": [
+            {
+              "wall_s": 0.0016159249935299158
+            }
+          ],
+          "planner/build_and_audit/uniform_audit/peak_table": [
+            {
+              "wall_s": 0.004194755994831212
+            },
+            {
+              "wall_s": 0.005726382005377673
+            }
+          ],
+          "planner/build_and_audit/uniform_audit/dynamic_peak_audit": [
+            {
+              "wall_s": 0.021284853995894082
+            }
+          ],
+          "planner/build_and_audit/uniform_audit/sweep_audit/sweep": [
+            {
+              "wall_s": 0.0003110739926341921
+            },
+            {
+              "wall_s": 0.005056741007138044
+            }
+          ],
+          "planner/build_and_audit/uniform_audit/sweep_audit": [
+            {
+              "wall_s": 0.0055007939954521134
+            }
+          ],
+          "planner/build_and_audit/uniform_audit": [
+            {
+              "wall_s": 0.06200948599143885,
+              "feasible": true
+            }
+          ],
+          "planner/build_and_audit": [
+            {
+              "wall_s": 0.0752170890045818
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit/time_law/peak_table": [
+            {
+              "wall_s": 0.004505830002017319
+            },
+            {
+              "wall_s": 0.0045556969998870045
+            },
+            {
+              "wall_s": 0.004464274999918416
+            },
+            {
+              "wall_s": 0.0044227190082892776
+            },
+            {
+              "wall_s": 0.004426281011546962
+            },
+            {
+              "wall_s": 0.004439341006218456
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit/time_law": [
+            {
+              "wall_s": 0.010343818998080678
+            },
+            {
+              "wall_s": 8.667299698572606e-05
+            },
+            {
+              "wall_s": 0.010247648009681143
+            },
+            {
+              "wall_s": 0.010225088990409859
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit/sample": [
+            {
+              "wall_s": 0.0011113189975731075
+            },
+            {
+              "wall_s": 0.00034906801010947675
+            },
+            {
+              "wall_s": 0.0011421890085330233
+            },
+            {
+              "wall_s": 0.0010982589883496985
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit/uniform_audit/peak_table": [
+            {
+              "wall_s": 0.0046293110062833875
+            },
+            {
+              "wall_s": 0.004604376998031512
+            },
+            {
+              "wall_s": 0.004503454998484813
+            },
+            {
+              "wall_s": 0.004628123002476059
+            },
+            {
+              "wall_s": 0.0044583380076801404
+            },
+            {
+              "wall_s": 0.004455963004147634
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit/uniform_audit/dynamic_peak_audit": [
+            {
+              "wall_s": 0.020656767999753356
+            },
+            {
+              "wall_s": 4.986699786968529e-05
+            },
+            {
+              "wall_s": 0.020743442000821233
+            },
+            {
+              "wall_s": 0.021037893995526247
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit/uniform_audit/sweep_audit/sweep": [
+            {
+              "wall_s": 0.0027379300008760765
+            },
+            {
+              "wall_s": 0.0005972159997327253
+            },
+            {
+              "wall_s": 0.0018510109948692843
+            },
+            {
+              "wall_s": 0.0006043390021659434
+            },
+            {
+              "wall_s": 0.003912176995072514
+            },
+            {
+              "wall_s": 0.0005924659926677123
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit/uniform_audit/sweep_audit": [
+            {
+              "wall_s": 0.0034313180076424032
+            },
+            {
+              "wall_s": 2.374988980591297e-06
+            },
+            {
+              "wall_s": 0.0025420239981031045
+            },
+            {
+              "wall_s": 0.004626936002750881
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit/uniform_audit": [
+            {
+              "wall_s": 0.05147807199682575,
+              "feasible": true
+            },
+            {
+              "wall_s": 0.0043075499997939914,
+              "feasible": true
+            },
+            {
+              "wall_s": 0.05053060100181028,
+              "feasible": true
+            },
+            {
+              "wall_s": 0.05253952500061132,
+              "feasible": true
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit": [
+            {
+              "wall_s": 0.06303531899175141
+            },
+            {
+              "wall_s": 0.004822841001441702
+            },
+            {
+              "wall_s": 0.0620486669940874
+            },
+            {
+              "wall_s": 0.06397447899507824
+            }
+          ],
+          "planner/refinement/candidate/curve_fit": [
+            {
+              "wall_s": 0.010210841006482951,
+              "path_returned": true
+            },
+            {
+              "wall_s": 0.008796758003882132,
+              "path_returned": true
+            },
+            {
+              "wall_s": 0.008916676000808366,
+              "path_returned": true
+            },
+            {
+              "wall_s": 0.01240973400126677,
+              "path_returned": true
+            }
+          ],
+          "planner/refinement/candidate/curve_geometry": [
+            {
+              "wall_s": 0.01383568900928367,
+              "status": null,
+              "reason": null,
+              "passed": true
+            },
+            {
+              "wall_s": 0.01653325100778602,
+              "status": null,
+              "reason": null,
+              "passed": true
+            },
+            {
+              "wall_s": 0.01226606899581384,
+              "status": null,
+              "reason": null,
+              "passed": true
+            },
+            {
+              "wall_s": 0.016306474994053133,
+              "status": null,
+              "reason": null,
+              "passed": true
+            }
+          ],
+          "planner/refinement/candidate/curve_retime/curve_selection_bounds": [
+            {
+              "wall_s": 0.0761289410002064
+            },
+            {
+              "wall_s": 0.07602920700446703
+            },
+            {
+              "wall_s": 0.07587248299387284
+            },
+            {
+              "wall_s": 0.07568845100468025
+            }
+          ],
+          "planner/refinement/candidate/curve_retime/curve_certify_bounds": [
+            {
+              "wall_s": 0.0754367409972474
+            },
+            {
+              "wall_s": 0.07532869599526748
+            },
+            {
+              "wall_s": 0.07538449999992736
+            },
+            {
+              "wall_s": 0.07556022200151347
+            }
+          ],
+          "planner/refinement/candidate/curve_retime": [
+            {
+              "wall_s": 0.1666504180029733,
+              "status": "DYNAMIC_FEASIBLE",
+              "reason": "",
+              "passed": null
+            },
+            {
+              "wall_s": 0.16906421301246155,
+              "status": "DYNAMIC_FEASIBLE",
+              "reason": "",
+              "passed": null
+            },
+            {
+              "wall_s": 0.16455957198922988,
+              "status": "DYNAMIC_FEASIBLE",
+              "reason": "",
+              "passed": null
+            },
+            {
+              "wall_s": 0.1689051149878651,
+              "status": "DYNAMIC_FEASIBLE",
+              "reason": "",
+              "passed": null
+            }
+          ],
+          "planner/refinement/candidate/curve_dynamics": [
+            {
+              "wall_s": 0.23111287999199703,
+              "status": null,
+              "reason": null,
+              "passed": true
+            },
+            {
+              "wall_s": 0.21554490900598466,
+              "status": null,
+              "reason": null,
+              "passed": true
+            },
+            {
+              "wall_s": 0.20444833899091464,
+              "status": null,
+              "reason": null,
+              "passed": true
+            },
+            {
+              "wall_s": 0.2716297349979868,
+              "status": null,
+              "reason": null,
+              "passed": true
+            }
+          ],
+          "planner/refinement/candidate/curve_collision": [
+            {
+              "wall_s": 0.02480403200024739,
+              "status": null,
+              "reason": "CARGO_OBB_COLLISION",
+              "passed": false
+            },
+            {
+              "wall_s": 0.01855642200098373,
+              "status": null,
+              "reason": "COLLISION_NUMERICAL_FAILURE",
+              "passed": false
+            },
+            {
+              "wall_s": 0.02475060299912002,
+              "status": null,
+              "reason": "CARGO_OBB_COLLISION",
+              "passed": false
+            },
+            {
+              "wall_s": 0.024263807004899718,
+              "status": null,
+              "reason": "CARGO_OBB_COLLISION",
+              "passed": false
+            }
+          ],
+          "planner/refinement/candidate": [
+            {
+              "wall_s": 0.5180327529960778,
+              "padding": [
+                1.25,
+                1.25
+              ],
+              "accepted": false
+            },
+            {
+              "wall_s": 0.4404054299957352,
+              "padding": [
+                0.0,
+                1.75
+              ],
+              "accepted": false
+            },
+            {
+              "wall_s": 0.48513128999911714,
+              "padding": [
+                0.75,
+                0.75
+              ],
+              "accepted": false
+            },
+            {
+              "wall_s": 0.5657981200056383,
+              "padding": [
+                2.0,
+                2.0
+              ],
+              "accepted": false
+            }
+          ],
+          "planner/refinement": [
+            {
+              "wall_s": 2.0094150850054575
+            }
+          ],
+          "planner": [
+            {
+              "wall_s": 2.166898303999915
+            }
+          ]
+        }
+      },
+      {
+        "wall_s": 2.226903646995197,
+        "search_s": 0.07878376099688467,
+        "reuse_count": 0,
+        "model_sha256": "ef0fee2f4dfc318459278e4d6fee73ca2d5b52045685a295be413fabc7a8c9ea",
+        "expansions": 0,
+        "candidates": 2,
+        "stages": {
+          "planner/search/sweep": [
+            {
+              "wall_s": 0.0002291510027134791
+            },
+            {
+              "wall_s": 0.002961143007269129
+            }
+          ],
+          "planner/search/build_and_audit/time_law/peak_table": [
+            {
+              "wall_s": 0.004046342000947334
+            },
+            {
+              "wall_s": 0.005623085991828702
+            }
+          ],
+          "planner/search/build_and_audit/time_law": [
+            {
+              "wall_s": 0.011415957007557154
+            }
+          ],
+          "planner/search/build_and_audit/sample": [
+            {
+              "wall_s": 0.00167291599791497
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/peak_table": [
+            {
+              "wall_s": 0.004058215010445565
+            },
+            {
+              "wall_s": 0.005550660993321799
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/dynamic_peak_audit": [
+            {
+              "wall_s": 0.02137390201096423
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/sweep_audit/sweep": [
+            {
+              "wall_s": 0.0003419450076762587
+            },
+            {
+              "wall_s": 0.004961756989359856
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/sweep_audit": [
+            {
+              "wall_s": 0.005416495012468658
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit": [
+            {
+              "wall_s": 0.0614573889906751,
+              "feasible": true
+            }
+          ],
+          "planner/search/build_and_audit": [
+            {
+              "wall_s": 0.07466261800436769
+            }
+          ],
+          "planner/search": [
+            {
+              "wall_s": 0.0788027569942642
+            }
+          ],
+          "planner/build_and_audit/time_law/peak_table": [
+            {
+              "wall_s": 0.004144888996961527
+            },
+            {
+              "wall_s": 0.005573219008510932
+            }
+          ],
+          "planner/build_and_audit/time_law": [
+            {
+              "wall_s": 0.011464636991149746
+            }
+          ],
+          "planner/build_and_audit/sample": [
+            {
+              "wall_s": 0.0016076140018412843
+            }
+          ],
+          "planner/build_and_audit/uniform_audit/peak_table": [
+            {
+              "wall_s": 0.004118767988984473
+            },
+            {
+              "wall_s": 0.005518603007658385
+            }
+          ],
+          "planner/build_and_audit/uniform_audit/dynamic_peak_audit": [
+            {
+              "wall_s": 0.02147363500262145
+            }
+          ],
+          "planner/build_and_audit/uniform_audit/sweep_audit/sweep": [
+            {
+              "wall_s": 0.0003098869929090142
+            },
+            {
+              "wall_s": 0.004966506006894633
+            }
+          ],
+          "planner/build_and_audit/uniform_audit/sweep_audit": [
+            {
+              "wall_s": 0.005398684996180236
+            }
+          ],
+          "planner/build_and_audit/uniform_audit": [
+            {
+              "wall_s": 0.06185276200994849,
+              "feasible": true
+            }
+          ],
+          "planner/build_and_audit": [
+            {
+              "wall_s": 0.07505442899127956
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit/time_law/peak_table": [
+            {
+              "wall_s": 0.0044797099981224164
+            },
+            {
+              "wall_s": 0.004499893999309279
+            },
+            {
+              "wall_s": 0.004534324994892813
+            },
+            {
+              "wall_s": 0.004485646000830457
+            },
+            {
+              "wall_s": 0.004504643002292141
+            },
+            {
+              "wall_s": 0.004565195995382965
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit/time_law": [
+            {
+              "wall_s": 0.01030820001324173
+            },
+            {
+              "wall_s": 9.854599193204194e-05
+            },
+            {
+              "wall_s": 0.010594341001706198
+            },
+            {
+              "wall_s": 0.010463737999089062
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit/sample": [
+            {
+              "wall_s": 0.001089947996661067
+            },
+            {
+              "wall_s": 0.00031344899616669863
+            },
+            {
+              "wall_s": 0.0011291289993096143
+            },
+            {
+              "wall_s": 0.0017370309942634776
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit/uniform_audit/peak_table": [
+            {
+              "wall_s": 0.004465461999643594
+            },
+            {
+              "wall_s": 0.004440527991391718
+            },
+            {
+              "wall_s": 0.005344068995327689
+            },
+            {
+              "wall_s": 0.004607939001289196
+            },
+            {
+              "wall_s": 0.0045367010025074705
+            },
+            {
+              "wall_s": 0.00452720200701151
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit/uniform_audit/dynamic_peak_audit": [
+            {
+              "wall_s": 0.020536849988275208
+            },
+            {
+              "wall_s": 4.986699786968529e-05
+            },
+            {
+              "wall_s": 0.0216707280051196
+            },
+            {
+              "wall_s": 0.021515191008802503
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit/uniform_audit/sweep_audit/sweep": [
+            {
+              "wall_s": 0.0027153709961567074
+            },
+            {
+              "wall_s": 0.0006043390021659434
+            },
+            {
+              "wall_s": 0.0018391379999229684
+            },
+            {
+              "wall_s": 0.0006399589910870418
+            },
+            {
+              "wall_s": 0.004292115001589991
+            },
+            {
+              "wall_s": 0.000600776998908259
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit/uniform_audit/sweep_audit": [
+            {
+              "wall_s": 0.00341706900508143
+            },
+            {
+              "wall_s": 2.373999450355768e-06
+            },
+            {
+              "wall_s": 0.002568144991528243
+            },
+            {
+              "wall_s": 0.005049617000622675
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit/uniform_audit": [
+            {
+              "wall_s": 0.05092360099661164,
+              "feasible": true
+            },
+            {
+              "wall_s": 0.004257683001924306,
+              "feasible": true
+            },
+            {
+              "wall_s": 0.05304887999955099,
+              "feasible": true
+            },
+            {
+              "wall_s": 0.05463749699993059,
+              "feasible": true
+            }
+          ],
+          "planner/refinement/candidate/build_and_audit": [
+            {
+              "wall_s": 0.06243691600684542
+            },
+            {
+              "wall_s": 0.004763475997606292
+            },
+            {
+              "wall_s": 0.06490057900373358
+            },
+            {
+              "wall_s": 0.06697005500609521
+            }
+          ],
+          "planner/refinement/candidate/curve_fit": [
+            {
+              "wall_s": 0.010239335999358445,
+              "path_returned": true
+            },
+            {
+              "wall_s": 0.008885806004400365,
+              "path_returned": true
+            },
+            {
+              "wall_s": 0.009459276014240459,
+              "path_returned": true
+            },
+            {
+              "wall_s": 0.013404697005171329,
+              "path_returned": true
+            }
+          ],
+          "planner/refinement/candidate/curve_geometry": [
+            {
+              "wall_s": 0.013859434999176301,
+              "status": null,
+              "reason": null,
+              "passed": true
+            },
+            {
+              "wall_s": 0.016647233002004214,
+              "status": null,
+              "reason": null,
+              "passed": true
+            },
+            {
+              "wall_s": 0.013323959996341728,
+              "status": null,
+              "reason": null,
+              "passed": true
+            },
+            {
+              "wall_s": 0.016843138000695035,
+              "status": null,
+              "reason": null,
+              "passed": true
+            }
+          ],
+          "planner/refinement/candidate/curve_retime/curve_selection_bounds": [
+            {
+              "wall_s": 0.07659199200861622
+            },
+            {
+              "wall_s": 0.07591760100331157
+            },
+            {
+              "wall_s": 0.0794688369933283
+            },
+            {
+              "wall_s": 0.07896423099737149
+            }
+          ],
+          "planner/refinement/candidate/curve_retime/curve_certify_bounds": [
+            {
+              "wall_s": 0.07581074400513899
+            },
+            {
+              "wall_s": 0.07839907299785409
+            },
+            {
+              "wall_s": 0.07767956599127501
+            },
+            {
+              "wall_s": 0.0791399529989576
+            }
+          ],
+          "planner/refinement/candidate/curve_retime": [
+            {
+              "wall_s": 0.16735330599476583,
+              "status": "DYNAMIC_FEASIBLE",
+              "reason": "",
+              "passed": null
+            },
+            {
+              "wall_s": 0.17211440698883962,
+              "status": "DYNAMIC_FEASIBLE",
+              "reason": "",
+              "passed": null
+            },
+            {
+              "wall_s": 0.17103514600603376,
+              "status": "DYNAMIC_FEASIBLE",
+              "reason": "",
+              "passed": null
+            },
+            {
+              "wall_s": 0.1767674650036497,
+              "status": "DYNAMIC_FEASIBLE",
+              "reason": "",
+              "passed": null
+            }
+          ],
+          "planner/refinement/candidate/curve_dynamics": [
+            {
+              "wall_s": 0.23405384199577384,
+              "status": null,
+              "reason": null,
+              "passed": true
+            },
+            {
+              "wall_s": 0.22631853799975943,
+              "status": null,
+              "reason": null,
+              "passed": true
+            },
+            {
+              "wall_s": 0.212727434001863,
+              "status": null,
+              "reason": null,
+              "passed": true
+            },
+            {
+              "wall_s": 0.2819794950046344,
+              "status": null,
+              "reason": null,
+              "passed": true
+            }
+          ],
+          "planner/refinement/candidate/curve_collision": [
+            {
+              "wall_s": 0.02437422701041214,
+              "status": null,
+              "reason": "CARGO_OBB_COLLISION",
+              "passed": false
+            },
+            {
+              "wall_s": 0.019784098010859452,
+              "status": null,
+              "reason": "COLLISION_NUMERICAL_FAILURE",
+              "passed": false
+            },
+            {
+              "wall_s": 0.025644645997090265,
+              "status": null,
+              "reason": "CARGO_OBB_COLLISION",
+              "passed": false
+            },
+            {
+              "wall_s": 0.02390642800310161,
+              "status": null,
+              "reason": "CARGO_OBB_COLLISION",
+              "passed": false
+            }
+          ],
+          "planner/refinement/candidate": [
+            {
+              "wall_s": 0.5204049989988562,
+              "padding": [
+                1.25,
+                1.25
+              ],
+              "accepted": false
+            },
+            {
+              "wall_s": 0.4557193240034394,
+              "padding": [
+                0.0,
+                1.75
+              ],
+              "accepted": false
+            },
+            {
+              "wall_s": 0.5052965200011386,
+              "padding": [
+                0.75,
+                0.75
+              ],
+              "accepted": false
+            },
+            {
+              "wall_s": 0.5879960210004356,
+              "padding": [
+                2.0,
+                2.0
+              ],
+              "accepted": false
+            }
+          ],
+          "planner/refinement": [
+            {
+              "wall_s": 2.0694584179873345
+            }
+          ],
+          "planner": [
+            {
+              "wall_s": 2.2268965230032336
+            }
+          ]
+        }
+      }
+    ],
+    "without_c2": [
+      {
+        "wall_s": 0.15843306000169832,
+        "search_s": 0.07942727699992247,
+        "reuse_count": 0,
+        "model_sha256": "ef0fee2f4dfc318459278e4d6fee73ca2d5b52045685a295be413fabc7a8c9ea",
+        "expansions": 0,
+        "candidates": 2,
+        "stages": {
+          "planner/search/sweep": [
+            {
+              "wall_s": 0.00025645800633355975
+            },
+            {
+              "wall_s": 0.002984888997161761
+            }
+          ],
+          "planner/search/build_and_audit/time_law/peak_table": [
+            {
+              "wall_s": 0.004079587000887841
+            },
+            {
+              "wall_s": 0.005551847993046977
+            }
+          ],
+          "planner/search/build_and_audit/time_law": [
+            {
+              "wall_s": 0.011366089995135553
+            }
+          ],
+          "planner/search/build_and_audit/sample": [
+            {
+              "wall_s": 0.0016990360018098727
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/peak_table": [
+            {
+              "wall_s": 0.004083149004145525
+            },
+            {
+              "wall_s": 0.005625461009913124
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/dynamic_peak_audit": [
+            {
+              "wall_s": 0.021358465994126163
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/sweep_audit/sweep": [
+            {
+              "wall_s": 0.00031701099942438304
+            },
+            {
+              "wall_s": 0.005002124002203345
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/sweep_audit": [
+            {
+              "wall_s": 0.005441428002086468
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit": [
+            {
+              "wall_s": 0.06211159199301619,
+              "feasible": true
+            }
+          ],
+          "planner/search/build_and_audit": [
+            {
+              "wall_s": 0.07529069900920149
+            }
+          ],
+          "planner/search": [
+            {
+              "wall_s": 0.07944746100110933
+            }
+          ],
+          "planner/build_and_audit/time_law/peak_table": [
+            {
+              "wall_s": 0.004165072998148389
+            },
+            {
+              "wall_s": 0.0056408960081171244
+            }
+          ],
+          "planner/build_and_audit/time_law": [
+            {
+              "wall_s": 0.01152162699145265
+            }
+          ],
+          "planner/build_and_audit/sample": [
+            {
+              "wall_s": 0.0015850549971219152
+            }
+          ],
+          "planner/build_and_audit/uniform_audit/peak_table": [
+            {
+              "wall_s": 0.00408908499230165
+            },
+            {
+              "wall_s": 0.005627834994811565
+            }
+          ],
+          "planner/build_and_audit/uniform_audit/dynamic_peak_audit": [
+            {
+              "wall_s": 0.021597113998723216
+            }
+          ],
+          "planner/build_and_audit/uniform_audit/sweep_audit/sweep": [
+            {
+              "wall_s": 0.00030038900149520487
+            },
+            {
+              "wall_s": 0.004989063992979936
+            }
+          ],
+          "planner/build_and_audit/uniform_audit/sweep_audit": [
+            {
+              "wall_s": 0.005411746009485796
+            }
+          ],
+          "planner/build_and_audit/uniform_audit": [
+            {
+              "wall_s": 0.06222913500096183,
+              "feasible": true
+            }
+          ],
+          "planner/build_and_audit": [
+            {
+              "wall_s": 0.07544623600551859
+            }
+          ],
+          "planner": [
+            {
+              "wall_s": 0.15842831099871546
+            }
+          ]
+        }
+      },
+      {
+        "wall_s": 0.15768624399788678,
+        "search_s": 0.07908177100762259,
+        "reuse_count": 0,
+        "model_sha256": "ef0fee2f4dfc318459278e4d6fee73ca2d5b52045685a295be413fabc7a8c9ea",
+        "expansions": 0,
+        "candidates": 2,
+        "stages": {
+          "planner/search/sweep": [
+            {
+              "wall_s": 0.00021846400341019034
+            },
+            {
+              "wall_s": 0.0029219629941508174
+            }
+          ],
+          "planner/search/build_and_audit/time_law/peak_table": [
+            {
+              "wall_s": 0.004021409011329524
+            },
+            {
+              "wall_s": 0.005581530000199564
+            }
+          ],
+          "planner/search/build_and_audit/time_law": [
+            {
+              "wall_s": 0.011306724001769908
+            }
+          ],
+          "planner/search/build_and_audit/sample": [
+            {
+              "wall_s": 0.0016990369913401082
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/peak_table": [
+            {
+              "wall_s": 0.0040878979925764725
+            },
+            {
+              "wall_s": 0.005504354994627647
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/dynamic_peak_audit": [
+            {
+              "wall_s": 0.02132403399446048
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/sweep_audit/sweep": [
+            {
+              "wall_s": 0.00031582399969920516
+            },
+            {
+              "wall_s": 0.005017560004489496
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/sweep_audit": [
+            {
+              "wall_s": 0.005452113997307606
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit": [
+            {
+              "wall_s": 0.06193586999143008,
+              "feasible": true
+            }
+          ],
+          "planner/search/build_and_audit": [
+            {
+              "wall_s": 0.07505086300079711
+            }
+          ],
+          "planner/search": [
+            {
+              "wall_s": 0.07909958099480718
+            }
+          ],
+          "planner/build_and_audit/time_law/peak_table": [
+            {
+              "wall_s": 0.0040582159999758005
+            },
+            {
+              "wall_s": 0.005510290997335687
+            }
+          ],
+          "planner/build_and_audit/time_law": [
+            {
+              "wall_s": 0.011256858007982373
+            }
+          ],
+          "planner/build_and_audit/sample": [
+            {
+              "wall_s": 0.001582680008141324
+            }
+          ],
+          "planner/build_and_audit/uniform_audit/peak_table": [
+            {
+              "wall_s": 0.004080774000613019
+            },
+            {
+              "wall_s": 0.005528100999072194
+            }
+          ],
+          "planner/build_and_audit/uniform_audit/dynamic_peak_audit": [
+            {
+              "wall_s": 0.02164816799631808
+            }
+          ],
+          "planner/build_and_audit/uniform_audit/sweep_audit/sweep": [
+            {
+              "wall_s": 0.00031582399969920516
+            },
+            {
+              "wall_s": 0.00496769200253766
+            }
+          ],
+          "planner/build_and_audit/uniform_audit/sweep_audit": [
+            {
+              "wall_s": 0.005393936007749289
+            }
+          ],
+          "planner/build_and_audit/uniform_audit": [
+            {
+              "wall_s": 0.06214127400016878,
+              "feasible": true
+            }
+          ],
+          "planner/build_and_audit": [
+            {
+              "wall_s": 0.07508885799325071
+            }
+          ],
+          "planner": [
+            {
+              "wall_s": 0.15768386900890619
+            }
+          ]
+        }
+      },
+      {
+        "wall_s": 0.15785009699175134,
+        "search_s": 0.07935010398796294,
+        "reuse_count": 0,
+        "model_sha256": "ef0fee2f4dfc318459278e4d6fee73ca2d5b52045685a295be413fabc7a8c9ea",
+        "expansions": 0,
+        "candidates": 2,
+        "stages": {
+          "planner/search/sweep": [
+            {
+              "wall_s": 0.00021727700368501246
+            },
+            {
+              "wall_s": 0.0029848900012439117
+            }
+          ],
+          "planner/search/build_and_audit/time_law/peak_table": [
+            {
+              "wall_s": 0.0040237840003101155
+            },
+            {
+              "wall_s": 0.005481796993990429
+            }
+          ],
+          "planner/search/build_and_audit/time_law": [
+            {
+              "wall_s": 0.011184431990841404
+            }
+          ],
+          "planner/search/build_and_audit/sample": [
+            {
+              "wall_s": 0.0017014110053423792
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/peak_table": [
+            {
+              "wall_s": 0.004076024997630157
+            },
+            {
+              "wall_s": 0.005501979991095141
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/dynamic_peak_audit": [
+            {
+              "wall_s": 0.02152943899272941
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/sweep_audit/sweep": [
+            {
+              "wall_s": 0.00035856699105352163
+            },
+            {
+              "wall_s": 0.005025869992095977
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/sweep_audit": [
+            {
+              "wall_s": 0.0055150410044007
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit": [
+            {
+              "wall_s": 0.06224101000407245,
+              "feasible": true
+            }
+          ],
+          "planner/search/build_and_audit": [
+            {
+              "wall_s": 0.07525152098969556
+            }
+          ],
+          "planner/search": [
+            {
+              "wall_s": 0.07936910100397654
+            }
+          ],
+          "planner/build_and_audit/time_law/peak_table": [
+            {
+              "wall_s": 0.004118767988984473
+            },
+            {
+              "wall_s": 0.0056242730061057955
+            }
+          ],
+          "planner/build_and_audit/time_law": [
+            {
+              "wall_s": 0.01151212900003884
+            }
+          ],
+          "planner/build_and_audit/sample": [
+            {
+              "wall_s": 0.0015636830066796392
+            }
+          ],
+          "planner/build_and_audit/uniform_audit/peak_table": [
+            {
+              "wall_s": 0.0040582159999758005
+            },
+            {
+              "wall_s": 0.0055874669924378395
+            }
+          ],
+          "planner/build_and_audit/uniform_audit/dynamic_peak_audit": [
+            {
+              "wall_s": 0.02128247900691349
+            }
+          ],
+          "planner/build_and_audit/uniform_audit/sweep_audit/sweep": [
+            {
+              "wall_s": 0.00030157600122038275
+            },
+            {
+              "wall_s": 0.004929698989144526
+            }
+          ],
+          "planner/build_and_audit/uniform_audit/sweep_audit": [
+            {
+              "wall_s": 0.005344068995327689
+            }
+          ],
+          "planner/build_and_audit/uniform_audit": [
+            {
+              "wall_s": 0.061772023007506505,
+              "feasible": true
+            }
+          ],
+          "planner/build_and_audit": [
+            {
+              "wall_s": 0.07496300399361644
+            }
+          ],
+          "planner": [
+            {
+              "wall_s": 0.15784534699923825
+            }
+          ]
+        }
+      },
+      {
+        "wall_s": 0.15796051701181568,
+        "search_s": 0.07937741199566517,
+        "reuse_count": 0,
+        "model_sha256": "ef0fee2f4dfc318459278e4d6fee73ca2d5b52045685a295be413fabc7a8c9ea",
+        "expansions": 0,
+        "candidates": 2,
+        "stages": {
+          "planner/search/sweep": [
+            {
+              "wall_s": 0.0002232140104752034
+            },
+            {
+              "wall_s": 0.0029397720063570887
+            }
+          ],
+          "planner/search/build_and_audit/time_law/peak_table": [
+            {
+              "wall_s": 0.004105707994312979
+            },
+            {
+              "wall_s": 0.005581530989729799
+            }
+          ],
+          "planner/search/build_and_audit/time_law": [
+            {
+              "wall_s": 0.011430204991484061
+            }
+          ],
+          "planner/search/build_and_audit/sample": [
+            {
+              "wall_s": 0.0016966619878076017
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/peak_table": [
+            {
+              "wall_s": 0.004066527006216347
+            },
+            {
+              "wall_s": 0.005639708993840031
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/dynamic_peak_audit": [
+            {
+              "wall_s": 0.021464136996655725
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/sweep_audit/sweep": [
+            {
+              "wall_s": 0.0003086990036536008
+            },
+            {
+              "wall_s": 0.005043679993832484
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/sweep_audit": [
+            {
+              "wall_s": 0.005478234001202509
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit": [
+            {
+              "wall_s": 0.06208784700720571,
+              "feasible": true
+            }
+          ],
+          "planner/search/build_and_audit": [
+            {
+              "wall_s": 0.07533106999471784
+            }
+          ],
+          "planner/search": [
+            {
+              "wall_s": 0.07939759599685203
+            }
+          ],
+          "planner/build_and_audit/time_law/peak_table": [
+            {
+              "wall_s": 0.00415201298892498
+            },
+            {
+              "wall_s": 0.00557796900102403
+            }
+          ],
+          "planner/build_and_audit/time_law": [
+            {
+              "wall_s": 0.011423080999520607
+            }
+          ],
+          "planner/build_and_audit/sample": [
+            {
+              "wall_s": 0.0016729150083847344
+            }
+          ],
+          "planner/build_and_audit/uniform_audit/peak_table": [
+            {
+              "wall_s": 0.004008349002106115
+            },
+            {
+              "wall_s": 0.005543535997276194
+            }
+          ],
+          "planner/build_and_audit/uniform_audit/dynamic_peak_audit": [
+            {
+              "wall_s": 0.021417832002043724
+            }
+          ],
+          "planner/build_and_audit/uniform_audit/sweep_audit/sweep": [
+            {
+              "wall_s": 0.00031938600295688957
+            },
+            {
+              "wall_s": 0.004984315004548989
+            }
+          ],
+          "planner/build_and_audit/uniform_audit/sweep_audit": [
+            {
+              "wall_s": 0.005417681997641921
+            }
+          ],
+          "planner/build_and_audit/uniform_audit": [
+            {
+              "wall_s": 0.06181595400266815,
+              "feasible": true
+            }
+          ],
+          "planner/build_and_audit": [
+            {
+              "wall_s": 0.07503424299648032
+            }
+          ],
+          "planner": [
+            {
+              "wall_s": 0.15795576700475067
+            }
+          ]
+        }
+      },
+      {
+        "wall_s": 0.15761857699544635,
+        "search_s": 0.07875764099298976,
+        "reuse_count": 0,
+        "model_sha256": "ef0fee2f4dfc318459278e4d6fee73ca2d5b52045685a295be413fabc7a8c9ea",
+        "expansions": 0,
+        "candidates": 2,
+        "stages": {
+          "planner/search/sweep": [
+            {
+              "wall_s": 0.00022914999863132834
+            },
+            {
+              "wall_s": 0.0029338360036490485
+            }
+          ],
+          "planner/search/build_and_audit/time_law/peak_table": [
+            {
+              "wall_s": 0.004055840996443294
+            },
+            {
+              "wall_s": 0.005555409996304661
+            }
+          ],
+          "planner/search/build_and_audit/time_law": [
+            {
+              "wall_s": 0.011273480995441787
+            }
+          ],
+          "planner/search/build_and_audit/sample": [
+            {
+              "wall_s": 0.0016503569931956008
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/peak_table": [
+            {
+              "wall_s": 0.004106894994038157
+            },
+            {
+              "wall_s": 0.005611214000964537
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/dynamic_peak_audit": [
+            {
+              "wall_s": 0.021296726990840398
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/sweep_audit/sweep": [
+            {
+              "wall_s": 0.00031107400718610734
+            },
+            {
+              "wall_s": 0.004972441995050758
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/sweep_audit": [
+            {
+              "wall_s": 0.005416494997916743
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit": [
+            {
+              "wall_s": 0.06161530100507662,
+              "feasible": true
+            }
+          ],
+          "planner/search/build_and_audit": [
+            {
+              "wall_s": 0.07465193199459463
+            }
+          ],
+          "planner/search": [
+            {
+              "wall_s": 0.07877782499417663
+            }
+          ],
+          "planner/build_and_audit/time_law/peak_table": [
+            {
+              "wall_s": 0.00415201298892498
+            },
+            {
+              "wall_s": 0.005544724001083523
+            }
+          ],
+          "planner/build_and_audit/time_law": [
+            {
+              "wall_s": 0.01144326600478962
+            }
+          ],
+          "planner/build_and_audit/sample": [
+            {
+              "wall_s": 0.001627798003028147
+            }
+          ],
+          "planner/build_and_audit/uniform_audit/peak_table": [
+            {
+              "wall_s": 0.004115206989808939
+            },
+            {
+              "wall_s": 0.005705010989913717
+            }
+          ],
+          "planner/build_and_audit/uniform_audit/dynamic_peak_audit": [
+            {
+              "wall_s": 0.02141189500980545
+            }
+          ],
+          "planner/build_and_audit/uniform_audit/sweep_audit/sweep": [
+            {
+              "wall_s": 0.00030751200392842293
+            },
+            {
+              "wall_s": 0.005009247994166799
+            }
+          ],
+          "planner/build_and_audit/uniform_audit/sweep_audit": [
+            {
+              "wall_s": 0.0054734849982196465
+            }
+          ],
+          "planner/build_and_audit/uniform_audit": [
+            {
+              "wall_s": 0.06209259900788311,
+              "feasible": true
+            }
+          ],
+          "planner/build_and_audit": [
+            {
+              "wall_s": 0.07528239299426787
+            }
+          ],
+          "planner": [
+            {
+              "wall_s": 0.15761382799246348
+            }
+          ]
+        }
+      }
+    ],
+    "without_c2_reuse": [
+      {
+        "wall_s": 0.08285740700375754,
+        "search_s": 0.07933347999642137,
+        "reuse_count": 1,
+        "model_sha256": "ef0fee2f4dfc318459278e4d6fee73ca2d5b52045685a295be413fabc7a8c9ea",
+        "expansions": 0,
+        "candidates": 2,
+        "stages": {
+          "planner/search/sweep": [
+            {
+              "wall_s": 0.00023746199440211058
+            },
+            {
+              "wall_s": 0.0029587690078187734
+            }
+          ],
+          "planner/search/build_and_audit/time_law/peak_table": [
+            {
+              "wall_s": 0.004067714005941525
+            },
+            {
+              "wall_s": 0.005544722997001372
+            }
+          ],
+          "planner/search/build_and_audit/time_law": [
+            {
+              "wall_s": 0.011342344005242921
+            }
+          ],
+          "planner/search/build_and_audit/sample": [
+            {
+              "wall_s": 0.001685976007138379
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/peak_table": [
+            {
+              "wall_s": 0.004068901005666703
+            },
+            {
+              "wall_s": 0.005601713986834511
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/dynamic_peak_audit": [
+            {
+              "wall_s": 0.021606612994219176
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/sweep_audit/sweep": [
+            {
+              "wall_s": 0.00032888400892261416
+            },
+            {
+              "wall_s": 0.0049071399989770725
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/sweep_audit": [
+            {
+              "wall_s": 0.0053464429947780445
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit": [
+            {
+              "wall_s": 0.0621246520022396,
+              "feasible": true
+            }
+          ],
+          "planner/search/build_and_audit": [
+            {
+              "wall_s": 0.07527288900746498
+            }
+          ],
+          "planner/search": [
+            {
+              "wall_s": 0.07935366399760824
+            }
+          ],
+          "planner": [
+            {
+              "wall_s": 0.08285384500049986
+            }
+          ]
+        }
+      },
+      {
+        "wall_s": 0.08289540100668091,
+        "search_s": 0.07928479999827687,
+        "reuse_count": 1,
+        "model_sha256": "ef0fee2f4dfc318459278e4d6fee73ca2d5b52045685a295be413fabc7a8c9ea",
+        "expansions": 0,
+        "candidates": 2,
+        "stages": {
+          "planner/search/sweep": [
+            {
+              "wall_s": 0.0002232140104752034
+            },
+            {
+              "wall_s": 0.0029338360036490485
+            }
+          ],
+          "planner/search/build_and_audit/time_law/peak_table": [
+            {
+              "wall_s": 0.0040772119973553345
+            },
+            {
+              "wall_s": 0.0056112129968823865
+            }
+          ],
+          "planner/search/build_and_audit/time_law": [
+            {
+              "wall_s": 0.011427829987951554
+            }
+          ],
+          "planner/search/build_and_audit/sample": [
+            {
+              "wall_s": 0.0017287189984926954
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/peak_table": [
+            {
+              "wall_s": 0.004055839992361143
+            },
+            {
+              "wall_s": 0.005569656990701333
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/dynamic_peak_audit": [
+            {
+              "wall_s": 0.02145820000441745
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/sweep_audit/sweep": [
+            {
+              "wall_s": 0.00030038898694328964
+            },
+            {
+              "wall_s": 0.005017559000407346
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/sweep_audit": [
+            {
+              "wall_s": 0.005428367992863059
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit": [
+            {
+              "wall_s": 0.06199642299907282,
+              "feasible": true
+            }
+          ],
+          "planner/search/build_and_audit": [
+            {
+              "wall_s": 0.07525626799906604
+            }
+          ],
+          "planner/search": [
+            {
+              "wall_s": 0.07929904799675569
+            }
+          ],
+          "planner": [
+            {
+              "wall_s": 0.08288946399989072
+            }
+          ]
+        }
+      },
+      {
+        "wall_s": 0.08242641699325759,
+        "search_s": 0.07887993101030588,
+        "reuse_count": 1,
+        "model_sha256": "ef0fee2f4dfc318459278e4d6fee73ca2d5b52045685a295be413fabc7a8c9ea",
+        "expansions": 0,
+        "candidates": 2,
+        "stages": {
+          "planner/search/sweep": [
+            {
+              "wall_s": 0.00021371500042732805
+            },
+            {
+              "wall_s": 0.002963519000331871
+            }
+          ],
+          "planner/search/build_and_audit/time_law/peak_table": [
+            {
+              "wall_s": 0.004041592997964472
+            },
+            {
+              "wall_s": 0.005586278988630511
+            }
+          ],
+          "planner/search/build_and_audit/time_law": [
+            {
+              "wall_s": 0.011297226999886334
+            }
+          ],
+          "planner/search/build_and_audit/sample": [
+            {
+              "wall_s": 0.0017097219970310107
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/peak_table": [
+            {
+              "wall_s": 0.00399884999205824
+            },
+            {
+              "wall_s": 0.005557783995755017
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/dynamic_peak_audit": [
+            {
+              "wall_s": 0.02162560999568086
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/sweep_audit/sweep": [
+            {
+              "wall_s": 0.0003063249896513298
+            },
+            {
+              "wall_s": 0.005017559000407346
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/sweep_audit": [
+            {
+              "wall_s": 0.005441429006168619
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit": [
+            {
+              "wall_s": 0.06175777599855792,
+              "feasible": true
+            }
+          ],
+          "planner/search/build_and_audit": [
+            {
+              "wall_s": 0.07487514399690554
+            }
+          ],
+          "planner/search": [
+            {
+              "wall_s": 0.07890011600102298
+            }
+          ],
+          "planner": [
+            {
+              "wall_s": 0.08241929400537629
+            }
+          ]
+        }
+      },
+      {
+        "wall_s": 0.08255939501395915,
+        "search_s": 0.07897135299572255,
+        "reuse_count": 1,
+        "model_sha256": "ef0fee2f4dfc318459278e4d6fee73ca2d5b52045685a295be413fabc7a8c9ea",
+        "expansions": 0,
+        "candidates": 2,
+        "stages": {
+          "planner/search/sweep": [
+            {
+              "wall_s": 0.00021727698913309723
+            },
+            {
+              "wall_s": 0.0029350230033742264
+            }
+          ],
+          "planner/search/build_and_audit/time_law/peak_table": [
+            {
+              "wall_s": 0.00397985300514847
+            },
+            {
+              "wall_s": 0.00558390500373207
+            }
+          ],
+          "planner/search/build_and_audit/time_law": [
+            {
+              "wall_s": 0.011263981999945827
+            }
+          ],
+          "planner/search/build_and_audit/sample": [
+            {
+              "wall_s": 0.001659855988691561
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/peak_table": [
+            {
+              "wall_s": 0.004008349002106115
+            },
+            {
+              "wall_s": 0.005575593997491524
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/dynamic_peak_audit": [
+            {
+              "wall_s": 0.021438016003230587
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/sweep_audit/sweep": [
+            {
+              "wall_s": 0.00031819799914956093
+            },
+            {
+              "wall_s": 0.005016372000682168
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/sweep_audit": [
+            {
+              "wall_s": 0.0054449900053441525
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit": [
+            {
+              "wall_s": 0.06195130699779838,
+              "feasible": true
+            }
+          ],
+          "planner/search/build_and_audit": [
+            {
+              "wall_s": 0.07498200100963004
+            }
+          ],
+          "planner/search": [
+            {
+              "wall_s": 0.07899035001173615
+            }
+          ],
+          "planner": [
+            {
+              "wall_s": 0.0825558340002317
+            }
+          ]
+        }
+      },
+      {
+        "wall_s": 0.08391648999531753,
+        "search_s": 0.08024296099029016,
+        "reuse_count": 1,
+        "model_sha256": "ef0fee2f4dfc318459278e4d6fee73ca2d5b52045685a295be413fabc7a8c9ea",
+        "expansions": 0,
+        "candidates": 2,
+        "stages": {
+          "planner/search/sweep": [
+            {
+              "wall_s": 0.00022677499509882182
+            },
+            {
+              "wall_s": 0.002978953009005636
+            }
+          ],
+          "planner/search/build_and_audit/time_law/peak_table": [
+            {
+              "wall_s": 0.004077213001437485
+            },
+            {
+              "wall_s": 0.005777436002972536
+            }
+          ],
+          "planner/search/build_and_audit/time_law": [
+            {
+              "wall_s": 0.011575055992580019
+            }
+          ],
+          "planner/search/build_and_audit/sample": [
+            {
+              "wall_s": 0.0017346560052828863
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/peak_table": [
+            {
+              "wall_s": 0.004175758993369527
+            },
+            {
+              "wall_s": 0.005599340001936071
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/dynamic_peak_audit": [
+            {
+              "wall_s": 0.021703973005060107
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/sweep_audit/sweep": [
+            {
+              "wall_s": 0.00031226199644152075
+            },
+            {
+              "wall_s": 0.004939197999192402
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit/sweep_audit": [
+            {
+              "wall_s": 0.005383251002058387
+            }
+          ],
+          "planner/search/build_and_audit/uniform_audit": [
+            {
+              "wall_s": 0.06269574999168981,
+              "feasible": true
+            }
+          ],
+          "planner/search/build_and_audit": [
+            {
+              "wall_s": 0.07612894200428855
+            }
+          ],
+          "planner/search": [
+            {
+              "wall_s": 0.08026077100657858
+            }
+          ],
+          "planner": [
+            {
+              "wall_s": 0.08391174000280444
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

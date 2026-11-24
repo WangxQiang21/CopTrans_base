@@ -1,0 +1,54 @@
+Panels:
+- Class: rviz_common/Displays
+  Name: Displays
+Visualization Manager:
+  Class: ''
+  Displays:
+  - Class: rviz_default_plugins/Grid
+    Name: Grid
+    Enabled: true
+    Cell Size: 1
+    Plane Cell Count: 18
+  - Class: rviz_default_plugins/RobotModel
+    Name: Ranger Mini 1
+    Enabled: true
+    Description Source: Topic
+    Description Topic:
+      Value: /ranger1/robot_description
+      Durability Policy: Transient Local
+      Reliability Policy: Reliable
+      History Policy: Keep Last
+      Depth: 5
+    TF Prefix: ranger1
+    Visual Enabled: true
+    Collision Enabled: false
+  - Class: rviz_default_plugins/Axes
+    Name: Vehicle control frame
+    Enabled: true
+    Reference Frame: ranger1/base_link
+    Length: 0.43
+    Radius: 0.014
+  - Class: fwis_rviz_plugins/TrackingHUD
+    Name: Tracking dashboard
+    Enabled: true
+  Global Options:
+    Background Color: 48; 49; 51
+    Fixed Frame: map
+    Frame Rate: 30
+  Tools:
+  - Class: rviz_default_plugins/Interact
+  - Class: rviz_default_plugins/MoveCamera
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 3.45
+      Focal Point:
+        X: 0.7
+        Y: 0.0
+        Z: 0.15
+      Pitch: 0.52
+      Yaw: 0.9
+      Target Frame: ranger1/base_link
+Window Geometry:
+  Width: 1190
+  Height: 780

@@ -1,0 +1,92 @@
+status: passed
+reason: all_trackers_complete
+phase_at_end: running
+scenario: port_01
+task: single
+experiment: short_turn
+planner: single_multimodal_hybrid_astar
+controller: nonlinear_feedback
+formation: null
+formation_offsets_m: null
+map_matches_generated: true
+observed_spawn:
+  1:
+  - 4.0
+  - 8.4
+  - 0.0
+plan_received: true
+planner_wall_s: 6.364335314996424
+plan_duration_s: 19.01796743
+routed_plan_keys:
+  1:
+  - 1
+  - 7058000000
+planner_status:
+  /plan/status: success id=1 source=iterated_joint nodes=3 time=6.58s fixed=2.05s
+    anchor=3.54s timed_check=0.00s fixed_profile={expand_s:0.000,seed_sweep_s:0.001,corridor_s:0.057,nlp_build_s:0.634,nlp_solve_s:1.314,nlp_iterations:100.000,line_search_sweep_s:0.002,total_s:2.008}
+    solver=100/Maximum_Iterations_Exceeded anchor_profile={expand_s:0.000,seed_sweep_s:0.001,edge_fit_sweep_s:0.004,beam_score_s:0.001,result_s:0.000,total_s:0.006,sos_hotspot_detected:0.000,sos_hotspot_score:0.000,sos_hotspot_threshold:1.000,sos_hotspot_clearance_limit:0.585,sos_hotspot_lookahead_limit:8.000,sos_hotspot_reason_code:0.000,sos_clear_window_count:0.000,sos_skip_reason_code:2.000,endpoint_replan_s:0.010,joint_rounds_requested:2.000,joint_rounds_accepted:2.000,joint_graph_candidates:4.000,joint_nlp_attempts:2.000,joint_nlp_accepts:0.000,joint_early_stop_low_gain:0.000,joint_total_s:3.496,joint_seed_score:1.596,joint_integration_s:3.538,local_mode_neighbor_candidates:0.000,pre_neighbor_schedules_generated:0.000,pre_neighbor_schedules_solved:0.000,pre_neighbor_schedules_accepted:0.000,pre_neighbor_base_schedule_s:0.001,local_mode_neighbor_s:0.001}
+    corridor=disc alpha=1.00000 common_score=1.574 anchor_score=1.574 anchor_modes=0
+    anchor_candidates=8 oblique_updates=0 oblique_micro_le_5deg=0 cost_parts={distance:1.569,spin:0.000,mode_switch:0.000,reverse:0.000,direction:0.000,steer_tv:0.004,curvature:0.001,oblique_tv:0.000,oblique_event:0.000,oblique_use:0.000,oblique_cruise:0.000,low_curvature_switch:0.000}
+    repaired=False repair_nodes=0 sample_dt=0.10000
+  /plan/search_status: search_success id=1 direction_policy=bidirectional_shared_cost
+    allow_shunting=0 reverse_search_competed=1 reverse_fallback_tried=1 reverse_fallback_used=0
+    selected_has_reverse=0 reverse_fallback_iterations=31685 reverse_fallback_seconds=0.258385
+    actions=3 iterations=34500 seconds=0.285767 modes=A3/1.565153m,O0/0.000000m,S0/0.000000rad,switches=0
+    steer_changes=2 curvature_tv=2.222222 oblique_tv=0.000000 reverse=0.000000m budget_hit=0
+    incumbent_budget_hit=0 selected=guided auxiliary_shunting_proposal=1 guided_cost=2.459042
+    cost_parts={distance:1.565153,spin:0.000000,mode_switch:0.000000,low_curvature_switch:0.000000,reverse:0.000000,reverse_early:0.000000,reverse_start:0.000000,reverse_yaw_early:0.000000,direction:0.000000,steer_tv:0.888889,curvature:0.005000,oblique_tv:0.000000,oblique_event:0.000000,oblique_use:0.000000,oblique_cruise:0.000000,sum:2.459042}
+    baseline_cost=inf route2d=feasible route2d_cost=2.459042 route2d_seconds=0.020498
+    ackermann_probe=unavailable ackermann_probe_cost=inf ackermann_probe_iterations=0
+    ackermann_probe_seconds=0.000000 route2d_reason=route_candidate xy_routes=1 duplicate_routes=3
+    duplicate_waypoint_variants=0 heuristic_headings=0 start_spin_blocked=0 start_spin_ok=0
+    heuristic_route_ok=0 route_edge_blocked=0 terminal_spin_blocked=0 terminal_pose_rejected=0
+    dp_terminal_states=24 dp_max_reachable_waypoint=9 dp_waypoint_count=10 dp_terminal_spin_blocked=0
+    dp_pose_rejected=0 mixed_calls=2 mixed_successes=1 ackermann_calls=2 ackermann_successes=1
+    ackermann_expansions=9 mixed_expansions=26 mixed_budget_hit=0 cell_astar_seconds=0.004686
+    route_heuristic_seconds=0.000000 route_dp_seconds=0.011915 route_graph_wall_seconds=0.011915
+    mixed_search_seconds=0.004953 route_details=floor:0.000000,weight:0.000000,sampling:base,path_m:1.703911,wps:3,dense_wps:0,intermediate_wps:1,sparse_wps:7,forced_wps:7,forced_corner:1,forced_curv_sign:1,forced_curv_extrema:4,forced_curv_rate_extrema:0,forced_clearance_min:3,base_wps:1,dp_states:1458,candidate_edges:63,feasible_edges:35,max_turn:0.628798,dp:2,mixed:2,expanded:7,dp_x:5.522379,dp_y:8.748435|floor:0.000000,weight:0.000000,sampling:adaptive,path_m:1.703911,wps:10,dense_wps:0,intermediate_wps:1,sparse_wps:7,forced_wps:7,forced_corner:1,forced_curv_sign:1,forced_curv_extrema:4,forced_curv_rate_extrema:0,forced_clearance_min:3,base_wps:1,dp_states:4860,candidate_edges:2925,feasible_edges:1650,max_turn:0.628798,dp:9,mixed:6,expanded:10,dp_x:5.522379,dp_y:8.748435
+    mode_policy=shared_cost_all_modes fallback_lattice_scale=1.000000 guided_modes=A3/O0/S0/sw0
+    baseline_modes=none start=(4.000000,8.400000,0.000000) goal=(5.522379,8.748435,0.450000)
+controller_status:
+  1:
+    phase: COMPLETE
+    reasons: []
+admitted:
+- 1
+complete:
+- 1
+final_cmd_vel:
+  1:
+  - 0.0
+  - 0.0
+  - 0.0
+last_odom_twist:
+  1:
+  - 0.0
+  - 0.0
+  - 0.0
+last_ground_truth_step_m:
+  1: 0.0
+metrics:
+  vehicles:
+    '1':
+      travel_from_spawn_m: 1.5601552530589988
+      terminal_position_error_m: 0.005298165801361557
+      terminal_yaw_error_deg: 0.17140875834118277
+      position_rmse_m: 0.00277950815718443
+      max_position_error_m: 0.006160872115557776
+      yaw_rmse_deg: 0.08791083975550772
+      max_yaw_error_deg: 0.18270765328563188
+      mean_control_ms: 0.20468076699591406
+  actual_samples: 259
+  min_environment_clearance:
+    robot1:
+      m: 2.1385023504800236
+      obstacle: sea_container_40
+      stamp_s: 24.580000000000002
+  first_tracking_s:
+    1: 7.08
+  requested_goal_position_error_m: 0.004789187050713666
+  requested_goal_yaw_error_deg: 0.57731607174027
+exit_code: 0
+launch_exit_code: 0

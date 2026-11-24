@@ -1,0 +1,164 @@
+status: passed
+reason: all_trackers_complete
+phase_at_end: running
+scenario: factory_indoor_01
+task: multi
+experiment: full_route
+planner: multi_4wis
+controller: nonlinear_feedback
+formation: wedge
+formation_offsets_m:
+- - 1.0
+  - 0.0
+- - 0.0
+  - 1.0
+- - 0.0
+  - -1.0
+map_matches_generated: true
+observed_spawn:
+  1:
+  - 5.0
+  - 5.6
+  - 0.0
+  2:
+  - 4.0
+  - 6.6
+  - 0.0
+  3:
+  - 4.0
+  - 4.6
+  - 0.0
+plan_received: true
+planner_wall_s: 9.811657286001719
+plan_duration_s: 400.813386602
+routed_plan_keys:
+  1:
+  - 1
+  - 13136000000
+  2:
+  - 1
+  - 13136000000
+  3:
+  - 1
+  - 13136000000
+planner_status:
+  /formation/optimizer_status:
+    plan_id: 1
+    node_state: HOLD_END
+    status: FEASIBLE
+    reason: OK
+    detail: playback reached the authoritative final frame; the next experiment is
+      admitted
+    trajectory_published: true
+controller_status:
+  1:
+    phase: COMPLETE
+    reasons: []
+  2:
+    phase: COMPLETE
+    reasons: []
+  3:
+    phase: COMPLETE
+    reasons: []
+admitted:
+- 1
+- 2
+- 3
+complete:
+- 1
+- 2
+- 3
+final_cmd_vel:
+  2:
+  - 0.0
+  - 0.0
+  - 0.0
+  1:
+  - 0.0
+  - 0.0
+  - 0.0
+  3:
+  - 0.0
+  - 0.0
+  - 0.0
+last_odom_twist:
+  1:
+  - 0.0
+  - 0.0
+  - 0.0
+  2:
+  - 0.0
+  - 0.0
+  - 0.0
+  3:
+  - 0.0
+  - 0.0
+  - 0.0
+last_ground_truth_step_m:
+  1: 0.0
+  2: 0.0
+  3: 0.0
+metrics:
+  vehicles:
+    '1':
+      travel_from_spawn_m: 21.899720758918633
+      terminal_position_error_m: 0.00032230081244662004
+      terminal_yaw_error_deg: 0.09105887402889909
+      position_rmse_m: 0.0010175714503671395
+      max_position_error_m: 0.0054902184495687
+      yaw_rmse_deg: 0.14604181299738556
+      max_yaw_error_deg: 1.0349488543910503
+      mean_control_ms: 0.2138751614622992
+    '2':
+      travel_from_spawn_m: 20.63988187606685
+      terminal_position_error_m: 0.0001928439285343276
+      terminal_yaw_error_deg: 0.16915892880754274
+      position_rmse_m: 0.0008200019655410356
+      max_position_error_m: 0.005424376034244127
+      yaw_rmse_deg: 0.032123188884378415
+      max_yaw_error_deg: 0.17084341795617122
+      mean_control_ms: 0.2123093188024651
+    '3':
+      travel_from_spawn_m: 23.44363094571779
+      terminal_position_error_m: 0.00029242268530534
+      terminal_yaw_error_deg: 0.07738940842502787
+      position_rmse_m: 0.0008412064535306622
+      max_position_error_m: 0.005542229226036954
+      yaw_rmse_deg: 0.012339990373782037
+      max_yaw_error_deg: 0.07798905897209688
+      mean_control_ms: 0.2123215249637705
+  actual_samples: 3475
+  min_environment_clearance:
+    robot1:
+      m: 1.3499999999999996
+      obstacle: line_south_01
+      stamp_s: 44.428000000000004
+    robot2:
+      m: 0.34999999999999964
+      obstacle: cabinet_pinchoff
+      stamp_s: 85.586
+    robot3:
+      m: 0.23786970044613537
+      obstacle: inner_fence
+      stamp_s: 368.416
+    cargo:
+      m: 0.1250505565709653
+      obstacle: inner_fence
+      stamp_s: 370.096
+  first_tracking_s:
+    1: 13.16
+    2: 13.16
+    3: 13.16
+  max_mount_error_m: 0.002894938606847947
+  min_vehicle_footprint_gap_m: 0.534380798178415
+  min_vehicle_center_gap_m: 1.4098082232629412
+  max_linear_twist_difference_mps: 0.10982239192306831
+  start_skew_s: 0.0
+  terminal_formation_pose:
+  - 21.499761843798883
+  - 19.00003386059003
+  - 1.5708512260045078
+  terminal_formation_position_error_m: 0.00024055127455034425
+  terminal_formation_yaw_error_deg: 0.003145493009326631
+exit_code: 0
+launch_exit_code: 0

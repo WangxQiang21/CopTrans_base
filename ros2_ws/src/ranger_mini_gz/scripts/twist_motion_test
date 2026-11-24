@@ -1,0 +1,128 @@
+#!/usr/bin/env python3
+"""Apply one body-frame Twist to the Ranger models in the Gazebo test world."""
+
+import math
+import time
+from functools import partial
+
+from geometry_msgs.msg import PoseStamped, Twist
+from gz.msgs10.boolean_pb2 import Boolean
+from gz.msgs10.pose_v_pb2 import Pose_V
+from gz.transport13 import Node as TransportNode
+import rclpy
+from rclpy.executors import ExternalShutdownException
+from rclpy.node import Node
+
+
+# Software switch radius recorded for the Ranger Mini 2.0 vehicle driver.
+MIN_TURN_RADIUS = 0.47644
+COMMAND_TIMEOUT = 0.35
+
+
+def ranger_motion(command):
+    vx, vy, yaw_rate = command
+    if vy != 0.0:
+        return "parallel", (vx, vy, 0.0)
+    if abs(yaw_rate) < 1e-6:
+        return "straight", (vx, 0.0, 0.0)
+    if abs(vx / yaw_rate) < MIN_TURN_RADIUS:
+        return "spin", (0.0, 0.0, yaw_rate)
+    return "ackermann", (vx, 0.0, yaw_rate)
+
+
+def advance(pose, velocity, dt):
+    x, y, z, yaw = pose
+    vx, vy, yaw_rate = velocity
+    half_turn = yaw_rate * dt / 2
+    scale = math.sin(half_turn) / half_turn if half_turn else 1.0
+    cosine = math.cos(yaw + half_turn)
+    sine = math.sin(yaw + half_turn)
+    return (
+        x + (vx * cosine - vy * sine) * dt * scale,
+        y + (vx * sine + vy * cosine) * dt * scale,
+        z,
+        yaw + 2 * half_turn,
+    )
+
+
+class TwistMotionTest(Node):
+    def __init__(self):
+        super().__init__("twist_motion_test")
+        self.robots = self.declare_parameter("robots", ["robot1"]).value
+        self.gz_node = TransportNode()
+        self.latest_poses = {}
+        self.active_poses = {}
+        self.command = (0.0, 0.0, 0.0)
+        self.last_command_at = 0.0
+        self.last_tick = self.get_clock().now()
+        self.mode = "stopped"
+        self.ready = False
+        for robot in self.robots:
+            self.create_subscription(
+                PoseStamped, f"/{robot}/gz_pose", partial(self.on_pose, robot), 10)
+        self.create_subscription(Twist, "cmd_vel", self.on_command, 1)
+        self.create_timer(0.05, self.step)
+
+    def on_pose(self, robot, message):
+        position = message.pose.position
+        q = message.pose.orientation
+        yaw = math.atan2(2 * (q.w * q.z + q.x * q.y), 1 - 2 * (q.y * q.y + q.z * q.z))
+        self.latest_poses[robot] = (position.x, position.y, position.z, yaw)
+        if not self.ready and len(self.latest_poses) == len(self.robots):
+            self.ready = True
+            self.get_logger().info(f"Ready for Twist on {self.resolve_topic_name('cmd_vel')}")
+
+    def on_command(self, message):
+        command = (message.linear.x, message.linear.y, message.angular.z)
+        self.command = command if all(map(math.isfinite, command)) else (0.0, 0.0, 0.0)
+        self.last_command_at = time.monotonic()
+
+    def step(self):
+        now = self.get_clock().now()
+        dt = (now - self.last_tick).nanoseconds / 1e9
+        self.last_tick = now
+        if not self.ready or dt <= 0:
+            self.active_poses.clear()
+            return
+        if time.monotonic() - self.last_command_at >= COMMAND_TIMEOUT or not any(self.command):
+            self.active_poses.clear()
+            self.mode = "stopped"
+            return
+
+        mode, velocity = ranger_motion(self.command)
+        previous = self.active_poses or self.latest_poses
+        next_poses = {robot: advance(previous[robot], velocity, min(dt, 0.1))
+                      for robot in self.robots}
+        request = Pose_V()
+        for robot, (x, y, z, yaw) in next_poses.items():
+            pose = request.pose.add()
+            pose.name = robot
+            pose.position.x, pose.position.y, pose.position.z = x, y, z
+            pose.orientation.z = math.sin(yaw / 2)
+            pose.orientation.w = math.cos(yaw / 2)
+        succeeded, response = self.gz_node.request(
+            "/world/whut/set_pose_vector/blocking", request, Pose_V, Boolean, 250)
+        if not (succeeded and response.data):
+            self.active_poses.clear()
+            self.get_logger().warning("Gazebo did not apply the group poses", throttle_duration_sec=2.0)
+            return
+        self.active_poses = next_poses
+        if mode != self.mode:
+            self.mode = mode
+            self.get_logger().info(f"Motion mode: {mode}")
+
+
+def main():
+    rclpy.init()
+    node = TwistMotionTest()
+    try:
+        rclpy.spin(node)
+    except (KeyboardInterrupt, ExternalShutdownException):
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.try_shutdown()
+
+
+if __name__ == "__main__":
+    main()

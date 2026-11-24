@@ -1,0 +1,229 @@
+scenario: factory_indoor_01
+variant: critical
+task: formation
+frame: map
+size_m:
+- 30.0
+- 24.0
+map_origin:
+- 0.0
+- 0.0
+- 0.0
+maps:
+  map:
+    resolution: 0.05
+    width: 600
+    height: 480
+    occupied_cells: 39634
+    raster_tolerance_m: 0.07071067811865477
+  map_0025:
+    resolution: 0.025
+    width: 1200
+    height: 960
+    occupied_cells: 148408
+    raster_tolerance_m: 0.03535533905932738
+pinch_width_m: 3.0
+spawn_poses:
+  robot1:
+  - 5.0
+  - 5.6
+  - 0.0
+  robot2:
+  - 4.0
+  - 6.6
+  - 0.0
+  robot3:
+  - 4.0
+  - 4.6
+  - 0.0
+experiments:
+  single:
+    start:
+    - 4.0
+    - 5.6
+    - 0.0
+    goal:
+    - 21.5
+    - 19.0
+    - 1.5707963267948966
+    waypoints: []
+  formation:
+    start:
+    - 4.0
+    - 5.6
+    - 0.0
+    goal:
+    - 21.5
+    - 19.0
+    - 1.5707963267948966
+    waypoints:
+    - - 21.5
+      - 5.6
+      - 0.0
+    - - 21.5
+      - 5.6
+      - 1.5707963267948966
+formation_offsets_m:
+- - 1.0
+  - 0.0
+- - 0.0
+  - 1.0
+- - 0.0
+  - -1.0
+cargo:
+  size_m:
+  - 1.95
+  - 2.7
+  - 1.1
+  offset_m:
+  - 0.5
+  - 0.0
+  bottom_m: 0.43800000000000006
+  opacity: 0.3
+  mount_height_m: 0.1
+  mount_diameter_m: 0.14
+environment_obstacles:
+- boundary_south
+- boundary_north
+- boundary_west
+- boundary_east
+- cnc_01
+- cnc_02
+- cnc_03
+- line_south_01
+- line_south_02
+- cabinet_pinchoff
+- cabinet_north
+- line_north
+- inner_fence
+- outer_fence
+- north_fence
+- column_sw
+- column_nw
+- column_n
+- column_e
+- pallet_01
+- pallet_02
+- pallet_03
+- storage_west
+- storage_east
+- staging_wall
+clearance:
+  single:
+    start:
+      robot1:
+        distance_m: 2.957137298131421
+        obstacle: line_south_01
+        reference:
+        - 4.0
+        - 5.6
+        - 0.0
+    goal:
+      robot1:
+        distance_m: 2.4093071618205943
+        obstacle: north_fence
+        reference:
+        - 21.5
+        - 19.0
+        - 1.5708
+  formation:
+    start:
+      robot1:
+        distance_m: 2.1172295577003455
+        obstacle: line_south_01
+        reference:
+        - 4.0
+        - 5.6
+        - 0.0
+      robot2:
+        distance_m: 2.7358108487247437
+        obstacle: cnc_01
+        reference:
+        - 4.0
+        - 5.6
+        - 0.0
+      robot3:
+        distance_m: 2.6541780271865716
+        obstacle: line_south_01
+        reference:
+        - 4.0
+        - 5.6
+        - 0.0
+      cargo:
+        distance_m: 1.5453559460525594
+        obstacle: line_south_01
+        reference:
+        - 4.0
+        - 5.6
+        - 0.0
+    goal:
+      robot1:
+        distance_m: 2.1077858050570524
+        obstacle: north_fence
+        reference:
+        - 21.5
+        - 19.0
+        - 1.5708
+      robot2:
+        distance_m: 3.1617971155657663
+        obstacle: inner_fence
+        reference:
+        - 21.5
+        - 19.0
+        - 1.5708
+      robot3:
+        distance_m: 1.6139271978624083
+        obstacle: north_fence
+        reference:
+        - 21.5
+        - 19.0
+        - 1.5708
+      cargo:
+        distance_m: 1.002808556006579
+        obstacle: north_fence
+        reference:
+        - 21.5
+        - 19.0
+        - 1.5708
+  reference_route:
+    single:
+      robot1:
+        distance_m: 1.1500000000000004
+        obstacle: cabinet_pinchoff
+        reference:
+        - 11.35
+        - 5.6
+        - 0.0
+    formation:
+      robot1:
+        distance_m: 1.1500000000000004
+        obstacle: cabinet_pinchoff
+        reference:
+        - 10.35
+        - 5.6
+        - 0.0
+      robot2:
+        distance_m: 0.15000000000000036
+        obstacle: cabinet_pinchoff
+        reference:
+        - 11.35
+        - 5.6
+        - 0.0
+      robot3:
+        distance_m: 0.34999999999999964
+        obstacle: line_south_01
+        reference:
+        - 6.65
+        - 5.6
+        - 0.0
+      cargo:
+        distance_m: 0.05000000000000071
+        obstacle: cabinet_pinchoff
+        reference:
+        - 10.25
+        - 5.6
+        - 0.0
+    sampling:
+      max_translation_m: 0.05
+      max_rotation_rad: 0.01
+      max_motion_from_nearest_sample_m: 0.035826

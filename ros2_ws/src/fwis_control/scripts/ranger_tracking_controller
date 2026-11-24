@@ -1,0 +1,201 @@
+#!/usr/bin/env python3
+"""Connect CopTrans and the isolated Ranger simulator through ROS 2 messages."""
+from dataclasses import asdict
+import json
+import math
+from pathlib import Path
+import signal
+from time import perf_counter
+
+from ament_index_python.packages import get_package_share_directory
+from fwis_v3_msgs.msg import FormationExecutionPermit, TimedTrajectory
+from geometry_msgs.msg import Twist as RosTwist
+from nav_msgs.msg import Odometry
+import rclpy
+from rclpy.executors import ExternalShutdownException
+from rclpy.node import Node
+from rclpy.qos import DurabilityPolicy, QoSProfile
+from rclpy.signals import SignalHandlerOptions
+from std_msgs.msg import Int32, String
+
+from fwis_control.config import load
+from fwis_control.model import Mode, Observation, Twist, ZERO
+from fwis_control.ros_state import planar_pose, read_trajectory, stamp_ns
+
+
+class TrackingNode(Node):
+    def __init__(self):
+        super().__init__("tracking_controller")
+        default = Path(get_package_share_directory("fwis_control")) / "config" / "ranger_tracking.yaml"
+        settings = self.declare_parameter("config_file", str(default)).value
+        algorithm = self.declare_parameter("algorithm", "nonlinear").value
+        topic = self.declare_parameter("trajectory_topic", "/plan/timed_trajectory").value
+        self.permit_topic = self.declare_parameter("permit_topic", "").value
+        self.future_window = self.declare_parameter("future_start_window_s", 0.).value
+        if self.permit_topic and not (math.isfinite(self.future_window) and self.future_window > 0.):
+            raise ValueError("coordinated tracking requires a positive future start window")
+        self.configuration = load(settings)
+        self.engine = self.configuration.execution(algorithm)
+        self.algorithm = algorithm
+        self.pending = self.plan = self.odom = self.mode = None
+        self.last_plan_key = None
+        self.last_phase = None
+        self.mode_request_pending = False
+        self.permit = None
+        self.twist = self.create_publisher(RosTwist, "cmd_vel", 1)
+        self.request = self.create_publisher(Int32, "sim_request_mode", 1)
+        self.status = self.create_publisher(String, "controller_status", 10)
+        self.create_subscription(TimedTrajectory, topic, self.on_trajectory,
+                                 QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL))
+        self.create_subscription(Odometry, "odom", self.on_odom, 5)
+        self.create_subscription(Int32, "motion_state", self.on_mode, 5)
+        if self.permit_topic:
+            self.create_subscription(FormationExecutionPermit, self.permit_topic, self.on_permit, 1)
+        self.create_timer(self.configuration.timing.period, self.step)
+
+    def now(self):
+        return self.get_clock().now().nanoseconds * 1e-9
+
+    def on_trajectory(self, message):
+        stamp = stamp_ns(message.header.stamp)
+        key = (message.plan_id, stamp, bool(message.points))
+        if key == self.last_plan_key:
+            return
+        self.last_plan_key = key
+        self.pending = read_trajectory(message)
+
+    def on_odom(self, message):
+        expected = self.get_namespace().strip("/") + "/base_link"
+        pose = planar_pose(message.pose.pose)
+        stamp = stamp_ns(message.header.stamp)
+        self.odom = None
+        if pose is not None and stamp >= 0 and message.header.frame_id == "map" and message.child_frame_id == expected:
+            t = message.twist.twist
+            self.odom = pose, Twist(t.linear.x, t.linear.y, t.angular.z), stamp * 1e-9
+
+    def on_mode(self, message):
+        self.mode = (Mode(message.data), self.now()) if message.data in tuple(Mode) else None
+
+    def on_permit(self, message):
+        self.permit = message
+
+    def permit_invalid(self, now):
+        permit = self.permit
+        matches = (permit is not None and permit.plan_id == self.plan.plan_id
+                   and stamp_ns(permit.start) == self.plan.stamp_ns)
+        if matches and not permit.enabled:
+            return True
+        if now < self.engine.start:
+            return False
+        timing = self.configuration.timing
+        return not (matches and -timing.clock_tolerance
+                    <= now - stamp_ns(permit.stamp) * 1e-9 <= timing.state_timeout)
+
+    def publish_twist(self, command):
+        msg = RosTwist()
+        msg.linear.x, msg.linear.y, msg.angular.z = command.values()
+        self.twist.publish(msg)
+
+    def publish_status(self, **fields):
+        self.status.publish(String(data=json.dumps(fields, separators=(",", ":"), allow_nan=False)))
+
+    def publish_mode_request(self, requested_mode):
+        if requested_mode is not None:
+            self.request.publish(Int32(data=int(requested_mode)))
+            self.mode_request_pending = True
+        elif self.mode_request_pending:
+            self.request.publish(Int32(data=-1))
+            self.mode_request_pending = False
+
+    def step(self):
+        start = perf_counter()
+        now = self.now()
+        state = Observation(*self.odom, *self.mode) if self.odom and self.mode else None
+        if self.pending is not None:
+            plan = self.pending
+            if not plan.points:
+                self.plan, self.pending = plan, None
+                self.engine.abort("planner_cleared_trajectory")
+                self.publish_status(kind="admission", plan_id=plan.plan_id, result="CLEARED",
+                                    trajectory_stamp_ns=plan.stamp_ns, stamp=now)
+            elif self.engine.sampler is not None:
+                self.engine.abort("trajectory_replaced_during_execution")
+                self.publish_twist(ZERO)
+                self.publish_mode_request(None)
+                self.publish_status(kind="execution", plan_id=self.plan.plan_id, phase="STOPPED",
+                                    trajectory_stamp_ns=self.plan.stamp_ns,
+                                    reasons=["trajectory_replaced_during_execution"], stamp=now)
+                return
+            elif self.engine.feedback_is_fresh(state, now) and state.twist.speed <= self.configuration.timing.stop_speed \
+                    and abs(state.twist.wz) <= self.configuration.timing.stop_yaw_rate:
+                self.plan, self.pending = plan, None
+                # A coordinated oblique segment can be longitudinal for
+                # one body. The mode is confirmed while stopped and the
+                # safety filter encodes it with a lateral Twist epsilon.
+                check = self.engine.admit(plan, state.mode, now,
+                                          future_window=self.future_window if self.permit_topic else 0.,
+                                          allow_axial_oblique=bool(self.permit_topic))
+                self.publish_status(kind="admission", plan_id=plan.plan_id, result=check.result,
+                                    trajectory_stamp_ns=plan.stamp_ns,
+                                    phase=self.engine.phase, stamp=now,
+                                    issues=[asdict(item) for item in check.issues])
+            elif now - plan.stamp_ns * 1e-9 > self.configuration.timing.plan_admission_timeout:
+                self.plan, self.pending = plan, None
+                self.engine.abort("trajectory_expired_waiting_for_stopped_feedback")
+                self.publish_status(kind="admission", plan_id=plan.plan_id, result="EXPIRED",
+                                    trajectory_stamp_ns=plan.stamp_ns, stamp=now)
+
+        if self.permit_topic and self.engine.sampler is not None and self.permit_invalid(now):
+            output = self.engine.abort("formation_permit_missing_or_revoked")
+        else:
+            output = self.engine.tick(now, state)
+        self.publish_twist(output.command)
+        self.publish_mode_request(output.requested_mode)
+        if self.plan is None:
+            return
+        error = None
+        if output.reference is not None and state is not None:
+            error = state.pose.error_to(output.reference.pose)
+        self.publish_status(kind="execution", stamp=now, plan_id=self.plan.plan_id,
+                            trajectory_stamp_ns=self.plan.stamp_ns,
+                            algorithm=self.algorithm, phase=output.phase,
+                            reference_time=output.reference.time if output.reference else None,
+                            planned_mode=int(output.reference.mode) if output.reference else None,
+                            feedback_mode=int(state.mode) if state else None,
+                            requested_mode=output.requested_mode,
+                            body_error=error, raw=output.raw.values(),
+                            command=output.command.values(), reasons=output.reasons,
+                            compute_s=perf_counter()-start)
+        if output.phase != self.last_phase:
+            self.get_logger().info(f"plan {self.plan.plan_id}: {output.phase} {', '.join(output.reasons)}")
+            self.last_phase = output.phase
+
+
+def main():
+    stopping = False
+
+    def stop(_signum, _frame):
+        nonlocal stopping
+        stopping = True
+
+    # A pending Python KeyboardInterrupt can interrupt rclpy message conversion.
+    # Request exit between callbacks so the final zero is sent on a live context.
+    rclpy.init(signal_handler_options=SignalHandlerOptions.NO)
+    signal.signal(signal.SIGINT, stop)
+    signal.signal(signal.SIGTERM, stop)
+    node = TrackingNode()
+    try:
+        while rclpy.ok() and not stopping:
+            rclpy.spin_once(node, timeout_sec=.10)
+    except ExternalShutdownException:
+        pass
+    finally:
+        if rclpy.ok():
+            node.publish_twist(ZERO)
+            node.publish_mode_request(None)
+        node.destroy_node()
+        rclpy.try_shutdown()
+
+
+if __name__ == "__main__":
+    main()

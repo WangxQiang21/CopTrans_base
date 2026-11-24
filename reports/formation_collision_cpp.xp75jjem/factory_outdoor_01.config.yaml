@@ -1,0 +1,48 @@
+mode: sim
+task: multi
+scene_task: formation
+scenario: factory_outdoor_01
+experiment: full_route
+start:
+- 4.0
+- 8.0
+- 0
+goal:
+- 32.0
+- 24.5
+- 1.5707963267948966
+waypoints:
+- - 32.0
+  - 8.0
+  - 0
+- - 32.0
+  - 8.0
+  - 1.5707963267948966
+planner: multi_4wis
+planner_backend: multi_4wis
+controller_backend: nonlinear_feedback
+controller_algorithm: nonlinear
+formation: wedge
+coordination:
+  name: wedge
+  implementation: uniform_v02
+  lead_s: 1.25
+  release_margin_s: 0.2
+planner_overrides:
+  timing_limits:
+    r_min_ackermann: 0.9
+    v_max: 0.16
+    a_max: 0.22
+    yaw_rate_max: 0.4
+    yaw_accel_max: 0.45
+    mode_switch_duration: 0.7
+acceptance:
+  terminal_position_m: 0.1
+  terminal_yaw_rad: 0.1
+  max_mount_error_m: 0.1
+gazebo_gui: true
+rviz_gui: true
+record: 'off'
+timeout_s: 900.0
+no_build: false
+observation_s: 5

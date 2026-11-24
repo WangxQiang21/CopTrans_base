@@ -1,0 +1,109 @@
+Panels:
+- Class: rviz_common/Displays
+  Name: Displays
+Visualization Manager:
+  Class: ''
+  Displays:
+  - Class: rviz_default_plugins/Map
+    Name: Occupancy grid
+    Enabled: true
+    Topic:
+      Value: /map
+      Depth: 5
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Transient Local
+  - Class: rviz_default_plugins/Pose
+    Name: Start
+    Enabled: true
+    Topic:
+      Value: /start_pose
+      Depth: 5
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Volatile
+  - Class: rviz_default_plugins/Pose
+    Name: Goal
+    Enabled: true
+    Topic:
+      Value: /move_base_simple/goal
+      Depth: 5
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Volatile
+  - Class: rviz_default_plugins/Path
+    Name: Coarse path
+    Enabled: true
+    Topic:
+      Value: /plan/path_coarse
+      Depth: 5
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Transient Local
+    Color: 246; 162; 34
+  - Class: rviz_default_plugins/Path
+    Name: Optimized path
+    Enabled: true
+    Topic:
+      Value: /plan/path
+      Depth: 5
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Transient Local
+    Color: 82; 213; 220
+  - Class: rviz_default_plugins/MarkerArray
+    Name: Search markers
+    Enabled: true
+    Topic:
+      Value: /plan/markers
+      Depth: 5
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Transient Local
+  - Class: rviz_default_plugins/MarkerArray
+    Name: Mode strip
+    Enabled: true
+    Topic:
+      Value: /plan/mode_strip
+      Depth: 5
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Transient Local
+  - Class: rviz_default_plugins/Marker
+    Name: Playback
+    Enabled: true
+    Topic:
+      Value: /robot/marker
+      Depth: 5
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Volatile
+  Global Options:
+    Fixed Frame: map
+    Frame Rate: 30
+  Tools:
+  - Class: rviz_default_plugins/Interact
+  - Class: rviz_default_plugins/MoveCamera
+  - Class: rviz_default_plugins/SetInitialPose
+    Topic:
+      Value: /initialpose
+      Depth: 5
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Volatile
+  - Class: rviz_default_plugins/SetGoal
+    Topic:
+      Value: /move_base_simple/goal
+      Depth: 5
+      History Policy: Keep Last
+      Reliability Policy: Reliable
+      Durability Policy: Volatile
+  Views:
+    Current:
+      Class: rviz_default_plugins/TopDownOrtho
+      Scale: 35
+      X: 4.0
+      Y: 4.0
+Window Geometry:
+  Width: 1120
+  Height: 740
