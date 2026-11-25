@@ -45,14 +45,16 @@ def p95(values):
     return sorted(values)[math.ceil(.95*len(values))-1] if values else None
 
 
-def report(directory, new_batch=None):
+def report(directory, new_batch=None, sealed=None):
     result={}
     for task in TASKS:
         for profile in PROFILES:
             name=f"{task}_{profile}"; p=directory/f"legacy_{name}.jsonl"
             if not p.exists():continue
             cases=list(map(json.loads,p.read_text().splitlines()))
-            manifest=json.loads((REPORT/("case_manifest_baseline.json" if profile=="baseline" else "case_manifest.json")).read_text())
+            manifest_path=(sealed/f"manifest_{profile}.json" if sealed is not None else
+                           REPORT/("case_manifest_baseline.json" if profile=="baseline" else "case_manifest.json"))
+            manifest=json.loads(manifest_path.read_text())
             validate_rows(cases,manifest,"holdout",task,profile,False)
             vals=[r["evidence"] for r in cases]
             feasible=[r for r in cases if r["label"]!="invalid"]
@@ -153,9 +155,12 @@ def report(directory, new_batch=None):
 def main():
     ap=argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--directory",type=Path,default=LOCAL.parent/"hybrid_v3_numeric/legacy_c3")
-    ap.add_argument("--new-batch",type=Path,default=LOCAL/"release_c6")
+    pairing=ap.add_mutually_exclusive_group()
+    pairing.add_argument("--new-batch",type=Path,default=LOCAL/"release_c6")
+    pairing.add_argument("--previous-only",action="store_true",help="verify only frozen previous-backend observations")
+    ap.add_argument("--sealed",type=Path,help="directory of the two immutable manifest_<profile>.json inputs")
     ap.add_argument("--output",type=Path);a=ap.parse_args()
-    text=json.dumps(report(a.directory,a.new_batch),indent=2,allow_nan=False)+"\n"
+    text=json.dumps(report(a.directory,None if a.previous_only else a.new_batch,a.sealed),indent=2,allow_nan=False)+"\n"
     if a.output:a.output.write_text(text)
     else:print(text,end="")
 
