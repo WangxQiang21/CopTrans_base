@@ -1,24 +1,24 @@
 {
   "schema": "coptrans.historical_routes/v1",
   "experiment": "Frozen native blind endpoint-only solve on the byte-verified historical map, then a separate certification process.",
-  "local_raw_dir": "reports/acceptance/hybrid_v3/historical_ros_c6",
-  "source_commit": "c09357a32ceab3ca9870daeed6b4e867405ea5c0",
-  "core_commit": "437ae8a00f707afdc015ff5adbba395190c75f8a",
-  "binary_sha256": "f9e3e86defa17cefff41e96ba18fd07cc653d1613c18fa96284362a2b3772c92",
-  "library_sha256": "a08f173c183981178d1030d54114d38c2a0f2d1c9e964661fb3cd4cbea582e29",
+  "local_raw_dir": "reports/acceptance/hybrid_v3/historical_ros_7cdf518",
+  "source_commit": "7cdf518d8ff75c15f3ac8d4233367a70c98cf772",
+  "core_commit": "7cdf518d8ff75c15f3ac8d4233367a70c98cf772",
+  "binary_sha256": "ee2228412171cb7859bd58496ba790ea1764fa5012e167d6e2ca47b95b0be809",
+  "library_sha256": "74e8c87917cae76a78676bf0221c504bbe4b4c33c9a9b8c8ec1931f12da3009c",
   "policy_sha256": "8a84e103bbad6e7c9c6ec3ff056368e623f4249e4f2e9c8f2b1bcecf0e504956",
-  "raw_summary_sha256": "6027ec17419b3b626184d1227845770c93bec853d9e211d101258fe2d28027b5",
+  "raw_summary_sha256": "9005a06a47ee8ad76e4b8c791bf9cb2a4d6cdd812deeebcdfda8392a5d19c488",
   "unique_routes": 13,
   "unique_requests": 52,
   "duplicates": [],
   "counts": {
     "formation_baseline": {
       "count": 13,
-      "passed": 5
+      "passed": 10
     },
     "formation_standard": {
       "count": 13,
-      "passed": 8
+      "passed": 10
     },
     "single_baseline": {
       "count": 13,
@@ -26,7 +26,7 @@
     },
     "single_standard": {
       "count": 13,
-      "passed": 11
+      "passed": 13
     }
   },
   "maps": {
@@ -153,16 +153,25 @@
           "passed": true,
           "request_sha256": "9464af4fc8a696ef27347bc3c6c85e82768f5e084e7f402e59235ba073d25945",
           "ros_contract_sha256": "3ba922dd8846b9a5a7a206dba89d34eca59a2cd32d65df47a5f427bcec609278",
-          "plan_sha256": "6f2044d62d8ecab1fd864db54f152c67fc89974e7504d82d24a1e0038c796d4d",
+          "plan_sha256": "34e1d526672c2999a0b14b9e8ed3886a6de056a4f2514cddef544ef7a723a2ee",
           "modes": "A",
           "certified_mode_switches": 0,
-          "reference_length_m": 22.36378739849295,
-          "plan_duration_s": 267.84448307984263,
-          "solve_wall_s": 6.819032196,
+          "reference_length_m": 22.377962556217337,
+          "plan_duration_s": 157.7053190523652,
+          "solve_wall_s": 1.386106791,
           "independent_audit": "CERTIFIED",
           "certified_executable": true,
           "source_task_profile_run": false,
-          "source_timing_limits_match": false
+          "source_timing_limits_match": false,
+          "baseline": {
+            "status": "CERTIFIED_POLICY_COMPLIANT",
+            "reason": "PURE_A",
+            "passed": true,
+            "modes": "A",
+            "reference_length_m": 22.36378739849295,
+            "duration_s": 267.84448307984263,
+            "solve_wall_s": 6.819032196
+          }
         },
         "formation_standard": {
           "status": "CERTIFIED_POLICY_COMPLIANT",
@@ -170,50 +179,77 @@
           "passed": true,
           "request_sha256": "df81606237d89766cc3115fe1a11c8827f69db0cb7dbbda501cf47d2a5a5db8b",
           "ros_contract_sha256": "694182c95c0cdac70ba61cb04f7ceea36ef1cb94371e50966d736a9c08dbc4fd",
-          "plan_sha256": "26e460634c1e96258d0c08d0728c45508d56fe801630ab1884d1a3be5bb76467",
+          "plan_sha256": "021bd957ccc3af56ae4c3cf4290313bef02329c061d6b13804983c274afe0bad",
           "modes": "A",
           "certified_mode_switches": 0,
-          "reference_length_m": 22.381821037479842,
-          "plan_duration_s": 55.90881830457967,
-          "solve_wall_s": 2.097381563,
+          "reference_length_m": 22.396829115899656,
+          "plan_duration_s": 53.42167261268799,
+          "solve_wall_s": 1.095362361,
           "independent_audit": "CERTIFIED",
           "certified_executable": true,
           "source_task_profile_run": true,
-          "source_timing_limits_match": true
+          "source_timing_limits_match": true,
+          "baseline": {
+            "status": "CERTIFIED_POLICY_COMPLIANT",
+            "reason": "PURE_A",
+            "passed": true,
+            "modes": "A",
+            "reference_length_m": 22.381821037479842,
+            "duration_s": 55.90881830457967,
+            "solve_wall_s": 2.097381563
+          }
         },
         "single_baseline": {
           "status": "CERTIFIED_POLICY_COMPLIANT",
-          "reason": "A_SEARCH_SPACE_EXHAUSTED",
+          "reason": "PURE_A",
           "passed": true,
           "request_sha256": "8eef5c2ad0fc3547756508317459f1d2f0d0de5ef35df803d8fe915e942d161c",
           "ros_contract_sha256": "8971ed4e7cc332a6dd479ad775c2ddf946d3a043f230a64d2300364e408bebe1",
-          "plan_sha256": "2f0ed46f6f6772be587f3830b78d5521be186cc0a44cdd96deceb5b80f6a76f0",
-          "modes": "AS",
-          "certified_mode_switches": 1,
-          "reference_length_m": 22.28997099673265,
-          "plan_duration_s": 183.04989118053675,
-          "solve_wall_s": 5.355314782,
+          "plan_sha256": "768e1559855e8f97602a009ffbd664f17af1b01d571037fdc727312988581cf3",
+          "modes": "A",
+          "certified_mode_switches": 0,
+          "reference_length_m": 26.452845311028035,
+          "plan_duration_s": 179.79057450555453,
+          "solve_wall_s": 0.834667748,
           "independent_audit": "CERTIFIED",
           "certified_executable": true,
           "source_task_profile_run": false,
-          "source_timing_limits_match": false
+          "source_timing_limits_match": false,
+          "baseline": {
+            "status": "CERTIFIED_POLICY_COMPLIANT",
+            "reason": "A_SEARCH_SPACE_EXHAUSTED",
+            "passed": true,
+            "modes": "AS",
+            "reference_length_m": 22.28997099673265,
+            "duration_s": 183.04989118053675,
+            "solve_wall_s": 5.355314782
+          }
         },
         "single_standard": {
-          "status": "NO_CERTIFIED_SOLUTION_WITHIN_BUDGET",
-          "reason": "A_SOLVE_TIMEOUT",
-          "passed": false,
+          "status": "CERTIFIED_POLICY_COMPLIANT",
+          "reason": "PURE_A",
+          "passed": true,
           "request_sha256": "93aefd8c02150c2440a781fc1edfe0d05323a061c2f8c4e4be56e9f65bd89b9e",
           "ros_contract_sha256": "9cb71bfe491d6f755546c2495480d6fb5fb6ab7a122f7863ba61bfdbcdca9210",
-          "plan_sha256": null,
-          "modes": null,
-          "certified_mode_switches": null,
-          "reference_length_m": null,
-          "plan_duration_s": null,
-          "solve_wall_s": 8.000066577,
-          "independent_audit": null,
-          "certified_executable": null,
+          "plan_sha256": "c030b73d6004153cced25c6f434bdf0918a5476d53cc5423ddfc66a2e1292d59",
+          "modes": "A",
+          "certified_mode_switches": 0,
+          "reference_length_m": 26.515702680746198,
+          "plan_duration_s": 50.56594121823183,
+          "solve_wall_s": 1.117970073,
+          "independent_audit": "CERTIFIED",
+          "certified_executable": true,
           "source_task_profile_run": false,
-          "source_timing_limits_match": false
+          "source_timing_limits_match": false,
+          "baseline": {
+            "status": "NO_CERTIFIED_SOLUTION_WITHIN_BUDGET",
+            "reason": "A_SOLVE_TIMEOUT",
+            "passed": false,
+            "modes": null,
+            "reference_length_m": null,
+            "duration_s": null,
+            "solve_wall_s": 8.000066577
+          }
         }
       }
     },
@@ -261,38 +297,56 @@
       },
       "native_results": {
         "formation_baseline": {
-          "status": "NO_CERTIFIED_SOLUTION_WITHIN_BUDGET",
-          "reason": "A_SOLVE_TIMEOUT",
-          "passed": false,
+          "status": "CERTIFIED_POLICY_COMPLIANT",
+          "reason": "PURE_A",
+          "passed": true,
           "request_sha256": "8eb270641298594006c41583ff4d4330d8c931391ef7b534bf7a84cb15c7ff42",
           "ros_contract_sha256": "d248afa997320a3cfb3406e3a8761649161b4ea1ceb6cf9012062ea44630158d",
-          "plan_sha256": null,
-          "modes": null,
-          "certified_mode_switches": null,
-          "reference_length_m": null,
-          "plan_duration_s": null,
-          "solve_wall_s": 12.007987813,
-          "independent_audit": null,
-          "certified_executable": null,
+          "plan_sha256": "0200920bf0c8ff994673ed0020567b350c3cc537c1e1d72d918e71f3917d27ed",
+          "modes": "A",
+          "certified_mode_switches": 0,
+          "reference_length_m": 39.97481736728932,
+          "plan_duration_s": 293.58259042873647,
+          "solve_wall_s": 2.135343522,
+          "independent_audit": "CERTIFIED",
+          "certified_executable": true,
           "source_task_profile_run": false,
-          "source_timing_limits_match": false
+          "source_timing_limits_match": false,
+          "baseline": {
+            "status": "NO_CERTIFIED_SOLUTION_WITHIN_BUDGET",
+            "reason": "A_SOLVE_TIMEOUT",
+            "passed": false,
+            "modes": null,
+            "reference_length_m": null,
+            "duration_s": null,
+            "solve_wall_s": 12.007987813
+          }
         },
         "formation_standard": {
-          "status": "NO_CERTIFIED_SOLUTION_WITHIN_BUDGET",
-          "reason": "A_SOLVE_TIMEOUT",
-          "passed": false,
+          "status": "CERTIFIED_POLICY_COMPLIANT",
+          "reason": "PURE_A",
+          "passed": true,
           "request_sha256": "4beadc89505131d084aaaea7b4395c86c3dd760fbb27afb459f2a298f3e00ff2",
           "ros_contract_sha256": "6063273b2b446211ed548f977820c7081f5ebfde718fb8a6ee0e1de390efb00f",
-          "plan_sha256": null,
-          "modes": null,
-          "certified_mode_switches": null,
-          "reference_length_m": null,
-          "plan_duration_s": null,
-          "solve_wall_s": 12.007700331,
-          "independent_audit": null,
-          "certified_executable": null,
+          "plan_sha256": "d2298dbf7814e20939f66f6c1000e352c7e9b5252ee15d833fcbe60331eebf03",
+          "modes": "A",
+          "certified_mode_switches": 0,
+          "reference_length_m": 39.97481109706266,
+          "plan_duration_s": 95.25188799935027,
+          "solve_wall_s": 2.203780525,
+          "independent_audit": "CERTIFIED",
+          "certified_executable": true,
           "source_task_profile_run": true,
-          "source_timing_limits_match": true
+          "source_timing_limits_match": true,
+          "baseline": {
+            "status": "NO_CERTIFIED_SOLUTION_WITHIN_BUDGET",
+            "reason": "A_SOLVE_TIMEOUT",
+            "passed": false,
+            "modes": null,
+            "reference_length_m": null,
+            "duration_s": null,
+            "solve_wall_s": 12.007700331
+          }
         },
         "single_baseline": {
           "status": "CERTIFIED_POLICY_COMPLIANT",
@@ -300,16 +354,25 @@
           "passed": true,
           "request_sha256": "d9916e4202352a75e31b95a31469a9d8765c7ec26d4a68d72457206c735da80d",
           "ros_contract_sha256": "19d72639bd24bc2f4d5d497addd00aaa57a8cd9489fd3140916ae3bccc7ccb85",
-          "plan_sha256": "fcba04b9a1eed40d458725f2b8d64e1daa465af92d175621b5bd233bdad91894",
+          "plan_sha256": "002a431342c4846f93e996d0df2e4b80a3b6a75f627a0c6ab471fbe2322d24c9",
           "modes": "A",
           "certified_mode_switches": 0,
-          "reference_length_m": 24.28348689770636,
-          "plan_duration_s": 198.74791735176228,
-          "solve_wall_s": 0.846153195,
+          "reference_length_m": 27.905506253136892,
+          "plan_duration_s": 190.43170753025362,
+          "solve_wall_s": 1.273439861,
           "independent_audit": "CERTIFIED",
           "certified_executable": true,
           "source_task_profile_run": false,
-          "source_timing_limits_match": false
+          "source_timing_limits_match": false,
+          "baseline": {
+            "status": "CERTIFIED_POLICY_COMPLIANT",
+            "reason": "PURE_A",
+            "passed": true,
+            "modes": "A",
+            "reference_length_m": 24.28348689770636,
+            "duration_s": 198.74791735176228,
+            "solve_wall_s": 0.846153195
+          }
         },
         "single_standard": {
           "status": "CERTIFIED_POLICY_COMPLIANT",
@@ -317,16 +380,25 @@
           "passed": true,
           "request_sha256": "aa86184731c006c2e66e68c60d84673be714ac4a6729a20595963b543f7a3a2e",
           "ros_contract_sha256": "71a2e398c8fb1e593f0d6f79f31e19a87a4b96137dc3f695037d5db32226978a",
-          "plan_sha256": "2c7a7208a5cc5fcd831af8f1a5ee1ef3946b3054107f8047edf284d8f10e38d3",
+          "plan_sha256": "b24d8db18749dadcad5731683889425b3ddbafb0f93708b9adf84f021182c5e7",
           "modes": "A",
           "certified_mode_switches": 0,
-          "reference_length_m": 24.296378719086213,
-          "plan_duration_s": 65.489170885312,
-          "solve_wall_s": 1.266390919,
+          "reference_length_m": 28.076438584735637,
+          "plan_duration_s": 55.20983456719071,
+          "solve_wall_s": 1.22907336,
           "independent_audit": "CERTIFIED",
           "certified_executable": true,
           "source_task_profile_run": false,
-          "source_timing_limits_match": false
+          "source_timing_limits_match": false,
+          "baseline": {
+            "status": "CERTIFIED_POLICY_COMPLIANT",
+            "reason": "PURE_A",
+            "passed": true,
+            "modes": "A",
+            "reference_length_m": 24.296378719086213,
+            "duration_s": 65.489170885312,
+            "solve_wall_s": 1.266390919
+          }
         }
       }
     },
@@ -384,11 +456,20 @@
           "certified_mode_switches": null,
           "reference_length_m": null,
           "plan_duration_s": null,
-          "solve_wall_s": 12.004368733,
+          "solve_wall_s": 12.014054495,
           "independent_audit": null,
           "certified_executable": null,
           "source_task_profile_run": false,
-          "source_timing_limits_match": false
+          "source_timing_limits_match": false,
+          "baseline": {
+            "status": "NO_CERTIFIED_SOLUTION_WITHIN_BUDGET",
+            "reason": "A_SOLVE_TIMEOUT",
+            "passed": false,
+            "modes": null,
+            "reference_length_m": null,
+            "duration_s": null,
+            "solve_wall_s": 12.004368733
+          }
         },
         "formation_standard": {
           "status": "NO_CERTIFIED_SOLUTION_WITHIN_BUDGET",
@@ -401,11 +482,20 @@
           "certified_mode_switches": null,
           "reference_length_m": null,
           "plan_duration_s": null,
-          "solve_wall_s": 12.163497503,
+          "solve_wall_s": 12.114209667,
           "independent_audit": null,
           "certified_executable": null,
           "source_task_profile_run": true,
-          "source_timing_limits_match": true
+          "source_timing_limits_match": true,
+          "baseline": {
+            "status": "NO_CERTIFIED_SOLUTION_WITHIN_BUDGET",
+            "reason": "A_SOLVE_TIMEOUT",
+            "passed": false,
+            "modes": null,
+            "reference_length_m": null,
+            "duration_s": null,
+            "solve_wall_s": 12.163497503
+          }
         },
         "single_baseline": {
           "status": "CERTIFIED_POLICY_COMPLIANT",
@@ -413,16 +503,25 @@
           "passed": true,
           "request_sha256": "a97c9ed32d19e6b1641bfa26b63b3715a611c4b4956fb5808ffc544ef57f8a9a",
           "ros_contract_sha256": "7f7aaf4408f09220ba7be4700332d63da51f382a9ed8274808506ba3a0cfc1a8",
-          "plan_sha256": "c305b0b01b9126b66c8ea7a7eb272a0a6f269c069488c5212a842bd677c81167",
+          "plan_sha256": "7e34c093b1bbf208a2ea9b1d71057408c2a515e75f2fc1d3f746e52ad03de134",
           "modes": "A",
           "certified_mode_switches": 0,
-          "reference_length_m": 21.948205480416952,
-          "plan_duration_s": 163.81324806243828,
-          "solve_wall_s": 0.423974942,
+          "reference_length_m": 21.957422488067312,
+          "plan_duration_s": 147.8928363219442,
+          "solve_wall_s": 0.783079861,
           "independent_audit": "CERTIFIED",
           "certified_executable": true,
           "source_task_profile_run": false,
-          "source_timing_limits_match": false
+          "source_timing_limits_match": false,
+          "baseline": {
+            "status": "CERTIFIED_POLICY_COMPLIANT",
+            "reason": "PURE_A",
+            "passed": true,
+            "modes": "A",
+            "reference_length_m": 21.948205480416952,
+            "duration_s": 163.81324806243828,
+            "solve_wall_s": 0.423974942
+          }
         },
         "single_standard": {
           "status": "CERTIFIED_POLICY_COMPLIANT",
@@ -430,16 +529,25 @@
           "passed": true,
           "request_sha256": "4125801af906bccb8645ed7c241d2b3b7321c448e96ce3f65676cb4d2149b052",
           "ros_contract_sha256": "148bc2ba80148a36bd0245fbc5cacb1860a19e48bbf8c7c0185247d428d52e6b",
-          "plan_sha256": "117bc0faeda01a3345673b6d8b1828581ef240dc9875ba9ecc2934f92e1168ba",
+          "plan_sha256": "66b51c6cd25ebc9e7a684ce29e973ca6b2a2ec61f3eee10729470509d56d3f01",
           "modes": "A",
           "certified_mode_switches": 0,
-          "reference_length_m": 22.10995365905985,
-          "plan_duration_s": 44.97775407887667,
-          "solve_wall_s": 0.492866747,
+          "reference_length_m": 22.115482444170883,
+          "plan_duration_s": 42.41483002408214,
+          "solve_wall_s": 0.571645913,
           "independent_audit": "CERTIFIED",
           "certified_executable": true,
           "source_task_profile_run": false,
-          "source_timing_limits_match": false
+          "source_timing_limits_match": false,
+          "baseline": {
+            "status": "CERTIFIED_POLICY_COMPLIANT",
+            "reason": "PURE_A",
+            "passed": true,
+            "modes": "A",
+            "reference_length_m": 22.10995365905985,
+            "duration_s": 44.97775407887667,
+            "solve_wall_s": 0.492866747
+          }
         }
       }
     },
@@ -487,21 +595,30 @@
       },
       "native_results": {
         "formation_baseline": {
-          "status": "NO_CERTIFIED_SOLUTION_WITHIN_BUDGET",
-          "reason": "A_SOLVE_TIMEOUT",
-          "passed": false,
+          "status": "CERTIFIED_POLICY_COMPLIANT",
+          "reason": "PURE_A",
+          "passed": true,
           "request_sha256": "8b2e6883b30eab4ad9227365ead57e2c412cc1216ecd75c004cd4d0a330ced44",
           "ros_contract_sha256": "c300311bd1da87efed02122f6df2f9c246fcd176e98ee5b9024a85a17070e6cd",
-          "plan_sha256": null,
-          "modes": null,
-          "certified_mode_switches": null,
-          "reference_length_m": null,
-          "plan_duration_s": null,
-          "solve_wall_s": 12.014968908,
-          "independent_audit": null,
-          "certified_executable": null,
+          "plan_sha256": "faf06339204541235915c84d5bf80f8f5c73e5f98dbd916ffc9df74549d14f6d",
+          "modes": "A",
+          "certified_mode_switches": 0,
+          "reference_length_m": 32.8838686451193,
+          "plan_duration_s": 223.43158431348058,
+          "solve_wall_s": 3.228419013,
+          "independent_audit": "CERTIFIED",
+          "certified_executable": true,
           "source_task_profile_run": false,
-          "source_timing_limits_match": false
+          "source_timing_limits_match": false,
+          "baseline": {
+            "status": "NO_CERTIFIED_SOLUTION_WITHIN_BUDGET",
+            "reason": "A_SOLVE_TIMEOUT",
+            "passed": false,
+            "modes": null,
+            "reference_length_m": null,
+            "duration_s": null,
+            "solve_wall_s": 12.014968908
+          }
         },
         "formation_standard": {
           "status": "CERTIFIED_POLICY_COMPLIANT",
@@ -509,16 +626,25 @@
           "passed": true,
           "request_sha256": "da97561771b73b3794d15ad67640e887096f80e91474490d2ae91593200526bb",
           "ros_contract_sha256": "22fd5c62ce3314b265ed84926d8167085f64dd7d1190ea658666c1df4914c494",
-          "plan_sha256": "92df3e252f90ec50d6b27c03e7019ad6f8b1100073f23134e25e38632e5f1695",
+          "plan_sha256": "4dedd83ea9669c321ae57d994961a273b92ab8c8ef7db152f128030987e2e799",
           "modes": "A",
           "certified_mode_switches": 0,
-          "reference_length_m": 32.90500228132111,
-          "plan_duration_s": 87.24115911629173,
-          "solve_wall_s": 3.842300882,
+          "reference_length_m": 33.1380169953966,
+          "plan_duration_s": 73.71319533993942,
+          "solve_wall_s": 3.479746885,
           "independent_audit": "CERTIFIED",
           "certified_executable": true,
           "source_task_profile_run": true,
-          "source_timing_limits_match": true
+          "source_timing_limits_match": true,
+          "baseline": {
+            "status": "CERTIFIED_POLICY_COMPLIANT",
+            "reason": "PURE_A",
+            "passed": true,
+            "modes": "A",
+            "reference_length_m": 32.90500228132111,
+            "duration_s": 87.24115911629173,
+            "solve_wall_s": 3.842300882
+          }
         },
         "single_baseline": {
           "status": "CERTIFIED_POLICY_COMPLIANT",
@@ -526,16 +652,25 @@
           "passed": true,
           "request_sha256": "16570ea1d2e442f0d72c9b6e32f93db4a3030bd4d2b9eaa91bcfbd4148b63282",
           "ros_contract_sha256": "8720029b3bfd1ae711cfde2d2c0bd0faded581c338dc276339c4887851a1f8e2",
-          "plan_sha256": "241fb61f3cf3b205237738eb2ef9aa9de36a8a3fa77d43ae7cb8f4025f58d08a",
+          "plan_sha256": "142ca2ddd395212145ba2ab313bbe514894afe38828c7fc5e2346eda93152d09",
           "modes": "A",
           "certified_mode_switches": 0,
-          "reference_length_m": 30.55271062295009,
-          "plan_duration_s": 229.28775044756068,
-          "solve_wall_s": 0.668975267,
+          "reference_length_m": 30.554686866785186,
+          "plan_duration_s": 207.02736511940554,
+          "solve_wall_s": 0.764595806,
           "independent_audit": "CERTIFIED",
           "certified_executable": true,
           "source_task_profile_run": false,
-          "source_timing_limits_match": false
+          "source_timing_limits_match": false,
+          "baseline": {
+            "status": "CERTIFIED_POLICY_COMPLIANT",
+            "reason": "PURE_A",
+            "passed": true,
+            "modes": "A",
+            "reference_length_m": 30.55271062295009,
+            "duration_s": 229.28775044756068,
+            "solve_wall_s": 0.668975267
+          }
         },
         "single_standard": {
           "status": "CERTIFIED_POLICY_COMPLIANT",
@@ -543,16 +678,25 @@
           "passed": true,
           "request_sha256": "b37fb512939848b5a7c2cbe2f20d5331d80ee7cda003ee31d13dd984fa9df9c4",
           "ros_contract_sha256": "679458de33b3ad3e0518f5a2d65c917949e142b99bbdbc64e79f96377870f7f0",
-          "plan_sha256": "5ed183e1e80c87d5e2ec4009d4f4b1d5ad37a98c28f760af8295f6fcc4d4afc7",
+          "plan_sha256": "3aa2821f7505695a7b66b4e553240aeffa4a1cfc97034fa1ae5e499726723b4e",
           "modes": "A",
           "certified_mode_switches": 0,
-          "reference_length_m": 30.669121340355417,
-          "plan_duration_s": 61.99675464581925,
-          "solve_wall_s": 0.872722943,
+          "reference_length_m": 30.670097819028644,
+          "plan_duration_s": 58.3814821961776,
+          "solve_wall_s": 0.670948497,
           "independent_audit": "CERTIFIED",
           "certified_executable": true,
           "source_task_profile_run": false,
-          "source_timing_limits_match": false
+          "source_timing_limits_match": false,
+          "baseline": {
+            "status": "CERTIFIED_POLICY_COMPLIANT",
+            "reason": "PURE_A",
+            "passed": true,
+            "modes": "A",
+            "reference_length_m": 30.669121340355417,
+            "duration_s": 61.99675464581925,
+            "solve_wall_s": 0.872722943
+          }
         }
       }
     },
@@ -600,72 +744,108 @@
       },
       "native_results": {
         "formation_baseline": {
-          "status": "NO_CERTIFIED_SOLUTION_WITHIN_BUDGET",
-          "reason": "A_SOLVE_TIMEOUT",
-          "passed": false,
+          "status": "CERTIFIED_POLICY_COMPLIANT",
+          "reason": "PURE_A",
+          "passed": true,
           "request_sha256": "a9b24ed6b92c8a28f7081f77bcd1488003379565c4d1bd01a5649965ff207bb3",
           "ros_contract_sha256": "d849adc94ea0de19bb85121f384af761830f6b3fcb6990bec9ece69a2447b3e7",
-          "plan_sha256": null,
-          "modes": null,
-          "certified_mode_switches": null,
-          "reference_length_m": null,
-          "plan_duration_s": null,
-          "solve_wall_s": 12.001544203,
-          "independent_audit": null,
-          "certified_executable": null,
-          "source_task_profile_run": false,
-          "source_timing_limits_match": false
-        },
-        "formation_standard": {
-          "status": "NO_CERTIFIED_SOLUTION_WITHIN_BUDGET",
-          "reason": "A_SOLVE_TIMEOUT",
-          "passed": false,
-          "request_sha256": "9956b813389223681e4d7f25a4ea959893573bc0855c7f56b9cca29e3d61fd29",
-          "ros_contract_sha256": "c55cc037f28330a7f8296177b363343e4e7ed6cf57a9b796d346e35207971e9e",
-          "plan_sha256": null,
-          "modes": null,
-          "certified_mode_switches": null,
-          "reference_length_m": null,
-          "plan_duration_s": null,
-          "solve_wall_s": 12.004596564,
-          "independent_audit": null,
-          "certified_executable": null,
-          "source_task_profile_run": true,
-          "source_timing_limits_match": true
-        },
-        "single_baseline": {
-          "status": "CERTIFIED_POLICY_COMPLIANT",
-          "reason": "A_SEARCH_SPACE_EXHAUSTED",
-          "passed": true,
-          "request_sha256": "03eeb59eb58e5098c854cc49bb386551785ce7b00eb87d4800a2eca65d6836db",
-          "ros_contract_sha256": "8d4d6f5ee245dfca02009fe9f971e1202a4b14178c0385354c6ea04d709bd8bb",
-          "plan_sha256": "162d1725c0082e431e61fdc980dd261b03baa6aebcd5e3062ccf95de8fece6e6",
-          "modes": "AS",
-          "certified_mode_switches": 1,
-          "reference_length_m": 27.216645226222404,
-          "plan_duration_s": 220.65987527834983,
-          "solve_wall_s": 7.708655431,
+          "plan_sha256": "9bb491202df81b39f1e17b5e7db104abc48a7eafd3d8f0d00800fcd4ba477d77",
+          "modes": "A",
+          "certified_mode_switches": 0,
+          "reference_length_m": 34.823475389750854,
+          "plan_duration_s": 250.82474563680165,
+          "solve_wall_s": 1.578079414,
           "independent_audit": "CERTIFIED",
           "certified_executable": true,
           "source_task_profile_run": false,
-          "source_timing_limits_match": false
+          "source_timing_limits_match": false,
+          "baseline": {
+            "status": "NO_CERTIFIED_SOLUTION_WITHIN_BUDGET",
+            "reason": "A_SOLVE_TIMEOUT",
+            "passed": false,
+            "modes": null,
+            "reference_length_m": null,
+            "duration_s": null,
+            "solve_wall_s": 12.001544203
+          }
+        },
+        "formation_standard": {
+          "status": "CERTIFIED_POLICY_COMPLIANT",
+          "reason": "PURE_A",
+          "passed": true,
+          "request_sha256": "9956b813389223681e4d7f25a4ea959893573bc0855c7f56b9cca29e3d61fd29",
+          "ros_contract_sha256": "c55cc037f28330a7f8296177b363343e4e7ed6cf57a9b796d346e35207971e9e",
+          "plan_sha256": "b06a66fb9a88d6e14ff1737ac193532b70f08ccca7bc264d2ab40d37b920e4ed",
+          "modes": "A",
+          "certified_mode_switches": 0,
+          "reference_length_m": 35.073039270721075,
+          "plan_duration_s": 84.15752591686699,
+          "solve_wall_s": 1.620542649,
+          "independent_audit": "CERTIFIED",
+          "certified_executable": true,
+          "source_task_profile_run": true,
+          "source_timing_limits_match": true,
+          "baseline": {
+            "status": "NO_CERTIFIED_SOLUTION_WITHIN_BUDGET",
+            "reason": "A_SOLVE_TIMEOUT",
+            "passed": false,
+            "modes": null,
+            "reference_length_m": null,
+            "duration_s": null,
+            "solve_wall_s": 12.004596564
+          }
+        },
+        "single_baseline": {
+          "status": "CERTIFIED_POLICY_COMPLIANT",
+          "reason": "PURE_A",
+          "passed": true,
+          "request_sha256": "03eeb59eb58e5098c854cc49bb386551785ce7b00eb87d4800a2eca65d6836db",
+          "ros_contract_sha256": "8d4d6f5ee245dfca02009fe9f971e1202a4b14178c0385354c6ea04d709bd8bb",
+          "plan_sha256": "ca9ff44c611adb869309d55ea7ceac1a3b2d52e1966e15bf31b23add45e69fe1",
+          "modes": "A",
+          "certified_mode_switches": 0,
+          "reference_length_m": 34.17693803425525,
+          "plan_duration_s": 239.91313433889763,
+          "solve_wall_s": 2.314988141,
+          "independent_audit": "CERTIFIED",
+          "certified_executable": true,
+          "source_task_profile_run": false,
+          "source_timing_limits_match": false,
+          "baseline": {
+            "status": "CERTIFIED_POLICY_COMPLIANT",
+            "reason": "A_SEARCH_SPACE_EXHAUSTED",
+            "passed": true,
+            "modes": "AS",
+            "reference_length_m": 27.216645226222404,
+            "duration_s": 220.65987527834983,
+            "solve_wall_s": 7.708655431
+          }
         },
         "single_standard": {
-          "status": "NO_CERTIFIED_SOLUTION_WITHIN_BUDGET",
-          "reason": "A_SOLVE_TIMEOUT",
-          "passed": false,
+          "status": "CERTIFIED_POLICY_COMPLIANT",
+          "reason": "PURE_A",
+          "passed": true,
           "request_sha256": "389a8b6308359f43e3963245101d67ab21dcc049f6e847b8c0434d96ca138330",
           "ros_contract_sha256": "9bb4deca43d2b5f0fc2878de0eba1fc61fd427998c7981f8644d6f44ec83a6a3",
-          "plan_sha256": null,
-          "modes": null,
-          "certified_mode_switches": null,
-          "reference_length_m": null,
-          "plan_duration_s": null,
-          "solve_wall_s": 8.001920234,
-          "independent_audit": null,
-          "certified_executable": null,
+          "plan_sha256": "654563e0b4381bca862b0c911de258fe43b26d8b00205f099c58b612c41f40ac",
+          "modes": "A",
+          "certified_mode_switches": 0,
+          "reference_length_m": 34.30331791023988,
+          "plan_duration_s": 67.50008675414327,
+          "solve_wall_s": 2.235767936,
+          "independent_audit": "CERTIFIED",
+          "certified_executable": true,
           "source_task_profile_run": false,
-          "source_timing_limits_match": false
+          "source_timing_limits_match": false,
+          "baseline": {
+            "status": "NO_CERTIFIED_SOLUTION_WITHIN_BUDGET",
+            "reason": "A_SOLVE_TIMEOUT",
+            "passed": false,
+            "modes": null,
+            "reference_length_m": null,
+            "duration_s": null,
+            "solve_wall_s": 8.001920234
+          }
         }
       }
     },
@@ -713,21 +893,30 @@
       },
       "native_results": {
         "formation_baseline": {
-          "status": "NO_CERTIFIED_SOLUTION_WITHIN_BUDGET",
-          "reason": "A_SOLVE_TIMEOUT",
-          "passed": false,
+          "status": "CERTIFIED_POLICY_COMPLIANT",
+          "reason": "PURE_A",
+          "passed": true,
           "request_sha256": "3be0eddc8c875a249a0024748d03740e49e925ec7000a9f9fdc78f72b55fdc75",
           "ros_contract_sha256": "e5d0bee18988e885b5ae06c7820e498cbe8fba2c376d6bbeab5da0f745002704",
-          "plan_sha256": null,
-          "modes": null,
-          "certified_mode_switches": null,
-          "reference_length_m": null,
-          "plan_duration_s": null,
-          "solve_wall_s": 12.012176651,
-          "independent_audit": null,
-          "certified_executable": null,
+          "plan_sha256": "f2590f471dba6f7b03133e2827a3f4ed44eb38753f11156c7ac6c4bab730a40a",
+          "modes": "A",
+          "certified_mode_switches": 0,
+          "reference_length_m": 42.83174950119937,
+          "plan_duration_s": 289.35064829444275,
+          "solve_wall_s": 4.175884405,
+          "independent_audit": "CERTIFIED",
+          "certified_executable": true,
           "source_task_profile_run": false,
-          "source_timing_limits_match": false
+          "source_timing_limits_match": false,
+          "baseline": {
+            "status": "NO_CERTIFIED_SOLUTION_WITHIN_BUDGET",
+            "reason": "A_SOLVE_TIMEOUT",
+            "passed": false,
+            "modes": null,
+            "reference_length_m": null,
+            "duration_s": null,
+            "solve_wall_s": 12.012176651
+          }
         },
         "formation_standard": {
           "status": "CERTIFIED_POLICY_COMPLIANT",
@@ -735,16 +924,25 @@
           "passed": true,
           "request_sha256": "c37555e2804d397dc06ed68ea5fed685e055571f653aca4456245ca18dd778c8",
           "ros_contract_sha256": "34ade2a71c9f0bf1f3b3d585f0187ec5cebc54dc7ea0c0694fc56f22b8f0cdb8",
-          "plan_sha256": "49fc2e9a49796522612676eb8386507fb2bee16289d7e687b8be438a0009e37a",
+          "plan_sha256": "c44eaf465a40c6c25ebee629c8b8d699cf98c7860eebe345e91b47f8c1042a20",
           "modes": "A",
           "certified_mode_switches": 0,
-          "reference_length_m": 43.04040993432271,
-          "plan_duration_s": 109.72447538874262,
-          "solve_wall_s": 3.510945825,
+          "reference_length_m": 43.711714515482576,
+          "plan_duration_s": 126.30289816915592,
+          "solve_wall_s": 3.247479116,
           "independent_audit": "CERTIFIED",
           "certified_executable": true,
           "source_task_profile_run": true,
-          "source_timing_limits_match": true
+          "source_timing_limits_match": true,
+          "baseline": {
+            "status": "CERTIFIED_POLICY_COMPLIANT",
+            "reason": "PURE_A",
+            "passed": true,
+            "modes": "A",
+            "reference_length_m": 43.04040993432271,
+            "duration_s": 109.72447538874262,
+            "solve_wall_s": 3.510945825
+          }
         },
         "single_baseline": {
           "status": "CERTIFIED_POLICY_COMPLIANT",
@@ -752,16 +950,25 @@
           "passed": true,
           "request_sha256": "df66865cd4f33680ddb164c8cd8548f1a852aff4b82235c7c5313ecba08da2e0",
           "ros_contract_sha256": "85dc9e65a56681e4fa472d3142183932f2fdf52e1eadefd888ed042d8e1f3bc9",
-          "plan_sha256": "bc7b121b92b8fdbf2ff09e78d0687862b100baae767e738fc166de88c7204711",
+          "plan_sha256": "bd831517a3fc6ef6193ca4e1e32c91f419206d7da155cb373acfdd60db6bb952",
           "modes": "A",
           "certified_mode_switches": 0,
-          "reference_length_m": 36.89617255282104,
-          "plan_duration_s": 278.73522904592886,
-          "solve_wall_s": 0.7382943,
+          "reference_length_m": 36.90723001180963,
+          "plan_duration_s": 251.6683204773987,
+          "solve_wall_s": 1.03822507,
           "independent_audit": "CERTIFIED",
           "certified_executable": true,
           "source_task_profile_run": false,
-          "source_timing_limits_match": false
+          "source_timing_limits_match": false,
+          "baseline": {
+            "status": "CERTIFIED_POLICY_COMPLIANT",
+            "reason": "PURE_A",
+            "passed": true,
+            "modes": "A",
+            "reference_length_m": 36.89617255282104,
+            "duration_s": 278.73522904592886,
+            "solve_wall_s": 0.7382943
+          }
         },
         "single_standard": {
           "status": "CERTIFIED_POLICY_COMPLIANT",
@@ -769,16 +976,25 @@
           "passed": true,
           "request_sha256": "db5bd3cf021f272608f07504968afba5cc4cdef9ec162135e4cefe47fde374f1",
           "ros_contract_sha256": "d277e501b73d78d2085520f9b89f23c6742802af6cf12a1077e8b412656f4c3c",
-          "plan_sha256": "f8768a4140cb8dc331fc1111d5444e38e288e792a7fe110663fce38c8b5ce39c",
+          "plan_sha256": "62ac752e58a6d774394eec6e68d44d936caad6d44c23cef685bdc8e5e7cfb2ea",
           "modes": "A",
           "certified_mode_switches": 0,
-          "reference_length_m": 37.00336397363836,
-          "plan_duration_s": 77.03011546681651,
-          "solve_wall_s": 0.719545341,
+          "reference_length_m": 37.00621193825791,
+          "plan_duration_s": 72.57012155778516,
+          "solve_wall_s": 0.999687113,
           "independent_audit": "CERTIFIED",
           "certified_executable": true,
           "source_task_profile_run": false,
-          "source_timing_limits_match": false
+          "source_timing_limits_match": false,
+          "baseline": {
+            "status": "CERTIFIED_POLICY_COMPLIANT",
+            "reason": "PURE_A",
+            "passed": true,
+            "modes": "A",
+            "reference_length_m": 37.00336397363836,
+            "duration_s": 77.03011546681651,
+            "solve_wall_s": 0.719545341
+          }
         }
       }
     },
@@ -831,16 +1047,25 @@
           "passed": true,
           "request_sha256": "d42ba5d014a16319eac10f0877fd043baacaae1b4615b9cb94326400f29302ab",
           "ros_contract_sha256": "7b064e02fa0272b6d5acf4436b62cf8a2e43b7337dc0238f514f87995ce5fb13",
-          "plan_sha256": "210cb7cd64dc187d118d01b2826da39606edcd1b0fb631fe243ae3eb0e9f22f7",
+          "plan_sha256": "8b144ae0182666ae7763c8c6fd5581aececf800a3bc1e0665ec097c094402767",
           "modes": "A",
           "certified_mode_switches": 0,
-          "reference_length_m": 24.402118031215373,
-          "plan_duration_s": 200.2423878189932,
-          "solve_wall_s": 0.770078838,
+          "reference_length_m": 24.48148254364374,
+          "plan_duration_s": 176.250931417208,
+          "solve_wall_s": 0.988494232,
           "independent_audit": "CERTIFIED",
           "certified_executable": true,
           "source_task_profile_run": false,
-          "source_timing_limits_match": false
+          "source_timing_limits_match": false,
+          "baseline": {
+            "status": "CERTIFIED_POLICY_COMPLIANT",
+            "reason": "PURE_A",
+            "passed": true,
+            "modes": "A",
+            "reference_length_m": 24.402118031215373,
+            "duration_s": 200.2423878189932,
+            "solve_wall_s": 0.770078838
+          }
         },
         "formation_standard": {
           "status": "CERTIFIED_POLICY_COMPLIANT",
@@ -848,16 +1073,25 @@
           "passed": true,
           "request_sha256": "b91b7e6611c4c6a03477bb442a5548bc10162a6e8990960143d2c41c05b5166a",
           "ros_contract_sha256": "b47720d56bd38b4effa1a5a9999868217719f8b7b8a74e80d89e941762e877f8",
-          "plan_sha256": "b58fe13af20dd343385aff229c35dc05fcf9b5b362ecdedd220b981c2be1b53a",
+          "plan_sha256": "4191518006e83fdb091970d833f496ba265e89b885f54e9b6d684a3e4f53a5d7",
           "modes": "A",
           "certified_mode_switches": 0,
-          "reference_length_m": 24.55459727279698,
-          "plan_duration_s": 65.41693334498201,
-          "solve_wall_s": 0.79280295,
+          "reference_length_m": 24.561689164853522,
+          "plan_duration_s": 59.8792766522266,
+          "solve_wall_s": 0.962075227,
           "independent_audit": "CERTIFIED",
           "certified_executable": true,
           "source_task_profile_run": true,
-          "source_timing_limits_match": true
+          "source_timing_limits_match": true,
+          "baseline": {
+            "status": "CERTIFIED_POLICY_COMPLIANT",
+            "reason": "PURE_A",
+            "passed": true,
+            "modes": "A",
+            "reference_length_m": 24.55459727279698,
+            "duration_s": 65.41693334498201,
+            "solve_wall_s": 0.79280295
+          }
         },
         "single_baseline": {
           "status": "CERTIFIED_POLICY_COMPLIANT",
@@ -865,16 +1099,25 @@
           "passed": true,
           "request_sha256": "0d64a299756abe65d9275031345aa6c18f05f8324777ab276f38ebd98d16af50",
           "ros_contract_sha256": "24fec5e05331e662b5040ef4fcc2467a7d6ae4968c68231c95dfc5d0fa21f638",
-          "plan_sha256": "e54bdb0eaee96b77979b066bc91e5cdbe1a50290dfe4a8f8fd8e53af1cf70630",
+          "plan_sha256": "b5d28c9384afac0c09ec02d9b4cdb032c2b13082a802e62979ca8660e858972e",
           "modes": "A",
           "certified_mode_switches": 0,
-          "reference_length_m": 22.238687493435826,
-          "plan_duration_s": 166.02757744811979,
-          "solve_wall_s": 0.51307758,
+          "reference_length_m": 22.25039186942472,
+          "plan_duration_s": 149.98931306604476,
+          "solve_wall_s": 0.605275568,
           "independent_audit": "CERTIFIED",
           "certified_executable": true,
           "source_task_profile_run": false,
-          "source_timing_limits_match": false
+          "source_timing_limits_match": false,
+          "baseline": {
+            "status": "CERTIFIED_POLICY_COMPLIANT",
+            "reason": "PURE_A",
+            "passed": true,
+            "modes": "A",
+            "reference_length_m": 22.238687493435826,
+            "duration_s": 166.02757744811979,
+            "solve_wall_s": 0.51307758
+          }
         },
         "single_standard": {
           "status": "CERTIFIED_POLICY_COMPLIANT",
@@ -882,16 +1125,25 @@
           "passed": true,
           "request_sha256": "0af22b6b093664fe6c3ffb629422bb51eff370df02a67e9e544f046742c8043e",
           "ros_contract_sha256": "534b0082919fe17af634d4275947404f0ddc87ff972f38631287ff59ae1ff9e1",
-          "plan_sha256": "cc73a16999beda604982e458fab3c9b3024d7a99fe6123c3696aa680a8d65d06",
+          "plan_sha256": "9ff02b030069d395f7d5af9a4dc4cf331aa1763989ad3061846948fb29913ade",
           "modes": "A",
           "certified_mode_switches": 0,
-          "reference_length_m": 22.34857194236236,
-          "plan_duration_s": 45.04705767252108,
-          "solve_wall_s": 0.551462436,
+          "reference_length_m": 22.351186128950314,
+          "plan_duration_s": 42.44418904040206,
+          "solve_wall_s": 0.617684225,
           "independent_audit": "CERTIFIED",
           "certified_executable": true,
           "source_task_profile_run": false,
-          "source_timing_limits_match": false
+          "source_timing_limits_match": false,
+          "baseline": {
+            "status": "CERTIFIED_POLICY_COMPLIANT",
+            "reason": "PURE_A",
+            "passed": true,
+            "modes": "A",
+            "reference_length_m": 22.34857194236236,
+            "duration_s": 45.04705767252108,
+            "solve_wall_s": 0.551462436
+          }
         }
       }
     },
@@ -939,21 +1191,30 @@
       },
       "native_results": {
         "formation_baseline": {
-          "status": "NO_CERTIFIED_SOLUTION_WITHIN_BUDGET",
-          "reason": "A_SOLVE_TIMEOUT",
-          "passed": false,
+          "status": "CERTIFIED_POLICY_COMPLIANT",
+          "reason": "PURE_A",
+          "passed": true,
           "request_sha256": "e694c0a3edfcfb6ddec409fe4ef55ee6370f5dfac1fc0ce3c93993bfb8a1f3c2",
           "ros_contract_sha256": "793d73901254b6b1eba035a6ae8320c94a756accfaac6702b150b5ec133ec9e5",
-          "plan_sha256": null,
-          "modes": null,
-          "certified_mode_switches": null,
-          "reference_length_m": null,
-          "plan_duration_s": null,
-          "solve_wall_s": 12.001412688,
-          "independent_audit": null,
-          "certified_executable": null,
+          "plan_sha256": "e6adb1fa72f8392575599ced12379a0f929da383640e636b2bc39b2c3c69db69",
+          "modes": "A",
+          "certified_mode_switches": 0,
+          "reference_length_m": 31.959772982673417,
+          "plan_duration_s": 235.48472986184348,
+          "solve_wall_s": 2.039227482,
+          "independent_audit": "CERTIFIED",
+          "certified_executable": true,
           "source_task_profile_run": false,
-          "source_timing_limits_match": false
+          "source_timing_limits_match": false,
+          "baseline": {
+            "status": "NO_CERTIFIED_SOLUTION_WITHIN_BUDGET",
+            "reason": "A_SOLVE_TIMEOUT",
+            "passed": false,
+            "modes": null,
+            "reference_length_m": null,
+            "duration_s": null,
+            "solve_wall_s": 12.001412688
+          }
         },
         "formation_standard": {
           "status": "CERTIFIED_POLICY_COMPLIANT",
@@ -961,16 +1222,25 @@
           "passed": true,
           "request_sha256": "f88520732741cb81f90629825140eb25a413138944ec52f7ab425ca963db4eb5",
           "ros_contract_sha256": "1f8bb673dafce33af5b63b93197a9498eb0ec967d1108c85b58bf6abb6b76fad",
-          "plan_sha256": "617d3f6bdd6240a2a2afc8089baae0e88607a9a920f6319675a0bf5929feb03f",
+          "plan_sha256": "f14ccd207d74f8349c24a5aa1422dea6cd690657064d2e3c4fc4e53d246d1202",
           "modes": "A",
           "certified_mode_switches": 0,
-          "reference_length_m": 32.07660504176503,
-          "plan_duration_s": 78.43719973427879,
-          "solve_wall_s": 11.537708324,
+          "reference_length_m": 31.905764681957137,
+          "plan_duration_s": 75.1809646308576,
+          "solve_wall_s": 1.834267972,
           "independent_audit": "CERTIFIED",
           "certified_executable": true,
           "source_task_profile_run": true,
-          "source_timing_limits_match": true
+          "source_timing_limits_match": true,
+          "baseline": {
+            "status": "CERTIFIED_POLICY_COMPLIANT",
+            "reason": "PURE_A",
+            "passed": true,
+            "modes": "A",
+            "reference_length_m": 32.07660504176503,
+            "duration_s": 78.43719973427879,
+            "solve_wall_s": 11.537708324
+          }
         },
         "single_baseline": {
           "status": "CERTIFIED_POLICY_COMPLIANT",
@@ -978,16 +1248,25 @@
           "passed": true,
           "request_sha256": "e3da25e59334363ba66c46fd2cd88fecf5ab01b1f707b6ca11fb625ebbdc48d7",
           "ros_contract_sha256": "207e34afad0745a2a6d68db06490d94690a94c5b2b4f74f2d4720583df923b73",
-          "plan_sha256": "ee549f45038d9f9d7c9f2cb87847a91dcd7216b5058ec009e5e93606a74632dd",
+          "plan_sha256": "2537c59060f14fbb3ab8f1bcff435517dba1d1d17bc4dc9adde7bef0ca69df06",
           "modes": "A",
           "certified_mode_switches": 0,
-          "reference_length_m": 26.20313740641478,
-          "plan_duration_s": 197.01358597587355,
-          "solve_wall_s": 0.781944554,
+          "reference_length_m": 26.17201121025356,
+          "plan_duration_s": 177.44320664389969,
+          "solve_wall_s": 0.924001426,
           "independent_audit": "CERTIFIED",
           "certified_executable": true,
           "source_task_profile_run": false,
-          "source_timing_limits_match": false
+          "source_timing_limits_match": false,
+          "baseline": {
+            "status": "CERTIFIED_POLICY_COMPLIANT",
+            "reason": "PURE_A",
+            "passed": true,
+            "modes": "A",
+            "reference_length_m": 26.20313740641478,
+            "duration_s": 197.01358597587355,
+            "solve_wall_s": 0.781944554
+          }
         },
         "single_standard": {
           "status": "CERTIFIED_POLICY_COMPLIANT",
@@ -995,16 +1274,25 @@
           "passed": true,
           "request_sha256": "5f4afbd2451d40577af5dd48cdbb0561bcee93509588cb98c138214b15e56996",
           "ros_contract_sha256": "f9ceb3d0ef448accb9f76c4f3f4b04f6c2ceb5688f0e618acd7ece8b9a7b7ba2",
-          "plan_sha256": "250a270ac29db2953afe9a654a8683c5c803963153ec868fc3407b48e1f4c37b",
+          "plan_sha256": "8c6ae0ef4ae619db54424f1c6816139282b600fb45179edcae99504d249f807c",
           "modes": "A",
           "certified_mode_switches": 0,
-          "reference_length_m": 26.367267014388055,
-          "plan_duration_s": 55.07422582419224,
-          "solve_wall_s": 0.804603353,
+          "reference_length_m": 26.390824617496182,
+          "plan_duration_s": 52.06038274361377,
+          "solve_wall_s": 0.968394045,
           "independent_audit": "CERTIFIED",
           "certified_executable": true,
           "source_task_profile_run": false,
-          "source_timing_limits_match": false
+          "source_timing_limits_match": false,
+          "baseline": {
+            "status": "CERTIFIED_POLICY_COMPLIANT",
+            "reason": "PURE_A",
+            "passed": true,
+            "modes": "A",
+            "reference_length_m": 26.367267014388055,
+            "duration_s": 55.07422582419224,
+            "solve_wall_s": 0.804603353
+          }
         }
       }
     },
@@ -1057,16 +1345,25 @@
           "passed": true,
           "request_sha256": "d0229a206f0b12c301ff121a616d3fc748dc215b674deae7d1bfc30dcb067fd2",
           "ros_contract_sha256": "7b35d02e9a740b975cf4d5e5c0327a74b29052073e755ba46da441810153d76d",
-          "plan_sha256": "e71a91d7e0f5a6ab2e9e097d3cc60dba1c277f73668a6e3790a378c6f3fe0094",
+          "plan_sha256": "a1b05700852b93aef1ed6404d44771666cfcb32e66c0e8810194ce1f86232e5b",
           "modes": "A",
           "certified_mode_switches": 0,
-          "reference_length_m": 28.983782472742533,
-          "plan_duration_s": 217.1959651623956,
-          "solve_wall_s": 8.713385067,
+          "reference_length_m": 29.00328416773234,
+          "plan_duration_s": 196.15884469915585,
+          "solve_wall_s": 1.602098961,
           "independent_audit": "CERTIFIED",
           "certified_executable": true,
           "source_task_profile_run": false,
-          "source_timing_limits_match": false
+          "source_timing_limits_match": false,
+          "baseline": {
+            "status": "CERTIFIED_POLICY_COMPLIANT",
+            "reason": "PURE_A",
+            "passed": true,
+            "modes": "A",
+            "reference_length_m": 28.983782472742533,
+            "duration_s": 217.1959651623956,
+            "solve_wall_s": 8.713385067
+          }
         },
         "formation_standard": {
           "status": "CERTIFIED_POLICY_COMPLIANT",
@@ -1074,16 +1371,25 @@
           "passed": true,
           "request_sha256": "5e28313ce535e82331d4c1576477d530d3cf070e2569ca68a99d0972fe3d5144",
           "ros_contract_sha256": "0ca911ce4d1dd22fce4f6d35ed7003828414e1663290678d1d6371b6a0d6d31d",
-          "plan_sha256": "62d41bbd3ef26d58bc40c803018bd03fc5d00c3fa40aa93ac8ee42bfbfa6cc7a",
+          "plan_sha256": "451cf58136140c6ee3bd033dc662cf9ef73124cf6fc3a834390561f71892008d",
           "modes": "A",
           "certified_mode_switches": 0,
-          "reference_length_m": 29.114031592130885,
-          "plan_duration_s": 70.75680267044778,
-          "solve_wall_s": 11.724983649,
+          "reference_length_m": 29.116728263544687,
+          "plan_duration_s": 66.66879366703053,
+          "solve_wall_s": 1.713166609,
           "independent_audit": "CERTIFIED",
           "certified_executable": true,
           "source_task_profile_run": true,
-          "source_timing_limits_match": true
+          "source_timing_limits_match": true,
+          "baseline": {
+            "status": "CERTIFIED_POLICY_COMPLIANT",
+            "reason": "PURE_A",
+            "passed": true,
+            "modes": "A",
+            "reference_length_m": 29.114031592130885,
+            "duration_s": 70.75680267044778,
+            "solve_wall_s": 11.724983649
+          }
         },
         "single_baseline": {
           "status": "CERTIFIED_POLICY_COMPLIANT",
@@ -1091,16 +1397,25 @@
           "passed": true,
           "request_sha256": "d38b69f46cb76a08fbdc958444d893dd46a6d9be36c95d2b7b45be5cb57a2f4a",
           "ros_contract_sha256": "126850b26527e66144fb06f63126b070b87a9784fe3570b774cce6894428bc1f",
-          "plan_sha256": "f3ae1e07e9bed8468604b546e76791ff067cf8424ada5c82a54e30d546a026da",
+          "plan_sha256": "ed68a4192197dcc7e5d8505ea3323730f2f67b0a58eacf838f11f10c1dfad8af",
           "modes": "A",
           "certified_mode_switches": 0,
-          "reference_length_m": 27.85291750817599,
-          "plan_duration_s": 208.45663540677947,
-          "solve_wall_s": 0.58916873,
+          "reference_length_m": 28.306504965892373,
+          "plan_duration_s": 191.82915342553648,
+          "solve_wall_s": 1.503661996,
           "independent_audit": "CERTIFIED",
           "certified_executable": true,
           "source_task_profile_run": false,
-          "source_timing_limits_match": false
+          "source_timing_limits_match": false,
+          "baseline": {
+            "status": "CERTIFIED_POLICY_COMPLIANT",
+            "reason": "PURE_A",
+            "passed": true,
+            "modes": "A",
+            "reference_length_m": 27.85291750817599,
+            "duration_s": 208.45663540677947,
+            "solve_wall_s": 0.58916873
+          }
         },
         "single_standard": {
           "status": "CERTIFIED_POLICY_COMPLIANT",
@@ -1108,16 +1423,25 @@
           "passed": true,
           "request_sha256": "4f3b74f81e133a1dbf9b13a2bc6cd51c8f4b814eeade20021c208ef2ccf0df7e",
           "ros_contract_sha256": "dbfbab2e109826b64907e9c72ba088b91c7df540bf4601fc1cc2804ac6a42466",
-          "plan_sha256": "ef4a5c0c7bfe86842434665d857c68ec0775b6020df917ade27cb0af5f81f20f",
+          "plan_sha256": "042ab2b65657a03de3bb59c2ace792b737e494a3c6232d20ffc9f3ac68a8a258",
           "modes": "A",
           "certified_mode_switches": 0,
-          "reference_length_m": 27.936525363604993,
-          "plan_duration_s": 56.51310072822132,
-          "solve_wall_s": 0.690943492,
+          "reference_length_m": 28.379258078773496,
+          "plan_duration_s": 53.87053579450994,
+          "solve_wall_s": 1.323910397,
           "independent_audit": "CERTIFIED",
           "certified_executable": true,
           "source_task_profile_run": false,
-          "source_timing_limits_match": false
+          "source_timing_limits_match": false,
+          "baseline": {
+            "status": "CERTIFIED_POLICY_COMPLIANT",
+            "reason": "PURE_A",
+            "passed": true,
+            "modes": "A",
+            "reference_length_m": 27.936525363604993,
+            "duration_s": 56.51310072822132,
+            "solve_wall_s": 0.690943492
+          }
         }
       }
     },
@@ -1170,16 +1494,25 @@
           "passed": true,
           "request_sha256": "4314a0801d63899d0c2186de793aeaf975cee7f2c95a61e5c721041114f40014",
           "ros_contract_sha256": "dfc3c9ccae493489689bf4e0f391e87e4d91dd9f25d66ac73aaa5066b13f23df",
-          "plan_sha256": "e71a91d7e0f5a6ab2e9e097d3cc60dba1c277f73668a6e3790a378c6f3fe0094",
+          "plan_sha256": "a1b05700852b93aef1ed6404d44771666cfcb32e66c0e8810194ce1f86232e5b",
           "modes": "A",
           "certified_mode_switches": 0,
-          "reference_length_m": 28.983782472742533,
-          "plan_duration_s": 217.1959651623956,
-          "solve_wall_s": 7.793752934,
+          "reference_length_m": 29.00328416773234,
+          "plan_duration_s": 196.15884469915585,
+          "solve_wall_s": 1.529238,
           "independent_audit": "CERTIFIED",
           "certified_executable": true,
           "source_task_profile_run": false,
-          "source_timing_limits_match": false
+          "source_timing_limits_match": false,
+          "baseline": {
+            "status": "CERTIFIED_POLICY_COMPLIANT",
+            "reason": "PURE_A",
+            "passed": true,
+            "modes": "A",
+            "reference_length_m": 28.983782472742533,
+            "duration_s": 217.1959651623956,
+            "solve_wall_s": 7.793752934
+          }
         },
         "formation_standard": {
           "status": "CERTIFIED_POLICY_COMPLIANT",
@@ -1187,16 +1520,25 @@
           "passed": true,
           "request_sha256": "3475ea0f53fce7b5c8bb19a862aa15acfdd8db089cc5225dcb30176e21db519d",
           "ros_contract_sha256": "ee5d631a7e705a5536c06e2505345ab42c84a8f40de76f9b3858e42df187fd37",
-          "plan_sha256": "62d41bbd3ef26d58bc40c803018bd03fc5d00c3fa40aa93ac8ee42bfbfa6cc7a",
+          "plan_sha256": "451cf58136140c6ee3bd033dc662cf9ef73124cf6fc3a834390561f71892008d",
           "modes": "A",
           "certified_mode_switches": 0,
-          "reference_length_m": 29.114031592130885,
-          "plan_duration_s": 70.75680267044778,
-          "solve_wall_s": 8.710899302,
+          "reference_length_m": 29.116728263544687,
+          "plan_duration_s": 66.66879366703053,
+          "solve_wall_s": 1.733767742,
           "independent_audit": "CERTIFIED",
           "certified_executable": true,
           "source_task_profile_run": true,
-          "source_timing_limits_match": true
+          "source_timing_limits_match": true,
+          "baseline": {
+            "status": "CERTIFIED_POLICY_COMPLIANT",
+            "reason": "PURE_A",
+            "passed": true,
+            "modes": "A",
+            "reference_length_m": 29.114031592130885,
+            "duration_s": 70.75680267044778,
+            "solve_wall_s": 8.710899302
+          }
         },
         "single_baseline": {
           "status": "CERTIFIED_POLICY_COMPLIANT",
@@ -1204,16 +1546,25 @@
           "passed": true,
           "request_sha256": "4a1e80871a52576d775ab90eed36de48ce275f0a5e34478b8aba81800c167603",
           "ros_contract_sha256": "cc520df119553a16fc253730b50a39e83836771128979681788741a4388109d1",
-          "plan_sha256": "f3ae1e07e9bed8468604b546e76791ff067cf8424ada5c82a54e30d546a026da",
+          "plan_sha256": "ed68a4192197dcc7e5d8505ea3323730f2f67b0a58eacf838f11f10c1dfad8af",
           "modes": "A",
           "certified_mode_switches": 0,
-          "reference_length_m": 27.85291750817599,
-          "plan_duration_s": 208.45663540677947,
-          "solve_wall_s": 0.599163512,
+          "reference_length_m": 28.306504965892373,
+          "plan_duration_s": 191.82915342553648,
+          "solve_wall_s": 1.503806833,
           "independent_audit": "CERTIFIED",
           "certified_executable": true,
           "source_task_profile_run": false,
-          "source_timing_limits_match": false
+          "source_timing_limits_match": false,
+          "baseline": {
+            "status": "CERTIFIED_POLICY_COMPLIANT",
+            "reason": "PURE_A",
+            "passed": true,
+            "modes": "A",
+            "reference_length_m": 27.85291750817599,
+            "duration_s": 208.45663540677947,
+            "solve_wall_s": 0.599163512
+          }
         },
         "single_standard": {
           "status": "CERTIFIED_POLICY_COMPLIANT",
@@ -1221,16 +1572,25 @@
           "passed": true,
           "request_sha256": "1efc3b7825dc910af131f64586da4ae08b23b49c41b520389e1c1ff093aa667a",
           "ros_contract_sha256": "f75948acddc6abd14c169721af06fb471494738bbe85b1ac22afbf7ddb357b2b",
-          "plan_sha256": "ef4a5c0c7bfe86842434665d857c68ec0775b6020df917ade27cb0af5f81f20f",
+          "plan_sha256": "042ab2b65657a03de3bb59c2ace792b737e494a3c6232d20ffc9f3ac68a8a258",
           "modes": "A",
           "certified_mode_switches": 0,
-          "reference_length_m": 27.936525363604993,
-          "plan_duration_s": 56.51310072822132,
-          "solve_wall_s": 0.672050749,
+          "reference_length_m": 28.379258078773496,
+          "plan_duration_s": 53.87053579450994,
+          "solve_wall_s": 1.287350494,
           "independent_audit": "CERTIFIED",
           "certified_executable": true,
           "source_task_profile_run": false,
-          "source_timing_limits_match": false
+          "source_timing_limits_match": false,
+          "baseline": {
+            "status": "CERTIFIED_POLICY_COMPLIANT",
+            "reason": "PURE_A",
+            "passed": true,
+            "modes": "A",
+            "reference_length_m": 27.936525363604993,
+            "duration_s": 56.51310072822132,
+            "solve_wall_s": 0.672050749
+          }
         }
       }
     },
@@ -1283,16 +1643,25 @@
           "passed": true,
           "request_sha256": "5105e87bf850d3d987f91e3b6a3542b6cd173810e79bd1889a1b774bc857d857",
           "ros_contract_sha256": "3358f009a53dea13413b234928e2a28acb183172bd7c042906956e4fbb642644",
-          "plan_sha256": "85fe8d6351e78e8e5dc9d4a7b952d7b2776c7d3f09aa023823aa8350186aa65b",
+          "plan_sha256": "454792c44a5e4e7a26b8e0e54cd187ae246b985a67a46bae2ca91a1764fd57e8",
           "modes": "A",
           "certified_mode_switches": 0,
-          "reference_length_m": 30.15792541199964,
-          "plan_duration_s": 241.1771546786466,
-          "solve_wall_s": 1.164678189,
+          "reference_length_m": 30.4542283735417,
+          "plan_duration_s": 206.18853125796207,
+          "solve_wall_s": 1.418514472,
           "independent_audit": "CERTIFIED",
           "certified_executable": true,
           "source_task_profile_run": false,
-          "source_timing_limits_match": false
+          "source_timing_limits_match": false,
+          "baseline": {
+            "status": "CERTIFIED_POLICY_COMPLIANT",
+            "reason": "PURE_A",
+            "passed": true,
+            "modes": "A",
+            "reference_length_m": 30.15792541199964,
+            "duration_s": 241.1771546786466,
+            "solve_wall_s": 1.164678189
+          }
         },
         "formation_standard": {
           "status": "CERTIFIED_POLICY_COMPLIANT",
@@ -1300,16 +1669,25 @@
           "passed": true,
           "request_sha256": "b998777450a326021bf7d0398e0f89defbd0110c07edb21e8a254a02470ebd2c",
           "ros_contract_sha256": "2e85a4c1384f1174d179c488f79bc481725b5aab6c7d84d3fd08635aefedde2d",
-          "plan_sha256": "ae605d7eb70d1c5648b69e04fdbaeaa3636e386294be111e93a1bd5b5083f269",
+          "plan_sha256": "af76d51b14e92b94b9cb3c97c6d0cef072b938715db1a6a2591de288e9596342",
           "modes": "A",
           "certified_mode_switches": 0,
-          "reference_length_m": 30.273387760291033,
-          "plan_duration_s": 78.55649346520585,
-          "solve_wall_s": 1.825776337,
+          "reference_length_m": 30.55432438206725,
+          "plan_duration_s": 70.33941771788723,
+          "solve_wall_s": 1.409417247,
           "independent_audit": "CERTIFIED",
           "certified_executable": true,
           "source_task_profile_run": true,
-          "source_timing_limits_match": true
+          "source_timing_limits_match": true,
+          "baseline": {
+            "status": "CERTIFIED_POLICY_COMPLIANT",
+            "reason": "PURE_A",
+            "passed": true,
+            "modes": "A",
+            "reference_length_m": 30.273387760291033,
+            "duration_s": 78.55649346520585,
+            "solve_wall_s": 1.825776337
+          }
         },
         "single_baseline": {
           "status": "CERTIFIED_POLICY_COMPLIANT",
@@ -1317,16 +1695,25 @@
           "passed": true,
           "request_sha256": "01d657be0e320de985e6756d21b7bc87568739e9b88530ca97beb9c1c16d91c8",
           "ros_contract_sha256": "f334d61995e26de44011dd77c079a654307adfaa12eddaf7f8583f73ba7c92a9",
-          "plan_sha256": "c05f1f9a010491d75b7ba4b7acc36a7737c4fd68f3ee50c6afbd1f383a327403",
+          "plan_sha256": "ca4465874c12519058c8d6a029e45c6db72f8b810127ac87723135e2f3966366",
           "modes": "A",
           "certified_mode_switches": 0,
-          "reference_length_m": 28.912129678364614,
-          "plan_duration_s": 214.88279105594216,
-          "solve_wall_s": 0.671550095,
+          "reference_length_m": 28.89443466607741,
+          "plan_duration_s": 193.83848404547237,
+          "solve_wall_s": 0.91117959,
           "independent_audit": "CERTIFIED",
           "certified_executable": true,
           "source_task_profile_run": false,
-          "source_timing_limits_match": false
+          "source_timing_limits_match": false,
+          "baseline": {
+            "status": "CERTIFIED_POLICY_COMPLIANT",
+            "reason": "PURE_A",
+            "passed": true,
+            "modes": "A",
+            "reference_length_m": 28.912129678364614,
+            "duration_s": 214.88279105594216,
+            "solve_wall_s": 0.671550095
+          }
         },
         "single_standard": {
           "status": "CERTIFIED_POLICY_COMPLIANT",
@@ -1334,16 +1721,25 @@
           "passed": true,
           "request_sha256": "333feb16d768cc0a27b3aee71b89f4b3599026da41c1be396578cac85658bbaa",
           "ros_contract_sha256": "4a5da292df8e3affbbadc02586c40ee19b703a191dac8a415da7b98499baf62a",
-          "plan_sha256": "f0dac4c81f9878086fae41d81bd983bfb2f7696779be0e0109adddd5b985f3a9",
+          "plan_sha256": "cb6a69657039efd1bbb67eba160e40b8b0a3b2dd2ec4479ddc94f194d79887b0",
           "modes": "A",
           "certified_mode_switches": 0,
-          "reference_length_m": 29.009671381579107,
-          "plan_duration_s": 58.06554992110487,
-          "solve_wall_s": 0.633419343,
+          "reference_length_m": 29.01032448091876,
+          "plan_duration_s": 54.69291806931876,
+          "solve_wall_s": 0.845124364,
           "independent_audit": "CERTIFIED",
           "certified_executable": true,
           "source_task_profile_run": false,
-          "source_timing_limits_match": false
+          "source_timing_limits_match": false,
+          "baseline": {
+            "status": "CERTIFIED_POLICY_COMPLIANT",
+            "reason": "PURE_A",
+            "passed": true,
+            "modes": "A",
+            "reference_length_m": 29.009671381579107,
+            "duration_s": 58.06554992110487,
+            "solve_wall_s": 0.633419343
+          }
         }
       }
     },
@@ -1401,11 +1797,20 @@
           "certified_mode_switches": null,
           "reference_length_m": null,
           "plan_duration_s": null,
-          "solve_wall_s": 12.05373199,
+          "solve_wall_s": 12.009512837,
           "independent_audit": null,
           "certified_executable": null,
           "source_task_profile_run": false,
-          "source_timing_limits_match": false
+          "source_timing_limits_match": false,
+          "baseline": {
+            "status": "NO_CERTIFIED_SOLUTION_WITHIN_BUDGET",
+            "reason": "A_SOLVE_TIMEOUT",
+            "passed": false,
+            "modes": null,
+            "reference_length_m": null,
+            "duration_s": null,
+            "solve_wall_s": 12.05373199
+          }
         },
         "formation_standard": {
           "status": "NO_CERTIFIED_SOLUTION_WITHIN_BUDGET",
@@ -1418,11 +1823,20 @@
           "certified_mode_switches": null,
           "reference_length_m": null,
           "plan_duration_s": null,
-          "solve_wall_s": 12.002465566,
+          "solve_wall_s": 12.004627232,
           "independent_audit": null,
           "certified_executable": null,
           "source_task_profile_run": true,
-          "source_timing_limits_match": true
+          "source_timing_limits_match": true,
+          "baseline": {
+            "status": "NO_CERTIFIED_SOLUTION_WITHIN_BUDGET",
+            "reason": "A_SOLVE_TIMEOUT",
+            "passed": false,
+            "modes": null,
+            "reference_length_m": null,
+            "duration_s": null,
+            "solve_wall_s": 12.002465566
+          }
         },
         "single_baseline": {
           "status": "CERTIFIED_POLICY_COMPLIANT",
@@ -1430,16 +1844,25 @@
           "passed": true,
           "request_sha256": "2f371d8ce1acf88f344dea3f589f9229356a369982c489ac472475fdd714c762",
           "ros_contract_sha256": "d9db56011a337de49774412d2d68e99312a3ef70b2959aa973ba957dcd6a7849",
-          "plan_sha256": "062c17cc006dee4f5f2a4c2037d65bc282dd1511598274f4b703fb46eb039e37",
+          "plan_sha256": "116cbca2cbd00942643a3b92ee1768e7db5fb0e39a818ccdbd2ae608ac9da280",
           "modes": "A",
           "certified_mode_switches": 0,
-          "reference_length_m": 27.86515399607968,
-          "plan_duration_s": 207.1281269177347,
-          "solve_wall_s": 0.607654617,
+          "reference_length_m": 27.86694335791469,
+          "plan_duration_s": 186.77807445391156,
+          "solve_wall_s": 1.002100854,
           "independent_audit": "CERTIFIED",
           "certified_executable": true,
           "source_task_profile_run": false,
-          "source_timing_limits_match": false
+          "source_timing_limits_match": false,
+          "baseline": {
+            "status": "CERTIFIED_POLICY_COMPLIANT",
+            "reason": "PURE_A",
+            "passed": true,
+            "modes": "A",
+            "reference_length_m": 27.86515399607968,
+            "duration_s": 207.1281269177347,
+            "solve_wall_s": 0.607654617
+          }
         },
         "single_standard": {
           "status": "CERTIFIED_POLICY_COMPLIANT",
@@ -1447,16 +1870,25 @@
           "passed": true,
           "request_sha256": "763cbbeea6c5047394742b3212cf42eda0f8931e7358bea55fd6fbe53b08c90d",
           "ros_contract_sha256": "0a4278b16c7d441ceb83e738eb8fadef45246e6ea8f3eab8df565cda83e8dc29",
-          "plan_sha256": "5cf872fdba12a36f92a43569b12fe91d39ea02f3305dff3d4124cbbe9a2e06c4",
+          "plan_sha256": "8f3cf9f4cc13f77218bce6b0e0a48cdc07b993f2ffb535d8d46759ac87171ba1",
           "modes": "A",
           "certified_mode_switches": 0,
-          "reference_length_m": 27.943457520555675,
-          "plan_duration_s": 55.860814586453756,
-          "solve_wall_s": 0.58257131,
+          "reference_length_m": 27.944079974440406,
+          "plan_duration_s": 52.6038311139654,
+          "solve_wall_s": 0.712523575,
           "independent_audit": "CERTIFIED",
           "certified_executable": true,
           "source_task_profile_run": false,
-          "source_timing_limits_match": false
+          "source_timing_limits_match": false,
+          "baseline": {
+            "status": "CERTIFIED_POLICY_COMPLIANT",
+            "reason": "PURE_A",
+            "passed": true,
+            "modes": "A",
+            "reference_length_m": 27.943457520555675,
+            "duration_s": 55.860814586453756,
+            "solve_wall_s": 0.58257131
+          }
         }
       }
     },
@@ -1514,11 +1946,20 @@
           "certified_mode_switches": null,
           "reference_length_m": null,
           "plan_duration_s": null,
-          "solve_wall_s": 12.015677875,
+          "solve_wall_s": 12.003753913,
           "independent_audit": null,
           "certified_executable": null,
           "source_task_profile_run": false,
-          "source_timing_limits_match": false
+          "source_timing_limits_match": false,
+          "baseline": {
+            "status": "NO_CERTIFIED_SOLUTION_WITHIN_BUDGET",
+            "reason": "A_SOLVE_TIMEOUT",
+            "passed": false,
+            "modes": null,
+            "reference_length_m": null,
+            "duration_s": null,
+            "solve_wall_s": 12.015677875
+          }
         },
         "formation_standard": {
           "status": "NO_CERTIFIED_SOLUTION_WITHIN_BUDGET",
@@ -1531,11 +1972,20 @@
           "certified_mode_switches": null,
           "reference_length_m": null,
           "plan_duration_s": null,
-          "solve_wall_s": 12.016486057,
+          "solve_wall_s": 12.087633354,
           "independent_audit": null,
           "certified_executable": null,
           "source_task_profile_run": true,
-          "source_timing_limits_match": true
+          "source_timing_limits_match": true,
+          "baseline": {
+            "status": "NO_CERTIFIED_SOLUTION_WITHIN_BUDGET",
+            "reason": "A_SOLVE_TIMEOUT",
+            "passed": false,
+            "modes": null,
+            "reference_length_m": null,
+            "duration_s": null,
+            "solve_wall_s": 12.016486057
+          }
         },
         "single_baseline": {
           "status": "CERTIFIED_POLICY_COMPLIANT",
@@ -1543,16 +1993,25 @@
           "passed": true,
           "request_sha256": "1cfeefc42de902110adcb62fa03448f8e6c55d1bd04d90d1fd85dfe7370d21c9",
           "ros_contract_sha256": "e79ba63588fe29ecd0afb5e9e9575f71ec1aa7a52528d4a9bdab50e64fe3488e",
-          "plan_sha256": "b7f589b9f60519ca2913dabe2fced24a8657a0ac16ca57336a53a4b149ae86c8",
+          "plan_sha256": "2ca70acbfdc5b9ca34b34c5fd7e68cf06a693f4750339cbb72f65289549a8292",
           "modes": "A",
           "certified_mode_switches": 0,
-          "reference_length_m": 27.86922273630659,
-          "plan_duration_s": 206.95865925126358,
-          "solve_wall_s": 0.71031371,
+          "reference_length_m": 27.871469384942806,
+          "plan_duration_s": 186.61535425004809,
+          "solve_wall_s": 0.991061138,
           "independent_audit": "CERTIFIED",
           "certified_executable": true,
           "source_task_profile_run": false,
-          "source_timing_limits_match": false
+          "source_timing_limits_match": false,
+          "baseline": {
+            "status": "CERTIFIED_POLICY_COMPLIANT",
+            "reason": "PURE_A",
+            "passed": true,
+            "modes": "A",
+            "reference_length_m": 27.86922273630659,
+            "duration_s": 206.95865925126358,
+            "solve_wall_s": 0.71031371
+          }
         },
         "single_standard": {
           "status": "CERTIFIED_POLICY_COMPLIANT",
@@ -1560,16 +2019,25 @@
           "passed": true,
           "request_sha256": "5f6b535a42796b51e5995213a037ab1ba2cb2c090cefb84b392a49046c88ef94",
           "ros_contract_sha256": "bc623cc56e7b71d8bc198d559520916a48c48b6a5de13d8a40652af2baeff824",
-          "plan_sha256": "a9db01896a332a5fdb8a4417bb7c814df3c4238a35d14c01817bdea1fabf6e29",
+          "plan_sha256": "c6f792487f75acff95dc802f2df0eb473cb8499720150e4a32ddbd5a3242ec03",
           "modes": "A",
           "certified_mode_switches": 0,
-          "reference_length_m": 27.9501897069626,
-          "plan_duration_s": 55.766779900268695,
-          "solve_wall_s": 0.673306161,
+          "reference_length_m": 27.950365846821626,
+          "plan_duration_s": 52.500178257256835,
+          "solve_wall_s": 0.924624782,
           "independent_audit": "CERTIFIED",
           "certified_executable": true,
           "source_task_profile_run": false,
-          "source_timing_limits_match": false
+          "source_timing_limits_match": false,
+          "baseline": {
+            "status": "CERTIFIED_POLICY_COMPLIANT",
+            "reason": "PURE_A",
+            "passed": true,
+            "modes": "A",
+            "reference_length_m": 27.9501897069626,
+            "duration_s": 55.766779900268695,
+            "solve_wall_s": 0.673306161
+          }
         }
       }
     }
@@ -1608,6 +2076,44 @@
       "map05_uturn_long.json": "c2b5c1b12da8dbe89a36afce8d37a6fcbe29253296b1c749bf04d3ed721b4b47",
       "ros1_historical_graph.json": "3497a6120362c09ebaaa1eefcd0442552e96a6ad2a026481c73d07a60d8b9c2d",
       "ros2_historical_graph.json": "d80a90c7d9f7fd26bc07ced24d5760a0c88e217d9b6f5b521024da6b17bc148f"
+    }
+  },
+  "matched_native_baseline": {
+    "source_commit": "c09357a32ceab3ca9870daeed6b4e867405ea5c0",
+    "core_commit": "437ae8a00f707afdc015ff5adbba395190c75f8a",
+    "binary_sha256": "f9e3e86defa17cefff41e96ba18fd07cc653d1613c18fa96284362a2b3772c92",
+    "library_sha256": "a08f173c183981178d1030d54114d38c2a0f2d1c9e964661fb3cd4cbea582e29",
+    "policy_sha256": "8a84e103bbad6e7c9c6ec3ff056368e623f4249e4f2e9c8f2b1bcecf0e504956",
+    "raw_summary_sha256": "6027ec17419b3b626184d1227845770c93bec853d9e211d101258fe2d28027b5",
+    "counts": {
+      "formation_baseline": {
+        "count": 13,
+        "baseline_passed": 5,
+        "both_pass": 5,
+        "gained": 5,
+        "lost": 0
+      },
+      "formation_standard": {
+        "count": 13,
+        "baseline_passed": 8,
+        "both_pass": 8,
+        "gained": 2,
+        "lost": 0
+      },
+      "single_baseline": {
+        "count": 13,
+        "baseline_passed": 13,
+        "both_pass": 13,
+        "gained": 0,
+        "lost": 0
+      },
+      "single_standard": {
+        "count": 13,
+        "baseline_passed": 11,
+        "both_pass": 11,
+        "gained": 2,
+        "lost": 0
+      }
     }
   }
 }
