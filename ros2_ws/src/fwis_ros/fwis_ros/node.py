@@ -1,11 +1,12 @@
 """ROS 2 parameters, QoS and time utilities used by CopTrans nodes."""
 
 import math
+import signal
 
 from builtin_interfaces.msg import Duration, Time
 import rclpy
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
-from rclpy.executors import ExternalShutdownException, MultiThreadedExecutor
+from rclpy.executors import ExternalShutdownException, MultiThreadedExecutor, SingleThreadedExecutor
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, QoSProfile
 from rclpy.signals import SignalHandlerOptions
@@ -100,22 +101,33 @@ def _qos(depth, durable):
 
 
 def run_node(name, component, *, threads=1, live_clock=False):
-    # Let SIGINT unwind the executor before destroying the ROS context.
+    stopping = False
+
+    def stop(_signum, _frame):
+        nonlocal stopping
+        stopping = True
+
+    # Finish taking the current message before tearing down the ROS context.
     rclpy.init(signal_handler_options=SignalHandlerOptions.SIGTERM)
+    previous_sigint = signal.signal(signal.SIGINT, stop)
     node = PlannerROSNode(name, live_clock=live_clock)
     if live_clock:
         threads = max(2, threads)
-    executor = MultiThreadedExecutor(num_threads=threads) if threads > 1 else None
+    executor = MultiThreadedExecutor(num_threads=threads) if threads > 1 else SingleThreadedExecutor()
+    executor.add_node(node)
     try:
         component(node)
-        rclpy.spin(node, executor=executor)
+        while rclpy.ok() and not stopping:
+            executor.spin_once(timeout_sec=.1)
     except (KeyboardInterrupt, ExternalShutdownException):
         pass
     finally:
-        if executor is not None:
+        try:
             executor.shutdown()
-        node.destroy_node()
-        rclpy.try_shutdown()
+            node.destroy_node()
+            rclpy.try_shutdown()
+        finally:
+            signal.signal(signal.SIGINT, previous_sigint)
 
 
 def time_message(sec=0, nanosec=0):
