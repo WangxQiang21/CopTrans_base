@@ -1,6 +1,7 @@
 """Generate and show a CopTrans industrial scene with Gazebo ground truth."""
 
 from dataclasses import replace
+import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -152,6 +153,11 @@ def setup(context):
     topic = f"/world/{scene.name}/clock"
     bridges = [f"{topic}@rosgraph_msgs/msg/Clock[gz.msgs.Clock"]
     remaps = [(topic, "/clock")]
+    trace_library = os.environ.get("COPTRANS_TRACE_RCL_TAKE_SO")
+    bridge_environment = None
+    if trace_library:
+        preload = (trace_library, os.environ.get("LD_PRELOAD"))
+        bridge_environment = {"LD_PRELOAD": os.pathsep.join(filter(None, preload))}
     for index, placement in scene.spawn_poses(task).items():
         robot = f"robot{index}"
         models, bridge, remap = model_actions(
@@ -164,7 +170,8 @@ def setup(context):
         remaps.append(remap)
         if body_twist:
             actions.append(Node(package="ros_gz_bridge", executable="parameter_bridge",
-                                name=f"{robot}_body_bridge", arguments=body_bridges(robot), output="screen"))
+                                name=f"{robot}_body_bridge", arguments=body_bridges(robot),
+                                additional_env=bridge_environment, output="screen"))
     actions.extend([
         Node(package="ros_gz_bridge", executable="parameter_bridge", name="scene_bridge",
              arguments=bridges, remappings=remaps),

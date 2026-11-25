@@ -8,11 +8,13 @@ import json
 import math
 import os
 from pathlib import Path
+import shutil
 import signal
 import subprocess
+import sys
 from time import monotonic
 
-from ament_index_python.packages import get_package_prefix
+from ament_index_python.packages import get_package_prefix, get_package_share_directory
 from fwis_v3_msgs.msg import FormationExecutionPermit, TimedTrajectory
 from geometry_msgs.msg import Twist as RosTwist
 from nav_msgs.msg import Odometry
@@ -163,6 +165,18 @@ def launch(command, env, output, tag, stack):
     return process
 
 
+def scheduler_visibility():
+    values = {}
+    for name in ("perf_event_paranoid", "sched_schedstats"):
+        path = Path("/proc/sys/kernel") / name
+        try:
+            values[name] = int(path.read_text())
+        except (OSError, ValueError):
+            values[name] = None
+    return {**values, "thread_observations": "cpu_time_and_context_switch_counts",
+            "kernel_runnable_intervals_recorded": False}
+
+
 def main():
     cli = argparse.ArgumentParser(description=__doc__)
     cli.add_argument("--robots", type=int, choices=(1, 3), required=True)
@@ -171,6 +185,8 @@ def main():
     cli.add_argument("--min-samples", type=int, default=15_000)
     cli.add_argument("--output", type=Path, required=True)
     cli.add_argument("--algorithm", choices=("nonlinear", "pid"), default="nonlinear")
+    cli.add_argument("--trace-ros-bridge", action="store_true",
+                     help="Capture command takes inside the existing ROS/Gazebo bridge")
     args = cli.parse_args()
     args.output = args.output.resolve()
     args.output.mkdir(parents=True, exist_ok=False)
@@ -180,14 +196,23 @@ def main():
     coordinated = args.robots == 3
     task = "formation" if coordinated else "single"
     routes, clearance = route_table(load_scene(SCENE), task, args.seconds)
+    library_dir = Path(get_package_prefix("fwis_control")) / "lib/fwis_control"
+    executable = str(library_dir / "ranger_tracking_controller_cpp")
+    controller_path = args.output / "controller_parameters.yaml"
+    shutil.copyfile(Path(get_package_share_directory("fwis_control")) / "config/ranger_tracking.yaml",
+                    controller_path)
     environment = dict(os.environ)
-    executable = str(Path(get_package_prefix("fwis_control")) /
-                     "lib/fwis_control/ranger_tracking_controller_cpp")
+    if args.trace_ros_bridge:
+        trace = library_dir / "libcoptrans_bridge_take_trace.so"
+        if not trace.is_file():
+            raise FileNotFoundError(f"bridge trace library missing: {trace}")
+        environment.update(COPTRANS_TRACE_RCL_TAKE_SO=str(trace))
     rclpy.init(args=[])
     report = dict(robots=args.robots, requested_wall_s=args.seconds, minimum_samples=args.min_samples,
                   scenario=SCENE, planned_sampled_clearance_m=clearance,
                   algorithm=args.algorithm, configuration="baseline, uninterrupted A circle",
-                  tracker_executable=executable, status="failed")
+                  tracker_executable=executable, bridge_take_trace=args.trace_ros_bridge,
+                  invocation=sys.argv, scheduler_visibility=scheduler_visibility(), status="failed")
     try:
         with ExitStack() as stack:
             probe = Probe(tuple(routes), args.output, coordinated, stack)
@@ -200,6 +225,7 @@ def main():
             processes = [process]
             for robot in routes:
                 parameters = ["-p", "use_sim_time:=true", "-p", f"algorithm:={args.algorithm}",
+                              "-p", f"config_file:={controller_path}",
                               "-p", f"trajectory_topic:=/{robot}/trajectory"]
                 if coordinated:
                     parameters += ["-p", "permit_topic:=/formation/execution_permit",

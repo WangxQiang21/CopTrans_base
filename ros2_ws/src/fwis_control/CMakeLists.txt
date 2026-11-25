@@ -29,6 +29,15 @@ target_link_libraries(ranger_tracking_controller_cpp fwis_tracking_core Threads:
 ament_target_dependencies(ranger_tracking_controller_cpp
   ament_index_cpp fwis_v3_msgs geometry_msgs nav_msgs rcl rclcpp std_msgs)
 install(TARGETS ranger_tracking_controller_cpp DESTINATION lib/${PROJECT_NAME})
+
+# Used only by the opt-in Gazebo timing probe and its existing ros_gz_bridge process.
+add_library(coptrans_bridge_take_trace SHARED test/trace_bridge_take.cpp)
+target_compile_features(coptrans_bridge_take_trace PRIVATE cxx_std_17)
+target_compile_options(coptrans_bridge_take_trace PRIVATE -Wall -Wextra -Wpedantic)
+target_link_libraries(coptrans_bridge_take_trace ${CMAKE_DL_LIBS})
+ament_target_dependencies(coptrans_bridge_take_trace geometry_msgs rcl)
+install(TARGETS coptrans_bridge_take_trace DESTINATION lib/${PROJECT_NAME})
+
 install(TARGETS fwis_tracking_core EXPORT fwis_tracking_core_targets)
 install(DIRECTORY include/ DESTINATION include)
 ament_export_targets(fwis_tracking_core_targets HAS_LIBRARY_TARGET)

@@ -9,6 +9,7 @@
 
 #include <rclcpp/exceptions/exceptions.hpp>
 #include <rclcpp/timer.hpp>
+#include <sys/resource.h>
 
 namespace fwis_control
 {
@@ -43,15 +44,37 @@ struct OdometryTiming
   int64_t callback_steady_ns{};
 };
 
+struct ThreadCounters
+{
+  int64_t cpu_ns{};
+  int64_t voluntary_switches{};
+  int64_t involuntary_switches{};
+};
+
+inline ThreadCounters thread_counters() noexcept
+{
+  rusage usage{};
+  if (getrusage(RUSAGE_THREAD, &usage) != 0) {
+    return {-1, -1, -1};
+  }
+  const auto nanoseconds = [](timeval interval) -> int64_t {
+      return interval.tv_sec * 1000000000LL + interval.tv_usec * 1000LL;
+    };
+  return {nanoseconds(usage.ru_utime) + nanoseconds(usage.ru_stime),
+    usage.ru_nvcsw, usage.ru_nivcsw};
+}
+
 struct ControlTiming
 {
   TimerDispatch timer;
   OdometryTiming odom;
+  ThreadCounters thread_at_entry;
   int64_t started_steady_ns{};
   int64_t ended_steady_ns{};
   int64_t ended_clock_ns{};
   int64_t core_ns{};
   int64_t command_publish_steady_ns{};
+  int64_t command_published_steady_ns{};
   uint64_t status_drops{};
 };
 

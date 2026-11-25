@@ -288,6 +288,10 @@ std_msgs::msg::String status_message(const Status & row, const std::string & alg
              << ",\"callback_ended_clock_ns\":" << t.ended_clock_ns
              << ",\"core_ns\":" << t.core_ns
              << ",\"command_publish_steady_ns\":" << t.command_publish_steady_ns
+             << ",\"command_published_steady_ns\":" << t.command_published_steady_ns
+             << ",\"thread_cpu_ns\":" << t.thread_at_entry.cpu_ns
+             << ",\"thread_voluntary_switches\":" << t.thread_at_entry.voluntary_switches
+             << ",\"thread_involuntary_switches\":" << t.thread_at_entry.involuntary_switches
              << ",\"odom_stamp_ns\":" << t.odom.odom_stamp_ns
              << ",\"odom_source_realtime_ns\":" << t.odom.source_realtime_ns
              << ",\"odom_received_realtime_ns\":" << t.odom.received_realtime_ns
@@ -465,21 +469,26 @@ private:
     return age < -config_.timing.clock_tolerance || age > config_.timing.state_timeout;
   }
 
-  int64_t publish_command(const Twist & twist, std::optional<Mode> mode)
+  void publish_command(
+    const Twist & twist, std::optional<Mode> mode, ControlTiming * timing = nullptr)
   {
     geometry_msgs::msg::Twist msg;
     msg.linear.x = twist.vx;
     msg.linear.y = twist.vy;
     msg.angular.z = twist.wz;
-    const auto at = timing_enabled_ ? steady_ns() : 0;
+    if (timing) {
+      timing->command_publish_steady_ns = steady_ns();
+    }
     command_->publish(msg);
+    if (timing) {
+      timing->command_published_steady_ns = steady_ns();
+    }
     if (mode || mode_request_pending_) {
       std_msgs::msg::Int32 request;
       request.data = mode ? static_cast<int>(*mode) : -1;
       mode_request_->publish(request);
       mode_request_pending_ = mode.has_value();
     }
-    return at;
   }
 
   void take_pending() noexcept
@@ -557,6 +566,7 @@ private:
       timing->timer = *dispatch;
       timing->odom = odometry_timing_;
       timing->started_steady_ns = steady_ns(begin);
+      timing->thread_at_entry = thread_counters();
     }
     const double callback_interval = last_tick_wall_ ?
       std::chrono::duration<double>(begin - *last_tick_wall_).count() : 0.;
@@ -575,10 +585,7 @@ private:
         queue_admission("CLEARED", ros_now);
       } else if (engine_.active()) {
         const auto stopped = engine_.abort("trajectory_replaced_during_execution");
-        const auto published = publish_command({}, {});
-        if (timing) {
-          timing->command_publish_steady_ns = published;
-        }
+        publish_command({}, {}, timing ? &*timing : nullptr);
         queue_execution(stopped, {}, ros_now, begin, callback_interval, timing);
         return;
       } else if (engine_.feedback_is_fresh(state, ros_now) &&
@@ -606,10 +613,7 @@ private:
     if (timing) {
       timing->core_ns = steady_ns() - core_started;
     }
-    const auto published = publish_command(result.command, result.requested_mode);
-    if (timing) {
-      timing->command_publish_steady_ns = published;
-    }
+    publish_command(result.command, result.requested_mode, timing ? &*timing : nullptr);
     queue_execution(result, state, ros_now, begin, callback_interval, timing);
   }
 

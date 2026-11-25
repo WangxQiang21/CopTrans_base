@@ -55,6 +55,8 @@ class BodyTwistSystem:
         if info.paused or not hasattr(self, "body"):
             return
         now = info.sim_time.total_seconds()
+        if self.timing and self.name == "robot1":
+            self.timing.physics_step(round(now * 1e9), time.monotonic_ns())
         capture = None
         with self.lock:
             self.sim_time = now
