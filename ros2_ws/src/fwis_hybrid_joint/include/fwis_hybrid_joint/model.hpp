@@ -80,6 +80,16 @@ struct Audit {
 };
 using Cancel = std::function<bool()>;
 Audit certify(const Request&, const Plan&, Clock::time_point deadline, const Cancel& cancel = {});
+// Dimensionless policy costs for a separately certified model. Soft clearance
+// and effort are deterministic quadratures, never collision/safety tests.
+struct PolicyScore {
+  int auxiliary_blocks{};
+  double auxiliary_cost{},execution_cost{},reference_length{},oblique_length{},spin_angle{};
+  double steering_effort{},jerk_effort{},clearance_effort{};
+  bool better_than(const PolicyScore&) const;
+};
+PolicyScore score_policy(const Request&,const Plan&,Clock::time_point deadline,const Cancel& cancel={});
+
 struct Attempt {
   std::string proposal,status;
   double nlp_build_s{},nlp_solve_s{},certify_s{},wall_s{};

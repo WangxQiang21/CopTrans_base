@@ -208,6 +208,11 @@ Value run(const Value& input) {
     out["plan"]=encode(*solution.plan);
     out["duration_s"]=hj::duration(*solution.plan);
     out["metrics"]=diagnostics(r,*solution.plan);
+    const auto scored=hj::score_policy(r,*solution.plan,hj::Clock::now()+std::chrono::seconds(5));
+    auto& m=out["metrics"];
+    m["aux_blocks"]=scored.auxiliary_blocks;m["auxiliary_cost"]=scored.auxiliary_cost;m["execution_cost"]=scored.execution_cost;
+    m["policy_reference_length_m"]=scored.reference_length;m["steering_effort"]=scored.steering_effort;
+    m["jerk_effort"]=scored.jerk_effort;m["clearance_effort"]=scored.clearance_effort;
     out["audit"]=audit(hj::certify(r,*solution.plan,hj::Clock::now()+std::chrono::seconds(5)));
   }
   out["actual_backend"]=r.vehicles.size()==1?"single_hybrid_joint_cpp":"formation_hybrid_joint_cpp";

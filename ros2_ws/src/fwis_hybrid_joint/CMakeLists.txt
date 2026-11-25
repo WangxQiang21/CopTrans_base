@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.19)
 project(fwis_hybrid_joint LANGUAGES CXX)
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
@@ -9,6 +9,23 @@ find_package(fwis_planning_core REQUIRED)
 find_package(casadi CONFIG REQUIRED HINTS
   "$ENV{COPTRANS_CASADI_ROOT}/cmake"
   "${CMAKE_CURRENT_SOURCE_DIR}/../../../../.coptrans-python/casadi/cmake")
+# The checked-in policy is the single numeric source for both runtime and evidence.
+set(policy_file "${CMAKE_CURRENT_SOURCE_DIR}/config/policy.json")
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${policy_file}")
+file(READ "${policy_file}" policy_json)
+set(policy_header "#pragma once
+namespace fwis_hybrid_joint::policy {
+")
+foreach(key aux_block_weight oblique_length_weight rotation_weight rotation_scale_rad time_weight
+    length_weight steering_effort_weight jerk_effort_weight clearance_weight comfort_padding_m
+    comparison_tolerance zero_motion_tolerance intervals_per_piece clearance_levels)
+  string(JSON value GET "${policy_json}" "${key}")
+  string(APPEND policy_header "inline constexpr auto ${key} = ${value};
+")
+endforeach()
+file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/generated/policy_values.hpp" CONTENT "${policy_header}}
+")
+install(FILES "${policy_file}" DESTINATION share/${PROJECT_NAME}/config)
 include(CTest)
 set(COPTRANS_HYBRID_SANITIZERS "" CACHE STRING "Comma-separated compiler sanitizers (address,undefined or thread)")
 if(COPTRANS_HYBRID_SANITIZERS)
@@ -19,9 +36,11 @@ add_library(hybrid_casadi_object OBJECT src/casadi_solver.cpp)
 set_target_properties(hybrid_casadi_object PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_compile_features(hybrid_casadi_object PRIVATE cxx_std_17)
 target_link_libraries(hybrid_casadi_object PRIVATE casadi::casadi)
-add_library(fwis_hybrid_joint SHARED src/model.cpp src/search.cpp src/certificate.cpp $<TARGET_OBJECTS:hybrid_casadi_object>)
+add_library(fwis_hybrid_joint SHARED src/model.cpp src/search.cpp src/certificate.cpp src/policy.cpp $<TARGET_OBJECTS:hybrid_casadi_object>)
 add_library(fwis_hybrid_joint::fwis_hybrid_joint ALIAS fwis_hybrid_joint)
 target_compile_features(fwis_hybrid_joint PUBLIC cxx_std_17)
+target_include_directories(fwis_hybrid_joint PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
+target_include_directories(hybrid_casadi_object PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
 target_include_directories(fwis_hybrid_joint PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<INSTALL_INTERFACE:include>)
 # Do not propagate the SDK-specific C++ string ABI to ROS, evaluators or consumers.
 target_link_libraries(fwis_hybrid_joint PUBLIC fwis_planning_core::fwis_planning_core PRIVATE $<TARGET_FILE:casadi::casadi>)

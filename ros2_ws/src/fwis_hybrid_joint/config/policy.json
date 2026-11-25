@@ -1,0 +1,21 @@
+{
+  "schema": "task_bounded_ackermann_dominant/v3",
+  "length_scale": "request.limits.radius",
+  "time_scale": "request.limits.radius / request.limits.speed",
+  "steering_rate_scale": "request.limits.steer_rate",
+  "jerk_scale": "request.limits.jerk or request.limits.spin_jerk for Spin",
+  "aux_block_weight": 0.5,
+  "oblique_length_weight": 1.0,
+  "rotation_weight": 0.25,
+  "rotation_scale_rad": 1.0,
+  "time_weight": 1.0,
+  "length_weight": 0.10,
+  "steering_effort_weight": 0.02,
+  "jerk_effort_weight": 0.02,
+  "clearance_weight": 0.04,
+  "comfort_padding_m": 0.20,
+  "clearance_levels": 8,
+  "intervals_per_piece": 24,
+  "comparison_tolerance": 1e-8,
+  "zero_motion_tolerance": 1e-10
+}

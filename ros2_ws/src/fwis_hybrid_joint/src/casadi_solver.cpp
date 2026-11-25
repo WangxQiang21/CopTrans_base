@@ -1,5 +1,6 @@
 #include "nlp_api.h"
 #include "clock.hpp"
+#include "policy_values.hpp"
 #include <casadi/casadi.hpp>
 #include <algorithm>
 #include <array>
@@ -14,6 +15,7 @@
 #include <vector>
 
 namespace {
+namespace policy=fwis_hybrid_joint::policy;
 using casadi::DM;
 using casadi::SX;
 const double inf=std::numeric_limits<double>::infinity();
@@ -182,6 +184,11 @@ std::pair<Jet,Jet> mount_jets(const Coordinates& curve,double u,double ox,double
 void Problem::run(){
   const auto build_start=std::chrono::steady_clock::now();
   const bool multi=p.bodies==3;
+  const double t0=p.radius/p.speed;
+  // Fixed-mode NLP uses differentiable collocation surrogates and spatial
+  // regularization; after certification the same archive policy compares every
+  // candidate on the physical model independently of these local graph nodes.
+  const double smooth_scale=.1*t0;
   SX x=parameter(p.start[0]),y=parameter(p.start[1]),yaw=parameter(p.start[2]),tau_sum=0;
   std::array<SX,3> h{SX(p.start[3]),SX(p.start[4]),SX(p.start[5])};
   std::array<std::array<SX,4>,3> prior{};
@@ -199,7 +206,7 @@ void Problem::run(){
     if(p.stop && p.stop(p.opaque)) throw std::runtime_error("NLP assembly deadline");
     HJPhase& ph=p.phase[k];
     const int N=ph.spans;
-    bool translation_chart=multi && std::abs(std::remainder(p.start[2]-p.goal[2],2*pi))<1e-9;
+    bool translation_chart=multi && !p.general_chart && std::abs(std::remainder(p.start[2]-p.goal[2],2*pi))<1e-9;
     for(int i=1;i<p.bodies && translation_chart;++i)
       translation_chart=(k>0 || std::abs(std::remainder(p.start[3]-p.start[3+i],pi))<1e-9) &&
         (k+1<p.count || !p.fixed_goal[1+i] || (p.fixed_goal[1] && std::abs(std::remainder(p.goal[3]-p.goal[3+i],pi))<1e-9));
@@ -258,7 +265,7 @@ void Problem::run(){
         bool last_rotation=true;
         for(int j=k+1;j<p.count;++j) if(p.phase[j].mode!=1) last_rotation=false;
         h[v]=last_rotation && p.fixed_goal[v+1]?SX(p.goal[v+3]):variable(ph.h1[v]);
-        SX d=h[v]-h0[v]; cost+=.25*sqrt(d*d+1e-10);
+        SX d=h[v]-h0[v]; cost+=policy::rotation_weight*sqrt(d*d+1e-10)/policy::rotation_scale_rad;
         constraint(1.875*d/tau,-p.spin_rate*.96,p.spin_rate*.96);
         constraint(5.77351*d/(tau*tau),-p.spin_acc*.96,p.spin_acc*.96);
         constraint(60*d/(tau*tau*tau),-p.spin_jerk*.96,p.spin_jerk*.96);
@@ -298,7 +305,12 @@ void Problem::run(){
           constraint(acc,-p.acceleration*.91,p.acceleration*.91);
           const SX jerk=(d2*sd*sd*sd+3*d1*sd*sdd+d*sj)/(tau*tau*tau);
           constraint(jerk,-p.jerk*.95,p.jerk*.95);
-          cost+=.0005*(N*tau/7.)*pow(jerk/p.jerk,2);
+          const double mass=((z==0 || z==6)?.5:1.)/(large?3.:6.);
+          cost+=smooth_scale*policy::jerk_effort_weight*(mass*tau/(N*t0))*pow(jerk/p.jerk,2);
+          if(v==0){
+            const auto rx=trajectory_jet(blocks[j][0],local),ry=trajectory_jet(blocks[j][1],local);
+            cost+=smooth_scale*policy::length_weight*mass*sqrt(rx[1]*rx[1]+ry[1]*ry[1]+1e-14)/p.radius;
+          }
           if(p.lateral_acceleration>0)constraint(vel*turning*sd/tau,-p.lateral_acceleration*.97,p.lateral_acceleration*.97);
           if(ph.mode==1) {
             const auto angle=atan2(ph.gear[v]*(-sin(h0[v])*dx+cos(h0[v])*dy),
@@ -330,7 +342,7 @@ void Problem::run(){
                 SX accel=wx*ctt/denom-2*wx*(-wy*a+wx*b)*ct*ct/(denom*denom);
                 constraint(accel,-.96*p.steer_acceleration,.96*p.steer_acceleration);
               }
-              cost+=.0005*(tau/(7*N))*pow(rate/p.steer_rate,2);
+              cost+=2*smooth_scale*policy::steering_effort_weight*(mass*tau/(N*t0))*pow(rate/p.steer_rate,2);
             }
             if(j==0 && z==0) direction(dx,dy,h0[v],ph.gear[v]);
             if(j==N-1 && z==6) h[v]=atan2(ph.gear[v]*dy,ph.gear[v]*dx);
@@ -351,6 +363,13 @@ void Problem::run(){
       }
       SX forward=plane.nx*cos(heading)+plane.ny*sin(heading),side=-plane.nx*sin(heading)+plane.ny*cos(heading);
       SX gap=plane.nx*mx+plane.ny*my-parameter(plane.obstacle_support)-plane.half_length*sqrt(forward*forward+1e-12)-plane.half_width*sqrt(side*side+1e-12);
+      if(plane.other>=0){
+        const auto other=mount_jets(blocks[plane.span],at,plane.other_x,plane.other_y);
+        const SX other_heading=ph.mode==0?atan2(other.second[1],other.first[1]):h0[plane.other];
+        const SX along=plane.nx*cos(other_heading)+plane.ny*sin(other_heading);
+        const SX across=-plane.nx*sin(other_heading)+plane.ny*cos(other_heading);
+        gap-=plane.nx*other.first[0]+plane.ny*other.second[0]+plane.other_half_length*sqrt(along*along+1e-12)+plane.other_half_width*sqrt(across*across+1e-12);
+      }
       constraint(gap,.00001,inf);
     }
     // Reserve protocol plus wheel preparation on the same task clock. At
@@ -370,7 +389,7 @@ void Problem::run(){
     prior=exit;
     if(ph.mode==1) {
       const SX d=sqrt(pow(endx-x,2)+pow(endy-y,2)+1e-14);
-      cost+=d/p.radius;
+      cost+=policy::oblique_length_weight*d/p.radius;
       const double peak_jerk=hybrid_clock::state(0.,ph.cruise_ramp_fraction)[3];
       constraint(peak_jerk*d/(tau*tau*tau),0.,.96*p.jerk);
     }
@@ -380,11 +399,13 @@ void Problem::run(){
     x=endx;y=endy;yaw=endpsi;
   }
   for(int v=0;v<p.bodies;++v) if(p.fixed_goal[v+1]) {
-    equal(sin(h[v]-p.goal[v+3]));
+    if(p.terminal_heading_window>0){
+      constraint(sin(h[v]-p.goal[v+3]),-std::sin(p.terminal_heading_window),std::sin(p.terminal_heading_window));
+    }else equal(sin(h[v]-p.goal[v+3]));
     constraint(cos(h[v]-p.goal[v+3]),.999,inf);
   }
   constraint(tau_sum,0,p.duration_cap);
-  cost+=.1*tau_sum;
+  cost+=smooth_scale*policy::time_weight*tau_sum/t0;
   const auto design=SX::vertcat(vars);
   const auto params=SX::vertcat(parameters);
   const auto factor=SX::vertcat(cons),output=SX::vertcat(outputs);

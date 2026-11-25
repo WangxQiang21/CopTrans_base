@@ -15,9 +15,11 @@ int main() {
     p.acceleration=.45;p.jerk=2;p.yaw_rate=2.5;p.wheelbase=.494;p.track=.364;
     p.steer_rate=.8;p.steer_angle=1.570796;p.wheel_speed=3;
     p.steer_acceleration=1.5;p.lateral_acceleration=.6;p.yaw_acceleration=.8;p.yaw_jerk=3.;p.prepare_time=.7;
-    HJSeparation features[2]={{0,0,2,0,0.,0.,.35,.25,.6,.8,-2.},
-      {0,1,4,bodies==3?-1:0,.2,-.1,.7,.45,-.8,.6,-4.}};
-    p.separations=features;p.sep_count=2;
+    HJSeparation features[3]={{0,0,2,0,0.,0.,.35,.25,.6,.8,-2.},
+      {0,1,4,bodies==3?-1:0,.2,-.1,.7,.45,-.8,.6,-4.},
+      {0,0,2.37,0,0.,0.,.35,.25,.6,.8,0.,1,-.4,.7,.35,.25}};
+    p.separations=features;p.sep_count=bodies==3?3:2;
+    p.general_chart=bodies==3;p.terminal_heading_window=bodies==3?.015:0.;
     p.offset[1][0]=-.4;p.offset[1][1]=.7;p.offset[2][0]=-.4;p.offset[2][1]=-.7;
     p.fixed_goal[0]=1;
     for(int i=0;i<bodies;++i) p.fixed_goal[i+1]=1;

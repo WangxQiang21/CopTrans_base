@@ -8,12 +8,15 @@ struct HJPhase {
   double cruise_ramp_fraction, tau, h0[3], h1[3], coefficient[HJ_MAX_SPANS][3][6];
 };
 struct HJSeparation {
-  int phase, span, station, vehicle; // vehicle -1 indicates cargo
+  int phase, span; double station; int vehicle; // vehicle -1 indicates cargo
   double ox, oy, half_length, half_width, nx, ny, obstacle_support;
+  int other{-1};
+  double other_x{},other_y{},other_half_length{},other_half_width{};
 };
 struct HJProblem {
   const HJSeparation *separations;
-  int sep_count, route_yaw_chart;
+  int sep_count, route_yaw_chart, general_chart;
+  double terminal_heading_window;
   double nlp_build_s, nlp_solve_s;
   char primal_status[80];
   double min_motion_duration, prepare_time, lateral_acceleration, steer_acceleration, yaw_acceleration, yaw_jerk;

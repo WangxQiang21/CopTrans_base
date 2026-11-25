@@ -1,5 +1,6 @@
 #include "fwis_hybrid_joint/model.hpp"
 #include "nlp_api.h"
+#include "clock.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -26,13 +27,7 @@ struct Run {
 extern "C" int stop_nlp(void *r){return static_cast<Run*>(r)->stop();}
 using Route=std::vector<Point>;
 using Sequence=std::vector<Mode>;
-struct Seed { Sequence seq; int sign; Route route; std::string edit; int reverse_from{-1}; bool quintic{}; };
-struct Ranked {
-  int presence;
-  double use,cost;
-  bool operator<(const Ranked& b)const{return std::tie(presence,use,cost)<std::tie(b.presence,b.use,b.cost);}
-};
-
+struct Seed { Sequence seq; int sign; Route route; std::string edit; int reverse_from{-1}; bool quintic{}, general{}, relaxed{}; int priority{8}; };
 // Occupancy A* only proposes continuous optimization starts. Full swept footprint
 // checks (including independent vehicle headings) are performed by the certifier.
 Route grid_seed(const Request& r,const Run& run) {
@@ -164,6 +159,8 @@ std::vector<Quintic> route_orientation(const Route& path,double start,double end
 HJProblem problem(const Request& r,const Seed& seed,const SolveOptions& options,Run& run) {
   const auto& l=r.limits;
   HJProblem p{};
+  p.general_chart=seed.general;
+  p.terminal_heading_window=seed.relaxed?.97*pi/180.:0.;
   p.count=seed.seq.size();p.bodies=r.vehicles.size();p.movable=options.movable_switches;
   p.radius=l.radius;p.speed=l.speed;p.acceleration=l.acceleration;p.jerk=l.jerk;
   p.yaw_rate=l.yaw_rate;p.spin_rate=l.spin_speed;p.spin_acc=l.spin_acceleration;p.spin_jerk=l.spin_jerk;
@@ -244,7 +241,7 @@ HJProblem problem(const Request& r,const Seed& seed,const SolveOptions& options,
       }
     }
     if(ph.mode==0 && p.bodies==3 && moving==1 && ph.spans>1 && p.count==1 &&
-       (std::abs(delta(psi,endpsi))>1e-8) && seed.edit!="GENERAL_F_YAW"){
+       (std::abs(delta(psi,endpsi))>1e-8) && !seed.general){
       auto yaw=route_orientation(path,psi,endpsi);
       for(int j=0;j<ph.spans;++j)std::copy(yaw[j].begin(),yaw[j].end(),ph.coefficient[j][2]);
       p.route_yaw_chart=1;
@@ -257,48 +254,79 @@ HJProblem problem(const Request& r,const Seed& seed,const SolveOptions& options,
 // Pick local separating axes from the map for smooth fixed-feature constraints.
 // A seed in collision may use a negative initial gap and move back into free space.
 // The independent swept certificate still accounts for every occupied/unknown cell.
-std::vector<HJSeparation> separators(const Request& r,const HJProblem& graph,const Run& run){
+struct WitnessStation {int phase;double u;};
+std::vector<HJSeparation> separators(const Request& r,const HJProblem& graph,const Run& run,
+                                     std::optional<WitnessStation> witness={}){
+
   const auto& grid=*r.grid;const auto org=grid.origin();const double res=grid.resolution();
   std::vector<HJSeparation> all;
   for(int k=0;k<graph.count&&!run.stop();++k){
-    const auto& a=graph.phase[k];if(a.mode==2)continue;
+    const auto& a=graph.phase[k];if(a.mode==2 || (witness && witness->phase!=k))continue;
     Phase phase;phase.mode=static_cast<Mode>(a.mode);phase.duration=1;
     std::copy_n(a.h0,3,phase.heading0.begin());std::copy_n(a.gear,3,phase.gear.begin());
     for(int j=0;j<a.spans;++j) {
       Piece q;std::copy_n(a.coefficient[j][0],6,q.x.begin());std::copy_n(a.coefficient[j][1],6,q.y.begin());
       std::copy_n(a.coefficient[j][2],6,q.yaw.begin());phase.pieces.push_back(q);
     }
-    for(int j=0;j<a.spans&&!run.stop();++j)for(int z=0;z<=6;++z){
-      double low=0,high=1,station=(j+z/6.)/a.spans;
-      for(int iter=0;iter<32;++iter){double u=(low+high)/2;if(u*u*u*(10+u*(-15+6*u))<station)low=u;else high=u;}
-      Sample sample;
-      try{sample=evaluate_phase(r,phase,(low+high)/2);}catch(const std::domain_error&){continue;}
-      for(int v=r.cargo?-1:0;v<graph.bodies;++v) {
-        const auto& shape=v<0?*r.cargo:r.vehicles[v];const double a0=shape[2]/2,b0=shape[3]/2;
-        Pose2d pose=sample.reference;
-        if(v<0){pose.x+=std::cos(pose.yaw)*shape[0]-std::sin(pose.yaw)*shape[1];
-          pose.y+=std::sin(pose.yaw)*shape[0]+std::cos(pose.yaw)*shape[1];}
-        else pose=sample.bodies[v].pose;
-        const double c=std::cos(pose.yaw),s=std::sin(pose.yaw),radius=std::hypot(a0,b0)+.5+res;
-        const std::array<Point,8> axes{{{1,0},{-1,0},{0,1},{0,-1},{c,s},{-c,-s},{-s,c},{s,-c}}};
-        std::array<double,8> tight,gaps;tight.fill(-1.e99);gaps.fill(1.e99);
-        int left=std::max(0,int(std::floor((pose.x-radius-org.x)/res)));
-        int right=std::min(int(grid.width())-1,int(std::floor((pose.x+radius-org.x)/res)));
-        int bottom=std::max(0,int(std::floor((pose.y-radius-org.y)/res)));
-        int top=std::min(int(grid.height())-1,int(std::floor((pose.y+radius-org.y)/res)));
-        for(int cy=bottom;cy<=top;++cy)for(int cx=left;cx<=right;++cx)if(grid.occupied(cx,cy)){
-          const Point center{org.x+(cx+.5)*res,org.y+(cy+.5)*res};
-          double largest=-1e99,support=0;int active=0;
-          for(int i=0;i<8;++i){const auto n=axes[i];
-            const double bound=n.x*center.x+n.y*center.y+.5*res*(std::abs(n.x)+std::abs(n.y));
-            const double gap=n.x*pose.x+n.y*pose.y-bound-a0*std::abs(c*n.x+s*n.y)-b0*std::abs(-s*n.x+c*n.y);
-            if(gap>largest){largest=gap;active=i;support=bound;}
+    for(int j=0;j<a.spans&&!run.stop();++j){
+      std::vector<double> stations;
+      if(witness){
+        const double local=witness->u*a.spans-j;
+        if(local>=0 && local<=1)stations={6*local};
+      }else stations={0,1,2,3,4,5,6};
+      for(double z:stations){
+        double low=0,high=1,station=(j+z/6.)/a.spans;
+        for(int iter=0;iter<32;++iter){double u=(low+high)/2;if(u*u*u*(10+u*(-15+6*u))<station)low=u;else high=u;}
+        Sample sample;
+        try{sample=evaluate_phase(r,phase,(low+high)/2);}catch(const std::domain_error&){continue;}
+        if(witness && graph.bodies==3){
+          // At an actual contact choose the best separating axis of the two
+          // OBBs. Both positions and headings remain variables in the next NLP.
+          for(int v=0;v<3;++v)for(int other=v+1;other<3;++other){
+            auto a0=sample.bodies[v].pose,b0=sample.bodies[other].pose;
+            auto sa=r.vehicles[v],sb=r.vehicles[other];
+            double best=-1e99;Point axis{};
+            for(auto angle:{a0.yaw,a0.yaw+pi/2,b0.yaw,b0.yaw+pi/2}){
+              Point n{std::cos(angle),std::sin(angle)};
+              double travel=n.x*(a0.x-b0.x)+n.y*(a0.y-b0.y);
+              if(travel<0){n.x=-n.x;n.y=-n.y;travel=-travel;}
+              auto extent=[&](const Footprint& f,double h){
+                return .5*(f[2]*std::abs(std::cos(h-angle))+f[3]*std::abs(std::sin(h-angle)));
+              };
+              double gap=travel-extent(sa,a0.yaw)-extent(sb,b0.yaw);
+              if(gap>best){best=gap;axis=n;}
+            }
+            if(best<.03)all.push_back({k,j,z,v,sa[0],sa[1],sa[2]/2,sa[3]/2,axis.x,axis.y,0,
+                                        other,sb[0],sb[1],sb[2]/2,sb[3]/2});
           }
-          if(largest<gaps[active]){tight[active]=support;gaps[active]=largest;}
         }
-        for(int i=0;i<8;++i)if(gaps[i]<.22){
-          const auto n=axes[i];
-          all.push_back({k,j,z,v,shape[0],shape[1],a0,b0,n.x,n.y,tight[i]});
+        for(int v=r.cargo?-1:0;v<graph.bodies;++v) {
+          const auto& shape=v<0?*r.cargo:r.vehicles[v];const double a0=shape[2]/2,b0=shape[3]/2;
+          Pose2d pose=sample.reference;
+          if(v<0){pose.x+=std::cos(pose.yaw)*shape[0]-std::sin(pose.yaw)*shape[1];
+            pose.y+=std::sin(pose.yaw)*shape[0]+std::cos(pose.yaw)*shape[1];}
+          else pose=sample.bodies[v].pose;
+          const double c=std::cos(pose.yaw),s=std::sin(pose.yaw),radius=std::hypot(a0,b0)+.5+res;
+          const std::array<Point,8> axes{{{1,0},{-1,0},{0,1},{0,-1},{c,s},{-c,-s},{-s,c},{s,-c}}};
+          std::array<double,8> tight,gaps;tight.fill(-1.e99);gaps.fill(1.e99);
+          int left=std::max(0,int(std::floor((pose.x-radius-org.x)/res)));
+          int right=std::min(int(grid.width())-1,int(std::floor((pose.x+radius-org.x)/res)));
+          int bottom=std::max(0,int(std::floor((pose.y-radius-org.y)/res)));
+          int top=std::min(int(grid.height())-1,int(std::floor((pose.y+radius-org.y)/res)));
+          for(int cy=bottom;cy<=top;++cy)for(int cx=left;cx<=right;++cx)if(grid.occupied(cx,cy)){
+            const Point center{org.x+(cx+.5)*res,org.y+(cy+.5)*res};
+            double largest=-1e99,support=0;int active=0;
+            for(int i=0;i<8;++i){const auto n=axes[i];
+              const double bound=n.x*center.x+n.y*center.y+.5*res*(std::abs(n.x)+std::abs(n.y));
+              const double gap=n.x*pose.x+n.y*pose.y-bound-a0*std::abs(c*n.x+s*n.y)-b0*std::abs(-s*n.x+c*n.y);
+              if(gap>largest){largest=gap;active=i;support=bound;}
+            }
+            if(largest<gaps[active]){tight[active]=support;gaps[active]=largest;}
+          }
+          for(int i=0;i<8;++i)if(gaps[i]<.22){
+            const auto n=axes[i];
+            all.push_back({k,j,z,v,shape[0],shape[1],a0,b0,n.x,n.y,tight[i]});
+          }
         }
       }
     }
@@ -345,28 +373,29 @@ Plan expand(const Request& r,const HJProblem& p) {
   }
   return plan;
 }
-Ranked score(const Plan& plan,const Request& r){
-  Ranked s{0,0,duration(plan)};
-  for(const auto& p:plan.phases) if(p.kind==Kind::Motion && p.mode!=Mode::A){
-    s.presence=1;s.use+=.5;
-    if(p.mode==Mode::O)for(const auto& c:p.pieces)s.use+=std::hypot(c.x[5]-c.x[0],c.y[5]-c.y[0])/r.limits.radius;
-    if(p.mode==Mode::S)for(std::size_t k=0;k<r.vehicles.size();++k)s.use+=.25*std::abs(p.heading1[k]-p.heading0[k]);
-  } return s;
-}
-bool locked_mount_tangents(const Request& r,const Boundary& b){
+// A pointwise determinant excludes only an exact endpoint. With a heading
+// tolerance the inactive tangent proof must hold over the whole neighborhood.
+struct MountRank {bool exact{}, whole_neighborhood{};};
+MountRank rank_at_boundary(const Request& r,const Boundary& b){
   if(r.vehicles.size()!=3 || !b.constrain_reference_yaw ||
-     std::any_of(b.constrain_heading.begin(),b.constrain_heading.end(),[](bool v){return !v;}))return false;
-  // A full-rank no-side-slip matrix admits no nonzero reference twist at
-  // this boundary. This excludes the regular tangent chart only.
-  std::array<std::array<double,3>,3> row{};
+     std::any_of(b.constrain_heading.begin(),b.constrain_heading.end(),[](bool v){return !v;}))return {};
+  std::array<std::array<double,3>,3> row{};double radii2=0.;
   for(std::size_t i=0;i<3;++i){
     auto f=r.vehicles[i];double c=std::cos(b.reference.yaw),s=std::sin(b.reference.yaw);
     double rx=c*f[0]-s*f[1],ry=s*f[0]+c*f[1];double h=b.heading[i];
     row[i]={-std::sin(h),std::cos(h),std::sin(h)*ry+std::cos(h)*rx};
+    radii2+=rx*rx+ry*ry;
   }
-  auto a=row[0],c=row[1],d=row[2];
-  double det=a[0]*(c[1]*d[2]-c[2]*d[1])+a[1]*(c[2]*d[0]-c[0]*d[2])+a[2]*(c[0]*d[1]-c[1]*d[0]);
-  return std::abs(det)>1.e-6;
+  double det=0., cofactors2=0.;
+  for(int i=0;i<3;++i)for(int j=0;j<3;++j){
+    const double c=row[(i+1)%3][(j+1)%3]*row[(i+2)%3][(j+2)%3]
+                  -row[(i+1)%3][(j+2)%3]*row[(i+2)%3][(j+1)%3];
+    if(i==0)det+=row[0][j]*c;
+    cofactors2+=c*c;
+  }
+  // 1/||inverse(M)||_F lower-bounds the smallest singular value.
+  double perturb=(pi/180.)*std::sqrt(3+4*radii2);
+  return {std::abs(det)>1e-6,std::abs(det)>std::sqrt(cofactors2)*perturb+1e-10};
 }
 std::string name(const Sequence& seq){std::string s;for(auto m:seq)s+="AOS"[static_cast<int>(m)];return s;}
 }
@@ -403,6 +432,8 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
   const double projection=(direct[1].x-direct[0].x)*std::cos(r.start.heading[0])+(direct[1].y-direct[0].y)*std::sin(r.start.heading[0]);
   const int sign=r.allow_reverse && projection<0?-1:1;
   std::vector<Seed> seeds;
+  const auto rank_start=rank_at_boundary(r,r.start),rank_goal=rank_at_boundary(r,r.goal);
+  const bool locked_start=rank_start.whole_neighborhood,locked_goal=rank_goal.whole_neighborhood;
   auto add=[&](Sequence seq,int gear,Route route,std::string edit,int reverse_from=-1){
     if(!opts.enable_edits && !opts.initial_sequence.empty() && seq!=opts.initial_sequence)return;
     for(auto& s:seeds)if(seq==s.seq && gear==s.sign && reverse_from==s.reverse_from && route.size()==s.route.size() &&
@@ -412,17 +443,8 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
   if(!opts.initial_sequence.empty())add(opts.initial_sequence,sign,direct,"SEED");
   else if(d>1e-7)add({Mode::A},sign,direct,"CONTINUOUS_A");
   else add({Mode::S},sign,direct,"SPIN");
-  if(opts.enable_edits && !opts.initial_sequence.empty()){
-    Sequence reduced;
-    for(auto mode:opts.initial_sequence)if(reduced.empty()||reduced.back()!=mode)reduced.push_back(mode);
-    if(reduced!=opts.initial_sequence)add(reduced,sign,direct,"MERGE_SAME_MODE");
-    if(d>1e-7)add({Mode::A},sign,direct,"REPLACE_SUBSEQUENCE");
-    for(std::size_t i=0;i<reduced.size();++i)if(reduced[i]!=Mode::A){
-      auto q=reduced;q.erase(q.begin()+i);if(!q.empty())add(q,sign,direct,"REMOVE_BLOCK");}
-  }
-  bool locked_start=locked_mount_tangents(r,r.start),locked_goal=locked_mount_tangents(r,r.goal);
   if(d>1e-7 || (r.vehicles.size()==3 && std::abs(delta(r.start.reference.yaw,r.goal.reference.yaw))>1e-7)) {
-    add({Mode::A},sign,direct,"CONTINUOUS_A");
+    if(opts.initial_sequence.empty())add({Mode::A},sign,direct,"CONTINUOUS_A");
     auto route=grid_seed(r,run);
     if(!route.empty()){
       double detour=0;
@@ -431,10 +453,17 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
       add({Mode::A},sign,route,"CHANGE_ROUTE_SEED");
       if(opts.initial_sequence.empty() && detour>r.limits.radius*.35 && seeds.size()>1)
         std::rotate(seeds.begin(),std::prev(seeds.end()),seeds.end());
-      if(r.vehicles.size()==3 && std::abs(delta(r.start.reference.yaw,r.goal.reference.yaw))>1e-8)
-        seeds.push_back({{Mode::A},sign,route,"GENERAL_F_YAW"});
+      if(r.vehicles.size()==3 && (opts.initial_sequence.empty() || opts.enable_edits || opts.initial_sequence==Sequence{Mode::A})){
+        Seed general{{Mode::A},sign,route,"GENERAL_F_YAW"};
+        general.general=true;
+        seeds.push_back(std::move(general));
+      }
     }
-    if(r.allow_reverse)add({Mode::A},-sign,direct,"CHANGE_GEAR");
+    if(r.vehicles.size()==3 && route.empty() && (opts.initial_sequence.empty() || opts.enable_edits)){
+      Seed general{{Mode::A},sign,direct,"GENERAL_F_YAW"};
+      general.general=true;seeds.push_back(std::move(general));
+    }
+    if(r.allow_reverse && opts.initial_sequence.empty())add({Mode::A},-sign,direct,"CHANGE_GEAR");
     add({Mode::O},sign,direct,"INSERT_MODE");
     // Expand both ends of a motion proposal using the same insertion grammar.
     // Try the endpoint with incompatible mount tangents first, if any.
@@ -464,13 +493,76 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
       }
     }
   }
+  // Near a rank transition, constrain the terminal tangent against its
+  // certified angle window. The original request is always used in certify().
+  if(rank_goal.exact && !locked_goal){
+    for(auto& seed:seeds)if(seed.seq.back()==Mode::A)seed.relaxed=true;
+  }
   result.seed_seconds=elapsed();
-  Ranked best{2,0,0};std::string why;
-  for(const auto& seed:seeds) {
+  for(auto& seed:seeds){
+    if(seed.edit=="SEED")seed.priority=-1;
+    else if(seed.seq==Sequence{Mode::A})seed.priority=0;
+    else if(seed.seq.size()==1)seed.priority=2;
+    else seed.priority=8+int(seed.seq.size());
+  }
+  PolicyScore best{};bool unranked_incumbent=false;std::string why;
+  for(std::size_t ordinal=0;ordinal<seeds.size();++ordinal) {
+    const Seed seed=seeds[ordinal]; // appending child proposals may reallocate the queue
+    auto propose=[&](std::size_t at,bool accepted){
+      if(!opts.enable_edits || seed.seq.empty() || run.stop())return;
+      at=std::min(at,seed.seq.size()-1);
+      auto child=[&](Sequence sequence,const char* operation,int reverse=-1,bool first=false){
+        if(sequence.empty() || sequence.size()>HJ_MAX_PHASES || (sequence==seed.seq && reverse==seed.reverse_from))return;
+        Seed next{sequence,seed.sign,seed.route,operation,reverse};
+        // Prefer pure-A replacements, then short edits of a certified parent,
+        // then repairs near a failed phase. These are ordering heuristics.
+        next.priority=sequence==Sequence{Mode::A}?0:(accepted?3:5)+int(sequence.size());
+        next.relaxed=rank_goal.exact && !locked_goal && sequence.back()==Mode::A;
+        auto duplicate=std::find_if(seeds.begin(),seeds.end(),[&](const Seed& existing){
+          return existing.seq==next.seq && existing.sign==next.sign && existing.reverse_from==reverse &&
+                 existing.general==next.general && existing.relaxed==next.relaxed && existing.route.size()==next.route.size() &&
+                 std::equal(existing.route.begin(),existing.route.end(),next.route.begin(),[](Point a,Point b){return distance(a,b)<1e-8;});
+        });
+        if(duplicate!=seeds.end()){
+          if(static_cast<std::size_t>(duplicate-seeds.begin())>ordinal)duplicate->priority=std::min(duplicate->priority,next.priority);
+          if(first && static_cast<std::size_t>(duplicate-seeds.begin())>ordinal){
+            duplicate->edit=operation;
+            std::rotate(seeds.begin()+ordinal+1,duplicate,duplicate+1);
+          }
+          return;
+        }
+        if(seeds.size()>=48)return;
+        if(first)seeds.insert(seeds.begin()+ordinal+1,std::move(next));else seeds.push_back(std::move(next));
+      };
+      const bool has_aux=std::any_of(seed.seq.begin(),seed.seq.end(),[](Mode m){return m!=Mode::A;});
+      if(has_aux){
+        // Rebuild the neighboring boundaries instead of forcing a zero-length phase.
+        for(std::size_t j=0;j<seed.seq.size();++j)if(seed.seq[j]!=Mode::A){
+          auto reduced=seed.seq;reduced.erase(reduced.begin()+j);child(reduced,"REMOVE_BLOCK");
+          auto replace=seed.seq;replace[j]=Mode::A;
+          replace.erase(std::unique(replace.begin(),replace.end()),replace.end());
+          child(replace,"REPLACE_SUBSEQUENCE");
+        }
+        if(d>1e-7)child({Mode::A},"REPLACE_SUBSEQUENCE",-1,true);
+      }
+      if(seed.reverse_from<0){
+        auto merged=seed.seq;merged.erase(std::unique(merged.begin(),merged.end()),merged.end());
+        child(merged,"MERGE_SAME_MODE");
+      }
+      if(!accepted){
+        for(auto mode:{Mode::S,Mode::O})for(std::size_t pos:{at,at+1}){
+          auto extended=seed.seq;extended.insert(extended.begin()+pos,mode);child(extended,"INSERT_MODE");
+        }
+        if(r.allow_reverse && seed.seq[at]==Mode::A){
+          auto mixed=seed.seq;mixed.insert(mixed.begin()+at,Mode::A);child(mixed,"CHANGE_GEAR",int(at+1));
+        }
+      }
+      std::stable_sort(seeds.begin()+ordinal+1,seeds.end(),[](const Seed& a,const Seed& b){return a.priority<b.priority;});
+    };
     if(run.stop())break;
     const auto improve_until=begin+std::chrono::duration_cast<Clock::duration>(
       std::chrono::duration<double>(result.first_certified_s+.65));
-    const bool improving_aux=result.plan && best.presence && seed.seq!=Sequence{Mode::A};
+    const bool improving_aux=result.plan && best.auxiliary_blocks && seed.seq!=Sequence{Mode::A};
     if(improving_aux && Clock::now()>=improve_until)break;
     try{
       if(seed.seq.empty())continue;
@@ -479,7 +571,7 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
       const auto started=Clock::now();
       struct Finish{Attempt& a;Clock::time_point start;~Finish(){a.wall_s=std::chrono::duration<double>(Clock::now()-start).count();}} finish{metrics,started};
       if((seed.seq.front()==Mode::A && locked_start) || (seed.seq.back()==Mode::A && locked_goal)){
-        why="ENDPOINT_MOUNT_TANGENT_RANK";result.trace.push_back(tag+":"+why);continue;
+        why="ENDPOINT_MOUNT_TANGENT_RANK";result.trace.push_back(tag+":"+why);propose(locked_start?0:seed.seq.size()-1,false);continue;
       }
       // Keep time for edits after a poor local initialization.
       double slice=seed.route.size()>2?5.6:(seed.seq.size()>2?2.15:2.8);
@@ -491,22 +583,65 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
       char msg[512]{};
       bool solved=hj_optimize(&graph,msg,sizeof(msg));
       metrics.nlp_build_s=graph.nlp_build_s;metrics.nlp_solve_s=graph.nlp_solve_s;
-      if(!solved){why=msg;metrics.status=why;result.trace.push_back(tag+":"+why);continue;}
+      if(!solved){why=msg;metrics.status=why;result.trace.push_back(tag+":"+why);propose(locked_goal?seed.seq.size()-1:0,false);continue;}
       if(graph.primal_status[0])result.trace.push_back(tag+":UNCONVERGED_PRIMAL:"+graph.primal_status);
       auto plan=expand(r,graph);
+      bool accepted=false;
+      std::size_t failed_motion=0;
+      int geometric_refinements=0;
       for(int retry=0;retry<12 && !run.stop();++retry){
         if(plan.phases.empty() || duration(plan)>r.task_duration_cap+1e-8){why="TASK_TIME_CONSTRAINT";break;}
         const auto audit_start=Clock::now();const auto audit=certify(r,plan,deadline,cancel);
         metrics.certify_s+=std::chrono::duration<double>(Clock::now()-audit_start).count();
         metrics.status=audit.reason;
         if(audit.executable) {
-          const auto ranking=score(plan,r);if(!result.plan)result.first_certified_s=elapsed();
+          accepted=true;
+          const bool first=!result.plan;
+          if(first)result.first_certified_s=elapsed();
+          PolicyScore ranking;
+          try{ranking=score_policy(r,plan,deadline,cancel);}
+          catch(const std::runtime_error&){
+            if(!run.stop())throw;
+            if(first){result.plan=plan;unranked_incumbent=true;}
+            result.trace.push_back(tag+":CERTIFIED:POLICY_EVALUATION_DEADLINE");
+            break;
+          }
           result.trace.push_back(tag+":CERTIFIED");
-          if(ranking<best){result.plan=plan;best=ranking;result.first_policy_compliant_s=elapsed();}
+          if(first || ranking.better_than(best)){result.plan=plan;best=ranking;result.first_policy_compliant_s=elapsed();}
           break;
         }
         why=audit.reason;result.trace.push_back(tag+":"+why);
         if(audit.phase>=plan.phases.size() || plan.phases[audit.phase].kind!=Kind::Motion)break;
+        failed_motion=std::count_if(plan.phases.begin(),plan.phases.begin()+audit.phase,
+                                  [](const Phase& ph){return ph.kind==Kind::Motion;});
+        if(why.find("OBB_COLLISION")!=std::string::npos && geometric_refinements<3 && !trial.stop()){
+          // Use the position of the failed continuous proof, not just the
+          // original collocation points. Preserve all earlier active planes.
+          std::size_t before=active.size();
+          const double ramp=plan.phases[audit.phase].cruise_ramp_fraction;
+          const double witness_time=.5*(hybrid_clock::inverse(audit.u0,ramp)+hybrid_clock::inverse(audit.u1,ramp));
+          const double witness_station=hybrid_clock::state(witness_time,ramp)[0];
+          for(double u:{witness_station,.25*audit.u0+.75*audit.u1,.5*(audit.u0+audit.u1),.75*audit.u0+.25*audit.u1}){
+            auto cuts=separators(r,graph,trial,WitnessStation{static_cast<int>(failed_motion),u});
+            for(const auto& cut:cuts){
+              auto same=[&](const HJSeparation& v){return v.phase==cut.phase && v.span==cut.span &&
+                v.vehicle==cut.vehicle && v.other==cut.other && std::abs(v.station-cut.station)<1e-7 &&
+                std::abs(v.nx-cut.nx)+std::abs(v.ny-cut.ny)+std::abs(v.obstacle_support-cut.obstacle_support)<1e-7;};
+              if(std::none_of(active.begin(),active.end(),same))active.push_back(cut);
+            }
+          }
+          if(active.size()>before && !trial.stop()){
+            ++geometric_refinements;
+            result.trace.push_back(tag+":REFINE_WITNESS:"+std::to_string(failed_motion)+":"+std::to_string(audit.u0)+":"+std::to_string(audit.u1));
+            graph.separations=active.data();graph.sep_count=active.size();
+            graph.nlp_build_s=graph.nlp_solve_s=0.;
+            const bool converged=hj_optimize(&graph,msg,sizeof(msg));
+            metrics.nlp_build_s+=graph.nlp_build_s;metrics.nlp_solve_s+=graph.nlp_solve_s;
+            if(!converged){why=msg;result.trace.push_back(tag+":REFINEMENT_FAILED:"+why);break;}
+            plan=expand(r,graph);
+            continue;
+          }
+        }
         // The certificate distinguishes spatial violations from time-law violations.
         // Retiming preserves geometry, boundary rest and the authoritative mount identities.
         if(why.find("SPEED")==std::string::npos && why.find("ACCELERATION")==std::string::npos &&
@@ -514,15 +649,16 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
            why.find("DYNAMIC")==std::string::npos)break;
         plan.phases[audit.phase].duration*=1.25;
       }
-      if(result.plan && (best.presence==0 ||
+      propose(failed_motion,accepted);
+      if(result.plan && (best.auxiliary_blocks==0 ||
          ((locked_start||locked_goal) && seed.seq.size()<=2 && seed.seq.front()!=Mode::O && seed.seq.back()!=Mode::O)))break;
       if(result.plan && elapsed()-result.first_certified_s>.75) break;
-    }catch(const std::exception& e){why=e.what();result.trace.push_back(why);}
+    }catch(const std::exception& e){why=e.what();result.trace.push_back(why);propose(0,false);}
   }
   if(cancel&&cancel()){result.plan.reset();result.status="CANCELLED";result.reason=result.status;}
   else if(result.plan){
-    result.status=run.stop() && best.presence?"FEASIBLE_POLICY_DEGRADED":"CERTIFIED_POLICY_COMPLIANT";
-    result.reason=!best.presence?"PURE_A":locked_start||locked_goal?"ENDPOINT_CONFIGURATION":
+    result.status=unranked_incumbent || (run.stop() && best.auxiliary_blocks)?"FEASIBLE_POLICY_DEGRADED":"CERTIFIED_POLICY_COMPLIANT";
+    result.reason=unranked_incumbent?"POLICY_EVALUATION_DEADLINE":!best.auxiliary_blocks?"PURE_A":locked_start||locked_goal?"ENDPOINT_CONFIGURATION":
       run.stop()?"A_SOLVE_TIMEOUT":"A_SEARCH_SPACE_EXHAUSTED";
   }
   else{result.status="NO_CERTIFIED_SOLUTION_WITHIN_BUDGET";result.reason=run.stop()?"A_SOLVE_TIMEOUT":why;}
