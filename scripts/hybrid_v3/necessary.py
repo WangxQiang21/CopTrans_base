@@ -1,7 +1,8 @@
 """Construct independent examples where either geometry/time or full rank excludes pure A."""
 import math
 import numpy as np
-from cases import phase, stationary, limits, CONTRACT, CARGO
+from cases import phase, stationary, limits, CONTRACT, digest, packed
+from benchmark import invoke, identify
 
 
 def construct(task,profile):
@@ -19,9 +20,10 @@ def construct(task,profile):
         # body velocities and yaw rates vanish on an open set for any A input.
         mat=[[-math.sin(h),math.cos(h),a*math.cos(h)+b*math.sin(h)]
              for h,(a,b,*_) in zip(initial,v)]
-        det=abs(np.linalg.det(mat))
-        assert det>.01
-        proof=dict(type="full_rank_start",abs_determinant=det)
+        sigma=float(np.linalg.svd(mat,compute_uv=False)[-1])
+        perturb=math.radians(1)*math.sqrt(3+4*sum(a*a+b*b for a,b,*_ in v))
+        assert sigma>perturb
+        proof=dict(type="full_rank_start",smallest_singular_value=sigma,endpoint_perturbation_bound=perturb)
     else:
         grid[:]=1
         grid[:,n//2-9:n//2+9]=0
@@ -45,3 +47,29 @@ def construct(task,profile):
            vehicles=v,cargo=[.5,0.,2.05,2.8] if multi else None,start=b(q),goal=b(g),limits=lim,
            task_duration_cap=cap,allow_reverse=True)
     return r,[first,last],proof
+
+
+def main():
+    import argparse
+    from pathlib import Path
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--executable",type=Path,required=True)
+    parser.add_argument("--output",type=Path,required=True)
+    args=parser.parse_args()
+    rows=[]
+    for task in ("single","formation"):
+        for profile in ("standard","baseline"):
+            req,witness,bound=construct(task,profile)
+            budget=8 if task=="single" else 12
+            audit=invoke(args.executable,dict(operation="certify",request=req,plan=witness,budget_s=budget),budget+2)
+            solve=invoke(args.executable,dict(operation="solve",request=req,budget_s=budget),budget+2)
+            rows.append(dict(task=task,profile=profile,bound=bound,request_sha=digest(req),witness_sha=digest(witness),
+                             witness_audit=audit,solve=solve))
+    with args.output.open("xb") as output:
+        output.write(packed(dict(exe_sha256=identify(args.executable),cases=rows))+b"\n")
+    return 0 if all(r["witness_audit"].get("executable") and r["solve"].get("audit",{}).get("executable") and
+                    r["solve"].get("metrics",{}).get("aux_blocks",0)>0 for r in rows) else 1
+
+
+if __name__=="__main__":
+    raise SystemExit(main())

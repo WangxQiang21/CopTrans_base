@@ -190,9 +190,10 @@ J contract(const Context & c)
 }
 Envelope encode(const Context & c,const hj::Plan & p,int64_t epoch)
 {
-  return encode(c,p,epoch,0);
+  return encode(c,p,epoch,0,0);
 }
-Envelope encode(const Context & c, const hj::Plan & p, int64_t epoch, int64_t publication_steady_ns)
+Envelope encode(const Context & c, const hj::Plan & p, int64_t epoch, int64_t publication_steady_ns,
+                int64_t publication_ros_ns)
 {
   require(c.id && epoch > 0, "invalid plan identity");
   J j;
@@ -202,6 +203,7 @@ Envelope encode(const Context & c, const hj::Plan & p, int64_t epoch, int64_t pu
   j["solver_build"] = HYBRID_BUILD_DIGEST;
   j["request"] = contract(c);
   j["epoch_ns"] = Json::Int64(epoch);
+  j["publication_ros_ns"] = Json::Int64(publication_ros_ns);
   j["publication_steady_ns"] = Json::Int64(publication_steady_ns);
   j["phases"] = J(Json::arrayValue);
   for (const auto & v:p.phases) {
@@ -243,7 +245,9 @@ Decoded decode(const Envelope & m, std::shared_ptr<const hj::GridSnapshot> grid,
   }
   Decoded out;
   require(
-    j["publication_steady_ns"].isInt64() && j["publication_steady_ns"].asInt64() >= 0,
+    j["publication_steady_ns"].isInt64() && j["publication_steady_ns"].asInt64() >= 0 &&
+    j["publication_ros_ns"].isInt64() && j["publication_ros_ns"].asInt64() >= 0 &&
+    j["publication_ros_ns"].asInt64() < ns(m.header.stamp),
     "invalid publication timestamp");
   auto & c = out.context;
   auto & r = c.request;

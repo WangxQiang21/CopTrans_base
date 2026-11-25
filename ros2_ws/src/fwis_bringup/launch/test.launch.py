@@ -23,8 +23,8 @@ def setup(context):
     config = read_config(config_path)
     if config["mode"] != "sim":
         raise ValueError(REAL_UNAVAILABLE)
-    if not (config["gazebo_gui"] and config["rviz_gui"]):
-        raise ValueError("The test entry point requires Gazebo GUI and RViz2 GUI")
+    if config.get("interactive") and not (config["gazebo_gui"] and config["rviz_gui"]):
+        raise ValueError("Interactive experiments require Gazebo GUI and RViz2 GUI")
     directory = config_path.parent
     scene = load_scene(config["scenario"], config.get("scene_variant", "default"))
     task = config["scene_task"]
@@ -65,8 +65,8 @@ def setup(context):
         PythonLaunchDescriptionSource(str(resources / "simulation.launch.py")),
         launch_arguments={
             "scenario": scene.name, "variant": scene.variant, "task": task,
-            "gui": "true", "rviz": "true", "body_twist": "true",
-            "tracking_dashboard": "true",
+            "gui": str(config["gazebo_gui"]).lower(), "rviz": str(config["rviz_gui"]).lower(), "body_twist": "true",
+            "tracking_dashboard": str(config["rviz_gui"]).lower(),
             "experiment_file": str(config_path), "scene_directory": str(directory / "scene"),
         }.items())
     runner = Node(package="fwis_bringup", executable="run_experiment", output="screen",
@@ -106,7 +106,10 @@ def setup(context):
         tracker = {"python": "ranger_tracking_controller",
                    "cpp": "ranger_tracking_controller_cpp"}[config.get("tracking_implementation", "python")]
         actions.append(Node(package="fwis_control", executable=tracker,
-                            namespace=f"robot{index}", output="screen", parameters=[parameters]))
+                            namespace=f"robot{index}", output="screen", parameters=[parameters],
+                            # Keep network transmission off the 25 Hz control thread. The
+                            # qualification monitor also measures when Gazebo consumes cmd_vel.
+                            additional_env={"RMW_FASTRTPS_PUBLICATION_MODE":"ASYNCHRONOUS"} if native else {}))
     if config["record"] == "on":
         topics = ["/clock", "/map", "/tf", "/tf_static"]
         for index in robots:

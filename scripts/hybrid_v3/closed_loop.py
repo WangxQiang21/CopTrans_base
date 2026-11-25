@@ -16,6 +16,7 @@ import time
 import uuid
 
 from cases import LOCAL, ROOT
+from qualification_scenes import SPECIAL_SCENES, setup, measured
 from fwis_bringup.experiment_log import collect, remaining_bytes, RUN_BUDGET
 
 # All endpoints are input fixtures, not planner tuning. Long route preserves
@@ -29,6 +30,7 @@ FAMILIES = {
     "cross_dock": (0., 1.1, 0.),
     "close_turn": (1.522379369389306,.34843514176563,.45),
     "long": None,
+    **dict.fromkeys(SPECIAL_SCENES),
     "fault": (3.8,0.,0.),
 }
 
@@ -50,13 +52,18 @@ def supervise(args, family, task, trial):
     task_arg="multi" if task=="formation" else "single"
     config_args=["--task",task_arg,"--planner-backend","hybrid_joint","--speed-profile",args.profile,
                  "--experiment","full_route" if family=="long" else "short_turn"]
+    if family in SPECIAL_SCENES:
+        config_args[-1]="full_route"
+        config_args.extend(["--scenario",SPECIAL_SCENES[family]])
     cfg=yaml.safe_load(subprocess.check_output([ROOT/"scripts/test.sh",*config_args,"--dry-run"],text=True))
     if FAMILIES[family] is not None:
         x,y,th=FAMILIES[family]
         gx,gy,_=local_pose(cfg["start"],(x,y))
         cfg["goal"]=[gx,gy,cfg["start"][2]+th]; cfg["waypoints"]=[]
+    proof=setup(family,task,cfg)
     cfg["experiment"]="v3_"+family
-    cfg["timeout_s"]=args.timeout if args.timeout else (890 if family=="long" else 180)
+    cfg["timeout_s"]=args.timeout if args.timeout else (890 if family in ("long","multibend") else 180)
+    cfg["gazebo_gui"]=cfg["rviz_gui"]=not args.headless
     cfg["observation_s"]=1.2 if family=="fault" else .3
     run_id=datetime.now().strftime("%Y%m%d_%H%M%S_")+uuid.uuid4().hex[:6]
     archive=ROOT/"reports/runs"/run_id
@@ -66,7 +73,7 @@ def supervise(args, family, task, trial):
     own=args.output/run_id
     own.mkdir()
     row=dict(run_id=run_id,family=family,task=task,trial=trial,profile=args.profile,
-             installed_binaries=binaries(),backend=cfg["planner_backend"])
+             gui=not args.headless,installed_binaries=binaries(),backend=cfg["planner_backend"],scene_proof=proof)
     with tempfile.TemporaryDirectory(prefix="coptrans-v3-gazebo-") as parent:
         spool=Path(parent)/run_id
         for suffix in ["ros","metrics","trajectories","screenshots"]:
@@ -118,6 +125,8 @@ def supervise(args, family, task, trial):
             result={"status":"launch_failed","reason":"no_result"}
             result_file.write_text(yaml.safe_dump(result))
         row.update(status=result["status"],reason=result["reason"])
+        if family in SPECIAL_SCENES:
+            row["scene_measurements"]=measured(family,task,proof,spool)
         row["archive"]=str(archive.relative_to(ROOT))
         collect(spool,archive,final=True)
         for p in own.iterdir():
@@ -132,6 +141,8 @@ def main():
     a=argparse.ArgumentParser(description=__doc__)
     a.add_argument("--families",default=",".join(FAMILIES)); a.add_argument("--task",choices=["single","formation","both"],default="both")
     a.add_argument("--profile",choices=["baseline","standard"],default="standard")
+    a.add_argument("--headless",action="store_true",help="run the actual Gazebo server and DDS graph without GUI clients")
+    a.add_argument("--resume",action="store_true",help="skip only completed repetition IDs from this exact executable set")
     a.add_argument("--repetitions",type=int,default=3);a.add_argument("--timeout",type=float)
     a.add_argument("--output",type=Path,required=True);a.add_argument("--stop-on-failure",action="store_true")
     args=a.parse_args()
@@ -143,6 +154,18 @@ def main():
             if family not in FAMILIES: a.error("unknown family "+family)
             for task in tasks:
                 for i in range(args.repetitions):
+                    if args.resume:
+                        binaries_now=binaries()
+                        done=False
+                        for meta in args.output.glob("*/metadata.json"):
+                            entry=json.loads(meta.read_text())
+                            if (entry["family"],entry["task"],entry["trial"],entry["profile"],entry.get("gui",True)) != (family,task,i,args.profile,not args.headless):
+                                continue
+                            if entry["installed_binaries"]!=binaries_now:
+                                raise ValueError("Existing trial used other binaries; select a fresh output directory.")
+                            done=True
+                        if done:
+                            continue
                     r=supervise(args,family,task,i)
                     if args.stop_on_failure and r["status"]!=("stopped" if family=="fault" else "passed"):
                         raise SystemExit(1)

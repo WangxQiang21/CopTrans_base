@@ -9,6 +9,14 @@ cd /home/wq/Whut/CopTrans_base
 
 脚本会增量构建并打开 Gazebo 和 RViz，`./run_demo.sh` 无参数时也进入同一测试。首次运行或代码变更后直接运行脚本。使用 `--no-build` 时，脚本会核对安装与源码是否一致。默认是室内厂房，西侧靠墙有一处只允许单车通过的 1.10 m 限宽口。可用 `--list-scenarios` 查看场景，加 `--scenario port_01` 切换到港口。
 
+要测试 V3 原生联合求解器，在仓库目录执行下面任意一条。启动后核对左侧面板或本轮 `experiment.json`，实际后端应显示 `formation_hybrid_joint_cpp` 或 `single_hybrid_joint_cpp`，跟踪器应显示 `cpp`。
+
+```bash
+./scripts/interactive.sh --planner-backend hybrid_joint
+./scripts/test.sh --task single --planner-backend hybrid_joint --experiment short_turn
+./scripts/test.sh --task multi --planner-backend hybrid_joint --experiment full_route
+```
+
 ## 2. 在 RViz 设置起点和终点
 
 1. 等待左侧「规划与执行」面板提示选择起点。点击 **2D Pose Estimate**，在地图上按住左键并拖出朝向。Gazebo 会把三辆车和货物放到选定位置。

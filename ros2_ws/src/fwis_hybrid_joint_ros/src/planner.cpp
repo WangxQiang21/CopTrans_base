@@ -113,11 +113,13 @@ private:
   void publish(const hj::Result & r)
   {
     auto & c = current->context;
-    auto epoch = now().nanoseconds() + std::llround(settings.lead * 1e9);
+    const auto publication_ros_ns = now().nanoseconds();
+    const auto epoch = publication_ros_ns + std::llround(settings.lead * 1e9);
     auto envelope =
       encode(
       c, *r.plan, epoch,
-      std::chrono::duration_cast<std::chrono::nanoseconds>(hj::Clock::now().time_since_epoch()).count());
+      std::chrono::duration_cast<std::chrono::nanoseconds>(hj::Clock::now().time_since_epoch()).count(),
+      publication_ros_ns);
     display_samples(envelope, c, *r.plan);
     envelope.trajectory.vehicles = current->specs;
     output->publish(envelope);

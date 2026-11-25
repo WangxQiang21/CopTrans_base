@@ -42,7 +42,7 @@ Json::Value parse(const std::string &);
 std::string json(const Json::Value &);
 Json::Value contract(const Context &);
 Envelope encode(const Context &, const hj::Plan &, int64_t epoch);
-Envelope encode(const Context &, const hj::Plan &, int64_t epoch, int64_t publication_steady_ns);
+Envelope encode(const Context &, const hj::Plan &, int64_t epoch, int64_t publication_steady_ns, int64_t publication_ros_ns);
 Decoded decode(const Envelope &, std::shared_ptr<const hj::GridSnapshot>, const Context * expected = nullptr);
 void display_samples(Envelope &, const Context &, const hj::Plan &);
 geometry_msgs::msg::Pose2D pose2(hj::Pose2d);

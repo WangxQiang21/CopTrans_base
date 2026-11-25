@@ -16,6 +16,7 @@ sys.path.insert(0,str(Path(__file__).resolve().parent/"hybrid_v3"))
 from qualify import (LOCAL,NUMERIC,POLICY,PROFILES,REGISTRY,REPORT,ROOT,SPEC,TASKS,closed_rows,
                      collect,digest,lines,load,quant,setup_metrics,sha,xml_cases)
 from cases import indices
+from evidence_manifest import build_manifest, audit_rows
 
 
 def write(path,obj):
@@ -24,9 +25,12 @@ def write(path,obj):
 
 def main():
     ap=argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--batch",type=Path,default=LOCAL/"release")
-    ap.add_argument("--control",type=Path,default=LOCAL/"control_605_v1")
-    ap.add_argument("--gazebo",type=Path,default=LOCAL/"gazebo_release")
+    ap.add_argument("--batch",type=Path,default=LOCAL/"release_c1")
+    ap.add_argument("--control",type=Path,default=LOCAL/"control_605_c1")
+    ap.add_argument("--gazebo",type=Path,default=LOCAL/"gazebo_release_c1")
+    ap.add_argument("--ros",type=Path,default=LOCAL/"group_c1")
+    ap.add_argument("--witness",type=Path,default=LOCAL/"witness_final_c1")
+    ap.add_argument("--ctest",type=Path,default=LOCAL/"release_c1"/"ctest")
     ap.add_argument("--report",type=Path,default=REPORT)
     ap.add_argument("--compact",action="store_true",help="re-evaluate from the checked-in measurements")
     args=ap.parse_args();out=args.report;out.mkdir(exist_ok=True,parents=True)
@@ -38,24 +42,25 @@ def main():
         models=load(NUMERIC/"model.json");collision=load(NUMERIC/"collision.json")
         derivatives=load(NUMERIC/"derivatives.json")
         defaults=yaml.safe_load(REGISTRY.read_text())
-        native=load(LOCAL/"native_proof_host/runtime.json")
-        archive=LOCAL.parent/"hybrid_v3_group_faults"
+        native=load(LOCAL/"native_c1/runtime.json")
+        archive=args.ros
         fixtures={t:load(archive/f"{t}.json") for t in TASKS}
         legacy={f"{t}/{p}":[[x["case_id"],x.get("request_hash"),x["evidence"].get("certified_in_budget",False)]
                 for x in lines(NUMERIC/f"legacy_{t}_{p}.jsonl")] for t in TASKS for p in PROFILES}
         witness={}
         for split in ("core","holdout","development","pruning"):
             for profile in PROFILES:
-                for r in lines(LOCAL/f"witness_{split}_{profile}_v2.jsonl"):
+                for r in lines(args.witness/f"witness_{split}_{profile}.jsonl"):
                     witness[r["case_id"]+"/"+profile]=[r["request_hash"],r["evidence"].get("executable",False),r.get("witness_hash")]
-        ctest=xml_cases(args.batch/"ctest");san=xml_cases(NUMERIC/"ASan_UBSan")
+        ctest=xml_cases(args.ctest);san=xml_cases(NUMERIC/"ASan_UBSan")
         data=dict(model=models,collision=collision,derivatives=derivatives,software_defaults=defaults["defaults"],
                   native=native,group_fixtures=fixtures,legacy=legacy,control=setup_metrics(args.control),
-                  certificate_tests=xml_cases(NUMERIC),ctest=ctest,san=san,
+                  certificate_tests=xml_cases(NUMERIC),ctest=ctest,san=san,necessary_aux=load(NUMERIC/"necessary_aux.json"),
+                  necessary_profiles=load(NUMERIC/"necessary_corridor_c1.json"),
                   asan_smoke=load(NUMERIC/"sanitizer_summary.json"),native_faults=load(archive/"faults.json"),
                   admission=load(archive/"delivery.json"),cases=stats,witness=witness,gazebo=closed_rows(args.gazebo),
-                  inputs_sha256={str(p.relative_to(ROOT)):sha(p) for p in [SPEC,REGISTRY,casefile] if p.exists()},
-                  default_runs=load(args.batch/"default_runs.json"),source_manifest=load(args.batch/"source_manifest.json"))
+                  inputs_sha256={str(p.relative_to(ROOT)):sha(p) for p in [SPEC,REGISTRY,casefile,REPORT/"case_manifest_baseline.json"] if p.exists()},
+                  default_runs=load(args.batch/"default_runs.json"),source_manifest=build_manifest(args.batch,args.witness,LOCAL/"candidate3",args.ctest))
         write(out/"measurements.json",data)
     if data is None:raise SystemExit("missing measurements")
     if not args.compact:
@@ -106,6 +111,29 @@ def main():
            and joins["curvature_jump"]<=1e-5 and tests.get("ContinuousCurvatureAndIndependentFormationYaw"),joins)
     record("FORMATION_REFERENCE",bool(m),m.get("max_mount_error_m",1)<=1e-8 and tests.get("ContinuousCurvatureAndIndependentFormationYaw")
            and tests.get("EnforcesReversePolicyAndPreparationTargetAndWheelGeometry"),dict(max_mount_identity_error_m=m.get("max_mount_error_m")))
+    necessary=data.get("necessary_aux") or {}
+    guaranteed={r["task"]:r for r in necessary.get("cases",[])}
+    extra_bounds={(r["task"],r["profile"]):r for r in (data.get("necessary_profiles") or {}).get("cases",[])}
+    def proven_aux(task,profile):
+        other=extra_bounds.get((task,profile),{})
+        bounds=other.get("bound",{})
+        if task=="single":
+            physical=(bounds.get("projected_width_m",0)>bounds.get("width_m",1) and
+                      bounds.get("max_A_lateral_m",1e6)<bounds.get("required_m",0)-.04)
+        else:
+            physical=bounds.get("smallest_singular_value",0)>bounds.get("endpoint_perturbation_bound",1)
+        outcome=other.get("solve",{})
+        if not (physical and other.get("witness_audit",{}).get("executable") and outcome.get("audit",{}).get("executable") and
+                outcome.get("metrics",{}).get("aux_blocks",0)>0):
+            return False
+        r=guaranteed.get(task,{})
+        bound=r.get("bound",{})
+        proof=(bound.get("minimum_pure_A_duration_s",0)>bound.get("cap_s",1) if task=="single" else
+               bound.get("certified_rank")==3 and bound.get("smallest_singular_value",0)>bound.get("endpoint_perturbation_Frobenius_max",1))
+        plan=r.get("solve",{})
+        return bool(proof and r.get("request_sha") and r.get("witness_sha") and
+                    r.get("witness_audit",{}).get("executable") and plan.get("audit",{}).get("executable") and
+                    plan.get("actual_backend")==task+"_hybrid_joint_cpp" and plan.get("metrics",{}).get("aux_blocks",0)>0)
     sets={};all_core=True;all_hold=True;all_prune=True;latencies={};timed_ok=True
     have_core=have_hold=have_prune=have_latency=False
     def is_witness(r):
@@ -140,9 +168,9 @@ def main():
             # Require an actual structural edit in the trace: simply solving an unrelated pure-A seed is insufficient.
             removed=sum(pure(r) and any(("REPLACE_SUBSEQUENCE" in e or "REMOVE_BLOCK" in e) and "CERTIFIED" in e for e in r["trace"]) for r in redundant)
             ab={k:sum(valid(r) for r in rr if r["ablation"]==k) for k in ("fixed","movable","full")}
-            sets[key]["pruning"]=dict(pairs=len(redundant),removed=removed,ablations=ab,counterexamples=len(counter))
+            sets[key]["pruning"]=dict(pairs=len(redundant),removed=removed,ablations=ab,other_fixtures=len(counter),proven_necessary_aux=proven_aux(t,p))
             all_prune &= len(redundant)>=10 and removed>=.9*len(redundant) and len(counter)>=1 and all(
-                valid(r) and r["metrics"].get("aux_blocks",0)>0 for r in counter) and all(full_set([r for r in rr if r["ablation"]==k],"pruning") for k in ab)
+                valid(r) for r in counter) and proven_aux(t,p) and all(full_set([r for r in rr if r["ablation"]==k],"pruning") for k in ab)
             for difficulty,family in (("easy","C01"),("difficult","C06")):
                 rr=[r for r in rows if r["operation"]=="timing" and r["task"]==t and r["profile"]==p and r["family"]==family]
                 have_latency|=bool(rr)
@@ -188,10 +216,12 @@ def main():
                           len(vs)==count and all(v["terminal_position_error_m"]<=.10 and v["terminal_yaw_error_deg"]<=math.degrees(.1) for v in vs.values()) and
                           (t=="single" or met.get("max_mount_error_m",1)<=.10) and bool(met.get("min_environment_clearance")) and
                           all(v["m"]>0 for v in met["min_environment_clearance"].values()))
+                if r["family"] in ("multibend","necessary_aux"):
+                    good=good and r.get("scene_measurements",{}).get("passed") and bool(r.get("scene_proof"))
                 results[r["family"]].append(bool(good))
             summary[t+"/"+p]={f:[sum(v),len(v)] for f,v in results.items()}
             good={f for f,v in results.items() if len(v)>=3 and all(v)}
-            enough &=len(good)>=8 and {"fault","long","cross_dock"}<=good
+            enough &=len(good)>=8 and {"fault","long","multibend","necessary_aux"}<=good
     record("CLOSED_LOOP",bool(gaz),enough,summary)
     clocks=[c for r in gaz for c in r["clocks"]]
     record("GAZEBO_CLOCK_SCOPE",bool(clocks),enough and all(c["ros_misses"]==0 and c["stale_motion"]==0 and
@@ -207,9 +237,10 @@ def main():
     record("DEFAULT_INTEGRATION",True,defaults_ok and {r["entry"] for r in smoke if r["status"]=="passed" and r["native"]}=={"single","multi","interactive"},
            dict(test_default=default["planners"],tracker=default["tracking_implementation"],runs=smoke))
     hashes=data["inputs_sha256"];manifest=data["source_manifest"]
+    provenance=audit_rows(rows,witness,{p:REPORT/("case_manifest.json" if p=="standard" else "case_manifest_baseline.json") for p in PROFILES},manifest)
     integrity=all((ROOT/p).exists() and sha(ROOT/p)==v for p,v in hashes.items()) and len(hashes)>=3
-    record("REPRODUCIBLE_EVIDENCE",True,bool(manifest) and integrity and bool(rows) and all(
-           c["status"]=="PASS" for k,c in checks.items() if k!="DEFAULT_INTEGRATION"),dict(input_hashes=hashes,source_manifest=manifest))
+    record("REPRODUCIBLE_EVIDENCE",True,provenance["verified"] and integrity and bool(rows) and all(
+           c["status"]=="PASS" for k,c in checks.items() if k!="DEFAULT_INTEGRATION"),dict(input_hashes=hashes,source_commit=(manifest or {}).get("binary_commit"),provenance=provenance))
     if set(checks)!=set(cfg):raise ValueError("gate coverage differs from frozen specification")
     completed=all(g["status"]=="PASS" for g in checks.values())
     final={"schema":spec["schema"],"task_state":"COMPLETED" if completed else "INCOMPLETE","hardware":"HARDWARE_NOT_VERIFIED",

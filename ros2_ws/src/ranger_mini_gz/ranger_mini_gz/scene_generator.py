@@ -16,7 +16,7 @@ from ranger_mini_gz.scene_geometry import (
 from ranger_mini_gz.scene_world import STYLE_COLORS, write_gui_config, write_world
 
 
-SCENARIOS = ("factory_indoor_01", "port_01", "factory_outdoor_01")
+SCENARIOS = ("factory_indoor_01", "port_01", "factory_outdoor_01", "v3_multibend", "v3_auxiliary")
 SCENE_VARIANTS = ("auto", "default", "west_single_lane", "wide", "critical", "too_narrow")
 TASKS = ("single", "formation")
 WALL_THICKNESS = .15
@@ -51,12 +51,17 @@ class Scene:
     formation_id: str
     cargo: Cargo
     pinch_width: float | None
+    initial_body_yaw_offsets: tuple = (0., 0., 0.)
 
     def spawn_poses(self, task):
         start = self.experiments[task]["start"]
         if task == "single":
             return {1: start}
-        return {i: local_pose(start, offset) for i, offset in zip(self.vehicle_ids, self.offsets)}
+        return {
+            i: (*local_pose(start, offset)[:2], start[2] + yaw_offset)
+            for i, offset, yaw_offset in zip(
+                self.vehicle_ids, self.offsets, self.initial_body_yaw_offsets, strict=True)
+        }
 
 
 def read_yaml(path):
@@ -173,11 +178,14 @@ def load_scene(name, variant=None, resolution=None, paths=None):
                   vector(raw["camera"]["eye"], 3, "camera.eye"),
                   vector(raw["camera"]["target"], 3, "camera.target"),
                   obstacles, experiments, vehicle_size, ids, offsets,
-                  contract["formation_id"], cargo, width)
+                  contract["formation_id"], cargo, width,
+                  vector(raw.get("initial_body_yaw_offsets", [0.] * len(ids)), len(ids),
+                         "initial_body_yaw_offsets"))
     for task in TASKS:
         for key in ("start", "goal"):
             reference = experiments[task][key]
-            for part, polygon in model_footprints(scene, task, reference):
+            vehicles = scene.spawn_poses(task).values() if task == "formation" and key == "start" else None
+            for part, polygon in model_footprints(scene, task, reference, vehicles):
                 distance, witness = clearance(polygon, scene.obstacles, scene.size)
                 if distance <= 0:
                     raise ValueError(f"{name} {task} {key}: {part} collides with {witness}")

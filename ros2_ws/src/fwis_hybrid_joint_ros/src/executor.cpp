@@ -79,9 +79,9 @@ private:
   std::array<std::string, 3> early_admissions;
   std::array<hj::Clock::time_point, 3> fresh{};
   std::array<double, 3> source_stamp{};
-  bool enabled{}, ended{};
+  bool enabled{}, ended{}, awaiting_clock{};
   hj::Clock::time_point began;
-  int64_t last_ros{}, publication_steady_ns{};
+  int64_t last_ros{}, publication_steady_ns{}, publication_ros_ns{}, receipt_ros_ns{};
   void diagnostic(const std::string & phase, const std::string & reason)
   {
     Json::Value j;
@@ -92,6 +92,9 @@ private:
     if (key) {
       j["start_ns"] = Json::Int64(ns(key->start));
       j["certificate_complete"] = proven;
+      j["publication_ros_ns"] = Json::Int64(publication_ros_ns);
+      j["receipt_ros_ns"] = Json::Int64(receipt_ros_ns);
+      j["coordinator_ros_ns"] = Json::Int64(now().nanoseconds());
       j["accepted_ids"] = Json::Value(Json::arrayValue);
       j["tracker_age_s"] = Json::Value(Json::arrayValue);
       const auto stamp = now().seconds();
@@ -166,12 +169,18 @@ private:
     started(m);
     try {
       auto decoded = decode(m, grid, &*expected);
-      publication_steady_ns = parse(m.model_json)["publication_steady_ns"].asInt64();
-      if (ns(m.header.stamp) <= now().nanoseconds() ||
-        ns(m.header.stamp) - now().nanoseconds() > int64_t((settings.lead + .10) * 1e9))
+      const auto model = parse(m.model_json);
+      publication_steady_ns = model["publication_steady_ns"].asInt64();
+      publication_ros_ns = model["publication_ros_ns"].asInt64();
+      const auto epoch = ns(m.header.stamp);
+      if (epoch <= receipt_ros_ns || epoch - publication_ros_ns != std::llround(settings.lead * 1e9))
       {
         throw std::invalid_argument("invalid future epoch");
       }
+      // DDS delivers /clock and the model independently. Wait in the stopped
+      // state for this node's clock sample instead of rejecting a valid epoch.
+      awaiting_clock = publication_ros_ns > receipt_ros_ns + 100000000;
+      if (awaiting_clock) diagnostic("WAIT_CLOCK", "publication_clock_ahead");
       // Recompute the safety proof using the locally observed map, request and limits.
       auto deadline = hj::Clock::now() + std::chrono::milliseconds(
         static_cast<int64_t>(std::clamp((ns(m.header.stamp) - now().nanoseconds()) * 1e-6 - release_margin_ns*1e-6, 0., 400.)));
@@ -196,7 +205,9 @@ private:
     key->plan_id = m.plan_id;
     key->model_sha256 = m.model_sha256;
     key->start = m.header.stamp;
-    publication_steady_ns = 0;
+    publication_ros_ns = publication_steady_ns = 0;
+    receipt_ros_ns = now().nanoseconds();
+    awaiting_clock = false;
     proven = false;
     enabled = false;
     ended = false;
@@ -261,6 +272,13 @@ private:
     if (!enabled && stamp >= ns(key->start)-release_margin_ns) {
       stop("admission_deadline");
       return;
+    }
+    if (awaiting_clock) {
+      if (publication_ros_ns > stamp + 100000000) {
+        if (wall - began >= std::chrono::milliseconds(200)) stop("publication_clock_not_synchronized");
+        return;
+      }
+      awaiting_clock = false;
     }
     for (unsigned i = 0; i < feedback.size(); ++i) {
       if (accepted[i] && !complete[i] &&

@@ -45,7 +45,8 @@ def xml_cases(folder):
     result={}
     for p in folder.glob("*.xml"):
         for case in ET.parse(p).iter("testcase"):
-            result[case.attrib["name"]]=not any(case.find(x) is not None for x in ("failure","error","skipped"))
+            name=case.attrib["name"]
+            result[name]=result.get(name,True) and not any(case.find(x) is not None for x in ("failure","error","skipped"))
     return result
 
 
@@ -88,8 +89,6 @@ def clock_metrics(folder):
         with gzip.open(plant,"rt") as h:prows=list(csv.DictReader(h))
         # Use only uniquely attributable commands to measure DDS and plant delivery.
         applied=[r for r in prows if r.get("event")=="command"]
-        if prows and not applied:
-            applied=[r for r in prows if r.get("kind")=="command"]
         pairs,_=pair_commands(tracking,applied)
         beg,end=times[0],times[-1]
         wall=(end["callback_started_steady_ns"]-beg["callback_started_steady_ns"])*1e-9

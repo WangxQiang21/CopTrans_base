@@ -1,0 +1,20 @@
+name: v3_multibend
+size: [32.0, 21.0]
+resolution: 0.05
+boundary_height: 1.2
+ground_color: [0.36, 0.39, 0.41]
+camera:
+  eye: [-4.0, -6.0, 28.0]
+  target: [16.0, 10.5, 0.4]
+# Each transverse gate reaches the outer wall. From west to east the three
+# openings force a high-low-high crossing in the horizontal reference path.
+obstacles:
+  - {id: west_lower, type: wall, pose: [8.0, 5.65, 0.6, 0], size: [0.25, 11.0, 1.2], style: fence}
+  - {id: west_upper, type: wall, pose: [8.0, 18.05, 0.6, 0], size: [0.25, 5.6, 1.2], style: fence}
+  - {id: middle_lower, type: wall, pose: [16.0, 3.20, 0.6, 0], size: [0.25, 6.1, 1.2], style: fence}
+  - {id: middle_upper, type: wall, pose: [16.0, 15.60, 0.6, 0], size: [0.25, 10.5, 1.2], style: fence}
+  - {id: east_lower, type: wall, pose: [24.0, 5.65, 0.6, 0], size: [0.25, 11.0, 1.2], style: fence}
+  - {id: east_upper, type: wall, pose: [24.0, 18.05, 0.6, 0], size: [0.25, 5.6, 1.2], style: fence}
+experiments:
+  single: {start: [2.5, 10.3, 0.0], goal: [29.5, 10.3, 0.0]}
+  formation: {start: [2.5, 10.3, 0.0], goal: [29.5, 10.3, 0.0]}

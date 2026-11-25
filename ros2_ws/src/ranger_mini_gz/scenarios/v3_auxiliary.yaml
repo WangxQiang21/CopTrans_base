@@ -1,0 +1,16 @@
+name: v3_auxiliary
+size: [18.0, 12.0]
+resolution: 0.025
+boundary_height: 1.2
+ground_color: [0.36, 0.39, 0.41]
+camera:
+  eye: [-3.0, -4.0, 22.0]
+  target: [8.5, 6.0, 0.4]
+# Closed at both map boundaries. Interior wall faces x=2.55 and 3.45.
+obstacles:
+  - {id: slot_west, type: wall, pose: [2.45, 6.0, 0.6, 0], size: [0.20, 11.70, 1.2], style: fence}
+  - {id: slot_east, type: wall, pose: [3.55, 6.0, 0.6, 0], size: [0.20, 11.70, 1.2], style: fence}
+initial_body_yaw_offsets: [0.15, 0.45, -0.35]
+experiments:
+  single: {start: [3.0, 3.0, 0.02], goal: [3.0, 7.5, 0.02]}
+  formation: {start: [8.0, 6.0, 0.0], goal: [11.0, 6.0, 0.0]}
