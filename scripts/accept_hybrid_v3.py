@@ -20,6 +20,7 @@ from route_evidence import (HISTORICAL, RELEASE_FAMILIES, historical_offline, hi
                             measured_completion, pair, route_is_bound)
 from evidence_manifest import build_manifest, audit_rows, system_hashes, runtime_binaries, recorder_revision, solver_system_compatibility, same_solver, observed_runtime_sources, runtime_sources_match, current_sources_match
 from evidence_manifest import qualification_inputs, compact_inputs_match
+from default_entries import matches_qualified_runtime
 
 
 def write(path,obj):
@@ -335,8 +336,9 @@ def main():
     default=data["software_defaults"];smoke=data["default_runs"] or []
     defaults_ok=default["planners"]==dict(single="hybrid_joint",multi="hybrid_joint") and default["tracking_implementation"]=="cpp"
     checkout_matches=current_sources_match(data["source_manifest"])
-    record("DEFAULT_INTEGRATION",True,checkout_matches and defaults_ok and {r["entry"] for r in smoke if r["status"]=="passed" and r["native"]}=={"single","multi","interactive"},
-           dict(test_default=default["planners"],tracker=default["tracking_implementation"],current_source_matches=checkout_matches,runs=smoke))
+    default_binaries_match=matches_qualified_runtime(smoke,data["source_manifest"].get("runtime_binaries",{}))
+    record("DEFAULT_INTEGRATION",True,checkout_matches and defaults_ok and default_binaries_match and all(r["status"]=="passed" for r in smoke),
+           dict(test_default=default["planners"],tracker=default["tracking_implementation"],current_source_matches=checkout_matches,runtime_matches=default_binaries_match,runs=smoke))
     hashes=data["inputs_sha256"];manifest=data["source_manifest"]
     provenance=audit_rows(rows,witness,case_manifests,manifest)
     evidence_manifest=load(out/"manifest.json") or {}
