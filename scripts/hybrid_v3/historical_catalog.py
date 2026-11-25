@@ -127,13 +127,48 @@ def summarize(summary_path, legacy_folder=None):
     return catalog
 
 
+def add_baseline(catalog, baseline_path):
+    earlier = read(baseline_path)
+    if not earlier["complete"]:
+        raise ValueError("incomplete baseline")
+    index = {row["request_sha256"]:row for row in earlier["cases"]}
+    stats = defaultdict(Counter)
+    consumed = set()
+    for route in catalog["routes"].values():
+        for group, current in route["native_results"].items():
+            key = current["request_sha256"]
+            old = index.get(key)
+            if old is None or old["ros_contract_sha256"] != current["ros_contract_sha256"]:
+                raise ValueError(f"baseline native/ROS request differs for {key}")
+            if old["map_sha256"] != route["source_map_pgm_sha256"] or key in consumed:
+                raise ValueError(f"baseline identity or multiplicity mismatch for {key}")
+            consumed.add(key)
+            current["baseline"] = {k:old.get(k) for k in (
+                "status","reason","passed","modes","reference_length_m","duration_s","solve_wall_s")}
+            stats[group]["count"] += 1
+            stats[group]["baseline_passed"] += int(old["passed"])
+            stats[group]["both_pass"] += int(old["passed"] and current["passed"])
+            stats[group]["gained"] += int(not old["passed"] and current["passed"])
+            stats[group]["lost"] += int(old["passed"] and not current["passed"])
+    if len(consumed) != len(earlier["cases"]):
+        raise ValueError("paired suites have different denominators")
+    catalog["matched_native_baseline"] = {
+        k:earlier[k] for k in ("source_commit","core_commit","binary_sha256","library_sha256","policy_sha256")
+    }
+    catalog["matched_native_baseline"].update(
+        raw_summary_sha256=sha256(baseline_path.read_bytes()).hexdigest(), counts=stats)
+
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument("summary",type=Path)
     parser.add_argument("--legacy-folder",type=Path,help="optional location of the separate map05 ROS1/ROS2 original diagnostics")
+    parser.add_argument("--baseline-summary",type=Path,help="optional earlier native suite on the same ROS contracts")
     parser.add_argument("--output",type=Path,required=True)
     args=parser.parse_args()
-    save(args.output,summarize(args.summary.resolve(),args.legacy_folder))
+    catalog=summarize(args.summary.resolve(),args.legacy_folder)
+    if args.baseline_summary:
+        add_baseline(catalog,args.baseline_summary.resolve())
+    save(args.output,catalog)
 
 
 if __name__=="__main__":
