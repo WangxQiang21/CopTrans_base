@@ -64,6 +64,11 @@ if(BUILD_TESTING)
     APPEND_ENV "PYTHONPATH=${CMAKE_CURRENT_SOURCE_DIR}"
     ENV "TRACKING_NATIVE_OBLIQUE=$<TARGET_FILE:native_oblique_replay>")
 
+  add_executable(solved_oblique_replay test/solved_oblique_replay.cpp)
+  target_link_libraries(solved_oblique_replay PRIVATE fwis_tracking_core fwis_hybrid_joint_ros::hybrid_codec)
+  add_test(NAME solved_oblique_controllers COMMAND solved_oblique_replay)
+  set_tests_properties(solved_oblique_controllers PROPERTIES ENVIRONMENT "OPENBLAS_NUM_THREADS=1;OMP_NUM_THREADS=1")
+
   ament_add_pytest_test(control_timing test/test_control_timing.py)
   add_executable(control_affinity_tests test/control_affinity_tests.cpp)
   target_compile_features(control_affinity_tests PRIVATE cxx_std_17)
