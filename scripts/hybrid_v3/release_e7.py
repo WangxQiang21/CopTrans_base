@@ -76,6 +76,8 @@ def inventory(cfg):
             required(cfg[key]/f)
     for key in ("historical", "clock_receipts"):
         required(cfg[key])
+    if cfg.get("transport_incident"):
+        required(cfg["transport_incident"])
     if cfg.get("control_stress"):
         for cars in (1,3):
             for suffix in ("csv","summary.json","binary.sha256","libraries.txt"):
@@ -148,6 +150,8 @@ def freeze_checks(cfg):
         rows = [read(path) for path in cfg[key].glob("*/metadata.json")]
         if not matrix(rows, key == "gazebo") or any(row["source_commit"] != system for row in rows):
             raise ValueError(f"Incomplete, mixed-source or duplicate simulations in {key}")
+        if any(row.get("gazebo_transport_ip") != "127.0.0.1" for row in rows):
+            raise ValueError(f"Gazebo qualification must use the local transport interface in {key}")
     scenes = read(cfg["scenes"]/"summary.json")["cases"]
     from qualification_scenes import SPECIAL_SCENES
     needed = {(f,t,p) for f in SPECIAL_SCENES for t in ("single","formation") for p in PROFILES}
@@ -212,6 +216,8 @@ def recompute(root, cfg, compact, inputs, before):
     cmd.extend(("--recorder", cfg.get("recorder",inputs/"no-recorder-override")))
     if cfg.get("control_stress"):
         cmd.extend(("--control-stress",cfg["control_stress"]))
+    if cfg.get("transport_incident"):
+        cmd.extend(("--transport-incident",cfg["transport_incident"]))
     rc = run(root,sys.executable,*cmd,ok=(0,1))
     gate(compact/"acceptance.json",before_defaults=before,exit_code=rc)
     manifest = read(compact/"manifest.json")
@@ -247,6 +253,7 @@ def run_smoke(clone, output, snapshot):
         raise ValueError("Run public smoke with the candidate clone's normal install")
     env["COPTRANS_CASADI_ROOT"] = env.get("COPTRANS_CASADI_ROOT",str(ROOT.parent/".coptrans-python/casadi"))
     env["CMAKE_BUILD_PARALLEL_LEVEL"]="2"
+    env["GZ_IP"]="127.0.0.1"
     # rcutils embeds __FILE__ in diagnostics. Bind its source spelling to the
     # frozen compile while the public launcher still builds and runs normally.
     env["CMAKE_CXX_COMPILER_LAUNCHER"]=str(configure_source_location(clone,snapshot))

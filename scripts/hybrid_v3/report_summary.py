@@ -45,7 +45,21 @@ def historical_summary(data):
         text.append("冻结历史离线请求的独立审计已记录 "+str(len(indexed))+" 次，结果为 "+"、".join(f"{k} {v} 次" for k,v in sorted(bins.items()))+"。单车和 baseline 为新增复测，旧归档只提供三车 standard 原始对照。逐条 SHA、状态和失败原因见 [measurements.json](measurements.json)。")
     prior=data.get("short_regression") or []
     if prior:
-        text.append(f"保留此前 C6 的 {len(prior)} 个已归档 GUI 试次，其中 {sum(r['status']=='passed' for r in prior)} 次正常到达。长途验收另计 96 个 GUI 试次及 4 个无界面试次。")
+        campaign=prior[0].get("campaign","历史试验")
+        completed=sum(r["status"]=="passed" for r in prior)
+        expected_stops=sum(r["family"]=="fault" and r["status"]=="stopped" for r in prior)
+        unexpected=[r for r in prior if r["status"]!=("stopped" if r["family"]=="fault" else "passed")]
+        text.append(f"保留 `{campaign}` 的 {len(prior)} 个 GUI 试次，其中 {completed} 次正常到达、"
+                    f"{expected_stops} 次注入故障后停车、{len(unexpected)} 次未达到该轮预期。"
+                    "正式闭环另计 96 个 GUI 试次及 4 个无界面试次。")
+        for run in unexpected:
+            text.append(f"`{run['run_id']}`（{run['task']} / {run['profile']} / {run['family']}）"
+                        f"结果为 `{run['status']}`，原因 `{run['reason']}`。")
+    incident=data.get("transport_incident") or {}
+    if incident.get("origin_cause")=="host_wlo1_link_timeout_correlated_with_gazebo_transport_loss":
+        text.append(f"`{incident['run_id']}` 的 Gazebo 物理里程计仍在推进，ROS 仿真时钟和反馈在 Wi-Fi 链路超时后停止送达。"
+                    "三车按控制时钟看门狗同步输出零速度。旧试次作为非预期停车归档，正式矩阵在本机回环网络上重新独立采集。"
+                    "宿主事件、三车时间轴和原始文件摘要见 [measurements.json](measurements.json)。")
     return "\n\n".join(text)
 
 

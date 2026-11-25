@@ -48,7 +48,8 @@ def main():
     ap.add_argument("--recorder",type=Path,default=LOCAL/f"recorder_stop_{system_release}"/"receipt.json")
     ap.add_argument("--historical",type=Path,default=LOCAL/"historical_ros_c6"/"summary.json")
     ap.add_argument("--sealed",type=Path,help="directory of the pre-solve manifest_standard.json and manifest_baseline.json")
-    ap.add_argument("--prior-gazebo",type=Path,default=LOCAL/"gazebo_release_c6",help="separate short-route regression index")
+    ap.add_argument("--prior-gazebo",type=Path,default=LOCAL/"gazebo_release_c6",help="additional earlier Gazebo campaign kept in the report")
+    ap.add_argument("--transport-incident",type=Path,help="diagnostic receipt bound to a failed run in the earlier Gazebo campaign")
     ap.add_argument("--report",type=Path,default=REPORT)
     ap.add_argument("--compact",action="store_true",help="re-evaluate from the checked-in measurements")
     args=ap.parse_args();out=args.report;out.mkdir(exist_ok=True,parents=True)
@@ -99,7 +100,18 @@ def main():
         data["historical_closed_loop"]=historical_pairs(data["gazebo"]+data["headless"],ROOT/"reports/runs")
         data["historical_offline"]=historical_offline(args.historical)
         data["short_regression"]=[{**{k:r.get(k) for k in ("run_id","task","profile","family","trial","status","reason","source_commit")},
-                                   "metadata_sha256":sha(f)} for f in sorted(args.prior_gazebo.glob("*/metadata.json")) if (r:=load(f))]
+                                   "campaign":args.prior_gazebo.name,"metadata_sha256":sha(f)}
+                                  for f in sorted(args.prior_gazebo.glob("*/metadata.json")) if (r:=load(f))]
+        if args.transport_incident:
+            incident=load(args.transport_incident)
+            if not incident or not any(
+                r["family"]!="fault" and r["status"]!="passed" and all(
+                    r[k]==incident.get(k) for k in ("run_id","status","reason","source_commit","metadata_sha256"))
+                for r in data["short_regression"]
+            ):
+                raise ValueError("Transport incident does not match the archived failing trial")
+            data["transport_incident"]=incident
+            data["source_manifest"]["raw_sha256"][str(args.transport_incident.resolve())]=sha(args.transport_incident)
         system_identity=args.system/"source_commit"
         system_commit=system_identity.read_text().strip() if system_identity.is_file() else None
         if data.get("default_runs"):
