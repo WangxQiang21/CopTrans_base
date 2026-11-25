@@ -48,7 +48,7 @@ private:
   void single_status(const std::string & s) {state->publish(message(s));search->publish(message(s));}
   void formation_status(
     uint32_t id, const std::string & phase, const std::string & reason,
-    double seconds = 0.)
+    double seconds = 0., const Json::Value & stages = Json::Value())
   {
     Json::Value j;
     j["backend"] = "hybrid_joint";
@@ -60,6 +60,7 @@ private:
     j["speed_profile"] = settings.profile;
     j["reason"] = reason;
     j["wall_time_s"] = seconds;
+    if (!stages.isNull()) {j["planning_stages"] = stages;}
     state->publish(message(json(j)));
   }
   void progress_message(uint32_t id, const char * stage, const std::string & reason = "")
@@ -69,7 +70,7 @@ private:
     Json::Value j;
     j["plan_id"] = id;
     j["stage"] = stage;
-    j["actual_backend"] = "hybrid_joint";
+    j["actual_backend"] = settings.multi ? "formation_hybrid_joint_cpp" : "single_hybrid_joint_cpp";
     j["model_schema"] = schema;
     j["solver_build"] = build_digest();
     j["legacy_fallback_used"] = false;
@@ -113,6 +114,7 @@ private:
   void publish(const hj::Result & r)
   {
     auto & c = current->context;
+    const auto pack_start = hj::Clock::now();
     const auto publication_ros_ns = now().nanoseconds();
     const auto epoch = publication_ros_ns + std::llround(settings.lead * 1e9);
     auto envelope =
@@ -120,9 +122,34 @@ private:
       c, *r.plan, epoch,
       std::chrono::duration_cast<std::chrono::nanoseconds>(hj::Clock::now().time_since_epoch()).count(),
       publication_ros_ns);
+    const auto encoded = hj::Clock::now();
     display_samples(envelope, c, *r.plan);
     envelope.trajectory.vehicles = current->specs;
+    const auto publish_begin = hj::Clock::now();
     output->publish(envelope);
+    const auto submitted = hj::Clock::now();
+    Json::Value stages;
+    stages["policy_status"] = r.status;
+    stages["policy_reason"] = r.reason;
+    stages["first_certified_s"] = r.first_certified_s;
+    if (r.status == "CERTIFIED_POLICY_COMPLIANT") {
+      stages["first_policy_compliant_s"] = r.first_policy_compliant_s;
+    }
+    stages["seed_s"] = r.seed_seconds;
+    stages["edit_s"] = r.edit_seconds;
+    double build = 0., solve = 0., audit = 0.;
+    for (const auto & attempt : r.attempts) {
+      build += attempt.nlp_build_s;
+      solve += attempt.nlp_solve_s;
+      audit += attempt.certify_s;
+    }
+    stages["attempts"] = Json::UInt64(r.attempts.size());
+    stages["nlp_build_s"] = build;
+    stages["nlp_solve_s"] = solve;
+    stages["certify_s"] = audit;
+    stages["encode_s"] = std::chrono::duration<double>(encoded - pack_start).count();
+    stages["sample_s"] = std::chrono::duration<double>(publish_begin - encoded).count();
+    stages["publish_call_s"] = std::chrono::duration<double>(submitted - publish_begin).count();
     for (size_t i = 0; i < paths.size(); ++i) {
       nav_msgs::msg::Path path;
       path.header = envelope.header;
@@ -137,8 +164,8 @@ private:
       paths[i]->publish(path);
     }
     if (settings.multi) {
-      formation_status(c.id, "PUBLISHED", "", r.first_policy_compliant_s);
-      progress_message(c.id, "certified", r.reason);
+      formation_status(c.id, "PUBLISHED", r.status, std::chrono::duration<double>(submitted - started).count(), stages);
+      progress_message(c.id, r.status == "FEASIBLE_POLICY_DEGRADED" ? "policy_degraded" : "certified", r.reason);
       return;
     }
     Timed t;
@@ -155,7 +182,7 @@ private:
     single_status(
       "success id=" + std::to_string(
         c.id) + " source=hybrid_joint schema=" + schema + " solver_build=" + build_digest() + " legacy_fallback=false speed_profile=" +
-      settings.profile);
+      settings.profile + " stages=" + json(stages));
   }
   void poll()
   {

@@ -170,6 +170,7 @@ private:
 
     QString solver = QStringLiteral("待开始");
     if (outcome == "success") {solver = QStringLiteral("已认证");}
+    if (outcome == "degraded") {solver = QStringLiteral("已认证 · 模式偏好降级");}
     if (outcome == "failed") {solver = QStringLiteral("失败");}
     if (outcome == "running") {solver = stageName(progress.value("stage").toString());}
     solving_->setText(QStringLiteral("求解  %1").arg(solver));

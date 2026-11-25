@@ -568,7 +568,8 @@ class RunExperiment(Node):
                            planning_stages=status.get("planning_stages", {}),
                            envelope_verification_wall_s=status.get("envelope_verification_wall_s"))
                 if self.interactive and self.result is None:
-                    self.solver_outcome = "success"
+                    degraded = status.get("planning_stages", {}).get("policy_status") == "FEASIBLE_POLICY_DEGRADED"
+                    self.solver_outcome = "degraded" if degraded else "success"
                     self.solver_elapsed_s = ((status.get("wall_time_s") or 0.)
                                              + (status.get("envelope_verification_wall_s") or 0.))
                     phase = self.phase if self.phase in ("arming", "running") else "verification"
@@ -588,6 +589,12 @@ class RunExperiment(Node):
                             detail=status.get("detail", ""))
         else:
             self.planner_status[topic] = msg.data
+            if self.native and topic == "/plan/status" and msg.data.startswith("success ") and " stages=" in msg.data:
+                metadata, stages = msg.data.split(" stages=", 1)
+                identifier = next((word[3:] for word in metadata.split() if word.startswith("id=")), "")
+                if self.plan_started and identifier.isdecimal():
+                    self.trace("planner_publication_status_received", plan_id=int(identifier),
+                               planning_stages=json.loads(stages))
             if topic == "/plan/status" and msg.data.startswith("success ") and self.planner_source is None:
                 self.planner_source = next(
                     (part.removeprefix("source=") for part in msg.data.split()

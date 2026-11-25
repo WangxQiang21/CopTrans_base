@@ -135,7 +135,8 @@ def closed_rows(folder):
                   "start","goal","plan_duration_s","planner_wall_s","routed_plan_keys","tracking_implementation","final_cmd_vel")}
         request=next((e for e in timed if e["event"]=="request_publish"),{})
         received=next((e for e in timed if e["event"]=="plan_received"),{})
-        public=next((e for e in timed if e["event"]=="planner_publication_status_received"),{})
+        public=next((e for e in timed if e["event"]=="planner_publication_status_received" and
+                     e.get("plan_id")==received.get("plan_id")),{})
         manifest=load(archive/"experiment.json") or {}
         model_file=archive/(manifest.get("model_artifact") or "trajectories/model.json.gz")
         model=None
