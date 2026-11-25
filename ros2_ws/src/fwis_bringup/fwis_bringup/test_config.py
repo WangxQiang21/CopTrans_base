@@ -10,7 +10,7 @@ import sys
 import yaml
 
 from fwis_bringup.experiment_log import read_config, replay_config
-from ranger_mini_gz.scene_generator import SCENARIOS
+from ranger_mini_gz.scene_generator import SCENARIOS, SCENE_VARIANTS
 from ranger_mini_gz.scene_geometry import local_pose
 
 
@@ -54,6 +54,8 @@ def parse_arguments(argv, scenarios, registry, experiments):
     parser.add_argument("--mode", choices=("sim", "real"), default="sim")
     parser.add_argument("--task", choices=("single", "multi"), default="single")
     parser.add_argument("--scenario", choices=scenarios, default=scenarios[0])
+    parser.add_argument("--scene-variant", choices=SCENE_VARIANTS,
+                        help="Select a named layout of the scenario for a new experiment")
     parser.add_argument("--planner-backend", help="Planner alias or ROS 2 backend ID")
     parser.add_argument("--controller-backend", default="auto", help="auto, pid, nonlinear_feedback")
     parser.add_argument("--tracker-implementation", choices=("python", "cpp"), default="python")
@@ -83,6 +85,8 @@ def parse_arguments(argv, scenarios, registry, experiments):
     args = parser.parse_args(argv)
     if args.mode == "real":
         parser.exit(2, REAL_UNAVAILABLE + "\n")
+    if args.replay and args.scene_variant is not None:
+        parser.error("--replay uses the recorded scene layout; --scene-variant is only for new runs")
     if args.task == "single" and args.formation:
         parser.error("--formation applies only to --task multi")
     if args.without_planning_playback and (
@@ -140,6 +144,15 @@ def resolve(argv, config_directory, scenario_directory, output):
 
     scene_task = "single" if args.task == "single" else "formation"
     scene = read_config(scenario_directory / f"{args.scenario}.yaml")
+    variant = args.scene_variant
+    if variant in (None, "auto"):
+        variant = scene.get("default_variant", "default")
+    layouts = {"default", *scene.get("obstacle_variants", {})}
+    if scene.get("pinch"):
+        layouts.update(scene.get("width_cases", {}))
+    if variant not in layouts:
+        raise SystemExit(f"Scene variant {variant!r} is not available for {args.scenario}; "
+                         f"choose from {', '.join(sorted(layouts))}")
     task = scene["experiments"][scene_task]
     start = task["start"]
     experiment = experiments[args.experiment]
@@ -174,7 +187,7 @@ def resolve(argv, config_directory, scenario_directory, output):
     if args.interactive:
         overrides = dict(overrides, publish_uniform_progress=True)
     config = dict(mode=args.mode, task=args.task, scene_task=scene_task, scenario=args.scenario,
-                  scene_variant=scene.get("default_variant", "default"),
+                  scene_variant=variant,
                   experiment="interactive" if args.interactive else args.experiment,
                   start=start, goal=goal, waypoints=waypoints,
                   planner=alias, planner_backend=backend, controller_backend=controller,
