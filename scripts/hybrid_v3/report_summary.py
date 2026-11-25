@@ -148,6 +148,16 @@ def write_summary(out,result,data):
     if data.get("control"):
         ctrl=data["control"].values()
         sections.append(f"独立 25 Hz 负载台记录每车 {min(r['ticks'] for r in ctrl)} 至 {max(r['ticks'] for r in ctrl)} 个周期，截止违约合计 {sum(r['deadline_misses'] for r in ctrl)} 次。各车 P99 跟踪计算最大值 {number(max(r['p99_compute_ms'] for r in ctrl))} ms，最大回调 {number(max(r['max_callback_ms'] for r in ctrl))} ms。")
+    if data.get("concurrent_gazebo_native_control"):
+        stress=data["concurrent_gazebo_native_control"]
+        counts=[stress["setups"][k]["deadline_misses"] for k in ("1/1","3/1","3/2","3/3")]
+        message=(f"同一原生控制台与 Gazebo 同时运行的额外压力测试中，单车超期 {counts[0]} 次，"
+                 f"三车分别超期 {counts[1]}、{counts[2]}、{counts[3]} 次。")
+        if stress["misses"]:
+            jitters=[m["release_jitter_ns"]*1e-6 for m in stress["misses"]]
+            compute=max(m["tracking_compute_ns"]*1e-3 for m in stress["misses"])
+            message+=f"超期周期的唤醒延迟为 {number(min(jitters))}–{number(max(jitters))} ms，当次跟踪计算最长 {number(compute)} µs。"
+        sections.append(message+"各次超期及原始 CSV 的 SHA-256 见 `measurements.json` 中的 `concurrent_gazebo_native_control`。")
     if data.get("admission"):
         sections.append("短路径 DDS 准入测试每组 5 次预热后正式测 30 次。"+"。".join(f"{names[k.split('/')[0]]} {k.split('/')[1]} 的 P95 为 {number(1000*quant(v,.95),1)} ms" for k,v in data["admission"].items())+"。")
     problems=[r["id"]+" ("+r["status"]+")" for r in result["checks"] if r["status"]!="PASS"]

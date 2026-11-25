@@ -73,6 +73,34 @@ def setup_metrics(folder):
     return groups
 
 
+def native_stress_comparison(folder, benchmark):
+    """Keep the original overlapping-load observations alongside the isolated native gate."""
+    expected = sha(benchmark)
+    files = {}
+    misses = []
+    for cars in (1, 3):
+        for suffix in ("csv", "summary.json", "binary.sha256", "libraries.txt"):
+            path = folder / f"{cars}.{suffix}"
+            files[str(path.resolve())] = sha(path)
+        identity = (folder / f"{cars}.binary.sha256").read_text().split()[0]
+        if identity != expected:
+            raise ValueError(f"{cars}-vehicle stress run used a different native load binary")
+        with (folder / f"{cars}.csv").open() as src:
+            for row in csv.DictReader(src):
+                delay = int(row["command_submitted_ns"]) - int(row["scheduled_ns"])
+                if delay > 40_000_000:
+                    jitter = int(row["release_jitter_ns"])
+                    misses.append({
+                        "cars": cars, "vehicle": int(row["vehicle"]), "tick": int(row["tick"]),
+                        "release_jitter_ns": jitter, "tracking_compute_ns": int(row["tracking_compute_ns"]),
+                        "release_to_submit_ns": delay - jitter, "deadline_excess_ns": delay - 40_000_000,
+                    })
+    metrics = setup_metrics(folder)
+    if set(metrics) != {"1/1", "3/1", "3/2", "3/3"} or sum(r["deadline_misses"] for r in metrics.values()) != len(misses):
+        raise ValueError("Incomplete stress measurement")
+    return {"raw_sha256": files, "binary_sha256": expected, "setups": metrics, "misses": misses}
+
+
 def clock_metrics(folder):
     items=[]
     for f in sorted(folder.glob("robot*_controller.jsonl.gz")):

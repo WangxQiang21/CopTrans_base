@@ -14,7 +14,7 @@ import yaml
 
 sys.path.insert(0,str(Path(__file__).resolve().parent/"hybrid_v3"))
 from qualify import (LOCAL,NUMERIC,POLICY,PROFILES,REGISTRY,REPORT,ROOT,SPEC,TASKS,closed_rows,
-                     archived_comparisons,collect,digest,lines,load,quant,setup_metrics,sha,xml_cases)
+                     archived_comparisons,collect,digest,lines,load,native_stress_comparison,quant,setup_metrics,sha,xml_cases)
 from cases import indices
 from route_evidence import (HISTORICAL, RELEASE_FAMILIES, historical_offline, historical_pairs, matrix,
                             measured_completion, pair, route_is_bound)
@@ -34,6 +34,7 @@ def main():
     ap=argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--batch",type=Path,default=LOCAL/f"release_{release}")
     ap.add_argument("--control",type=Path,default=LOCAL/f"control_605_{system_release}")
+    ap.add_argument("--control-stress",type=Path,help="additional native benchmark acquired concurrently with Gazebo")
     ap.add_argument("--gazebo",type=Path,default=LOCAL/f"gazebo_release_{system_release}")
     ap.add_argument("--headless",type=Path,default=LOCAL/f"gazebo_headless_{system_release}")
     ap.add_argument("--legacy",type=Path,default=NUMERIC/f"legacy_{cohort}",help="paired previous-backend results for this cohort")
@@ -129,6 +130,12 @@ def main():
         data["source_manifest"]["runtime_binaries"]=runtime_binaries(args.system)
         data["source_manifest"]["solver_system_compatibility"]=solver_system_compatibility(data["source_manifest"])
         data["source_manifest"]["observed_runtime_sources"]=observed_runtime_sources(args.system,args.ros,args.control)
+        if args.control_stress:
+            if args.control.resolve() == args.control_stress.resolve():
+                raise ValueError("Isolated and concurrent Gazebo control observations must name different runs")
+            bench = args.system/"ros2_ws/build/fwis_control/hybrid_deadlines"
+            data["concurrent_gazebo_native_control"] = native_stress_comparison(args.control_stress,bench)
+            data["source_manifest"]["raw_sha256"].update(data["concurrent_gazebo_native_control"]["raw_sha256"])
         data["source_manifest"]["closed_loop_raw"]={r["run_id"]:{"campaign":r["campaign"],"archive":r["route"]["source_hashes"],
                                                     "instrumentation":r["evidence_files"]} for r in data["gazebo"]+data["headless"]}
         data["source_manifest"]["recorder_revision"]=recorder_revision(args.recorder)

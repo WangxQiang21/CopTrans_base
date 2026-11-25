@@ -133,3 +133,23 @@ def test_candidate_commits_with_offline_unrelated_promised_blob(tmp_path):
     commit(candidate,["scripts/test.sh"],"staged default")
     assert git(candidate,"rev-parse","HEAD:archive/older.txt")==old_blob
     assert git(candidate,"diff-tree","--no-commit-id","--name-only","-r","HEAD")=="scripts/test.sh"
+
+
+def test_native_stress_preserves_the_original_deadline_and_binary(tmp_path):
+    from qualify import native_stress_comparison, sha
+
+    bench=tmp_path/"bench"
+    bench.write_bytes(b"same binary")
+    header="vehicle,tick,scheduled_ns,release_jitter_ns,tracking_compute_ns,command_submitted_ns,valid\n"
+    for cars in (1,3):
+        (tmp_path/f"{cars}.summary.json").write_text('{"wall_s":0.04}')
+        (tmp_path/f"{cars}.binary.sha256").write_text(f"{sha(bench)}  bench\n")
+        (tmp_path/f"{cars}.libraries.txt").write_text("libsolver.so\n")
+        samples=[f"{v},0,0,39999000,1000,{40_000_000+(v==2)},1\n" for v in range(1,cars+1)]
+        (tmp_path/f"{cars}.csv").write_text(header+"".join(samples))
+    comparison=native_stress_comparison(tmp_path,bench)
+    assert len(comparison["raw_sha256"])==8 and len(comparison["misses"])==1
+    assert comparison["misses"][0]["vehicle"]==2 and comparison["misses"][0]["deadline_excess_ns"]==1
+    bench.write_bytes(b"other binary")
+    with pytest.raises(ValueError,match="different native"):
+        native_stress_comparison(tmp_path,bench)

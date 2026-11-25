@@ -76,6 +76,10 @@ def inventory(cfg):
             required(cfg[key]/f)
     for key in ("historical", "clock_receipts"):
         required(cfg[key])
+    if cfg.get("control_stress"):
+        for cars in (1,3):
+            for suffix in ("csv","summary.json","binary.sha256","libraries.txt"):
+                required(cfg["control_stress"]/f"{cars}.{suffix}")
     for key in ("gazebo","headless"):
         count = len(list(cfg[key].glob("*/metadata.json")))
         expected = 96 if key == "gazebo" else 4
@@ -206,6 +210,8 @@ def recompute(root, cfg, compact, inputs, before):
     for key in ("witness","binary","sealed","system","numeric","native","ros","control","gazebo","headless","historical","prior_gazebo"):
         cmd.extend(("--"+key.replace("_","-"),cfg[key]))
     cmd.extend(("--recorder", cfg.get("recorder",inputs/"no-recorder-override")))
+    if cfg.get("control_stress"):
+        cmd.extend(("--control-stress",cfg["control_stress"]))
     rc = run(root,sys.executable,*cmd,ok=(0,1))
     gate(compact/"acceptance.json",before_defaults=before,exit_code=rc)
     manifest = read(compact/"manifest.json")
