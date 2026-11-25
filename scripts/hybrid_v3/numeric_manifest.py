@@ -23,7 +23,7 @@ def input_hashes(source_root=ROOT):
     sources={}
     for pkg in ("fwis_planning_core","fwis_hybrid_joint"):
         base=source_root/"ros2_ws/src"/pkg
-        files=[base/"package.xml",base/"CMakeLists.txt",*base.glob("src/*"),*base.glob("include/*/*"),
+        files=[base/"package.xml",base/"CMakeLists.txt",*base.glob("config/*.json"),*base.glob("src/*"),*base.glob("include/*/*"),
                *base.glob("test/*.cpp"),*base.glob("benchmark/*.cpp")]
         sources.update({str(p.relative_to(source_root)):sha(p) for p in files if p.is_file()})
     return sources

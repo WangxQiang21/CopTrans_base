@@ -4,10 +4,17 @@ root=$(cd "$(dirname "$0")/.." && pwd)
 evidence=${1:?provide a local evidence directory}
 mkdir -p "$evidence"
 evidence=$(realpath "$evidence")
+if [[ -e "$evidence/runtime.json" || -e "$evidence/sources.sha256" ]]; then
+  echo "Choose a fresh evidence directory for this native runtime check." >&2
+  exit 2
+fi
 source /opt/ros/humble/setup.bash
 export CMAKE_BUILD_PARALLEL_LEVEL=2 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1
 build=$(mktemp -d "${TMPDIR:-/tmp}/coptrans-native.XXXXXXXX")
 trap 'rm -rf -- "$build"' EXIT
+cd "$root"
+git rev-parse HEAD > "$evidence/source_commit"
+git ls-files -z ros2_ws/src/fwis_planning_core ros2_ws/src/fwis_hybrid_joint | xargs -0 sha256sum > "$evidence/sources.sha256"
 cd "$root/ros2_ws"
 colcon --log-base "$build/log" build --packages-up-to fwis_hybrid_joint --install-base "$build/install" \
   --build-base "$build/build" --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON \
@@ -19,8 +26,14 @@ for pkg in fwis_planning_core fwis_hybrid_joint; do
 done
 bin="$build/install/fwis_hybrid_joint/lib/fwis_hybrid_joint/hybrid_joint_case"
 cp "$build/build/fwis_planning_core/CMakeCache.txt" "$evidence/core-cache.txt"
+(
+  cd "$build/install"
+  sha256sum fwis_hybrid_joint/lib/fwis_hybrid_joint/hybrid_joint_case fwis_hybrid_joint/lib/libfwis_hybrid_joint.so \
+    fwis_planning_core/lib/libfwis_planning_core.a
+) > "$evidence/binaries.sha256"
 ldd "$bin" > "$evidence/libraries.txt"
 cd "$root"
+sha256sum --check --status "$evidence/sources.sha256"
 # Only the benchmark harness constructs inputs; strace starts at the native executable.
 python3 - "$evidence" <<'PY'
 import json,sys
@@ -43,7 +56,7 @@ rows=list(map(json.loads,(p/"native.jsonl").read_text().splitlines()))
 trace=(p/"trace.txt").read_text().splitlines()
 execs=[x for x in trace if re.search(r"\bexecve(at)?\(",x)]
 bad=[x for x in trace if re.search(r'/(libpython[^/"]*\.so|python[.0-9]*"|[^/"]+\.(py|pyc)")',x)]
-result=dict(traced_execs=execs,forbidden_loads=bad,backend=[x.get("actual_backend") for x in rows],
+result=dict(source_commit=(p/"source_commit").read_text().strip(),traced_execs=execs,forbidden_loads=bad,backend=[x.get("actual_backend") for x in rows],
             certified=[x.get("audit",{}).get("executable",False) for x in rows],
             pybind_disabled="FWIS_PLANNING_CORE_PYTHON:BOOL=OFF" in (p/"core-cache.txt").read_text())
 (p/"runtime.json").write_text(json.dumps(result,indent=2))
