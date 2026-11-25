@@ -108,3 +108,37 @@ def test_skips_overrun_wall_stale_and_identity(tmp_path):
     controlled[-1]['trajectory_stamp_ns']+=1
     with pytest.raises(ValueError,match='trajectory identity'):
         vehicle(controlled,plant,bridge,'robot1',identity)
+
+
+@pytest.mark.parametrize('resume', [False, True], ids=['fresh-trial', 'resumed-trial'])
+def test_monitored_matrix_stops_before_next_trial_on_a_physical_pass(tmp_path, monkeypatch, resume):
+    # Importing the driver is read-only. Only the native archive and control
+    # timing are real inputs here; the simulator launch itself is replaced.
+    monkeypatch.syspath_prepend(str(Path(__file__).resolve().parents[2]/'ros2_ws/src/fwis_bringup'))
+    import closed_loop
+    run,archive_root,controls,_,_=fixture(tmp_path)
+    (tmp_path/'reports').mkdir()
+    (tmp_path/'reports/runs').symlink_to(archive_root,target_is_directory=True)
+    controls[-1]['control_timing']['callback_ended_steady_ns']+=5_100_000
+    control_file=run/'robot1_controller.jsonl.gz'
+    with gzip.open(control_file,'wt') as h:
+        for row in controls:h.write(json.dumps(row)+'\n')
+    raw_before=control_file.read_bytes()
+    meta_file=run/'metadata.json'
+    meta_before=meta_file.read_bytes()
+    launches=[]
+    def simulated_run(args,family,task,trial):
+        launches.append(trial)
+        return {'status':'passed','experiment_id':run.name}
+    monkeypatch.setattr(closed_loop,'ROOT',tmp_path)
+    monkeypatch.setattr(closed_loop,'supervise',simulated_run)
+    monkeypatch.setattr(closed_loop,'fixture_config',lambda *args: {})
+    monkeypatch.setattr(closed_loop,'same_fixture',lambda *args: True)
+    monkeypatch.setattr(closed_loop,'binaries',lambda:json.loads(meta_before)['installed_binaries'])
+    cli=['closed_loop','--families','long','--task','single','--profile','standard','--repetitions','2',
+         '--stop-on-failure','--output',str(run.parent)]
+    monkeypatch.setattr(sys,'argv',cli+(['--resume'] if resume else []))
+    with pytest.raises(SystemExit,match=run.name+'.*robot1 callback_over_5ms'):
+        closed_loop.main()
+    assert launches==([] if resume else [0])
+    assert control_file.read_bytes()==raw_before and meta_file.read_bytes()==meta_before

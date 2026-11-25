@@ -249,7 +249,29 @@ def supervise(args, family, task, trial):
                 p.with_suffix(p.suffix+".gz").write_bytes(gzip.compress(p.read_bytes(),compresslevel=3,mtime=0));p.unlink()
         (own/"metadata.json").write_text(json.dumps(row,indent=2))
         print(f"{run_id} {row['status']} {row['reason']}",flush=True)
-        return result
+        return {**result, "experiment_id": run_id}
+
+
+def require_accepted_clock(directory, gui, archive_root):
+    """Stop a monitored campaign at the finalized failing run, preserving all raw evidence."""
+    from clock_receipts import audit
+    try:
+        metadata=json.loads((directory/"metadata.json").read_bytes())
+        expected="stopped" if metadata["family"]=="fault" else "passed"
+        if metadata["status"]!=expected:
+            raise ValueError(f"outcome={metadata['status']}, reason={metadata['reason']}")
+        record=audit(directory,gui,archive_root)
+    except (EOFError,OSError,KeyError,ValueError,TypeError,ZeroDivisionError) as error:
+        raise SystemExit(f"Trial {directory.name} rejected: {error}") from error
+    if record["flags"]:
+        details=[]
+        for robot,v in record["vehicles"].items():
+            if v["flags"]:
+                details.append(f"{robot} {','.join(v['flags'])} (ROS misses={v['ros_misses']}, "
+                               f"stale motion={v['stale_motion']}, max callback={v['callback']['max_ms']:.3f} ms, "
+                               f"matched bridge-to-plant={v['causal_bridge_to_plant']['n']})")
+        raise SystemExit(f"Trial {directory.name} failed raw clock verification: "
+                         + (" | ".join(details) or ", ".join(record["flags"])))
 
 
 def main():
@@ -262,7 +284,7 @@ def main():
     a.add_argument("--headless",action="store_true",help="run the actual Gazebo server and DDS graph without GUI clients")
     a.add_argument("--resume",action="store_true",help="skip only completed repetition IDs from this exact executable set")
     a.add_argument("--repetitions",type=int,default=3);a.add_argument("--timeout",type=float)
-    a.add_argument("--output",type=Path,required=True);a.add_argument("--stop-on-failure",action="store_true")
+    a.add_argument("--output",type=Path,required=True);a.add_argument("--stop-on-failure",action="store_true",help="stop at the first unsuccessful experiment or failed native clock/transport review, including matching archived trials on --resume")
     args=a.parse_args()
     args.output.mkdir(parents=True,exist_ok=True)
     tasks=("formation","single") if args.task=="both" else (args.task,)
@@ -302,10 +324,12 @@ def main():
                             if entry["installed_binaries"]!=binaries_now:
                                 raise ValueError("Existing trial used other binaries; select a fresh output directory.")
                             if same_fixture(resume_cfg, ROOT/entry["archive"]):
+                                if args.stop_on_failure:
+                                    require_accepted_clock(meta.parent,not args.headless,ROOT/"reports/runs")
                                 done=True
                         if done:
                             continue
                     r=supervise(args,family,task,i)
-                    if args.stop_on_failure and (r.get("bridge_capture_error") or r["status"]!=("stopped" if family=="fault" else "passed")):
-                        raise SystemExit(1)
+                    if args.stop_on_failure:
+                        require_accepted_clock(args.output/r["experiment_id"],not args.headless,ROOT/"reports/runs")
 if __name__=="__main__":main()
