@@ -233,6 +233,17 @@ def supervise(args, family, task, trial):
             row["scene_measurements"]=measured(family,task,proof,spool)
         row["archive"]=str(archive.relative_to(ROOT))
         collect(spool,archive,final=True)
+        # The original native journal survives both normal exit and SIGSEGV.
+        # Preserve the experiment archive even if a trace was incomplete.
+        sys.path.append(str(ROOT/"ros2_ws/src/fwis_control/test"))
+        from bridge_take_journal import coverage, finalize
+        try:
+            finalize(own)
+            robots=["robot1","robot2","robot3"] if task=="formation" else ["robot1"]
+            row["bridge_take_samples"]=coverage(own,robots)
+        except (OSError, ValueError) as exc:
+            row["bridge_capture_error"]=str(exc)
+            result["bridge_capture_error"]=str(exc)
         for p in own.iterdir():
             if p.suffix in (".csv",".jsonl"):
                 p.with_suffix(p.suffix+".gz").write_bytes(gzip.compress(p.read_bytes(),compresslevel=3,mtime=0));p.unlink()
@@ -295,6 +306,6 @@ def main():
                         if done:
                             continue
                     r=supervise(args,family,task,i)
-                    if args.stop_on_failure and r["status"]!=("stopped" if family=="fault" else "passed"):
+                    if args.stop_on_failure and (r.get("bridge_capture_error") or r["status"]!=("stopped" if family=="fault" else "passed")):
                         raise SystemExit(1)
 if __name__=="__main__":main()

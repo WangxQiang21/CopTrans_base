@@ -266,6 +266,10 @@ def main():
             probe.spin_until(lambda: False, processes, .44)
             print(json.dumps(report, indent=2), flush=True)
     finally:
+        if args.trace_ros_bridge:
+            from bridge_take_journal import coverage, finalize
+            finalize(args.output)
+            report["bridge_take_samples"] = coverage(args.output, [f"robot{i+1}" for i in range(args.robots)])
         (args.output / "probe_summary.json").write_text(json.dumps(report, indent=2) + "\n")
         rclpy.try_shutdown()
 

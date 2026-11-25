@@ -70,6 +70,7 @@ if(BUILD_TESTING)
   set_tests_properties(solved_oblique_controllers PROPERTIES ENVIRONMENT "OPENBLAS_NUM_THREADS=1;OMP_NUM_THREADS=1")
 
   ament_add_pytest_test(control_timing test/test_control_timing.py)
+  ament_add_pytest_test(bridge_take_journal test/test_bridge_take_journal.py)
   add_executable(control_affinity_tests test/control_affinity_tests.cpp)
   target_compile_features(control_affinity_tests PRIVATE cxx_std_17)
   target_link_libraries(control_affinity_tests Threads::Threads)
