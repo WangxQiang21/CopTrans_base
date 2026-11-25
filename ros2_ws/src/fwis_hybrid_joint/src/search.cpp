@@ -31,7 +31,7 @@ using Sequence=std::vector<Mode>;
 struct Seed { Sequence seq; int sign; Route route; std::string edit; int reverse_from{-1}; bool quintic{}, general{}, relaxed{}; int priority{8}; bool shortest_yaw{}, smooth_channel{}; std::vector<double> channel_yaw{}; };
 // Occupancy A* only proposes continuous optimization starts. Full swept footprint
 // checks (including independent vehicle headings) are performed by the certifier.
-Route grid_seed(const Request& r,const Run& run,bool wide=false,int gear=1,std::vector<double>* yaw_seed=nullptr) {
+Route grid_seed(const Request& r,const Run& run,bool wide=false,int gear=1,std::vector<double>* yaw_seed=nullptr,const Route* fallback=nullptr) {
   const auto& map=*r.grid;
   const int w=map.width(),h=map.height(); const double res=map.resolution();
   const auto org=map.origin();
@@ -139,20 +139,27 @@ Route grid_seed(const Request& r,const Run& run,bool wide=false,int gear=1,std::
       frontier.emplace(ng+distance(point(next),point(to)),next);
     }
   }
-  if(parent[to]<0)return {};
-  Route rev{goal};
-  for(int v=parent[to];v!=from && v>=0;v=parent[v])rev.push_back(point(v));
-  rev.push_back(start);std::reverse(rev.begin(),rev.end());
-  std::vector<double> arc{0};for(std::size_t i=1;i<rev.size();++i)arc.push_back(arc.back()+distance(rev[i-1],rev[i]));
-  const int spans=std::clamp(int(std::ceil(arc.back()/4.0)),2,HJ_MAX_SPANS);
-  Route out{start};
-  for(int i=1;i<spans;++i){
-    double at=arc.back()*i/spans;
-    auto j=std::upper_bound(arc.begin(),arc.end(),at)-arc.begin();
-    double f=(at-arc[j-1])/(arc[j]-arc[j-1]);
-    out.push_back({rev[j-1].x+f*(rev[j].x-rev[j-1].x),rev[j-1].y+f*(rev[j].y-rev[j-1].y)});
+  Route out;
+  if(parent[to]<0){
+    // A prescribed yaw progression can block a channel that is physically
+    // traversable with a different posture. Keep its centerline for the DP.
+    if(!fallback || !yaw_seed || !wide || run.stop())return {};
+    out=*fallback;
+  }else{
+    Route rev{goal};
+    for(int v=parent[to];v!=from && v>=0;v=parent[v])rev.push_back(point(v));
+    rev.push_back(start);std::reverse(rev.begin(),rev.end());
+    std::vector<double> arc{0};for(std::size_t i=1;i<rev.size();++i)arc.push_back(arc.back()+distance(rev[i-1],rev[i]));
+    const int spans=std::clamp(int(std::ceil(arc.back()/4.0)),2,HJ_MAX_SPANS);
+    out.push_back(start);
+    for(int i=1;i<spans;++i){
+      double at=arc.back()*i/spans;
+      auto j=std::upper_bound(arc.begin(),arc.end(),at)-arc.begin();
+      double f=(at-arc[j-1])/(arc[j]-arc[j-1]);
+      out.push_back({rev[j-1].x+f*(rev[j].x-rev[j-1].x),rev[j-1].y+f*(rev[j].y-rev[j-1].y)});
+    }
+    out.push_back(goal);
   }
-  out.push_back(goal);
   if(wide && yaw_seed){
     const auto last=out[out.size()-2];
     const double entry=r.start.heading[0]+(gear<0?pi:0);
@@ -557,6 +564,40 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
       add({Mode::A},sign,route,"CHANGE_ROUTE_SEED");
       if(opts.initial_sequence.empty() && detour>r.limits.radius*.35 && seeds.size()>1)
         std::rotate(seeds.begin(),std::prev(seeds.end()),seeds.end());
+      if(route.size()>=4 && r.vehicles.size()==1 && opts.initial_sequence.empty() && r.goal.constrain_heading[0]){
+        const auto before=route[route.size()-2],goal=route.back();
+        const double terminal=r.goal.heading[0]+(sign<0?pi:0);
+        const double approach=std::atan2(goal.y-before.y,goal.x-before.x);
+        const double angle=delta(approach,terminal);
+        // The position-only graph can approach the goal from the wrong side.
+        // Extend the requested terminal tangent backwards on each feasible
+        // turning branch, then seed one unconstrained continuous A phase.
+        if(std::abs(angle)>pi/3){
+          std::vector<Seed> turns;
+          for(double rotation:{angle,angle-std::copysign(2*pi,angle)}){
+            if(std::abs(rotation)>1.55*pi)continue;
+            const double radius=1.65*r.limits.radius, signed_radius=std::copysign(radius,rotation);
+            const Point center{goal.x-signed_radius*std::sin(terminal),goal.y+signed_radius*std::cos(terminal)};
+            auto arc=[&](double t){const double h=terminal-(1.-t)*rotation;
+              return Point{center.x+signed_radius*std::sin(h),center.y-signed_radius*std::cos(h)};
+            };
+            const auto incoming=arc(0.);
+            auto intermediate=r;intermediate.goal.reference={incoming.x,incoming.y,approach};
+            auto channel=grid_seed(intermediate,run,true,sign);
+            if(channel.empty())channel=grid_seed(intermediate,run);
+            if(channel.empty())channel={route.front(),incoming};
+            for(int k=1;k<=8;++k)channel.push_back(arc(k/8.));
+            double length=0;for(std::size_t j=1;j<channel.size();++j)length+=distance(channel[j-1],channel[j]);
+            const int spans=std::clamp(int(std::ceil(length/2.8)),3,HJ_MAX_SPANS);
+            Route smooth;
+            for(int j=0;j<=spans;++j)smooth.push_back(interpolate(channel,double(j)/spans));
+            Seed solved{{Mode::A},sign,std::move(smooth),"TERMINAL_TANGENT_ARC"};
+            solved.smooth_channel=true;turns.push_back(std::move(solved));
+          }
+          auto base=std::find_if(seeds.begin(),seeds.end(),[](const Seed& v){return v.edit=="CHANGE_ROUTE_SEED";});
+          seeds.insert(base,turns.begin(),turns.end());
+        }
+      }
       if(r.vehicles.size()==3 && (opts.initial_sequence.empty() || opts.enable_edits || opts.initial_sequence==Sequence{Mode::A})){
         Seed general{{Mode::A},sign,route,"GENERAL_F_YAW"};
         general.general=true;
@@ -599,7 +640,7 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
   // with a smooth quintic clock. Both variants must pass the identical audit.
   if(opts.initial_sequence.empty() || opts.enable_edits){
     for(std::size_t i=0;i<seeds.size();++i){
-      if(seeds[i].seq==Sequence{Mode::A} && seeds[i].route.size()>2 && seeds[i].edit!="GENERAL_F_YAW"){
+      if(seeds[i].seq==Sequence{Mode::A} && seeds[i].route.size()>2 && seeds[i].edit=="CHANGE_ROUTE_SEED"){
         auto alternative=seeds[i];alternative.edit="CHANGE_TIME_LAW";alternative.quintic=true;
         seeds.insert(seeds.begin()+i+1,std::move(alternative));++i;
       }
@@ -618,7 +659,7 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
       low_rotation.edit="MINIMUM_YAW_ROUTE";
       low_rotation.shortest_yaw=true;
       if(!subcell_rotation){
-        auto wide=grid_seed(r,run,true,sign,&low_rotation.channel_yaw);
+        auto wide=grid_seed(r,run,true,sign,&low_rotation.channel_yaw,&route->route);
         if(!wide.empty())low_rotation.route=std::move(wide);
         low_rotation.smooth_channel=true;
       }
