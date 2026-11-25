@@ -79,7 +79,8 @@ def main():
         target.write_bytes(document)
         print(f"{len(manifest['cases'])} cases; SHA-256 {identify(target)}")
         return
-    ranking_sha=identify(args.policy_source)
+    # Rechecking a supplied reference trajectory does not run the ranking policy.
+    ranking_sha=None if args.action=="witness" else identify(args.policy_source)
     splits=indices(args.split)
     ids=[int(x) for x in args.ids.split(",")] if args.ids else list(range(len(splits)))
     if args.action=="timing" and not args.ids:
