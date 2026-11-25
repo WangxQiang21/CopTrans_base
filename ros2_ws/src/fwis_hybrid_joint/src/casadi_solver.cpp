@@ -499,6 +499,21 @@ void Problem::run(){
         if(ph.mode==0)heading=atan2(mounted.second[1],mounted.first[1]);
         else heading=h0[plane.vehicle];
       }
+      if(plane.other==HJSeparation::map_cell) {
+        const SX c=cos(heading),s=sin(heading);
+        const SX dx=mx-parameter(plane.other_x),dy=my-parameter(plane.other_y);
+        const double hx=plane.other_half_length,hy=plane.other_half_width;
+        const auto above=[](const SX& v){return sqrt(v*v+1e-12);};
+        const auto below=[&](const SX& v){return above(v)-1e-6;};
+        // Conservative smooth lower bound on max(a,b), preserving collision semantics.
+        const auto either=[&](const SX& a,const SX& b){return (a+b+below(a-b))*.5;};
+        const SX gx=below(dx)-hx-plane.half_length*above(c)-plane.half_width*above(s);
+        const SX gy=below(dy)-hy-plane.half_length*above(s)-plane.half_width*above(c);
+        const SX gl=below(c*dx+s*dy)-plane.half_length-hx*above(c)-hy*above(s);
+        const SX gw=below(-s*dx+c*dy)-plane.half_width-hx*above(s)-hy*above(c);
+        constraint(either(either(gx,gy),either(gl,gw)),.00001,inf);
+        continue;
+      }
       SX forward=plane.nx*cos(heading)+plane.ny*sin(heading),side=-plane.nx*sin(heading)+plane.ny*cos(heading);
       SX gap=plane.nx*mx+plane.ny*my-parameter(plane.obstacle_support)-plane.half_length*sqrt(forward*forward+1e-12)-plane.half_width*sqrt(side*side+1e-12);
       if(plane.other>=0){

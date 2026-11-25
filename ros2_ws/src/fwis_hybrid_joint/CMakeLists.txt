@@ -5,6 +5,7 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
 endif()
 find_package(ament_cmake REQUIRED)
 find_package(fwis_planning_core REQUIRED)
+find_package(Eigen3 REQUIRED)
 # Standard CMake discovery first; a local unpacked CasADi SDK is also supported.
 find_package(casadi CONFIG REQUIRED HINTS
   "$ENV{COPTRANS_CASADI_ROOT}/cmake"
@@ -43,7 +44,7 @@ target_include_directories(fwis_hybrid_joint PRIVATE "${CMAKE_CURRENT_BINARY_DIR
 target_include_directories(hybrid_casadi_object PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/generated")
 target_include_directories(fwis_hybrid_joint PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<INSTALL_INTERFACE:include>)
 # Do not propagate the SDK-specific C++ string ABI to ROS, evaluators or consumers.
-target_link_libraries(fwis_hybrid_joint PUBLIC fwis_planning_core::fwis_planning_core PRIVATE $<TARGET_FILE:casadi::casadi>)
+target_link_libraries(fwis_hybrid_joint PUBLIC fwis_planning_core::fwis_planning_core PRIVATE Eigen3::Eigen $<TARGET_FILE:casadi::casadi>)
 set_target_properties(fwis_hybrid_joint PROPERTIES INSTALL_RPATH_USE_LINK_PATH ON)
 target_compile_options(fwis_hybrid_joint PRIVATE -Wall -Wextra -Wpedantic)
 install(DIRECTORY include/ DESTINATION include)
@@ -54,6 +55,9 @@ target_link_libraries(hybrid_joint_case PRIVATE fwis_hybrid_joint JsonCpp::JsonC
 install(TARGETS hybrid_joint_case DESTINATION lib/${PROJECT_NAME})
 if(BUILD_TESTING)
   find_package(GTest REQUIRED)
+  add_executable(hybrid_channel_repair_test test/channel_repair_test.cpp)
+  target_link_libraries(hybrid_channel_repair_test PRIVATE fwis_hybrid_joint Eigen3::Eigen GTest::gtest_main)
+  add_test(NAME hybrid_channel_repair_test COMMAND hybrid_channel_repair_test)
   add_executable(hybrid_solver_test test/solver_test.cpp)
   target_link_libraries(hybrid_solver_test PRIVATE fwis_hybrid_joint GTest::gtest_main)
   add_test(NAME hybrid_solver_test COMMAND hybrid_solver_test)

@@ -2,6 +2,7 @@
 #include "nlp_api.h"
 #include "clock.hpp"
 #include "channel_spline.hpp"
+#include "channel_repair.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -476,6 +477,7 @@ std::vector<HJSeparation> separators(const Request& r,const HJProblem& graph,con
           else pose=sample.bodies[v].pose;
           const double c=std::cos(pose.yaw),s=std::sin(pose.yaw),radius=std::hypot(a0,b0)+.5+res;
           const std::array<Point,8> axes{{{1,0},{-1,0},{0,1},{0,-1},{c,s},{-c,-s},{-s,c},{s,-c}}};
+          std::array<Point,8> feature{};
           std::array<double,8> tight,gaps;tight.fill(-1.e99);gaps.fill(1.e99);
           int left=std::max(0,int(std::floor((pose.x-radius-org.x)/res)));
           int right=std::min(int(grid.width())-1,int(std::floor((pose.x+radius-org.x)/res)));
@@ -489,11 +491,23 @@ std::vector<HJSeparation> separators(const Request& r,const HJProblem& graph,con
               const double gap=n.x*pose.x+n.y*pose.y-bound-a0*std::abs(c*n.x+s*n.y)-b0*std::abs(-s*n.x+c*n.y);
               if(gap>largest){largest=gap;active=i;support=bound;}
             }
-            if(largest<gaps[active]){tight[active]=support;gaps[active]=largest;}
+            if(largest<gaps[active]){tight[active]=support;gaps[active]=largest;feature[active]=center;}
+          }
+          // Two opposing seed faces may define an empty strip for every yaw.
+          // Preserve the SAT disjunction for this body's local obstacle features.
+          bool impossible=false;
+          for(int i=0;i<8;i+=2) {
+            if(gaps[i]<.22 && gaps[i+1]<.22 &&
+               tight[i]+tight[i+1]+2*(std::min(a0,b0)+1e-5)>0)
+              impossible=true;
           }
           for(int i=0;i<8;++i)if(gaps[i]<.22){
             const auto n=axes[i];
-            all.push_back({k,j,z,v,shape[0],shape[1],a0,b0,n.x,n.y,tight[i]});
+            if(impossible) {
+              all.push_back({k,j,z,v,shape[0],shape[1],a0,b0,n.x,n.y,tight[i],HJSeparation::map_cell,feature[i].x,feature[i].y,.5*res,.5*res});
+            } else {
+              all.push_back({k,j,z,v,shape[0],shape[1],a0,b0,n.x,n.y,tight[i]});
+            }
           }
         }
       }
@@ -839,6 +853,7 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
   std::array<std::optional<Route>,2> oblique_channels;
   bool tried_oblique_departure=false;
   PolicyScore best{};bool unranked_incumbent=false;std::string why;
+  bool repaired_channel=false;
   for(std::size_t ordinal=0;ordinal<seeds.size();++ordinal) {
     if(!result.plan && sharp_departure && !tried_oblique_departure &&
        elapsed()>.36*std::chrono::duration<double>(deadline-begin).count()){
@@ -950,7 +965,47 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
         try{timed=continuous_channel?retime_channel(r,graph,timing,first_proof):
               retime_mixed_channel(r,graph,timing,first_proof,timing_status);}
         catch(const std::domain_error&){/* The full NLP can repair a singular initial tangent. */}
-        metrics.certify_s+=std::chrono::duration<double>(Clock::now()-before).count();
+        double repair_seed_s=0.;
+        if(!timed && !repaired_channel && graph.count==1 && graph.phase[0].mode==0 &&
+           r.cargo && graph.bodies==3 && graph.phase[0].spans>=4 &&
+           (seed.edit=="CLEARANCE_YAW_ROUTE" || seed.edit=="MINIMUM_YAW_ROUTE")) {
+          const auto repair_start=Clock::now();
+          double repair_certification_s=0.;
+          const auto cuts=separators(r,graph,trial);
+          const bool near_cargo=std::any_of(cuts.begin(),cuts.end(),[](const auto& plane){return plane.vehicle<0;});
+          if(near_cargo) {
+            repaired_channel=true;
+            auto stopped=[&](){return trial.stop();};
+            const auto boxes=channel_repair::rectangles(*r.grid,stopped);
+            // Move the cargo rotation to either side of the tight passage, then
+            // refine the early-turn chart by one knot at the opposite shoulder.
+            const int original=graph.phase[0].spans;
+            const int fine=std::min(HJ_MAX_SPANS,original+4);
+            struct PostureChart {int spans; double start,end;};
+            const std::array<PostureChart,3> charts{{
+              {std::min(HJ_MAX_SPANS,original+2),.5,1.},
+              {std::min(HJ_MAX_SPANS,original+3),0.,1./3},
+              {fine,1./(3*fine),1./3}
+            }};
+            for(const auto& chart:charts) {
+              if(timed || boxes.empty() || stopped())break;
+              HJProblem candidate=graph;
+              if(!channel_repair::repair(r,candidate,boxes,chart.spans,chart.start,chart.end,stopped))continue;
+              Clock::time_point first;
+              const auto certification_start=Clock::now();
+              try{timed=retime_channel(r,candidate,trial,first);}
+              catch(const std::domain_error&){/* A singular mount tangent invalidates this initial guess. */}
+              repair_certification_s+=std::chrono::duration<double>(Clock::now()-certification_start).count();
+              if(timed){
+                graph=candidate;first_proof=first;
+                result.trace.push_back(tag+":CERTIFIED_POSTURE_REPAIR");
+              }
+            }
+          }
+          repair_seed_s=std::chrono::duration<double>(Clock::now()-repair_start).count()-repair_certification_s;
+          result.seed_seconds+=repair_seed_s;
+        }
+        metrics.certify_s+=std::chrono::duration<double>(Clock::now()-before).count()-repair_seed_s;
         if(!timed && !timing_status.empty())result.trace.push_back(tag+":INITIAL_CHANNEL:"+timing_status);
         if(timed){
           result.first_certified_s=std::chrono::duration<double>(first_proof-begin).count();
@@ -1018,7 +1073,9 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
             for(const auto& cut:cuts){
               auto same=[&](const HJSeparation& v){return v.phase==cut.phase && v.span==cut.span &&
                 v.vehicle==cut.vehicle && v.other==cut.other && std::abs(v.station-cut.station)<1e-7 &&
-                std::abs(v.nx-cut.nx)+std::abs(v.ny-cut.ny)+std::abs(v.obstacle_support-cut.obstacle_support)<1e-7;};
+                (v.other==HJSeparation::map_cell
+                  ? std::abs(v.other_x-cut.other_x)+std::abs(v.other_y-cut.other_y)<1e-7
+                  : std::abs(v.nx-cut.nx)+std::abs(v.ny-cut.ny)+std::abs(v.obstacle_support-cut.obstacle_support)<1e-7);};
               if(std::none_of(active.begin(),active.end(),same))active.push_back(cut);
             }
           }

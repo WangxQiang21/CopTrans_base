@@ -10,7 +10,8 @@ struct HJPhase {
 struct HJSeparation {
   int phase, span; double station; int vehicle; // vehicle -1 indicates cargo
   double ox, oy, half_length, half_width, nx, ny, obstacle_support;
-  int other{-1};
+  static constexpr int map_cell=-2; // other_x/y are world coordinates for a grid cell.
+  int other{-1}; // -1 fixed supporting plane, nonnegative body index for pair separation.
   double other_x{},other_y{},other_half_length{},other_half_width{};
 };
 struct HJCurvatureStation {int phase,span; double local;};
