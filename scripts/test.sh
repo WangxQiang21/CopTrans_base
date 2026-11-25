@@ -256,8 +256,10 @@ done
 if [[ ${config[4]} == on ]]; then
     ros2 pkg prefix rosbag2_transport >/dev/null || fail 'Recording requires rosbag2_transport.' rosbag_missing
 fi
-install_digest=$(python3 "$root/scripts/source_fingerprint.py" --installed "$install_base") || \
+install_receipt=$(python3 "$root/scripts/source_fingerprint.py" --installed-receipt "$install_base") || \
     fail 'Required CopTrans runtime files are missing. Rerun without --no-build.' overlay_artifact_missing
+install_digest=${install_receipt%%$'\n'*}
+installed_files=${install_receipt#*$'\n'}
 if [[ ${config[3]} == False ]]; then
     source_stamp_tmp=$(mktemp "$install_base/.coptrans-source.XXXXXXXX")
     printf '%s %s Release\n' "$source_digest" "$install_digest" > "$source_stamp_tmp"
@@ -268,6 +270,7 @@ elif [[ $stamped_install != "$install_digest" ]]; then
 fi
 printf 'coptrans_source_sha256=%s\ncoptrans_install_sha256=%s\ncoptrans_build_type=Release\nCOPTRANS_INSTALL_BASE=%s\n' \
     "$source_digest" "$install_digest" "$install_base" >> "$run_dir/environment.txt"
+printf 'coptrans_installed_files=%s\n' "$installed_files" >> "$run_dir/environment.txt"
 printf 'CopTrans Release install %s (source %s, runtime %s)\n' "$install_base" "${source_digest:0:12}" "${install_digest:0:12}"
 python3 "$archive_tool" collect "$run_dir" "$archive_dir"
 

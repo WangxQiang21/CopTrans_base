@@ -50,7 +50,12 @@ def historical_summary(data):
 
 
 def write_summary(out,result,data):
-    template=(REPORT/"README.md").read_text().split("## 实测与已知故障")[0]
+    cohorts={n for group in (data.get("legacy_summary") or {}).get("cohorts",{}).values()
+             for n in group.get("cohorts",[])}
+    if cohorts=={4}:
+        template=release_instructions(data["software_defaults"])
+    else:
+        template=(REPORT/"README.md").read_text().split("## 实测与已知故障")[0]
     gates={r["id"]:r for r in result["checks"]}
     passed=sum(r["status"]=="PASS" for r in result["checks"])
     states={"INCOMPLETE":"尚未完成","COMPLETED":"已通过","BLOCKED":"受阻"}
@@ -147,5 +152,49 @@ def write_summary(out,result,data):
         sections.append("短路径 DDS 准入测试每组 5 次预热后正式测 30 次。"+"。".join(f"{names[k.split('/')[0]]} {k.split('/')[1]} 的 P95 为 {number(1000*quant(v,.95),1)} ms" for k,v in data["admission"].items())+"。")
     problems=[r["id"]+" ("+r["status"]+")" for r in result["checks"] if r["status"]!="PASS"]
     if problems: sections.append("待通过门项为 "+"、".join(problems)+"。")
-    sections.append("开发期间真实复现过启动时两个节点的仿真时钟错序、接收端尚未收到首个时钟、三车 S→A 的末时刻浮点残差、DDS 发送回调长尾。失败试次在本机原始目录保留。旧版单车用采样 Twist 反推运动模式有歧义，表中旧版列仅统计同请求下的认证成功数。TSan 在本机进入测试主函数前因内存映射失败，ASan、UBSan 以及主动执行求解器的测试结果单独列出。硬件状态为 `HARDWARE_NOT_VERIFIED`。")
+    sections.append("开发期间记录了仿真节点首个时钟错序、三车 S→A 末时刻浮点残差及 DDS 发送回调长尾。原始失败试次保存在本机。旧版单车的采样 Twist 推断模式有歧义，旧版列按同请求的预算内认证结果统计。ASan、UBSan 和实际 C++ 求解器的测试记录见 `BUILD_TESTS_SANITIZERS`。TSan 宿主探针记录为 `"+str((data.get("asan_smoke") or {}).get("tsan") or "未采集")+"`。实车验证状态为 `HARDWARE_NOT_VERIFIED`。")
     (out/"README.md").write_text("\n\n".join(sections)+"\n")
+
+
+def release_instructions(defaults):
+    promoted=all(defaults["planners"].get(k)=="hybrid_joint" for k in ("single","multi"))
+    select="" if promoted else " --planner-backend hybrid_joint"
+    return f"""# V3 联合规划与闭环验收
+
+## 仿真
+
+从仓库根目录运行以下任一命令。关闭当前 Gazebo 后再开始下一次。
+
+```bash
+./scripts/test.sh{select}
+./scripts/test.sh --task multi{select}
+./scripts/interactive.sh{select}
+./scripts/test.sh --task multi --planner-backend legacy
+```
+
+交互仿真用 RViz 的 **2D Pose Estimate** 和 **2D Goal Pose** 设置起终点。单车与编队的原生后端分别为 `single_hybrid_joint_cpp` 和 `formation_hybrid_joint_cpp`。默认速度档为 standard，低速测试可加 `--speed-profile baseline`。本机 `reports/runs/<实验编号>/` 保存实际端点、结果、权威轨迹、运行环境及安装指纹。
+
+## 规划和控制
+
+C++17 搜索生成连续 Ackermann、斜行、原地旋转和舵角准备阶段。CasADi C++ 与 Ipopt 调整几何、时长及连接状态。连续证书检查运动学、车体和货物包络。C++ 执行协调器验证各车收到相同权威模型，再向全部跟踪器发出共同起跑许可。每车执行车体 Twist，仿真反馈经里程计闭环回到跟踪器。
+
+## 复算
+
+干净检出可直接复算仓库内的压缩证据。
+
+```bash
+python3 scripts/accept_hybrid_v3.py --compact
+```
+
+本批使用两档预封存的 cohort 4 清单。重建原生基准、独立参考认证和计时需 ROS 2 Humble、CasADi C++ SDK。冻结源提交见 `manifest.json` 中的 `numeric_and_control_sources.system_commit`。
+
+```bash
+raw=$(mktemp -d)
+revision=$(python3 -c 'import json; print(json.load(open("reports/hybrid_v3/manifest.json"))["numeric_and_control_sources"]["system_commit"])')
+bash scripts/hybrid_v3/build_snapshot.sh "$raw/system" "$revision"
+bash scripts/hybrid_v3/full_benchmark.sh "$raw/system" "$raw/batch" "$raw/witness" "$raw/binary" 4
+```
+
+本机发布前，用 `scripts/hybrid_v3/release_e7.example.json` 填入同一冻结候选的实际目录，并运行 `python3 scripts/hybrid_v3/release_e7.py --config <文件>` 检查工件。加 `--stage <新目录> --packaging-ref <提交>` 后，程序依次核对全部非默认门项、在隔离检出中运行三个真实默认入口、从干净检出复算，通过后输出本地 Git bundle。实验日志保存在本机。
+
+"""

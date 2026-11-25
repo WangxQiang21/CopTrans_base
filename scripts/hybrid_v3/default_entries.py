@@ -6,6 +6,8 @@ import json
 import math
 import os
 from pathlib import Path
+import re
+import shlex
 import signal
 import subprocess
 import sys
@@ -13,6 +15,43 @@ import time
 import yaml
 
 from cases import LOCAL, ROOT
+sys.path.insert(0, str(ROOT/"scripts"))
+from source_fingerprint import RUNTIME_ARTIFACTS, receipt_fingerprint
+
+
+def observed_install(entry, archive):
+    env_file = archive / "environment.txt"
+    command_file = archive / "command.txt"
+    env = dict(line.split("=", 1) for line in env_file.read_text().splitlines() if "=" in line)
+    argv = shlex.split(command_file.read_text())
+    flags = {"single": [], "multi": ["--task", "multi"],
+             "interactive": ["--task", "multi", "--interactive", "--experiment", "full_route"]}
+    artifacts = json.loads(env.get("coptrans_installed_files", "{}"))
+    digests = {f"{pkg}/{name}" for pkg, names in RUNTIME_ARTIFACTS.items() for name in names}
+    valid = bool(argv and Path(argv[0]).parts[-2:] == ("scripts","test.sh") and argv[1:] == flags[entry]
+                 and env.get("coptrans_build_type") == "Release" and set(artifacts) == digests
+                 and all(re.fullmatch("[0-9a-f]{64}", v) for v in artifacts.values())
+                 and receipt_fingerprint(artifacts) == env.get("coptrans_install_sha256")
+                 and re.fullmatch("[0-9a-f]{64}", env.get("coptrans_source_sha256",""))
+                 and re.fullmatch("[0-9a-f]{40}", env.get("git_commit","")))
+    return dict(valid=valid, source_commit=env.get("git_commit"), source_sha256=env.get("coptrans_source_sha256"),
+                install_sha256=env.get("coptrans_install_sha256"), installed_files=artifacts,
+                argv=["scripts/test.sh", *argv[1:]] if argv else [],
+                environment_sha256=sha256(env_file.read_bytes()).hexdigest(),
+                command_sha256=sha256(command_file.read_bytes()).hexdigest())
+
+
+def matches_qualified_runtime(receipts, runtime):
+    keys = {f"{pkg}/{name}" for pkg, names in RUNTIME_ARTIFACTS.items() if pkg != "fwis_bringup" for name in names}
+    expected = {}
+    for key in keys:
+        matched = [value for filename, value in runtime.items() if Path(filename).as_posix().endswith("/" + key)]
+        if len(matched) != 1:
+            return False
+        expected[key] = matched[0]
+    return len(receipts) == 3 and {r.get("entry") for r in receipts} == {"single","multi","interactive"} and all(
+        r.get("native") and r.get("install", {}).get("valid") and
+        all(r["install"].get("installed_files", {}).get(k) == v for k, v in expected.items()) for r in receipts)
 
 
 def operate(run_id):
@@ -75,13 +114,16 @@ def collect(entry,archive):
     auth=any(e["event"]=="native_group_admission" and e.get("phase")=="AUTHORIZED" and
              e.get("model_sha256")==result.get("model_sha256") and (e["plan_id"],e["start_ns"]) in keys
              for e in map(json.loads,(archive/"timing_trace.jsonl").read_text().splitlines()))
-    native=(config["planner_backend"]==("single" if count==1 else "formation")+"_hybrid_joint_cpp" and
+    install=observed_install(entry,archive)
+    native=(install["valid"] and result.get("exit_code")==0 and
+            config["planner_backend"]==("single" if count==1 else "formation")+"_hybrid_joint_cpp" and
             result.get("planner_source")=="hybrid_joint" and config["tracking_implementation"]=="cpp" and auth and
             duration is not None and duration>0 and len(keys)==1 and result.get("complete")==list(range(1,count+1)) and
             bool(config.get("interactive"))==(entry=="interactive"))
     return dict(entry=entry,run_id=archive.name,status=result["status"],reason=result["reason"],native=bool(native),
                 planner_backend=config["planner_backend"],model_sha256=result.get("model_sha256"),
-                map_sha256=experiment["map_sha256"],result_sha256=sha256(result_file.read_bytes()).hexdigest())
+                map_sha256=experiment["map_sha256"],result_sha256=sha256(result_file.read_bytes()).hexdigest(),
+                install=install)
 
 
 def test_entry(entry,destination):
@@ -99,20 +141,26 @@ def test_entry(entry,destination):
         proc=subprocess.Popen(command,cwd=ROOT,start_new_session=True,stdout=stream,stderr=subprocess.STDOUT)
         operator=None
         try:
-            end=time.monotonic()+resolved["timeout_s"]+120
+            # A first public launch runs colcon before simulation begins.
+            # The ordinary mission and RViz input deadlines start after that build.
+            end=time.monotonic()+1800
+            launch_ready=False
             while proc.poll() is None and time.monotonic()<end:
                 archives=[p for p in runs.iterdir() if p.is_dir() and p.name not in before]
                 if len(archives)>1:
                     raise RuntimeError("Multiple experiments appeared during a public default test")
-                if entry=="interactive" and archives and operator is None:
+                if archives and not launch_ready:
                     env_file=archives[0]/"environment.txt"
                     if env_file.is_file():
                         env=dict(line.split("=",1) for line in env_file.read_text().splitlines() if "=" in line)
-                        if not env.get("ROS_DOMAIN_ID"):
+                        if not (env.get("ROS_DOMAIN_ID") and env.get("coptrans_install_sha256")):
                             time.sleep(.3)
                             continue
-                        operator=subprocess.Popen([sys.executable,__file__,"--operator",archives[0].name],
-                            env=dict(os.environ,ROS_DOMAIN_ID=env["ROS_DOMAIN_ID"],ROS_LOCALHOST_ONLY="1"))
+                        launch_ready=True
+                        end=time.monotonic()+resolved["timeout_s"]+120
+                        if entry=="interactive":
+                            operator=subprocess.Popen([sys.executable,__file__,"--operator",archives[0].name],
+                                env=dict(os.environ,ROS_DOMAIN_ID=env["ROS_DOMAIN_ID"],ROS_LOCALHOST_ONLY="1"))
                 if operator is not None and operator.poll() is not None:
                     if operator.returncode:
                         raise RuntimeError("The RViz input sequence did not finish successfully")

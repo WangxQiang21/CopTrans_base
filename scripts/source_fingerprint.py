@@ -2,6 +2,7 @@
 """Fingerprint build inputs without relying on Git HEAD or file timestamps."""
 
 import hashlib
+import json
 import os
 from pathlib import Path
 import stat
@@ -19,18 +20,31 @@ RUNTIME_ARTIFACTS = {
 }
 
 
-def installed_fingerprint(install):
-    digest = hashlib.sha256(b"coptrans-release-install-v1\0")
+def installed_receipt(install):
+    artifacts = {}
     for package, names in RUNTIME_ARTIFACTS.items():
         prefix = install / package if (install / package).is_dir() else install
         for name in names:
-            digest.update(f"{package}/{name}\0".encode())
             with (prefix / name).open("rb") as handle:
                 file_digest = hashlib.sha256()
                 for chunk in iter(lambda: handle.read(1024 * 1024), b""):
                     file_digest.update(chunk)
-            digest.update(file_digest.digest())
+            artifacts[f"{package}/{name}"] = file_digest.hexdigest()
+    return artifacts
+
+
+def receipt_fingerprint(artifacts):
+    digest = hashlib.sha256(b"coptrans-release-install-v1\0")
+    for package, names in RUNTIME_ARTIFACTS.items():
+        for name in names:
+            key = f"{package}/{name}"
+            digest.update(key.encode() + b"\0")
+            digest.update(bytes.fromhex(artifacts[key]))
     return digest.hexdigest()
+
+
+def installed_fingerprint(install):
+    return receipt_fingerprint(installed_receipt(install))
 
 
 def fingerprint(root):
@@ -62,7 +76,11 @@ def fingerprint(root):
 
 
 if __name__ == "__main__":
-    if sys.argv[1:2] == ["--installed"]:
+    if sys.argv[1:2] == ["--installed-receipt"]:
+        files = installed_receipt(Path(sys.argv[2]))
+        print(receipt_fingerprint(files))
+        print(json.dumps(files, sort_keys=True, separators=(",", ":")))
+    elif sys.argv[1:2] == ["--installed"]:
         print(installed_fingerprint(Path(sys.argv[2])))
     else:
         print(fingerprint(Path(sys.argv[1])))
