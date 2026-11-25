@@ -12,6 +12,18 @@ def phase(mode, x, y, **kw):
 
 
 class BehaviorMetrics(unittest.TestCase):
+    def test_dual_ramp_endpoints_cruise_rate_and_derivative(self):
+        from behavior_metrics import station
+        t = np.array([0., .05, .27, .50, .73, .95, 1.])
+        for ramp in (1/64, 1/32, 1/16):
+            pos, speed = station(t,ramp)
+            self.assertEqual((pos[0],pos[-1],speed[0],speed[-1]),(0.,1.,0.,0.))
+            np.testing.assert_allclose(pos+pos[::-1],1.,atol=1e-14)
+            np.testing.assert_allclose(speed[2:5],.875/(1-ramp)+.125/.875,atol=1e-14)
+            h=1e-6
+            finite=(station(t[1:-1]+h,ramp)[0]-station(t[1:-1]-h,ramp)[0])/(2*h)
+            np.testing.assert_allclose(finite,speed[1:-1],atol=1e-8)
+
     def test_normalized_same_gear_stop_inside_but_gear_change_excluded(self):
         x = np.linspace(0.,1.,6)
         first = phase("A", x, 0*x)

@@ -32,7 +32,7 @@ def coefficients(phase):
     return np.asarray([[p[k] for k in ("x", "y", "yaw")] if isinstance(p, dict) else p for p in phase["pieces"]])
 
 
-def station(t, ramp):
+def single_ramp_station(t, ramp):
     if not ramp:
         h = np.minimum(t, 1-t)
         s = h**3*(10+h*(-15+6*h))
@@ -42,6 +42,16 @@ def station(t, ramp):
     cruise = (t > ramp) & (t < 1-ramp)
     return (np.where(cruise, (t-.5*ramp)/(1-ramp), np.where(t <= .5, s, 1-s)),
             np.where(cruise, 1., h*h*(3-2*h))/(1-ramp))
+
+
+def station(t, ramp):
+    if ramp == 0 or ramp == .125:
+        return single_ramp_station(t, ramp)
+    if ramp not in (1/64, 1/32, 1/16):
+        raise ValueError(f"unsupported archived phase clock {ramp}")
+    fast = single_ramp_station(t, ramp)
+    slow = single_ramp_station(t, .125)
+    return tuple(.875 * a + .125 * b for a, b in zip(fast, slow))
 
 
 def spatial(curve, s, offsets):
