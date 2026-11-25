@@ -1,5 +1,6 @@
 """Run one scenario, planner and set of existing trackers on the simulation clock."""
 
+import os
 from pathlib import Path
 
 from ament_index_python.packages import get_package_share_directory
@@ -109,15 +110,21 @@ def setup(context):
                               future_start_window_s=lead + .1)
         tracker = {"python": "ranger_tracking_controller",
                    "cpp": "ranger_tracking_controller_cpp"}[config.get("tracking_implementation", "python")]
-        prefix = f"taskset -c {','.join(map(str, control_cpus[index]))}" if index in control_cpus else None
+        prefix = None
+        tracker_env = {"RMW_FASTRTPS_PUBLICATION_MODE": "ASYNCHRONOUS",
+                       "COPTRANS_SPLIT_TRACKER_CORE": "0"} if native else {}
+        if index in control_cpus:
+            lane = control_cpus[index]
+            # The control executor owns one logical CPU. DDS and the Humble
+            # TimeSource may also use simulation cores when the local sibling is busy.
+            allowed = sorted(set(lane) | os.sched_getaffinity(0))
+            prefix = f"taskset -c {','.join(map(str, allowed))}"
+            tracker_env.update(COPTRANS_SPLIT_TRACKER_CORE="1", COPTRANS_CONTROL_WORKER_CPU=str(lane[0]))
         actions.append(Node(package="fwis_control", executable=tracker, prefix=prefix,
                             namespace=f"robot{index}", output="screen", parameters=[parameters],
                             # Keep network transmission off the 25 Hz control thread. The
                             # qualification monitor also measures when Gazebo consumes cmd_vel.
-                            additional_env={
-                                "RMW_FASTRTPS_PUBLICATION_MODE": "ASYNCHRONOUS",
-                                "COPTRANS_SPLIT_TRACKER_CORE": "1" if index in control_cpus else "0",
-                            } if native else {}))
+                            additional_env=tracker_env))
     if config["record"] == "on":
         topics = ["/clock", "/map", "/tf", "/tf_static"]
         for index in robots:

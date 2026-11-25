@@ -22,8 +22,20 @@ inline int reserve_control_cpu()
     return -1;
   }
   int cpu = 0;
-  while (!CPU_ISSET(cpu, &mask)) {
-    ++cpu;
+  const char * requested = std::getenv("COPTRANS_CONTROL_WORKER_CPU");
+  if (requested) {
+    char * end = nullptr;
+    const long value = std::strtol(requested, &end, 10);
+    if (end == requested || *end || value < 0 || value >= CPU_SETSIZE ||
+      !CPU_ISSET(static_cast<int>(value), &mask))
+    {
+      return -1;
+    }
+    cpu = static_cast<int>(value);
+  } else {
+    while (!CPU_ISSET(cpu, &mask)) {
+      ++cpu;
+    }
   }
   CPU_CLR(cpu, &mask);
   return sched_setaffinity(0, sizeof(mask), &mask) == 0 ? cpu : -1;

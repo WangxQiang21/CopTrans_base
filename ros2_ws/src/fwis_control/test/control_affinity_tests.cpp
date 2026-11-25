@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cstdlib>
 #include <iostream>
+#include <string>
 #include <thread>
 
 int main()
@@ -20,8 +21,18 @@ int main()
     return 77;
   }
   setenv("COPTRANS_SPLIT_TRACKER_CORE", "1", 1);
+  // The worker lane may sit in the middle of the wider middleware pool.
+  int expected = CPU_SETSIZE - 1;
+  while (!CPU_ISSET(expected, &original)) {
+    --expected;
+  }
+  setenv("COPTRANS_CONTROL_WORKER_CPU", "invalid", 1);
+  if (fwis_control::reserve_control_cpu() != -1) {
+    return 1;
+  }
+  setenv("COPTRANS_CONTROL_WORKER_CPU", std::to_string(expected).c_str(), 1);
   const int chosen = fwis_control::reserve_control_cpu();
-  if (chosen < 0 || !CPU_ISSET(chosen, &original)) {
+  if (chosen != expected) {
     return 1;
   }
   cpu_set_t helpers;
@@ -57,4 +68,9 @@ int main()
     std::cerr << "control and middleware thread masks or counters differ from the contract\n";
     return 1;
   }
+  if (sched_setaffinity(0, sizeof(original), &original) != 0) {
+    return 1;
+  }
+  unsetenv("COPTRANS_CONTROL_WORKER_CPU");
+  return fwis_control::reserve_control_cpu() >= 0 ? 0 : 1;
 }
