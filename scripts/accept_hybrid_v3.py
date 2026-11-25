@@ -114,6 +114,16 @@ def main():
                 verified.append(checked)
             data["default_runs"]=verified
         data["source_manifest"]["system_commit"]=system_commit
+        proof=load(args.batch/"default_relocation.json")
+        if proof:
+            from default_relocation import collect as relink_default_objects
+            actual=relink_default_objects(proof["public_source_root"],args.system)
+            if actual!=proof:
+                raise ValueError("Default build objects or relocation receipt differ from the original replay")
+            data["default_relocation"]=actual
+            for name in ("default_runs.json","default_relocation.json"):
+                path=args.batch/name
+                data["source_manifest"]["raw_sha256"][str(path.resolve())]=sha(path)
         data["source_manifest"]["system_source_sha256"]=system_hashes(system_commit)
         data["source_manifest"]["system_release_tests"]=xml_cases(args.system/"ctest")
         data["source_manifest"]["runtime_binaries"]=runtime_binaries(args.system)
@@ -336,7 +346,7 @@ def main():
     default=data["software_defaults"];smoke=data["default_runs"] or []
     defaults_ok=default["planners"]==dict(single="hybrid_joint",multi="hybrid_joint") and default["tracking_implementation"]=="cpp"
     checkout_matches=current_sources_match(data["source_manifest"])
-    default_binaries_match=matches_qualified_runtime(smoke,data["source_manifest"].get("runtime_binaries",{}))
+    default_binaries_match=matches_qualified_runtime(smoke,data["source_manifest"].get("runtime_binaries",{}),data.get("default_relocation"))
     record("DEFAULT_INTEGRATION",True,checkout_matches and defaults_ok and default_binaries_match and all(r["status"]=="passed" for r in smoke),
            dict(test_default=default["planners"],tracker=default["tracking_implementation"],current_source_matches=checkout_matches,runtime_matches=default_binaries_match,runs=smoke))
     hashes=data["inputs_sha256"];manifest=data["source_manifest"]

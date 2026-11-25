@@ -41,7 +41,8 @@ def observed_install(entry, archive):
                 command_sha256=sha256(command_file.read_bytes()).hexdigest())
 
 
-def matches_qualified_runtime(receipts, runtime):
+def matches_qualified_runtime(receipts, runtime, relocation=None):
+    from default_relocation import covers
     keys = {f"{pkg}/{name}" for pkg, names in RUNTIME_ARTIFACTS.items() if pkg != "fwis_bringup" for name in names}
     expected = {}
     for key in keys:
@@ -49,9 +50,16 @@ def matches_qualified_runtime(receipts, runtime):
         if len(matched) != 1:
             return False
         expected[key] = matched[0]
-    return len(receipts) == 3 and {r.get("entry") for r in receipts} == {"single","multi","interactive"} and all(
-        r.get("native") and r.get("install", {}).get("valid") and
-        all(r["install"].get("installed_files", {}).get(k) == v for k, v in expected.items()) for r in receipts)
+    if len(receipts)!=3 or {r.get("entry") for r in receipts}!={"single","multi","interactive"}:
+        return False
+    for receipt in receipts:
+        install=receipt.get("install",{})
+        if not receipt.get("native") or not install.get("valid"):
+            return False
+        observed=install.get("installed_files",{})
+        if not all(observed.get(k)==v for k,v in expected.items()) and not covers(relocation or {},observed,expected):
+            return False
+    return True
 
 
 def operate(run_id):
@@ -119,11 +127,17 @@ def collect(entry,archive):
             config["planner_backend"]==("single" if count==1 else "formation")+"_hybrid_joint_cpp" and
             result.get("planner_source")=="hybrid_joint" and config["tracking_implementation"]=="cpp" and auth and
             duration is not None and duration>0 and len(keys)==1 and result.get("complete")==list(range(1,count+1)) and
-            bool(config.get("interactive"))==(entry=="interactive"))
+            bool(config.get("interactive"))==(entry=="interactive") and
+            (entry!="interactive" or observed_stop(result)))
     return dict(entry=entry,run_id=archive.name,status=result["status"],reason=result["reason"],native=bool(native),
                 planner_backend=config["planner_backend"],model_sha256=result.get("model_sha256"),
                 map_sha256=experiment["map_sha256"],result_sha256=sha256(result_file.read_bytes()).hexdigest(),
                 install=install)
+
+
+def observed_stop(result):
+    final=(result.get("termination_observation") or {}).get("final") or {}
+    return result.get("status")=="passed" and final.get("window_complete") is True
 
 
 def test_entry(entry,destination):
@@ -164,7 +178,10 @@ def test_entry(entry,destination):
                 if operator is not None and operator.poll() is not None:
                     if operator.returncode:
                         raise RuntimeError("The RViz input sequence did not finish successfully")
-                    break
+                    # ROS reports finished before the configured stop observation is checkpointed.
+                    result=archives[0]/"result.yaml"
+                    if result.is_file() and observed_stop(yaml.safe_load(result.read_text()) or {}):
+                        break
                 time.sleep(.3)
         finally:
             if operator is not None and operator.poll() is None:

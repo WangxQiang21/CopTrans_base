@@ -59,3 +59,29 @@ def test_failed_public_start_is_archived(tmp_path):
     record = json.loads(manifests[0].read_text())
     assert record["status"] == "launch_failed"
     assert record["reason"] in ("display_missing", "ros_setup_missing")
+
+
+def test_shared_log_root_enforces_the_real_quota(tmp_path):
+    root=Path(__file__).resolve().parents[1]
+    checkout=tmp_path/"checkout"
+    scripts=checkout/"scripts"
+    scripts.mkdir(parents=True)
+    shutil.copy2(root/"scripts/test.sh",scripts/"test.sh")
+    src=checkout/"ros2_ws/src"
+    src.mkdir(parents=True)
+    for package in (root/"ros2_ws/src").iterdir():
+        if package.name=="fwis_bringup":
+            shutil.copytree(package,src/package.name)
+        else:
+            (src/package.name).symlink_to(package,target_is_directory=package.is_dir())
+    recorder=src/"fwis_bringup/fwis_bringup/experiment_log.py"
+    recorder.write_text(recorder.read_text().replace("5_000_000_000","70_000"))
+    actual=tmp_path/"shared-archives"
+    actual.mkdir()
+    (actual/"existing.bin").write_bytes(b"x"*70_000)
+    (checkout/"reports").mkdir()
+    (checkout/"reports/runs").symlink_to(actual,target_is_directory=True)
+    result=subprocess.run([scripts/"test.sh","--task","single","--no-build"],
+                          env=dict(os.environ,DISPLAY="",WAYLAND_DISPLAY=""),capture_output=True,text=True)
+    assert result.returncode==2 and "local experiment quota" in result.stderr
+    assert not list(actual.glob("*/experiment.json"))

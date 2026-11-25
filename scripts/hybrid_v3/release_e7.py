@@ -14,6 +14,7 @@ import yaml
 
 from cases import ROOT, SPEC
 from default_entries import matches_qualified_runtime
+from default_relocation import collect as relink_default_objects, configure_source_location
 from evidence_manifest import runtime_binaries
 from route_evidence import HISTORICAL, matrix
 
@@ -154,7 +155,7 @@ def freeze_checks(cfg):
 def link_batch(src, dst):
     dst.mkdir()
     for f in src.iterdir():
-        if f.name != "default_runs.json":
+        if f.name not in ("default_runs.json","default_relocation.json"):
             (dst/f.name).symlink_to(f.resolve(), target_is_directory=f.is_dir())
 
 
@@ -213,7 +214,7 @@ def recompute(root, cfg, compact, inputs, before):
         raise ValueError("Incomplete or changed compact files")
     if not before:
         rows = read(inputs/"batch/default_runs.json")
-        if not matches_qualified_runtime(rows,runtime_binaries(cfg["system"])):
+        if not matches_qualified_runtime(rows,runtime_binaries(cfg["system"]),read(inputs/"batch/default_relocation.json")):
             raise ValueError("Ordinary default entries differ from the qualified installed binaries")
 
 
@@ -234,12 +235,15 @@ def relay_archives(clone, cfg):
     runs.symlink_to(original_runs,target_is_directory=True)
 
 
-def run_smoke(clone, output):
+def run_smoke(clone, output, snapshot):
     env = os.environ.copy()
     if env.get("COPTRANS_INSTALL_BASE"):
         raise ValueError("Run public smoke with the candidate clone's normal install")
     env["COPTRANS_CASADI_ROOT"] = env.get("COPTRANS_CASADI_ROOT",str(ROOT.parent/".coptrans-python/casadi"))
     env["CMAKE_BUILD_PARALLEL_LEVEL"]="2"
+    # rcutils embeds __FILE__ in diagnostics. Bind its source spelling to the
+    # frozen compile while the public launcher still builds and runs normally.
+    env["CMAKE_CXX_COMPILER_LAUNCHER"]=str(configure_source_location(clone,snapshot))
     for task in ("single","multi"):
         for arch in ("optimized","baseline"):
             cmd=[clone/"scripts/test.sh","--dry-run","--task",task,"--architecture-profile",arch]
@@ -268,6 +272,20 @@ def checkout_release_files(clone, revision):
     run(clone,"git","checkout","--quiet","--detach",revision)
 
 
+def candidate_checkout(source, clone, revision):
+    run(source,"git","clone","--quiet","--no-checkout","--shared",source,clone)
+    # Shared clones inherit the object store, but not its partial-clone contract.
+    # A sparse staged commit must preserve promised archive blobs outside the release trees.
+    promisor=subprocess.run(["git","config","--get-regexp",r"^remote\..*\.promisor$","true"],
+                            cwd=source,stdout=subprocess.DEVNULL,check=False)
+    if promisor.returncode==0:
+        run(clone,"git","config","remote.origin.promisor","true")
+        run(clone,"git","config","remote.origin.partialclonefilter","blob:none")
+    elif promisor.returncode!=1:
+        raise RuntimeError("Cannot inspect the source object store")
+    checkout_release_files(clone,revision)
+
+
 def publish(cfg, work, ref):
     work.mkdir(parents=True,exist_ok=False)
     freeze_checks(cfg)
@@ -278,12 +296,13 @@ def publish(cfg, work, ref):
     compact, stage = prepare_inputs(cfg, work)
     recompute(ROOT,cfg,compact,stage,True)
     clone=work/"candidate"
-    run(ROOT,"git","clone","--quiet","--no-checkout","--shared",ROOT,clone)
-    checkout_release_files(clone,base)
+    candidate_checkout(ROOT,clone,base)
     (clone/REGISTRY).write_text(promoted_text((clone/REGISTRY).read_text()))
     commit(clone,[REGISTRY],"Use certified hybrid planners for default simulations")
     relay_archives(clone,cfg)
-    run_smoke(clone,stage/"batch/default_runs.json")
+    run_smoke(clone,stage/"batch/default_runs.json",cfg["system"])
+    relocation=relink_default_objects(clone,cfg["system"])
+    (stage/"batch/default_relocation.json").write_text(json.dumps(relocation,indent=2,sort_keys=True)+"\n")
     # The versioned report is regenerated in an isolated clone. Old report data cannot fill missing artifacts.
     out=clone/REPORT
     shutil.rmtree(out)

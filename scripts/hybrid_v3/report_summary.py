@@ -197,4 +197,6 @@ bash scripts/hybrid_v3/full_benchmark.sh "$raw/system" "$raw/batch" "$raw/witnes
 
 本机发布前，用 `scripts/hybrid_v3/release_e7.example.json` 填入同一冻结候选的实际目录，并运行 `python3 scripts/hybrid_v3/release_e7.py --config <文件>` 检查工件。加 `--stage <新目录> --packaging-ref <提交>` 后，程序依次核对全部非默认门项、在隔离检出中运行三个真实默认入口、从干净检出复算，通过后输出本地 Git bundle。实验日志保存在本机。
 
+每个默认入口记录实际加载的本机安装指纹。独立复编时，日志宏里的源码路径映射为冻结路径。同一批目标文件分别按实际目录和冻结目录的 CMake 链接路径重建，两次都与对应安装文件逐字节核对。五个原生文件的实际、冻结和重建 SHA-256 可在 `measurements.json` 的 `default_relocation` 中复查。
+
 """
