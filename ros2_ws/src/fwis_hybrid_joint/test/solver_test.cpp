@@ -40,6 +40,25 @@ TEST(NativeSolver,OneSharedClockWithOppositeMountHeadings){
     EXPECT_EQ(hj::Mode::A,p.mode); EXPECT_EQ(-1,p.gear[2]);EXPECT_EQ(1,p.gear[0]);
   }
 }
+TEST(NativeSolver,ForwardOnlyObliqueHonorsEveryVehicleGear){
+  hj::SolveOptions fixed;
+  fixed.initial_sequence={hj::Mode::O};
+  fixed.enable_edits=false;
+  for(bool formation:{false,true}){
+    auto r=request(formation);
+    r.allow_reverse=false;
+    r.goal.reference={r.start.reference.x+1.,0.,0.};
+    // Only the last follower faces backwards in the formation counterexample.
+    if(formation)r.start.heading[2]=r.goal.heading[2]=std::acos(-1.);
+    else r.goal.reference.x=r.start.reference.x-1.;
+    EXPECT_FALSE(hj::solve(r,deadline(),{},fixed).plan);
+    r.goal.reference.x=r.start.reference.x+1.;
+    r.start.heading.fill(0.);r.goal.heading.fill(0.);
+    auto forward=hj::solve(r,deadline(),{},fixed);
+    ASSERT_TRUE(forward.plan)<<forward.reason;
+    for(const auto& phase:forward.plan->phases)EXPECT_EQ(phase.gear,(hj::Gears{1,1,1}));
+  }
+}
 TEST(NativeSolver,CancellationAndStationaryGoal){
   auto r=request();auto stopped=hj::solve(r,deadline(),[]{return true;});
   EXPECT_FALSE(stopped.plan);EXPECT_EQ("CANCELLED",stopped.status);

@@ -321,6 +321,7 @@ HJProblem problem(const Request& r,const Seed& seed,const SolveOptions& options,
     const int sign=seed.reverse_from>=0 && k>=seed.reverse_from?-seed.sign:seed.sign;
     const double dx=end.x-start.x,dy=end.y-start.y,length=std::hypot(dx,dy);
     const double travel=length>1e-9?std::atan2(dy,dx):p.start[2];
+    const double oblique_direction=ph.mode==1 && seed.curved_oblique?central_tangent(path):travel;
     double endpsi=psi;
     if(ph.mode==0){
       const int remaining=seed.curved_oblique?std::count(seed.seq.begin()+k,seed.seq.end(),Mode::A):moving-m;
@@ -329,8 +330,12 @@ HJProblem problem(const Request& r,const Seed& seed,const SolveOptions& options,
     for(int i=0;i<p.bodies;++i){
       ph.h0[i]=headings[i];
       const int orientation=std::cos(headings[i]-ph.h0[0])>=0?1:-1;
-      ph.gear[i]=ph.mode==0?sign*orientation:(ph.mode==2 || std::cos(travel-headings[i])>=0?1:-1);
-      if(ph.mode==0 && ph.gear[i]<0 && !r.allow_reverse)ph.gear[i]=1;
+      // All gears start forward. O's per-car direction uses the curved
+      // channel tangent or the straight chord and honors the same policy as A.
+      if(r.allow_reverse){
+        if(ph.mode==0)ph.gear[i]=sign*orientation;
+        if(ph.mode==1)ph.gear[i]=std::cos(oblique_direction-headings[i])>=0?1:-1;
+      }
       if(ph.mode==2) {
         bool last=k+1==p.count;
         double next=p.goal[3+i];
@@ -349,8 +354,6 @@ HJProblem problem(const Request& r,const Seed& seed,const SolveOptions& options,
         const double next=k+1==p.count && p.fixed_goal[i+1]?p.goal[3+i]:travel+(ph.gear[i]<0?pi:0);
         headings[i]+=delta(headings[i],next);
       }
-      if(seed.curved_oblique && ph.mode==1)
-        ph.gear[i]=std::cos(central_tangent(path)-headings[i])>=0?1:-1;
       ph.h1[i]=headings[i];
     }
     double spin=0;for(int i=0;i<p.bodies;++i)spin=std::max(spin,std::abs(ph.h1[i]-ph.h0[i]));
