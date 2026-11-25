@@ -184,8 +184,11 @@ def resolve(argv, config_directory, scenario_directory, output):
     if alias == "hybrid_joint":
         if mode:
             mode = dict(mode, implementation="hybrid_joint")
+        cap = experiment.get("task_duration_cap_s", 300.0)
+        if experiment.get("use_scene_goal") and not args.interactive:
+            cap = task.get("task_duration_cap_by_speed_s", {}).get(args.speed_profile, cap)
         overrides = dict(overrides, speed_profile=args.speed_profile, solve_budget_s=8.0 if scene_task == "single" else 12.0,
-                         task_duration_cap_s=float(experiment.get("task_duration_cap_s", 300.0)))
+                         task_duration_cap_s=positive_seconds(cap))
     elif args.architecture_profile == "optimized":
         if scene_task == "formation":
             overrides = dict(overrides, reuse_terminal_certificate=True,

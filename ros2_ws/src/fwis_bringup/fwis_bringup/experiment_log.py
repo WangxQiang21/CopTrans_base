@@ -114,11 +114,13 @@ def collect(spool, destination, *, final=False):
     scene_digest = _digest_file(spool / "scene" / "scene_meta.yaml")
     persist("scene/map.pgm", essential=True, compressed=True)
 
-    frozen_plan = None
-    if persist("trajectories/planner.cdr", essential=True, compressed=True):
+    # The single-car CDR can contain only the compatibility projection. Save
+    # the exact authority bytes first so the experiment digest can be verified.
+    has_model = persist("trajectories/model.json", essential=True, compressed=True)
+    model_artifact = "trajectories/model.json.gz" if has_model else None
+    frozen_plan = model_artifact
+    if persist("trajectories/planner.cdr", essential=not has_model, compressed=True):
         frozen_plan = "trajectories/planner.cdr.gz"
-    elif persist("trajectories/model.json", essential=True, compressed=True):
-        frozen_plan = "trajectories/model.json.gz"
 
     for name in ("timing_trace.jsonl", "operator_events.jsonl", "planning_progress.jsonl", "launch.log",
                  "planner.log", "controller.log", "metrics/motion.jsonl", "metrics/fault_tail.jsonl", "build.log"):
@@ -162,7 +164,7 @@ def collect(spool, destination, *, final=False):
                 "start": result.get("start") if config.get("interactive") else config.get("start"),
                 "goal": result.get("goal") if config.get("interactive") else config.get("goal"),
                 "plan_artifact": frozen_plan, "map_sha256": map_digest, "scene_sha256": scene_digest,
-                "model_sha256": result.get("model_sha256"),
+                "model_sha256": result.get("model_sha256"), "model_artifact": model_artifact,
                 "request_submitted": result.get("planner_wall_s") is not None,
                 "replay_of": config.get("replay_of"),
                 "git_commit": environment.get("git_commit"), "git_dirty": environment.get("git_dirty"),

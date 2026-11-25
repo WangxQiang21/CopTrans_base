@@ -143,7 +143,7 @@ public:
   const Twist & previous() const noexcept {return previous_;}
   Result apply(
     Twist raw, Mode mode, double dt, double direction = 0.,
-    std::optional<double> oblique_reference_vy = {}) noexcept;
+    std::optional<double> oblique_reference_vy = {}, bool continuous_oblique = false) noexcept;
 
 private:
   Limits limits_;

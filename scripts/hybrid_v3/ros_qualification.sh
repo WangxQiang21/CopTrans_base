@@ -31,10 +31,10 @@ git -C "$root" rev-parse HEAD >"$out/source_commit"
 failed=0
 for n in 1 3; do
     for profile in standard baseline; do
-        for trial in faults expired rollback repeat_ack ack_before_envelope latency; do
+        for trial in faults expired rollback repeat_ack ack_before_envelope clock_delivery_order clock_not_synchronized forged_source_epoch latency; do
             case "$trial" in
                 faults) args=(--cases success tamper missing_member stale_feedback wrong_mode map_replaced permit_loss wrong_epoch future_permit revoked_permit nan_feedback);;
-                repeat_ack|ack_before_envelope) args=(--cases "$trial");;
+                repeat_ack|ack_before_envelope|clock_delivery_order|clock_not_synchronized|forged_source_epoch) args=(--cases "$trial");;
                 rollback) args=(--cases clock_rollback);;
                 expired) args=(--cases expired);;
                 latency) args=(--admission-trials 30);;

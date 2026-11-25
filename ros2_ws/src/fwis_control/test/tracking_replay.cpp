@@ -14,6 +14,15 @@ int main(int argc, char ** argv)
   const bool measure = argc > 1 && std::string(argv[1]) == "quiet";
   std::cout << std::setprecision(17);
   Configuration config;
+  if (argc > 1 && std::string(argv[1]) == "continuous-oblique") {
+    SafetyFilter filter(config.limits);
+    double dt, vx, vy, reference_vy;
+    while (std::cin >> dt >> vx >> vy >> reference_vy) {
+      auto cmd = filter.apply({vx, vy, 0.}, Mode::Oblique, dt, 0., reference_vy, true).command;
+      std::cout << cmd.vx << ' ' << cmd.vy << ' ' << cmd.wz << '\n';
+    }
+    return std::cin.eof() ? 0 : 1;
+  }
   int pid, allow_axial, initial;
   double admitted_at, future_window;
   while (std::cin >> pid >> allow_axial >> initial >> admitted_at >> future_window) {

@@ -109,3 +109,13 @@ def test_trend_keeps_mode_changes_and_full_recent_fault_context(tmp_path):
     fault = [json.loads(line) for line in (tmp_path / "metrics" / "fault_tail.jsonl").read_text().splitlines()]
     assert len(fault) == 201
     assert fault[0]["stamp"] == 2. and fault[-1]["phase"] == "STOPPED"
+
+def test_authority_and_projection_are_both_recoverable(run):
+    spool, destination = run
+    model = b'{"authority":"native trajectory"}'
+    projection = b"sampled display trajectory"
+    (spool / "trajectories/model.json").write_bytes(model)
+    (spool / "trajectories/planner.cdr").write_bytes(projection)
+    manifest = experiment_log.collect(spool, destination)
+    assert gzip.decompress((destination / manifest["model_artifact"]).read_bytes()) == model
+    assert gzip.decompress((destination / manifest["plan_artifact"]).read_bytes()) == projection

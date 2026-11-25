@@ -6,7 +6,8 @@ out=$(realpath -m "${1:?fresh local build path}")
 sha=$(git -C "$root" rev-parse "${2:-HEAD}^{commit}")
 mkdir -p "$out"
 [[ ! -e $out/ros2_ws/src ]]
-git -C "$root" archive "$sha" ros2_ws/src | tar -x -C "$out"
+mkdir -p "$out/ros2_ws/src"
+git -C "$root" archive "$sha:ros2_ws/src" | tar -x -C "$out/ros2_ws/src"
 # Sparse clones can omit legacy archives under scripts. Extract only the tracked executable entry points.
 for script in scripts/test.sh scripts/interactive.sh scripts/source_fingerprint.py; do
     mkdir -p "$out/scripts"

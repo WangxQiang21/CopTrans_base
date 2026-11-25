@@ -48,7 +48,7 @@ def setup(family, task, config, *, scene=None):
     dx, dy = dx + 2*margin, dy + 2*margin
     vmax = overrides["quality"]["limits"]["v_max"]
     lateral = abs(goal[1] - start[1])
-    cap = 6.1 + 2.01*lateral/vmax
+    cap = overrides["task_duration_cap_s"]
     alpha = .22
     projected_at_barrier = dx*math.cos(alpha) + dy*math.sin(alpha)
     max_lateral_A = vmax*cap*math.sin(alpha)
@@ -57,7 +57,6 @@ def setup(family, task, config, *, scene=None):
         raise ValueError("Pure-A lateral reach is not excluded at the resolved limits")
     # The body cannot pass +/-alpha in this strip. Integrating |v*sin(yaw)|
     # bounds lateral progress for any number of stopped gear changes.
-    overrides["task_duration_cap_s"] = cap
     return {"type": "bounded_lateral_reach", "physical_width_m": width,
             "body_width_at_yaw_barrier_m": projected_at_barrier, "yaw_barrier_rad": alpha,
             "task_duration_cap_s": cap, "speed_limit_mps": vmax, "max_pure_A_lateral_m": max_lateral_A,

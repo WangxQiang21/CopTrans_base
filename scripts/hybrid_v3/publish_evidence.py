@@ -1,6 +1,5 @@
 """Write compact measured scalars and environment identifiers. Full runs stay in local storage."""
 import csv
-import hashlib
 import json
 import os
 from pathlib import Path
@@ -33,6 +32,8 @@ def export(out,data):
                   dependencies=dict(casadi="3.7.2",ROS="Humble"),policy=POLICY,
                   threads=dict(OPENBLAS_NUM_THREADS=1,OMP_NUM_THREADS=1),scope="static_map_simulation_and_native_soft_realtime_load",
                   config_hashes={str(p.relative_to(ROOT)):sha(p) for p in (REGISTRY,GEOMETRY,SPEC)},
+                  case_sha256={p:sha(REPORT/p) for p in ("case_manifest.json","case_manifest_baseline.json")},
+                  numeric_and_control_sources=data.get("source_manifest"),
                   raw_local=str(LOCAL),reference_run_ids=["20261125_140950_e40cIk","20261125_141134_AeDvqX","20261125_141201_TcTcHJ"],
-                  compact_hashes={p.name:sha(p) for p in [out/"runs.csv",out/"measurements.json",out/"case_manifest.json"] if p.exists()})
+                  compact_hashes={p.name:sha(p) for p in [out/"runs.csv",out/"measurements.json",out/"case_manifest.json",out/"case_manifest_baseline.json"] if p.exists()})
     (out/"manifest.json").write_text(json.dumps(manifest,indent=2,ensure_ascii=False)+"\n")

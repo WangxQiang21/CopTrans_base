@@ -12,5 +12,9 @@ obstacles:
   - {id: slot_east, type: wall, pose: [3.55, 6.0, 0.6, 0], size: [0.20, 11.70, 1.2], style: fence}
 initial_body_yaw_offsets: [0.15, 0.45, -0.35]
 experiments:
-  single: {start: [3.0, 3.0, 0.02], goal: [3.0, 7.5, 0.02]}
+  single:
+    start: [3.0, 3.0, 0.02]
+    goal: [3.0, 7.5, 0.02]
+    # 6.1 s steering allowance plus 2.01 times the crossing distance / speed.
+    task_duration_cap_by_speed_s: {standard: 21.175, baseline: 62.63125}
   formation: {start: [8.0, 6.0, 0.0], goal: [11.0, 6.0, 0.0]}

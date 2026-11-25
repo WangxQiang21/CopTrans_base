@@ -3,6 +3,8 @@
 import argparse
 from copy import deepcopy
 import json
+import hashlib
+import re
 from math import cos, sin, isfinite
 import os
 import signal
@@ -52,6 +54,9 @@ class Run(Node):
         self.poses = [list(offset) + [0.] for offset in (OFFSETS if count == 3 else ((0., 0.),))]
         self.expired_fixture = False
         self.clock_fixture = False
+        self.group_clock_lag = False
+        self.forge_source = False
+        self.held_clock = None
         self.repeat_ack = False
         self.ack_before_envelope = False
         self.group_plan = self.create_publisher(FormationPlaybackPlan, "/fixture/group_plan", DURABLE)
@@ -62,7 +67,9 @@ class Run(Node):
         self.bad_numeric = set()
         self.wrong_permit = None
         self.nonfinite_commands = 0
+        self.timeline = []
         self.check_reasons = {}
+        self.executor_clock = self.create_publisher(Clock, "/fixture/executor_clock", 5)
         self.fake_clock = self.create_publisher(Clock, "/clock", 5)
         self.bad_permit = self.create_publisher(HybridExecutionPermit,"/hybrid_joint/execution_permit",1)
         self.original = None
@@ -117,7 +124,9 @@ class Run(Node):
             if self.repeat_ack and role=="executor":
                 for i in range(self.count):
                     remaps.extend(["-r",f"/robot{i+1}/controller_status:=/fixture/ack{i+1}"])
-            if self.ack_before_envelope and role=="executor":
+            if self.group_clock_lag and role=="executor":
+                remaps.extend(["-r","/clock:=/fixture/executor_clock"])
+            if (self.ack_before_envelope or self.forge_source) and role=="executor":
                 remaps.extend(["-r",f"{self.model_topic}:=/fixture/group_plan"])
             launch("fwis_hybrid_joint_ros", f"hybrid_joint_{role}", [
                 "-p", "task:=" + ("formation" if self.count == 3 else "single"), *parameters, *remaps, *clock_args])
@@ -140,6 +149,9 @@ class Run(Node):
 
     def status(self, i, m):
         row = json.loads(m.data)
+        if row.get("kind")=="execution":
+            self.timeline.append((monotonic(),i,row["plan_id"],row["stamp"],row["phase"],row["command"]))
+            self.timeline=self.timeline[-100:]
         if row.get("kind")=="admission" and row.get("result") in ("PASS","WARN"):
             self.first_admission.add((row["plan_id"],i))
         if (self.repeat_ack and row.get("kind")=="execution"
@@ -174,6 +186,9 @@ class Run(Node):
         stamp = time.to_msg()
         if self.clock_fixture:
             self.fake_clock.publish(Clock(clock=stamp))
+            if self.group_clock_lag:
+                self.executor_clock.publish(Clock(clock=self.held_clock or stamp))
+                self.latest_clock = stamp
         if self.wrong_permit and self.last_plan:
             bad = HybridExecutionPermit(plan_id=self.last_plan.plan_id, start=self.last_plan.header.stamp,
                                         model_sha256=self.last_plan.model_sha256, stamp=stamp, enabled=True)
@@ -248,6 +263,9 @@ class Run(Node):
             self.pump(.28)
         self.unsafe_after_stale = 0
         self.nonfinite_commands = 0
+        if self.group_clock_lag:
+            self.held_clock=self.latest_clock
+            self.pump(.22)
         self.request(plan_id)
         if name=="expired":
             self.until(lambda:self.original and self.original.plan_id==plan_id,12.)
@@ -255,6 +273,22 @@ class Run(Node):
                        self.original.header.stamp.sec*10**9+self.original.header.stamp.nanosec+10**8,3.)
             self.inject.publish(self.original)
         self.until(lambda: self.last_plan and self.last_plan.plan_id == plan_id, 12)
+        clock_gap=0.
+        if self.group_clock_lag:
+            self.until(lambda:any(e["plan_id"]==plan_id and e["phase"]=="WAIT_CLOCK" for _,e in self.events),1.5)
+            wait=next(e for _,e in self.events if e["plan_id"]==plan_id and e["phase"]=="WAIT_CLOCK")
+            clock_gap=(wait["publication_ros_ns"]-wait["receipt_ros_ns"])*1e-9
+            if clock_gap<=.1 or any(allow for _,i,allow in self.permits if i==plan_id):
+                raise AssertionError("Expected an unreleased model ahead of the receiver clock window")
+            if name=="clock_delivery_order":
+                self.held_clock=None
+        if self.forge_source:
+            bad=deepcopy(self.last_plan)
+            bad.model_json,n=re.subn(r'("publication_ros_ns":)([0-9]+)',
+                        lambda m:m.group(1)+str(int(m.group(2))-200000000),bad.model_json)
+            if n!=1:raise AssertionError("Missing publication ROS timestamp")
+            bad.model_sha256=hashlib.sha256(bad.model_json.encode()).hexdigest()
+            self.group_plan.publish(bad)
         if name=="ack_before_envelope":
             self.until(lambda:all((plan_id,i) in self.first_admission for i in range(self.count)),1.)
             self.group_plan.publish(self.last_plan)
@@ -287,21 +321,29 @@ class Run(Node):
             self.wrong_permit = name if name!="permit_loss" else None
             coordinator=self.children[1]
             coordinator.send_signal(signal.SIGSTOP)
+            injection_ros = self.get_clock().now().nanoseconds * 1e-9
+            cutoff = injection_ros + .20 + .04   # expiry and one 25 Hz release
             try:
-                self.pump(.38)
-                if any(abs(v)>1e-9 for c in self.commands.values() for v in c):
-                    raise AssertionError("motion continued without group permit")
+                # Bind measurements to the controller's source stamp. A pre-fault cmd_vel
+                # can remain the last Python callback observed when the test process is
+                # descheduled. Every measured command after expiry must be zero.
+                def post_expiry():
+                    return [r for r in self.timeline if r[2]==plan_id and r[3]>=cutoff]
+                self.until(lambda:len({r[1] for r in post_expiry()})==self.count, 1.5)
+                if any(any(abs(v)>1e-9 for v in r[5]) for r in post_expiry()):
+                    raise AssertionError(dict(fault=name, cutoff_ros=cutoff, controller=post_expiry()))
+                self.until(lambda:all(abs(v)<=1e-9 for c in self.commands.values() for v in c),.25)
             finally:
                 self.wrong_permit=None
                 coordinator.send_signal(signal.SIGCONT)
         if name == "stale_feedback":
             self.disabled = {self.count - 1}
-        expected = "COMPLETE" if name in ("success","repeat_ack","ack_before_envelope") else "STOPPED"
+        expected = "COMPLETE" if name in ("success","repeat_ack","ack_before_envelope","clock_delivery_order") else "STOPPED"
         self.until(lambda: any(e["plan_id"] == plan_id and e["phase"] == expected for _, e in self.events), 12.)
         self.pump(.3)
         final = next(e for _, e in self.events if e["plan_id"] == plan_id and e["phase"] == expected)
         release = [t for t,e in self.events if e["plan_id"] == plan_id and e["phase"] == "AUTHORIZED"]
-        if name == "missing_member" and any(allow for _, i, allow in self.permits if i==plan_id):
+        if name in ("missing_member","clock_not_synchronized","forged_source_epoch") and any(allow for _, i, allow in self.permits if i==plan_id):
             raise AssertionError("partial group received motion permission")
         if any(abs(v) > 1e-9 for command in self.commands.values() for v in command):
             raise AssertionError("nonzero group output after stop")
@@ -316,7 +358,7 @@ class Run(Node):
         self.modes=dict.fromkeys(self.modes,0)
         return {"task": self.count, "profile":self.profile, "fault": name, "id": plan_id, "phase": expected, "reason": final["reason"],
                 "release_s": release[0]-self.plan_received_wall if release else None,
-                "stale_feedback_moving_commands":self.unsafe_after_stale,
+                "stale_feedback_moving_commands":self.unsafe_after_stale, "publication_clock_gap_s":clock_gap,
                 "nonfinite_commands":self.nonfinite_commands,
                 "tracker_reasons":sorted(self.check_reasons.get(plan_id,()))}
 
@@ -346,6 +388,11 @@ def main():
         node.repeat_ack=True
     if args.cases==["ack_before_envelope"]:
         node.ack_before_envelope=True
+    if args.cases in (["clock_delivery_order"],["clock_not_synchronized"]):
+        node.group_clock_lag=True
+        node.clock_fixture=True
+    if args.cases==["forged_source_epoch"]:
+        node.forge_source=True
     if "clock_rollback" in args.cases:
         if args.cases!=["clock_rollback"]:
             parser.error("clock rollback runs on a dedicated simulated clock")

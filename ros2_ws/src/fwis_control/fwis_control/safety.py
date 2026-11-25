@@ -46,7 +46,7 @@ class SafetyFilter:
         self.previous = ZERO
         self.mode = None
 
-    def apply(self, raw, mode, dt, direction=0.0, oblique_direction=None):
+    def apply(self, raw, mode, dt, direction=0.0, oblique_direction=None, continuous_oblique=False):
         if (not all(math.isfinite(value) for value in (*raw.values(), dt)) or dt <= 0
                 or (oblique_direction is not None and not math.isfinite(oblique_direction))):
             self.reset()
@@ -106,7 +106,8 @@ class SafetyFilter:
                 vy = math.copysign(self.limits.parallel_min_vy, branch)
                 vx = clamp(vx, math.sqrt(self.limits.max_speed ** 2 - vy ** 2))
                 reasons.append("oblique_reference_branch" if crosses_reference else "oblique_encoding")
-            if prev.vy * vy < 0:
+            forward_progress = prev.vx * vx > 0 and prev.vx * vx + prev.vy * vy > 0
+            if prev.vy * vy < 0 and not (continuous_oblique and forward_progress):
                 vx = vy = 0.0
                 reasons.append("oblique_reversal_through_zero")
 
@@ -120,6 +121,14 @@ class SafetyFilter:
         if angular_fraction < 1:
             reasons.append("angular_acceleration")
         step = min(1., linear_fraction, angular_fraction)
-        self.previous = desired if step == 1. else prev.interpolate(desired, step)
+        command = desired if step == 1. else prev.interpolate(desired, step)
+        if (continuous_oblique and mode == Mode.OBLIQUE and prev.vy * vy < 0
+                and command.vx and abs(command.vy) < self.limits.parallel_min_vy):
+            encoding = min(self.limits.parallel_min_vy, abs(prev.vy), abs(vy))
+            lateral = math.copysign(encoding, vy)
+            if math.hypot(command.vx - prev.vx, lateral - prev.vy) > self.limits.max_accel * dt:
+                lateral = math.copysign(encoding, prev.vy)
+            command = Twist(command.vx, lateral, command.wz)
+        self.previous = command
         self.mode = mode
         return Filtered(self.previous, tuple(reasons))

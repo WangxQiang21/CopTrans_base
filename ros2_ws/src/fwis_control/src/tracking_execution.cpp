@@ -162,7 +162,7 @@ Output Execution::tick(double now, const std::optional<Observation> & obs) noexc
   }
   const auto raw = controller_.update(reference, *obs, dt, direction_);
   const auto result =
-    filter_.apply(raw, reference.mode, dt, direction_, reference.twist.vy);
+    filter_.apply(raw, reference.mode, dt, direction_, reference.twist.vy, bool(plan_->model_sample));
   if (result.reasons.count && result.reasons.codes[0] == "nonfinite_or_invalid_interval") {
     return abort("invalid_controller_output", reference);
   }

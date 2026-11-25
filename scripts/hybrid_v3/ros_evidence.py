@@ -48,7 +48,7 @@ def main():
             if any(not math.isfinite(x) or x<=0 for x in delays[key]):
                 raise ValueError(f"Invalid delivery timing at {key}")
             seen={}
-            for suite in ("faults","expired","rollback","repeat_ack","ack_before_envelope"):
+            for suite in ("faults","expired","rollback","repeat_ack","ack_before_envelope","clock_delivery_order","clock_not_synchronized","forged_source_epoch"):
                 path=args.run/f"{count}_{profile}_{suite}.json"
                 cases=rows(path,count,profile)
                 raw[path.name]=sha256(path.read_bytes()).hexdigest()
@@ -56,9 +56,9 @@ def main():
                     if r["fault"] in seen:
                         raise ValueError(f"Duplicate fault {r['fault']} at {key}")
                     seen[r["fault"]]=r
-            success={"success","repeat_ack","ack_before_envelope"}
+            success={"success","repeat_ack","ack_before_envelope","clock_delivery_order"}
             stopped={"tamper","expired","missing_member","stale_feedback","wrong_mode","map_replaced","permit_loss",
-                     "wrong_epoch","future_permit","revoked_permit","nan_feedback","clock_rollback"}
+                     "wrong_epoch","future_permit","revoked_permit","nan_feedback","clock_rollback","clock_not_synchronized","forged_source_epoch"}
             if set(seen)!=success|stopped or any(seen[k]["phase"]!="COMPLETE" for k in success):
                 raise ValueError(f"Missing successful controls or fault cases at {key}")
             if any(seen[k]["phase"]!="STOPPED" for k in stopped):
@@ -69,13 +69,20 @@ def main():
                 raise ValueError(f"Released without fresh plan and all members at {key}")
             if seen["expired"]["reason"]!="invalid future epoch" or seen["clock_rollback"]["reason"]!="clock_rollback":
                 raise ValueError(f"Clock contract was not exercised at {key}")
+            if (seen["clock_delivery_order"]["publication_clock_gap_s"]<=.1 or
+                    seen["clock_not_synchronized"]["release_s"] is not None or
+                    seen["clock_not_synchronized"]["reason"]!="publication_clock_not_synchronized" or
+                    seen["forged_source_epoch"]["release_s"] is not None or
+                    seen["forged_source_epoch"]["reason"]!="invalid future epoch"):
+                raise ValueError(f"Missing independent publication/receiver clock checks at {key}")
             for name in ("wrong_epoch","future_permit","revoked_permit","permit_loss"):
                 if "formation_permit_missing_or_revoked" not in seen[name]["tracker_reasons"]:
                     raise ValueError(f"{key} did not exercise permit rejection on {name}")
             if "missing_stale_or_invalid_feedback" not in seen["nan_feedback"]["tracker_reasons"]:
                 raise ValueError(f"{key} did not exercise nonfinite feedback")
             if profile=="standard": groups[task]=list(seen.values())
-            faults[key]={name:{"outcome":r["phase"],"reason":r["reason"],"tracker_reasons":r["tracker_reasons"]}
+            faults[key]={name:{"outcome":r["phase"],"reason":r["reason"],"tracker_reasons":r["tracker_reasons"],
+                               "publication_clock_gap_s":r.get("publication_clock_gap_s",0.)}
                          for name,r in seen.items()}
     parity={}
     for algo in ("nonlinear","pid"):

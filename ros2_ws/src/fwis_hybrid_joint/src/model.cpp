@@ -68,10 +68,16 @@ Sample evaluate_phase(const Request& r,const Phase& p,double t) {
   return sample;
 }
 Sample evaluate(const Request& r,const Plan& p,double t) {
+  if (!std::isfinite(t) || p.phases.empty())
+    throw std::invalid_argument("invalid hybrid plan sample");
+  double start=0.;
   for (const auto& phase:p.phases) {
-    if(t<phase.duration || &phase==&p.phases.back()) return evaluate_phase(r,phase,t);
-    t-=phase.duration;
+    const double end=start+phase.duration;
+    if(t<end) return evaluate_phase(r,phase,t-start);
+    start=end;
   }
-  throw std::invalid_argument("empty hybrid plan");
+  // duration() sums the same boundaries. Subtracting several non-integral
+  // phase durations from their sum can leave a moving sample just before rest.
+  return evaluate_phase(r,p.phases.back(),p.phases.back().duration);
 }
 }

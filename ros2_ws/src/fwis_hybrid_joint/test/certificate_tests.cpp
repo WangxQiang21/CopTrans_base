@@ -50,6 +50,28 @@ TEST(HybridCertificate, StraightSingleAndFormation) {
     EXPECT_TRUE(res.executable)<<res.reason;
   }
 }
+TEST(HybridCertificate, SampleAtAccumulatedPhaseBoundaryIsAtExactRest) {
+  // Four phase durations from Gazebo 20261125_155710_3a0ff9 (S -> A).
+  const double times[]={2.893309979854491,2.3121077424637013,2.8933099814015346,9.075133095743006};
+  h::Plan plan;
+  for(double t:times) plan.phases.push_back(straight(t));
+  plan.phases.back().pieces.front()={
+    {8.,8.947157691817644,9.295622332951677,9.704344443161169,10.050228764131498,11.},
+    {6.,6.047397388889517,6.064835151791835,6.023265256995866,6.012038651933857,6.},
+    {0.,0.,0.,0.,0.,0.}};
+  for(bool f:{false,true}) {
+    const auto r=request(f);
+    for(double t:{h::duration(plan),h::duration(plan)+1.}) {
+      const auto s=h::evaluate(r,plan,t);
+      for(std::size_t i=0;i<r.vehicles.size();++i) {
+        EXPECT_EQ(s.bodies[i].vx,0.);
+        EXPECT_EQ(s.bodies[i].vy,0.);
+        EXPECT_EQ(s.bodies[i].wz,0.);
+      }
+    }
+    EXPECT_THROW(h::evaluate(r,plan,std::numeric_limits<double>::quiet_NaN()),std::invalid_argument);
+  }
+}
 TEST(HybridCertificate, ContinuousCurvatureAndIndependentFormationYaw) {
   for(bool f:{false,true}) {
     auto r=request(f);

@@ -165,7 +165,7 @@ void SafetyFilter::reset() noexcept {previous_ = {};}
 
 SafetyFilter::Result SafetyFilter::apply(
   Twist raw, Mode mode, double dt, double direction,
-  std::optional<double> oblique_reference_vy) noexcept
+  std::optional<double> oblique_reference_vy, bool continuous_oblique) noexcept
 {
   Reasons reasons;
   if (!raw.finite() || !std::isfinite(dt) || dt <= 0. ||
@@ -240,7 +240,11 @@ SafetyFilter::Result SafetyFilter::apply(
       vx = clamp(vx, std::sqrt(limits_.max_speed * limits_.max_speed - vy * vy));
       reasons.add(crosses_reference ? "oblique_reference_branch" : "oblique_encoding");
     }
-    if (previous_.vy * vy < 0.) {
+    // On a certified curve, a steering angle may pass through zero while
+    // longitudinal travel continues. A true reversal still brakes to rest.
+    const bool forward_progress = previous_.vx * vx > 0. &&
+      previous_.vx * vx + previous_.vy * vy > 0.;
+    if (previous_.vy * vy < 0. && !(continuous_oblique && forward_progress)) {
       vx = 0.;
       vy = 0.;
       reasons.add("oblique_reversal_through_zero");
@@ -261,7 +265,18 @@ SafetyFilter::Result SafetyFilter::apply(
   }
   const double step = std::min({1., linear_fraction, angular_fraction});
   const Twist desired{vx, vy, wz};
-  previous_ = step == 1. ? desired : previous_.interpolate(desired, step);
+  Twist next = step == 1. ? desired : previous_.interpolate(desired, step);
+  if (continuous_oblique && mode == Mode::Oblique && previous_.vy * vy < 0. &&
+    next.vx != 0. && std::abs(next.vy) < limits_.parallel_min_vy)
+  {
+    // An axial Twist would passively select Ackermann. Choose the new side
+    // only if its encoded speed is reachable in this actual control period.
+    const double encoding = std::min({limits_.parallel_min_vy, std::abs(previous_.vy), std::abs(vy)});
+    const double target_y = std::copysign(encoding, vy);
+    next.vy = std::hypot(next.vx - previous_.vx, target_y - previous_.vy) <= limits_.max_accel * dt ?
+      target_y : std::copysign(encoding, previous_.vy);
+  }
+  previous_ = next;
   mode_ = mode;
   return {previous_, reasons};
 }

@@ -135,3 +135,40 @@ def test_cpp_ticks_match_python_oracle(algorithm):
     assert {"missing_stale_or_invalid_feedback", "control_clock_jump_or_overrun",
             "unexpected_feedback_mode", "mode_confirmation_timeout",
             "oblique_reference_branch"} <= reasons
+
+
+@pytest.mark.parametrize("direction", [-1., 1.])
+def test_continuous_oblique_crosses_axial_without_a_passive_mode_change(direction):
+    from fwis_control.safety import Limits, SafetyFilter
+    binary = os.environ.get("TRACKING_CPP_REPLAY")
+    if not binary:
+        pytest.skip("CMake supplies the C++ replay executable")
+    limits = Limits()
+    oracle = SafetyFilter(limits)
+    vx = direction*.20
+    initial = [(.04, vx, .018, .018)]*25
+    # The first limited step lands exactly on the encoding boundary.
+    crossing = [(.04, vx, -.018, -.018)]*8
+    axial = [(.04, vx, 0., 0.)]*4
+    reverse = [(.04, -vx, .018, .018)]*40
+    ticks = initial + crossing + axial + reverse
+    inputs = "\n".join(" ".join(map(str, row)) for row in ticks)
+    actual = subprocess.check_output([binary, "continuous-oblique"], input=inputs, text=True)
+    previous = (0., 0., 0.)
+    after = []
+    for index, (row, line) in enumerate(zip(ticks, actual.splitlines(), strict=True)):
+        dt, x, y, ref = row
+        cmd = tuple(map(float, line.split()))
+        expected = oracle.apply(Twist(x, y, 0.), Mode.OBLIQUE, dt,
+                                oblique_direction=ref, continuous_oblique=True).command
+        assert cmd == pytest.approx((expected.vx, expected.vy, expected.wz), abs=1e-12, rel=0.)
+        assert math.dist(previous, cmd) <= limits.max_accel*dt + 1e-12
+        assert math.hypot(*cmd[:2]) <= limits.max_speed + 1e-12
+        assert cmd[2] == 0. and (cmd[1] != 0. or cmd == (0., 0., 0.))
+        if len(initial) <= index < len(ticks) - len(reverse):
+            assert cmd[0] == vx
+        if index >= len(ticks) - len(reverse):
+            after.append(cmd)
+        previous = cmd
+    assert (0., 0., 0.) in after
+    assert after[-1][0] == -vx

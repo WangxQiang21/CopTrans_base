@@ -2,6 +2,8 @@
 import re
 from pathlib import Path
 
+import subprocess
+
 from qualify import ROOT, sha, load
 
 
@@ -35,11 +37,27 @@ def build_manifest(batch, witnesses, binary_dir, ctest_dir):
                 binary_commit=(ctest_dir/"source_commit").read_text().strip() if (ctest_dir/"source_commit").is_file() else None)
 
 
+def system_hashes(commit):
+    if not commit:
+        return {}
+    scopes=("ros2_ws/src/fwis_hybrid_joint_ros","ros2_ws/src/fwis_v3_msgs/msg","ros2_ws/src/fwis_control/src",
+            "ros2_ws/src/fwis_control/include","ros2_ws/src/fwis_bringup/launch/test.launch.py",
+            "ros2_ws/src/fwis_bringup/launch/plan.launch.py")
+    paths=subprocess.check_output(["git","ls-tree","-r","--name-only",commit,"--",*scopes],cwd=ROOT,text=True).splitlines()
+    from hashlib import sha256
+    return {name:sha256(subprocess.check_output(["git","show",commit+":"+name],cwd=ROOT)).hexdigest() for name in paths
+            if "/test/" not in name and not name.endswith((".md",".rst"))}
+
+
 def audit_rows(records,witnesses,manifest_files,source):
     manifests={k:{r["id"]:r for r in (load(v) or {}).get("cases",[])} for k,v in manifest_files.items()}
     reasons=[]
     if not source or not source.get("verified_at_collection") or not source.get("raw_sha256") or not source.get("binary_commit"):
         reasons.append("missing_source_or_raw_identity")
+    sources=(source or {}).get("source_sha256",{}) | (source or {}).get("system_source_sha256",{})
+    for name,value in sources.items():
+        if not (ROOT/name).is_file() or sha(ROOT/name)!=value:
+            reasons.append("source/"+name)
     allowed=set((source or {}).get("binary_sha256",{}).values())
     seen=set()
     for row in records:

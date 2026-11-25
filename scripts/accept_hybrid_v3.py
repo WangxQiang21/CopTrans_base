@@ -16,7 +16,7 @@ sys.path.insert(0,str(Path(__file__).resolve().parent/"hybrid_v3"))
 from qualify import (LOCAL,NUMERIC,POLICY,PROFILES,REGISTRY,REPORT,ROOT,SPEC,TASKS,closed_rows,
                      collect,digest,lines,load,quant,setup_metrics,sha,xml_cases)
 from cases import indices
-from evidence_manifest import build_manifest, audit_rows
+from evidence_manifest import build_manifest, audit_rows, system_hashes
 
 
 def write(path,obj):
@@ -27,9 +27,10 @@ def main():
     ap=argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--batch",type=Path,default=LOCAL/"release_c1")
     ap.add_argument("--control",type=Path,default=LOCAL/"control_605_c1")
-    ap.add_argument("--gazebo",type=Path,default=LOCAL/"gazebo_release_c1")
+    ap.add_argument("--gazebo",type=Path,default=LOCAL/"gazebo_release_c2")
     ap.add_argument("--ros",type=Path,default=LOCAL/"group_c1")
     ap.add_argument("--witness",type=Path,default=LOCAL/"witness_final_c1")
+    ap.add_argument("--binary",type=Path,default=LOCAL/"candidate3")
     ap.add_argument("--ctest",type=Path,default=LOCAL/"release_c1"/"ctest")
     ap.add_argument("--report",type=Path,default=REPORT)
     ap.add_argument("--compact",action="store_true",help="re-evaluate from the checked-in measurements")
@@ -60,7 +61,8 @@ def main():
                   asan_smoke=load(NUMERIC/"sanitizer_summary.json"),native_faults=load(archive/"faults.json"),
                   admission=load(archive/"delivery.json"),cases=stats,witness=witness,gazebo=closed_rows(args.gazebo),
                   inputs_sha256={str(p.relative_to(ROOT)):sha(p) for p in [SPEC,REGISTRY,casefile,REPORT/"case_manifest_baseline.json"] if p.exists()},
-                  default_runs=load(args.batch/"default_runs.json"),source_manifest=build_manifest(args.batch,args.witness,LOCAL/"candidate3",args.ctest))
+                  default_runs=load(args.batch/"default_runs.json"),source_manifest=build_manifest(args.batch,args.witness,args.binary,args.ctest))
+        data["source_manifest"]["system_source_sha256"]=system_hashes(data["source_manifest"]["binary_commit"])
         write(out/"measurements.json",data)
     if data is None:raise SystemExit("missing measurements")
     if not args.compact:
@@ -84,7 +86,7 @@ def main():
     record("NATIVE_RUNTIME",bool(native),native.get("pybind_disabled") and native.get("forbidden_loads")==[]
            and len(native.get("traced_execs",[]))==1 and native.get("certified")==[True,True]
            and native.get("backend")==["single_hybrid_joint_cpp","formation_hybrid_joint_cpp"]
-           and all((data["group_fixtures"].get(t) or [{}])[0].get("phase")=="COMPLETE" for t in TASKS),native)
+           and all(any(r.get("fault")=="success" and r.get("phase")=="COMPLETE" for r in (data["group_fixtures"].get(t) or [])) for t in TASKS),native)
     tests=data["certificate_tests"]
     record("COLLISION_DYNAMICS",bool(c) and bool(tests),c.get("random_collision_cases",0)>=20000 and
            c.get("false_negatives",1)==0 and all(tests.get(k) for k in (
@@ -208,13 +210,19 @@ def main():
                 met=r["metrics"] or {};vs=met.get("vehicles",{})
                 fault=r["fault"] or {}
                 if r["family"]=="fault":
-                    good=(r["status"]=="stopped" and fault.get("triggered") and fault.get("moved")==ids and
+                    good=(r["status"]=="stopped" and r["reason"]=="external_stop" and fault.get("triggered") and fault.get("moved")==ids and
                           len(fault.get("first_zero_after_s",{}))==count and not any(fault.get("last",{}).values()))
                 else:
-                    good=(r["status"]=="passed" and r["plan_received"] and r["admitted"]==r["complete"]==ids and
-                          bool(r["admissions"]) and len(set(tuple(k) for k in (r["routed_plan_keys"] or {}).values()))==1 and
+                    keys=set(tuple(k) for k in (r["routed_plan_keys"] or {}).values())
+                    authentic=any(a.get("model_sha256")==r["model_sha256"] and (a.get("plan_id"),a.get("start_ns")) in keys
+                                  for a in r["admissions"])
+                    group_geometry=(t=="single" or
+                                    met.get("min_vehicle_footprint_gap_m",-1)>0 and met.get("max_mount_error_m",1)<=.10 and
+                                    met.get("terminal_formation_position_error_m",1)<=.10 and met.get("terminal_formation_yaw_error_deg",180)<=math.degrees(.10))
+                    good=(r["status"]=="passed" and r["tracking_implementation"]=="cpp" and r["planner_source"]=="hybrid_joint" and authentic and r["plan_received"] and r["admitted"]==r["complete"]==ids and
+                          bool(r["admissions"]) and len(keys)==1 and
                           len(vs)==count and all(v["terminal_position_error_m"]<=.10 and v["terminal_yaw_error_deg"]<=math.degrees(.1) for v in vs.values()) and
-                          (t=="single" or met.get("max_mount_error_m",1)<=.10) and bool(met.get("min_environment_clearance")) and
+                          group_geometry and bool(met.get("min_environment_clearance")) and
                           all(v["m"]>0 for v in met["min_environment_clearance"].values()))
                 if r["family"] in ("multibend","necessary_aux"):
                     good=good and r.get("scene_measurements",{}).get("passed") and bool(r.get("scene_proof"))

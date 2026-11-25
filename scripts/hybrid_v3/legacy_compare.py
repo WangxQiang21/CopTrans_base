@@ -6,6 +6,7 @@ published. The formation planner receives the same request in process.
 """
 import argparse
 import fcntl
+import hashlib
 import json
 import math
 import os
@@ -97,7 +98,9 @@ class PreviousPortfolio:
         self.log=(path/"planner.log").open("a")
         self.process=subprocess.Popen(["ros2","launch","fwis_bringup","plan.launch.py","backend:=single_state_lattice",
             "rviz:=false","transport_ui:=false","overrides_file:="+str(p)],stdout=self.log,stderr=self.log,start_new_session=True)
-        self.wait(lambda:self.map.get_subscription_count()>=2 and self.goal.get_subscription_count()>=1,20)
+        if not self.wait(lambda:self.map.get_subscription_count()>=2 and self.goal.get_subscription_count()>=1,20):
+            self.close()
+            raise RuntimeError("legacy planner topics were not discovered")
     def wait(self,done,timeout):
         end=time.monotonic()+timeout
         while not done() and time.monotonic()<end and self.process.poll() is None:
@@ -142,7 +145,12 @@ class PreviousPortfolio:
                 if math.hypot(x-p.x,y-p.y)>.02 or abs(math.remainder(th-p.theta,2*math.pi))>math.pi/180:
                     return dict(out,reason="projection endpoint disagrees with request")
             last=pts[-1].time_from_start
-            out.update(solved=True,modes=sorted({"AOS"[p.mode] for p in pts if abs(p.v)>1e-7}),
+            moving={"AOS"[p.mode] for p in pts if abs(p.v)>1e-7}
+            # TimedPoint.v is linear; Spin samples explicitly carry v=0.
+            for previous, point in zip(pts,pts[1:]):
+                if point.mode==2 and abs(math.remainder(point.center_pose.theta-previous.center_pose.theta,2*math.pi))>1e-10:
+                    moving.add("S")
+            out.update(solved=True,modes=sorted(moving),spin_measurement="projected_yaw_change",
                 duration_s=last.sec+last.nanosec/1e9,source=re.search(r"source=(\S+)",status).group(1))
         return out
     def close(self):
@@ -173,12 +181,13 @@ def main():
     if a.task=="single" and not (os.getenv("ROS_LOCALHOST_ONLY")=="1" and os.getenv("ROS_DOMAIN_ID")):
         ap.error("single comparison requires a private ROS_DOMAIN_ID and ROS_LOCALHOST_ONLY=1")
     manifest=a.manifest
-    if a.split=="holdout" and not manifest.exists(): raise SystemExit("freeze the holdout manifest first")
+    if not manifest.is_file(): raise SystemExit("freeze the dataset manifest first")
     doc=json.loads(manifest.read_text()) if manifest.exists() else {}
     if a.split=="holdout" and doc.get("cohort")!=a.cohort:
         raise SystemExit("Wrong frozen manifest cohort")
     frozen={x["id"]:x["request"] for x in doc.get("cases",[])}
     source_sha=subprocess.check_output(["git","rev-parse","HEAD"],cwd=ROOT,text=True).strip()
+    runner_sha=hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
     service=None
     try:
         with a.output.open("a+" if a.resume else "x+") as out:
@@ -189,7 +198,9 @@ def main():
                 i=int(prior["case_id"].rsplit("/",1)[1])
                 actual,_,_=make(a.split,i,a.task,a.profile)
                 if (prior["profile"]!=a.profile or prior["task"]!=a.task or prior.get("cohort",0)!=a.cohort or
-                    prior["request_hash"]!=digest(actual)):
+                    prior["operation"]!=("timing" if a.timing else "solve") or
+                    prior["case_id"]!=f"{a.split}/{a.task}/{i:03}" or
+                    frozen.get(prior["case_id"])!=prior["request_hash"] or prior["request_hash"]!=digest(actual)):
                     raise ValueError("refusing to combine different legacy cohorts or configurations")
                 key=(i,prior.get("repeat",0))
                 if key in completed:raise ValueError("duplicate legacy result")
@@ -198,7 +209,7 @@ def main():
                 if (i,repeat) in completed:continue
                 r,_,meta=make(a.split,i,a.task,a.profile)
                 case_id=f"{a.split}/{a.task}/{i:03}"
-                if a.split=="holdout" and frozen.get(case_id)!=digest(r):
+                if frozen.get(case_id)!=digest(r):
                     raise RuntimeError("frozen request mismatch")
                 if a.task=="single" and service is None:
                     service=PreviousPortfolio(a.output.with_suffix(".ros"),r,budget)
@@ -209,7 +220,7 @@ def main():
                 result["certified_in_budget"]=bool(result["solved"] and result["within_budget"]
                     and result.get("duration_s",math.inf)<=r["task_duration_cap"])
                 row=dict(case_id=case_id,cohort=a.cohort,task=a.task,profile=a.profile,budget_s=budget,source_sha=source_sha,
-                    repeat=repeat,operation="timing" if a.timing else "solve",cpus=sorted(os.sched_getaffinity(0)),
+                    repeat=repeat,operation="timing" if a.timing else "solve",runner_sha256=runner_sha,cpus=sorted(os.sched_getaffinity(0)),
                     backend="single_state_lattice_with_continuous_portfolio" if service else "uniform_v02_optimized",
                     request_hash=digest(r),map_hash=digest(r["grid"]),limits_hash=digest(r["limits"]),**meta,evidence=result)
                 out.write(packed(row).decode()+"\n");out.flush()

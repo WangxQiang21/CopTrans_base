@@ -14,7 +14,7 @@ import xml.etree.ElementTree as ET
 import yaml
 from cases import LOCAL, REPORT, ROOT, MASTER_SEEDS, POLICY, GEOMETRY, REGISTRY, SPEC, digest
 sys.path.insert(0,str(ROOT/"ros2_ws/src/fwis_control/test"))
-from analyze_control_timing import deadline_info, pair_commands
+from analyze_control_timing import deadline_info, pair_commands, plant_gaps
 
 NUMERIC=LOCAL.parent/"hybrid_v3_numeric"
 TASKS=("single","formation")
@@ -89,14 +89,30 @@ def clock_metrics(folder):
         with gzip.open(plant,"rt") as h:prows=list(csv.DictReader(h))
         # Use only uniquely attributable commands to measure DDS and plant delivery.
         applied=[r for r in prows if r.get("event")=="command"]
-        pairs,_=pair_commands(tracking,applied)
+        all_timed=[r for r in rows if r.get("control_timing") and "command" in r]
+        pairs,unmatched=pair_commands(all_timed,applied)
+        tracked={r["control_timing"]["command_publish_steady_ns"] for r in tracking}
+        pairs=[(start,row) for start,row in pairs if start in tracked]
+        odom_gaps,physics=plant_gaps(prows)
+        consumed=[(int(row["consume_steady_ns"])-start)*1e-6 for start,row in pairs]
+        callback_ms=[(t["callback_ended_steady_ns"]-t["callback_started_steady_ns"])*1e-6 for t in times]
+        publish_ms=[(t["command_published_steady_ns"]-t["command_publish_steady_ns"])*1e-6 for t in times]
+        begin_ns=times[0]["callback_started_steady_ns"];end_ns=times[-1]["callback_started_steady_ns"]
+        gaps=[r for r in physics if begin_ns<=r["begin_steady_ns"]<=end_ns]
+        wall_gaps=[r for r in odom_gaps if begin_ns<=r["begin_steady_ns"]<=end_ns]
+        inter_rtf=[(b["timer_called_clock_ns"]-a["timer_called_clock_ns"])/(b["callback_started_steady_ns"]-a["callback_started_steady_ns"])
+                   for a,b in zip(times,times[1:]) if (b["callback_started_steady_ns"]-a["callback_started_steady_ns"])>=40000000]
         beg,end=times[0],times[-1]
         wall=(end["callback_started_steady_ns"]-beg["callback_started_steady_ns"])*1e-9
         items.append(dict(ticks=len(tracking),stale_motion=stale,ros_misses=sum(sum(deadline_info(t)[1:]) for t in times),
                           wall_s=wall,real_time_factor=((end["timer_called_clock_ns"]-beg["timer_called_clock_ns"])*1e-9/wall if wall>0 else None),
-                          max_callback_ms=max(t["callback_ended_steady_ns"]-t["callback_started_steady_ns"] for t in times)*1e-6,
+                          max_callback_ms=max(callback_ms),p99_callback_ms=quant(callback_ms,.99),
+                          max_publish_ms=max(publish_ms),p99_publish_ms=quant(publish_ms,.99),
+                          min_intertick_rtf=min(inter_rtf,default=None),observed_physics_gaps=len(gaps),observed_odom_gaps=len(wall_gaps),
+                          max_physics_gap_ms=max((r["wall_ns"]*1e-6 for r in gaps),default=None),
                           max_wall_gap_ms=max([0]+[(b["callback_started_steady_ns"]-a["callback_started_steady_ns"])*1e-6 for a,b in zip(times,times[1:])]),
-                          matched_commands=len(pairs),max_consumption_ms=max([0]+[(int(row["consume_steady_ns"])-start)*1e-6 for start,row in pairs]),
+                          matched_commands=len(pairs),unmatched_commands=dict(unmatched),max_consumption_ms=max(consumed,default=None),
+                          p95_consumption_ms=quant(consumed,.95),p99_consumption_ms=quant(consumed,.99),
                           max_odom_dds_ms=max((t["odom_received_realtime_ns"]-t["odom_source_realtime_ns"])*1e-6 for t in times)))
     return items
 
