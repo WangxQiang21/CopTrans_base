@@ -28,10 +28,10 @@ struct Run {
 extern "C" int stop_nlp(void *r){return static_cast<Run*>(r)->stop();}
 using Route=std::vector<Point>;
 using Sequence=std::vector<Mode>;
-struct Seed { Sequence seq; int sign; Route route; std::string edit; int reverse_from{-1}; bool quintic{}, general{}, relaxed{}; int priority{8}; bool shortest_yaw{}, smooth_channel{}; std::vector<double> channel_yaw{}; };
+struct Seed { Sequence seq; int sign; Route route; std::string edit; int reverse_from{-1}; bool quintic{}, general{}, relaxed{}; int priority{8}; bool shortest_yaw{}, smooth_channel{}; std::vector<double> channel_yaw{}; bool curved_oblique{}; double switch_station{.5}; };
 // Occupancy A* only proposes continuous optimization starts. Full swept footprint
 // checks (including independent vehicle headings) are performed by the certifier.
-Route grid_seed(const Request& r,const Run& run,bool wide=false,int gear=1,std::vector<double>* yaw_seed=nullptr,const Route* fallback=nullptr) {
+Route grid_seed(const Request& r,const Run& run,bool wide=false,int gear=1,std::vector<double>* yaw_seed=nullptr,const Route* fallback=nullptr,bool oblique=false) {
   const auto& map=*r.grid;
   const int w=map.width(),h=map.height(); const double res=map.resolution();
   const auto org=map.origin();
@@ -128,7 +128,7 @@ Route grid_seed(const Request& r,const Run& run,bool wide=false,int gear=1,std::
         if(gap<-.025)continue;
         tangent_cost=.65/std::pow(.3+std::max(0.,gap),2);
         const double approach=2.5*r.limits.radius;
-        if(initial<approach){
+        if(!oblique && initial<approach){
           const double alignment=gear*(x*std::cos(r.start.heading[0])+y*std::sin(r.start.heading[0]))/std::hypot(x,y);
           tangent_cost+=5.*(1.-alignment)*std::pow(1.-initial/approach,2);
         }
@@ -150,7 +150,7 @@ Route grid_seed(const Request& r,const Run& run,bool wide=false,int gear=1,std::
     for(int v=parent[to];v!=from && v>=0;v=parent[v])rev.push_back(point(v));
     rev.push_back(start);std::reverse(rev.begin(),rev.end());
     std::vector<double> arc{0};for(std::size_t i=1;i<rev.size();++i)arc.push_back(arc.back()+distance(rev[i-1],rev[i]));
-    const int spans=std::clamp(int(std::ceil(arc.back()/4.0)),2,HJ_MAX_SPANS);
+    const int spans=std::clamp(int(std::ceil(arc.back()/(oblique?1.75:4.0))),2,HJ_MAX_SPANS);
     out.push_back(start);
     for(int i=1;i<spans;++i){
       double at=arc.back()*i/spans;
@@ -180,6 +180,75 @@ Point interpolate(const Route& r,double fraction){
     if(left<=d || k+1==r.size()){double f=d>0?std::min(1.,left/d):0;return {a.x+(b.x-a.x)*f,a.y+(b.y-a.y)*f};}
     left-=d;
   } return r.back();
+}
+
+// Cut a channel by arc length. Its interior nodes only initialize the NLP;
+// the shared mode-switch position is still one of its decision variables.
+Route channel_part(const Route& route,double a,double b){
+  const int spans=std::clamp(int(std::ceil((b-a)*(route.size()-1))),1,HJ_MAX_SPANS);
+  Route part;
+  for(int j=0;j<=spans;++j)part.push_back(interpolate(route,a+(b-a)*j/spans));
+  return part;
+}
+double central_tangent(const Route& route){
+  double heading=std::atan2(route[1].y-route[0].y,route[1].x-route[0].x),low=heading,high=heading;
+  for(std::size_t j=1;j<route.size();++j){
+    heading+=delta(heading,std::atan2(route[j].y-route[j-1].y,route[j].x-route[j-1].x));
+    low=std::min(low,heading);high=std::max(high,heading);
+  }
+  return .5*(low+high);
+}
+
+// Moving an interpolation knot keeps the entire clamped spline C4. The
+// local score steers only the initial geometry; admission always certifies
+// the original footprint and the continuous normal/steering dynamics.
+void shape_oblique_seed(const Request& r,Route& path,double entry,double exit,double yaw,
+                        const double* headings,const Run& run){
+  if(path.size()<3 || run.stop())return;
+  CollisionKernel map(*r.grid,r.vehicles,r.cargo);
+  const auto original=path;
+  const double cell=r.grid->resolution();
+  auto score=[&](const Route& proposal){
+    const auto curve=hybrid_channel::fit(proposal,entry,exit);
+    if(curve[0].empty())return std::numeric_limits<double>::infinity();
+    double penalty=0.;
+    for(std::size_t j=0;j<curve[0].size();++j){
+      const int steps=std::clamp(int(std::ceil(distance(proposal[j],proposal[j+1])/.10)),8,48);
+      for(int k=0;k<steps;++k){
+        const double t=(k+.5)/steps;
+        double xy[2]{};
+        for(int axis=0;axis<2;++axis){
+          auto v=curve[axis][j];
+          for(int d=5;d>0;--d)for(int i=0;i<d;++i)v[i]+=t*(v[i+1]-v[i]);
+          xy[axis]=v[0];
+        }
+        const fwis_planning_core::Pose2d pose{xy[0],xy[1],yaw};
+        if(map.check(pose,headings,r.vehicles.size(),2*cell).reason==CollisionReason::clear)continue;
+        penalty+=.15;
+        if(map.check(pose,headings,r.vehicles.size(),cell).reason!=CollisionReason::clear)penalty+=1.;
+        if(map.check(pose,headings,r.vehicles.size()).reason!=CollisionReason::clear)penalty+=10.;
+      }
+    }
+    for(std::size_t j=1;j+1<proposal.size();++j)penalty+=.05*std::pow(distance(original[j],proposal[j]),2);
+    return penalty;
+  };
+  double best=score(path);
+  if(best<1.)return;
+  for(double step:{std::max(.18,4*cell),std::max(.09,2*cell),cell}){
+    for(int sweep=0;sweep<3 && !run.stop();++sweep){
+      const double before=best;
+      for(std::size_t j=1;j+1<path.size() && !run.stop();++j){
+        const auto initial=path[j];auto picked=initial;
+        for(auto shift:{Point{step,0},Point{-step,0},Point{0,step},Point{0,-step}}){
+          path[j]={initial.x+shift.x,initial.y+shift.y};
+          const double current=score(path);
+          if(current+1.e-8<best){best=current;picked=path[j];}
+        }
+        path[j]=picked;
+      }
+      if(before-best<1.e-8 || best<.15)break;
+    }
+  }
 }
 
 // A clamped, uniform quintic B-spline initialized from the channel tangent.
@@ -239,13 +308,23 @@ HJProblem problem(const Request& r,const Seed& seed,const SolveOptions& options,
   for(int k=0;k<p.count;++k){
     auto& ph=p.phase[k];ph.mode=static_cast<int>(seed.seq[k]);ph.spans=1;
     std::fill_n(ph.gear,3,1);
-    const auto start=interpolate(seed.route,m/double(std::max(1,moving)));
-    const auto end=ph.mode==2?start:interpolate(seed.route,(m+1)/double(moving));
+    auto fraction=[&](int index){
+      if(seed.curved_oblique && moving==2 && index==1)return seed.switch_station;
+      return index/double(std::max(1,moving));
+    };
+    const auto start=interpolate(seed.route,fraction(m));
+    const auto end=ph.mode==2?start:interpolate(seed.route,fraction(m+1));
+    Route path{start,end};
+    if(ph.mode==0 && moving==1)path=seed.route;
+    if(seed.curved_oblique && ph.mode!=2)path=channel_part(seed.route,fraction(m),fraction(m+1));
     const int sign=seed.reverse_from>=0 && k>=seed.reverse_from?-seed.sign:seed.sign;
     const double dx=end.x-start.x,dy=end.y-start.y,length=std::hypot(dx,dy);
     const double travel=length>1e-9?std::atan2(dy,dx):p.start[2];
     double endpsi=psi;
-    if(ph.mode==0) endpsi=psi+delta(psi,p.goal[2])/(moving-m);
+    if(ph.mode==0){
+      const int remaining=seed.curved_oblique?std::count(seed.seq.begin()+k,seed.seq.end(),Mode::A):moving-m;
+      endpsi=psi+delta(psi,p.goal[2])/remaining;
+    }
     for(int i=0;i<p.bodies;++i){
       ph.h0[i]=headings[i];
       const int orientation=std::cos(headings[i]-ph.h0[0])>=0?1:-1;
@@ -253,19 +332,30 @@ HJProblem problem(const Request& r,const Seed& seed,const SolveOptions& options,
       if(ph.mode==0 && ph.gear[i]<0 && !r.allow_reverse)ph.gear[i]=1;
       if(ph.mode==2) {
         bool last=k+1==p.count;
-        const auto tangent = seed.route[1];
-        const double next=last?p.goal[3+i]:std::atan2(tangent.y-seed.route.front().y,tangent.x-seed.route.front().x)+(seed.sign<0?pi:0);
+        double next=p.goal[3+i];
+        if(!last){
+          if(seed.curved_oblique){
+            const auto after=channel_part(seed.route,fraction(m),fraction(m+1));
+            next=seed.seq[k+1]==Mode::O?central_tangent(after):
+              std::atan2(after[1].y-after[0].y,after[1].x-after[0].x);
+          }else{
+            next=std::atan2(seed.route[1].y-seed.route[0].y,seed.route[1].x-seed.route[0].x);
+          }
+          if(seed.sign<0)next+=pi;
+        }
         headings[i]+=delta(headings[i],next);
       } else if(ph.mode==0) {
         const double next=k+1==p.count && p.fixed_goal[i+1]?p.goal[3+i]:travel+(ph.gear[i]<0?pi:0);
         headings[i]+=delta(headings[i],next);
       }
+      if(seed.curved_oblique && ph.mode==1)
+        ph.gear[i]=std::cos(central_tangent(path)-headings[i])>=0?1:-1;
       ph.h1[i]=headings[i];
     }
     double spin=0;for(int i=0;i<p.bodies;++i)spin=std::max(spin,std::abs(ph.h1[i]-ph.h0[i]));
     double amount=ph.mode==2?spin:length;
-    if(moving==1 && seed.route.size()>2 && ph.mode==0){
-      amount=0;for(std::size_t j=1;j<seed.route.size();++j)amount+=distance(seed.route[j-1],seed.route[j]);
+    if(path.size()>2){
+      amount=0;for(std::size_t j=1;j<path.size();++j)amount+=distance(path[j-1],path[j]);
     }
     // A cubic velocity ramp reaching v requires t >= 1.5 v/a and
     // t >= sqrt(6 v/j). For ramp fraction f, a plateau covering arc L at v
@@ -283,7 +373,6 @@ HJProblem problem(const Request& r,const Seed& seed,const SolveOptions& options,
     ph.tau=std::clamp(1.15*std::max({.5,peak*amount/(ph.mode==2?l.spin_speed:l.speed),
       std::sqrt(acceleration_peak*amount/(ph.mode==2?l.spin_acceleration:l.acceleration)),
       std::cbrt(jerk_peak*amount/(ph.mode==2?l.spin_jerk:l.jerk))}),.05,p.duration_cap);
-    Route path{start,end};if(ph.mode==0 && moving==1)path=seed.route;
     ph.spans=path.size()-1;
     for(int j=0;j<ph.spans;++j){
       const auto a=path[j],b=path[j+1];double len=distance(a,b);
@@ -298,13 +387,22 @@ HJProblem problem(const Request& r,const Seed& seed,const SolveOptions& options,
           ph.coefficient[j][0][c]=(c<3?a.x:b.x)+w*std::cos(h);
           ph.coefficient[j][1][c]=(c<3?a.y:b.y)+w*std::sin(h);
         }
-        ph.coefficient[j][2][c]=psi+(endpsi-psi)*(j+t)/ph.spans;
+        // At a stopped A/O junction the adjacent translation chooses one
+        // chassis heading per mount. Give a short cargo-yaw adjustment zero
+        // station derivatives at the endpoints to preserve compatible tangents.
+        const double angle_fraction=seed.curved_oblique && ph.mode==0 && ph.spans==1?
+          (c<3?0.:1.):(j+t)/ph.spans;
+        ph.coefficient[j][2][c]=psi+(endpsi-psi)*angle_fraction;
       }
     }
-    if(seed.smooth_channel && ph.spans>1 && ph.mode==0) {
+    if((seed.smooth_channel || seed.curved_oblique) && ph.spans>1 && ph.mode!=2) {
       const auto a=path[ph.spans-1],b=path.back();
-      const double entry=ph.h0[0]+(sign<0?pi:0);
-      const double exit=p.fixed_goal[1]?ph.h1[0]+(sign<0?pi:0):std::atan2(b.y-a.y,b.x-a.x);
+      const double entry=ph.mode==1?std::atan2(path[1].y-path[0].y,path[1].x-path[0].x):ph.h0[0]+(sign<0?pi:0);
+      const double exit=ph.mode==0 && k+1==p.count && p.fixed_goal[1]?ph.h1[0]+(sign<0?pi:0):std::atan2(b.y-a.y,b.x-a.x);
+      if(seed.curved_oblique && ph.mode==1){
+        Run local{std::min(run.end,Clock::now()+std::chrono::milliseconds(180)),run.cancel};
+        shape_oblique_seed(r,path,entry,exit,psi,ph.h0,local);
+      }
       const auto smooth=hybrid_channel::fit(path,entry,exit);
       if(!smooth[0].empty())
         for(int axis=0;axis<2;++axis)for(int j=0;j<ph.spans;++j)
@@ -455,7 +553,7 @@ Plan expand(const Request& r,const HJProblem& p) {
 // the full shape-and-time NLP. A feasible spatial iterate survives subsequent
 // nonconvergence. Every tested duration uses the original continuous checker.
 std::optional<Plan> retime_channel(const Request& r,const HJProblem& graph,const Run& run,Clock::time_point& first_proof){
-  if(graph.count!=1 || graph.phase[0].mode!=0 || graph.phase[0].spans<2 || run.stop())return {};
+  if(graph.count!=1 || graph.phase[0].mode==2 || graph.phase[0].spans<2 || run.stop())return {};
   Plan plan=expand(r,graph);
   auto& motion=plan.phases.back();
   const double cap=r.task_duration_cap-(duration(plan)-motion.duration);
@@ -483,6 +581,30 @@ std::optional<Plan> retime_channel(const Request& r,const HJProblem& graph,const
   }
   motion.duration=hi;
   return plan;
+}
+// Retime a multi-phase seed without moving its channel or any mode boundary.
+// A failed spatial audit cannot be repaired by lengthening a phase. Keep its
+// witness for the normal full shape-and-time NLP in that case.
+std::optional<Plan> retime_mixed_channel(const Request& r,const HJProblem& graph,
+                                        const Run& run,Clock::time_point& first_proof,std::string& status){
+  auto plan=expand(r,graph);
+  for(int attempt=0;attempt<16 && !run.stop();++attempt){
+    const double total=duration(plan);
+    if(total>r.task_duration_cap){status="TASK_TIME_CONSTRAINT";return {};}
+    const auto audit=certify(r,plan,run.end,run.cancel);
+    status=audit.reason+"@"+std::to_string(audit.phase)+"/"+std::to_string(.5*(audit.u0+audit.u1));
+    if(audit.executable){first_proof=Clock::now();return plan;}
+    if(audit.phase>=plan.phases.size() || plan.phases[audit.phase].kind!=Kind::Motion)return {};
+    const auto& reason=audit.reason;
+    if(reason.find("SPEED")==std::string::npos && reason.find("ACCELERATION")==std::string::npos &&
+       reason.find("JERK")==std::string::npos && reason.find("RATE")==std::string::npos &&
+       reason.find("DYNAMIC")==std::string::npos)return {};
+    auto& tau=plan.phases[audit.phase].duration;
+    const double next=std::min(tau*1.22,r.task_duration_cap-total+tau);
+    if(next<=tau+1.e-8)return {};
+    tau=std::nextafter(next,0.);
+  }
+  return {};
 }
 // A pointwise determinant excludes only an exact endpoint. With a heading
 // tolerance the inactive tangent proof must hold over the whole neighborhood.
@@ -543,6 +665,7 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
   const double projection=(direct[1].x-direct[0].x)*std::cos(r.start.heading[0])+(direct[1].y-direct[0].y)*std::sin(r.start.heading[0]);
   const int sign=r.allow_reverse && projection<0?-1:1;
   std::vector<Seed> seeds;
+  bool sharp_departure=false;
   const auto rank_start=rank_at_boundary(r,r.start),rank_goal=rank_at_boundary(r,r.goal);
   const bool locked_start=rank_start.whole_neighborhood,locked_goal=rank_goal.whole_neighborhood;
   auto add=[&](Sequence seq,int gear,Route route,std::string edit,int reverse_from=-1){
@@ -558,6 +681,8 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
     if(opts.initial_sequence.empty())add({Mode::A},sign,direct,"CONTINUOUS_A");
     auto route=grid_seed(r,run);
     if(!route.empty()){
+      const double heading=std::atan2(route[1].y-route[0].y,route[1].x-route[0].x);
+      sharp_departure=std::abs(delta(r.start.heading[0]+(sign<0?pi:0),heading))>pi/2;
       double detour=0;
       for(auto p:route){double dx=direct[1].x-direct[0].x,dy=direct[1].y-direct[0].y;
         detour=std::max(detour,std::abs(dy*(p.x-direct[0].x)-dx*(p.y-direct[0].y))/std::max(1e-8,d));}
@@ -596,6 +721,30 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
           }
           auto base=std::find_if(seeds.begin(),seeds.end(),[](const Seed& v){return v.edit=="CHANGE_ROUTE_SEED";});
           seeds.insert(base,turns.begin(),turns.end());
+        }
+      }
+      if(route.size()>=3){
+        const double turn=std::abs(delta(r.start.reference.yaw,r.goal.reference.yaw));
+        double length=0.,reach=r.limits.radius;
+        for(std::size_t j=1;j<route.size();++j)length+=distance(route[j-1],route[j]);
+        for(const auto& v:r.vehicles)reach=std::max(reach,std::hypot(v[0],v[1])+r.limits.radius);
+        const double turn_station=std::clamp((reach*turn*1.5+r.limits.radius)/std::max(.01,length),.12,.45);
+        auto curve=[&](Sequence sequence,double station){
+          if(!opts.initial_sequence.empty() && !opts.enable_edits && opts.initial_sequence!=sequence)return;
+          Seed seed{sequence,sign,route,"CURVED_OBLIQUE_CHANNEL"};
+          seed.curved_oblique=true;seed.switch_station=station;
+          seeds.push_back(std::move(seed));
+        };
+        if(!r.goal.constrain_reference_yaw || turn<1.e-8 || r.vehicles.size()==1)curve({Mode::O},.5);
+        if(r.vehicles.size()==3 && turn>=1.e-8){
+          // If the route crosses the steering angle branch, a shared spin
+          // before O and another before A keep both stopped joins feasible.
+          curve({Mode::S,Mode::O,Mode::S,Mode::A},1.-turn_station);
+          curve({Mode::O,Mode::A},1.-turn_station);
+          curve({Mode::A,Mode::O},turn_station);
+          curve({Mode::O,Mode::S,Mode::A},1.-turn_station);
+          curve({Mode::S,Mode::O,Mode::A},1.-turn_station);
+          curve({Mode::S,Mode::A,Mode::O},turn_station);
         }
       }
       if(r.vehicles.size()==3 && (opts.initial_sequence.empty() || opts.enable_edits || opts.initial_sequence==Sequence{Mode::A})){
@@ -687,13 +836,35 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
     else if(seed.seq.size()==1)seed.priority=2;
     else seed.priority=8+int(seed.seq.size());
   }
+  std::array<std::optional<Route>,2> oblique_channels;
+  bool tried_oblique_departure=false;
   PolicyScore best{};bool unranked_incumbent=false;std::string why;
   for(std::size_t ordinal=0;ordinal<seeds.size();++ordinal) {
-    if (!result.plan && elapsed()>.58*std::chrono::duration<double>(deadline-begin).count()) {
+    if(!result.plan && sharp_departure && !tried_oblique_departure &&
+       elapsed()>.36*std::chrono::duration<double>(deadline-begin).count()){
+      // With the corridor behind the initial steering branch, permit a
+      // stationary alignment before O and independently at the join to A.
+      // Pure A retains its first attempts; do not repeatedly preempt it.
+      const auto curve=std::find_if(seeds.begin()+ordinal,seeds.end(),[](const Seed& s){
+        return s.curved_oblique && s.seq==Sequence{Mode::S,Mode::O,Mode::S,Mode::A};});
+      if(curve!=seeds.end())std::rotate(seeds.begin()+ordinal,curve,curve+1);
+      tried_oblique_departure=true;
+    }else if (!result.plan && elapsed()>.58*std::chrono::duration<double>(deadline-begin).count()) {
       auto repair=std::find_if(seeds.begin()+ordinal,seeds.end(),[](const Seed& s){return s.edit=="ALIGN_TO_CHANNEL";});
       if(repair!=seeds.end())std::rotate(seeds.begin()+ordinal,repair,repair+1);
     }
-    const Seed seed=seeds[ordinal]; // appending child proposals may reallocate the queue
+    Seed seed=seeds[ordinal]; // appending child proposals may reallocate the queue
+    if(seed.curved_oblique){
+      const auto first=std::find_if(seed.seq.begin(),seed.seq.end(),[](Mode mode){return mode!=Mode::S;});
+      const bool starts_oblique=*first==Mode::O;
+      auto& channel=oblique_channels[starts_oblique?0:1];
+      if(!channel){
+        auto fixed=r;
+        fixed.start.reference.yaw=fixed.goal.reference.yaw=starts_oblique?r.start.reference.yaw:r.goal.reference.yaw;
+        channel=grid_seed(fixed,run,true,seed.sign,nullptr,nullptr,true);
+      }
+      if(!channel->empty())seed.route=*channel;
+    }
     auto propose=[&](std::size_t at,bool accepted){
       if(!opts.enable_edits || seed.seq.empty() || run.stop())return;
       const auto edit_start=Clock::now();
@@ -769,14 +940,18 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
       Run trial{std::min(deadline,Clock::now()+std::chrono::duration_cast<Clock::duration>(std::chrono::duration<double>(slice))),cancel};
       if(improving_aux)trial.end=std::min(trial.end,improve_until);
       auto graph=problem(r,seed,opts,trial);
-      if(!result.plan && graph.count==1 && graph.phase[0].mode==0 && graph.phase[0].spans>1){
+      const bool continuous_channel=graph.count==1 && graph.phase[0].mode!=2 && graph.phase[0].spans>1;
+      if(!result.plan && (continuous_channel || seed.curved_oblique)){
         const auto before=Clock::now();
         Run timing{std::min(trial.end,before+std::chrono::milliseconds(300)),cancel};
         Clock::time_point first_proof;
         std::optional<Plan> timed;
-        try{timed=retime_channel(r,graph,timing,first_proof);}
+        std::string timing_status;
+        try{timed=continuous_channel?retime_channel(r,graph,timing,first_proof):
+              retime_mixed_channel(r,graph,timing,first_proof,timing_status);}
         catch(const std::domain_error&){/* The full NLP can repair a singular initial tangent. */}
         metrics.certify_s+=std::chrono::duration<double>(Clock::now()-before).count();
+        if(!timed && !timing_status.empty())result.trace.push_back(tag+":INITIAL_CHANNEL:"+timing_status);
         if(timed){
           result.first_certified_s=std::chrono::duration<double>(first_proof-begin).count();
           try{best=score_policy(r,*timed,deadline,cancel);}

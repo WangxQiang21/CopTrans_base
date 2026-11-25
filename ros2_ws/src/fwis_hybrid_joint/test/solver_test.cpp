@@ -109,6 +109,38 @@ TEST(NativeSolver,RefinesAnInteriorObstacleAtTheContinuousWitness){
   auto collision=found("SEED:A:1:MAP_OBB_COLLISION"),refined=found("SEED:A:1:REFINE_WITNESS");
   ASSERT_NE(refined,result.trace.end());EXPECT_LT(collision,refined);EXPECT_LT(refined,found("SEED:A:1:CERTIFIED"));
 }
+TEST(NativeSolver,ObliqueChannelChangesDirectionWhileAllMountsKeepTheirHeading){
+  for(bool formation:{false,true}){
+    auto r=request(formation);
+    std::vector<std::uint8_t> cells(60*60);
+    for(int y=28;y<=31;++y)for(int x=29;x<=30;++x)cells[y*60+x]=1;
+    r.grid=std::make_shared<hj::GridSnapshot>(60,60,.25,fwis_planning_core::Point2d{-7.5,-7.5},cells);
+    r.start.reference={-5.,0.,0.};r.goal.reference={5.,0.,0.};
+    hj::SolveOptions options;options.initial_sequence={hj::Mode::O};options.enable_edits=false;
+    auto result=hj::solve(r,deadline(),{},options);
+    ASSERT_TRUE(result.plan)<<result.reason;
+    const auto audit=hj::certify(r,*result.plan,deadline());
+    ASSERT_TRUE(audit.executable)<<audit.reason;
+    ASSERT_EQ(result.plan->phases.size(),2u);
+    EXPECT_EQ(result.plan->phases.front().kind,hj::Kind::Prepare);
+    const auto& motion=result.plan->phases.back();
+    EXPECT_EQ(motion.mode,hj::Mode::O);EXPECT_GT(motion.pieces.size(),1u);
+    double min_angle=0.,max_angle=0.;
+    for(int i=0;i<=160;++i){
+      const auto sample=hj::evaluate_phase(r,motion,motion.duration*i/160.);
+      EXPECT_NEAR(sample.reference.yaw,0.,1e-10);
+      for(unsigned v=0;v<r.vehicles.size();++v){
+        const auto& b=sample.bodies[v];
+        EXPECT_DOUBLE_EQ(b.wz,0.);EXPECT_NEAR(b.pose.yaw,0.,1e-10);
+        EXPECT_NEAR(b.pose.x-sample.reference.x,r.vehicles[v][0],1e-9);
+        EXPECT_NEAR(b.pose.y-sample.reference.y,r.vehicles[v][1],1e-9);
+        if(i==0 || i==160){EXPECT_NEAR(b.vx,0.,1e-12);EXPECT_NEAR(b.vy,0.,1e-12);}
+        min_angle=std::min(min_angle,b.oblique_angle);max_angle=std::max(max_angle,b.oblique_angle);
+      }
+    }
+    EXPECT_LT(min_angle,-.08);EXPECT_GT(max_angle,.08);
+  }
+}
 TEST(NativeSolver,RemovesBlocksAfterAnActualMixedProposal){
   auto r=request();
   hj::SolveOptions options;options.initial_sequence={hj::Mode::A,hj::Mode::S,hj::Mode::O,hj::Mode::S,hj::Mode::A};

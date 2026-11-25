@@ -92,6 +92,23 @@ TEST(HybridCertificate, GearAndSwitchRequireStoppedSteeringPreparation) {
   b.duration=.1;
   EXPECT_EQ(audit(r,{{b,o}}).reason,"MISSING_WHEEL_PREPARATION");
 }
+TEST(HybridCertificate, CurvedObliqueChecksWheelSpeedAndSteeringDerivativesInMotion) {
+  for(bool formation:{false,true}){
+    auto r=request(formation);auto o=straight(18.);o.mode=h::Mode::O;
+    // Initial wheels point straight; both subsequent constraints bind in motion.
+    o.pieces[0].y={3.,3.,3.35,3.35,3.,3.};
+    auto prep=stopped_at(r,o);h::Plan plan{{prep,o}};
+    const auto ok=audit(r,plan);ASSERT_TRUE(ok.executable)<<ok.reason;
+    auto slow=r;slow.limits.wheel_speed=.02;
+    EXPECT_EQ(audit(slow,plan).reason,"WHEEL_SPEED");
+    slow=r;slow.limits.steer_rate=.002;
+    EXPECT_EQ(audit(slow,plan).reason,"STEER_RATE");
+    slow=r;slow.limits.steer_acceleration=.0001;
+    EXPECT_EQ(audit(slow,plan).reason,"STEER_ACCELERATION");
+    slow=r;slow.limits.steer_angle=.04;
+    EXPECT_EQ(audit(slow,plan).reason,"OBLIQUE_ANGLE");
+  }
+}
 TEST(HybridCertificate, RejectsHiddenCollisionAndCargoAndPairContact) {
   std::vector<std::uint8_t> cells(100*100);
   cells[24*100+32]=255;

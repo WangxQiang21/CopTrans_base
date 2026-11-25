@@ -347,8 +347,8 @@ void Problem::run(){
           continue;
         }
         if(ph.mode==2 || (axis==2 && (!multi || translation_chart || ph.mode!=0))) { b[axis].fill(start);continue; }
-        if(ph.mode==1){for(int i=0;i<6;++i)b[axis][i]=start+(end-start)*i/5.;continue;}
-        if(N>1 && p.general_chart){
+        if(ph.mode==1 && N==1){for(int i=0;i<6;++i)b[axis][i]=start+(end-start)*i/5.;continue;}
+        if(N>1 && (p.general_chart || ph.mode==1)){
           if(j==0)channel[axis]=continuous_axis(ph,axis,start,end);
           std::copy_n(channel[axis].begin()+5*j,6,b[axis].begin());
           for(int i=1;i<=5;++i)if(j+1<N || i<5)
@@ -428,6 +428,19 @@ void Problem::run(){
           if(ph.mode==1) {
             const auto angle=atan2(ph.gear[v]*(-sin(h0[v])*dx+cos(h0[v])*dy),
                                    ph.gear[v]*(cos(h0[v])*dx+sin(h0[v])*dy));
+            // Under fixed F and chassis headings, every wheel sees the
+            // common translational tangent. Its angular velocity is steering
+            // rate, not body yaw rate. Zero speed occurs only at phase ends.
+            constraint(den,1e-8,inf);
+            constraint(angle,-p.steer_angle,p.steer_angle);
+            constraint(vel,0.,p.wheel_speed*.97);
+            const SX steer_velocity=turning*sd/tau;
+            const SX steer_acceleration=(w1*sd*sd+turning*sdd)/(tau*tau);
+            constraint(steer_velocity,-p.steer_rate*.97,p.steer_rate*.97);
+            if(p.steer_acceleration>0)
+              constraint(steer_acceleration,-p.steer_acceleration*.96,p.steer_acceleration*.96);
+            cost+=4*smooth_scale*policy::steering_effort_weight*mass*(tau/(N*t0))*pow(steer_velocity/p.steer_rate,2);
+            if(v==0)cost+=policy::oblique_length_weight*mass*d/p.radius;
             if(j==0 && z==0) entry[v].fill(angle);
             if(j+1==N && z==6) exit[v].fill(angle);
           }
@@ -512,12 +525,6 @@ void Problem::run(){
     }
     tau_sum+=travel+p.prepare_time;
     prior=exit;
-    if(ph.mode==1) {
-      const SX d=sqrt(pow(endx-x,2)+pow(endy-y,2)+1e-14);
-      cost+=policy::oblique_length_weight*d/p.radius;
-      const double peak_jerk=hybrid_clock::state(0.,ph.cruise_ramp_fraction)[3];
-      constraint(peak_jerk*d/(tau*tau*tau),0.,.96*p.jerk);
-    }
     for(const SX& heading:h0) outputs.push_back(heading);
     for(const SX& heading:h) outputs.push_back(heading);
     for(const auto& block:blocks) for(const auto& axis:block) for(const SX& c:axis) outputs.push_back(c);
