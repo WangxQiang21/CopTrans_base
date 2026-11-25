@@ -15,7 +15,7 @@ cd CopTrans_base
 
 ```bash
 ./scripts/interactive.sh --planner-backend hybrid_joint
-./scripts/test.sh --task single --planner-backend hybrid_joint --experiment short_turn
+./scripts/test.sh --task single --planner-backend hybrid_joint --experiment full_route
 ./scripts/test.sh --task multi --planner-backend hybrid_joint --experiment full_route
 ```
 
@@ -35,16 +35,20 @@ cat "reports/runs/$id/experiment.json"
 ./scripts/interactive.sh --replay "$id" --no-build
 ```
 
-`experiment.json` 可查起终点、结果、失败原因和轨迹文件位置。复跑使用归档中的地图版本、起终点和参数，自动重新规划，并生成新的实验编号。用当前地图重新测试时，直接启动交互仿真，再选择相同的起终点。
+`experiment.json` 可查起终点、结果、失败原因和轨迹文件位置。`--replay` 使用归档的规划器和参数，适合复现旧问题。要用 V3 测同一张地图、同一组 RViz 起终点和朝向，执行下面的命令；新日志的 `retest_of` 会记录原实验编号。
+
+```bash
+./scripts/test.sh --task multi --planner-backend hybrid_joint --retest 20261125_115519_smXjHv
+```
 
 ## 4. 自动跑固定用例
 
 ```bash
 ./scripts/test.sh
-./scripts/test.sh --task multi --scenario factory_indoor_01 --experiment short_turn --no-build
+./scripts/test.sh --task multi --scenario factory_indoor_01 --experiment full_route --no-build
 ```
 
-无参数默认跑单车 State Lattice 短弯。三车默认启用 `uniform_v02` 的原生前沿、凸走廊和共同时间轴，两者都用 C++ 跟踪器。终端会显示本轮实际加载的配置，单车的 `experiment.json` 还会记录选中的轨迹来源。格点规划器在长距离可选用重新认证的连续候选，来源显示为 `continuous_portfolio`。
+无参数默认跑单车厂房全程，加 `--task multi` 跑三车全程。终端会显示本轮实际加载的规划器、跟踪器和版本。
 
 `short_turn` 是短弯，改成 `short_straight` 测直行，改成 `full_route` 测全程。加 `--scene-variant critical` 测临界窄通道，加 `--scene-variant too_narrow` 测绕行。
 

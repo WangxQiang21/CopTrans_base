@@ -82,6 +82,23 @@ def test_essential_model_can_fit_under_global_cap_when_raw_plan_cannot(run, monk
     assert experiment_log.allocated(destination.parent) <= capacity
 
 
+def test_retest_uses_selected_poses_and_verified_map_without_old_settings(run):
+    spool, destination = run
+    (spool / "scene/scene_meta.yaml").write_text("scenario: factory_indoor_01\nvariant: default\n")
+    (spool / "scene/map.yaml").write_text("image: map.pgm\nresolution: 0.05\n")
+    selected = {"start": [4.4, 5.6, 0.], "goal": [7.1, 5.8, .4]}
+    (spool / "selected_endpoints.yaml").write_text(yaml.safe_dump(selected))
+    manifest = experiment_log.collect(spool, destination, final=True)
+    route = experiment_log.retest_route(destination.parent, destination.name)
+    assert {key: route[key] for key in selected} == selected
+    assert route["replay_map_sha256"] == manifest["map_sha256"]
+    assert route["waypoints"] == [] and route["retest_of"] == destination.name
+    assert not {"planner_backend", "replay_planner", "replay_controller", "replay_plant"}.intersection(route)
+    (destination / "scene/map.pgm.gz").write_bytes(gzip.compress(b"modified pixels"))
+    with pytest.raises(ValueError, match="map pixels"):
+        experiment_log.retest_route(destination.parent, destination.name)
+
+
 def test_missing_endpoints_and_path_traversal_are_rejected(run):
     spool, destination = run
     (spool / "result.yaml").write_text("status: cancelled\nreason: operator_interrupt\n")

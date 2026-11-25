@@ -88,12 +88,14 @@ class RunExperiment(Node):
         self.spawns = self.scene.spawn_poses(self.task)
         self.contract = read_config(paths[2] / "config" / "multi_4wis" / "transport_formation.yaml")
         self.timing = load(self.declare_parameter("controller_config", "").value).timing
-        _, cells = read_map(self.directory / "scene" / "map.yaml")
+        map_metadata, cells = read_map(self.directory / "scene" / "map.yaml")
         self.replay_mismatch = next((name for name, key in (("map.pgm", "replay_map_sha256"),
                                     ("scene_meta.yaml", "replay_scene_sha256"))
                                     if self.config.get(key) and sha256(
                                         (self.directory / "scene" / name).read_bytes()).hexdigest()
                                     != self.config[key]), None)
+        if self.config.get("retest_map_metadata") and self.config["retest_map_metadata"] != map_metadata:
+            self.replay_mismatch = "map.yaml"
         self.map_shape = cells.shape
         self.map_bytes = array("b", cells.tobytes())
         self.map_matches = False

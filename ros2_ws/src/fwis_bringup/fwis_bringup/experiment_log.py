@@ -167,6 +167,7 @@ def collect(spool, destination, *, final=False):
                 "model_sha256": result.get("model_sha256"), "model_artifact": model_artifact,
                 "request_submitted": result.get("planner_wall_s") is not None,
                 "replay_of": config.get("replay_of"),
+                "retest_of": config.get("retest_of"),
                 "git_commit": environment.get("git_commit"), "git_dirty": environment.get("git_dirty"),
                 "omitted_by_budget": omissions}
     if result:
@@ -182,7 +183,7 @@ def collect(spool, destination, *, final=False):
     return manifest
 
 
-def replay_config(root, experiment_id):
+def _archived_experiment(root, experiment_id):
     if not ID_PATTERN.fullmatch(experiment_id):
         raise ValueError("invalid experiment ID")
     directory = root / experiment_id
@@ -200,6 +201,30 @@ def replay_config(root, experiment_id):
     if config["scenario"] != manifest["scenario"] or config["mode"] != "sim":
         raise ValueError("archived scenario or simulation mode does not match")
     config.setdefault("scene_variant", "default")
+    return directory, manifest, config
+
+
+def retest_route(root, experiment_id):
+    directory, manifest, config = _archived_experiment(root, experiment_id)
+    scene = read_config(directory / "scene/scene_meta.yaml")
+    selected = directory / "selected_endpoints.yaml"
+    if selected.is_file():
+        poses = read_config(selected)
+        if any(poses.get(key) != manifest[key] for key in ("start", "goal")):
+            raise ValueError("archived RViz selection differs from the experiment manifest")
+    if scene["scenario"] != manifest["scenario"] or scene["variant"] != config["scene_variant"]:
+        raise ValueError("archived map layout differs from the experiment configuration")
+    pgm = gzip.decompress((directory / "scene/map.pgm.gz").read_bytes())
+    if sha256(pgm).hexdigest() != manifest["map_sha256"]:
+        raise ValueError("archived map pixels differ from the experiment manifest")
+    return dict(scenario=scene["scenario"], scene_variant=scene["variant"],
+                start=manifest["start"], goal=manifest["goal"], waypoints=[],
+                replay_map_sha256=manifest["map_sha256"],
+                retest_map_metadata=read_config(directory / "scene/map.yaml"), retest_of=experiment_id)
+
+
+def replay_config(root, experiment_id):
+    directory, manifest, config = _archived_experiment(root, experiment_id)
     if config.get("interactive"):
         config["replay_endpoints"] = {key: manifest[key] for key in ("start", "goal")}
     else:

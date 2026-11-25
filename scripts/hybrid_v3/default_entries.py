@@ -21,7 +21,7 @@ def operate(run_id):
     from rclpy.qos import QoSProfile, DurabilityPolicy
     from std_msgs.msg import String
     fixture=yaml.safe_load(subprocess.check_output(
-        [ROOT/"scripts/test.sh","--task","multi","--experiment","short_turn","--dry-run"],text=True))
+        [ROOT/"scripts/test.sh","--task","multi","--experiment","full_route","--dry-run"],text=True))
     def set_pose(msg,endpoint):
         x,y,heading=fixture[endpoint]
         msg.position.x=float(x)
@@ -41,7 +41,7 @@ def operate(run_id):
     sp=node.create_publisher(PoseWithCovarianceStamped,"/initialpose",5)
     gp=node.create_publisher(PoseStamped,"/move_base_simple/goal",5)
     started=goal=False
-    end=time.monotonic()+125
+    end=time.monotonic()+fixture["timeout_s"]
     while time.monotonic()<end:
         rclpy.spin_once(node,timeout_sec=.15)
         phase=state.get("phase")
@@ -99,7 +99,7 @@ def test_entry(entry,destination):
         proc=subprocess.Popen(command,cwd=ROOT,start_new_session=True,stdout=stream,stderr=subprocess.STDOUT)
         operator=None
         try:
-            end=time.monotonic()+600
+            end=time.monotonic()+resolved["timeout_s"]+120
             while proc.poll() is None and time.monotonic()<end:
                 archives=[p for p in runs.iterdir() if p.is_dir() and p.name not in before]
                 if len(archives)>1:

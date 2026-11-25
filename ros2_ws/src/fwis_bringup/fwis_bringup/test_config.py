@@ -9,7 +9,7 @@ import sys
 
 import yaml
 
-from fwis_bringup.experiment_log import read_config, replay_config
+from fwis_bringup.experiment_log import read_config, replay_config, retest_route
 from ranger_mini_gz.scene_generator import SCENARIOS, SCENE_VARIANTS
 from ranger_mini_gz.scene_geometry import local_pose
 
@@ -75,7 +75,9 @@ def parse_arguments(argv, scenarios, registry, experiments):
     parser.add_argument("--experiment", choices=tuple(experiments), default=defaults["experiment"])
     parser.add_argument("--record", choices=("on", "off"), default="off",
                         help="Capture an extra topic bag. Compact local experiment logs are always saved.")
-    parser.add_argument("--replay", metavar="EXPERIMENT_ID", help="Re-run a local experiment with its archived inputs")
+    history = parser.add_mutually_exclusive_group()
+    history.add_argument("--replay", metavar="EXPERIMENT_ID", help="Re-run a local experiment with its archived settings")
+    history.add_argument("--retest", metavar="EXPERIMENT_ID", help="Use archived map and selected poses with the currently selected planner and limits")
     parser.add_argument("--timeout", type=positive_seconds, help="Override the experiment wall timeout")
     parser.add_argument("--no-build", action="store_true", help="Use the existing Colcon install")
     parser.add_argument("--dry-run", action="store_true", help="Print the resolved configuration and exit")
@@ -89,6 +91,8 @@ def parse_arguments(argv, scenarios, registry, experiments):
         parser.exit(2, REAL_UNAVAILABLE + "\n")
     if args.replay and args.scene_variant is not None:
         parser.error("--replay uses the recorded scene layout; --scene-variant is only for new runs")
+    if args.retest and (args.interactive or any(arg.split("=", 1)[0] in ("--scenario", "--scene-variant", "--experiment") for arg in argv)):
+        parser.error("--retest already specifies the map and both selected poses")
     if args.task == "single" and args.formation:
         parser.error("--formation applies only to --task multi")
     if args.without_planning_playback and (
@@ -152,6 +156,15 @@ def resolve(argv, config_directory, scenario_directory, output):
         write_config(output, config, args.dry_run)
         return
 
+    route = {}
+    if args.retest:
+        try:
+            route = retest_route(Path(os.environ["COPTRANS_RUN_ROOT"]), args.retest)
+        except (OSError, ValueError, KeyError) as error:
+            raise SystemExit(f"Historical route: {error}") from None
+        args.scenario, args.scene_variant, args.experiment = route["scenario"], route["scene_variant"], "full_route"
+        if args.scenario not in scenarios:
+            raise SystemExit(f"Historical scenario {args.scenario!r} is unavailable")
     scene_task = "single" if args.task == "single" else "formation"
     scene = read_config(scenario_directory / f"{args.scenario}.yaml")
     variant = args.scene_variant
@@ -227,6 +240,7 @@ def resolve(argv, config_directory, scenario_directory, output):
                   timeout_s=args.timeout or float(experiment.get("wall_timeout_s", registry["defaults"]["timeout_s"])),
                   no_build=args.no_build,
                   observation_s=registry["defaults"]["observation_s"], interactive=args.interactive)
+    config.update(route)
     write_config(output, config, args.dry_run)
 
 
