@@ -55,6 +55,8 @@ def audit_rows(records,witnesses,manifest_files,source):
     if not source or not source.get("verified_at_collection") or not source.get("raw_sha256") or not source.get("binary_commit"):
         reasons.append("missing_source_or_raw_identity")
     sources=(source or {}).get("source_sha256",{}) | (source or {}).get("system_source_sha256",{})
+    if not source or not source.get("system_commit") or not source.get("system_source_sha256"):
+        reasons.append("missing_system_identity")
     for name,value in sources.items():
         if not (ROOT/name).is_file() or sha(ROOT/name)!=value:
             reasons.append("source/"+name)

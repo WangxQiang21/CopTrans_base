@@ -13,6 +13,7 @@ from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 import yaml
 
+from fwis_bringup.control_affinity import allocate
 from fwis_bringup.formation_route import PERMIT_TOPIC
 from fwis_bringup.test_config import REAL_UNAVAILABLE, cargo_footprint_parameters, read_config
 from ranger_mini_gz.scene_generator import clearance_summary, load_scene
@@ -30,6 +31,9 @@ def setup(context):
     task = config["scene_task"]
     native = config["planner_backend"] in ("single_hybrid_joint_cpp", "formation_hybrid_joint_cpp")
     robots = scene.vehicle_ids if task == "formation" else (1,)
+    control_cpus = allocate(robots) if native else {}
+    if control_cpus:
+        print(f"Native tracker CPU sets: {control_cpus}", flush=True)
     for label in (("start",) if config.get("interactive") else ("start", "goal")):
         gaps = clearance_summary(scene, task, [(config[label], None)])
         for name, gap in gaps.items():
@@ -105,7 +109,8 @@ def setup(context):
                               future_start_window_s=lead + .1)
         tracker = {"python": "ranger_tracking_controller",
                    "cpp": "ranger_tracking_controller_cpp"}[config.get("tracking_implementation", "python")]
-        actions.append(Node(package="fwis_control", executable=tracker,
+        prefix = f"taskset -c {','.join(map(str, control_cpus[index]))}" if index in control_cpus else None
+        actions.append(Node(package="fwis_control", executable=tracker, prefix=prefix,
                             namespace=f"robot{index}", output="screen", parameters=[parameters],
                             # Keep network transmission off the 25 Hz control thread. The
                             # qualification monitor also measures when Gazebo consumes cmd_vel.

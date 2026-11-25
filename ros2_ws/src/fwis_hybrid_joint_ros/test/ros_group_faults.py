@@ -55,6 +55,10 @@ class Run(Node):
         self.expired_fixture = False
         self.clock_fixture = False
         self.group_clock_lag = False
+        self.recover_clock = False
+        self.delayed_role = None
+        self.freeze_during_motion = False
+        self.started_delayed_clock = False
         self.forge_source = False
         self.held_clock = None
         self.repeat_ack = False
@@ -69,6 +73,8 @@ class Run(Node):
         self.nonfinite_commands = 0
         self.timeline = []
         self.check_reasons = {}
+        self.reports = {}
+        self.planner_clock = self.create_publisher(Clock, "/fixture/planner_clock", 5)
         self.executor_clock = self.create_publisher(Clock, "/fixture/executor_clock", 5)
         self.fake_clock = self.create_publisher(Clock, "/clock", 5)
         self.bad_permit = self.create_publisher(HybridExecutionPermit,"/hybrid_joint/execution_permit",1)
@@ -81,7 +87,8 @@ class Run(Node):
         self.map_pub = self.create_publisher(OccupancyGrid, "/map", DURABLE)
         self.inject = self.create_publisher(FormationPlaybackPlan, self.model_topic, DURABLE)
         self.create_subscription(FormationPlaybackPlan, self.model_topic, self.model, DURABLE)
-        self.create_subscription(String, "/hybrid_joint/admission", self.admission, DURABLE)
+        self.create_subscription(String, "/hybrid_joint/admission", self.admission,
+                                 QoSProfile(depth=30,durability=DurabilityPolicy.TRANSIENT_LOCAL))
         self.create_subscription(HybridExecutionPermit, "/hybrid_joint/execution_permit",
                                  lambda m: self.permits.append((monotonic(), m.plan_id, m.enabled)), 10)
         self.outputs = []
@@ -124,7 +131,9 @@ class Run(Node):
             if self.repeat_ack and role=="executor":
                 for i in range(self.count):
                     remaps.extend(["-r",f"/robot{i+1}/controller_status:=/fixture/ack{i+1}"])
-            if self.group_clock_lag and role=="executor":
+            if role=="planner" and self.delayed_role=="planner":
+                remaps.extend(["-r","/clock:=/fixture/planner_clock"])
+            if (self.group_clock_lag or self.delayed_role=="executor" or self.freeze_during_motion) and role=="executor":
                 remaps.extend(["-r","/clock:=/fixture/executor_clock"])
             if (self.ack_before_envelope or self.forge_source) and role=="executor":
                 remaps.extend(["-r",f"{self.model_topic}:=/fixture/group_plan"])
@@ -136,6 +145,11 @@ class Run(Node):
                 "-p", f"hybrid_plan_topic:={self.model_topic}", "-p", "permit_topic:=/hybrid_joint/execution_permit",
                 "-p", "future_start_window_s:=1.35", "-p", f"config_file:={self.tracker_config}",*clock_args])
 
+    def observe_ready(self,role,msg):
+        data=json.loads(msg.data)
+        self.reports[role]=data
+        self.ready_gate.observe(role,msg.data,monotonic())
+
     def generated(self, msg):
         self.original = msg
 
@@ -145,7 +159,18 @@ class Run(Node):
         self.last_plan = m
 
     def admission(self, m):
-        self.events.append((monotonic(), json.loads(m.data)))
+        event=json.loads(m.data)
+        self.events.append((monotonic(),event))
+        if self.recover_clock and self.clock_lag_observed(event):
+            self.started_delayed_clock=True
+            self.held_clock=None
+
+    @staticmethod
+    def clock_lag_observed(event):
+        # PRECHECK retains the original receipt stamp even if the depth-one
+        # source delivered it before an observer could take WAIT_CLOCK.
+        return (event["phase"] in ("WAIT_CLOCK","PRECHECK") and
+                event.get("publication_ros_ns",0)-event.get("receipt_ros_ns",0)>100000000)
 
     def status(self, i, m):
         row = json.loads(m.data)
@@ -186,9 +211,16 @@ class Run(Node):
         stamp = time.to_msg()
         if self.clock_fixture:
             self.fake_clock.publish(Clock(clock=stamp))
-            if self.group_clock_lag:
-                self.executor_clock.publish(Clock(clock=self.held_clock or stamp))
-                self.latest_clock = stamp
+            if self.group_clock_lag or self.freeze_during_motion or self.delayed_role=="executor":
+                local=stamp
+                if self.group_clock_lag and not self.started_delayed_clock:
+                    local=Time(nanoseconds=time.nanoseconds-400000000).to_msg()
+                if (self.delayed_role!="executor" or self.started_delayed_clock):
+                    self.latest_executor_clock=self.held_clock or local
+                    self.executor_clock.publish(Clock(clock=self.latest_executor_clock))
+            if self.delayed_role=="planner" and self.started_delayed_clock:
+                self.planner_clock.publish(Clock(clock=stamp))
+            self.latest_clock = stamp
         if self.wrong_permit and self.last_plan:
             bad = HybridExecutionPermit(plan_id=self.last_plan.plan_id, start=self.last_plan.header.stamp,
                                         model_sha256=self.last_plan.model_sha256, stamp=stamp, enabled=True)
@@ -263,9 +295,20 @@ class Run(Node):
             self.pump(.28)
         self.unsafe_after_stale = 0
         self.nonfinite_commands = 0
-        if self.group_clock_lag:
-            self.held_clock=self.latest_clock
-            self.pump(.22)
+        cold=None
+        if self.delayed_role:
+            other="planner" if self.delayed_role=="executor" else "executor"
+            self.until(lambda: self.reports.get(other,{}).get("ready") and
+                       self.delayed_role in self.reports,3.)
+            self.pump(.3)
+            ros_ns=self.latest_clock.sec*10**9+self.latest_clock.nanosec
+            cold=dict(delayed_role=self.delayed_role,initial=dict(self.reports),
+                      permitted_before=self.ready_gate.ready(ros_ns, monotonic()))
+            if cold["permitted_before"] or self.last_plan is not None or self.reports[self.delayed_role]["clock_ns"]!=0:
+                raise AssertionError("Cold receiver incorrectly admitted a request")
+            self.started_delayed_clock=True
+            self.until(lambda:self.ready_gate.ready(self.latest_clock.sec*10**9+self.latest_clock.nanosec,monotonic()),3.)
+            cold["after"]=dict(self.reports)
         self.request(plan_id)
         if name=="expired":
             self.until(lambda:self.original and self.original.plan_id==plan_id,12.)
@@ -275,13 +318,14 @@ class Run(Node):
         self.until(lambda: self.last_plan and self.last_plan.plan_id == plan_id, 12)
         clock_gap=0.
         if self.group_clock_lag:
-            self.until(lambda:any(e["plan_id"]==plan_id and e["phase"]=="WAIT_CLOCK" for _,e in self.events),1.5)
-            wait=next(e for _,e in self.events if e["plan_id"]==plan_id and e["phase"]=="WAIT_CLOCK")
+            self.until(lambda:any(e["plan_id"]==plan_id and self.clock_lag_observed(e) for _,e in self.events),1.5)
+            wait=next(e for _,e in self.events if e["plan_id"]==plan_id and self.clock_lag_observed(e))
             clock_gap=(wait["publication_ros_ns"]-wait["receipt_ros_ns"])*1e-9
-            if clock_gap<=.1 or any(allow for _,i,allow in self.permits if i==plan_id):
+            if clock_gap<=.1 or any(e["phase"]=="AUTHORIZED" and e["coordinator_ros_ns"]+100000000<e["publication_ros_ns"]
+                                    for _,e in self.events if e["plan_id"]==plan_id):
                 raise AssertionError("Expected an unreleased model ahead of the receiver clock window")
-            if name=="clock_delivery_order":
-                self.held_clock=None
+            if name=="clock_not_synchronized":
+                self.held_clock=self.latest_executor_clock
         if self.forge_source:
             bad=deepcopy(self.last_plan)
             bad.model_json,n=re.subn(r'("publication_ros_ns":)([0-9]+)',
@@ -306,8 +350,10 @@ class Run(Node):
             bad = deepcopy(self.last_plan)
             bad.model_json += " "
             self.inject.publish(bad)
-        if name in ("stale_feedback","wrong_mode","map_replaced","permit_loss","clock_rollback","nan_feedback","wrong_epoch","future_permit","revoked_permit"):
+        if name in ("stale_feedback","wrong_mode","map_replaced","permit_loss","clock_rollback","nan_feedback","wrong_epoch","future_permit","revoked_permit","running_clock_stall"):
             self.until(lambda: all(abs(c[0]) > .01 for c in self.commands.values()), 4.)
+        if name=="running_clock_stall":
+            self.held_clock=self.latest_executor_clock
         if name=="clock_rollback":
             self.rollback+=.8
         if name=="nan_feedback":
@@ -338,7 +384,7 @@ class Run(Node):
                 coordinator.send_signal(signal.SIGCONT)
         if name == "stale_feedback":
             self.disabled = {self.count - 1}
-        expected = "COMPLETE" if name in ("success","repeat_ack","ack_before_envelope","clock_delivery_order") else "STOPPED"
+        expected = "COMPLETE" if name in ("success","repeat_ack","ack_before_envelope","clock_delivery_order","cold_executor_clock","cold_planner_clock") else "STOPPED"
         self.until(lambda: any(e["plan_id"] == plan_id and e["phase"] == expected for _, e in self.events), 12.)
         self.pump(.3)
         final = next(e for _, e in self.events if e["plan_id"] == plan_id and e["phase"] == expected)
@@ -358,7 +404,7 @@ class Run(Node):
         self.modes=dict.fromkeys(self.modes,0)
         return {"task": self.count, "profile":self.profile, "fault": name, "id": plan_id, "phase": expected, "reason": final["reason"],
                 "release_s": release[0]-self.plan_received_wall if release else None,
-                "stale_feedback_moving_commands":self.unsafe_after_stale, "publication_clock_gap_s":clock_gap,
+                "stale_feedback_moving_commands":self.unsafe_after_stale, "publication_clock_gap_s":clock_gap, "cold_start":cold,
                 "nonfinite_commands":self.nonfinite_commands,
                 "tracker_reasons":sorted(self.check_reasons.get(plan_id,()))}
 
@@ -390,6 +436,18 @@ def main():
         node.ack_before_envelope=True
     if args.cases in (["clock_delivery_order"],["clock_not_synchronized"]):
         node.group_clock_lag=True
+        node.recover_clock=args.cases==["clock_delivery_order"]
+        node.clock_fixture=True
+    if args.cases in (["cold_executor_clock"],["cold_planner_clock"]):
+        from fwis_bringup.native_readiness import NativeReadiness
+        node.delayed_role=args.cases[0].split("_")[1]
+        node.clock_fixture=True
+        node.ready_gate=NativeReadiness()
+        for role,topic in (("planner","planner_readiness"),("executor","readiness")):
+            node.create_subscription(String,"/hybrid_joint/"+topic,
+                                     lambda m,role=role:node.observe_ready(role,m),DURABLE)
+    if args.cases==["running_clock_stall"]:
+        node.freeze_during_motion=True
         node.clock_fixture=True
     if args.cases==["forged_source_epoch"]:
         node.forge_source=True

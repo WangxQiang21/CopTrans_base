@@ -58,6 +58,12 @@ if(BUILD_TESTING)
     APPEND_ENV "PYTHONPATH=${CMAKE_CURRENT_SOURCE_DIR}"
     ENV "TRACKING_CPP_REPLAY=$<TARGET_FILE:tracking_replay>")
 
+  add_executable(native_oblique_replay test/native_oblique_replay.cpp)
+  target_link_libraries(native_oblique_replay PRIVATE fwis_tracking_core fwis_hybrid_joint_ros::hybrid_codec)
+  ament_add_pytest_test(native_oblique_controller_parity test/test_native_oblique_replay.py
+    APPEND_ENV "PYTHONPATH=${CMAKE_CURRENT_SOURCE_DIR}"
+    ENV "TRACKING_NATIVE_OBLIQUE=$<TARGET_FILE:native_oblique_replay>")
+
   ament_add_pytest_test(control_timing test/test_control_timing.py)
   ament_add_pytest_test(tracking_core test/test_tracking_core.py
     APPEND_ENV "PYTHONPATH=${CMAKE_CURRENT_SOURCE_DIR}")

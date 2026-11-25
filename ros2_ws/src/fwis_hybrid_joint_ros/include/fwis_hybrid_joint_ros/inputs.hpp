@@ -11,6 +11,10 @@ protected:
   explicit Inputs(const char * name)
   : Node(name), settings(*this)
   {
+    const bool planner = std::string(name)=="hybrid_joint_planner";
+    readiness = create_publisher<std_msgs::msg::String>(
+      planner ? "/hybrid_joint/planner_readiness" : "/hybrid_joint/readiness", durable());
+    readiness_timer = create_wall_timer(std::chrono::milliseconds(20), [this] {update_readiness();});
     map_sub = create_subscription<nav_msgs::msg::OccupancyGrid>(
       "/map", durable(), [this](const nav_msgs::msg::OccupancyGrid & m) {
         try {
@@ -18,7 +22,8 @@ protected:
           if (!grid || grid->hash() != next->hash()) {
             invalidate();
             grid = std::move(next);
-            map_ready();
+            announced_map.clear();
+            update_readiness();
           }
         } catch (const std::exception & e) {invalidate();grid.reset();failure(0, e.what());}
       });
@@ -26,7 +31,7 @@ protected:
       multi_sub = create_subscription<Formation>(
         "/formation/plan_request", 10, [this](const Formation & m) {
           try {
-            if (!grid) {throw std::invalid_argument("map unavailable");}
+            if (!request_ready()) {throw std::invalid_argument("native_clock_or_map_not_ready");}
             auto c = formation_context(m, settings, grid);
             if (last_id && m.plan_id <= last_id) {throw std::invalid_argument("stale or reused plan ID");}
             last_id = m.plan_id;
@@ -59,13 +64,18 @@ protected:
           ++last_id;
           invalidate();
           try {
-            if (!grid || !start || !last_id || m.header.frame_id != "map") {
+            if (!request_ready()) {throw std::invalid_argument("native_clock_or_map_not_ready");}
+            if (!start || !last_id || m.header.frame_id != "map") {
               throw std::invalid_argument("missing map/start or bad goal");
             }
             requested(single_context(*start, pose_from(m.pose), last_id, settings, grid), {});
           } catch (const std::exception & e) {failure(last_id, e.what());}
         });
     }
+  }
+  bool request_ready() const {
+    return grid && clock_advanced && now().nanoseconds()>0 &&
+      hj::Clock::now()-last_advance<=std::chrono::milliseconds(200);
   }
   using Specs = std::vector<fwis_v3_msgs::msg::FormationVehicleSpec>;
   virtual void requested(Context, Specs) = 0;
@@ -83,6 +93,37 @@ protected:
   }
 
 private:
+  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr readiness;
+  rclcpp::TimerBase::SharedPtr readiness_timer;
+  int64_t last_clock{};
+  bool clock_advanced{}, sent_ready{};
+  std::string announced_map;
+  hj::Clock::time_point last_advance{}, last_report{};
+  void update_readiness() {
+    const auto stamp=now().nanoseconds();
+    const auto wall=hj::Clock::now();
+    if(stamp<=0 || stamp<last_clock) clock_advanced=false;
+    else if(last_clock>0 && stamp>last_clock) {
+      clock_advanced=true;
+      last_advance=wall;
+    }
+    last_clock=stamp;
+    const bool ready=request_ready();
+    const bool new_map=ready && announced_map!=grid->hash();
+    if(ready!=sent_ready || new_map || wall-last_report>=std::chrono::milliseconds(50)) {
+      Json::Value row;
+      row["ready"]=ready;
+      row["clock_ns"]=Json::Int64(stamp);
+      row["map_sha256"]=grid ? grid->hash() : "";
+      readiness->publish(message(json(row)));
+      last_report=wall;
+      sent_ready=ready;
+    }
+    if(new_map) {
+      announced_map=grid->hash();
+      map_ready();
+    }
+  }
   uint32_t last_id{};
   std::optional<hj::Pose2d> start;
   rclcpp::Subscription<Formation>::SharedPtr multi_sub;

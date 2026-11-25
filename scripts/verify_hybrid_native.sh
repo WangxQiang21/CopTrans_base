@@ -5,6 +5,7 @@ evidence=${1:?provide a local evidence directory}
 mkdir -p "$evidence"
 evidence=$(realpath "$evidence")
 source /opt/ros/humble/setup.bash
+export CMAKE_BUILD_PARALLEL_LEVEL=2 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1
 build=$(mktemp -d "${TMPDIR:-/tmp}/coptrans-native.XXXXXXXX")
 trap 'rm -rf -- "$build"' EXIT
 cd "$root/ros2_ws"

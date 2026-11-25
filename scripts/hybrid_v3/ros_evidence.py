@@ -94,9 +94,21 @@ def main():
             raise ValueError(f"Controller parity failed for {algo}")
         parity[algo]=result
         raw[path.name]=sha256(path.read_bytes()).hexdigest()
+    native_modes={}
+    for algorithm in ("nonlinear","pid"):
+        for direction in (-1,1):
+            path=args.parity/f"native_oblique_{algorithm}_{direction}.json"
+            data=json.loads(path.read_text())
+            if (data.get("algorithm")!=algorithm or data.get("direction")!=direction or data.get("ticks",0)<201 or
+                    data.get("ticks")!=data.get("matched_fsm_ticks") or not data.get("exact_terminal_rest") or
+                    data.get("zero_crossing_tick")!=100 or data.get("geometric_reference_vy_at_crossing")!=0. or
+                    not data.get("applied_vy_at_crossing") or data.get("max_absolute_error",1)>1e-6):
+                raise ValueError(f"Native O crossing or exact rest failed for {algorithm} and direction {direction}")
+            raw[path.name]=sha256(path.read_bytes()).hexdigest()
+            native_modes[f"{algorithm}/{direction}"]=data
     write(args.output/"delivery.json",delays)
     write(args.output/"faults.json",dict(old_epoch_rejected=True,clock_rollback_stopped=True,late_permit_stopped=True,
-          invalid_numeric_commands=0,scenarios=faults,controller_parity=parity,
+          invalid_numeric_commands=0,scenarios=faults,controller_parity=parity,native_oblique_parity=native_modes,
           binary_manifest_sha256=sha256(before).hexdigest(),raw_file_hashes=raw,raw_directory=str(args.run.resolve())))
     for task, examples in groups.items(): write(args.output/(task+".json"),examples)
 

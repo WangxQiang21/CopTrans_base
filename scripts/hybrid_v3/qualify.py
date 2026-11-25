@@ -13,7 +13,7 @@ import xml.etree.ElementTree as ET
 
 import yaml
 from cases import LOCAL, REPORT, ROOT, MASTER_SEEDS, POLICY, GEOMETRY, REGISTRY, SPEC, digest
-sys.path.insert(0,str(ROOT/"ros2_ws/src/fwis_control/test"))
+sys.path.append(str(ROOT/"ros2_ws/src/fwis_control/test"))
 from analyze_control_timing import deadline_info, pair_commands, plant_gaps
 
 NUMERIC=LOCAL.parent/"hybrid_v3_numeric"
@@ -125,7 +125,25 @@ def closed_rows(folder):
         timed=lines(archive/"timing_trace.jsonl")
         recorded={k:result.get(k) for k in ("plan_received","planner_source","model_sha256","admitted","complete",
                   "start","goal","plan_duration_s","planner_wall_s","routed_plan_keys","tracking_implementation","final_cmd_vel")}
-        entry.update(recorded,metrics=result.get("metrics"),fault=load(file.parent/"fault.json"),
+        request=next((e for e in timed if e["event"]=="request_publish"),{})
+        received=next((e for e in timed if e["event"]=="plan_received"),{})
+        public=next((e for e in timed if e["event"]=="planner_publication_status_received"),{})
+        manifest=load(archive/"experiment.json") or {}
+        model_file=archive/(manifest.get("model_artifact") or "trajectories/model.json.gz")
+        model=None
+        if model_file.is_file():
+            with gzip.open(model_file,"rb") as inp:
+                encoded=inp.read()
+            if hashlib.sha256(encoded).hexdigest()!=manifest.get("model_sha256"):
+                raise ValueError("Archived authority digest mismatch for "+archive.name)
+            model=json.loads(encoded)
+        publish=(model or {}).get("publication_steady_ns")
+        entry.update(recorded,publish_s=(publish*1e-9-request["wall_s"] if publish and "wall_s" in request else None),
+                     publication_to_receive_s=(received["wall_s"]-publish*1e-9 if publish and "wall_s" in received else None),
+                     map_sha256=manifest.get("map_sha256"),scene_sha256=manifest.get("scene_sha256"),
+                     config_sha256=sha(archive/"resolved_config.yaml"),source_sha=manifest.get("git_commit"),
+                     request_to_receive_s=(received["wall_s"]-request["wall_s"] if "wall_s" in request and "wall_s" in received else None),
+                     publication_event=public,metrics=result.get("metrics"),fault=load(file.parent/"fault.json"),
                      clocks=clock_metrics(file.parent),admissions=[r for r in timed if r["event"]=="native_group_admission" and r["phase"]=="AUTHORIZED"],
                      result_sha256=sha(archive/"result.yaml"))
         batch.append(entry)
@@ -143,6 +161,9 @@ def collect(batch):
             row["valid"]=e.get("audit",{}).get("executable",False)
             row["has_plan"]=bool(e.get("plan"))
             row["trace"]=e.get("trace",[])
+            row["certificate"]=e.get("audit")
+            proposal=next(iter((e.get("stage_times") or {}).get("attempts",[])),{}).get("proposal","")
+            row["mode_sequence_before"]=("ASOSA" if row.get("ablation") else proposal.split(":")[1] if ":" in proposal else None)
             row["metrics"]=e.get("metrics",{})
             if raw["operation"]=="witness":row["valid"]=e.get("executable",False)
             records.append(row)

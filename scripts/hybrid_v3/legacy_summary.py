@@ -60,6 +60,9 @@ def report(directory, new_batch=None):
             summary=dict(attempts=len(cases),unique=len({r["case_id"] for r in cases}),cohorts=sorted({r.get("cohort",0) for r in cases}),
                 feasible=len(feasible),certified_in_budget=sum(r["evidence"]["certified_in_budget"] for r in feasible),
                 certified_including_late=sum(r["evidence"]["solved"] for r in feasible),
+                solved_after_wall_budget=sum(r["evidence"]["solved"] and not r["evidence"]["within_budget"] for r in feasible),
+                solved_within_wall_but_over_task_duration=sum(r["evidence"]["solved"] and r["evidence"]["within_budget"] and
+                    not r["evidence"]["certified_in_budget"] for r in feasible),
                 pure_A_in_budget=sum(r["evidence"]["certified_in_budget"] and r["evidence"].get("modes")==["A"] for r in a_cases),
                 known_A=len(a_cases),infrastructure_errors=sum(e["status"]=="ERROR" for e in vals),
                 false_executable_invalid=sum(r["evidence"]["solved"] for r in cases if r["label"]=="invalid"),

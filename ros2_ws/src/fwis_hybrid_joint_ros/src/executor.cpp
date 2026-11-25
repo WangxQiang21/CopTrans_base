@@ -18,7 +18,6 @@ public:
     }
     permits = create_publisher<Permit>(permit_topic, 1);
     result = create_publisher<std_msgs::msg::String>("/hybrid_joint/admission", durable());
-    readiness = create_publisher<std_msgs::msg::String>("/hybrid_joint/readiness", durable());
     sub = create_subscription<Envelope>(model_topic(), durable(), [this](const Envelope & m) {receive(m);});
     for (unsigned i = 0; i < (settings.multi ? 3u : 1u); ++i) {
       feedback.push_back(
@@ -36,7 +35,7 @@ public:
 private:
   const int64_t release_margin_ns;
   rclcpp::Publisher<Permit>::SharedPtr permits;
-  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr result, readiness;
+  rclcpp::Publisher<std_msgs::msg::String>::SharedPtr result;
   struct Proof {
     std::string hash;
     std::shared_ptr<std::atomic_bool> cancelled;
@@ -44,9 +43,6 @@ private:
   };
   std::vector<Proof> proofs;
   bool proven{};
-  void map_ready() override {
-    readiness->publish(message(grid->hash()));
-  }
   void collect_proofs() {
     for (auto it = proofs.begin(); it != proofs.end();) {
       if (it->outcome.wait_for(std::chrono::seconds(0)) != std::future_status::ready) {
@@ -269,6 +265,7 @@ private:
     if (!key || ended) return;
     const auto wall = hj::Clock::now();
     if (stamp < last_ros) {stop("clock_rollback");return;} last_ros = stamp;
+    if (enabled && !request_ready()) {stop("clock_not_advancing");return;}
     if (!enabled && stamp >= ns(key->start)-release_margin_ns) {
       stop("admission_deadline");
       return;

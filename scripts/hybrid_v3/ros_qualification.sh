@@ -9,10 +9,15 @@ if [[ ! $domain =~ ^[0-9]+$ || $domain -lt 1 || $domain -gt 230 ]]; then
     exit 2
 fi
 mkdir -p "$out"
+if [[ -e "$out/binaries.before.sha256" ]]; then
+    echo "Qualification evidence already exists in $out; choose a fresh output directory." >&2
+    exit 2
+fi
 # Humble setup references unset shell variables.
 set +u
 source /opt/ros/humble/setup.bash
-source "${COPTRANS_INSTALL_BASE:-$root/ros2_ws/install}/setup.bash"
+prefix=$(realpath "${COPTRANS_INSTALL_BASE:-$root/ros2_ws/install}")
+source "$prefix/setup.bash"
 set -u
 export ROS_LOCALHOST_ONLY=1 ROS_DOMAIN_ID=$domain OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
 export ROS_LOG_DIR="$out/ros"
@@ -27,7 +32,13 @@ hashes(){
         "$control/lib/fwis_control/ranger_tracking_controller_cpp"
 }
 hashes >"$out/binaries.before.sha256"
-git -C "$root" rev-parse HEAD >"$out/source_commit"
+git -C "$root" rev-parse HEAD >"$out/harness_commit"
+sha256sum "$fixture" "$root/scripts/hybrid_v3/ros_qualification.sh" >"$out/harness.sha256"
+if [[ -f "$prefix/../../source_commit" ]]; then
+    cp "$prefix/../../source_commit" "$out/source_commit"
+else
+    cp "$out/harness_commit" "$out/source_commit"
+fi
 failed=0
 for n in 1 3; do
     for profile in standard baseline; do

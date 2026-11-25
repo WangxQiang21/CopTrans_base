@@ -124,7 +124,7 @@ def test_entry(entry,destination):
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--operator")
-    parser.add_argument("--output",type=Path,default=LOCAL/"release_c1"/"default_runs.json")
+    parser.add_argument("--output",type=Path,default=LOCAL/"release_c3"/"default_runs.json")
     args=parser.parse_args()
     if args.operator:
         return operate(args.operator)

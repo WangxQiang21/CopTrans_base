@@ -70,11 +70,14 @@ class RunExperiment(Node):
         self.formation_backend = self.config["coordination"]["implementation"] if self.multi else None
         self.native = self.config["planner_backend"] in ("single_hybrid_joint_cpp", "formation_hybrid_joint_cpp")
         self.native_release = None
-        self.native_ready = False
+        self.native_ready = None
         self.native_cancel = None
         if self.native:
-            self.create_subscription(String, "/hybrid_joint/readiness",
-                                     lambda m: setattr(self, "native_ready", bool(m.data)), DURABLE)
+            from fwis_bringup.native_readiness import NativeReadiness
+            self.native_ready = NativeReadiness()
+            for role, topic in (("planner","planner_readiness"),("executor","readiness")):
+                self.create_subscription(String, "/hybrid_joint/"+topic,
+                    lambda m,role=role:self.native_ready.observe(role,m.data,monotonic()), DURABLE)
             self.create_subscription(String, "/hybrid_joint/admission", self.on_native_admission, DURABLE)
             self.native_cancel = self.create_publisher(String, "/hybrid_joint/cancel", 1)
         self.execution_without_playback = bool(
@@ -278,7 +281,7 @@ class RunExperiment(Node):
                     self.selected_start = reference
                     self.ui("waiting_goal", detail="Gazebo 三车与货物已对齐。用 2D Goal Pose 设置编队终点")
             return
-        if self.selected_start is None or self.pending_goal is None or stale:
+        if self.selected_start is None or self.pending_goal is None or stale or (self.native and not self.planner_ready()):
             return
         self.execution_started_wall = wall
         self.spawns = self.placement.vehicle_poses(self.selected_start)
@@ -691,7 +694,7 @@ class RunExperiment(Node):
     def goal_subscribers_ready(self):
         if self.native:
             names = {endpoint.node_name for endpoint in self.get_subscriptions_info_by_topic(self.goal_pub.topic_name)}
-            return (self.native_ready and self.goal_pub.get_subscription_count() >= 2
+            return (self.planner_ready() and self.goal_pub.get_subscription_count() >= 2
                     and (self.start_pub is None or self.start_pub.get_subscription_count() >= 2)
                     and {"hybrid_joint_planner", "hybrid_joint_executor"} <= names)
         if not self.multi:
@@ -705,6 +708,8 @@ class RunExperiment(Node):
         return {"formation_uniform_planner", "formation_playback"} <= listeners
 
     def planner_ready(self):
+        if self.native:
+            return self.native_ready.ready(self.get_clock().now().nanoseconds,monotonic())
         if self.multi:
             return (self.job.get("backend") == self.formation_backend
                     and self.job.get("map_ready") and self.job.get("map_frame_id") == "map"

@@ -25,13 +25,15 @@ def write(path,obj):
 
 def main():
     ap=argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--batch",type=Path,default=LOCAL/"release_c1")
-    ap.add_argument("--control",type=Path,default=LOCAL/"control_605_c1")
-    ap.add_argument("--gazebo",type=Path,default=LOCAL/"gazebo_release_c2")
-    ap.add_argument("--ros",type=Path,default=LOCAL/"group_c1")
-    ap.add_argument("--witness",type=Path,default=LOCAL/"witness_final_c1")
-    ap.add_argument("--binary",type=Path,default=LOCAL/"candidate3")
-    ap.add_argument("--ctest",type=Path,default=LOCAL/"release_c1"/"ctest")
+    ap.add_argument("--batch",type=Path,default=LOCAL/"release_c3")
+    ap.add_argument("--control",type=Path,default=LOCAL/"control_605_c3")
+    ap.add_argument("--gazebo",type=Path,default=LOCAL/"gazebo_release_c3")
+    ap.add_argument("--numeric",type=Path,default=NUMERIC/"c3")
+    ap.add_argument("--ros",type=Path,default=LOCAL/"group_c3")
+    ap.add_argument("--witness",type=Path,default=LOCAL/"witness_final_c3")
+    ap.add_argument("--system",type=Path,default=LOCAL/"system_c3",help="clean snapshot of the ROS binaries used in the Gazebo series")
+    ap.add_argument("--binary",type=Path,default=LOCAL/"binary_c3")
+    ap.add_argument("--ctest",type=Path,default=LOCAL/"release_c3"/"ctest")
     ap.add_argument("--report",type=Path,default=REPORT)
     ap.add_argument("--compact",action="store_true",help="re-evaluate from the checked-in measurements")
     args=ap.parse_args();out=args.report;out.mkdir(exist_ok=True,parents=True)
@@ -40,10 +42,10 @@ def main():
     if not args.compact:
         casefile=REPORT/"case_manifest.json"
         stats=collect(args.batch)
-        models=load(NUMERIC/"model.json");collision=load(NUMERIC/"collision.json")
-        derivatives=load(NUMERIC/"derivatives.json")
+        models=load(args.numeric/"model.json");collision=load(args.numeric/"collision.json")
+        derivatives=load(args.numeric/"derivatives.json")
         defaults=yaml.safe_load(REGISTRY.read_text())
-        native=load(LOCAL/"native_c1/runtime.json")
+        native=load(LOCAL/"native_c3/runtime.json")
         archive=args.ros
         fixtures={t:load(archive/f"{t}.json") for t in TASKS}
         legacy={f"{t}/{p}":[[x["case_id"],x.get("request_hash"),x["evidence"].get("certified_in_budget",False)]
@@ -53,21 +55,26 @@ def main():
             for profile in PROFILES:
                 for r in lines(args.witness/f"witness_{split}_{profile}.jsonl"):
                     witness[r["case_id"]+"/"+profile]=[r["request_hash"],r["evidence"].get("executable",False),r.get("witness_hash")]
-        ctest=xml_cases(args.ctest);san=xml_cases(NUMERIC/"ASan_UBSan")
+        ctest=xml_cases(args.ctest);san=xml_cases(args.numeric/"ASan_UBSan")
         data=dict(model=models,collision=collision,derivatives=derivatives,software_defaults=defaults["defaults"],
                   native=native,group_fixtures=fixtures,legacy=legacy,control=setup_metrics(args.control),
-                  certificate_tests=xml_cases(NUMERIC),ctest=ctest,san=san,necessary_aux=load(NUMERIC/"necessary_aux.json"),
-                  necessary_profiles=load(NUMERIC/"necessary_corridor_c1.json"),
-                  asan_smoke=load(NUMERIC/"sanitizer_summary.json"),native_faults=load(archive/"faults.json"),
+                  certificate_tests=xml_cases(args.numeric),ctest=ctest,san=san,necessary_aux=load(args.numeric/"necessary_aux.json"),
+                  necessary_profiles=load(args.numeric/"necessary_corridor.json"),
+                  asan_smoke=load(args.numeric/"sanitizer_summary.json"),native_faults=load(archive/"faults.json"),
                   admission=load(archive/"delivery.json"),cases=stats,witness=witness,gazebo=closed_rows(args.gazebo),
                   inputs_sha256={str(p.relative_to(ROOT)):sha(p) for p in [SPEC,REGISTRY,casefile,REPORT/"case_manifest_baseline.json"] if p.exists()},
                   default_runs=load(args.batch/"default_runs.json"),source_manifest=build_manifest(args.batch,args.witness,args.binary,args.ctest))
-        data["source_manifest"]["system_source_sha256"]=system_hashes(data["source_manifest"]["binary_commit"])
+        system_identity=args.system/"source_commit"
+        system_commit=system_identity.read_text().strip() if system_identity.is_file() else None
+        data["source_manifest"]["system_commit"]=system_commit
+        data["source_manifest"]["system_source_sha256"]=system_hashes(system_commit)
+        data["source_manifest"]["system_release_tests"]=xml_cases(args.system/"ctest")
+        data["source_manifest"]["system_snapshot"]=str(args.system.resolve())
         write(out/"measurements.json",data)
     if data is None:raise SystemExit("missing measurements")
     if not args.compact:
         from publish_evidence import export
-        export(out,data)
+        export(out,data,args.batch)
     cfg={g["id"]:g for g in spec["checks"]}
     checks={}
     def record(name,available,passed,measurement):
@@ -95,7 +102,8 @@ def main():
            dict(collision=c,native_certificate_tests=tests))
     code_tests=data["ctest"];asan=data["asan_smoke"] or {}
     record("BUILD_TESTS_SANITIZERS",bool(code_tests),bool(code_tests) and all(code_tests.values()) and
-           all(data["san"].values()) and bool(data["san"]) and asan.get("native_solve_passed") is True
+           all(data["san"].values()) and bool(data["san"]) and bool((data["source_manifest"] or {}).get("system_release_tests")) and
+           all(data["source_manifest"]["system_release_tests"].values()) and asan.get("native_solve_passed") is True
            and asan.get("sanitizers")==["address","undefined"] and bool(asan.get("tsan")),dict(ctest=code_tests,sanitizers=asan))
     rows=data["cases"];witness=data["witness"]
     def valid(r):
@@ -254,6 +262,9 @@ def main():
     final={"schema":spec["schema"],"task_state":"COMPLETED" if completed else "INCOMPLETE","hardware":"HARDWARE_NOT_VERIFIED",
            "checks":[dict(id=k,**checks[k]) for k in cfg],"measurements_sha256":sha(out/"measurements.json")}
     write(out/"acceptance.json",final)
+    if not args.compact:
+        from report_summary import write_summary
+        write_summary(out,final,data)
     print(final["task_state"],{k:v["status"] for k,v in checks.items() if v["status"]!="PASS"})
     return 0 if completed else 1
 
