@@ -2,6 +2,7 @@
 from dataclasses import replace
 import json
 import math
+import struct
 import time
 
 import numpy as np
@@ -10,6 +11,7 @@ import pytest
 from fwis_backends.multi_4wis.core import Grid
 from fwis_backends.multi_4wis.formation import FormationModel, FormationPose, VehicleOffset
 from fwis_backends.multi_4wis.formation_collision import CargoFootprint, FormationCollisionChecker, VehicleShape
+from fwis_backends.multi_4wis.formation_continuous_a.bounds import _next_down, _next_up
 from fwis_backends.multi_4wis.formation_continuous_a.geometry import VirtualAPath
 from fwis_backends.multi_4wis.formation_retiming import FormationTimingLimits, _DYNAMIC_LIMITS
 from fwis_backends.multi_4wis.uniform_continuous_corridor import corridor_curves
@@ -28,6 +30,28 @@ from fwis_backends.multi_4wis.uniform_reachability import (
 )
 from fwis_backends.multi_4wis.uniform_search import GraphSearchConfig, SuccessorConfig
 from fwis_backends.multi_4wis.uniform_timing import MotionTiming, SetupTiming
+
+
+def test_interval_rounding_keeps_historical_ieee754_endpoints():
+    def decode(bits):
+        return struct.unpack("<d", struct.pack("<Q", bits))[0]
+
+    def encode(value):
+        return struct.unpack("<Q", struct.pack("<d", value))[0]
+
+    sign, infinity = 1 << 63, 0x7FF0000000000000
+    for zero in (0, sign):
+        assert encode(_next_up(decode(zero))) == 1
+        assert encode(_next_down(decode(zero))) == sign | 1
+    for bits in (1, 0x000FFFFFFFFFFFFF, 0x0010000000000000, 0x3FF0000000000000, infinity - 1):
+        assert encode(_next_up(decode(bits))) == bits + 1
+        assert encode(_next_down(decode(bits))) == bits - 1
+        negative = bits | sign
+        assert encode(_next_up(decode(negative))) == negative - 1
+        assert encode(_next_down(decode(negative))) == negative + 1
+    for bits in (infinity, infinity | sign, infinity | 0x8000000000013, infinity | sign | 57):
+        assert encode(_next_up(decode(bits))) == bits
+        assert encode(_next_down(decode(bits))) == bits
 
 
 @pytest.mark.parametrize("distance,speed,acceleration,jerk", (

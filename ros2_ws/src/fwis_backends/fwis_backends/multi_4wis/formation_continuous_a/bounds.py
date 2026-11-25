@@ -10,7 +10,6 @@ covered by an explicit per-coefficient widening (``COEFFICIENT_ULPS``).  This
 is a documented numerical assumption, not a formal floating-point proof.
 """
 import math
-import struct
 
 EPSILON = 2.220446049250313e-16
 COEFFICIENT_ULPS = 16
@@ -35,23 +34,13 @@ NUMERICS_VERSION = DEFAULT_NUMERICS_VERSION
 
 
 def _next_up(value):
-    if math.isnan(value) or math.isinf(value):
-        return value
-    if value == 0.0:
-        return 5e-324
-    bits = struct.unpack("<Q", struct.pack("<d", value))[0]
-    bits = bits + 1 if value > 0.0 else bits - 1
-    return struct.unpack("<d", struct.pack("<Q", bits))[0]
+    # Preserve the historical behavior for a bound already at infinity and
+    # for NaNs, including the original sign and payload.
+    return math.nextafter(value, math.inf) if math.isfinite(value) else value
 
 
 def _next_down(value):
-    if math.isnan(value) or math.isinf(value):
-        return value
-    if value == 0.0:
-        return -5e-324
-    bits = struct.unpack("<Q", struct.pack("<d", value))[0]
-    bits = bits - 1 if value > 0.0 else bits + 1
-    return struct.unpack("<d", struct.pack("<Q", bits))[0]
+    return math.nextafter(value, -math.inf) if math.isfinite(value) else value
 
 
 def widen(value, ulps=COEFFICIENT_ULPS):
