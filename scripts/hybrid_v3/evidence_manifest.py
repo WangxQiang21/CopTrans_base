@@ -7,6 +7,7 @@ import subprocess
 from qualify import ROOT, POLICY, digest, sha, load
 
 RANKING_SOURCE="ros2_ws/src/fwis_hybrid_joint/config/policy.json"
+RECORDER_SOURCE="ros2_ws/src/fwis_bringup/scripts/run_experiment"
 
 
 def read_hash_file(path):
@@ -65,6 +66,47 @@ def runtime_binaries(snapshot):
     return {str(p.resolve()):sha(p) for p in paths if p.is_file()}
 
 
+def recorder_revision(path):
+    """Bind the later archive-only change to its paired observed fault tests."""
+    receipt=load(path)
+    if not receipt or receipt["status"]!="validated":
+        return None
+    def check_files(value):
+        if isinstance(value,dict):
+            if "file" in value and "sha256" in value:
+                p=Path(value["file"])
+                if not p.is_file() or sha(p)!=value["sha256"]:
+                    raise ValueError("Changed recorder evidence: "+str(p))
+            for v in value.values(): check_files(v)
+        elif isinstance(value,list):
+            for v in value: check_files(v)
+    check_files(receipt)
+    return receipt
+
+
+def verified_recorder(manifest):
+    receipt=manifest.get("recorder_revision") or {}
+    versions=receipt.get("build_and_runtime",{})
+    old=manifest.get("system_source_sha256",{}).get(RECORDER_SOURCE)
+    pairs=receipt.get("paired_runs",{})
+    if not (receipt.get("status")=="validated" and versions.get("native_source_commit")==manifest.get("system_commit")
+            and versions.get("native_binaries")==manifest.get("runtime_binaries") and old
+            and versions.get("old_runner",{}).get("sha256")==old
+            and versions.get("new_runner",{}).get("sha256")==sha(ROOT/RECORDER_SOURCE)
+            and versions.get("unit_suites",{}).get("stop_observation")
+            and set(pairs)=={"original","fixed"}
+            and all({r["task"] for r in pairs[k]}=={"single","formation"} for k in pairs)):
+        return False
+    for r in pairs["fixed"]:
+        if r.get("reported_status")!="stopped" or not r.get("termination_observation",{}).get("final",{}).get("window_complete"):
+            return False
+        for car in r["cars"].values():
+            if not (car["result_cmd_vel"]==car["independent_cmd_vel_last"]["velocity"]==[0.,0.,0.] and
+                    car["result_last_odom_twist"]==car["independent_odom_last"]["velocity"]==[0.,0.,0.]):
+                return False
+    return True
+
+
 def audit_rows(records,witnesses,manifest_files,source):
     manifests={k:{r["id"]:r for r in (load(v) or {}).get("cases",[])} for k,v in manifest_files.items()}
     reasons=[]
@@ -73,6 +115,8 @@ def audit_rows(records,witnesses,manifest_files,source):
     sources=(source or {}).get("source_sha256",{}) | (source or {}).get("system_source_sha256",{})
     if not source or not source.get("system_commit") or not source.get("system_source_sha256"):
         reasons.append("missing_system_identity")
+    if source and verified_recorder(source):
+        sources[RECORDER_SOURCE]=source["recorder_revision"]["build_and_runtime"]["new_runner"]["sha256"]
     for name,value in sources.items():
         if not (ROOT/name).is_file() or sha(ROOT/name)!=value:
             reasons.append("source/"+name)

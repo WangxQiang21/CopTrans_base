@@ -92,5 +92,5 @@ def export(out,data,batch):
                   numeric_and_control_sources=data.get("source_manifest"),
                   raw_local=str(LOCAL),reference_run_ids=["20261125_140950_e40cIk","20261125_141134_AeDvqX","20261125_141201_TcTcHJ"],
                   compact_hashes={str(p.relative_to(out)):sha(p) for p in [out/"runs.csv",out/"measurements.json",out/"case_manifest.json",
-                      out/"case_manifest_baseline.json",out/"legacy_comparison.json",out/"acceptance_spec.yaml",*sorted((out/"representative_plans").glob("*.json.gz"))] if p.exists()})
+                      out/"case_manifest_baseline.json",out/"legacy_comparison.json",out/"behavior.json",out/"acceptance_spec.yaml",*sorted((out/"representative_plans").glob("*.json.gz"))] if p.exists()})
     (out/"manifest.json").write_text(json.dumps(manifest,indent=2,ensure_ascii=False)+"\n")

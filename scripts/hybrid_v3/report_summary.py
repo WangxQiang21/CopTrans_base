@@ -1,6 +1,6 @@
 """Render the short qualification summary from the same measurements as the gates."""
 from pathlib import Path
-from qualify import REPORT, quant
+from qualify import REPORT, load, quant
 
 
 def number(x, digits=3):
@@ -39,6 +39,10 @@ def write_summary(out,result,data):
                 return number(t["policy_compliant_p95_s"]) if t["policy_compliant_p95_observed"] else f"未达到（{t['certified_in_budget']}/30）"
             lines.append(f"| {names[task]} | {profile} | {legacy_value('C01')} | {legacy_value('C06')} |")
         sections.append(lines[0]+"\n\n"+"\n".join(lines[1:]))
+    behavior=load(out/"behavior.json")
+    if behavior:
+        from publish_behavior import readme_paragraph
+        sections.append(readme_paragraph(behavior))
     pruned=gates["MODE_PRUNING"]["measured"]
     sections.append(f"冗余辅助模式专项已从 {sum(v['pairs'] for v in pruned.values())} 个预置序列中完整删除 {sum(v['removed'] for v in pruned.values())} 个。核心集的纯 A 判定要求内部停车次数为零。必要辅助使用窄槽侧向位移上界和编队挂点满秩反例检验。")
     g=data["gazebo"];success=[r for r in g if r["status"]=="passed"]

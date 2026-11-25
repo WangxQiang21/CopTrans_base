@@ -16,7 +16,7 @@ sys.path.insert(0,str(Path(__file__).resolve().parent/"hybrid_v3"))
 from qualify import (LOCAL,NUMERIC,POLICY,PROFILES,REGISTRY,REPORT,ROOT,SPEC,TASKS,closed_rows,
                      archived_comparisons,collect,digest,lines,load,quant,setup_metrics,sha,xml_cases)
 from cases import indices
-from evidence_manifest import build_manifest, audit_rows, system_hashes, runtime_binaries, RANKING_SOURCE
+from evidence_manifest import build_manifest, audit_rows, system_hashes, runtime_binaries, recorder_revision, RANKING_SOURCE
 
 
 def write(path,obj):
@@ -39,6 +39,7 @@ def main():
     ap.add_argument("--native",type=Path,default=LOCAL/f"native_{release}")
     ap.add_argument("--binary",type=Path,default=LOCAL/f"binary_{release}")
     ap.add_argument("--ctest",type=Path,default=LOCAL/f"release_{release}"/"ctest")
+    ap.add_argument("--recorder",type=Path,default=LOCAL/f"recorder_stop_{release}"/"receipt.json")
     ap.add_argument("--report",type=Path,default=REPORT)
     ap.add_argument("--compact",action="store_true",help="re-evaluate from the checked-in measurements")
     args=ap.parse_args();out=args.report;out.mkdir(exist_ok=True,parents=True)
@@ -88,6 +89,7 @@ def main():
         data["source_manifest"]["system_source_sha256"]=system_hashes(system_commit)
         data["source_manifest"]["system_release_tests"]=xml_cases(args.system/"ctest")
         data["source_manifest"]["runtime_binaries"]=runtime_binaries(args.system)
+        data["source_manifest"]["recorder_revision"]=recorder_revision(args.recorder)
         data["source_manifest"]["system_snapshot"]=str(args.system.resolve())
         write(out/"measurements.json",data)
     if data is None:raise SystemExit("missing measurements")
