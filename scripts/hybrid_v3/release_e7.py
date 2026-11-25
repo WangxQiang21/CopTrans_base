@@ -123,11 +123,22 @@ def freeze_checks(cfg):
     if (numeric["source_commit"] != solver or native["source_commit"] != solver or
             sha(cfg["native"]/"runtime.json") != numeric["raw_sha256"]["native/runtime.json"]):
         raise ValueError("The numeric and native receipts must bind this solver")
+    for name, digest in numeric["raw_sha256"].items():
+        folder, relative = (cfg["native"], name[7:]) if name.startswith("native/") else (cfg["numeric"],name)
+        if sha(folder/relative) != digest:
+            raise ValueError("Changed numeric qualification artifact: "+name)
+    for variant, evidence in numeric["variants"].items():
+        if sha(cfg["numeric"]/variant/"manifest.json") != evidence["manifest_sha256"]:
+            raise ValueError("Changed numerical build manifest: "+variant)
     frozen = {Path(k).name:v for k,v in old["sealed_manifest_sha256"].items()}
     if (frozen != {f"manifest_{k}.json":v for k,v in PROFILE_SEALS.items()} or
             old["core_timing_reference_sha256"] != sha(cfg["legacy"]/"core_timing_references.json") or
             old["frozen_holdout_cohort"] != 4):
         raise ValueError("Unmatched legacy cohort or timing reference")
+    for key, group in old["cohorts"].items():
+        if sha(cfg["legacy"]/f"legacy_{key}.jsonl")!=group["raw_sha256"] or (
+                sha(cfg["legacy"]/f"legacy_timing_{key}.jsonl")!=group["timing_raw_sha256"]):
+            raise ValueError("Changed previously acquired control observations: "+key)
     for key in ("gazebo","headless"):
         rows = [read(path) for path in cfg[key].glob("*/metadata.json")]
         if not matrix(rows, key == "gazebo") or any(row["source_commit"] != system for row in rows):
@@ -175,9 +186,15 @@ def prepare_inputs(cfg, work):
     compact.mkdir()
     shutil.copy2(SPEC, compact/SPEC.name)
     shutil.copy2(legacy/"legacy_progress.json",compact/"legacy_comparison.json")
-    run(ROOT, sys.executable, TOOLS/"historical_catalog.py",cfg["historical"],"--output",compact/"historical_routes.json")
+    scene_source=cfg["system"]/"ros2_ws/src/ranger_mini_gz"
+    catalog_env=dict(os.environ,PYTHONPATH=os.pathsep.join([str(scene_source),os.environ.get("PYTHONPATH","")]))
+    run(ROOT,sys.executable,TOOLS/"historical_catalog.py",cfg["historical"],"--output",compact/"historical_routes.json",
+        env=catalog_env)
+    clocks=stage/"independent_clocks.json"
+    run(ROOT,sys.executable,TOOLS/"clock_receipts.py","--gazebo",cfg["gazebo"],"--headless",cfg["headless"],
+        "--system",cfg["system"],"--verify",cfg["clock_receipts"],"--output",clocks)
     run(ROOT, sys.executable, TOOLS/"publish_behavior.py","--native",stage/"native.json","--scenes",scenes,
-        "--gazebo",stage/"gui.json","--headless",stage/"headless.json","--clock-receipts",cfg["clock_receipts"],
+        "--gazebo",stage/"gui.json","--headless",stage/"headless.json","--clock-receipts",clocks,
         "--system",cfg["system"],"--output",compact/"behavior.json")
     return compact, stage
 
@@ -243,6 +260,14 @@ def commit(clone, paths, message):
         "commit","-m",message)
 
 
+def checkout_release_files(clone, revision):
+    # Archived ROS 1 blobs in a partial operator checkout may be offline.
+    # Hydrate the complete runtime, tools and evidence trees used by E7.
+    run(clone,"git","sparse-checkout","init","--cone")
+    run(clone,"git","sparse-checkout","set","scripts","ros2_ws/src","reports/hybrid_v3")
+    run(clone,"git","checkout","--quiet","--detach",revision)
+
+
 def publish(cfg, work, ref):
     work.mkdir(parents=True,exist_ok=False)
     freeze_checks(cfg)
@@ -254,7 +279,7 @@ def publish(cfg, work, ref):
     recompute(ROOT,cfg,compact,stage,True)
     clone=work/"candidate"
     run(ROOT,"git","clone","--quiet","--no-checkout","--shared",ROOT,clone)
-    run(clone,"git","checkout","--quiet","--detach",base)
+    checkout_release_files(clone,base)
     (clone/REGISTRY).write_text(promoted_text((clone/REGISTRY).read_text()))
     commit(clone,[REGISTRY],"Use certified hybrid planners for default simulations")
     relay_archives(clone,cfg)
@@ -266,9 +291,13 @@ def publish(cfg, work, ref):
     recompute(clone,cfg,out,stage,False)
     commit(clone,[REPORT],"Publish verified hybrid planning and control evidence")
     clean=work/"clean"
-    run(ROOT,"git","clone","--quiet","--no-local",clone,clean)
+    run(clone,"git","config","uploadpack.allowFilter","true")
+    run(clone,"git","config","uploadpack.allowAnySHA1InWant","true")
+    run(ROOT,"git","clone","--quiet","--no-local","--no-checkout","--filter=blob:none",clone,clean)
+    checkout_release_files(clean,git(clone,"rev-parse","HEAD"))
+    run(clean,"git","remote","remove","origin")
     # This clone contains neither local log directories nor the simulation install.
-    if (clean/"reports/runs").exists() or (clean/"ros2_ws/install").exists():
+    if any((clean/name).exists() for name in ("reports/runs","ros2_ws/install",".git/objects/info/alternates")):
         raise ValueError("Unexpected raw artifacts in clean verifier")
     expected=sha(clean/REPORT/"acceptance.json")
     rc=run(clean,sys.executable,"scripts/accept_hybrid_v3.py","--compact")
