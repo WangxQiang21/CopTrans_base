@@ -443,6 +443,40 @@ Plan expand(const Request& r,const HJProblem& p) {
   }
   return plan;
 }
+
+// Optimize duration on a continuous channel before releasing its geometry to
+// the full shape-and-time NLP. A feasible spatial iterate survives subsequent
+// nonconvergence. Every tested duration uses the original continuous checker.
+std::optional<Plan> retime_channel(const Request& r,const HJProblem& graph,const Run& run,Clock::time_point& first_proof){
+  if(graph.count!=1 || graph.phase[0].mode!=0 || graph.phase[0].spans<2 || run.stop())return {};
+  Plan plan=expand(r,graph);
+  auto& motion=plan.phases.back();
+  const double cap=r.task_duration_cap-(duration(plan)-motion.duration);
+  if(cap<r.limits.min_motion_duration)return {};
+  auto test=[&](double trial){
+    motion.duration=trial;
+    return certify(r,plan,run.end,run.cancel);
+  };
+  double hi=std::min(motion.duration,cap),lo=r.limits.min_motion_duration;
+  auto proof=test(hi);
+  if(!proof.executable){
+    const auto& failure=proof.reason;
+    if(run.stop() || hi>=cap || !(failure.find("SPEED")!=std::string::npos ||
+       failure.find("ACCELERATION")!=std::string::npos || failure.find("JERK")!=std::string::npos ||
+       failure.find("RATE")!=std::string::npos || failure.find("DYNAMIC")!=std::string::npos))return {};
+    lo=hi;hi=cap;
+    if(!test(hi).executable)return {};
+  }
+  first_proof=Clock::now();
+  // Bisection keeps the last proven duration; a timeout can never admit the
+  // unverified lower endpoint. The later joint solve can further reduce cost.
+  for(int i=0;i<4 && !run.stop();++i){
+    const double middle=(lo+hi)*.5;
+    if(test(middle).executable)hi=middle;else lo=middle;
+  }
+  motion.duration=hi;
+  return plan;
+}
 // A pointwise determinant excludes only an exact endpoint. With a heading
 // tolerance the inactive tangent proof must hold over the whole neighborhood.
 struct MountRank {bool exact{}, whole_neighborhood{};};
@@ -588,7 +622,16 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
         if(!wide.empty())low_rotation.route=std::move(wide);
         low_rotation.smooth_channel=true;
       }
-      seeds.insert(route,std::move(low_rotation));
+      if(!low_rotation.channel_yaw.empty()){
+        auto minimum=low_rotation;
+        minimum.channel_yaw.clear();
+        low_rotation.edit="CLEARANCE_YAW_ROUTE";
+        // Keep the original channel in second place. Both orientation hypotheses
+        // go through the same fixed-sequence optimizer and full interval check.
+        const auto index=route-seeds.begin();
+        seeds.insert(seeds.begin()+index,std::move(low_rotation));
+        seeds.insert(seeds.begin()+index+2,std::move(minimum));
+      }else seeds.insert(route,std::move(low_rotation));
     }
   }
   // Near a rank transition, constrain the terminal tangent against its
@@ -685,13 +728,36 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
       Run trial{std::min(deadline,Clock::now()+std::chrono::duration_cast<Clock::duration>(std::chrono::duration<double>(slice))),cancel};
       if(improving_aux)trial.end=std::min(trial.end,improve_until);
       auto graph=problem(r,seed,opts,trial);
+      if(!result.plan && graph.count==1 && graph.phase[0].mode==0 && graph.phase[0].spans>1){
+        const auto before=Clock::now();
+        Run timing{std::min(trial.end,before+std::chrono::milliseconds(300)),cancel};
+        Clock::time_point first_proof;
+        std::optional<Plan> timed;
+        try{timed=retime_channel(r,graph,timing,first_proof);}
+        catch(const std::domain_error&){/* The full NLP can repair a singular initial tangent. */}
+        metrics.certify_s+=std::chrono::duration<double>(Clock::now()-before).count();
+        if(timed){
+          result.first_certified_s=std::chrono::duration<double>(first_proof-begin).count();
+          try{best=score_policy(r,*timed,deadline,cancel);}
+          catch(const std::runtime_error&){
+            if(!run.stop())throw;
+            result.plan=std::move(*timed);
+            unranked_incumbent=true;
+            result.trace.push_back(tag+":CERTIFIED_CHANNEL_TIMING:POLICY_EVALUATION_DEADLINE");
+            break;
+          }
+          result.plan=std::move(*timed);
+          result.trace.push_back(tag+":CERTIFIED_CHANNEL_TIMING");
+          trial.end=std::min(trial.end,Clock::now()+std::chrono::milliseconds(1600));
+        }
+      }
       auto active=separators(r,graph,run);
       std::vector<HJCurvatureStation> curvature_stations;
       graph.separations=active.data();graph.sep_count=active.size();
       char msg[512]{};
       bool solved=hj_optimize(&graph,msg,sizeof(msg));
       metrics.nlp_build_s=graph.nlp_build_s;metrics.nlp_solve_s=graph.nlp_solve_s;
-      if(!solved){why=msg;metrics.status=why;result.trace.push_back(tag+":"+why);propose(locked_goal?seed.seq.size()-1:0,false);continue;}
+      if(!solved){why=msg;metrics.status=why;result.trace.push_back(tag+":"+why);if(result.plan && !best.auxiliary_blocks)break;propose(locked_goal?seed.seq.size()-1:0,false);continue;}
       if(graph.primal_status[0])result.trace.push_back(tag+":UNCONVERGED_PRIMAL:"+graph.primal_status);
       auto plan=expand(r,graph);
       bool accepted=false;

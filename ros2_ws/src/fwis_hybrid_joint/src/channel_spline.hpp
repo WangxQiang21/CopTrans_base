@@ -111,6 +111,32 @@ std::vector<double> yaw_profile(const std::array<std::vector<Span>,2>& xy, doubl
     }
     return value;
   };
+  // Prefer the least-rotation cargo chart whenever its actual C4 centerline
+  // already clears the same comfort gap used by the posture search. Extra
+  // cargo rotation increases travel at the outer mounts on a long slow run.
+  constexpr double comfort_gap=.08;
+  std::vector<double> knots(6,0.);
+  for(int j=1;j<n;++j)knots.push_back(j);
+  knots.insert(knots.end(),6,n);
+  std::vector<double> simple(n+5);
+  for(int i=0;i<n+5;++i){
+    double t=0.;
+    for(int j=1;j<=5;++j)t+=knots[i+j]/5.;
+    simple[i]=start+turn*t/n;
+  }
+  std::fill_n(simple.begin(),3,start);
+  std::fill_n(simple.end()-3,3,start+turn);
+  const auto minimum_yaw=bezier_spans(std::move(simple),n);
+  bool needs_rotation_search=false;
+  for(int k=0;k<=samples;++k){
+    const auto pos=point(k);
+    const int j=std::min(k/subdivisions,n-1);
+    const double u=double(k-j*subdivisions)/subdivisions;
+    auto yaw=minimum_yaw[j];
+    for(int d=5;d>0;--d)for(int i=0;i<d;++i)yaw[i]+=u*(yaw[i+1]-yaw[i]);
+    if(clearance({pos[0],pos[1]},yaw[0])<comfort_gap){needs_rotation_search=true;break;}
+  }
+  if(!needs_rotation_search)return {};
   auto before=point(0);
   for(int k=1;k<=samples;++k){
     const auto pos=point(k);
@@ -120,7 +146,7 @@ std::vector<double> yaw_profile(const std::array<std::vector<Span>,2>& xy, doubl
     for(int b=0;b<bins;++b){
       if(k==samples && b!=mid)continue;
       const double yaw=theta(k,b),gap=clearance({pos[0],pos[1]},yaw);
-      const double contact=std::max(0.,.08-gap);
+      const double contact=std::max(0.,comfort_gap-gap);
       const double cost=ds*(.003*std::pow((b-mid)*angular_step,2)+.10/std::pow(.22+std::max(0.,gap),2)+120.*contact*contact);
       for(int a=std::max(0,b-3);a<=std::min(bins-1,b+3);++a){
         const double rate=(yaw-theta(k-1,a))/ds;
