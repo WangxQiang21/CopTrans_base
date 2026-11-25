@@ -73,3 +73,32 @@ def test_router_rejects_the_whole_envelope_on_inconsistent_data(corruption, matc
         track.points[-1].mode = FormationTimedPoint.SPIN
     with pytest.raises(ValueError, match=match):
         make_routes(envelope, request, Time(sec=7))
+
+
+def test_native_requests_require_two_current_clocks_and_the_same_map():
+    import json
+    from fwis_bringup.native_readiness import NativeReadiness
+
+    gate = NativeReadiness()
+    stamp = 2_000_000_000
+
+    def report(role, **changes):
+        data = {"ready": True, "clock_ns": stamp, "map_sha256": "a" * 64}
+        gate.observe(role, json.dumps(data | changes), wall=10.)
+
+    report("planner")
+    assert not gate.ready(stamp, 10.)
+    report("executor", clock_ns=0)
+    assert not gate.ready(stamp, 10.)
+    report("executor", map_sha256="b" * 64)
+    assert not gate.ready(stamp, 10.)
+    report("executor")
+    assert gate.ready(stamp, 10.)
+    assert not gate.ready(stamp, 10.21)
+    assert not gate.ready(stamp - 201_000_000, 10.)
+    assert not gate.ready(stamp + 201_000_000, 10.)
+    report("planner", ready=False)
+    assert not gate.ready(stamp, 10.)
+    report("planner")
+    gate.observe("executor", "corrupt", wall=10.)
+    assert not gate.ready(stamp, 10.)

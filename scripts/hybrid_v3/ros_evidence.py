@@ -48,7 +48,7 @@ def main():
             if any(not math.isfinite(x) or x<=0 for x in delays[key]):
                 raise ValueError(f"Invalid delivery timing at {key}")
             seen={}
-            for suite in ("faults","expired","rollback","repeat_ack","ack_before_envelope","clock_delivery_order","clock_not_synchronized","forged_source_epoch"):
+            for suite in ("faults","expired","rollback","repeat_ack","ack_before_envelope","clock_delivery_order","clock_not_synchronized","forged_source_epoch","cold_executor_clock","cold_planner_clock","running_clock_stall"):
                 path=args.run/f"{count}_{profile}_{suite}.json"
                 cases=rows(path,count,profile)
                 raw[path.name]=sha256(path.read_bytes()).hexdigest()
@@ -56,9 +56,9 @@ def main():
                     if r["fault"] in seen:
                         raise ValueError(f"Duplicate fault {r['fault']} at {key}")
                     seen[r["fault"]]=r
-            success={"success","repeat_ack","ack_before_envelope","clock_delivery_order"}
+            success={"success","repeat_ack","ack_before_envelope","clock_delivery_order","cold_executor_clock","cold_planner_clock"}
             stopped={"tamper","expired","missing_member","stale_feedback","wrong_mode","map_replaced","permit_loss",
-                     "wrong_epoch","future_permit","revoked_permit","nan_feedback","clock_rollback","clock_not_synchronized","forged_source_epoch"}
+                     "wrong_epoch","future_permit","revoked_permit","nan_feedback","clock_rollback","clock_not_synchronized","forged_source_epoch","running_clock_stall"}
             if set(seen)!=success|stopped or any(seen[k]["phase"]!="COMPLETE" for k in success):
                 raise ValueError(f"Missing successful controls or fault cases at {key}")
             if any(seen[k]["phase"]!="STOPPED" for k in stopped):
@@ -75,6 +75,15 @@ def main():
                     seen["forged_source_epoch"]["release_s"] is not None or
                     seen["forged_source_epoch"]["reason"]!="invalid future epoch"):
                 raise ValueError(f"Missing independent publication/receiver clock checks at {key}")
+            for role in ("planner","executor"):
+                cold=seen[f"cold_{role}_clock"]["cold_start"]
+                other="executor" if role=="planner" else "planner"
+                if (cold["permitted_before"] or cold["initial"][role]["ready"] or cold["initial"][role]["clock_ns"]!=0
+                        or not cold["initial"][other]["ready"] or not all(r["ready"] for r in cold["after"].values())):
+                    raise ValueError(f"Cold {role} was not tested independently for {key}")
+            if (seen["running_clock_stall"]["release_s"] is None or
+                    seen["running_clock_stall"]["reason"] not in ("clock_not_advancing","tracker_STOPPED")):
+                raise ValueError(f"Clock stall after release did not stop {key}")
             for name in ("wrong_epoch","future_permit","revoked_permit","permit_loss"):
                 if "formation_permit_missing_or_revoked" not in seen[name]["tracker_reasons"]:
                     raise ValueError(f"{key} did not exercise permit rejection on {name}")

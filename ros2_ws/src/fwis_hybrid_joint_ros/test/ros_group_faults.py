@@ -7,7 +7,6 @@ import hashlib
 import re
 from math import cos, sin, isfinite
 import os
-import signal
 from pathlib import Path
 import subprocess
 import sys
@@ -70,6 +69,8 @@ class Run(Node):
         self.rollback = 0.
         self.bad_numeric = set()
         self.wrong_permit = None
+        self.relay_permits = False
+        self.block_permits = False
         self.nonfinite_commands = 0
         self.timeline = []
         self.check_reasons = {}
@@ -123,6 +124,9 @@ class Run(Node):
             prefix="timing_limits." if self.count==3 else "quality.limits."
             if key!="target_v":
                 parameters.extend(["-p",f"{prefix}{key}:={value}"])
+        if self.relay_permits:
+            self.create_subscription(HybridExecutionPermit,"/fixture/source_permit",
+                                     lambda m: self.bad_permit.publish(m) if not self.block_permits else None,10)
         if self.expired_fixture:
             self.create_subscription(FormationPlaybackPlan, "/fixture/delayed_plan", self.generated, DURABLE)
         for role in ("planner", "executor"):
@@ -131,6 +135,8 @@ class Run(Node):
             if self.repeat_ack and role=="executor":
                 for i in range(self.count):
                     remaps.extend(["-r",f"/robot{i+1}/controller_status:=/fixture/ack{i+1}"])
+            if self.relay_permits and role=="executor":
+                remaps.extend(["-r","/hybrid_joint/execution_permit:=/fixture/source_permit"])
             if role=="planner" and self.delayed_role=="planner":
                 remaps.extend(["-r","/clock:=/fixture/planner_clock"])
             if (self.group_clock_lag or self.delayed_role=="executor" or self.freeze_during_motion) and role=="executor":
@@ -365,8 +371,9 @@ class Run(Node):
             self.map_pub.publish(self.map)
         if name in ("permit_loss","wrong_epoch","future_permit","revoked_permit"):
             self.wrong_permit = name if name!="permit_loss" else None
-            coordinator=self.children[1]
-            coordinator.send_signal(signal.SIGSTOP)
+            # Drop the coordinator's transport samples without freezing a DDS
+            # participant while it may hold shared reader/writer resources.
+            self.block_permits=True
             injection_ros = self.get_clock().now().nanoseconds * 1e-9
             cutoff = injection_ros + .20 + .04   # expiry and one 25 Hz release
             try:
@@ -381,7 +388,7 @@ class Run(Node):
                 self.until(lambda:all(abs(v)<=1e-9 for c in self.commands.values() for v in c),.25)
             finally:
                 self.wrong_permit=None
-                coordinator.send_signal(signal.SIGCONT)
+                self.block_permits=False
         if name == "stale_feedback":
             self.disabled = {self.count - 1}
         expected = "COMPLETE" if name in ("success","repeat_ack","ack_before_envelope","clock_delivery_order","cold_executor_clock","cold_planner_clock") else "STOPPED"
@@ -430,6 +437,8 @@ def main():
         sys.exit("Set an isolated ROS_DOMAIN_ID for synthetic robot topics")
     rclpy.init()
     node=Run(args.vehicles,args.speed_profile)
+    node.relay_permits=any(name in args.cases for name in
+                            ("permit_loss","wrong_epoch","future_permit","revoked_permit"))
     if args.cases==["repeat_ack"]:
         node.repeat_ack=True
     if args.cases==["ack_before_envelope"]:
