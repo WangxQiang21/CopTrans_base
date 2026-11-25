@@ -118,6 +118,21 @@ def _piecewise_continuous_dynamics_peaks(block, phase, limits, table=None):
     coeff = np.asarray([0., c1t, c2t, tail[0], tail[1], tail[2]])
     if not np.allclose(coeff, phase.get("coefficients", []), rtol=0., atol=1e-9):
         raise ValueError("continuous_time_profile_coefficients_mismatch")
+    if phase.get("timing_source") == "constant_ackermann_s_curve_v1":
+        curvature = block.knots[0].value
+        if block.mode != 0 or any(k.value != curvature or k.derivative != 0. for k in block.knots):
+            raise ValueError("analytic_ackermann_requires_constant_curvature")
+        derivatives = [np.polynomial.polynomial.polyder(coeff, order) for order in range(1, 5)]
+        critical = [0., 1.]
+        for derivative in derivatives:
+            critical.extend(float(root.real) for root in np.polynomial.polynomial.polyroots(derivative)
+                            if abs(root.imag) <= 1e-10 and 0. < root.real < 1.)
+        q = np.polynomial.polynomial.polyval(critical, coeff)
+        v, a, j = [np.polynomial.polynomial.polyval(critical, derivative) / duration ** order
+                   for order, derivative in enumerate(derivatives[:3], 1)]
+        if np.min(q) < -1e-8 or np.max(q) > distance + 1e-8 or np.min(v) < -1e-8:
+            raise ValueError("continuous_nonmonotone_time_profile")
+        return _independent_motion_peaks(block, phase["s0"] + np.clip(q, 0., distance), v, a, j, limits)
     spatial = np.concatenate([np.linspace(a.s, b.s, 9)
         for a, b in zip(block.knots, block.knots[1:])])
     boundaries = np.asarray([k.s for k in block.knots])

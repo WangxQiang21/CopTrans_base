@@ -50,6 +50,7 @@ FORMATION_RETIMING_INFEASIBLE = "FORMATION_RETIMING_INFEASIBLE"
 TIMING_AUDIT_FAILED = "TIMING_AUDIT_FAILED"
 
 _DYNAMIC_PROFILE = "formation_piecewise_quintic_v1"
+REACHABLE_DYNAMIC_PROFILE = "formation_piecewise_jerk_v1"
 _GEOMETRY_TOL = 1e-7
 _TIME_TOL = 1e-9
 _WHEEL_ANGLE_TOL = 1e-9
@@ -381,7 +382,7 @@ class FormationTimedTrajectory:
         if self.certification != GEOMETRY_ONLY:
             raise FormationValidationError(
                 "INVALID_TIMED_CERTIFICATION {}".format(self.certification))
-        if self.dynamic_profile != _DYNAMIC_PROFILE:
+        if self.dynamic_profile not in (_DYNAMIC_PROFILE, REACHABLE_DYNAMIC_PROFILE):
             raise FormationValidationError(
                 "INVALID_DYNAMIC_PROFILE {}".format(self.dynamic_profile))
 

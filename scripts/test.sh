@@ -3,7 +3,12 @@ set -e -o pipefail
 
 root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 workspace="$root/ros2_ws"
+install_base="${COPTRANS_INSTALL_BASE:-$workspace/install}"
 temporary=$(mktemp "${TMPDIR:-/tmp}/coptrans-test.XXXXXXXX")
+run_root="$root/reports/runs"
+archive_tool="$workspace/src/fwis_bringup/fwis_bringup/experiment_log.py"
+archive_dir=
+spool_root=
 run_dir=
 launch_pid=
 interrupted=
@@ -23,6 +28,7 @@ stop_remaining() {
 
 cleanup() {
     local code=$?
+    trap - EXIT
     rm -f -- "$temporary"
     stop_remaining
     if [[ -n $run_dir && ! -f $run_dir/result.yaml ]]; then
@@ -32,6 +38,17 @@ cleanup() {
             printf 'status: launch_failed\nreason: startup_or_launch_exited\nexit_code: %s\n' "$code" >"$run_dir/result.yaml"
         fi
     fi
+    if [[ -n $run_dir ]]; then
+        if python3 "$archive_tool" collect "$run_dir" "$archive_dir" --final; then
+            rm -rf -- "$spool_root"
+        else
+            printf 'Archive incomplete. Working data retained at %s\n' "$run_dir" >&2
+            [[ $code != 0 ]] || code=2
+        fi
+    elif [[ -n $spool_root ]]; then
+        rmdir -- "$spool_root"
+    fi
+    exit "$code"
 }
 
 interrupt() {
@@ -48,7 +65,8 @@ trap cleanup EXIT
 trap 'interrupt INT 130' INT
 trap 'interrupt TERM 143' TERM
 
-COPTRANS_CONFIG_OUT="$temporary" PYTHONPATH="$workspace/src/ranger_mini_gz${PYTHONPATH:+:$PYTHONPATH}" \
+COPTRANS_RUN_ROOT="$run_root" COPTRANS_CONFIG_OUT="$temporary" \
+    PYTHONPATH="$workspace/src/fwis_bringup:$workspace/src/ranger_mini_gz${PYTHONPATH:+:$PYTHONPATH}" \
     python3 "$workspace/src/fwis_bringup/fwis_bringup/test_config.py" "$@"
 [[ -s $temporary ]] || exit 0
 
@@ -61,14 +79,17 @@ for key in ("task", "scenario", "planner", "no_build", "record"):
 PY
 )
 
-run_root="$root/reports/runs"
 mkdir -p -- "$run_root"
 exec 9>"$run_root/.test.lock"
 if ! flock -n 9; then
     printf 'ERROR: another CopTrans test is already running.\n' >&2
     exit 2
 fi
-run_dir=$(mktemp -d "$run_root/$(date +%Y%m%d_%H%M%S)_${config[0]}_${config[1]}_${config[2]}_XXXXXX")
+python3 "$archive_tool" reserve "$run_root"
+spool_root=$(mktemp -d "${TMPDIR:-/tmp}/coptrans-run.XXXXXXXX")
+archive_dir=$(mktemp -d "$run_root/$(date +%Y%m%d_%H%M%S)_XXXXXX")
+run_dir="$spool_root/${archive_dir##*/}"
+export COPTRANS_ARCHIVE_DIR="$archive_dir"
 mkdir -p -- "$run_dir"/{metrics,trajectories,screenshots,ros}
 {
     printf '%q' "$root/scripts/test.sh"
@@ -78,7 +99,9 @@ mkdir -p -- "$run_dir"/{metrics,trajectories,screenshots,ros}
     printf '\n'
 } >"$run_dir/command.txt"
 cp -- "$temporary" "$run_dir/resolved_config.yaml"
-printf 'Run directory %s\n' "$run_dir"
+python3 "$archive_tool" collect "$run_dir" "$archive_dir"
+printf 'Experiment ID %s\n' "${archive_dir##*/}"
+printf 'Run directory %s\n' "$archive_dir"
 
 fail() {
     printf 'ERROR: %s\n' "$1" >&2
@@ -126,8 +149,28 @@ fi
         "$ROS_DISTRO" "$ROS_DOMAIN_ID" "$ROS_LOCALHOST_ONLY" "$GZ_PARTITION"
     printf 'git_commit='
     git -C "$root" rev-parse HEAD
+    git_state=$(git -C "$root" status --porcelain)
+    if [[ -n $git_state ]]; then
+        printf 'git_dirty=true\n'
+    else
+        printf 'git_dirty=false\n'
+    fi
     printf 'gazebo_sim=%s\n' "$gazebo_version"
 } >"$run_dir/environment.txt"
+python3 "$archive_tool" collect "$run_dir" "$archive_dir"
+python3 - "$run_dir" <<'PY'
+import json
+from pathlib import Path
+import sys
+run = Path(sys.argv[1])
+config = json.loads((run / "resolved_config.yaml").read_text())
+if config.get("replay_of"):
+    print(f"Replay of {config['replay_of']}")
+    recorded = config.get("replay_git_commit")
+    current = dict(line.split("=", 1) for line in (run / "environment.txt").read_text().splitlines())
+    if recorded and recorded != current["git_commit"]:
+        print(f"Replay uses the current code ({current['git_commit'][:8]}). Original used {recorded[:8]}.")
+PY
 printf 'ROS_DOMAIN_ID=%s  GZ_PARTITION=%s\n' "$ROS_DOMAIN_ID" "$GZ_PARTITION"
 
 if [[ ${config[3]} == False ]]; then
@@ -135,11 +178,11 @@ if [[ ${config[3]} == False ]]; then
     (
         cd -- "$workspace"
         CMAKE_BUILD_PARALLEL_LEVEL="${CMAKE_BUILD_PARALLEL_LEVEL:-2}" \
-            colcon build --packages-up-to fwis_bringup --parallel-workers 2
+            colcon build --packages-up-to fwis_bringup --parallel-workers 2 --install-base "$install_base"
     ) 2>&1 | tee "$run_dir/build.log"
 fi
-[[ -r $workspace/install/setup.bash ]] || fail 'Build the Colcon workspace before using --no-build.' overlay_missing
-source "$workspace/install/setup.bash"
+[[ -r $install_base/setup.bash ]] || fail 'Build the Colcon workspace before using --no-build.' overlay_missing
+source "$install_base/setup.bash"
 for package in fwis_bringup fwis_backends fwis_control ranger_mini_gz ros_gz_bridge rviz2; do
     ros2 pkg prefix "$package" >/dev/null || fail "ROS package $package is unavailable." ros_package_missing
 done
@@ -162,12 +205,12 @@ if [[ -n $interrupted ]]; then
     wait "$launch_pid" 2>/dev/null || true
 fi
 
-python3 - "$run_dir" "$launch_code" "$interrupted" <<'PY'
+python3 - "$run_dir" "$archive_dir" "$launch_code" "$interrupted" <<'PY'
 from pathlib import Path
 import sys
 import yaml
 
-folder, launch_code, signal = Path(sys.argv[1]), int(sys.argv[2]), sys.argv[3]
+folder, archive, launch_code, signal = Path(sys.argv[1]), Path(sys.argv[2]), int(sys.argv[3]), sys.argv[4]
 path = folder / "result.yaml"
 data = yaml.safe_load(path.read_text()) if path.exists() else {}
 config = yaml.safe_load((folder / "resolved_config.yaml").read_text())
@@ -175,6 +218,8 @@ if data.get("status") == "passed" and config["record"] == "on" and not (folder /
     data.update(status="failed", reason="bag_recording_missing")
 if signal:
     code = 130 if signal == "INT" else 143
+    if config.get("interactive") and data.get("status") == "passed" and signal == "INT":
+        code = 0
     data.setdefault("status", "cancelled")
     if data["status"] == "cancelled":
         data["reason"] = "operator_interrupt"
@@ -193,6 +238,6 @@ temporary = path.with_suffix(".tmp")
 temporary.write_text(yaml.safe_dump(data, sort_keys=False))
 temporary.replace(path)
 print(f"Result {data['status']} ({data.get('reason', '')})")
-print(path)
+print(archive / path.name)
 sys.exit(code)
 PY

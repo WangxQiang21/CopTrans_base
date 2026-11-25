@@ -823,7 +823,7 @@ class _UniformAuditor(_IndependentEvaluator):
                     required = self._wrap_angle(
                         tangent if sigma > 0 else tangent + math.pi)
                     self._compare_number(
-                        self._wrap_angle(start_map[vehicle_id]), required,
+                        self._wrap_angle(start_map[vehicle_id] - required), 0.0,
                         _GEOMETRY_TOL,
                         "edge{}.start_heading[{}]".format(index, vehicle_id),
                         UNIFORM_MODEL_MISMATCH, block_index=index,
@@ -856,7 +856,7 @@ class _UniformAuditor(_IndependentEvaluator):
                     required = self._wrap_angle(
                         motion if sigma > 0 else motion + math.pi)
                     self._compare_number(
-                        self._wrap_angle(start_map[vehicle_id]), required,
+                        self._wrap_angle(start_map[vehicle_id] - required), 0.0,
                         _GEOMETRY_TOL,
                         "edge{}.start_heading[{}]".format(index, vehicle_id),
                         UNIFORM_MODEL_MISMATCH, block_index=index,

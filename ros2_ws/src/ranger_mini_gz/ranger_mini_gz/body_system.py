@@ -1,4 +1,5 @@
 """Harmonic system bridging independent Twist input to a static model's body."""
+import os
 from pathlib import Path
 from threading import Lock
 import time
@@ -11,6 +12,7 @@ from gz.transport13 import Node
 import yaml
 
 from ranger_mini_gz.body_sim import GazeboBody, PlantSettings, ZERO
+from ranger_mini_gz.plant_timing import PlantTiming
 
 
 class BodyTwistSystem:
@@ -25,6 +27,9 @@ class BodyTwistSystem:
         self.request = None
         self.sim_time = 0.
         self.command_time = self.request_time = self.command_wall = -float("inf")
+        directory = os.environ.get("COPTRANS_TIMING_DIR")
+        self.timing = PlantTiming(directory, self.name) if directory else None
+        self.command_received_ns = 0
         self.transport = Node()
         self.transport.subscribe(Twist, f"/{self.name}/cmd_vel", self.on_twist)
         self.transport.subscribe(Int32, f"/{self.name}/sim_request_mode", self.on_mode_request)
@@ -32,10 +37,14 @@ class BodyTwistSystem:
         self.mode = self.transport.advertise(f"/{self.name}/motion_state", Int32)
 
     def on_twist(self, message):
+        received_ns = time.monotonic_ns() if self.timing else 0
         with self.lock:
             self.command = (message.linear.x, message.linear.y, message.angular.z)
             self.command_time = self.sim_time
             self.command_wall = time.monotonic()
+            if self.timing:
+                self.timing.sequence += 1
+                self.command_received_ns = received_ns
 
     def on_mode_request(self, message):
         with self.lock:
@@ -46,13 +55,19 @@ class BodyTwistSystem:
         if info.paused or not hasattr(self, "body"):
             return
         now = info.sim_time.total_seconds()
+        capture = None
         with self.lock:
             self.sim_time = now
             fresh = (0. <= now - self.command_time <= self.timeout
                      and time.monotonic() - self.command_wall <= self.timeout)
             command = self.command if fresh else ZERO
             request = self.request if fresh and 0. <= now - self.request_time <= self.timeout else None
+            if fresh and self.timing and self.timing.sequence != self.timing.last_consumed:
+                capture = self.timing.sequence, self.command_received_ns
+        consumed_ns = time.monotonic_ns() if capture else 0
         self.body.pre_update(now, info.dt.total_seconds(), ecm, command, request)
+        if capture:
+            self.timing.consumed(*capture, consumed_ns, time.monotonic_ns(), command)
 
     def post_update(self, info, ecm):
         if info.paused or not hasattr(self, "body"):
@@ -74,6 +89,8 @@ class BodyTwistSystem:
         msg.pose.orientation.x, msg.pose.orientation.y = q.x(), q.y()
         msg.pose.orientation.z, msg.pose.orientation.w = q.z(), q.w()
         msg.twist.linear.x, msg.twist.linear.y, msg.twist.angular.z = state.velocity
+        if self.timing:
+            self.timing.odometry(stamp, time.monotonic_ns())
         self.odom.publish(msg)
         self.mode.publish(Int32(data=state.mode))
 

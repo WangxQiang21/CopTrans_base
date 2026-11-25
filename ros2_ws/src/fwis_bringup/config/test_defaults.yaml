@@ -3,6 +3,7 @@ planners:
     hybrid_astar: single_multimodal_hybrid_astar
     constant_primitive: single_constant_primitive
     continuous_mode_path: single_continuous_mode_path
+    state_lattice: single_state_lattice
   multi:
     multi_4wis: multi_4wis
 controllers:
@@ -14,6 +15,7 @@ defaults:
     multi: multi_4wis
   controller: nonlinear_feedback
   experiment: short_turn
+  speed_profile: standard
   timeout_s: 180
   observation_s: 5
 formation:
@@ -37,12 +39,12 @@ real_vehicle_adapter:
   state_timeout_s: 0.20
 
 # Planner limits reserve feedback authority inside the controller's envelope.
-# The controller parameters and safety filter are unchanged.
 profiles:
   single:
     vehicle:
       r_min_ack: 0.90
       mode_switch_duration: 0.70
+
     quality:
       limits:
         profile: ranger_twist_integration
@@ -58,6 +60,7 @@ profiles:
         translation_alpha_max: 0.45
         translation_angular_jerk_max: 1.0
   multi:
+    prefer_ackermann: true
     timing_limits:
       r_min_ackermann: 0.90
       v_max: 0.16
@@ -65,3 +68,13 @@ profiles:
       yaw_rate_max: 0.40
       yaw_accel_max: 0.45
       mode_switch_duration: 0.70
+
+# Standard is for the kinematic Gazebo experiments. The tracker and plant
+# caps stay below the manual's 0.75 m/s derating for steering above 20 degrees.
+speed_profiles:
+  baseline: {}
+  standard:
+    single: {target_v: 0.60, v_max: 0.60, a_max: 0.42, jerk_max: 1.30}
+    multi: {v_max: 0.50, a_max: 0.36}
+    controller: {max_speed: 0.72, max_accel: 0.60}
+    plant: {max_speed: 0.72}

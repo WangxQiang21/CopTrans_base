@@ -1,12 +1,15 @@
 """Versioned common timeline for audited A/O/S pieces with one C2 A span."""
 from bisect import bisect_left, bisect_right
-from dataclasses import dataclass, replace
+from dataclasses import asdict, dataclass, replace
 import hashlib
 import json
 import math
 
 from .formation_continuous_a.contracts import request_from_payload
 from .formation_continuous_a.trajectory import VirtualATimedPlan
+from .uniform_curve_clock import certify_curve_clock
+from .uniform_progress_clock import JerkClock
+from .uniform_reachability import REACHABILITY_MODEL_VERSION, UniformReachabilityTimedPlan
 from .uniform_timing import SetupTiming
 from .uniform_trajectory import (
     CERTIFICATION,
@@ -17,6 +20,7 @@ from .uniform_trajectory import (
 )
 
 MIXED_MODEL_VERSION = "uniform_trajectory.c2_span/v1"
+MIXED_CLOCK_MODEL_VERSION = "uniform_trajectory.c2_span_reachable/v1"
 BOUNDARY_TOL = 1e-9
 
 
@@ -68,9 +72,12 @@ def _validate_join(first, second):
 class UniformMixedTimedPlan:
     """Three joined pieces on one clock, with standalone analytic C2 reconstruction."""
 
-    def __init__(self, prefix, curve, suffix):
+    model_version = MIXED_MODEL_VERSION
+    dynamic_profile = UniformTimedPlan.dynamic_profile
+
+    def __init__(self, prefix, curve, suffix, *, clock=None):
         middle = request_from_payload(curve.to_model_dict()["request_inputs"])
-        if (not suffix.edges or not middle.initial.wheels_straight
+        if (not middle.initial.wheels_straight
                 or middle.initial.source != "verified_terminal"
                 or middle.initial.context_id != prefix.model_sha256()
                 or curve.kind != "motion" or suffix.initial_edge is not None
@@ -83,6 +90,10 @@ class UniformMixedTimedPlan:
             raise UniformTrajectoryError("MIXED_PIECE_MISMATCH", "incompatible C2 span pieces")
 
         self.prefix, self.curve, self.suffix = prefix, curve, suffix
+        self.clock = clock
+        self.clock_bounds = None if clock is None else certify_curve_clock(curve, clock)
+        if clock is not None:
+            self.model_version = MIXED_CLOCK_MODEL_VERSION
         self.plan_id = prefix.plan_id
         self.formation_id = prefix.formation_id
         self.model = prefix.model
@@ -94,7 +105,8 @@ class UniformMixedTimedPlan:
         self.goal_qf, self.goal_headings = suffix.goal_qf, suffix.goal_headings
         self.edges = prefix.edges + suffix.edges
         self.initial_edge = prefix.initial_edge
-        self.curve_phase = CurvePhase(prefix.duration_s, curve.duration_s, len(prefix.edges))
+        curve_duration = curve.duration_s if clock is None else clock.duration_s
+        self.curve_phase = CurvePhase(prefix.duration_s, curve_duration, len(prefix.edges))
         suffix_time = self.curve_phase.end_time
         # Suffix initial wheel setup is internal to the common timeline.
         self.phases = prefix.phases + (self.curve_phase,) + tuple(
@@ -106,10 +118,21 @@ class UniformMixedTimedPlan:
         self._ends = (prefix.duration_s, suffix_time, suffix_time + suffix.duration_s)
         self.duration_s = self._ends[-1]
         _validate_join(prefix.state_at(prefix.duration_s), self._curve_state(0.0))
-        _validate_join(self._curve_state(curve.duration_s), suffix.state_at(0.0))
+        _validate_join(self._curve_state(curve_duration), suffix.state_at(0.0))
 
     def _curve_state(self, elapsed, side="auto"):
-        state = self.curve.state_at(elapsed, side)
+        if self.clock is None:
+            state = self.curve.state_at(elapsed, side)
+        else:
+            elapsed = min(self.clock.duration_s, max(0., elapsed))
+            s, w, a, j = self.clock.sample(elapsed, self.curve.total_S_m)
+            station, spatial_side = self.curve._snap_station(s, side)
+            if station == 0.:
+                spatial_side = "right"
+            elif station == self.curve.total_S_m:
+                spatial_side = "left"
+            spatial = self.curve.path.state_at_s(station, spatial_side)
+            state = self.curve._state_from_spatial(elapsed, station, w, a, j, spatial, "motion")
         phase = self.curve_phase
         vehicles = tuple(
             UniformVehicleTimeState(
@@ -147,7 +170,7 @@ class UniformMixedTimedPlan:
         index = min(2, (bisect_left if side == "left" else bisect_right)(self._ends, elapsed))
         if index == 0:
             return self.prefix.state_at(elapsed, side)
-        if index == 1:
+        if index == 1 or not self.suffix.edges:
             return self._curve_state(elapsed - self._ends[0], side)
         local = min(self.suffix.duration_s, elapsed - self._ends[1])
         state = self.suffix.state_at(local, side)
@@ -156,7 +179,15 @@ class UniformMixedTimedPlan:
                        phase_index=phase_index, phase_kind=self.phases[phase_index].kind,
                        edge_index=state.edge_index + len(self.prefix.edges) + 1)
 
-    default_sample_times = UniformTimedPlan.default_sample_times
+    def default_sample_times(self):
+        # Shifted phases can express the same seam with different last bits.
+        # The next phase's start is the right-continuous boundary to sample.
+        times = [0.]
+        for phase in self.phases:
+            if phase.t0_s - times[-1] > BOUNDARY_TOL and self.duration_s - phase.t0_s > BOUNDARY_TOL:
+                times.append(phase.t0_s)
+        return (*times, self.duration_s)
+
     _mode_intervals = UniformTimedPlan._mode_intervals
     def phase_table(self):
         return [phase.as_dict() for phase in self.phases]
@@ -168,8 +199,7 @@ class UniformMixedTimedPlan:
                 "motion_s": self.duration_s - initial - setup}
 
     def sample(self, times=None):
-        projection = UniformTimedPlan.sample(self, times)
-        return replace(projection, model_version=MIXED_MODEL_VERSION)
+        return UniformTimedPlan.sample(self, times)
 
     def _aggregate_peaks(self):
         peaks = UniformTimedPlan._aggregate_peaks(self)
@@ -182,36 +212,51 @@ class UniformMixedTimedPlan:
         }
         bounds["wheel_angle"] = selection["wheel_angle_bound_rad"]
         for values in peaks.values():
-            for name, bound in bounds.items():
+            for name, bound in (self.clock_bounds or bounds).items():
                 values[name] = max(values[name], bound)
         return peaks
 
     def to_model_dict(self):
-        return {
-            "model_version": MIXED_MODEL_VERSION, "certification": CERTIFICATION,
+        data = {
+            "model_version": self.model_version, "certification": CERTIFICATION,
             "prefix": self.prefix.to_model_dict(), "curve": self.curve.to_model_dict(),
             "suffix": self.suffix.to_model_dict(),
         }
+        if self.clock is not None:
+            data["curve_clock"] = asdict(self.clock)
+        return data
 
     def to_model_json(self):
         return json.dumps(self.to_model_dict(), sort_keys=True, separators=(",", ":"), allow_nan=False)
 
     def model_sha256(self):
         digest = hashlib.sha256()
-        for word in (MIXED_MODEL_VERSION, self.prefix.model_sha256(),
+        for word in (self.model_version, self.prefix.model_sha256(),
                      self.curve.model_sha256(), self.suffix.model_sha256()):
             digest.update(word.encode("ascii"))
+        if self.clock is not None:
+            digest.update(json.dumps(asdict(self.clock), sort_keys=True).encode("ascii"))
         return digest.hexdigest()
 
     @classmethod
     def from_model_json(cls, payload):
         data = json.loads(payload)
+        fields = {"model_version", "certification", "prefix", "curve", "suffix"}
         if (not isinstance(data, dict)
-                or set(data) != {"model_version", "certification", "prefix", "curve", "suffix"}
-                or data["model_version"] != MIXED_MODEL_VERSION
-                or data["certification"] != CERTIFICATION):
+                or data.get("model_version") not in (MIXED_MODEL_VERSION, MIXED_CLOCK_MODEL_VERSION)
+                or data.get("certification") != CERTIFICATION):
             raise UniformTrajectoryError("INVALID_MIXED_MODEL", "invalid mixed model schema")
+        uses_clock = data["model_version"] == MIXED_CLOCK_MODEL_VERSION
+        if set(data) != (fields | {"curve_clock"} if uses_clock else fields):
+            raise UniformTrajectoryError("INVALID_MIXED_MODEL", "invalid mixed model fields")
+
+        def uniform_part(part):
+            if part.get("model_version") == REACHABILITY_MODEL_VERSION:
+                return UniformReachabilityTimedPlan.from_model_dict(part)
+            return UniformTimedPlan.from_model_dict(part)
+
         return cls(
-            UniformTimedPlan.from_model_dict(data["prefix"]),
+            uniform_part(data["prefix"]),
             VirtualATimedPlan.from_model_json(json.dumps(data["curve"], allow_nan=False)),
-            UniformTimedPlan.from_model_dict(data["suffix"]))
+            uniform_part(data["suffix"]),
+            clock=JerkClock(**data["curve_clock"]) if uses_clock else None)

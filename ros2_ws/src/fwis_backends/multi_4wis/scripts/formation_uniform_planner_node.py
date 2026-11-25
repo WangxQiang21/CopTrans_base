@@ -27,6 +27,7 @@ import threading
 import time as _time
 
 from geometry_msgs.msg import Point, Pose2D, PoseWithCovarianceStamped
+from visualization_msgs.msg import Marker, MarkerArray
 from nav_msgs.msg import OccupancyGrid
 from std_srvs.srv import Trigger
 from std_msgs.msg import String
@@ -75,6 +76,7 @@ from fwis_backends.multi_4wis.uniform_pipeline import (
     PIPELINE_REQUEST_REJECTED,
     UniformPlanningRequest,
     plan_uniform,
+    refine_certified_plan,
 )
 from fwis_backends.multi_4wis.uniform_search import (
     SEARCH_AUDIT_REJECTED,
@@ -381,6 +383,15 @@ class UniformPlannerNode(object):
                 "~collision_margin", 0.05)),
             timing_limits=self.timing_limits)
         # Frozen FR04 search budget: 10000 expansions / 30 s.
+        self.refinement_budget_s = float(self.ros.param("~background_refinement_budget_s", 0.0))
+        if not math.isfinite(self.refinement_budget_s) or self.refinement_budget_s < 0.0:
+            raise ValueError("background_refinement_budget_s must be nonnegative and finite")
+        self.reuse_terminal_certificate = bool(self.ros.param("~reuse_terminal_certificate", False))
+        self.reachability_retime = bool(self.ros.param("~reachability_retime", False))
+        self.execution_without_playback = (
+            self.backend == PLAYBACK_PLAN_BACKEND
+            and bool(self.ros.param("~execution_without_playback", False)))
+        self._refinement_thread = None
         self.search_config = GraphSearchConfig(
             max_expansions=int(self.ros.param(
                 "~max_expansions", GraphSearchConfig.max_expansions)),
@@ -393,8 +404,12 @@ class UniformPlannerNode(object):
             global_translation_route=self.ros.param("~global_translation_route", True),
             heading_aligned_route=self.ros.param("~heading_aligned_route", True),
             heading_transition_route=self.ros.param("~heading_transition_route", True),
-            continuous_a_refinement=self.ros.param("~continuous_a_refinement", False),
+            continuous_a_refinement=(self.refinement_budget_s == 0.0
+                                     and self.ros.param("~continuous_a_refinement", False)),
             formation_raster=self.ros.param("~formation_raster", True),
+            native_frontier=self.ros.param("~native_frontier", False),
+            convex_corridor=self.ros.param("~convex_corridor", False),
+            prefer_ackermann=self.ros.param("~prefer_ackermann", True),
             preview_checks=self.ros.param("~preview_checks", True))
         self.playback_start_timeout_s = float(self.ros.param(
             "~playback_start_timeout_s", 5.0))
@@ -492,6 +507,12 @@ class UniformPlannerNode(object):
         self.playback_plan_pub = self.ros.publisher(
             PLAYBACK_PLAN_TOPIC, FormationPlaybackPlan, queue_size=1,
             latch=True)
+        self.corridor_pub = (self.ros.publisher(
+            "/formation/convex_corridor_guide", MarkerArray, queue_size=1, latch=True)
+            if self.search_config.convex_corridor else None)
+        self.uniform_progress_pub = (self.ros.publisher(
+            "/formation/uniform_progress", String, queue_size=10, latch=True)
+            if self.ros.param("~publish_uniform_progress", False) else None)
         # Progress stages are published in bursts: the "complete" document of
         # a stage is immediately followed by the "running" document of the
         # next one, and each carries the retained geometry.  A single-slot
@@ -1220,6 +1241,10 @@ class UniformPlannerNode(object):
             "detail": detail,
         }
         document.update(self._map_payload())
+        if self.execution_without_playback:
+            document["execution_verified"] = bool(
+                self._state == PLAYING and self._published_wall is not None
+                and self._request_map_signature == self._map_signature)
         plan = getattr(getattr(self, "_last_result", None), "plan", None)
         if self.backend == PLAYBACK_PLAN_BACKEND and self._state == HOLD_END and plan is not None:
             terminal = plan.goal_qf
@@ -1630,7 +1655,9 @@ class UniformPlannerNode(object):
                 formation_id=snapshot.formation_id,
                 successor_config=successor_config,
                 search_config=self.search_config, initial_edge=initial_edge,
-                cancelled=self._planning_cancel.is_set, cargo_footprint=self.cargo_footprint)
+                cancelled=self._planning_cancel.is_set, cargo_footprint=self.cargo_footprint,
+                reuse_terminal_certificate=self.reuse_terminal_certificate,
+                reachability_retime=self.reachability_retime)
 
             self._generation += 1
             generation = self._generation
@@ -1682,8 +1709,16 @@ class UniformPlannerNode(object):
 
     def _plan_worker(self, generation, plan_id, snapshot, request):
         started = _time.monotonic()
+        publisher = getattr(self, "uniform_progress_pub", None)
+        last_progress = {}
+
+        def report_progress(stage, metrics):
+            last_progress.update(metrics)
+            if generation == self._generation:
+                publisher.publish(String(data=_json(dict(last_progress, stage=stage, plan_id=plan_id))))
+
         try:
-            result = self._plan(request)
+            result = self._plan(request, progress=report_progress) if publisher else self._plan(request)
         except Exception as exc:
             self._finish_exception(generation, plan_id, snapshot, started, exc)
             return
@@ -1707,8 +1742,63 @@ class UniformPlannerNode(object):
                     plan_id, snapshot, result, started, result.reason,
                     result.detail, layer=result.first_failure_layer)
                 return
+            if publisher:
+                report_progress("publication", {"elapsed_s": _time.monotonic() - started})
             self._finish_success(generation, plan_id, snapshot, result,
                                  started)
+            if (self._published_wall is not None and self.refinement_budget_s > 0.0
+                    and result.status == SEARCH_SUCCESS
+                    and (self._refinement_thread is None or not self._refinement_thread.is_alive())):
+                self._refinement_thread = threading.Thread(
+                    target=self._refine_worker, args=(generation, request, result.plan),
+                    name="uniform-refine-{}".format(plan_id), daemon=True)
+                self._refinement_thread.start()
+
+    def _refine_worker(self, generation, request, plan):
+        """Record certified quality experiments without changing the executing plan."""
+        started = _time.perf_counter()
+        original_cancelled = request.cancelled
+        admitted_map = request.grid
+
+        def obsolete():
+            return (generation != self._generation or self._grid is not admitted_map
+                    or bool(original_cancelled and original_cancelled()))
+
+        try:
+            candidate = refine_certified_plan(
+                replace(request, cancelled=obsolete), plan, started + self.refinement_budget_s,
+                research_worker=True)
+            outcome = "no_accepted_improvement"
+            if obsolete():
+                outcome = "stale"
+            elif _time.perf_counter() >= started + self.refinement_budget_s:
+                outcome = "budget_exhausted"
+            elif candidate is not None:
+                outcome = "certified_candidate_discarded_without_safe_switch"
+            self.ros.log("info", "[uniform planner] background refinement for %s: %s wall=%.4f s",
+                         request.plan_id, outcome, _time.perf_counter() - started)
+        except Exception as exc:
+            self.ros.log("warning", "[uniform planner] background refinement for %s failed: %r",
+                         request.plan_id, exc)
+
+    def _publish_corridor_guide(self, search, stamp):
+        if self.corridor_pub is None:
+            return
+        guide = getattr(search, "corridor_guide", None) or {}
+        marker = Marker()
+        marker.header.frame_id = self.frame_id
+        marker.header.stamp = time_message(*stamp)
+        marker.ns = "convex_corridor_guide"
+        marker.type = Marker.LINE_LIST
+        marker.pose.orientation.w = 1.0
+        marker.scale.x = .04
+        marker.color.r, marker.color.g, marker.color.b, marker.color.a = .1, .75, .8, .65
+        for x0, y0, x1, y1 in guide.get("convex_regions_m", ()):
+            ring = ((x0, y0), (x1, y0), (x1, y1), (x0, y1), (x0, y0))
+            for start, end in zip(ring, ring[1:]):
+                marker.points.extend(Point(x=x, y=y, z=.06) for x, y in (start, end))
+        marker.action = Marker.ADD if marker.points else Marker.DELETE
+        self.corridor_pub.publish(MarkerArray(markers=[marker]))
 
     # ---- virtual_rigid_a admission and worker -------------------------
 
@@ -2294,6 +2384,9 @@ class UniformPlannerNode(object):
         self._published_stamp = fields["stamp"]
         self._playback_seen = False
         self.playback_plan_pub.publish(envelope)
+        if self.execution_without_playback:
+            self._state = PLAYING
+            self._publish_job_state("execution envelope independently verified")
         status_word = self._active_status_word
         wall = result.wall_time_s
         extra = {
@@ -2302,6 +2395,8 @@ class UniformPlannerNode(object):
             "pipeline_status": result.status,
             "first_failure_layer": result.first_failure_layer,
             "wall_time_s": wall,
+            "planning_stages": getattr(result, "stages", {}),
+            "envelope_verification_wall_s": self._published_wall - verification_started,
             "T_end": float(rebuilt.duration_s),
             "duration_s": float(rebuilt.duration_s),
             "trajectory_stamp": {"secs": int(fields["stamp"][0]),
@@ -2343,6 +2438,11 @@ class UniformPlannerNode(object):
             plan_id, rebuilt.duration_s, verified_digest,
             verified.sample_count, wall,
             getattr(self, "_publication_delay_s", 0.0))
+        if self.corridor_pub is not None:
+            try:
+                self._publish_corridor_guide(result.search, stamp)
+            except Exception as exc:
+                self.ros.log("warning", "[uniform planner] corridor display failed: %r", exc)
 
     @staticmethod
     def _search_summary(result):
@@ -2365,6 +2465,8 @@ class UniformPlannerNode(object):
     # ---- playback feedback -------------------------------------------
 
     def on_playback_status(self, message):
+        if self.execution_without_playback:
+            return
         try:
             report = json.loads(message.data)
         except (TypeError, ValueError):
@@ -2522,7 +2624,8 @@ class UniformPlannerNode(object):
                         "PLANNING_TIMEOUT")
                     self._publish_job_state("PLANNING_TIMEOUT", detail)
                     self.ros.log("error", "[uniform planner] %s", detail)
-            elif self._state == PLAYING and self._published_stamp is not None:
+            elif (self._state == PLAYING and self._published_stamp is not None
+                  and not self.execution_without_playback):
                 secs, nsecs = self._now()
                 start_secs, start_nsecs = self._published_stamp
                 elapsed = (secs - start_secs) + (nsecs - start_nsecs) * 1e-9

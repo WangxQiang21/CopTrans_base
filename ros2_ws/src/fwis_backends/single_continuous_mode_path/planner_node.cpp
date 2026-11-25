@@ -249,6 +249,7 @@ class PlannerNode : public rclcpp::Node {
                guided_iter_without_incumbent_,max_iter_/2);
     fwis_ros::parameter(*this, "search.ackermann_probe_iter",ackermann_probe_iter_,30000);
     fwis_ros::parameter(*this, "search.reverse_competition_max_iter",reverse_competition_max_iter_,90000);
+    fwis_ros::parameter(*this, "search.adaptive_reverse_competition",adaptive_reverse_competition_,false);
     fwis_ros::parameter(*this, "search.route_graph_max_expansions",route_graph_max_expansions_,8000);
     fwis_ros::parameter(*this, "search.route_graph_dense_spacing",route_graph_dense_spacing_,0.30);
     fwis_ros::parameter(*this, "search.route_graph_sparse_spacing",route_graph_sparse_spacing_,0.70);
@@ -1912,17 +1913,21 @@ class PlannerNode : public rclcpp::Node {
     std::vector<Action> auxiliary_policy_proposal;
     const int reverse_competition_budget=std::max(
         reverse_fallback_max_iter_,reverse_competition_max_iter_);
+    int reverse_budget=reverse_competition_budget;
     // Compare a bounded bidirectional candidate even when the forward search
     // found a route. A legal forward incumbent remains available throughout;
     // the reverse candidate replaces it only when the shared action cost is
     // lower. This restores direction competition without making the legacy
     // forward feasibility envelope depend on reverse-state search cost.
     if(allow_reverse_ && ok && !guided_allow_reverse) {
+      const auto& incumbent=use_fallback?fallback_actions:guided_actions;
+      if(adaptive_reverse_competition_ && open_forward_incumbent(incumbent))
+        reverse_budget=std::min(reverse_competition_budget,8000);
       reverse_tried=true;reverse_search_competed=true;
       const auto reverse_begin=std::chrono::steady_clock::now();
       reverse_ok=search(reverse_actions,reverse_iterations,true,reverse_cost,
                         nullptr,std::numeric_limits<double>::infinity(),
-                        reverse_competition_budget,1.0,true,true,
+                        reverse_budget,1.0,true,true,
                         allow_shunting_?nullptr:&auxiliary_policy_proposal);
       reverse_seconds=std::chrono::duration<double>(
           std::chrono::steady_clock::now()-reverse_begin).count();
@@ -2059,6 +2064,7 @@ class PlannerNode : public rclcpp::Node {
       " reverse_fallback_tried="+(reverse_tried?"1":"0")+
       " reverse_fallback_used="+(reverse_selected?"1":"0")+
       " selected_has_reverse="+(has_reverse_motion(actions)?"1":"0")+
+      " reverse_budget="+std::to_string(reverse_budget)+
       " reverse_fallback_iterations="+std::to_string(reverse_iterations)+
       " reverse_fallback_seconds="+std::to_string(reverse_seconds)+" actions="+
       std::to_string(actions.size())+" iterations="+std::to_string(iterations)+
@@ -2117,6 +2123,29 @@ class PlannerNode : public rclcpp::Node {
   rclcpp::Publisher<fwis_v3_msgs::msg::PlanSeed>::SharedPtr pub_seed_;
   rclcpp::Publisher<fwis_v3_msgs::msg::PlanSeed>::SharedPtr pub_request_;
   rclcpp::Publisher<fwis_v3_msgs::msg::PlanSeedCandidates>::SharedPtr pub_seed_candidates_;
+  // A cheap preference for spending less improvement budget in open space.
+  // Full bidirectional feasibility search is unchanged for difficult requests.
+  bool open_forward_incumbent(const std::vector<Action>& actions) const {
+    const double chord=std::hypot(goal_.x-start_.x,goal_.y-start_.y);
+    if(actions.empty() || chord<0.25 || std::abs(wrap(goal_.th-start_.th))>0.75)
+      return false;
+    const double clearance=std::hypot(length_+margin_,width_+margin_)/2+0.35;
+    double length=0.0;
+    auto pose=start_;
+    for(const auto& action:actions) {
+      if(action.mode!=A || action.amount<=0) return false;
+      length+=action.amount;
+      if(length>1.4*chord+0.10) return false;
+      const int count=std::max(1,static_cast<int>(std::ceil(action.amount/0.15)));
+      for(int i=0;i<=count;++i) {
+        const auto sample=advance(pose,{A,action.amount*i/count,action.control});
+        if(clearance_lower_bound(sample.x,sample.y)<clearance) return false;
+      }
+      pose=advance(pose,action);
+    }
+    return true;
+  }
+
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr pub_status_;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr pub_markers_;
   fwis::GridMap map_;Pose start_,goal_;
@@ -2126,6 +2155,7 @@ class PlannerNode : public rclcpp::Node {
   std::vector<float> goal_field_;
   bool has_map_=false,has_start_=false,has_goal_=false,enable_route_heuristic_=true;
   bool allow_reverse_=false,allow_shunting_=false;
+  bool adaptive_reverse_competition_=false;
   int reverse_fallback_max_iter_=30000;
   double reverse_fallback_budget_s_=3.0;
   uint32_t plan_id_=0;

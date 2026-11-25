@@ -8,7 +8,7 @@
 | [港口维护区](port_01/) | 42 × 30 m | 840 × 600 | 20/40 英尺集装箱通道、港机支腿、防撞柱、平板车和维修区 |
 | [室外工厂](factory_outdoor_01/) | 44 × 32 m | 880 × 640 | 钢材堆放区、斜停平板车、架空管廊和设备安装区 |
 
-室内场景的转弯区预留 5.5 × 5.6 m，货架之间另有一段 1.35 m 的单车通道。工厂、港口和室外工厂的主测试路线都从装载区沿直道进入转弯区，再转向安装或维修区。起终点坐标、参考转弯的位置和各车 Spawn 均保存在各场景的 `scene_meta.yaml`。
+室内场景的转弯区预留 5.5 × 5.6 m，货架之间另有一段 1.35 m 的单车通道。当前仿真入口选用 `west_single_lane`，在西墙与西侧货架之间新增 1.10 m 限宽口。此处的室内工厂工件和历史验收使用 `default` 版本。起终点坐标、参考转弯的位置和各车 Spawn 均保存在各场景的 `scene_meta.yaml`。
 
 ## 正式运输测试
 
@@ -36,7 +36,8 @@ ros2 launch fwis_bringup simulation.launch.py scenario:=factory_indoor_01 task:=
 
 | 室内版本 | 几何净宽 | 用途 |
 | --- | ---: | --- |
-| `variant:=default` | 3.20 m | 标准狭窄通道 |
+| `variant:=west_single_lane` | 南侧 3.20 m，西侧 1.10 m | 当前默认布局，西侧限宽口仅供单车通过 |
+| `variant:=default` | 3.20 m | 历史布局和归档回放 |
 | [`variant:=wide`](factory_indoor_01_wide/) | 3.60 m | 宽松通道 |
 | [`variant:=critical`](factory_indoor_01_critical/) | 3.00 m | 临界净空实验 |
 | [`variant:=too_narrow`](factory_indoor_01_too_narrow/) | 2.60 m | 固定朝向通过时，单车有净空，Cargo 与瓶颈相交 |
@@ -90,7 +91,7 @@ python3 src/fwis_bringup/test/probe_scene_plan.py factory_indoor_01 formation --
 每项用新启动的规划实例运行。RViz 场景视图可直接显示对应的规划 Path。生成某个场景的离线工件及运行场景几何回归测试的命令如下。
 
 ```bash
-python3 -m ranger_mini_gz.scene_generator factory_indoor_01 generated/scenes/factory_indoor_01
+python3 -m ranger_mini_gz.scene_generator factory_indoor_01 generated/scenes/factory_indoor_01 --variant default
 gz sdf -k generated/scenes/factory_indoor_01/world.sdf
 python3 -m pytest -q src/ranger_mini_gz/test/test_scenes.py
 ```

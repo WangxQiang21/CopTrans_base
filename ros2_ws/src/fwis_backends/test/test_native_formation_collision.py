@@ -18,6 +18,13 @@ from fwis_backends.multi_4wis.formation_collision import (
     VehicleShape,
     grid_from_occupancy_grid,
 )
+from fwis_backends.multi_4wis.uniform_motion import (
+    a_arc_edge,
+    a_arc_required_headings,
+    a_straight_edge,
+    o_translation_edge,
+)
+from fwis_backends.multi_4wis.uniform_search import analytic_sweep_segment
 
 
 pytestmark = pytest.mark.skipif(
@@ -133,6 +140,67 @@ def test_analytic_sweep_preserves_first_witness_trace_and_budget(budget, reason)
     assert 4.0 <= actual.station < 5.0
     assert actual.time_s == 2.0 * actual.station
     assert native.statistics() == reference.statistics()
+
+
+@pytest.mark.parametrize("blocked,budget", [(False, 100), (True, 100), (True, 1)])
+def test_batched_stationary_spin_keeps_witness_and_query_counts(blocked, budget):
+    cells = np.zeros((32, 32), dtype=bool)
+    cells[16, 20] = blocked
+    model = FormationModel([VehicleOffset(7, 0.0, 0.0)])
+    native, reference = _checker_pair(
+        Grid(cells, 0.125, 0.0, 0.0), model, {7: VehicleShape(1.2, 0.15)},
+    )
+    assert hasattr(native._native_kernel, "check_spin_samples"), "rebuild the collision extension"
+    qf = FormationPose(2.0, 2.0, 0.0)
+    before, after = {7: -math.pi / 4}, {7: math.pi / 4}
+    length = math.pi / 2
+
+    def state(fraction):
+        progress = fraction * length
+        return FormationState(fraction, qf, {7: before[7] + (after[7] - before[7]) * progress / length})
+
+    segment = AnalyticSweepSegment(
+        0.0, 1.0, state, lambda fraction: 2.0 * fraction, 0.0, 0.0, {7: length},
+    )
+    policy = SweepPolicy(0.01, budget)
+    expected = reference.swept_check_analytic([segment], policy)
+    actual = native.swept_check_analytic([segment], policy, _stationary_spin=(length, before, after))
+    assert actual == expected
+    assert actual.reason == ("SWEEP_SAMPLE_BUDGET_EXCEEDED" if budget == 1 else
+                             "MAP_OBB_COLLISION" if blocked else None)
+    assert native.statistics() == reference.statistics()
+
+
+@pytest.mark.parametrize("kind", ["straight", "arc", "oblique"])
+def test_batched_analytic_edge_keeps_cargo_mid_edge_witness(kind):
+    model = FormationModel([VehicleOffset(17, 0.0, 0.0)])
+    start = FormationPose(2.0, 2.0, 0.0)
+    gear = {17: 1}
+    if kind == "arc":
+        headings = a_arc_required_headings(model, start, .8, (0.0, 2.0), gear)
+        edge = a_arc_edge(model, start, headings, .8, (0.0, 2.0), gear)
+    elif kind == "straight":
+        edge = a_straight_edge(model, start, {17: 0.0}, (2.0, 0.0), gear)
+    else:
+        edge = o_translation_edge(model, start, {17: 0.0}, (0.0, 2.0), gear, {17: math.pi / 2})
+    midpoint = edge.state_at(edge.control.parameter_length / 2).qf
+    res = .0625
+    occupancy = np.zeros((100, 100), dtype=bool)
+    occupancy[int(midpoint.y / res), int(midpoint.x / res)] = True
+    native, python = _checker_pair(
+        Grid(occupancy, res, 0.0, 0.0), model, {17: VehicleShape(.1, .1)},
+        cargo=CargoFootprint(.15, .16),
+    )
+    for pose, headings in ((edge.start_qf, edge.start_headings), (edge.end_qf, edge.end_headings)):
+        assert python.static_check(pose, dict(headings)).success
+        assert native.static_check(pose, dict(headings)).success
+    segment = analytic_sweep_segment(edge, 3.0)
+    policy = SweepPolicy(.01, 1000)
+    expected = python.swept_check_analytic([segment], policy)
+    got = native.swept_check_analytic([segment], policy, _exact_edge=edge)
+    assert got == expected
+    assert got.reason == "CARGO_OBB_COLLISION" and 0.0 < got.station < 1.0
+    assert native.statistics() == python.statistics()
 
 
 @pytest.mark.parametrize("cargo", [None, CargoFootprint(0.8, 0.95, 0.43, -0.28)])

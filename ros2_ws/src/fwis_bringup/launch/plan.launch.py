@@ -17,6 +17,7 @@ SINGLE_BACKENDS = (
     "single_multimodal_hybrid_astar",
     "single_constant_primitive",
     "single_continuous_mode_path",
+    "single_state_lattice",
 )
 
 
@@ -40,16 +41,36 @@ def make_nodes(context):
     map_topic = LaunchConfiguration("map_topic").perform(context)
     remaps = [("/map", map_topic)]
 
-    def planner_node(executable, params):
+    def planner_node(executable, params, extra_remaps=()):
         return Node(package="fwis_backends", executable=executable,
-                    parameters=[*params, common], remappings=remaps, output="screen")
+                    parameters=[*params, common], remappings=[*remaps, *extra_remaps], output="screen")
 
     if backend in SINGLE_BACKENDS:
         vehicle = read_config(common_share / "config" / "ranger_mini_2.yaml")
+        if backend == "single_state_lattice":
+            selected_config = backend_share / "config" / "single_continuous_mode_path"
         cfg_file = Path(config_arg) if config_arg else selected_config / "params.yaml"
         params = [vehicle, read_config(cfg_file), overrides]
-        nodes = [planner_node(f"{backend}_{role}", params)
-                 for role in ("planner", "optimizer", "playback")]
+        if backend == "single_state_lattice":
+            lattice = {**params[1].get("lattice", {}), **overrides.get("lattice", {})}
+            contest_legacy = lattice.get("contest_legacy", True)
+            nodes = [planner_node("single_state_lattice_planner.py",
+                                  [*params, {"lattice.contest_legacy": contest_legacy}])]
+            if contest_legacy:
+                namespace = "/plan/lattice_legacy"
+                private = {
+                    "/start_pose": "start", "/initialpose": "initialpose",
+                    "/move_base_simple/goal": "goal", "/plan/path_coarse": "path",
+                    "/plan/seed": "seed", "/plan/request": "request",
+                    "/plan/seed_candidates": "seed_candidates", "/plan/markers": "markers",
+                    "/plan/search_status": "search_status",
+                }
+                nodes.append(planner_node("single_continuous_mode_path_planner", params,
+                                          [(topic, namespace + "/" + suffix)
+                                           for topic, suffix in private.items()]))
+        else:
+            nodes = [planner_node(f"{backend}_{role}", params)
+                     for role in ("planner", "optimizer", "playback")]
         rviz_file = "single.rviz"
     else:
         implementation = LaunchConfiguration("formation_backend").perform(context)
@@ -59,6 +80,10 @@ def make_nodes(context):
         # ROS parameters support arrays of scalars. Preserve the YAML tuple order in JSON.
         contract["offsets"] = json.dumps(contract["offsets"])
         overrides = {**(read_config(Path(config_arg)) if config_arg else {}), **overrides}
+        runner_managed = LaunchConfiguration("runner_managed_execution").perform(context) == "true"
+        direct_execution = bool(overrides.get("execution_without_playback"))
+        if direct_execution and (interactive or not runner_managed or implementation != "uniform_v02"):
+            raise ValueError("direct execution requires the one-shot uniform experiment runner")
         if implementation == "legacy":
             params = [read_config(selected_config / "formation_params.yaml"), overrides]
             nodes = [planner_node("multi_4wis_legacy_planner", params),
@@ -78,11 +103,15 @@ def make_nodes(context):
                                       cargo_footprint=cargo_footprint_parameters(
                                           cargo["size"], cargo["center_offset"]))
             nodes = [planner_node("formation_uniform_planner_node.py", [planner_params, overrides])]
-        nodes.append(planner_node("formation_playback.py", [
-            contract, {"backend": implementation, "transport_ui": interactive, "ranger_meshes": interactive,
-                       "publish_tf": interactive, "hud_enabled": interactive,
-                       "show_status_text": False, "show_cargo_reason": False},
-            {"timing_limits": overrides["timing_limits"]} if "timing_limits" in overrides else {}]))
+        playback = LaunchConfiguration("planning_playback").perform(context) == "true"
+        if not playback and not direct_execution:
+            raise ValueError("playback can only be omitted for runner-managed uniform execution")
+        if playback:
+            nodes.append(planner_node("formation_playback.py", [
+                contract, {"backend": implementation, "transport_ui": interactive, "ranger_meshes": interactive,
+                           "publish_tf": interactive, "hud_enabled": interactive,
+                           "show_status_text": False, "show_cargo_reason": False},
+                {"timing_limits": overrides["timing_limits"]} if "timing_limits" in overrides else {}]))
         if interactive:
             nodes.append(planner_node("formation_goal_bridge.py", [
                 contract, {"admission_backend": implementation}, overrides]))
@@ -105,6 +134,8 @@ def generate_launch_description():
         DeclareLaunchArgument("overrides_file", default_value=""),
         DeclareLaunchArgument("transport_config", default_value=""),
         DeclareLaunchArgument("transport_ui", default_value="true", choices=boolean),
+        DeclareLaunchArgument("planning_playback", default_value="true", choices=boolean),
+        DeclareLaunchArgument("runner_managed_execution", default_value="false", choices=boolean),
         DeclareLaunchArgument("map_topic", default_value="/map"),
         DeclareLaunchArgument("map_transient_local", default_value="true", choices=boolean),
         DeclareLaunchArgument("use_sim_time", default_value="false", choices=boolean),

@@ -1,0 +1,48 @@
+# Simulation commissioning values. The chassis manual gives 0.810 m;
+# the archive and current simulator give a separate 0.47644 m mode boundary.
+limits:
+  max_speed: 0.28
+  max_yaw_rate: 0.55
+  max_accel: 0.45
+  max_yaw_accel: 0.70
+  mechanical_radius: 0.810
+  switch_radius: 0.47644
+  radius_margin: 0.02
+  parallel_min_vy: 0.00001
+timing:
+  frequency: 25.0
+  state_timeout: 0.20
+  mode_timeout: 0.20
+  plan_admission_timeout: 0.70
+  clock_tolerance: 0.04
+  approach_time: 0.35
+  stable_time: 0.08
+  switch_timeout: 0.30
+  settle_time: 0.08
+  stop_speed: 0.012
+  stop_yaw_rate: 0.020
+  final_stop_timeout: 1.50
+preflight:
+  min_step: 0.0005
+  max_step: 0.25
+  stationary_position: 0.00000001
+  stationary_yaw: 0.00000001
+  stop_declared_speed: 0.005
+  velocity_tolerance: 0.0003
+  oblique_yaw_tolerance: 0.003
+  spin_position_tolerance: 0.003
+  declared_speed_warn: 0.01
+  declared_speed_tolerance: 0.025
+  acceleration_tolerance: 0.035
+nonlinear:
+  ack_x: 1.35
+  ack_y: 9.0
+  ack_yaw: 6.0
+  oblique_xy: 1.65
+  spin_yaw: 2.0
+pid:
+  ack_x:   {kp: 1.20, ki: 0.22, kd: 0.10, integral_limit: 0.05, derivative_tau: 0.11}
+  ack_y:   {kp: 1.35, ki: 0.12, kd: 0.12, integral_limit: 0.08, derivative_tau: 0.11}
+  ack_yaw: {kp: 1.35, ki: 0.10, kd: 0.09, integral_limit: 0.08, derivative_tau: 0.11}
+  oblique: {kp: 1.40, ki: 0.22, kd: 0.12, integral_limit: 0.05, derivative_tau: 0.11}
+  spin:    {kp: 1.80, ki: 0.20, kd: 0.10, integral_limit: 0.08, derivative_tau: 0.11}

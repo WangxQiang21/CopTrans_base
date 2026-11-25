@@ -1,0 +1,67 @@
+planners:
+  single:
+    hybrid_astar: single_multimodal_hybrid_astar
+    constant_primitive: single_constant_primitive
+    continuous_mode_path: single_continuous_mode_path
+  multi:
+    multi_4wis: multi_4wis
+controllers:
+  pid: pid
+  nonlinear_feedback: nonlinear
+defaults:
+  planners:
+    single: continuous_mode_path
+    multi: multi_4wis
+  controller: nonlinear_feedback
+  experiment: short_turn
+  timeout_s: 180
+  observation_s: 5
+formation:
+  name: wedge
+  implementation: uniform_v02
+  lead_s: 1.25
+  release_margin_s: 0.20
+acceptance:
+  terminal_position_m: 0.10
+  terminal_yaw_rad: 0.10
+  max_mount_error_m: 0.10
+real_vehicle_adapter:
+  available: false
+  ros1_ros2_bridge_config: null
+  device_id: null
+  namespace_pattern: /robot{vehicle_id}
+  odom_topic: odom
+  status_topic: motion_state
+  command_topic: cmd_vel
+  emergency_stop_topic: emergency_stop
+  state_timeout_s: 0.20
+
+# Planner limits reserve feedback authority inside the controller's envelope.
+# The controller parameters and safety filter are unchanged.
+profiles:
+  single:
+    vehicle:
+      r_min_ack: 0.90
+      mode_switch_duration: 0.70
+    quality:
+      limits:
+        profile: ranger_twist_integration
+        translation_speed_policy: restricted
+        target_v: 0.16
+        v_max: 0.16
+        a_max: 0.22
+        jerk_max: 0.8
+        omega_max: 0.40
+        alpha_max: 0.45
+        angular_jerk_max: 1.0
+        translation_omega_max: 0.40
+        translation_alpha_max: 0.45
+        translation_angular_jerk_max: 1.0
+  multi:
+    timing_limits:
+      r_min_ackermann: 0.90
+      v_max: 0.16
+      a_max: 0.22
+      yaw_rate_max: 0.40
+      yaw_accel_max: 0.45
+      mode_switch_duration: 0.70

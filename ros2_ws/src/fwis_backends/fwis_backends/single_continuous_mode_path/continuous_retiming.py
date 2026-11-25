@@ -286,6 +286,59 @@ def _piece_peaks(block, phase, limits, table=None):
     return {name: float(np.max(np.abs(value))) for name, value in values.items()}
 
 
+def _analytic_ackermann_phases(block, limits, block_index, start_time, global_s):
+    """Build the existing polynomial phase contract for a constant A block."""
+    from .ackermann_reachability import constant_ackermann_jerk_profile
+
+    curvature = block.knots[0].value
+    if (block.mode != 0 or limits.translation_speed_policy != "restricted"
+            or any(k.value != curvature or k.derivative != 0. for k in block.knots)):
+        return None
+    try:
+        profile = constant_ackermann_jerk_profile(Action(0, block.direction * block.length,
+                                                         curvature), limits)
+        if any(b - a < .0012 for a, b in zip(profile.times_s, profile.times_s[1:])):
+            return None
+        phases, overall = [], {}
+        for i, jerk in enumerate(profile.jerks):
+            t0 = profile.times_s[i]
+            duration = profile.times_s[i + 1] - t0
+            s0, s1 = profile.progress[i:i + 2]
+            v0, v1 = profile.speeds[i:i + 2]
+            a0, a1 = profile.accelerations[i:i + 2]
+            if s1 - s0 <= 1e-8:
+                return None
+            phase = {
+                "kind": "translation", "profile": "piecewise_quintic",
+                "timing_source": "constant_ackermann_s_curve_v1", "block_index": block_index,
+                "segment_index": i, "mode": block.mode, "direction": block.direction,
+                "t0": start_time + t0, "duration": duration, "s0": s0, "s1": s1,
+                "start_speed": v0, "end_speed": v1, "start_acceleration": a0, "end_acceleration": a1,
+                "coefficients": [0., v0 * duration, .5 * a0 * duration ** 2,
+                                 jerk * duration ** 3 / 6., 0., 0.],
+                "speed_envelope_active_limits": [],
+            }
+            measured = _piece_peaks(block, phase, limits)
+            powers = _translation_time_limits(limits)
+            if (measured["wheel_angle"] > limits.steer_angle_max + 1e-8
+                    or any(bound is not None and measured[name] > bound + 1e-8
+                           for name, (bound, _) in powers.items())):
+                return None
+            phase["dynamic_peaks"] = measured
+            phases.append(phase)
+            for name, value in measured.items():
+                overall[name] = max(overall.get(name, 0.), value)
+    except (ValueError, ArithmeticError, np.linalg.LinAlgError):
+        return None
+    return phases, profile.duration_s, overall, [{
+        "block_index": block_index,
+        "local_s_interval_m": [0., block.length],
+        "global_s_interval_m": [global_s, global_s + block.length],
+        "active_speed_caps": [],
+        "timing_source": "constant_ackermann_s_curve_v1",
+    }]
+
+
 def _translation_phases(block, limits, block_index, start_time,
                         global_s_offset=0., time_step=.20):
     """Connect physical speed bottlenecks with jerk-limited S curves.
@@ -740,7 +793,7 @@ class SegmentTimingCache:
 
 
 def retime_continuous(plan, limits=None, dt=.02, spatial_dt=.005,
-                      segment_cache=None):
+                      segment_cache=None, *, analytic_ackermann=False):
     """Time-scale a continuous plan; only a mode change inserts stationary setup."""
     if not isinstance(plan, ContinuousPlan):
         raise TypeError("continuous_plan_required")
@@ -816,12 +869,13 @@ def retime_continuous(plan, limits=None, dt=.02, spatial_dt=.005,
         else:
             rows = sample_block(block, start_pose, spatial_dt)
             lookup_stations = np.asarray([row[0] for row in rows])
-            if segment_cache is None:
-                block_phases, duration, peaks, block_constraints = _translation_phases(
-                    block, limits, index, elapsed, global_s)
-            else:
-                block_phases, duration, peaks, block_constraints = segment_cache.translation(
-                    block, limits, index, elapsed, global_s)
+            timing = (_analytic_ackermann_phases(block, limits, index, elapsed, global_s)
+                      if analytic_ackermann else None)
+            if timing is None:
+                timing = (_translation_phases(block, limits, index, elapsed, global_s)
+                          if segment_cache is None else
+                          segment_cache.translation(block, limits, index, elapsed, global_s))
+            block_phases, duration, peaks, block_constraints = timing
             speed_constraints.extend(block_constraints)
             for phase in block_phases:
                 phase["start_pose"] = [start_pose.x, start_pose.y, start_pose.th]

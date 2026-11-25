@@ -5,9 +5,9 @@ import numpy as np
 import pytest
 
 from ranger_mini_gz.scene_generator import (
-    SCENARIOS, generate_scene, installed_paths, load_scene, read_map, scene_audit,
+    SCENARIOS, clearance_summary, generate_scene, installed_paths, load_scene, read_map, scene_audit,
 )
-from ranger_mini_gz.scene_geometry import Obstacle, rasterize
+from ranger_mini_gz.scene_geometry import Obstacle, interpolate, rasterize
 
 
 def paths():
@@ -75,6 +75,24 @@ def test_grid_origin_and_pgm_row_order(tmp_path):
     pixels = (tmp_path / "map.pgm").read_bytes().split(b"\n", 3)[-1]
     assert pixels[(grid.shape[0] - 1 - row) * grid.shape[1] + column] == 0
     assert pixels[row * grid.shape[1] + column] == 254
+
+
+def test_default_factory_west_limit_is_single_car_only():
+    locations = paths()
+    scene = load_scene("factory_indoor_01", paths=locations)
+    assert scene.variant == "west_single_lane"
+    obstacles = {obstacle.name: obstacle for obstacle in scene.obstacles}
+    barrier = obstacles["west_single_lane_barrier"]
+    opening = barrier.bounds[0][0] - obstacles["boundary_west"].bounds[1][0]
+    assert opening == pytest.approx(1.10)
+    assert barrier.bounds[1][0] > obstacles["storage_west"].bounds[0][0]
+    assert opening < min(scene.cargo.size[:2])
+    straight = ((.70, 14.75, np.pi / 2), (.70, 17.25, np.pi / 2))
+    route = clearance_summary(scene, "single", ((pose, None) for pose in interpolate(straight)))
+    assert route["robot1"]["distance_m"] == pytest.approx(.30)
+
+    legacy = load_scene(scene.name, "default", paths=locations)
+    assert barrier.name not in {obstacle.name for obstacle in legacy.obstacles}
 
 
 @pytest.mark.parametrize("variant,width,minimum", [

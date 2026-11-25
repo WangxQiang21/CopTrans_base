@@ -801,7 +801,8 @@ def verify_uniform_playback_plan(*, plan_id, formation_id, backend,
     table alone are not accepted.
     """
     from .uniform_trajectory import MODEL_VERSION, UniformTimedPlan
-    from .uniform_mixed_trajectory import MIXED_MODEL_VERSION, UniformMixedTimedPlan
+    from .uniform_mixed_trajectory import MIXED_CLOCK_MODEL_VERSION, MIXED_MODEL_VERSION, UniformMixedTimedPlan
+    from .uniform_reachability import REACHABILITY_MODEL_VERSION, UniformReachabilityTimedPlan
 
     if backend != PLAYBACK_PLAN_BACKEND:
         raise PlaybackValidationError(
@@ -811,7 +812,10 @@ def verify_uniform_playback_plan(*, plan_id, formation_id, backend,
         raise PlaybackValidationError(
             "unsupported playback semantic_version {!r}; expected {!r}"
             .format(semantic_version, PLAYBACK_PLAN_SCHEMA))
-    if model_version not in (MODEL_VERSION, MIXED_MODEL_VERSION):
+    model_types = {MODEL_VERSION: UniformTimedPlan, MIXED_MODEL_VERSION: UniformMixedTimedPlan,
+                   MIXED_CLOCK_MODEL_VERSION: UniformMixedTimedPlan,
+                   REACHABILITY_MODEL_VERSION: UniformReachabilityTimedPlan}
+    if model_version not in model_types:
         raise PlaybackValidationError(
             "unsupported uniform model_version {!r}".format(model_version))
     if not isinstance(model_sha256, str) or len(model_sha256) != 64:
@@ -831,7 +835,7 @@ def verify_uniform_playback_plan(*, plan_id, formation_id, backend,
             .format(formation_id, trajectory_fields.get("formation_id")))
 
     try:
-        model_type = UniformMixedTimedPlan if model_version == MIXED_MODEL_VERSION else UniformTimedPlan
+        model_type = model_types[model_version]
         plan = model_type.from_model_json(model_json)
     except (ValueError, TypeError, KeyError) as exc:
         raise PlaybackValidationError(

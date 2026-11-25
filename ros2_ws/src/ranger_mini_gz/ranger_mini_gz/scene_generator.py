@@ -17,6 +17,7 @@ from ranger_mini_gz.scene_world import STYLE_COLORS, write_gui_config, write_wor
 
 
 SCENARIOS = ("factory_indoor_01", "port_01", "factory_outdoor_01")
+SCENE_VARIANTS = ("auto", "default", "west_single_lane", "wide", "critical", "too_narrow")
 TASKS = ("single", "formation")
 WALL_THICKNESS = .15
 
@@ -85,7 +86,7 @@ def boundary_rows(size, height):
                "size": [dx, dy, height], "style": "boundary"}
 
 
-def load_scene(name, variant="default", resolution=None, paths=None):
+def load_scene(name, variant=None, resolution=None, paths=None):
     if name not in SCENARIOS:
         raise ValueError(f"unknown scene {name!r}")
     sim, common, backends = paths or installed_paths()
@@ -99,9 +100,14 @@ def load_scene(name, variant="default", resolution=None, paths=None):
         comparison = map_resolution(size, comparison)
     walls, = positive((float(raw["boundary_height"]),), "boundary height")
 
+    if variant in (None, "auto"):
+        variant = raw.get("default_variant", "default")
     obstacle_rows = raw["obstacles"]
     pinch = raw.get("pinch")
-    if variant != "default":
+    variant_rows = raw.get("obstacle_variants", {})
+    if variant in variant_rows:
+        obstacle_rows = [*obstacle_rows, *variant_rows[variant]]
+    elif variant != "default":
         cases = raw.get("width_cases", {})
         if variant not in cases or pinch is None:
             raise ValueError(f"variant {variant!r} is not available for {name}")
@@ -287,7 +293,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("scenario", choices=SCENARIOS)
     parser.add_argument("output", type=Path)
-    parser.add_argument("--variant", default="default")
+    parser.add_argument("--variant", choices=SCENE_VARIANTS, default="auto")
     parser.add_argument("--resolution", type=float)
     parser.add_argument("--task", choices=TASKS, default="formation")
     args = parser.parse_args()

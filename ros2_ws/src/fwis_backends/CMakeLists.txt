@@ -3,6 +3,7 @@ project(fwis_backends)
 
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
+find_package(fwis_planning_core REQUIRED)
 set(planner_dependencies
   fwis_common fwis_ros fwis_v3_msgs geometry_msgs nav_msgs rclcpp std_msgs
   tf2 tf2_geometry_msgs visualization_msgs
@@ -36,6 +37,7 @@ if(pybind11_FOUND)
   find_package(Python3 COMPONENTS Interpreter Development.Module REQUIRED)
   ament_get_python_install_dir(PYTHON_INSTALL_DIR)
   pybind11_add_module(_formation_collision_native MODULE multi_4wis/formation_collision_bindings.cpp)
+  target_link_libraries(_formation_collision_native PRIVATE fwis_planning_core::fwis_planning_core)
   target_compile_features(_formation_collision_native PRIVATE cxx_std_17)
   # Preserve the separating-axis comparisons at exact contact.
   target_compile_options(_formation_collision_native PRIVATE -O3 -Wall -Wextra -ffp-contract=off)
@@ -52,6 +54,10 @@ foreach(backend IN ITEMS single_multimodal_hybrid_astar single_constant_primitiv
     DESTINATION lib/${PROJECT_NAME} RENAME ${backend}_playback)
   install(DIRECTORY ${backend}/config/ DESTINATION share/${PROJECT_NAME}/config/${backend})
 endforeach()
+
+install(PROGRAMS single_continuous_mode_path/scripts/single_state_lattice_planner.py
+  DESTINATION lib/${PROJECT_NAME}
+)
 
 install(PROGRAMS
   multi_4wis/scripts/formation_uniform_planner_node.py

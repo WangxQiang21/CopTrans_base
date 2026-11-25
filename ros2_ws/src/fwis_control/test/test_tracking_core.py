@@ -126,6 +126,36 @@ def test_safety_preserves_parallel_encoding_and_spin_constraints():
     assert saf.apply(Twist(wz=math.nan), S, .04).command == ZERO
 
 
+@pytest.mark.parametrize("planned_vy", [-.0125, .0125])
+def test_oblique_feedback_does_not_brake_for_a_spurious_branch_change(planned_vy):
+    saf = SafetyFilter(Limits())
+    cruise = Twist(-.24, planned_vy, 0.)
+    for _ in range(20):
+        saf.apply(cruise, O, .04, oblique_direction=planned_vy)
+    for raw_vy in (-2 * planned_vy, planned_vy, -planned_vy):
+        result = saf.apply(Twist(cruise.vx, raw_vy, 0.), O, .04, oblique_direction=planned_vy)
+        assert result.command.vx == cruise.vx
+        assert result.command.vy * planned_vy > 0.
+        assert "oblique_reversal_through_zero" not in result.reasons
+        assert ("oblique_reference_branch" in result.reasons) == (raw_vy * planned_vy < 0.)
+
+    # Numerical noise in a longitudinal-only coordinated O segment cannot
+    # change the encoding branch. An actual reference reversal still stops.
+    axial = saf.apply(Twist(cruise.vx, -planned_vy, 0.), O, .04,
+                      oblique_direction=math.copysign(1e-10, -planned_vy))
+    assert axial.command.vx == cruise.vx and axial.command.vy * planned_vy > 0.
+    reversed_twist = Twist(cruise.vx, -planned_vy, 0.)
+    outcome = saf.apply(reversed_twist, O, .04, oblique_direction=-planned_vy)
+    assert "oblique_reversal_through_zero" in outcome.reasons
+    for _ in range(30):
+        if outcome.command == ZERO:
+            break
+        assert outcome.command.vy * planned_vy > 0.
+        outcome = saf.apply(reversed_twist, O, .04, oblique_direction=-planned_vy)
+    assert outcome.command == ZERO
+    assert saf.apply(reversed_twist, O, .04, oblique_direction=-planned_vy).command.vy * planned_vy < 0.
+
+
 def test_pid_integrator_antiwindup_and_wrapped_derivative():
     controller = PIDAxis(PIDGains(1., .5, .1, .15, .08), angular=True)
     controller.update(math.pi-.005, .04)

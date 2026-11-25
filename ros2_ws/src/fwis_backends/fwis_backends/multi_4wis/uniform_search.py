@@ -75,6 +75,7 @@ from .uniform_motion import (
     s_spin_edge,
 )
 from .uniform_timing import timing_motion_limits
+from .uniform_convex_corridor import convex_corridor, shortcut_corridor
 from .uniform_translation_route import fixed_heading_route
 
 # Reuse FR02's exact wheel-change threshold so a "no setup" decision in the
@@ -350,6 +351,57 @@ class RepresentativeTable:
 
     def __len__(self):
         return len(self._best)
+
+
+class _PythonFrontier:
+    def __init__(self, config, rank):
+        self.config = config
+        self.rank = rank
+        self.table = RepresentativeTable(config)
+        self.heap = []
+        self.serial = itertools.count()
+
+    def offer(self, state, initial=False):
+        accepted, _, _ = self.table.offer(state)
+        if accepted:
+            heapq.heappush(self.heap, (
+                self.rank(state, initial), state.g, next(self.serial), state))
+        return accepted
+
+    def pop(self):
+        _, _, _, state = heapq.heappop(self.heap)
+        key = make_key(state, self.config)
+        return state if self.table.representative(key) is state else None
+
+    def __len__(self):
+        return len(self.heap)
+
+
+class _NativeFrontier:
+    def __init__(self, config, rank):
+        try:
+            from fwis_multi_frontier_native import Frontier
+        except ImportError as exc:
+            raise FormationValidationError(
+                "NATIVE_SEARCH_FRONTIER_UNAVAILABLE: build fwis_multi_planner_cpp with pybind11") from exc
+        self.frontier = Frontier(config)
+        self.rank = rank
+        self.pending = {}
+
+    def offer(self, state, initial=False):
+        serial = self.frontier.offer(state, state.g, self.rank(state, initial))
+        if serial is None:
+            return False
+        self.pending[serial] = state
+        return True
+
+    def pop(self):
+        serial, stale = self.frontier.pop()
+        state = self.pending.pop(serial)
+        return None if stale else state
+
+    def __len__(self):
+        return len(self.frontier)
 
 
 # ---------------------------------------------------------------------------
@@ -719,7 +771,8 @@ def a_capability_labels(model, qf, headings, goal_qf, config=None,
 class SuccessorGenerator:
     """Generate finite, mode-consistent, swept, costed successors for a state."""
 
-    def __init__(self, model, checker, config=None):
+    def __init__(self, model, checker, config=None, *, native_spin_sweep=False,
+                 native_candidates=False):
         if not isinstance(model, FormationModel):
             raise FormationValidationError(
                 "INVALID_MODEL expected FormationModel")
@@ -729,6 +782,17 @@ class SuccessorGenerator:
         self.model = model
         self.checker = checker
         self.config = config or SuccessorConfig()
+        self._native_spin_sweep = native_spin_sweep
+        self._native_candidates = None
+        if native_candidates and len(model.vehicle_ids) <= 16:
+            try:
+                import fwis_multi_frontier_native as native
+                native.generate_lattice
+            except (ImportError, AttributeError) as exc:
+                raise FormationValidationError(
+                    "NATIVE_SUCCESSOR_GENERATOR_UNAVAILABLE: rebuild fwis_multi_planner_cpp") from exc
+            self._native_candidates = native
+        self._offsets = tuple((offset.x, offset.y) for offset in model.offsets)
         self.motion_limits = timing_motion_limits(self.config.timing_limits)
         self._translation_length_limit = translation_block_length_limit(
             self.config.timing_limits)
@@ -758,12 +822,32 @@ class SuccessorGenerator:
                     and abs(_wrap(state.qf.psi - goal_qf.psi))
                     <= self.config.goal_psi_tol_rad):
                 displacement = goal[:2]
-                if translation_mode in (None, MODE_A):
+                if self._native_candidates is not None:
+                    branches = self._native_candidates.generate_candidates(
+                        state.qf.psi, self._offsets, tuple(current[i] for i in self.vehicle_ids),
+                        (("O_direct_goal", displacement),) if translation_mode in (None, MODE_O) else (),
+                        (("A_direct_goal", displacement),) if translation_mode in (None, MODE_A) else (),
+                        (), self.motion_limits.r_min_ack, self.config.allow_reverse, False)
+                    self._add_native_branches(state, current, branches, consider, result)
+                elif translation_mode in (None, MODE_A):
                     self._add_a_straight(state, current, "A_direct_goal", displacement,
                                          consider, result)
-                if translation_mode in (None, MODE_O):
+                if self._native_candidates is None and translation_mode in (None, MODE_O):
                     self._add_o(state, current, "O_direct_goal", displacement,
                                 consider, result)
+            result.generation_s = time.perf_counter() - generation_start - result.collision_s
+            return result
+
+        if self._native_candidates is not None:
+            target = self._a_straight_displacements(state, goal_qf)
+            target_yaw = (None if goal_qf is None or self.config.goal_formation_heading_free
+                          else goal_qf.psi)
+            branches = self._native_candidates.generate_lattice(
+                state.qf.psi, self._offsets, tuple(current[i] for i in self.vehicle_ids),
+                self.config.translation_step_m, target[0][1] if target else None,
+                self.config.arc_pivots, self.config.arc_step_rad, target_yaw,
+                self.motion_limits.r_min_ack, self.config.allow_reverse)
+            self._add_native_branches(state, current, branches, consider, result)
             result.generation_s = time.perf_counter() - generation_start - result.collision_s
             return result
 
@@ -788,6 +872,51 @@ class SuccessorGenerator:
         result.generation_s = time.perf_counter() - generation_start - result.collision_s
         return result
 
+    def _add_native_branches(self, state, current, branches, consider, result):
+        """Materialize the ordered C++ branch descriptors as authoritative FR01 edges."""
+        native = self._native_candidates
+        options = {"limits": self.motion_limits, "allow_reverse": self.config.allow_reverse}
+        for kind, label, control, delta, gears, values, refusal, index, bearing in branches:
+            if refusal == native.Refusal.REVERSE_REQUIRED:
+                result.candidate_count += 1
+                result.reject(label, "O_BRANCH_REQUIRES_REVERSE", "vehicle_id={} direction={:.6g}".format(
+                    self.vehicle_ids[index], bearing))
+                continue
+
+            directions = dict(zip(self.vehicle_ids, gears))
+            diagnostic_label = (label.rsplit("_sig", 1)[0]
+                                if kind == native.Primitive.OBLIQUE else label)
+            try:
+                aligned = refusal != native.Refusal.ALIGNMENT_REQUIRED
+                if refusal == native.Refusal.ARC_DOMAIN:
+                    # Keep the detailed authoritative geometry diagnostic at a rejected
+                    # radius and resolve libm differences on the radius boundary.
+                    target = a_arc_required_headings(
+                        self.model, state.qf, delta, control, directions, limits=self.motion_limits)
+                    aligned = _headings_match(current, target)
+                if not aligned:
+                    result.candidate_count += 1
+                    detail = ("body headings are not the required arc tangent"
+                              if kind == native.Primitive.ARC else
+                              "body headings are not the required tangent/anti-tangent")
+                    result.reject(label, "A_HEADING_REQUIRES_S_ALIGNMENT", detail)
+                    continue
+                if kind == native.Primitive.OBLIQUE:
+                    edge = o_translation_edge(self.model, state.qf, current, control, directions,
+                                              dict(zip(self.vehicle_ids, values)), **options)
+                elif kind == native.Primitive.STRAIGHT:
+                    edge = a_straight_edge(self.model, state.qf, current, control, directions, **options)
+                elif kind == native.Primitive.ARC:
+                    edge = a_arc_edge(self.model, state.qf, current, delta, control, directions, **options)
+                else:
+                    edge = s_spin_edge(self.model, state.qf, current,
+                                       dict(zip(self.vehicle_ids, values)), limits=self.motion_limits)
+            except UniformMotionError as exc:
+                result.candidate_count += 1
+                result.reject(diagnostic_label, exc.reason, exc.detail)
+                continue
+            consider(label, edge)
+
     def _consider(self, state, goal_qf, label, edge, result):
         """Apply the same cost, sweep and exact state update to every edge."""
         result.candidate_count += 1
@@ -797,11 +926,31 @@ class SuccessorGenerator:
             result.reject(label, "MOTION_DURATION_LIMIT",
                           "required subdivision exceeds the per-edge work limit")
             return
-        setup_s = setup_demand_s(state.wheel, edge, self.motion_limits)
-        proxy_s = motion_proxy_s(edge, self.config.timing_limits)
+        if self._native_candidates is None:
+            setup_s = setup_demand_s(state.wheel, edge, self.motion_limits)
+            proxy_s = motion_proxy_s(edge, self.config.timing_limits)
+        else:
+            previous = {item.vehicle_id: item for item in state.wheel}
+            new_wheel = wheel_signature_from_edge(edge)
+            end = dict(edge.end_headings)
+            limits = self.motion_limits
+            timing = self.config.timing_limits
+            setup_s, proxy_s = self._native_candidates.edge_cost(
+                [(previous[item.vehicle_id].mode, previous[item.vehicle_id].angles) for item in new_wheel],
+                [(item.mode, item.angles) for item in new_wheel],
+                [float(segment.travel_distance) for segment in edge.segments],
+                [abs(end[i] - angle) for i, angle in edge.start_headings],
+                (limits.mode_setup_time, limits.mode_switch_duration or 0., limits.steer_rate_max,
+                 limits.steer_accel_max, timing.v_max, timing.yaw_rate_max,
+                 limits.translation_speed_policy == "mode_switch_only"))
         segment = analytic_sweep_segment(edge, proxy_s)
         start = time.perf_counter()
-        report = self.checker.swept_check_analytic([segment], self._sweep_policy)
+        spin = None
+        native_edge = edge if self._native_candidates is not None else None
+        if native_edge is None and self._native_spin_sweep and edge.primitive == PRIMITIVE_S_SPIN:
+            spin = (edge.control.parameter_length, dict(edge.start_headings), dict(edge.end_headings))
+        report = self.checker.swept_check_analytic(
+            [segment], self._sweep_policy, _stationary_spin=spin, _exact_edge=native_edge)
         result.collision_s += time.perf_counter() - start
         if not report.success:
             result.reject(
@@ -950,25 +1099,36 @@ class SuccessorGenerator:
             half_cot = 0.5 / math.tan(delta / 2.0)
             pivot = (0.5 * local_x - half_cot * local_y,
                      half_cot * local_x + 0.5 * local_y)
-            forward = dict.fromkeys(self.vehicle_ids, 1)
-            try:
-                tangents = a_arc_required_headings(
-                    self.model, start, delta, pivot, forward, limits=self.motion_limits)
-            except UniformMotionError as exc:
-                result = SuccessorResult(candidate_count=1,
-                                         generation_s=time.perf_counter() - generation_start)
-                result.reject("A_arc_direct_goal", exc.reason, exc.detail)
-                yield result
-                continue
+            native_branches = None
+            if self._native_candidates is not None:
+                native_branches = self._native_candidates.goal_arc_branches(
+                    start.psi, self._offsets, tuple(current[i] for i in self.vehicle_ids),
+                    pivot, delta, self.motion_limits.r_min_ack, self.config.allow_reverse)
+            if native_branches is not None:
+                gear_branches = [(gears, dict(zip(self.vehicle_ids, values)))
+                                 for gears, values in native_branches]
+            else:
+                forward = dict.fromkeys(self.vehicle_ids, 1)
+                try:
+                    tangents = a_arc_required_headings(
+                        self.model, start, delta, pivot, forward, limits=self.motion_limits)
+                except UniformMotionError as exc:
+                    result = SuccessorResult(candidate_count=1,
+                                             generation_s=time.perf_counter() - generation_start)
+                    result.reject("A_arc_direct_goal", exc.reason, exc.detail)
+                    yield result
+                    continue
 
-            gear_branches = []
-            for gears in _gear_combinations(self.vehicle_ids, self.config.allow_reverse):
-                target = {i: tangents[i] + (math.pi if gear < 0 else 0.0)
-                          for i, gear in zip(self.vehicle_ids, gears)}
-                spins = [abs(_wrap(target[i] - current[i])) for i in self.vehicle_ids]
-                gear_branches.append(((max(spins), sum(spins)), gears, target))
+                scored = []
+                for gears in _gear_combinations(self.vehicle_ids, self.config.allow_reverse):
+                    target = {i: tangents[i] + (math.pi if gear < 0 else 0.0)
+                              for i, gear in zip(self.vehicle_ids, gears)}
+                    spins = [abs(_wrap(target[i] - current[i])) for i in self.vehicle_ids]
+                    scored.append(((max(spins), sum(spins)), gears, target))
+                gear_branches = [(gears, target)
+                                 for _, gears, target in sorted(scored, key=lambda branch: branch[0])]
 
-            for _, gears, target in sorted(gear_branches, key=lambda branch: branch[0]):
+            for gears, target in gear_branches:
                 result = SuccessorResult()
                 arc_start = state
                 branch = gear_label(gears)
@@ -1221,16 +1381,16 @@ class SuccessorGenerator:
         return ordered
 
     def _add_s(self, state, current, label, target, consider, result):
-        deltas = {}
-        any_change = False
-        for vehicle_id in self.vehicle_ids:
-            delta = _wrap(target[vehicle_id] - current[vehicle_id])
-            deltas[vehicle_id] = delta
-            if abs(delta) > 1e-12:
-                any_change = True
-        if not any_change:
-            # Already aligned with this scheme; no zero-cost S self-loop.
-            return
+        if self._native_candidates is None:
+            deltas = {i: _wrap(target[i] - current[i]) for i in self.vehicle_ids}
+            if not any(abs(delta) > 1e-12 for delta in deltas.values()):
+                return
+        else:
+            values = self._native_candidates.spin_increments(
+                tuple(current[i] for i in self.vehicle_ids), tuple(target[i] for i in self.vehicle_ids))
+            if values is None:
+                return
+            deltas = dict(zip(self.vehicle_ids, values))
         try:
             edge = s_spin_edge(
                 self.model, state.qf, current, deltas, limits=self.motion_limits)
@@ -1298,8 +1458,13 @@ class GraphSearchConfig:
     continuous_a_refinement: bool = False
     formation_raster: bool = True
     preview_checks: bool = True
+    native_frontier: bool = False
+    convex_corridor: bool = False
+    prefer_ackermann: bool = False
 
     def __post_init__(self):
+        if not isinstance(self.native_frontier, bool):
+            raise FormationValidationError("INVALID_SEARCH_CONFIG native_frontier must be bool")
         if not isinstance(self.direct_goal_translation, bool):
             raise FormationValidationError(
                 "INVALID_SEARCH_CONFIG direct_goal_translation must be bool")
@@ -1315,7 +1480,7 @@ class GraphSearchConfig:
         if not isinstance(self.continuous_a_refinement, bool):
             raise FormationValidationError(
                 "INVALID_SEARCH_CONFIG continuous_a_refinement must be bool")
-        for name in ("formation_raster", "preview_checks"):
+        for name in ("formation_raster", "preview_checks", "prefer_ackermann"):
             if not isinstance(getattr(self, name), bool):
                 raise FormationValidationError(
                     "INVALID_SEARCH_CONFIG {} must be bool".format(name))
@@ -1357,9 +1522,11 @@ class UniformGraphSearchResult:
     offset_preview_rejections: int = 0
     straight_preparation_probes: int = 0
     global_route: Optional[dict] = None
+    corridor_guide: Optional[dict] = None
     heading_transition_probes: int = 0
     first_failure_layer: str = "none"
     detail: str = ""
+    frontier_backend: str = "python"
 
     @property
     def edges(self):
@@ -1372,6 +1539,7 @@ class UniformGraphSearchResult:
             "reason": self.reason,
             "detail": self.detail,
             "first_failure_layer": self.first_failure_layer,
+            "frontier_backend": self.frontier_backend,
             "goal_qf": [self.goal_qf.x, self.goal_qf.y, self.goal_qf.psi],
             "expansions": self.expansions,
             "candidate_count": self.candidate_count,
@@ -1398,6 +1566,8 @@ class UniformGraphSearchResult:
         }
         if include_path:
             result["path"] = path_records(self.goal_state)
+        if self.corridor_guide is not None:
+            result["corridor_guide"] = self.corridor_guide
         return result
 
 
@@ -1481,17 +1651,23 @@ class UniformGraphSearch:
         self.successor_config = successor_config or SuccessorConfig()
         self.search_config = search_config or GraphSearchConfig()
         self.generator = SuccessorGenerator(
-            model, checker, self.successor_config)
+            model, checker, self.successor_config,
+            native_spin_sweep=self.search_config.native_frontier,
+            native_candidates=self.search_config.native_frontier)
 
     def search(self, start_state, goal_qf, terminal_validator=None,
-               goal_headings=None, cancelled=None):
+               goal_headings=None, cancelled=None, progress=None):
         started = time.perf_counter()
         config = self.search_config
         result = UniformGraphSearchResult(
             status=SEARCH_NO_SOLUTION, reason=SEARCH_NO_SOLUTION,
-            start_state=start_state, goal_qf=goal_qf)
-        open_heap = []
+            start_state=start_state, goal_qf=goal_qf,
+            frontier_backend="cpp" if config.native_frontier else "python")
+        frontier = None
         is_cancelled = cancelled or (lambda: False)
+        native = self.generator._native_candidates
+        budget = (native.SearchBudget(config.max_expansions, config.max_seconds)
+                  if native is not None else None)
 
         def finish(status, reason, layer, detail="", goal_state=None):
             result.status = status
@@ -1499,7 +1675,7 @@ class UniformGraphSearch:
             result.first_failure_layer = layer
             result.detail = detail
             result.goal_state = goal_state
-            result.open_size = len(open_heap)
+            result.open_size = 0 if frontier is None else len(frontier)
             result.wall_time_s = time.perf_counter() - started
             return result
 
@@ -1515,6 +1691,8 @@ class UniformGraphSearch:
             for reason, count in generated.rejection_histogram().items():
                 result.rejection_histogram[reason] = (
                     result.rejection_histogram.get(reason, 0) + count)
+            if progress is not None:
+                progress(result.expansions, result.candidate_count)
 
         deadline = started + config.max_seconds
 
@@ -1562,14 +1740,80 @@ class UniformGraphSearch:
             frames = (0.0, angle) if config.heading_aligned_route and abs(angle) > 1e-9 else (0.0,)
             candidates = []
             diagnostics = []
+
+            def direction_steps(frame):
+                return tuple((dy, dx) for dy, dx in ((0, 1), (0, -1), (1, 0), (-1, 0))
+                             if all(_o_branch(theta, frame + math.atan2(dy, dx),
+                                              opts.allow_reverse) is not None
+                                    for theta in headings.values()))
+
+            def direction_allowed(first, second):
+                dx, dy = second[0] - first[0], second[1] - first[1]
+                if math.hypot(dx, dy) <= opts.goal_xy_tol_m:
+                    return False
+                bearing = math.atan2(dy, dx)
+                return all(_o_branch(theta, bearing, opts.allow_reverse) is not None
+                           for theta in headings.values())
+
+            def legs_for_points(points):
+                legs = []
+                length = a_distance = 0.0
+                for a, b in zip(points, points[1:]):
+                    dx, dy = b[0] - a[0], b[1] - a[1]
+                    bearing = math.atan2(dy, dx)
+                    tangent = all(abs(_wrap(theta - bearing)) <= HEADING_MATCH_TOL_RAD
+                                  or (opts.allow_reverse and abs(_wrap(theta - bearing + math.pi))
+                                      <= HEADING_MATCH_TOL_RAD) for theta in headings.values())
+                    travel = math.hypot(dx, dy)
+                    length += travel
+                    if tangent:
+                        a_distance += travel
+                    legs.append((MODE_A if tangent else MODE_O, FormationPose(*b, start_qf.psi)))
+                return legs, length, a_distance
+
+            if config.convex_corridor and config.formation_raster:
+                began = time.perf_counter()
+                corridor_deadline = began + min(.5, .20 * max(0.0, try_until - began))
+                grid = self.checker.grid
+                corridor = convex_corridor(
+                    grid, blocked, (start_qf.x, start_qf.y), (target.x, target.y), direction_steps(0.0),
+                    deadline=corridor_deadline, max_expansions=config.max_expansions, cancelled=cancelled)
+                record = {
+                    "status": corridor.status, "expansions": corridor.expansions, "frame_angle_rad": 0.0,
+                    "wall_time_s": time.perf_counter() - began,
+                    "waypoints": [list(p) for p in corridor.points],
+                    "convex_regions_m": [[grid.ox + r.left * grid.res, grid.oy + r.bottom * grid.res,
+                                          grid.ox + r.right * grid.res, grid.oy + r.top * grid.res]
+                                         for r in corridor.rectangles],
+                }
+                diagnostics.append(record)
+                if corridor.points:
+                    def stop_shortcuts():
+                        return is_cancelled() or time.perf_counter() >= corridor_deadline
+
+                    shorter = shortcut_corridor(grid, corridor, direction_allowed, stop_shortcuts)
+                    paths = [(False, corridor.points)]
+                    if shorter != corridor.points:
+                        paths.append((True, shorter))
+                    routes = []
+                    for shortcut, points in paths:
+                        legs, length, a_distance = legs_for_points(points)
+                        details = dict(record, length_m=length, a_distance_m=a_distance,
+                                       uses_shortcuts=shortcut, waypoints=[list(point) for point in points])
+                        last = follow_translation(legs, try_until, origin)
+                        if last is not None:
+                            routes.append((last.next_state.g, details, last))
+                    for _, details, last in sorted(routes, key=lambda candidate: candidate[0]):
+                        if record_route:
+                            result.global_route = details
+                        result.corridor_guide = details
+                        yield replace(last, label="convex_corridor_global_route")
+
             def probe(frame, raster, alternative=False):
                 began = time.perf_counter()
                 if began >= try_until:
                     return
-                steps = tuple((dy, dx) for dy, dx in ((0, 1), (0, -1), (1, 0), (-1, 0))
-                              if all(_o_branch(theta, frame + math.atan2(dy, dx),
-                                               opts.allow_reverse) is not None
-                                     for theta in headings.values()))
+                steps = direction_steps(frame)
                 expansions = 0
                 for spacing in (2 * opts.xy_bin_m, opts.xy_bin_m):
                     route = fixed_heading_route(
@@ -1588,19 +1832,7 @@ class UniformGraphSearch:
                 diagnostics.append(record)
                 if not route.points:
                     return
-                legs = []
-                length = a_distance = 0.0
-                for a, b in zip(route.points, route.points[1:]):
-                    dx, dy = b[0] - a[0], b[1] - a[1]
-                    bearing = math.atan2(dy, dx)
-                    tangent = all(abs(_wrap(theta - bearing)) <= HEADING_MATCH_TOL_RAD
-                                  or (opts.allow_reverse and abs(_wrap(theta - bearing + math.pi))
-                                      <= HEADING_MATCH_TOL_RAD) for theta in headings.values())
-                    travel = math.hypot(dx, dy)
-                    length += travel
-                    if tangent:
-                        a_distance += travel
-                    legs.append((MODE_A if tangent else MODE_O, FormationPose(*b, start_qf.psi)))
+                legs, length, a_distance = legs_for_points(route.points)
                 score = length + opts.translation_step_m * (len(legs) - 1)
                 record.update(length_m=length, a_distance_m=a_distance, score_m=score)
                 return (round(score, 9), -a_distance), record, legs
@@ -1948,31 +2180,36 @@ class UniformGraphSearch:
 
         direct = goal_connectors() if config.direct_goal_translation else iter(())
 
-        table = RepresentativeTable(self.successor_config)
-        table.offer(start_state)
-        serial = 0
-        initial_h = goal_heuristic_s(
-            start_state, goal_qf, self.successor_config, config)
-        heapq.heappush(open_heap, (
-            config.heuristic_weight * initial_h, start_state.g,
-            serial, start_state))
+        def rank(state, initial):
+            heuristic = goal_heuristic_s(state, goal_qf, self.successor_config, config)
+            weighted = config.heuristic_weight * heuristic
+            return weighted if initial else state.g + weighted
+
+        frontier_type = _NativeFrontier if config.native_frontier else _PythonFrontier
+        frontier = frontier_type(self.successor_config, rank)
+        frontier.offer(start_state, initial=True)
 
         while True:
-            if is_cancelled():
+            cancelled_now = bool(is_cancelled())
+            elapsed = 0.0 if cancelled_now else time.perf_counter() - started
+            status = (budget.probe(cancelled_now, result.expansions, elapsed)
+                      if budget is not None else None)
+            if (cancelled_now if budget is None else status == native.BudgetStatus.CANCELLED):
                 return finish(SEARCH_NO_SOLUTION, "REQUEST_CANCELLED",
                               "request", "manual reset superseded the pending search")
-            elapsed = time.perf_counter() - started
-            if result.expansions >= config.max_expansions:
+            if (result.expansions >= config.max_expansions if budget is None
+                    else status == native.BudgetStatus.EXPANSIONS):
                 return finish(
                     SEARCH_BUDGET_EXHAUSTED, "EXPANSION_BUDGET_EXHAUSTED",
                     "budget", "expansions {} >= {}".format(
                         result.expansions, config.max_expansions))
-            if elapsed >= config.max_seconds:
+            if (elapsed >= config.max_seconds if budget is None
+                    else status == native.BudgetStatus.DEADLINE):
                 return finish(
                     SEARCH_BUDGET_EXHAUSTED, "TIME_BUDGET_EXHAUSTED",
                     "budget", "wall time {:.9g} s >= {:.9g} s".format(
                         elapsed, config.max_seconds))
-            if not open_heap:
+            if not frontier:
                 if result.terminal_audits:
                     last = result.terminal_audits[-1]
                     return finish(
@@ -1993,9 +2230,8 @@ class UniformGraphSearch:
             if connector is not None:
                 state = connector.next_state
             else:
-                _, _, _, state = heapq.heappop(open_heap)
-                key = make_key(state, self.successor_config)
-                if table.representative(key) is not state:
+                state = frontier.pop()
+                if state is None:
                     # A lower-g exact state superseded this heap entry.
                     result.stale_heap_entries += 1
                     continue
@@ -2009,9 +2245,14 @@ class UniformGraphSearch:
                         "audit", "no terminal validator was supplied; an "
                         "unaudited geometric goal is not an FR04 success",
                         state)
-                audit_started = time.perf_counter()
-                accepted, audit_detail = terminal_validator(edges)
-                audit_finished = time.perf_counter()
+                if budget is None:
+                    audit_started = time.perf_counter()
+                    accepted, audit_detail = terminal_validator(edges)
+                    audit_finished = time.perf_counter()
+                    audit_late = audit_finished - started >= config.max_seconds
+                else:
+                    accepted, audit_detail, audit_started, audit_finished, audit_late = (
+                        budget.audit_terminal(started, time.perf_counter, terminal_validator, edges))
                 record = dict(audit_detail or {})
                 record.update({
                     "accepted": bool(accepted),
@@ -2025,7 +2266,7 @@ class UniformGraphSearch:
                     record["direct_goal_translation"] = connector.label
                 result.terminal_audits.append(record)
                 if accepted:
-                    if audit_finished - started >= config.max_seconds:
+                    if audit_late:
                         return finish(
                             SEARCH_BUDGET_EXHAUSTED, "TIME_BUDGET_EXHAUSTED",
                             "budget", "terminal audit completed at {:.9g} s, "
@@ -2055,14 +2296,7 @@ class UniformGraphSearch:
                     result.redundant_s_pruned += 1
                     continue
                 child = successor.next_state
-                accepted, _, _ = table.offer(child)
-                if not accepted:
+                if not frontier.offer(child):
                     result.duplicate_key_rejections += 1
                     continue
                 result.accepted_successors += 1
-                serial += 1
-                heuristic = goal_heuristic_s(
-                    child, goal_qf, self.successor_config, config)
-                heapq.heappush(open_heap, (
-                    child.g + config.heuristic_weight * heuristic,
-                    child.g, serial, child))

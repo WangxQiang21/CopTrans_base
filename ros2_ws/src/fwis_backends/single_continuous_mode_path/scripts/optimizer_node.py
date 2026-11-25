@@ -337,6 +337,9 @@ class OptimizerNode:
         self.plan_id = 0
         self._frontend_failures = {}
         self._seed_proposal_condition = threading.Condition()
+        self.seed_proposal_wait_s = float(self.ros.param("~quality/seed_proposal_wait_s", .15))
+        if not math.isfinite(self.seed_proposal_wait_s) or self.seed_proposal_wait_s < 0.:
+            raise ValueError("seed proposal wait must be finite and nonnegative")
         self._seed_proposals = {}
         self.length = self.ros.param("~vehicle/length", .738)
         self.width = self.ros.param("~vehicle/width", .5)
@@ -945,7 +948,7 @@ class OptimizerNode:
         actions = [Action(a.mode, a.amount, a.control) for a in msg.primitives]
         auxiliary_seeds = []
         if self.planning_backend in ("mode_path_v1", "mode_path_v2"):
-            proposal_deadline = time.monotonic()+.15
+            proposal_deadline = time.monotonic()+self.seed_proposal_wait_s
             with self._seed_proposal_condition:
                 while (int(msg.plan_id) not in self._seed_proposals and
                        time.monotonic() < proposal_deadline):

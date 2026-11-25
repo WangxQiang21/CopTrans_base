@@ -1,17 +1,24 @@
 """FR04 thin autonomous pipeline: request -> search -> FR02 timing -> audit.
 
 There is no legacy geometric seed, no goal-nearby pose teleport, no ROS and no
-NLP here.  Every nonempty path consists only of FR03 successors derived from
-FR01 edges.  The search's terminal validator is the real FR02 audit, and a
+NLP here.  Every nonempty uniform path consists of FR01 edges. The search's
+terminal validator is the real FR02 audit, and a
 returned SUCCESS is rebuilt and independently audited once more before the
-pipeline marks it feasible.  A geometric goal path alone is never executable.
+pipeline marks it feasible. The optional request-local cache can reuse that
+complete independent certificate for the exact path returned by the search.
+A bounded route selection pass can compare other independently audited paths.
+A geometric goal path alone is never executable.
 """
+from copy import copy
 from dataclasses import asdict, dataclass, field, replace
 import hashlib
 import json
 import math
 import time
+from types import MappingProxyType
 from typing import Callable, Mapping, Optional
+
+import numpy as np
 
 from .core import Grid
 from .formation import FormationModel, FormationPose, FormationValidationError
@@ -23,7 +30,7 @@ from .formation_quality import (
     REJECTED,
 )
 from .formation_retiming import _DYNAMIC_LIMITS
-from .uniform_motion import UniformMotionEdge
+from .uniform_motion import MODE_A, MODE_O, PRIMITIVE_A_ARC, PRIMITIVE_A_STRAIGHT, UniformMotionEdge
 from .uniform_quality import (
     UNIFORM_DYNAMIC_UNCONFIRMED, UniformAuditRequest, audit_uniform_timed_plan,
 )
@@ -39,10 +46,13 @@ from .uniform_search import (
     UniformGraphSearchResult,
     initial_state,
 )
-from .uniform_trajectory import UniformTimedPlan, _edge_record, _validate_initial_edge
+from .uniform_trajectory import (
+    CERTIFICATION, MODEL_VERSION, UniformTimedPlan, _edge_record, _validate_initial_edge,
+)
 from .uniform_timing import MotionTiming
 
 PIPELINE_REQUEST_REJECTED = "REQUEST_REJECTED"
+AUDIT_CACHE_VERSION = "uniform-independent-audit.v1"
 
 
 def _canonical_json(value):
@@ -82,6 +92,8 @@ class UniformPlanningRequest:
     initial_edge: Optional[UniformMotionEdge] = None
     cancelled: Optional[Callable[[], bool]] = None
     cargo_footprint: Optional[CargoFootprint] = None
+    reuse_terminal_certificate: bool = False
+    reachability_retime: bool = False
 
 
 @dataclass
@@ -100,6 +112,7 @@ class UniformPlanningResult:
     projection: object = None
     evaluation: object = None
     request_inputs: dict = field(default_factory=dict)
+    stages: dict = field(default_factory=dict)
 
     @property
     def executable(self):
@@ -125,6 +138,7 @@ class UniformPlanningResult:
             "first_failure_layer": self.first_failure_layer,
             "request_sha256": self.request_sha256,
             "wall_time_s": self.wall_time_s,
+            "stages": self.stages,
             "duration_s": None if self.plan is None else self.plan.duration_s,
             "search": search,
             "evaluation": evaluation,
@@ -166,6 +180,9 @@ def request_fingerprint(request):
          "width_m": request.vehicle_shapes[vehicle_id].width_m}
         for vehicle_id in sorted(request.vehicle_shapes)]
     search_config = asdict(request.search_config)
+    for optional_backend_flag in ("convex_corridor", "native_frontier", "prefer_ackermann"):
+        if not search_config.get(optional_backend_flag, False):
+            search_config.pop(optional_backend_flag, None)
     if not search_config["continuous_a_refinement"]:
         del search_config["continuous_a_refinement"]
     if not search_config["direct_goal_translation"]:
@@ -197,6 +214,8 @@ def request_fingerprint(request):
         inputs["previous_terminal_edge"] = _edge_record(request.initial_edge)
     if request.cargo_footprint is not None:
         inputs["cargo_footprint"] = asdict(request.cargo_footprint)
+    if request.reachability_retime:
+        inputs["reachability_retime"] = True
     return _sha256_text(_canonical_json(inputs)), inputs
 
 
@@ -642,10 +661,159 @@ def _goal_center_outside(grid, model, goal_qf):
     return False
 
 
-def plan_uniform(request):
+def terminal_certificate_key(request, edges):
+    """Bind one full certificate to all inputs used by the independent audit."""
+    request_digest, _ = request_fingerprint(request)
+    return _sha256_text(_canonical_json({
+        "request_sha256": request_digest,
+        "algorithm": MODEL_VERSION,
+        "model_contract": CERTIFICATION,
+        "audit_version": AUDIT_CACHE_VERSION,
+        "collision_quality": asdict(FormationQualityConfig(
+            timing_limits=request.successor_config.timing_limits,
+            collision_margin_m=max(FormationQualityConfig.collision_margin_m,
+                                   request.successor_config.collision_margin_m))),
+        "edges": [_edge_record(edge) for edge in edges],
+    }))
+
+
+def refine_certified_plan(request, plan, cutoff, *, research_worker=False):
+    from .uniform_curve_refinement import refine_turn
+
+    if request.successor_config.goal_formation_heading_free:
+        request = replace(request, goal_qf=FormationPose(
+            request.goal_qf.x, request.goal_qf.y, plan.goal_qf.psi))
+    return refine_turn(request, plan, _build_and_audit, cutoff,
+                       screen_cargo=research_worker,
+                       allow_slower_for_fewer_spins=not research_worker)
+
+
+def _prefer_continuous_route(request, checker, audited, deadline, stages, detail, *,
+                             corridor=True, local=True):
+    from .uniform_curve_refinement import refine_corridor, refine_cruise
+    from .uniform_route_preference import route_quality
+
+    baseline = audited[0]
+    began = time.perf_counter()
+    span = math.hypot(request.goal_qf.x - request.start_qf.x,
+                      request.goal_qf.y - request.start_qf.y)
+    if (not any(edge.primitive == PRIMITIVE_A_ARC for edge in baseline.edges)
+            and (span < 6. or all(edge.mode == MODE_A for edge in baseline.edges))):
+        return audited, detail
+    cutoff = min(deadline, began + (20. if span >= 6. else 1.))
+    improved = refine_corridor(request, baseline, checker, _build_and_audit, cutoff) if corridor else None
+    if improved is None and local:
+        improved = refine_cruise(request, baseline, _build_and_audit, cutoff)
+    if improved is None and local:
+        improved = refine_certified_plan(request, baseline, cutoff)
+    stages["continuous_a_refinement_s"] = stages.get("continuous_a_refinement_s", 0.) + time.perf_counter() - began
+    if improved is None or time.perf_counter() >= cutoff or (request.cancelled and request.cancelled()):
+        return audited, detail
+    before, after = route_quality(baseline), route_quality(improved[0])
+    fewer_switches = (after["mode_switches"] < before["mode_switches"]
+                      and after["oblique_distance_m"] <= before["oblique_distance_m"])
+    suffix = improved[0].suffix.edges
+    reverse_docking = (not improved[0].prefix.edges and len(suffix) == 1
+                       and suffix[0].primitive == PRIMITIVE_A_STRAIGHT
+                       and all(direction == -1 for _, direction in suffix[0].directions))
+    if reverse_docking:
+        after["ackermann_reverse_docking_m"] = suffix[0].control.parameter_length
+    stages["continuous_a_refinement_comparison"] = {"baseline": before, "candidate": after}
+    all_ackermann = not improved[0].prefix.edges and (not suffix or reverse_docking)
+    tradeoff = 1.55 if all_ackermann else 1.30
+    if after["score_s"] < before["score_s"] or (fewer_switches and after["duration_s"] <= tradeoff * before["duration_s"]):
+        stages["continuous_a_refinement_selected"] = True
+        detail = "curvature-continuous Ackermann span independently certified"
+        if reverse_docking:
+            detail += " with a stopped reverse docking segment"
+        return improved, detail
+    return audited, detail
+
+
+def _certificate_snapshot(request):
+    grid = copy(request.grid)
+    # A bytes-backed array prevents callers from changing cells underneath an
+    # already computed certificate or its lazy clearance field.
+    grid.occ = np.frombuffer(grid.occ.tobytes(), dtype=grid.occ.dtype).reshape(grid.occ.shape)
+    grid._clearance_lower_bound = None
+    return replace(request, grid=grid,
+                   model=FormationModel(request.model.offsets),
+                   vehicle_shapes=MappingProxyType(dict(request.vehicle_shapes)),
+                   start_headings=MappingProxyType(dict(request.start_headings)),
+                   goal_headings=(None if request.goal_headings is None else
+                                  MappingProxyType(dict(request.goal_headings))))
+
+
+def _reachable_candidate(audited):
+    from .uniform_reachability import retime_certified_uniform
+
+    plan, _, evaluation = audited
+    try:
+        return retime_certified_uniform(plan, evaluation)
+    except (ArithmeticError, ValueError):
+        return None
+
+
+def _prefer_ackermann(request, checker, audited, expired, audit):
+    from .uniform_route_preference import RouteProposals, route_quality
+
+    baseline = audited[0]
+    best = route_quality(baseline)
+    trials = [{"route": "search_result", **best}]
+    selected = "search_result"
+    proposals = RouteProposals(request, baseline, checker, expired)
+    checked = [baseline.edges]
+    for name, edges in proposals.candidates():
+        if expired():
+            break
+        if edges in checked:
+            continue
+        checked.append(edges)
+        candidate = audit(edges)
+        if not candidate[2].feasible:
+            trials.append({"route": name, "reason": candidate[2].reason,
+                           "detail": candidate[2].detail})
+            continue
+        if request.reachability_retime and not expired():
+            candidate = _reachable_candidate(candidate) or candidate
+        if expired():
+            break
+        score = route_quality(candidate[0])
+        trials.append({"route": name, **score})
+        if score["score_s"] < best["score_s"] - 1e-6:
+            best, audited, selected = score, candidate, name
+    return audited, {"selected": selected, "candidates": trials}
+
+
+def plan_uniform(request, *, progress=None):
     """Run one autonomous, budgeted FR04 request without any reference seed."""
     started = time.perf_counter()
+    options = request.search_config
+    search_stage = "joint_search"
+    totals = {"expansions": 0, "candidates": 0, "terminal_audits": 0}
+    completed_expansions = completed_candidates = 0
+    last_report = started - .1
+
+    def notify(stage, *, limited=False):
+        nonlocal last_report
+        if progress is not None:
+            now = time.perf_counter()
+            if not limited or now - last_report >= .1:
+                last_report = now
+                progress(stage, dict(totals, expansion_budget=options.max_expansions,
+                                     elapsed_s=now - started))
+
+    def search_progress(expansions, candidates):
+        totals.update(expansions=completed_expansions + expansions,
+                      candidates=completed_candidates + candidates)
+        notify(search_stage, limited=True)
+
+    notify("check_endpoints")
+    if request.reuse_terminal_certificate:
+        request = _certificate_snapshot(request)
     request_sha256, inputs = request_fingerprint(request)
+    stages = {}
+    certified_path = None
     checker = FormationCollisionChecker(
         request.grid, request.model, request.vehicle_shapes,
         request.successor_config.collision_margin_m, cargo_footprint=request.cargo_footprint)
@@ -658,7 +826,7 @@ def plan_uniform(request):
             request_sha256=request_sha256,
             wall_time_s=time.perf_counter() - started, search=search,
             plan=plan, projection=projection, evaluation=evaluation,
-            request_inputs=inputs)
+            request_inputs=inputs, stages=dict(stages))
 
     start_report = checker.static_check(request.start_qf, request.start_headings)
     if not start_report.success:
@@ -698,24 +866,119 @@ def plan_uniform(request):
     initial = initial_state(
         request.model, request.start_qf, request.start_headings,
         config=request.successor_config, goal_qf=request.goal_qf, initial_edge=request.initial_edge)
-    search = UniformGraphSearch(
-        request.model, checker, request.successor_config,
-        request.search_config)
-
     def terminal_validator(edges):
-        _, _, evaluation = _build_and_audit(edges, request)
+        nonlocal certified_path
+        if progress is not None:
+            totals["terminal_audits"] += 1
+            notify("terminal_audit")
+        key = (terminal_certificate_key(request, edges)
+               if request.reuse_terminal_certificate else None)
+        audited = _build_and_audit(edges, request)
+        evaluation = audited[2]
+        if evaluation.feasible:
+            stages.setdefault("first_certified_s", time.perf_counter() - started)
+            if key is not None and key == terminal_certificate_key(request, edges):
+                certified_path = (key, tuple(edges), audited)
+        else:
+            notify(search_stage)
         return evaluation.feasible, evaluation_detail(evaluation)
 
-    search_result = search.search(
-        initial, request.goal_qf, terminal_validator=terminal_validator,
-        goal_headings=request.goal_headings, cancelled=request.cancelled)
+    def search_with(config):
+        nonlocal search_stage, completed_expansions, completed_candidates
+        search_stage = "corridor_search" if config.convex_corridor else "joint_search"
+        notify(search_stage)
+        search = UniformGraphSearch(request.model, checker, request.successor_config, config)
+        found = search.search(initial, request.goal_qf, terminal_validator=terminal_validator,
+                              goal_headings=request.goal_headings, cancelled=request.cancelled,
+                              **({"progress": search_progress} if progress is not None else {}))
+        completed_expansions += found.expansions
+        completed_candidates += found.candidate_count
+        totals.update(expansions=completed_expansions, candidates=completed_candidates)
+        return found
+
+    def audit_route(edges):
+        totals["terminal_audits"] += 1
+        notify("terminal_audit")
+        return _build_and_audit(edges, request)
+
+    plan_deadline = started + options.max_seconds
+    cruise_candidate = None
+    if (options.prefer_ackermann and request.initial_edge is None
+            and not request.successor_config.goal_formation_heading_free
+            and abs(math.remainder(request.goal_qf.psi - request.start_qf.psi, math.tau)) > math.radians(5.)):
+        from .uniform_route_preference import RouteProposals, route_quality
+
+        probe_started = time.perf_counter()
+        probe_deadline = min(probe_started + 3., started + .20 * options.max_seconds)
+
+        def probe_expired():
+            return (time.perf_counter() >= probe_deadline
+                    or (request.cancelled is not None and request.cancelled()))
+
+        candidates = []
+        for edges in RouteProposals(request, None, checker, probe_expired).arc_straight_arc():
+            audited = audit_route(edges)
+            if not audited[2].feasible or probe_expired():
+                continue
+            stages.setdefault("first_certified_s", time.perf_counter() - started)
+            if request.reachability_retime:
+                audited = _reachable_candidate(audited) or audited
+            if not probe_expired():
+                candidates.append((route_quality(audited[0]), audited))
+        stages["ackermann_cruise_probe_s"] = time.perf_counter() - probe_started
+        if candidates and not (request.cancelled and request.cancelled()):
+            score, cruise_candidate = min(candidates, key=lambda item: item[0]["score_s"])
+            stages["ackermann_cruise_candidates"] = [quality for quality, _ in candidates]
+            span = math.hypot(request.goal_qf.x - request.start_qf.x,
+                              request.goal_qf.y - request.start_qf.y)
+            # An all-A moving path with bounded detour and mean speed above
+            # half max velocity is already a viable long cruise. Keep slower
+            # certified proposals for comparison with the normal search.
+            if score["duration_s"] <= 2. * span / request.successor_config.timing_limits.v_max:
+                stages["route_selection"] = {"selected": "ackermann_arc_cruise_arc"}
+                (plan, projection, evaluation), detail = _prefer_continuous_route(
+                    request, checker, cruise_candidate, plan_deadline, stages,
+                    "Ackermann cruise independently certified on the requested map")
+                if request.cancelled is not None and request.cancelled():
+                    return result(SEARCH_NO_SOLUTION, False, "REQUEST_CANCELLED", "request",
+                                  "planning request cancelled before route publication")
+                return result(SEARCH_SUCCESS, True, evaluation.reason, "none",
+                              detail,
+                              plan=plan, projection=projection, evaluation=evaluation)
+
+    remaining = max(1e-9, plan_deadline - time.perf_counter()) if options.prefer_ackermann else options.max_seconds
+    if options.convex_corridor:
+        search_started = time.perf_counter()
+        search_result = search_with(replace(
+            options, max_seconds=remaining * .40,
+            max_expansions=max(1, int(options.max_expansions * .40))))
+        if (search_result.status not in (SEARCH_SUCCESS, SEARCH_NO_MOTION)
+                and not (request.cancelled and request.cancelled())):
+            remaining -= time.perf_counter() - search_started
+            expansions = options.max_expansions - search_result.expansions
+            if remaining > 0.0 and expansions > 0:
+                stages["convex_corridor_fallback"] = search_result.reason
+                search_result = search_with(replace(options, convex_corridor=False,
+                                                     max_seconds=remaining,
+                                                     max_expansions=expansions))
+    else:
+        search_result = search_with(replace(options, max_seconds=remaining))
 
     if search_result.status == SEARCH_SUCCESS:
-        # Rebuild and independently re-audit the returned path.  The search
-        # terminal audit was a candidate screen; this final audit is the
-        # pipeline's executable certificate.
-        plan, projection, evaluation = _build_and_audit(
-            search_result.edges, request)
+        notify("terminal_audit")
+        audit_started = time.perf_counter()
+        edges = search_result.edges
+        reusable = (certified_path is not None
+                    and len(certified_path[1]) == len(edges)
+                    and all(first is second for first, second in zip(certified_path[1], edges))
+                    and terminal_certificate_key(request, edges) == certified_path[0])
+        if reusable:
+            plan, projection, evaluation = certified_path[2]
+        else:
+            plan, projection, evaluation = _build_and_audit(edges, request)
+        stages["terminal_certificate_reused"] = reusable
+        stages["final_audit_s"] = time.perf_counter() - audit_started
+        stages.setdefault("first_certified_s", time.perf_counter() - started)
         if not evaluation.feasible:
             return result(
                 SEARCH_AUDIT_REJECTED, False,
@@ -724,26 +987,67 @@ def plan_uniform(request):
                 "audit", "final rebuilt-path audit rejected a path that the "
                 "terminal screen had accepted", search_result,
                 plan, projection, evaluation)
-        if request.search_config.continuous_a_refinement:
-            from .uniform_curve_refinement import refine_turn
+        deadline = plan_deadline
+        detail = "autonomous path rebuilt and independently audited FEASIBLE"
+        reachability_selected = False
+        if request.reachability_retime and time.perf_counter() < deadline:
+            notify("common_timing")
+            timing_started = time.perf_counter()
+            improved = _reachable_candidate((plan, projection, evaluation))
+            stages["reachability_clock_s"] = time.perf_counter() - timing_started
+            if (improved is not None and time.perf_counter() < deadline
+                    and not (request.cancelled and request.cancelled())):
+                plan, projection, evaluation = improved
+                reachability_selected = True
+                detail = "common reachability clock certified on the original swept edges"
+            else:
+                stages["reachability_clock_fallback"] = True
+        compare_corridor_first = options.prefer_ackermann and any(edge.mode == MODE_O for edge in plan.edges)
+        if compare_corridor_first:
+            (plan, projection, evaluation), detail = _prefer_continuous_route(
+                request, checker, (plan, projection, evaluation), deadline, stages, detail, local=False)
+        continuous_selected = stages.get("continuous_a_refinement_selected", False)
+        if compare_corridor_first and not continuous_selected:
+            route_started = time.perf_counter()
+            route_deadline = min(deadline, route_started + 4.)
 
-            refinement_request = request
-            if not fixed_goal_heading:
-                refinement_request = replace(request, goal_qf=FormationPose(
-                    request.goal_qf.x, request.goal_qf.y, plan.goal_qf.psi))
-            improved = refine_turn(refinement_request, plan, _build_and_audit,
-                                   started + request.search_config.max_seconds)
+            def expired():
+                return (time.perf_counter() >= route_deadline
+                        or (request.cancelled is not None and request.cancelled()))
+
+            (plan, projection, evaluation), stages["route_selection"] = _prefer_ackermann(
+                request, checker, (plan, projection, evaluation), expired, audit_route)
+            stages["route_selection_s"] = time.perf_counter() - route_started
+            if stages["route_selection"]["selected"] != "search_result":
+                detail = "preferred Ackermann and oblique route independently certified"
+
+        if cruise_candidate is not None and not continuous_selected:
+            from .uniform_route_preference import route_quality
+
+            if route_quality(cruise_candidate[0])["score_s"] < route_quality(plan)["score_s"]:
+                plan, projection, evaluation = cruise_candidate
+                stages.setdefault("route_selection", {})["selected"] = "ackermann_arc_cruise_arc"
+                detail = "Ackermann cruise independently certified on the requested map"
+        if options.prefer_ackermann and not continuous_selected:
+            (plan, projection, evaluation), detail = _prefer_continuous_route(
+                request, checker, (plan, projection, evaluation), deadline, stages, detail,
+                corridor=not compare_corridor_first)
+        elif not options.prefer_ackermann and options.continuous_a_refinement and not reachability_selected:
+            improved = refine_certified_plan(request, plan, deadline)
             if improved is not None:
                 plan, projection, evaluation = improved
                 return result(SEARCH_SUCCESS, True, evaluation.reason, "none",
                               "continuous A refined and audited on the common A/O/S timeline",
                               search_result, plan, projection, evaluation)
+        if request.cancelled is not None and request.cancelled():
+            return result(SEARCH_NO_SOLUTION, False, "REQUEST_CANCELLED", "request",
+                          "planning request cancelled before route publication", search_result)
         return result(
-            SEARCH_SUCCESS, True, evaluation.reason, "none",
-            "autonomous path rebuilt and independently audited FEASIBLE",
+            SEARCH_SUCCESS, True, evaluation.reason, "none", detail,
             search_result, plan, projection, evaluation)
 
     if search_result.status == SEARCH_NO_MOTION:
+        notify("terminal_audit")
         plan, projection, evaluation = _build_and_audit(
             (), request, zero_motion=True)
         return result(
@@ -751,6 +1055,13 @@ def plan_uniform(request):
             "none" if evaluation.feasible else "audit",
             "exact zero-motion hold audited by FR02", search_result,
             plan, projection, evaluation)
+
+    if cruise_candidate is not None and not (request.cancelled and request.cancelled()):
+        plan, projection, evaluation = cruise_candidate
+        stages["route_selection"] = {"selected": "ackermann_arc_cruise_arc"}
+        return result(SEARCH_SUCCESS, True, evaluation.reason, "none",
+                      "certified Ackermann cruise retained after search stopped",
+                      search_result, plan, projection, evaluation)
 
     layer = search_result.first_failure_layer
     if search_result.status == SEARCH_BUDGET_EXHAUSTED:

@@ -13,11 +13,15 @@ from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 import yaml
 
+from fwis_bringup.experiment_log import read_config
 from ranger_mini_gz.model_launch import body_bridges, model_actions
-from ranger_mini_gz.scene_generator import SCENARIOS, TASKS, generate_scene, installed_paths, load_scene
+from ranger_mini_gz.scene_generator import (
+    SCENARIOS, SCENE_VARIANTS, TASKS, generate_scene, installed_paths, load_scene,
+)
 
 
-def rviz_config(description, directory, scene, task, *, tracking_dashboard=False):
+def rviz_config(description, directory, scene, task, *, tracking_dashboard=False, show_corridor=False,
+                interactive=False):
     vehicles = scene.spawn_poses(task)
     count = len(vehicles)
     data = yaml.safe_load((description / "rviz" / f"ranger_{count}.rviz").read_text())
@@ -39,6 +43,22 @@ def rviz_config(description, directory, scene, task, *, tracking_dashboard=False
         paths = [(f"Vehicle {index} plan", f"/formation/path/vehicle_{index}", color)
                  for index, color in zip(scene.vehicle_ids,
                                          ("36; 127; 176", "198; 103; 33", "103; 74; 153"))]
+        if show_corridor:
+            manager["Displays"].append({
+                "Class": "rviz_default_plugins/MarkerArray", "Name": "Convex corridor guide",
+                "Enabled": True, "Topic": {"Value": "/formation/convex_corridor_guide", **qos},
+            })
+        if interactive:
+            manager["Displays"].append({
+                "Class": "rviz_default_plugins/MarkerArray", "Name": "编队起终点",
+                "Enabled": True, "Topic": {"Value": "/formation/interactive_endpoints", **qos},
+            })
+            tool_qos = {**qos, "Durability Policy": "Volatile"}
+            manager.setdefault("Tools", []).extend([
+                {"Class": "rviz_default_plugins/SetInitialPose", "Topic": {"Value": "/initialpose", **tool_qos}},
+                {"Class": "rviz_default_plugins/SetGoal", "Topic": {"Value": "/move_base_simple/goal", **tool_qos}},
+            ])
+            data.setdefault("Panels", []).append({"Class": "fwis_rviz_plugins/PlanningPanel", "Name": "规划与执行"})
     else:
         paths = [("Single-vehicle plan", "/plan/path", "36; 127; 176")]
     for name, topic, color in paths:
@@ -82,8 +102,15 @@ def setup(context):
     scene = load_scene(args["scenario"], args["variant"], args["resolution"] or None, paths)
     task = args["task"]
     body_twist = args["body_twist"] == "true"
+    plant_overrides = {}
+    replay_plant = None
+    show_corridor = interactive = False
     if args["experiment_file"]:
-        config = yaml.safe_load(Path(args["experiment_file"]).read_text())
+        config = read_config(Path(args["experiment_file"]))
+        plant_overrides = config.get("plant_overrides", {})
+        replay_plant = config.get("replay_plant")
+        show_corridor = bool(config.get("planner_overrides", {}).get("convex_corridor"))
+        interactive = bool(config.get("interactive"))
         experiment = {key: config[key] for key in ("start", "goal", "waypoints")}
         scene = replace(scene, experiments={**scene.experiments, task: experiment})
     actions = []
@@ -96,6 +123,16 @@ def setup(context):
             on_shutdown=[OpaqueFunction(function=lambda _context: temporary.cleanup())])))
     template = paths[0] / "config" / "ranger.gui.config"
     generate_scene(scene, directory, task, template, audit=False)
+    body_settings = None
+    if body_twist:
+        plant_source = paths[0] / "config" / "body_twist.yaml"
+        plant_data = replay_plant
+        if plant_data is None:
+            plant_data = yaml.safe_load(plant_source.read_text())
+            plant_data["plant"].update(plant_overrides)
+        plant_config = directory / "body_twist_parameters.yaml"
+        plant_config.write_text(yaml.safe_dump(plant_data, sort_keys=False))
+        body_settings = str(plant_config)
     def simulator_process(label, process):
         if body_twist:
             def on_exit(_event, context):
@@ -120,7 +157,7 @@ def setup(context):
         models, bridge, remap = model_actions(
             description, scene.name, robot, placement,
             ("white", "orange", "blue")[index - 1], "map", ground_truth=True,
-            body_settings=str(paths[0] / "config" / "body_twist.yaml") if body_twist else None,
+            body_settings=body_settings,
             managed_switching="true" if body_twist else "false")
         actions.extend(models)
         bridges.append(bridge)
@@ -142,7 +179,9 @@ def setup(context):
             for index in scene.spawn_poses(task)
             for topic in ("odom", "motion_state", "controller_status")
         ] if tracking_dashboard else []
-        config = rviz_config(description, directory, scene, task, tracking_dashboard=tracking_dashboard)
+        config = rviz_config(description, directory, scene, task,
+                             tracking_dashboard=tracking_dashboard, show_corridor=show_corridor,
+                             interactive=interactive)
         simulator_process("RViz2", Node(package="rviz2", executable="rviz2",
                             arguments=["-d", str(config)], remappings=hud_remaps,
                             parameters=[{"use_sim_time": True}]))
@@ -152,8 +191,7 @@ def setup(context):
 def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument("scenario", default_value=SCENARIOS[0], choices=SCENARIOS),
-        DeclareLaunchArgument("variant", default_value="default",
-                              choices=["default", "wide", "critical", "too_narrow"]),
+        DeclareLaunchArgument("variant", default_value="auto", choices=SCENE_VARIANTS),
         DeclareLaunchArgument("task", default_value="formation", choices=TASKS),
         DeclareLaunchArgument("resolution", default_value=""),
         DeclareLaunchArgument("gui", default_value="true", choices=["true", "false"]),

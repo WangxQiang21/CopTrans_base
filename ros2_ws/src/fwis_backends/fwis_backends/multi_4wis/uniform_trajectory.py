@@ -568,6 +568,9 @@ class UniformSampleProjection:
 
 @dataclass(frozen=True)
 class UniformTimedPlan:
+    model_version = MODEL_VERSION
+    dynamic_profile = "formation_piecewise_quintic_v1"
+
     plan_id: int
     formation_id: str
     model: FormationModel
@@ -867,6 +870,12 @@ class UniformTimedPlan:
         progress_rate = length * first / duration
         progress_acceleration = length * second / duration ** 2
         progress_jerk = length * third / duration ** 3
+        return self._motion_state_for_progress(
+            time_s, phase, phase_index, progress, progress_rate,
+            progress_acceleration, progress_jerk)
+
+    def _motion_state_for_progress(self, time_s, phase, phase_index, progress,
+                                   progress_rate, progress_acceleration, progress_jerk):
         derivatives = motion_derivatives(phase, progress)
         geometric = phase.edge.state_at(progress)
         centers = {
@@ -1071,7 +1080,7 @@ class UniformTimedPlan:
             }]
         intervals = self._mode_intervals()
         report = FormationTimingReport(
-            dynamic_profile="formation_piecewise_quintic_v1",
+            dynamic_profile=self.dynamic_profile,
             dt=(min((b - a for a, b in zip(checked, checked[1:])), default=0.0)),
             duration_s=self.duration_s, moving_seconds=totals["motion_s"],
             stationary_seconds=(totals["initial_setup_s"]
@@ -1094,9 +1103,10 @@ class UniformTimedPlan:
             times_from_start=tuple(checked),
             trajectories={vehicle_id: tuple(points)
                           for vehicle_id, points in trajectories.items()},
-            phases=tuple(copy.deepcopy(phases)), timing_report=report)
+            phases=tuple(copy.deepcopy(phases)), timing_report=report,
+            dynamic_profile=self.dynamic_profile)
         return UniformSampleProjection(
-            semantic_version=PROJECTION_SEMANTICS, model_version=MODEL_VERSION,
+            semantic_version=PROJECTION_SEMANTICS, model_version=self.model_version,
             plan_id=self.plan_id, model_sha256=self.model_sha256(),
             states=states, timed_trajectory=timed)
 

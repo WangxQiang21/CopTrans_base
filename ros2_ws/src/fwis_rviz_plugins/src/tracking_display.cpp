@@ -213,6 +213,9 @@ void recordError(const std::string & message, ErrorHistory & history)
     history.plan_id = plan_id;
     history.trajectory_stamp_ns = trajectory_stamp_ns;
   }
+  if (history.phase == "COMPLETE" && phase == "COMPLETE") {
+    return;
+  }
   history.phase = phase;
   if (phase == "STOPPED" || !std::isfinite(elapsed) || elapsed < 0 ||
     error.size() < 2 || !error.at(0).isDouble() || !error.at(1).isDouble())

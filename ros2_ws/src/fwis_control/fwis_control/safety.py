@@ -46,8 +46,9 @@ class SafetyFilter:
         self.previous = ZERO
         self.mode = None
 
-    def apply(self, raw, mode, dt, direction=0.0, oblique_direction=0.0):
-        if not all(math.isfinite(value) for value in (*raw.values(), dt)) or dt <= 0:
+    def apply(self, raw, mode, dt, direction=0.0, oblique_direction=None):
+        if (not all(math.isfinite(value) for value in (*raw.values(), dt)) or dt <= 0
+                or (oblique_direction is not None and not math.isfinite(oblique_direction))):
             self.reset()
             return Filtered(ZERO, ("nonfinite_or_invalid_interval",))
         reasons = []
@@ -93,11 +94,18 @@ class SafetyFilter:
                 vx = wz = 0.0
                 reasons.append("ackermann_reversal_through_zero")
         elif mode == Mode.OBLIQUE:
+            last_branch = prev.vy or 1.
+            if oblique_direction is None:
+                branch = vy or last_branch
+            else:
+                branch = oblique_direction if abs(oblique_direction) > 1e-9 else last_branch
+            # Constrain lateral feedback to the half-plane of the reference.
             # A nonzero longitudinal-only Twist would select Ackermann.
-            if vx and abs(vy) < self.limits.parallel_min_vy:
-                vy = math.copysign(self.limits.parallel_min_vy, vy or oblique_direction or prev.vy or 1.)
+            crosses_reference = vy * branch < 0.
+            if crosses_reference or (vx and abs(vy) < self.limits.parallel_min_vy):
+                vy = math.copysign(self.limits.parallel_min_vy, branch)
                 vx = clamp(vx, math.sqrt(self.limits.max_speed ** 2 - vy ** 2))
-                reasons.append("oblique_encoding")
+                reasons.append("oblique_reference_branch" if crosses_reference else "oblique_encoding")
             if prev.vy * vy < 0:
                 vx = vy = 0.0
                 reasons.append("oblique_reversal_through_zero")

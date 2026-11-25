@@ -8,6 +8,7 @@ never treated as a geometry certificate.
 """
 from collections.abc import Mapping as MappingABC
 from dataclasses import dataclass
+from functools import lru_cache
 import hashlib
 import json
 import math
@@ -562,6 +563,7 @@ def _integration_plan(pieces, start_psi, config, start_magnitude_m=0.0):
     }
 
 
+@lru_cache(maxsize=2048)
 def _simpson_piece_integral(piece, psi0, qa, qb, subintervals):
     """Composite Simpson of exp(i*psi) over ``qa..qb`` in one piece."""
     if not (math.isfinite(qa) and math.isfinite(qb)
@@ -575,6 +577,12 @@ def _simpson_piece_integral(piece, psi0, qa, qb, subintervals):
             "NONFINITE_AUDIT_VALUE",
             "Simpson requires an even positive subinterval count",
             constraint="AUDIT_INTEGRATION")
+    if piece.c0 == piece.c1 == piece.c2 == piece.c3 == 0.0:
+        # Simpson integrates this constant integrand exactly. Avoid visiting
+        # every panel on straight sections of the independent oracle.
+        psi = _finite_audit(psi0, "simpson_psi", constraint="AUDIT_INTEGRATION")
+        length = piece.h * (qb - qa)
+        return length * math.cos(psi), length * math.sin(psi)
     width = (qb - qa) / subintervals
     factor = piece.h * (qb - qa) / (3.0 * subintervals)
     cosine = 0.0

@@ -12,10 +12,12 @@ from .formation_route import fit_reference
 
 
 class RunMetrics:
-    def __init__(self, directory, scene, task):
+    def __init__(self, directory, scene, task, *, motion_log_period=0.):
         self.scene, self.task = scene, task
         self.formation = task == "formation"
         self.motion = (directory / "metrics" / "motion.jsonl").open("w", buffering=1)
+        self.motion_log_period = motion_log_period
+        self.last_logged_stamp = -float("inf")
         self.minimum_clearance = {}
         self.first_tracking_s = {}
         self.errors = {}
@@ -37,7 +39,7 @@ class RunMetrics:
                                     angle_squares + dyaw**2, max(angle_max, abs(dyaw)),
                                     compute_s + row.get("compute_s", 0.))
 
-    def sample(self, stamp, poses, commands):
+    def sample(self, stamp, poses, commands, *, measured=None, modes=None):
         indices = self.scene.vehicle_ids if self.formation else (1,)
         positions = [poses[index] for index in indices]
         reference = fit_reference(self.scene.offsets, positions) if self.formation else positions[0]
@@ -63,7 +65,11 @@ class RunMetrics:
             if len(commands) == len(indices):
                 self.twist_separation = max(self.twist_separation, *(
                     abs(a[0] - b[0]) for a, b in combinations(commands.values(), 2)))
-        self.motion.write(json.dumps(row, allow_nan=False) + "\n")
+        if stamp < self.last_logged_stamp or stamp - self.last_logged_stamp >= self.motion_log_period - 1e-9:
+            if measured is not None:
+                row.update(odom_twist=measured, mode_feedback=modes)
+            self.motion.write(json.dumps(row, allow_nan=False) + "\n")
+            self.last_logged_stamp = stamp
         self.samples += 1
         return reference
 

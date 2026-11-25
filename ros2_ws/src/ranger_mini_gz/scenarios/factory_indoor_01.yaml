@@ -1,4 +1,5 @@
 name: factory_indoor_01
+default_variant: west_single_lane
 size: [30.0, 24.0]
 resolution: 0.05
 comparison_resolution: 0.025
@@ -29,6 +30,9 @@ obstacles:
   - {id: storage_west, pose: [7.0, 16.0, 1.25, 0], size: [2.5, 2.0, 2.5], style: rack}
   - {id: storage_east, pose: [10.85, 16.0, 1.25, 0], size: [2.5, 2.0, 2.5], style: rack}
   - {id: staging_wall, type: wall, pose: [7.8, 20.2, 0.65, 0], size: [5.0, 0.10, 1.30], style: fence}
+obstacle_variants:
+  west_single_lane:
+    - {id: west_single_lane_barrier, type: wall, pose: [3.55, 16.0, 0.65, 0], size: [4.60, 0.50, 1.30], style: fence}
 decorations:
   - {id: north_mezzanine, pose: [21.65, 14.7, 3.10, 0], size: [5.25, 0.33, 0.31], color: [0.31, 0.40, 0.46]}
   - {id: plant_services, pose: [8.35, 12.3, 3.30, 0], size: [11.5, 0.34, 0.26], color: [0.40, 0.48, 0.52]}

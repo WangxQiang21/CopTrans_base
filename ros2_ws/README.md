@@ -13,7 +13,7 @@ cd /home/wq/Whut/CopTrans_base
 ./scripts/test.sh --task multi --controller-backend pid --record on
 ```
 
-默认在室内工厂跑单车低速短弯，使用连续模式路径规划与非线性反馈跟踪。多车默认使用楔形队形和 `uniform_v02` 组合运动搜索，三辆车各自跟踪同一时间轴上的轨迹。每次仿真同时打开 Gazebo 和 RViz2，运行完成后保留两窗五秒。按 Ctrl+C 可结束本次测试。
+默认在室内工厂跑单车短弯，使用连续模式路径规划与非线性反馈跟踪。多车默认使用楔形队形和 `uniform_v02` 组合运动搜索，三辆车各自跟踪同一时间轴上的轨迹。标准档的规划线速度上限为单车 0.60 m/s、三车带货每车 0.50 m/s。每次仿真同时打开 Gazebo 和 RViz2，运行完成后保留两窗五秒。按 Ctrl+C 可结束本次测试。
 
 RViz2 上方显示三车与货物状态，下方显示各自的平面跟踪误差（cm）。货物误差按三车实测位姿拟合出的货物基准点与同一执行时刻的规划基准点计算，安装点约束误差单独显示。单车测试仅更新白色 V1 的反馈。
 
@@ -21,8 +21,12 @@ RViz2 上方显示三车与货物状态，下方显示各自的平面跟踪误�
 | --- | --- |
 | `--task` | `single`、`multi` |
 | `--scenario` | `factory_indoor_01`、`port_01`、`factory_outdoor_01` |
-| `--planner-backend` | 单车可选 `continuous_mode_path`、`hybrid_astar`、`constant_primitive`，多车用 `multi_4wis` |
+| `--planner-backend` | 单车可选 `continuous_mode_path`、`hybrid_astar`、`constant_primitive` 和实验性的 `state_lattice`，多车用 `multi_4wis` |
 | `--controller-backend` | `auto`、`nonlinear_feedback`、`pid` |
+| `--tracker-implementation` | `python`（默认）、`cpp`（实验） |
+| `--speed-profile` | `standard`（默认）、`baseline`（旧的 0.16 m/s 对照档） |
+| `--architecture-profile` | `baseline`（默认）、`optimized`（实验） |
+| `--multi-native-frontier`、`--multi-convex-corridor` | 可选三车 C++ 搜索前沿与凸走廊引导 |
 | `--experiment` | `short_turn`、`short_straight`、`full_route` |
 | `--formation` | 多车使用 `wedge` |
 | `--record` | `off`、`on`，开启后保存 rosbag |
@@ -32,7 +36,7 @@ RViz2 上方显示三车与货物状态，下方显示各自的平面跟踪误�
 
 每次运行的命令、解析配置、规划器日志、控制器日志、轨迹 CDR、观测数据和终态写入 `reports/runs/<run_id>/`。终端同时打印本次 ROS 域和 Gazebo 分区，便于连入只读的诊断工具。 `--mode real` 当前返回 2 并在加载 ROS 环境前退出。
 
-实跑矩阵、接口和截图见 [CopTrans V1.1 联调验收](../docs/ros2_migration/COPTRANS_TEST_INTEGRATION_V1.1.md)。
+速度档、实验后端、性能对照及回退命令见 [架构优化实施和验收](../docs/architecture/IMPLEMENTATION.md)。迁移阶段的实跑矩阵、接口和截图见 [CopTrans V1.1 联调验收](../docs/ros2_migration/COPTRANS_TEST_INTEGRATION_V1.1.md)。
 
 ## 内部调试与历史复现
 
@@ -184,6 +188,21 @@ python3 src/fwis_bringup/test/probe_scene_plan.py factory_indoor_01 formation --
 ```
 
 ## 工业运输场景
+
+### RViz 点选三车带货闭环
+
+```bash
+cd /home/wq/Whut/CopTrans_base
+./scripts/interactive.sh
+```
+
+脚本自动启动 Gazebo 和 RViz。已有最新 ROS 2 构建时可加 `--no-build`。默认使用室内厂房、`uniform_v02` 的 C++ 搜索、凸走廊、共同 jerk 时间轴和 C++ 跟踪器。
+
+1. 等 RViz 的 **规划与执行** 面板提示选择起点。点 **2D Pose Estimate**，在地图中按住左键拖出起始朝向。绿色箭头表示编队参考点。三车和货物按楔形支点同步放置，车辆停稳后等待终点。
+2. 点 **2D Goal Pose**，用同样的方式指定编队终点和朝向。橙色箭头表示终点。面板显示实际规划阶段、已扩展状态、候选数量、耗时、准入和失败原因。三台车通过预检并收到共同许可后才移动。
+3. Gazebo 展示三车和半透明货物的运动。RViz 从同一仿真反馈显示车和货物的位姿、速度、模式、支点误差和跟踪误差曲线。每次启动执行一个任务，完成或规划失败后保留窗口。按 `Ctrl+C` 退出，再运行脚本即可开始下一轮。
+
+面板顶部的时间编号可以一键复制。编号对应本地 `reports/runs/<实验编号>/`。每次运行结束会保存起终点、规划路径和结果。收到问题反馈时可以用编号查原始配置和日志，也可以发起一次复跑。 [实验日志与复现](../docs/architecture/EXPERIMENT_LOG.md)
 
 ```bash
 ros2 launch fwis_bringup simulation.launch.py scenario:=factory_indoor_01

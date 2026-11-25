@@ -494,6 +494,20 @@ class FormationCollisionChecker:
         return CollisionReport(True, segment_index=segment_index,
                                sample_index=sample_index, qf=qf)
 
+    def _native_report(self, qf, segment_index, sample_index, reason, first, second):
+        if not reason:
+            return CollisionReport(True, segment_index=segment_index,
+                                   sample_index=sample_index, qf=qf)
+        if reason == "CARGO_OBB_COLLISION":
+            return self._failure(reason, segment_index, sample_index, qf,
+                                 detail="cargo envelope intersects occupied map or boundary")
+        if reason in ("MAP_OBB_COLLISION", "VEHICLE_OBB_COLLISION"):
+            return self._failure(
+                reason, segment_index, sample_index, qf, self._vehicle_ids[first],
+                self._vehicle_ids[second] if reason == "VEHICLE_OBB_COLLISION" else None)
+        # Use the Python model's diagnostic for a non-finite center.
+        return None
+
     def _check_state(self, qf, headings, padding_m, segment_index=0,
                      sample_index=0):
         self._stats["states_checked"] += 1
@@ -502,18 +516,9 @@ class FormationCollisionChecker:
                 qf.x, qf.y, qf.psi, tuple(headings[i] for i in self._vehicle_ids), padding_m)
             self._stats["map_queries"] += map_queries
             self._stats["obb_pair_queries"] += pair_queries
-            if not reason:
-                return CollisionReport(True, segment_index=segment_index,
-                                       sample_index=sample_index, qf=qf)
-            if reason == "CARGO_OBB_COLLISION":
-                return self._failure(reason, segment_index, sample_index, qf,
-                                     detail="cargo envelope intersects occupied map or boundary")
-            if reason in ("MAP_OBB_COLLISION", "VEHICLE_OBB_COLLISION"):
-                return self._failure(
-                    reason, segment_index, sample_index, qf, self._vehicle_ids[first],
-                    self._vehicle_ids[second] if reason == "VEHICLE_OBB_COLLISION" else None)
-            # The Python model provides the original diagnostic for a
-            # non-finite center instead of turning it into a map collision.
+            report = self._native_report(qf, segment_index, sample_index, reason, first, second)
+            if report is not None:
+                return report
         try:
             vehicle_poses = self.model.vehicle_poses(qf, headings)
         except FormationValidationError as exc:
@@ -836,13 +841,30 @@ class FormationCollisionChecker:
             maximum = max(maximum, centre_bound + body_bound)
         return maximum
 
-    def swept_check_analytic(self, segments, policy, trace=None):
+    def _native_edge_samples(self, edge, count, padding):
+        evaluate = getattr(self._native_kernel, "check_edge_samples", None)
+        if evaluate is None:
+            return None
+        start, end = edge.start_qf, edge.end_qf
+        before, after = dict(edge.start_headings), dict(edge.end_headings)
+        return evaluate(edge.control.geometry_type, (start.x, start.y, start.psi),
+                        (end.x, end.y, end.psi), (edge.control.pivot_x, edge.control.pivot_y),
+                        edge.control.parameter_length, tuple(before[i] for i in self._vehicle_ids),
+                        tuple(after[i] for i in self._vehicle_ids), count, padding)
+
+    def swept_check_analytic(self, segments, policy, trace=None, *,
+                             _stationary_spin=None, _exact_edge=None):
         """Sample exact V0.2 states with conservative per-segment bounds.
 
         Unlike :meth:`swept_check`, no chord interpolation is used.  Every
         checked pose is produced by the caller's analytic callback at the
         exact fraction.  The per-segment sample budget is enforced before any
         state is evaluated and is never increased to force a pass.
+
+        The optional exact edge is reserved for the native search adapter. It
+        evaluates the same authoritative FR01 geometry with the original
+        interval count and padding. Traces and independent certification
+        continue through the general analytic callback.
         """
         self._stats["swept_checks"] += 1
         try:
@@ -918,6 +940,33 @@ class FormationCollisionChecker:
                     "station_end": segment.station_end,
                 })
             self._stats["segments_checked"] += 1
+            native_scan = None
+            if trace is None and len(checked_segments) == 1:
+                if _exact_edge is not None:
+                    native_scan = self._native_edge_samples(_exact_edge, sample_count, padding)
+                elif _stationary_spin is not None:
+                    spin_samples = getattr(self._native_kernel, "check_spin_samples", None)
+                    if spin_samples is not None:
+                        length, start_headings, end_headings = _stationary_spin
+                        native_scan = spin_samples(qf.x, qf.y, qf.psi,
+                                                  tuple(start_headings[i] for i in self._vehicle_ids),
+                                                  tuple(end_headings[i] for i in self._vehicle_ids),
+                                                  length, sample_count, padding)
+            if native_scan is not None:
+                reason, first, second, map_queries, pair_queries, count = native_scan
+                if reason:
+                    fraction = count / float(sample_count)
+                    witness_station, qf, _ = self._analytic_state(segment, fraction, segment_index)
+                    witness_time = self._analytic_time(segment, fraction, segment_index)
+                report = self._native_report(qf, segment_index, count, reason, first, second)
+                if report is not None:
+                    self._stats["states_checked"] += count
+                    self._stats["swept_samples_checked"] += count
+                    self._stats["map_queries"] += map_queries
+                    self._stats["obb_pair_queries"] += pair_queries
+                    if not report.success:
+                        return replace(report, time_s=witness_time, station=witness_station)
+                    continue
             for sample_index in range(1, sample_count + 1):
                 fraction = sample_index / float(sample_count)
                 try:
