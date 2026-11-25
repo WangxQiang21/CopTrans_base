@@ -143,9 +143,11 @@ def observed_runtime_sources(system, group, control):
         observed["load"]={"build_sha256":actual,"runs":{}}
         for n in (1,3):
             saved=read_hash_file(control/f"{n}.binary.sha256")
-            if saved:
-                observed["load"]["runs"][str(n)]={"captured_sha256":list(saved.values()),"raw_csv_sha256":sha(control/f"{n}.csv"),
-                                                   "summary_sha256":sha(control/f"{n}.summary.json")}
+            csv=control/f"{n}.csv"
+            summary=control/f"{n}.summary.json"
+            if saved and csv.is_file() and summary.is_file() and summary.stat().st_size:
+                observed["load"]["runs"][str(n)]={"captured_sha256":list(saved.values()),"raw_csv_sha256":sha(csv),
+                                                   "summary_sha256":sha(summary)}
     faults=load(group/"faults.json") or {}
     if faults.get("raw_directory"):
         raw=Path(faults["raw_directory"])

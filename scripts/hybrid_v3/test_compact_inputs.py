@@ -1,6 +1,9 @@
 import shutil
 
-from evidence_manifest import COMPACT_REQUIRED, CONFIG_FILES, ROOT, compact_inputs_match, qualification_inputs
+from evidence_manifest import (
+    COMPACT_REQUIRED, CONFIG_FILES, ROOT, compact_inputs_match, observed_runtime_sources,
+    qualification_inputs,
+)
 from qualify import sha
 
 
@@ -25,3 +28,24 @@ def test_manifest_binding_survives_copy_and_rejects_missing_or_changed_inputs(tm
     assert not compact_inputs_match(moved,{**manifest,"config_hashes":{}},inputs,moved_cases)
     moved_cases["baseline"].write_text("different cohort")
     assert not compact_inputs_match(moved,manifest,inputs,moved_cases)
+
+
+def test_runtime_evidence_waits_for_completed_benchmark(tmp_path):
+    system = tmp_path/"system"
+    binary = system/"ros2_ws/build/fwis_control/hybrid_deadlines"
+    binary.parent.mkdir(parents=True)
+    binary.write_bytes(b"frozen binary")
+    control = tmp_path/"control"
+    control.mkdir()
+    (control/"1.binary.sha256").write_text(f"{sha(binary)}  {binary}\n")
+    (control/"1.summary.json").write_text("")
+    group = tmp_path/"group"
+    assert observed_runtime_sources(system,group,control)["load"]["runs"] == {}
+
+    csv = control/"1.csv"
+    csv.write_text("tick\n1\n")
+    assert observed_runtime_sources(system,group,control)["load"]["runs"] == {}
+    summary = control/"1.summary.json"
+    summary.write_text("{}")
+    run = observed_runtime_sources(system,group,control)["load"]["runs"]["1"]
+    assert run == {"captured_sha256":[sha(binary)],"raw_csv_sha256":sha(csv),"summary_sha256":sha(summary)}
