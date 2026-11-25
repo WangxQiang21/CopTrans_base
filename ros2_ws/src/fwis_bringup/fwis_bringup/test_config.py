@@ -101,8 +101,11 @@ def parse_arguments(argv, scenarios, registry, experiments):
                              or args.without_planning_playback):
         parser.error("--interactive requires multi, the optimized architecture and planning playback")
     planners = registry["planners"][args.task]
+    planner_default = defaults["planners"][args.task]
+    if args.architecture_profile == "baseline":
+        planner_default = defaults.get("baseline_planners", {}).get(args.task, planner_default)
     try:
-        alias, backend = identifier(planners, args.planner_backend or defaults["planners"][args.task])
+        alias, backend = identifier(planners, args.planner_backend or planner_default)
         controller, algorithm = identifier(
             registry["controllers"], defaults["controller"] if args.controller_backend == "auto"
             else args.controller_backend)
@@ -178,7 +181,7 @@ def resolve(argv, config_directory, scenario_directory, output):
             overrides = dict(overrides, reuse_terminal_certificate=True,
                              background_refinement_budget_s=1.0,
                              execution_without_playback=True)
-        elif backend == "single_continuous_mode_path":
+        elif backend in ("single_continuous_mode_path", "single_state_lattice"):
             overrides = dict(overrides, search={"adaptive_reverse_competition": True},
                              quality=dict(overrides["quality"], seed_proposal_wait_s=0.0))
     if scene_task == "formation":

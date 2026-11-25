@@ -51,7 +51,12 @@ def test_new_experiments_use_qualified_backend_with_explicit_rollback(task):
     current, rollback = (yaml.safe_load(run.stdout) for run in (current, rollback))
     assert (current["architecture_profile"], current["tracking_implementation"]) == ("optimized", "cpp")
     assert (rollback["architecture_profile"], rollback["tracking_implementation"]) == ("baseline", "python")
-    if task == "multi":
+    if task == "single":
+        assert current["planner_backend"] == "single_state_lattice"
+        assert current["planner_overrides"]["search"]["adaptive_reverse_competition"]
+        assert rollback["planner_backend"] == "single_continuous_mode_path"
+    else:
+        assert current["planner_backend"] == rollback["planner_backend"] == "multi_4wis"
         for option in ("native_frontier", "convex_corridor", "reachability_retime"):
             assert current["planner_overrides"][option]
             assert not rollback["planner_overrides"].get(option, False)
@@ -64,3 +69,22 @@ def test_optimized_features_can_be_retested_in_isolation():
     assert overrides["native_frontier"]
     assert overrides["convex_corridor"] is False
     assert overrides["reachability_retime"] is False
+
+
+def test_explicit_planner_override_still_works():
+    process = dry_run("--task", "single", "--planner-backend", "continuous_mode_path")
+    assert process.returncode == 0, process.stderr
+    assert yaml.safe_load(process.stdout)["planner_backend"] == "single_continuous_mode_path"
+
+
+def test_interactive_entry_gets_the_same_optimized_defaults():
+    process = subprocess.run(
+        ["bash", str(ROOT / "scripts/interactive.sh"), "--dry-run"],
+        cwd=ROOT, check=True, capture_output=True, text=True,
+    )
+    config = yaml.safe_load(process.stdout)
+    assert config["interactive"] is True
+    assert config["planner_backend"] == "multi_4wis"
+    assert config["tracking_implementation"] == "cpp"
+    assert all(config["planner_overrides"][feature]
+               for feature in ("native_frontier", "convex_corridor", "reachability_retime"))

@@ -25,6 +25,11 @@ def read_config(path):
     return yaml.safe_load(path.read_text()) or {}
 
 
+def test_defaults():
+    bringup = Path(get_package_share_directory("fwis_bringup"))
+    return read_config(bringup / "config" / "test_defaults.yaml")
+
+
 def make_nodes(context):
     backend = LaunchConfiguration("backend").perform(context)
     backend_share = Path(get_package_share_directory("fwis_backends"))
@@ -102,6 +107,13 @@ def make_nodes(context):
                                       publication_dt=0.05,
                                       cargo_footprint=cargo_footprint_parameters(
                                           cargo["size"], cargo["center_offset"]))
+                # The unified runner already passes its resolved profile and
+                # replay settings through overrides_file.
+                if not config_arg and not override_arg:
+                    features = test_defaults()["optimized_multi_defaults"]
+                    planner_params.update(features, reuse_terminal_certificate=True)
+                    if features.get("reachability_retime"):
+                        planner_params["continuous_a_refinement"] = False
             nodes = [planner_node("formation_uniform_planner_node.py", [planner_params, overrides])]
         playback = LaunchConfiguration("planning_playback").perform(context) == "true"
         if not playback and not direct_execution:
@@ -125,8 +137,10 @@ def make_nodes(context):
 
 def generate_launch_description():
     boolean = ["true", "false"]
+    registry = test_defaults()
+    default_backend = registry["planners"]["single"][registry["defaults"]["planners"]["single"]]
     return LaunchDescription([
-        DeclareLaunchArgument("backend", default_value="single_continuous_mode_path",
+        DeclareLaunchArgument("backend", default_value=default_backend,
                               choices=[*SINGLE_BACKENDS, "multi_4wis"]),
         DeclareLaunchArgument("formation_backend", default_value="uniform_v02",
                               choices=["virtual_rigid_a", "uniform_v02", "legacy"]),

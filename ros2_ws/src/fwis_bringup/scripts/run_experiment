@@ -97,6 +97,7 @@ class RunExperiment(Node):
         self.cargo_plan_times = ()
         self.job = {}
         self.goals, self.planner_status, self.controller_status = {}, {}, {}
+        self.planner_source = None
         self.plan_started = self.plan_wall = self.duration = self.end_wall = None
         self.admitted, self.complete, self.moved = set(), set(), set()
         self.phase = "waiting_for_simulation"
@@ -510,6 +511,12 @@ class RunExperiment(Node):
                             detail=status.get("detail", ""))
         else:
             self.planner_status[topic] = msg.data
+            if topic == "/plan/status" and msg.data.startswith("success ") and self.planner_source is None:
+                self.planner_source = next(
+                    (part.removeprefix("source=") for part in msg.data.split()
+                     if part.startswith("source=")), None)
+                if self.planner_source:
+                    self.get_logger().info(f"Single-vehicle plan source: {self.planner_source}")
             if self.phase == "planning" and msg.data.startswith((
                 "search_no_path", "search_budget_exhausted", "action_policy_rejected",
                 "missing_map_or_start ", "invalid_goal_frame ",
@@ -773,6 +780,7 @@ class RunExperiment(Node):
                 return
         data = dict(self.result, scenario=self.scene.name, task=self.config["task"],
                     experiment=self.config["experiment"], planner=self.config["planner_backend"],
+                    planner_source=self.planner_source,
                     controller=self.config["controller_backend"], formation=self.config["formation"],
                     architecture_profile=self.config.get("architecture_profile", "baseline"),
                     speed_profile=self.config.get("speed_profile", "baseline"),

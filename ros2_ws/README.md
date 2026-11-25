@@ -13,7 +13,7 @@ cd /home/wq/Whut/CopTrans_base
 ./scripts/test.sh --task multi --controller-backend pid --record on
 ```
 
-默认在室内工厂跑单车短弯，使用连续模式路径规划与非线性反馈跟踪。多车默认使用楔形队形和 `uniform_v02` 组合运动搜索，三辆车各自跟踪同一时间轴上的轨迹。标准档的规划线速度上限为单车 0.60 m/s、三车带货每车 0.50 m/s。每次仿真同时打开 Gazebo 和 RViz2，运行完成后保留两窗五秒。按 Ctrl+C 可结束本次测试。
+默认在室内厂房跑单车 State Lattice 短弯，使用优化配置和 C++ 非线性反馈跟踪。多车默认使用楔形队形与 `uniform_v02` 组合运动搜索，启用原生前沿、凸走廊和共同时间轴。标准档的规划线速度上限为单车 0.60 m/s、三车带货每车 0.50 m/s。每次仿真同时打开 Gazebo 和 RViz2，固定用例结束后保留两窗五秒。按 Ctrl+C 可结束本次测试。
 
 RViz2 上方显示三车与货物状态，下方显示各自的平面跟踪误差（cm）。货物误差按三车实测位姿拟合出的货物基准点与同一执行时刻的规划基准点计算，安装点约束误差单独显示。单车测试仅更新白色 V1 的反馈。
 
@@ -21,17 +21,17 @@ RViz2 上方显示三车与货物状态，下方显示各自的平面跟踪误�
 | --- | --- |
 | `--task` | `single`、`multi` |
 | `--scenario` | `factory_indoor_01`、`port_01`、`factory_outdoor_01` |
-| `--planner-backend` | 单车可选 `continuous_mode_path`、`hybrid_astar`、`constant_primitive` 和实验性的 `state_lattice`，多车用 `multi_4wis` |
+| `--planner-backend` | 单车默认 `state_lattice`，可显式选择 `continuous_mode_path`、`hybrid_astar` 或 `constant_primitive`，多车用 `multi_4wis` |
 | `--controller-backend` | `auto`、`nonlinear_feedback`、`pid` |
-| `--tracker-implementation` | `python`（默认）、`cpp`（实验） |
+| `--tracker-implementation` | `cpp`（默认）、`python`（回退） |
 | `--speed-profile` | `standard`（默认）、`baseline`（旧的 0.16 m/s 对照档） |
-| `--architecture-profile` | `baseline`（默认）、`optimized`（实验） |
-| `--multi-native-frontier`、`--multi-convex-corridor` | 可选三车 C++ 搜索前沿与凸走廊引导 |
+| `--architecture-profile` | `optimized`（默认）、`baseline`（回退） |
+| `--no-multi-native-frontier`、`--no-multi-convex-corridor`、`--no-multi-reachable-clock` | 单独关闭相应的三车优化功能做对照 |
 | `--experiment` | `short_turn`、`short_straight`、`full_route` |
 | `--formation` | 多车使用 `wedge` |
 | `--record` | `off`、`on`，开启后保存 rosbag |
 | `--timeout` | 启动后的墙钟秒数，短程默认 180，`full_route` 默认 900 |
-| `--no-build` | 使用已构建的工作空间 |
+| `--no-build` | 复用由统一脚本确认与当前源码一致的安装 |
 | `--dry-run`、`--list-scenarios`、`--list-backends`、`--help` | 查看配置与参数 |
 
 每次运行的命令、解析配置、规划器日志、控制器日志、轨迹 CDR、观测数据和终态写入 `reports/runs/<run_id>/`。终端同时打印本次 ROS 域和 Gazebo 分区，便于连入只读的诊断工具。 `--mode real` 当前返回 2 并在加载 ROS 环境前退出。
@@ -114,9 +114,9 @@ send 1 '{}'
 
 单车仿真使用 OSRF 的 Jammy Python 软件包 `python3-gz-sim8`、`python3-gz-transport13`、`python3-gz-msgs10`。
 
-#### Gazebo 和 RViz 一键演示
+#### Gazebo 和 RViz 跟踪器单项演示
 
-在终端运行下列命令，脚本自动加载已构建的工作空间，打开 Gazebo 和 RViz。
+在终端运行下列命令，脚本加载已构建的工作空间，打开 Gazebo 和 RViz，并向 C++ 跟踪器发预设轨迹。完整规划与控制测试使用统一入口。
 
 ```bash
 /home/wq/Whut/CopTrans_base/ros2_ws/demo_ranger_tracking.sh
@@ -150,13 +150,19 @@ ros2 topic echo /ranger1/controller_status
 每次启动一个后端。默认 `/map` 使用可靠、transient local 的 OccupancyGrid，坐标原点不可旋转，帧为 `map`。地图由场景或上游发布。后端启动时可通过 `map_topic` 重映射。若地图发布器使用 volatile，传入 `map_transient_local:=false` 并在 RViz 的 Map 显示同步调整 Durability。
 
 ```bash
-ros2 launch fwis_bringup plan.launch.py backend:=single_multimodal_hybrid_astar
-ros2 launch fwis_bringup plan.launch.py backend:=single_constant_primitive
-ros2 launch fwis_bringup plan.launch.py backend:=single_continuous_mode_path
+ros2 launch fwis_bringup plan.launch.py
 ros2 launch fwis_bringup plan.launch.py backend:=multi_4wis
 ```
 
-- 单车可在 RViz 用 **2D Pose Estimate** 和 **2D Goal Pose** 设定起终点，也可发布 `/start_pose` 和 `/move_base_simple/goal`。订阅 `/plan/path`、`/plan/timed_trajectory` 和 `/robot/marker` 查看结果与回放。
+需要对照旧单车后端可显式指定。
+
+```bash
+ros2 launch fwis_bringup plan.launch.py backend:=single_multimodal_hybrid_astar
+ros2 launch fwis_bringup plan.launch.py backend:=single_constant_primitive
+ros2 launch fwis_bringup plan.launch.py backend:=single_continuous_mode_path
+```
+
+- 单车默认 State Lattice，可在 RViz 用 **2D Pose Estimate** 和 **2D Goal Pose** 设定起终点，也可发布 `/start_pose` 和 `/move_base_simple/goal`。订阅 `/plan/path`、`/plan/timed_trajectory` 和 `/plan/status` 查看路线、时间轴和实际选中的来源。
 - 多车默认使用 `uniform_v02`。先在 `map` 中用 **2D Pose Estimate** 初始化，再用 **2D Goal Pose** 给出载荷目标。程序可发送 `/formation/plan_request`，输出包含 `/formation/playback_plan`、各车辆的 Path、MarkerArray 和状态。历史复现可通过 `formation_backend:=virtual_rigid_a` 或 `formation_backend:=legacy` 选择原后端。
 - 三车回放使用与 Gazebo 一致的白、橙、蓝 Ranger 网格。半透明 **Cargo** 在车顶上方随编队位姿平移和转动。默认编队的显示尺寸为 1.40 × 2.18 × 0.05 m，不透明度为 28%。初始化后，在 **Panels → Views** 中双击 **Cargo overview** 查看全貌，双击 **Cargo side** 查看车顶和 Cargo 底面的连接。
 - 三个连接机构分别位于车辆控制中心正上方。Cargo 上的固定安装点使用编队配置中的车体中心偏移 `offsets`，回放中车体绕各自安装点改变航向，安装点在 Cargo 坐标系内的平面位置保持固定。连接机构以 RViz 圆柱标记显示，尺寸用于示意。

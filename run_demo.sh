@@ -2,6 +2,12 @@
 set -euo pipefail
 
 demo_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+case "${1:-}" in
+  "") exec "$demo_dir/scripts/interactive.sh" ;;
+  --ros2) shift; exec "$demo_dir/scripts/interactive.sh" "$@" ;;
+  --ros1) shift ;;
+esac
+
 overlay_dir="${demo_dir}/catkin_ws"
 map_root="${demo_dir}/maps"
 map_index="${map_root}/map_index.tsv"
@@ -13,7 +19,9 @@ branch_name="continuous-mode-path"
 usage() {
   cat <<'EOF'
 用法：
-  ./run_demo.sh [ROS参数...]
+  ./run_demo.sh                         # 当前 ROS 2 三车交互测试
+  ./run_demo.sh --ros2 [测试参数...]      # 给当前 ROS 2 三车交互测试传参
+  ./run_demo.sh --ros1 [ROS参数...]       # ROS 1 历史演示
   ./run_demo.sh --map map01/map001、完整目录名、旧名称或地图目录 [ROS参数...]
   ./run_demo.sh --map map01/map001、完整目录名、旧名称或地图目录 [--map-scale|--scale|-scale 比例] [ROS参数...]
   ./run_demo.sh --list-maps

@@ -84,7 +84,7 @@ cd /home/wq/Whut/CopTrans_base
 ./scripts/test.sh --task single --planner-backend state_lattice --speed-profile baseline --no-build
 ```
 
-已有最新 Colcon overlay 时可加 `--no-build`。仿真默认使用 `optimized`、C++ nonlinear 跟踪器和标准速度，单车使用 `continuous_mode_path`，三车使用 `uniform_v02`。三车优化配置启用原生搜索前沿、凸走廊引导和共同可达时间轴。搜索使用 A/O/S 组合模式策略，并保留 C² 同步和回放状态机。架构回退用 `--architecture-profile baseline --tracker-implementation python`，旧仿真速度另选 `--speed-profile baseline`。 [切换验收](ACCEPTANCE.md)
+可用 `--no-build` 复用与当前源码一致的安装。仿真默认使用 `optimized`、C++ nonlinear 跟踪器和标准速度，单车使用 State Lattice，三车使用 `uniform_v02`。三车优化配置启用原生搜索前沿、凸走廊引导和共同可达时间轴。搜索使用 A/O/S 组合模式策略，并保留 C² 同步和回放状态机。架构回退用 `--architecture-profile baseline --tracker-implementation python`，旧仿真速度另选 `--speed-profile baseline`。[切换验收](ACCEPTANCE.md)
 
 从 `ros2_ws` 构建的目标是 `fwis_bringup` 及其依赖，共 11 个 ROS 2 包。新包为 `fwis_planning_core` 和 `fwis_multi_planner_cpp`。跟踪器保留在 `fwis_control` 并使用既有消息。新增时序探针使用 Humble 的 `rcl` 和 `rclcpp`，原生规划绑定需 pybind11。提交变更清单可用 `git diff --name-status 2c181ca..HEAD` 查看。 [构建和测量主机](../../reports/architecture_optimization/qualification_environment.json) · [规划核构建和测试](PLANNING_CORE.md) · [控制构建和测试](CONTROLLER_CPP.md) · [单车研究复现](PHASE5_SINGLE.md)
 

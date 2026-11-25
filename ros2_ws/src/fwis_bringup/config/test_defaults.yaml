@@ -11,8 +11,10 @@ controllers:
   nonlinear_feedback: nonlinear
 defaults:
   planners:
-    single: continuous_mode_path
+    single: state_lattice
     multi: multi_4wis
+  baseline_planners:
+    single: continuous_mode_path
   controller: nonlinear_feedback
   tracking_implementation: cpp
   architecture_profile: optimized

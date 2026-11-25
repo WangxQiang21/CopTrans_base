@@ -1,6 +1,6 @@
 # Phase 5 单车 State Lattice 与认证定时
 
-`state_lattice` 是可选单车后端。只针对选中它的实验启用整套改动，`continuous_mode_path` 仍是默认后端。保留 `TimedTrajectory`、启动话题和跟踪器预检接口。 [测试入口](../../scripts/test.sh)
+`state_lattice` 是单车优化配置的默认后端。基线配置或显式 `--planner-backend continuous_mode_path` 可选择原后端。两者共用 `TimedTrajectory`、启动话题和跟踪器预检接口。[测试入口](../../scripts/test.sh)
 
 ## 搜索、竞争与发布
 

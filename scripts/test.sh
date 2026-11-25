@@ -3,7 +3,9 @@ set -e -o pipefail
 
 root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 workspace="$root/ros2_ws"
-install_base="${COPTRANS_INSTALL_BASE:-$workspace/install}"
+install_base=$(realpath -m -- "${COPTRANS_INSTALL_BASE:-$workspace/install}")
+source_stamp="$install_base/.coptrans-source.sha256"
+source_stamp_tmp=
 temporary=$(mktemp "${TMPDIR:-/tmp}/coptrans-test.XXXXXXXX")
 run_root="$root/reports/runs"
 archive_tool="$workspace/src/fwis_bringup/fwis_bringup/experiment_log.py"
@@ -30,6 +32,9 @@ cleanup() {
     local code=$?
     trap - EXIT
     rm -f -- "$temporary"
+    if [[ -n $source_stamp_tmp ]]; then
+        rm -f -- "$source_stamp_tmp"
+    fi
     stop_remaining
     if [[ -n $run_dir && ! -f $run_dir/result.yaml ]]; then
         if [[ -n $interrupted ]]; then
@@ -164,6 +169,10 @@ from pathlib import Path
 import sys
 run = Path(sys.argv[1])
 config = json.loads((run / "resolved_config.yaml").read_text())
+print(f"Planner {config['planner_backend']} | "
+      f"tracker {config.get('tracking_implementation', 'python')}/{config['controller_algorithm']} | "
+      f"profile {config.get('architecture_profile', 'baseline')} | "
+      f"scene {config['scenario']}/{config.get('scene_variant', 'default')}")
 if config.get("replay_of"):
     print(f"Replay of {config['replay_of']}")
     recorded = config.get("replay_git_commit")
@@ -173,22 +182,70 @@ if config.get("replay_of"):
 PY
 printf 'ROS_DOMAIN_ID=%s  GZ_PARTITION=%s\n' "$ROS_DOMAIN_ID" "$GZ_PARTITION"
 
+fingerprint() {
+    python3 "$root/scripts/source_fingerprint.py" "$root"
+}
+
+source_digest=$(fingerprint) || fail 'Could not verify the CopTrans source fingerprint.' source_fingerprint_failed
 if [[ ${config[3]} == False ]]; then
     command -v colcon >/dev/null || fail 'Colcon is required to build the workspace.' colcon_missing
+    rm -f -- "$source_stamp"
     (
         cd -- "$workspace"
         CMAKE_BUILD_PARALLEL_LEVEL="${CMAKE_BUILD_PARALLEL_LEVEL:-2}" \
             colcon build --packages-up-to fwis_bringup --parallel-workers 2 --install-base "$install_base"
     ) 2>&1 | tee "$run_dir/build.log"
+    built_digest=$(fingerprint) || fail 'Could not verify the CopTrans source fingerprint after the build.' source_fingerprint_failed
+    [[ $source_digest == "$built_digest" ]] || fail 'Source changed during the build. Rerun without --no-build.' source_changed_during_build
+else
+    if [[ ! -r $source_stamp ]] || [[ $(<"$source_stamp") != "$source_digest" ]]; then
+        fail 'The installed CopTrans build is stale or unverified. Rerun without --no-build. 请去掉 --no-build 重新运行。' overlay_source_mismatch
+    fi
 fi
 [[ -r $install_base/setup.bash ]] || fail 'Build the Colcon workspace before using --no-build.' overlay_missing
 source "$install_base/setup.bash"
-for package in fwis_bringup fwis_backends fwis_control ranger_mini_gz ros_gz_bridge rviz2; do
+if ! python3 - "$install_base" <<'PY'
+from importlib.util import find_spec
+from pathlib import Path
+import sys
+
+from ament_index_python.packages import get_package_prefix, PackageNotFoundError
+
+install = Path(sys.argv[1])
+packages = ("fwis_backends", "fwis_bringup", "fwis_common", "fwis_control",
+            "fwis_multi_planner_cpp", "fwis_planning_core", "fwis_ros",
+            "fwis_rviz_plugins", "fwis_v3_msgs", "ranger_mini_description", "ranger_mini_gz")
+for package in packages:
+    try:
+        resolved = Path(get_package_prefix(package)).resolve()
+    except PackageNotFoundError:
+        sys.exit(f"Missing CopTrans overlay package: {package}")
+    if resolved not in (install, install / package):
+        sys.exit(f"{package} resolves to {resolved}, outside the selected install {install}")
+for module in ("fwis_backends", "fwis_bringup", "fwis_control", "fwis_ros",
+               "fwis_v3_msgs", "ranger_mini_gz", "fwis_multi_frontier_native",
+               "fwis_planning_core_native"):
+    spec = find_spec(module)
+    if spec is not None and spec.origin and not Path(spec.origin).absolute().is_relative_to(install):
+        sys.exit(f"{module} resolves to {spec.origin}, outside the selected install {install}")
+PY
+then
+    fail 'CopTrans package paths do not match the selected install. Open a fresh shell and rerun without --no-build.' overlay_package_mismatch
+fi
+for package in ros_gz_bridge rviz2; do
     ros2 pkg prefix "$package" >/dev/null || fail "ROS package $package is unavailable." ros_package_missing
 done
 if [[ ${config[4]} == on ]]; then
     ros2 pkg prefix rosbag2_transport >/dev/null || fail 'Recording requires rosbag2_transport.' rosbag_missing
 fi
+if [[ ${config[3]} == False ]]; then
+    source_stamp_tmp=$(mktemp "$install_base/.coptrans-source.XXXXXXXX")
+    printf '%s\n' "$source_digest" > "$source_stamp_tmp"
+    mv -f -- "$source_stamp_tmp" "$source_stamp"
+    source_stamp_tmp=
+fi
+printf 'coptrans_source_sha256=%s\nCOPTRANS_INSTALL_BASE=%s\n' "$source_digest" "$install_base" >> "$run_dir/environment.txt"
+printf 'CopTrans install %s (%s)\n' "$install_base" "${source_digest:0:12}"
 
 env --default-signal=INT,TERM setsid ros2 launch --noninteractive fwis_bringup test.launch.py \
     "run_config:=$run_dir/resolved_config.yaml" > >(tee "$run_dir/launch.log" 9>&-) 2>&1 9>&- &

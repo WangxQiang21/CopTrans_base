@@ -7,7 +7,7 @@ cd /home/wq/Whut/CopTrans_base
 ./scripts/interactive.sh
 ```
 
-脚本会构建程序并打开 Gazebo 和 RViz。已有最新构建时，用 `./scripts/interactive.sh --no-build` 直接启动。默认是室内厂房，西侧靠墙有一处只允许单车通过的 1.10 m 限宽口。可用 `./scripts/interactive.sh --list-scenarios` 查看场景，加 `--scenario port_01` 切换到港口。
+脚本会增量构建并打开 Gazebo 和 RViz，`./run_demo.sh` 无参数时也进入同一测试。首次运行或代码变更后直接运行脚本。使用 `--no-build` 时，脚本会核对安装与源码是否一致。默认是室内厂房，西侧靠墙有一处只允许单车通过的 1.10 m 限宽口。可用 `--list-scenarios` 查看场景，加 `--scenario port_01` 切换到港口。
 
 ## 2. 在 RViz 设置起点和终点
 
@@ -30,10 +30,13 @@ cat "reports/runs/$id/experiment.json"
 ## 4. 自动跑固定用例
 
 ```bash
+./scripts/test.sh
 ./scripts/test.sh --task multi --scenario factory_indoor_01 --experiment short_turn --no-build
 ```
 
-`short_turn` 是短弯，改成 `short_straight` 测直行，改成 `full_route` 测带货全程。脚本使用优化规划配置和 C++ 跟踪器，自动发目标并打印结果和日志目录。加 `--scene-variant critical` 测临界窄通道，加 `--scene-variant too_narrow` 测绕行。
+无参数默认跑单车 State Lattice 短弯。三车默认启用 `uniform_v02` 的原生前沿、凸走廊和共同时间轴，两者都用 C++ 跟踪器。终端会显示本轮实际加载的配置，单车的 `experiment.json` 还会记录选中的轨迹来源。格点规划器在长距离可选用重新认证的连续候选，来源显示为 `continuous_portfolio`。
+
+`short_turn` 是短弯，改成 `short_straight` 测直行，改成 `full_route` 测全程。加 `--scene-variant critical` 测临界窄通道，加 `--scene-variant too_narrow` 测绕行。
 
 需要回退到基础规划配置和 Python 跟踪器时，运行同一测试并加上两个参数。
 

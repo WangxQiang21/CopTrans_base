@@ -38,7 +38,7 @@
 
 ## 复现
 
-以下命令复现归档用基线提交。在新版 CLI 上执行同一实验时追加 `--speed-profile baseline`，沿用 0.16 m/s 的旧速度合同。统一入口为各试验设置本机 DDS 域和 Gazebo 分区，仿真锁保护该入口的运行。
+以下命令在归档用基线提交上执行。在新版 CLI 上复测时显式追加 `--architecture-profile baseline --tracker-implementation python --speed-profile baseline --scene-variant default`，选择原规划器、原跟踪器、0.16 m/s 和原地图布局。统一入口为各试验设置本机 DDS 域和 Gazebo 分区，仿真锁保护该入口的运行。
 
 ```bash
 source /opt/ros/humble/setup.bash
