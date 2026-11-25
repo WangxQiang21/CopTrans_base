@@ -124,11 +124,12 @@ def observed_runtime_sources(system, group, control):
         before,after=(raw/n for n in ("binaries.before.sha256","binaries.after.sha256"))
         files=read_hash_file(before)
         verification=load(group/"verification.json") or {}
+        parity_dir=faults.get("parity_directory") or verification.get("parity_directory")
         checked={}
         for name,expected in faults.get("raw_file_hashes",{}).items():
             f=raw/name
-            if not f.is_file() and verification.get("parity_directory"):
-                f=Path(verification["parity_directory"])/name
+            if not f.is_file() and parity_dir:
+                f=Path(parity_dir)/name
             if f.is_file() and sha(f)==expected:
                 checked[name]=expected
         observed["dds"]={"actual_files":files,"capture_sha256":sha(before),"after_sha256":sha(after),

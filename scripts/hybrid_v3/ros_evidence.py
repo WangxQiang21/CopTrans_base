@@ -118,7 +118,8 @@ def main():
     write(args.output/"delivery.json",delays)
     write(args.output/"faults.json",dict(old_epoch_rejected=True,clock_rollback_stopped=True,late_permit_stopped=True,
           invalid_numeric_commands=0,scenarios=faults,controller_parity=parity,native_oblique_parity=native_modes,
-          binary_manifest_sha256=sha256(before).hexdigest(),raw_file_hashes=raw,raw_directory=str(args.run.resolve())))
+          binary_manifest_sha256=sha256(before).hexdigest(),raw_file_hashes=raw,raw_directory=str(args.run.resolve()),
+          parity_directory=str(args.parity.resolve())))
     for task, examples in groups.items(): write(args.output/(task+".json"),examples)
 
 
