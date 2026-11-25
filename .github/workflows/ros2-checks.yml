@@ -1,0 +1,48 @@
+name: ROS 2 checks
+
+on:
+  push:
+    branches: [ros2-humble]
+  pull_request:
+    branches: [ros2-humble]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-24.04
+    container: ros:humble-ros-base-jammy
+    timeout-minutes: 35
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install ROS and Harmonic dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends curl git python3-rosdep
+          curl --fail --silent --show-error --location \
+            https://packages.osrfoundation.org/gazebo.gpg \
+            --output /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg
+          printf 'deb [arch=%s signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] https://packages.osrfoundation.org/gazebo/ubuntu-stable jammy main\n' \
+            "$(dpkg --print-architecture)" > /etc/apt/sources.list.d/gazebo-stable.list
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            gz-harmonic ros-humble-ros-gzharmonic python3-colcon-common-extensions \
+            python3-pytest pybind11-dev libgtest-dev
+          if [[ ! -f /etc/ros/rosdep/sources.list.d/20-default.list ]]; then
+            rosdep init
+          fi
+          rosdep update --rosdistro humble
+          rosdep install --from-paths ros2_ws/src --ignore-src --rosdistro humble -y \
+            --skip-keys "ros_gz_bridge ros_gz_sim"
+      - name: Build Release and run acceptance checks
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          bash scripts/check.sh
