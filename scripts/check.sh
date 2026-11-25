@@ -42,8 +42,14 @@ from fwis_backends.multi_4wis import _formation_collision_native
 for module in (fwis_multi_frontier_native, fwis_planning_core_native, _formation_collision_native):
     print(f"{module.__name__}: {module.__file__}", flush=True)
 PY
-colcon --log-base "$workspace/log" test --packages-up-to fwis_bringup \
-    --build-base "$workspace/build" --install-base "$workspace/install" \
-    --executor sequential --return-code-on-test-failure
-colcon test-result --test-result-base "$workspace/build" --verbose
+mkdir -p "$evidence/ctest"
+test_status=0
+for package_build in "$workspace/build"/*; do
+    if [[ -f $package_build/CTestTestfile.cmake ]]; then
+        package_name=${package_build##*/}
+        ctest --test-dir "$package_build" --build-config Release --output-on-failure \
+            --output-junit "$evidence/ctest/$package_name.xml" || test_status=1
+    fi
+done
 python3 -m pytest -q --junitxml="$evidence/backend-tests.xml" src/fwis_backends/test
+exit "$test_status"
