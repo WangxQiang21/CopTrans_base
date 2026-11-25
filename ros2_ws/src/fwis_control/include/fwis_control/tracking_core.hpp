@@ -2,6 +2,7 @@
 #define FWIS_CONTROL_TRACKING_CORE_HPP_
 
 #include <array>
+#include <functional>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -223,6 +224,8 @@ struct PreparedPlan
   Trajectory trajectory;
   Preflight matching_mode;
   Preflight different_mode;
+  std::string model_sha256;
+  std::function<Reference(double)> model_sample;
   const Preflight & checked(Mode initial_mode) const noexcept;
 };
 

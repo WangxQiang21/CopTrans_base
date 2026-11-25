@@ -50,7 +50,28 @@ def make_nodes(context):
         return Node(package="fwis_backends", executable=executable,
                     parameters=[*params, common], remappings=[*remaps, *extra_remaps], output="screen")
 
-    if backend in SINGLE_BACKENDS:
+    if backend in ("single_hybrid_joint_cpp", "formation_hybrid_joint_cpp"):
+        single = backend == "single_hybrid_joint_cpp"
+        registry = test_defaults()
+        task = "single" if single else "multi"
+        defaults = registry["profiles"][task]
+        speed = registry["speed_profiles"][registry["defaults"]["speed_profile"]][task]
+        vehicle = read_config(common_share / "config" / "ranger_mini_2.yaml")
+        cargo = read_config(Path(get_package_share_directory("ranger_mini_gz")) /
+                            "config" / "cargo_geometry.yaml")["cargo"]
+        profile = ({"quality": {"limits": {**defaults["quality"]["limits"], **speed}},
+                    "vehicle": defaults["vehicle"]} if single else
+                   {"timing_limits": {**defaults["timing_limits"], **speed}})
+        parameters = [vehicle, profile,
+                      {"task": "single" if single else "formation", "lead_s": registry["formation"]["lead_s"],
+                       "collision_margin": 0.04 if single else 0.05,
+                       "cargo_footprint": cargo_footprint_parameters(cargo["size"], cargo["center_offset"])},
+                      read_config(Path(config_arg)) if config_arg else {}, overrides, common]
+        nodes = [Node(package="fwis_hybrid_joint_ros", executable=executable, parameters=parameters,
+                      remappings=remaps, output="screen")
+                 for executable in ("hybrid_joint_planner", "hybrid_joint_executor")]
+        rviz_file = "single.rviz" if single else "formation.rviz"
+    elif backend in SINGLE_BACKENDS:
         vehicle = read_config(common_share / "config" / "ranger_mini_2.yaml")
         if backend == "single_state_lattice":
             selected_config = backend_share / "config" / "single_continuous_mode_path"
@@ -141,9 +162,9 @@ def generate_launch_description():
     default_backend = registry["planners"]["single"][registry["defaults"]["planners"]["single"]]
     return LaunchDescription([
         DeclareLaunchArgument("backend", default_value=default_backend,
-                              choices=[*SINGLE_BACKENDS, "multi_4wis"]),
+                              choices=[*SINGLE_BACKENDS, "multi_4wis", "single_hybrid_joint_cpp", "formation_hybrid_joint_cpp"]),
         DeclareLaunchArgument("formation_backend", default_value="uniform_v02",
-                              choices=["virtual_rigid_a", "uniform_v02", "legacy"]),
+                              choices=["virtual_rigid_a", "uniform_v02", "legacy", "hybrid_joint"]),
         DeclareLaunchArgument("config_file", default_value=""),
         DeclareLaunchArgument("overrides_file", default_value=""),
         DeclareLaunchArgument("transport_config", default_value=""),

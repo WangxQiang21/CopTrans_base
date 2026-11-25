@@ -113,7 +113,17 @@ Output Execution::tick(double now, const std::optional<Observation> & obs) noexc
   if (elapsed < 0.) {
     return brake(Phase::WaitStart, {}, expected_mode_, dt);
   }
-  const auto reference = sample(plan_->trajectory, *checked_, elapsed);
+  Reference reference;
+  try {
+    reference = plan_->model_sample ? plan_->model_sample(elapsed) :
+      sample(plan_->trajectory, *checked_, elapsed);
+  } catch (...) {
+    return abort("invalid_model_sample");
+  }
+  if (!std::isfinite(reference.pose.x) || !std::isfinite(reference.pose.y) ||
+      !std::isfinite(reference.pose.yaw) || !reference.twist.finite()) {
+    return abort("invalid_model_sample");
+  }
   const Switch * event = switch_index_ < checked_->switches.size() ?
     &checked_->switches[switch_index_] : nullptr;
   if (event && elapsed + 1e-8 >= event->time) {

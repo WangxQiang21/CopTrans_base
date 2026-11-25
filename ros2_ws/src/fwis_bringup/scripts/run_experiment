@@ -14,7 +14,7 @@ from time import monotonic
 
 from builtin_interfaces.msg import Time
 from fwis_v3_msgs.msg import (FormationExecutionPermit, FormationPlanRequest, FormationPlaybackPlan,
-                             FormationVehicleSpec, TimedTrajectory)
+                             FormationVehicleSpec, TimedPoint, TimedTrajectory)
 from geometry_msgs.msg import Point, Pose2D, PoseStamped, PoseWithCovarianceStamped, Twist
 from nav_msgs.msg import OccupancyGrid, Odometry
 import rclpy
@@ -68,6 +68,15 @@ class RunExperiment(Node):
         self.task = self.config["scene_task"]
         self.multi = self.task == "formation"
         self.formation_backend = self.config["coordination"]["implementation"] if self.multi else None
+        self.native = self.config["planner_backend"] in ("single_hybrid_joint_cpp", "formation_hybrid_joint_cpp")
+        self.native_release = None
+        self.native_ready = False
+        self.native_cancel = None
+        if self.native:
+            self.create_subscription(String, "/hybrid_joint/readiness",
+                                     lambda m: setattr(self, "native_ready", bool(m.data)), DURABLE)
+            self.create_subscription(String, "/hybrid_joint/admission", self.on_native_admission, DURABLE)
+            self.native_cancel = self.create_publisher(String, "/hybrid_joint/cancel", 1)
         self.execution_without_playback = bool(
             self.multi and self.config["planner_overrides"].get("execution_without_playback"))
         scene = load_scene(self.config["scenario"], self.config.get("scene_variant", "default"), paths=paths)
@@ -122,22 +131,25 @@ class RunExperiment(Node):
         for topic in string_topics(self.multi):
             self.create_subscription(String, topic, partial(self.on_planner, topic), DURABLE)
         if self.multi:
-            self.start_pub = (None if self.formation_backend == PLAYBACK_PLAN_BACKEND else
+            self.start_pub = (None if self.native or self.formation_backend == PLAYBACK_PLAN_BACKEND else
                               self.create_publisher(PoseWithCovarianceStamped, "/initialpose", 10))
             self.goal_pub = self.create_publisher(FormationPlanRequest, "/formation/plan_request", 10)
             self.create_subscription(FormationPlaybackPlan, "/formation/playback_plan",
                                      self.on_formation, DURABLE)
             self.create_subscription(String, "/formation/job_state", self.on_job, DURABLE)
-            self.routes = {i: self.create_publisher(TimedTrajectory, f"/robot{i}/trajectory", DURABLE)
+            self.routes = {} if self.native else {i: self.create_publisher(TimedTrajectory, f"/robot{i}/trajectory", DURABLE)
                            for i in self.spawns}
-            self.permit_pub = self.create_publisher(FormationExecutionPermit, PERMIT_TOPIC, 1)
+            self.permit_pub = None if self.native else self.create_publisher(FormationExecutionPermit, PERMIT_TOPIC, 1)
             self.cargo_pub = self.create_publisher(Odometry, "/cargo/odom", 5)
             self.mount_pub = self.create_publisher(Float64, "/cargo/constraint_error", 5)
             self.cargo_status_pub = self.create_publisher(String, "/cargo/controller_status", 30)
         else:
             self.start_pub = self.create_publisher(PoseStamped, "/start_pose", 10)
             self.goal_pub = self.create_publisher(PoseStamped, "/move_base_simple/goal", 10)
-            self.create_subscription(TimedTrajectory, "/plan/timed_trajectory", self.on_single, DURABLE)
+            if self.native:
+                self.create_subscription(FormationPlaybackPlan, "/hybrid_joint/plan", self.on_native_single, DURABLE)
+            else:
+                self.create_subscription(TimedTrajectory, "/plan/timed_trajectory", self.on_single, DURABLE)
         if self.interactive:
             margin = self.config.get("replay_planner", self.config["planner_overrides"]).get("collision_margin", .05)
             self.placement = FormationPlacement(self.scene, cells, margin)
@@ -410,6 +422,49 @@ class RunExperiment(Node):
         self.save_plan(msg, {1: msg})
         self.phase = "running"
 
+    def on_native_single(self, msg):
+        if self.phase != "planning" or not msg.trajectory.trajectories:
+            return
+        track = msg.trajectory.trajectories[0]
+        route = TimedTrajectory(header=msg.header, plan_id=msg.plan_id, points=[
+            TimedPoint(time_from_start=p.time_from_start, center_pose=p.center_pose,
+                       v=p.center_speed_mps, mode=p.mode) for p in track.points])
+        self.model_sha256, self.arm_stamp = msg.model_sha256, msg.header.stamp
+        self.trace("plan_received", plan_id=msg.plan_id, model_sha256=msg.model_sha256,
+                   planner_ros_stamp_ns=stamp_ns(msg.header.stamp))
+        self.save_plan(route, {1: route})
+        path = self.directory / "trajectories"
+        (path / "model.json").write_text(msg.model_json)
+        self.planner_source = "hybrid_joint"
+        self.phase = "arming"
+        if self.native_release:
+            self.native_running()
+
+    def on_native_admission(self, msg):
+        event = json.loads(msg.data)
+        if not self.plan_started or self.result or not event.get("plan_id"):
+            return
+        if self.multi and (not self.request or event["plan_id"] != self.request.plan_id):
+            return
+        self.trace("native_group_admission", **event)
+        if event["phase"] == "STOPPED":
+            self.finish("stopped", event["reason"])
+        elif event["phase"] == "AUTHORIZED":
+            self.native_release = event
+            if self.plan_keys and self.phase == "arming":
+                self.native_running()
+
+    def native_running(self):
+        event = self.native_release
+        if (event["model_sha256"] != self.model_sha256
+                or event["start_ns"] != stamp_ns(self.arm_stamp)):
+            self.finish("stopped", "group_admission_identity_mismatch")
+            return
+        self.phase = "running"
+        self.admitted.update(self.spawns)
+        self.trace("permit_enabled", start_ns=event["start_ns"])
+        self.ui("running", detail="三车已通过 C++ 联合准入，按同一时刻起步")
+
     def on_formation(self, msg):
         if (self.phase not in ("planning", "waiting_for_plan_validation", "arming", "running")
                 or msg.plan_id != self.request.plan_id):
@@ -426,6 +481,25 @@ class RunExperiment(Node):
             (archive_path / "model.json").write_text(msg.model_json)
         self.trace("plan_received", model_sha256=msg.model_sha256,
                    planner_ros_stamp_ns=stamp_ns(msg.header.stamp))
+        if self.native:
+            # These projections feed only experiment logging and display. The independent
+            # C++ coordinator owns recertification, group start and all permits.
+            self.arm_stamp = msg.header.stamp
+            self.model_sha256 = msg.model_sha256
+            self.formation_plan = msg
+            self.cargo_plan_times = tuple(stamp_ns(point) for point in msg.trajectory.times_from_start)
+            projections = {
+                track.vehicle_id: TimedTrajectory(header=msg.header, plan_id=msg.plan_id, points=[
+                    TimedPoint(time_from_start=p.time_from_start, center_pose=p.center_pose,
+                               v=p.center_speed_mps, mode=p.mode) for p in track.points])
+                for track in msg.trajectory.trajectories}
+            self.save_plan(msg, projections)
+            self.planner_source = "hybrid_joint"
+            self.phase = "arming"
+            self.ui("arming", detail="等待 C++ 三车联合准入")
+            if self.native_release:
+                self.native_running()
+            return
         try:
             routes = make_routes(msg, self.request, msg.header.stamp,
                                  expected_backend=self.formation_backend)
@@ -555,7 +629,7 @@ class RunExperiment(Node):
         self.controller_status[index] = {k: row[k] for k in ("phase", "result", "reasons") if k in row}
 
     def permit(self, enabled):
-        if self.arm_stamp is not None and rclpy.ok():
+        if not self.native and self.arm_stamp is not None and rclpy.ok():
             self.permit_pub.publish(FormationExecutionPermit(
                 stamp=self.get_clock().now().to_msg(), start=self.arm_stamp,
                 plan_id=self.request.plan_id, enabled=enabled))
@@ -615,6 +689,11 @@ class RunExperiment(Node):
             self.execute(now, wall, stale)
 
     def goal_subscribers_ready(self):
+        if self.native:
+            names = {endpoint.node_name for endpoint in self.get_subscriptions_info_by_topic(self.goal_pub.topic_name)}
+            return (self.native_ready and self.goal_pub.get_subscription_count() >= 2
+                    and (self.start_pub is None or self.start_pub.get_subscription_count() >= 2)
+                    and {"hybrid_joint_planner", "hybrid_joint_executor"} <= names)
         if not self.multi:
             return self.goal_pub.get_subscription_count() >= 1
         endpoints = self.get_subscriptions_info_by_topic(self.goal_pub.topic_name)
@@ -637,6 +716,10 @@ class RunExperiment(Node):
     def execute(self, now, wall, stale):
         if stale:
             self.finish("stopped", f"robot{stale[0]}_stale_or_invalid_feedback")
+            return
+        if self.native:
+            if self.complete == self.spawns.keys():
+                self.check_result()
             return
         if self.phase == "arming":
             deadline = stamp_ns(self.arm_stamp) / NSEC - self.config["coordination"]["release_margin_s"]
@@ -753,6 +836,8 @@ class RunExperiment(Node):
         self.result = {"status": status, "reason": reason, "detail": detail, "phase_at_end": self.phase}
         self.permit(False)
         if status in ("failed", "stopped", "timed_out"):
+            if self.native_cancel and rclpy.ok():
+                self.native_cancel.publish(String(data=reason))
             self.controller_log.save_fault_tail(monotonic())
         self.trace("finish", result=status, reason=reason)
         if self.interactive:

@@ -28,6 +28,7 @@ def setup(context):
     directory = config_path.parent
     scene = load_scene(config["scenario"], config.get("scene_variant", "default"))
     task = config["scene_task"]
+    native = config["planner_backend"] in ("single_hybrid_joint_cpp", "formation_hybrid_joint_cpp")
     robots = scene.vehicle_ids if task == "formation" else (1,)
     for label in (("start",) if config.get("interactive") else ("start", "goal")):
         gaps = clearance_summary(scene, task, [(config[label], None)])
@@ -46,7 +47,7 @@ def setup(context):
     planner_overrides = config.get("replay_planner", config["planner_overrides"])
     if task == "single":
         planner_overrides["quality"]["report_dir"] = str(directory / "trajectories" / "planner_reports")
-    elif config["coordination"]["implementation"] == "uniform_v02" and "replay_planner" not in config:
+    elif config["coordination"]["implementation"] in ("uniform_v02", "hybrid_joint") and "replay_planner" not in config:
         planner_overrides["cargo_footprint"] = cargo_footprint_parameters(
             scene.cargo.size, scene.cargo.offset)
     overrides = directory / "planner_parameters.yaml"
@@ -96,6 +97,12 @@ def setup(context):
         if task == "formation":
             parameters.update(trajectory_topic=f"/robot{index}/trajectory", permit_topic=PERMIT_TOPIC,
                               future_start_window_s=config["coordination"]["lead_s"] + .1)
+        if native:
+            lead = config["coordination"]["lead_s"] if config["coordination"] else 1.25
+            parameters.update(hybrid_joint=True, vehicle_id=index,
+                              hybrid_plan_topic="/formation/playback_plan" if task == "formation" else "/hybrid_joint/plan",
+                              permit_topic="/hybrid_joint/execution_permit",
+                              future_start_window_s=lead + .1)
         tracker = {"python": "ranger_tracking_controller",
                    "cpp": "ranger_tracking_controller_cpp"}[config.get("tracking_implementation", "python")]
         actions.append(Node(package="fwis_control", executable=tracker,

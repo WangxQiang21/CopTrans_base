@@ -213,7 +213,7 @@ from ament_index_python.packages import get_package_prefix, PackageNotFoundError
 
 install = Path(sys.argv[1])
 packages = ("fwis_backends", "fwis_bringup", "fwis_common", "fwis_control",
-            "fwis_multi_planner_cpp", "fwis_planning_core", "fwis_ros",
+            "fwis_hybrid_joint", "fwis_hybrid_joint_ros", "fwis_multi_planner_cpp", "fwis_planning_core", "fwis_ros",
             "fwis_rviz_plugins", "fwis_v3_msgs", "ranger_mini_description", "ranger_mini_gz")
 for package in packages:
     try:

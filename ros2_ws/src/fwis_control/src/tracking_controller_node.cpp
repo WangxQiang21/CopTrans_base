@@ -1,5 +1,6 @@
 #include "fwis_control/tracking_core.hpp"
 #include "control_timing.hpp"
+#include "hybrid_tracking.hpp"
 
 #include <atomic>
 #include <chrono>
@@ -19,6 +20,7 @@
 
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <fwis_v3_msgs/msg/formation_execution_permit.hpp>
+#include <fwis_v3_msgs/msg/hybrid_execution_permit.hpp>
 #include <fwis_v3_msgs/msg/timed_trajectory.hpp>
 #include <geometry_msgs/msg/twist.hpp>
 #include <nav_msgs/msg/odometry.hpp>
@@ -174,6 +176,8 @@ struct Status
 {
   uint32_t plan_id{};
   int64_t trajectory_stamp_ns{};
+  std::string_view model_sha256;
+  bool native_ready_to_start{};
   double now{};
   std::string_view admission;
   const Preflight * checked{};
@@ -223,6 +227,7 @@ std_msgs::msg::String status_message(const Status & row, const std::string & alg
   stream.imbue(std::locale::classic());
   stream << std::setprecision(17) << "{\"plan_id\":" << row.plan_id
          << ",\"trajectory_stamp_ns\":" << row.trajectory_stamp_ns << ",\"stamp\":" << row.now;
+  if (!row.model_sha256.empty()) stream << ",\"model_sha256\":\"" << row.model_sha256 << '\"';
   if (!row.admission.empty()) {
     stream << ",\"kind\":\"admission\",\"result\":\"" << row.admission << '"';
     if (row.checked) {
@@ -245,6 +250,7 @@ std_msgs::msg::String status_message(const Status & row, const std::string & alg
     }
   } else {
     const auto & out = row.output;
+    if (!row.model_sha256.empty()) stream << ",\"preflight_accepted\":" << (row.native_ready_to_start ? "true" : "false");
     stream << ",\"kind\":\"execution\",\"phase\":\"" << name(out.phase)
            << "\",\"algorithm\":\"" << algorithm << "\",\"reference_time\":";
     if (out.reference) {
@@ -341,7 +347,29 @@ public:
     mode_request_ = create_publisher<std_msgs::msg::Int32>("sim_request_mode", 1);
     status_ = create_publisher<std_msgs::msg::String>("controller_status", 10);
 
-    trajectory_sub_ = create_subscription<TimedTrajectory>(
+    if (declare_parameter("hybrid_joint", false)) {
+      vehicle_id_ = declare_parameter("vehicle_id", 1);
+      if (vehicle_id_ < 1 || vehicle_id_ > 3 || permit_topic_.empty()) {
+        throw std::invalid_argument("native model requires a vehicle ID and a group permit");
+      }
+      grid_sub_ = create_subscription<nav_msgs::msg::OccupancyGrid>("/map",hybrid_ros::durable(),
+        [this](const nav_msgs::msg::OccupancyGrid & msg) {
+          try {
+            auto next=hybrid_ros::grid_from(msg);
+            if (hybrid_grid_ && next->hash()!=hybrid_grid_->hash()) invalidate_native();
+            hybrid_grid_=std::move(next);
+            if(deferred_model_){auto model=std::move(deferred_model_);on_model(*model);}
+          } catch(const std::exception & e) {
+            hybrid_grid_.reset(); invalidate_native(); RCLCPP_WARN(get_logger(),"%s",e.what());
+          }
+        });
+      model_sub_=create_subscription<hybrid_ros::Envelope>(
+        declare_parameter("hybrid_plan_topic",std::string(hybrid_ros::envelope_topic)),hybrid_ros::durable(),
+        [this](hybrid_ros::Envelope::ConstSharedPtr m){
+          if(!hybrid_grid_){deferred_model_=std::move(m);return;}
+          on_model(*m);
+        });
+    } else trajectory_sub_ = create_subscription<TimedTrajectory>(
       topic, rclcpp::QoS(1).transient_local(),
       [this](const TimedTrajectory & message) {on_trajectory(message);});
     odom_sub_ = create_subscription<nav_msgs::msg::Odometry>(
@@ -353,7 +381,16 @@ public:
       "motion_state", 5, [this](const std_msgs::msg::Int32 & msg) {on_mode(msg.data);},
       control_options);
     if (!permit_topic_.empty()) {
-      permit_sub_ = create_subscription<FormationExecutionPermit>(
+      if(model_sub_){
+        native_permit_sub_=create_subscription<fwis_v3_msgs::msg::HybridExecutionPermit>(
+          permit_topic_,1,[this](const fwis_v3_msgs::msg::HybridExecutionPermit& msg){
+            FormationExecutionPermit copy;copy.plan_id=msg.plan_id;copy.stamp=msg.stamp;
+            copy.start=msg.start;copy.enabled=msg.enabled;
+            permit_=copy;
+            native_permit_hash_.fill(0);
+            if(msg.model_sha256.size()==64)std::copy_n(msg.model_sha256.begin(),64,native_permit_hash_.begin());
+          },control_options);
+      } else permit_sub_ = create_subscription<FormationExecutionPermit>(
         permit_topic_, 1, [this](const FormationExecutionPermit & msg) {permit_ = msg;},
         control_options);
     }
@@ -397,6 +434,33 @@ public:
   }
 
 private:
+  void invalidate_native()
+  {
+    auto cleared=std::make_unique<PreparedPlan>();
+    cleared->trajectory.plan_id=native_id_;
+    cleared->trajectory.stamp_ns=native_epoch_;
+    cleared->model_sha256=native_hash_;
+    delete incoming_.exchange(cleared.release());
+  }
+
+  void on_model(const hybrid_ros::Envelope & m)
+  {
+    try {
+      auto data=std::make_shared<hybrid_ros::Decoded>(hybrid_ros::decode(m,hybrid_grid_));
+      if(m.plan_id==native_id_){
+        if(m.model_sha256!=native_hash_)throw std::invalid_argument("model changed for existing plan ID");
+        return;
+      }
+      if(m.plan_id<native_id_)throw std::invalid_argument("stale native plan ID");
+      native_id_=m.plan_id;native_epoch_=hybrid_ros::ns(m.header.stamp);native_hash_=m.model_sha256;
+      auto checked=std::make_unique<PreparedPlan>(prepare_hybrid(data,vehicle_id_,native_epoch_,native_hash_,config_));
+      delete incoming_.exchange(checked.release());
+    } catch(const std::exception & e) {
+      invalidate_native();
+      RCLCPP_WARN(get_logger(),"Rejected hybrid plan: %s",e.what());
+    }
+  }
+
   void on_trajectory(const TimedTrajectory & message)
   {
     const auto stamp = stamp_ns(message.header.stamp);
@@ -455,7 +519,8 @@ private:
   bool permit_invalid(double ros_now) const noexcept
   {
     const bool matches = permit_ && permit_->plan_id == plan_->trajectory.plan_id &&
-      stamp_ns(permit_->start) == plan_->trajectory.stamp_ns;
+      stamp_ns(permit_->start) == plan_->trajectory.stamp_ns &&
+      (!model_sub_ || std::string_view(native_permit_hash_.data(),64) == plan_->model_sha256);
     if (matches && !permit_->enabled) {
       return true;
     }
@@ -510,6 +575,7 @@ private:
     Status row;
     row.plan_id = plan_->trajectory.plan_id;
     row.trajectory_stamp_ns = plan_->trajectory.stamp_ns;
+    row.model_sha256 = plan_->model_sha256;
     row.now = ros_now;
     row.admission = result;
     row.checked = check;
@@ -528,8 +594,12 @@ private:
     Status row;
     row.plan_id = plan_->trajectory.plan_id;
     row.trajectory_stamp_ns = plan_->trajectory.stamp_ns;
+    row.model_sha256 = plan_->model_sha256;
     row.now = ros_now;
     row.output = output;
+    // Re-announce successful preflight during the stationary, pre-epoch wait.
+    // DDS discovery may complete after this tracker's one-shot admission event.
+    row.native_ready_to_start = plan_->model_sample && engine_.active() && output.phase == Phase::WaitStart;
     if (state) {
       row.feedback_mode = state->mode;
       if (output.reference) {
@@ -593,6 +663,15 @@ private:
         std::abs(state->twist.wz) <= config_.timing.stop_yaw_rate)
       {
         activate_pending();
+        if (plan_->model_sample) {
+          const auto error = state->pose.error_to(plan_->trajectory.points.front().pose);
+          if (std::hypot(error[0],error[1]) > .10 || std::abs(wrap(error[2])) > .10) {
+            engine_.abort("model_start_differs_from_feedback");
+            queue_admission("REJECTED",ros_now);
+            publish_command({}, {});
+            return;
+          }
+        }
         const auto & pre = engine_.admit(*plan_, state->mode, ros_now,
           permit_topic_.empty() ? 0. : future_window_);
         queue_admission(pre.result(), ros_now, &pre);
@@ -659,6 +738,14 @@ private:
   rclcpp::Publisher<std_msgs::msg::Int32>::SharedPtr mode_request_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr status_;
   rclcpp::Subscription<TimedTrajectory>::SharedPtr trajectory_sub_;
+  rclcpp::Subscription<hybrid_ros::Envelope>::SharedPtr model_sub_;
+  rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr grid_sub_;
+  hybrid_ros::Envelope::ConstSharedPtr deferred_model_;
+  std::shared_ptr<const hybrid_ros::hj::GridSnapshot> hybrid_grid_;
+  int vehicle_id_{};
+  uint32_t native_id_{};
+  int64_t native_epoch_{};
+  std::string native_hash_;
   rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
   rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr mode_sub_;
   rclcpp::Subscription<FormationExecutionPermit>::SharedPtr permit_sub_;
@@ -675,6 +762,8 @@ private:
   uint64_t status_drops_{};
   std::optional<std::pair<Mode, double>> mode_;
   std::optional<FormationExecutionPermit> permit_;
+  rclcpp::Subscription<fwis_v3_msgs::msg::HybridExecutionPermit>::SharedPtr native_permit_sub_;
+  std::array<char,64> native_permit_hash_{};
   std::optional<WallClock::time_point> last_tick_wall_;
   bool mode_request_pending_{};
 };

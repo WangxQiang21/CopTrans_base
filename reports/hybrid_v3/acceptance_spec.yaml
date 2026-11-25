@@ -1,0 +1,238 @@
+# 这是待执行的冻结验收规范，不是已完成测试结果。
+# Codex 必须实现验证器，从原始结果计算状态，不能手工填写 PASS。
+schema: coptrans.hybrid_joint.acceptance/v3.0
+kind: specification_not_results
+version_date: '2026-11-25'
+design_file: 01_CopTrans_Codex执行方案_V3.md
+repository:
+  full_name: WangxQiang21/CopTrans_base
+  branch: ros2-humble
+  inspected_sha: 9ca13215df9ce37c24144ac0eda090951ddfcdb4
+  resolve_actual_head_before_execution: true
+  protect_user_uncommitted_changes: true
+execution:
+  autonomous_milestones: [E0, E1, E2, E3, E4, E5, E6, E7]
+  require_user_confirmation_between_milestones: false
+  implement_then_test_and_repair: true
+  default_switch_required_after_acceptance: true
+  implicit_legacy_fallback_allowed: false
+  live_hardware_motion_authorized: false
+  incomplete_items_must_not_be_reported_complete: true
+language:
+  standard: C++17
+  required_native_modules:
+    - request_snapshot_and_map_index
+    - seed_generation_and_search
+    - mode_sequence_editing
+    - continuous_problem_assembly
+    - gradients_and_solver_invocation
+    - timing_and_continuity
+    - independent_certification
+    - authoritative_plan_codec_and_evaluation
+    - execution_admission_and_formation_coordination
+    - tracking_safety_and_mode_fsm
+  python_allowed_for: [launch, experiments, plotting, offline_oracle, optional_pybind_entry]
+  native_runtime_python_calls_allowed: false
+  runnable_without_pybind: true
+solver:
+  preferred: casadi_cpp_ipopt
+  alternate_requires_recorded_reason: true
+  multiple_solver_framework_required: false
+policy:
+  name: task_bounded_ackermann_dominant
+  comparison: [auxiliary_presence, weighted_auxiliary_use, execution_cost]
+  # 不把辅助块数单独排在距离之前，避免奖励“一段长 O 取代两段短调整”。
+  auxiliary_use_terms: [block_count, oblique_distance, total_spin_angle]
+  development_initial_weights: {block_count: 0.5, oblique_distance: 1.0, total_spin_angle: 0.25}
+  length_scale: resolved_planning_minimum_radius
+  angle_scale_rad: 1.0
+  freeze_weights_before_holdout: true
+  task_duration_cap_source: request_or_frozen_benchmark
+  witness_must_fit_task_duration_cap: true
+  role_specific_distance_rules_allowed: false
+  scene_name_specific_branches_allowed: false
+  numerical_failure_is_global_infeasibility: false
+benchmark:
+  speed_profiles: [baseline, standard]
+  compare_within_same_profile_only: true
+  preserve_limits_and_collision_margins: true
+  warmups: 5
+  timed_trials_per_representative_case: 30
+  minimum_independent_samples_for_empirical_p99: 100
+  record_failures_and_timeouts: true
+  deterministic_seed_manifest_required: true
+  compile_mode: Release_or_RelWithDebInfo
+  sanitizer_timing_excluded: true
+datasets:
+  tasks: [single, formation]
+  core:
+    families: [C01, C02, C03, C04, C05, C06, C07, C08, C09, C10, C11, C12]
+    minimum_per_family_per_task: 3
+    minimum_total_per_task: 36
+    known_A_witness_required_for_A_labels: true
+    A_witness_not_given_to_planner: true
+  development:
+    minimum_per_task: 60
+  holdout:
+    minimum_per_task: 120
+    minimum_A_feasible_per_task: 60
+    minimum_other_feasible_per_task: 40
+    freeze_generator_config_and_seeds: true
+    retuning_requires_new_holdout: true
+    perturbations: [rigid_world_transform, endpoint_pose, corridor_geometry, cargo_shape_and_offset, formation_offsets]
+  pruning:
+    minimum_redundant_mode_cases_per_task: 10
+    necessary_auxiliary_counterexamples_required: true
+  closed_loop:
+    minimum_families_per_task: 8
+    repetitions_per_family: 3
+    include_long_route: true
+    include_necessary_auxiliary_modes: true
+    include_faults: true
+checks:
+  - id: BUILD_TESTS_SANITIZERS
+    mandatory: true
+    all_target_tests_pass: true
+    required_sanitizers: [ASan, UBSan]
+    tsan_when_supported: true
+  - id: NATIVE_RUNTIME
+    mandatory: true
+    core_runtime_python_calls: 0
+    legacy_fallback_used: false
+    runnable_without_pybind: true
+  - id: GEOMETRY_KINEMATICS
+    mandatory: true
+    minimum_samples_each: 10000
+    ordinary_position_tolerance_m: 1.0e-7
+    ordinary_angle_tolerance_rad: 1.0e-7
+    boundary_cases_separate: true
+  - id: DERIVATIVES
+    mandatory: true
+    minimum_cases_per_factor: 100
+    relative_tolerance: 1.0e-4
+    near_zero_absolute_tolerance: 1.0e-6
+    multiple_finite_difference_steps: true
+  - id: REINTEGRATION
+    mandatory: true
+    max_position_error_m: 1.0e-4
+    max_angle_error_rad: 1.0e-4
+  - id: PLAN_ENDPOINTS
+    mandatory: true
+    max_position_error_m: 0.02
+    max_constrained_angle_error_deg: 1.0
+    preserve_free_heading_semantics: true
+  - id: FORMATION_REFERENCE
+    mandatory: true
+    max_mount_identity_error_m: 1.0e-8
+    vehicle_dynamics_continuous_validation_required: true
+  - id: A_CONTINUITY
+    mandatory: true
+    max_join_position_error_m: 1.0e-6
+    max_join_yaw_error_rad: 1.0e-6
+    max_join_velocity_error_mps: 1.0e-6
+    max_curvature_jump_per_m: 1.0e-5
+    all_wheel_rate_constraints_pass: true
+  - id: COLLISION_DYNAMICS
+    mandatory: true
+    minimum_random_collision_cases: 20000
+    detected_false_negatives: 0
+    continuous_certificate_required: true
+    safety_slack_allowed_at_acceptance: false
+    sampling_alone_is_certificate: false
+    unchanged_margins_required: true
+  - id: A_WITNESS_CORE
+    mandatory: true
+    certified_success_rate: 1.0
+    pure_A_rate_all_labeled_cases: 1.0
+    unnecessary_internal_stops: 0
+  - id: MODE_PRUNING
+    mandatory: true
+    complete_redundant_auxiliary_removal_rate_min: 0.90
+    invalid_join_count: 0
+    necessary_mode_counterexamples_pass: true
+  - id: HOLDOUT_GENERALIZATION
+    mandatory: true
+    certified_success_rate_on_feasible_min: 0.95
+    pure_A_rate_on_all_A_labeled_min: 0.95
+    false_executable_on_proven_invalid: 0
+    max_rotation_success_rate_drop_percentage_points: 5.0
+    no_scene_specific_retuning: true
+  - id: PLANNING_LATENCY
+    mandatory: true
+    metric: request_to_first_policy_compliant_certified_output_wall_s
+    easy_single_p95_max: 2.0
+    easy_formation_p95_max: 3.0
+    difficult_single_p95_max: 8.0
+    difficult_formation_p95_max: 12.0
+    default_solve_budget_single_s: 8.0
+    default_solve_budget_formation_s: 12.0
+    record_deadline_overrun: true
+  - id: DELIVERY_AND_ADMISSION
+    mandatory: true
+    excludes_configured_future_start_wait: true
+    single_p95_max_s: 0.20
+    formation_p95_max_s: 0.40
+  - id: CONTROLLER_PARITY_FAULTS
+    mandatory: true
+    output_absolute_error_max: 1.0e-6
+    deterministic_fsm_fixture_match_rate: 1.0
+    invalid_numeric_commands: 0
+    all_fault_contracts_pass: true
+  - id: CONTROLLER_COMPUTE
+    mandatory: true
+    frequency_hz: 25.0
+    minimum_wall_duration_s_per_setup: 600.0
+    minimum_valid_ticks_per_vehicle: 15000
+    tracking_compute_p99_max_ms: 0.5
+    tracking_compute_max_ms: 1.0
+    callback_max_ms: 5.0
+    setups: [single, three_vehicles]
+  - id: NATIVE_CONTROL_DEADLINES
+    mandatory: true
+    clock: steady
+    period_ms: 40.0
+    deadline_definition: command_submission_later_than_scheduled_release_plus_period
+    deadline_miss_count: 0
+    release_jitter_report_required: true
+    concurrent_planner_load_required: true
+  - id: GAZEBO_CLOCK_SCOPE
+    mandatory: true
+    ros_simulation_clock_contract_pass: true
+    wall_clock_and_transport_metrics_required: true
+    paused_simulation_or_RTF_variation_must_be_identified: true
+    cannot_claim_hard_wall_realtime_from_sim_time_pass: true
+    stale_feedback_moving_command_count: 0
+  - id: CLOSED_LOOP
+    mandatory: true
+    max_endpoint_position_error_m: 0.10
+    max_constrained_endpoint_yaw_error_rad: 0.10
+    max_formation_mount_error_m: 0.10
+    collision_count: 0
+    common_epoch_and_atomic_admission_required: true
+  - id: DEFAULT_INTEGRATION
+    mandatory: true
+    default_single_planner_native_new: true
+    default_formation_planner_native_new: true
+    default_tracker_cpp: true
+    interactive_and_test_entrypoints_match: true
+    old_planner_only_explicit_selection: true
+  - id: REPRODUCIBLE_EVIDENCE
+    mandatory: true
+    compact_reports_tracked: true
+    all_mandatory_check_ids_reported: true
+    missing_evidence_cannot_pass: true
+    source_config_map_limits_hashes_required: true
+    independent_validation_script_exit_zero: true
+reporting:
+  check_statuses: [PASS, FAIL, BLOCKED, NOT_RUN]
+  task_statuses: [COMPLETED, INCOMPLETE, BLOCKED]
+  hardware_status: HARDWARE_NOT_VERIFIED
+  output_directory: reports/hybrid_v3
+  minimum_files: [manifest.json, acceptance.json, runs.csv, case_manifest.json, README.md]
+  large_artifacts_need_hash_and_accessible_location: true
+  declared_validation_scope: static_map_simulation_and_native_soft_realtime_load
+completion:
+  require_all_mandatory_pass: true
+  require_default_switch: true
+  optional_live_hardware_not_a_blocker: true
+  an_experimental_backend_alone_is_not_completion: true

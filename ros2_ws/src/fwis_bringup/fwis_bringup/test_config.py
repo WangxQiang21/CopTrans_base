@@ -111,6 +111,11 @@ def parse_arguments(argv, scenarios, registry, experiments):
             else args.controller_backend)
     except ValueError as error:
         parser.error(f"task={args.task}: {error}")
+    if alias == "hybrid_joint" and (args.tracker_implementation != "cpp" or args.without_planning_playback
+                                   or any(flag is not None for flag in (
+                                       args.multi_native_frontier, args.multi_convex_corridor,
+                                       args.multi_reachable_clock))):
+        parser.error("hybrid_joint uses the native tracker and its own joint solver configuration")
     return args, alias, backend, controller, algorithm
 
 
@@ -176,7 +181,12 @@ def resolve(argv, config_directory, scenario_directory, output):
         overrides = dict(overrides, quality=dict(quality, limits=quality["limits"] | speeds))
     else:
         overrides = dict(overrides, timing_limits=overrides["timing_limits"] | speeds)
-    if args.architecture_profile == "optimized":
+    if alias == "hybrid_joint":
+        if mode:
+            mode = dict(mode, implementation="hybrid_joint")
+        overrides = dict(overrides, speed_profile=args.speed_profile, solve_budget_s=8.0 if scene_task == "single" else 12.0,
+                         task_duration_cap_s=float(experiment.get("task_duration_cap_s", 300.0)))
+    elif args.architecture_profile == "optimized":
         if scene_task == "formation":
             overrides = dict(overrides, reuse_terminal_certificate=True,
                              background_refinement_budget_s=1.0,
@@ -184,7 +194,7 @@ def resolve(argv, config_directory, scenario_directory, output):
         elif backend in ("single_continuous_mode_path", "single_state_lattice"):
             overrides = dict(overrides, search={"adaptive_reverse_competition": True},
                              quality=dict(overrides["quality"], seed_proposal_wait_s=0.0))
-    if scene_task == "formation":
+    if scene_task == "formation" and alias != "hybrid_joint":
         features = (registry.get("optimized_multi_defaults", {})
                     if args.architecture_profile == "optimized" else {})
         flags = {"native_frontier": args.multi_native_frontier,
@@ -194,7 +204,7 @@ def resolve(argv, config_directory, scenario_directory, output):
         overrides.update({name: value for name, value in flags.items() if value is not None})
         if overrides.get("reachability_retime"):
             overrides["continuous_a_refinement"] = False
-    if args.interactive:
+    if args.interactive and alias != "hybrid_joint":
         overrides = dict(overrides, publish_uniform_progress=True)
     config = dict(mode=args.mode, task=args.task, scene_task=scene_task, scenario=args.scenario,
                   scene_variant=variant,

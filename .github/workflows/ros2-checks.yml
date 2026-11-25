@@ -35,7 +35,9 @@ jobs:
           apt-get update
           apt-get install -y --no-install-recommends \
             gz-harmonic ros-humble-ros-gzharmonic python3-colcon-common-extensions \
-            python3-pytest pybind11-dev libgtest-dev
+            python3-pytest python3-pip pybind11-dev libgtest-dev libjsoncpp-dev libssl-dev
+          python3 -m pip install --no-deps --target /opt/coptrans-sdk casadi==3.7.2
+          echo "COPTRANS_CASADI_ROOT=/opt/coptrans-sdk/casadi" >> "$GITHUB_ENV"
           if [[ ! -f /etc/ros/rosdep/sources.list.d/20-default.list ]]; then
             rosdep init
           fi

@@ -12,6 +12,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/FormationPlanSeed.msg"
   "msg/FormationPlaybackPlan.msg"
   "msg/FormationExecutionPermit.msg"
+  "msg/HybridExecutionPermit.msg"
   "msg/FormationPrimitive.msg"
   "msg/FormationTimedPoint.msg"
   "msg/FormationTimedTrajectory.msg"

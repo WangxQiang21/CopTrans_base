@@ -47,6 +47,8 @@ QString stageName(const QString & stage)
   if (stage == "joint_search") {return QStringLiteral("A/O/S 联合搜索");}
   if (stage == "terminal_audit") {return QStringLiteral("终点候选独立认证");}
   if (stage == "common_timing") {return QStringLiteral("求解共同时间轴");}
+  if (stage == "solve") {return QStringLiteral("C++ 联合优化");}
+  if (stage == "certified") {return QStringLiteral("独立认证通过");}
   if (stage == "publication") {return QStringLiteral("校验轨迹信封");}
   return QStringLiteral("等待求解器");
 }
@@ -78,6 +80,7 @@ public:
     title_font.setPointSize(title_font.pointSize() + 3);
     title_->setFont(title_font);
     solving_ = makeLabel(layout);
+    identity_ = makeLabel(layout);
     progress_ = makeLabel(layout);
     timing_ = makeLabel(layout);
     admission_ = makeLabel(layout);
@@ -171,6 +174,14 @@ private:
     if (outcome == "running") {solver = stageName(progress.value("stage").toString());}
     solving_->setText(QStringLiteral("求解  %1").arg(solver));
 
+    const auto backend = progress.value("actual_backend").toString();
+    identity_->setVisible(!backend.isEmpty());
+    if (!backend.isEmpty()) {
+      identity_->setText(QStringLiteral("%1 · %2\n%3 · 构建 %4 · 旧算法回退 %5")
+        .arg(backend, progress.value("speed_profile").toString(),
+             progress.value("model_schema").toString(), progress.value("solver_build").toString().left(10),
+             progress.value("legacy_fallback_used").toBool() ? QStringLiteral("已使用") : QStringLiteral("关闭")));
+    }
     const auto expanded = progress.value("expansions");
     progress_->setVisible(expanded.isDouble());
     if (expanded.isDouble()) {
@@ -200,6 +211,7 @@ private:
   QString experiment_id_;
   QLabel * title_;
   QLabel * solving_;
+  QLabel * identity_;
   QLabel * progress_;
   QLabel * timing_;
   QLabel * admission_;

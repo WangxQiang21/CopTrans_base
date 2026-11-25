@@ -258,7 +258,7 @@ PreparedPlan prepare(Trajectory trajectory, const Configuration & config, bool a
   const int first_mode = has_points ? trajectory.points.front().mode : 0;
   const Mode matching = valid_mode(first_mode) ? static_cast<Mode>(first_mode) : Mode::Ackermann;
   const Mode different = matching == Mode::Ackermann ? Mode::Oblique : Mode::Ackermann;
-  PreparedPlan plan{std::move(trajectory), {}, {}};
+  PreparedPlan plan{std::move(trajectory), {}, {}, {}, {}};
   plan.matching_mode = preflight(
     plan.trajectory, config.limits, config.preflight, config.timing.minimum_hold(),
     matching, allow_axial_oblique);

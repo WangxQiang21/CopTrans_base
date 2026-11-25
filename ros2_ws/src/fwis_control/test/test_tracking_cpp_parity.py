@@ -1,5 +1,7 @@
 """Replay both controllers with the same trajectories, feedback and faults."""
 from dataclasses import replace
+from hashlib import sha256
+import json
 import math
 import os
 from pathlib import Path
@@ -76,14 +78,31 @@ def replay(algorithm, cases, binary):
                              capture_output=True, check=True, timeout=10.)
     observed = process.stdout.splitlines()
     assert len(observed) == len(expected)
+    differences = []
+    ticks = 0
     for index, (text, want) in enumerate(zip(observed, expected)):
         tokens = text.split()
         if isinstance(want, list):
             assert tokens == want, index
             continue
         assert tokens[0] == want[0] and int(tokens[1]) == want[1], index
-        assert tuple(float(x) for x in tokens[2:16]) == pytest.approx(want[2:16], abs=1e-9), index
+        numeric = tuple(float(x) for x in tokens[2:16])
+        assert numeric == pytest.approx(want[2:16], rel=0., abs=1e-9), index
+        assert all(math.isfinite(value) for value in numeric)
+        differences.extend(abs(actual - target) for actual, target in zip(numeric[:6], want[2:8]))
+        ticks += 1
         assert tuple(tokens[16:]) == want[16:], index
+    evidence = os.environ.get("COPTRANS_PARITY_EVIDENCE")
+    if evidence:
+        folder = Path(evidence)
+        folder.mkdir(parents=True, exist_ok=True)
+        report = dict(algorithm=algorithm, ticks=ticks, matched_fsm_ticks=ticks,
+                      compared_raw_and_applied_components=len(differences),
+                      max_absolute_error=max(differences), mean_absolute_error=math.fsum(differences)/len(differences),
+                      nonfinite_outputs=0, absolute_tolerance=1e-9, relative_tolerance=0.,
+                      fixture_sha256=sha256(("\n".join(lines)+"\n").encode()).hexdigest(),
+                      replay_sha256=sha256(Path(binary).read_bytes()).hexdigest())
+        (folder / f"parity_{algorithm}.json").write_text(json.dumps(report,indent=2)+"\n")
     return expected
 
 
