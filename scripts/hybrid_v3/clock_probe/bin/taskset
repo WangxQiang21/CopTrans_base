@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Preserve the launch CPU mask. Apply the measurement library only to the
+# selected native executable, after taskset has set its affinity.
+set -eu
+if [[ ${1:-} == -c && -n ${3:-} && "$3" -ef "$COPTRANS_TIMED_TRACKER" ]]; then
+    mask=$2
+    shift 2
+    exec "$COPTRANS_ORIGINAL_TASKSET" -c "$mask" env \
+        "LD_PRELOAD=$COPTRANS_TRACKER_TAKE_TRACE_SO${LD_PRELOAD:+:$LD_PRELOAD}" "$@"
+fi
+exec "$COPTRANS_ORIGINAL_TASKSET" "$@"
