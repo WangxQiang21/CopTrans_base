@@ -14,6 +14,8 @@
 
 `parameterize` 以 `x = (ds/dt)^2` 按可控集合向后计算，再向前推进，支持区间速度、加减速以及多车约束的共同包络。`pure_ackermann_profile` 解析计算连续曲率块在 Hermite 区间上的曲率和空间导数极值。一般变化曲率的可达性解可用于速度上界研究。其加速度切换仍需 jerk 平滑和完整认证。
 
+两者采用不同的求解口径。论文中的 TOPP-RA 在离散路径站点求解进度加速度和速度平方上的线性规划。本项目的研究原型使用标量区间递推。用于已验收固定曲率轨迹的执行时钟采用下文的解析 jerk 律。这里的对照指标是在同路径、同限值和同停车条件下的参考运动时长与独立认证结果。[TOPP-RA 原论文](https://arxiv.org/abs/1707.07239) · [单车实现](../../ros2_ws/src/fwis_backends/fwis_backends/single_continuous_mode_path/ackermann_reachability.py)
+
 针对限制模式下的定曲率 A，已将解析 jerk 有界 S 曲线转成现有 `ContinuousTimedPlan` 的分段多项式。独立审计重新构造时间多项式、对其导数求极值并检查速度、加速度和 jerk，再校验车体扫掠、终点及下发样点。只有更快且独立认证通过才采用。模式切换和原有停车相位保持原合同。算法支持 ROS 普通调用链及原跟踪器预检，实车状态为 `HARDWARE_NOT_VERIFIED`。
 
 相同限制下五个定曲率前进、倒行、直线和弯道样本全部通过认证，较原连续定时的运动时间缩短 **8.9%–18.9%**（中位 **16.8%**）。五个样本各运行 5 次预热及 30 次计时。故意篡改时间多项式均被独立审计拒绝。 [原始样本](../../reports/architecture_phase5/results.json) · [定时转换](../../ros2_ws/src/fwis_backends/fwis_backends/single_continuous_mode_path/continuous_retiming.py) · [独立审计](../../ros2_ws/src/fwis_backends/fwis_backends/single_continuous_mode_path/quality.py)

@@ -65,23 +65,48 @@ colcon test-result --verbose
 | 控制回调 | 主机单调时钟，从 timer 的用户回调入口到形成将要入队的状态记录。包含反馈快照、许可、Twist/切换请求发布和固定大小状态组装。 |
 | 定时器 | Humble 的 RCL timer 时钟，使用 `rcl_timer_call` 前的 `time_until_trigger` 得到到期相对时间。对同一测量点记录从到期到派发的延迟、跳过的周期，以及单次回调退出时越过该次截止的次数。仿真模式采用 ROS 仿真时间，读取误差受仿真时钟推进粒度限制。 |
 | 执行器派发和抖动 | 主机单调时钟，从 RCL timer 派发到进入控制函数。墙钟相邻回调间隔与 40 ms 的偏差另列。 |
+| Linux 线程观测 | 控制线程记录相邻采样间的 CPU 时间和自愿、非自愿上下文切换。Gazebo 在同一个物理更新线程记录 ≥10 ms 的 `PreUpdate` 间隔、期间实际推进的仿真时间以及线程计数。精确的 runnable 等待和唤醒间隔还需要内核调度事件。 |
 | 里程计的 DDS 和回调 | 同机系统实时时钟，使用 RMW 的源和接收时间戳，再与 C++ 订阅回调入口比较。RMW 的接收时间戳具体落点由实现决定。另用仿真消息时间戳匹配 Gazebo 里程计发布时间，可观察从车体发布到跟踪器回调的完整主机单调时间。 |
 | 命令从 ROS 到 Gazebo 实际使用 | 记录 ROS 侧发布前、Gazebo 传输回调收到时、首次将该命令送进车体 `pre_update` 时三个主机单调时间。以车号、精确的三个 Twist 分量和 500 ms 因果窗口做双向唯一匹配，重复及缺失记录单独计数。 |
+| 命令的 DDS 和桥边界 | `--trace-ros-bridge` 在实际 `ros_gz_bridge` 取得 Twist 后复制 RMW 源、接收和取样时间以及本机单调时间。先验因果匹配成立时，将延迟拆为 DDS 源→接收、接收→桥接节点取样、桥接节点取样→Gazebo 收到、Gazebo 收到→插件首次消费。ROS 发布调用耗时单列。扩展追踪仅在性能探针调用时启用。 |
 
-实际 Gazebo 测量使用厂房内一条半径 1.12 m、峰值约 0.14 m/s 的开阔区域 A 模式重复圆弧。单车和三车在独立 DDS 域和 Gazebo 分区分别运行。三车各自经过共同起点提前登记和统一许可。这个持续压力用例衡量实际仿真车体命令消费，cargo 负载运动由前述完整协同运输集成用例覆盖。
+实际 Gazebo 测量使用厂房内一条半径 1.12 m、峰值约 0.14 m/s 的开阔区域 A 模式重复圆弧。单车和三车使用独立 DDS 域和 Gazebo 分区，正式复测在同一台主机上逐个启动。三车各自经过共同起点提前登记和统一许可。这个持续压力用例衡量实际仿真车体命令消费，cargo 负载运动由完整协同运输集成用例覆盖。
+
+使用扩展追踪前，构建 `fwis_bringup` 及其依赖，使最新控制节点、桥取样库、车体插件和启动文件都进入同一 ROS 2 安装环境。
 
 ```bash
 source /opt/ros/humble/setup.bash
 source ros2_ws/install/setup.bash
 python3 ros2_ws/src/fwis_control/test/gazebo_timing_probe.py \
-    --robots 3 --dds-domain 131 --output /tmp/coptrans-timing-three
+    --robots 3 --dds-domain 131 --trace-ros-bridge --output /tmp/coptrans-timing-three
 python3 ros2_ws/src/fwis_control/test/analyze_control_timing.py \
     /tmp/coptrans-timing-three --output /tmp/coptrans-timing-three/summary.json
 ```
 
 选用独立输出目录和可用的本机 DDS 域。改用 `--robots 1` 可运行单车。完整压力默认至少运行 605 墙钟秒并收集每车 15,000 个跟踪样本。短时连通性验证可用 `--seconds 8 --min-samples 175`。 [本机探针](../../ros2_ws/src/fwis_control/test/gazebo_timing_probe.py) · [离线匹配与截止统计](../../ros2_ws/src/fwis_control/test/analyze_control_timing.py)
 
-### 实际 Gazebo 的 605 秒压力结果
+`summary.json` 列出 ROS 时钟门槛和墙钟门槛，并逐条保留 ≥80 ms 回调间隔和 >40 ms 命令消费记录。纯计算 P99、纯计算最大值、完整回调最大值的门槛分别为 0.5、1.0、5.0 ms。既有墙钟门槛要求出现 ≥80 ms 的回调间隔和超过 40 ms 才被消费的命令均为零。相邻回调间隔 >40 ms 的次数和百分位用于记录周期抖动。分析时加 `--require-contract` 可使任何一个门槛失败返回非零。
+
+### Gazebo 串行复测
+
+单车和三车各连续跟踪 605.000 墙钟秒，中间间隔 6.822 s。每车 15,125 个有效 TRACKING 周期，全部 Twist 同时匹配到实际 ROS 桥接取样和车体首次消费。ROS 时钟和墙钟门槛均为 `PASS`。各车 ROS 时钟漏期、数据缺口、非法命令、≥80 ms 回调间隔和 >40 ms 才被消费的命令均为 0。
+
+| 用例 | 纯控制计算 P99 / 最大（ms） | 完整回调最大（ms） | 回调墙钟间隔 P99 / 最大（ms） | 回调间隔 >40 ms | 命令发布至首次消费 P99 / 最大（ms） |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 单车 | 0.0131 / 0.0974 | 0.361 | 40.151 / 43.249 | 7,457 | 5.870 / 19.807 |
+| 三车 robot1 | 0.0095 / 0.2446 | 2.145 | 40.321 / 45.081 | 7,402 | 5.907 / 7.940 |
+| 三车 robot2 | 0.0095 / 0.2458 | 2.014 | 40.384 / 45.090 | 7,400 | 7.669 / 10.381 |
+| 三车 robot3 | 0.0095 / 0.2956 | 2.373 | 40.312 / 45.114 | 7,345 | 5.876 / 9.882 |
+
+单车最长命令耗时 19.807 ms，主要来自桥接取样后到 Gazebo 传输回调之间的 17.701 ms。单车和三车的分阶段最大值分别为 DDS 源到接收 0.822 / 2.508 ms、DDS 接收到 ROS 桥取样 2.231 / 2.056 ms、桥取样到 Gazebo 收到 17.701 / 7.833 ms、Gazebo 收到到插件消费 3.007 / 3.778 ms。每段最大值按各自样本计算。
+
+两轮均无 ≥10 ms 的 Gazebo `PreUpdate` 间隔。主机当前使用 `SCHED_OTHER`，普通进程无法访问内核 perf 事件，`sched_schedstats` 为 0。记录保留了线程 CPU 时间和上下文切换数。旧异常的内核线程等待时长缺少直接测量。串行 Gazebo 是这两轮采用的主机负载控制条件，结果为本机软实时验收。
+
+本地证据位于 `reports/acceptance/20261125_control_serial_605s/`。单车和三车的 `manifest.json` 含源码提交、确切配置、已加载程序与插件的 SHA-256，`raw/` 含原始计时，`summary.json` 含门槛结果。`combined_summary.json` 记录原始采样 SHA-256 和两轮时间窗口。分析器的原文件和 SHA-256 独立归档。
+
+相同 C++ 跟踪器的三车 ROS 2 合成反馈故障注入复测覆盖 nonlinear 和 PID。两次均完成 A/O/S 混合轨迹、单车反馈超时后的整组停车，以及活动轨迹替换后的停车。每轮的参数、可执行文件和状态原样保存于同目录的 `native_fault_nonlinear/` 与 `native_fault_pid/`。
+
+### 历史 Gazebo 605 秒压力结果
 
 单车和三车各记录至少 605 墙钟秒，每台车超过 15,000 个 TRACKING 周期。处于正常跟踪的命令全部能按原始数值匹配到 Gazebo 插件的首次消费。仿真时钟的 40 ms 截止契约下，跳过的 Ticks、回调越过截止次数和未解释的周期槽均为 0。有限值、速度、模式、半径和相邻输出加速度的违规数均为 0。
 
@@ -94,6 +119,8 @@ python3 ros2_ws/src/fwis_control/test/analyze_control_timing.py \
 
 DDS 里程计源到接收 P99 为 0.365–0.461 ms。从 RMW 接收标记到跟踪器回调 P99 为 0.246–0.298 ms。Gazebo 发布里程计到跟踪器回调的端到端 P99 为 1.096–1.209 ms。定时器派发到回调入口 P99 约 0.005 ms。命令从 Gazebo 收到到首次消费 P99 为 1.888–2.069 ms。
 
-三车最大的墙钟控制回调间隙出现在同一仿真时间，此间 ROS 仿真时间仍只增加 40 ms。三车分别有 2、1、1 条命令超过 40 ms 才被插件消费。robot1 的最大延迟主要在 Gazebo 收到命令后等待 `pre_update`，robot2 和 robot3 的最大延迟主要发生在从 ROS 发布到 Gazebo 接收的路径上。该记录的 ROS 仿真时钟门槛为 `PASS`，严格墙钟 40 ms 的门槛为 `NOT_MET`。这是本机软实时测量，真机响应为 `HARDWARE_NOT_VERIFIED`，控制器默认仍为 Python。
+三车最大的墙钟控制回调间隙出现在同一仿真时间，此间 ROS 仿真时间仍只增加 40 ms。三车分别有 2、1、1 条命令超过 40 ms 才被插件消费。robot1 的最大延迟主要在 Gazebo 收到命令后等待 `pre_update`，robot2 和 robot3 的最大延迟主要发生在从 ROS 发布到 Gazebo 接收的路径上。该记录的 ROS 仿真时钟门槛为 `PASS`，墙钟门槛为 `NOT_MET`。这些数据来自本机软实时测量，试验时生产默认使用 Python。
+
+重算原始主机单调时间发现，两次历史跟踪区间实际重叠 **592.295 s**。单车的 6 次 ≥80 ms 回调间隔都能在三车数据中找到同一时刻的异常，间隔终点相差至多 34 ms。这些间隔都覆盖了 **117–124 ms** 的 Gazebo 插件里程计发布间隙，期间仿真时间推进 20 ms，控制器的 ROS 定时器派发延迟为 0。两次历史实验存在同机负载干扰，以上结果记录为历史观测。新压力验收采用实验锁和 Gazebo 进程检查保证串行，并用新的桥接及物理更新证据重新归因。
 
 原始归档包含控制周期、三轴 Twist 和 Gazebo 端事件，可解包到独立目录后用上面的分析脚本复算。 [单车指标](../../reports/control_cpp/actual_gazebo_single_605s_summary.json) · [单车原始计时](../../reports/control_cpp/actual_gazebo_single_605s_raw.tar.gz) · [三车指标](../../reports/control_cpp/actual_gazebo_three_605s_summary.json) · [三车原始计时](../../reports/control_cpp/actual_gazebo_three_605s_raw.tar.gz)

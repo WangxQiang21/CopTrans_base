@@ -123,6 +123,9 @@ def run_node(name, component, *, threads=1, live_clock=False):
         pass
     finally:
         try:
+            if isinstance(executor, MultiThreadedExecutor):
+                # Humble can still have queued callbacks after its shutdown wait.
+                executor._executor.shutdown(wait=True)
             executor.shutdown()
             node.destroy_node()
             rclpy.try_shutdown()
