@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <limits>
 #include <vector>
 
 namespace hybrid_channel {
@@ -84,5 +85,56 @@ std::array<std::vector<Span>,2> fit(const std::vector<Point>& route, double star
     result[axis] = bezier_spans(std::move(control), n);
   }
   return result;
+}
+// On a spatial channel select the cargo orientation using a short dynamic
+// program. The per-car tangents remain free variables of the subsequent NLP.
+template <class Clearance>
+std::vector<double> yaw_profile(const std::array<std::vector<Span>,2>& xy, double start, double turn,
+                                Clearance clearance) {
+  constexpr int subdivisions=4, bins=49, mid=bins/2;
+  constexpr double angular_step=3.14159265358979323846/24;
+  const int n=static_cast<int>(xy[0].size()), samples=n*subdivisions;
+  const double infinity=std::numeric_limits<double>::infinity();
+  std::array<double,bins> previous, current;
+  previous.fill(infinity);
+  previous[mid]=0;
+  std::vector<std::array<int,bins>> parent(samples+1);
+  auto theta=[&](int k,int b){return start+turn*k/samples+(b-mid)*angular_step;};
+  auto point=[&](int k){
+    const int j=std::min(k/subdivisions,n-1);
+    const double u=double(k-j*subdivisions)/subdivisions;
+    std::array<double,2> value;
+    for(int axis=0;axis<2;++axis){
+      Span controls=xy[axis][j];
+      for(int d=5;d>0;--d)for(int i=0;i<d;++i)controls[i]+=u*(controls[i+1]-controls[i]);
+      value[axis]=controls[0];
+    }
+    return value;
+  };
+  auto before=point(0);
+  for(int k=1;k<=samples;++k){
+    const auto pos=point(k);
+    const double ds=std::max(.01,std::hypot(pos[0]-before[0],pos[1]-before[1]));
+    before=pos;
+    current.fill(infinity);
+    for(int b=0;b<bins;++b){
+      if(k==samples && b!=mid)continue;
+      const double yaw=theta(k,b),gap=clearance({pos[0],pos[1]},yaw);
+      const double contact=std::max(0.,.08-gap);
+      const double cost=ds*(.003*std::pow((b-mid)*angular_step,2)+.10/std::pow(.22+std::max(0.,gap),2)+120.*contact*contact);
+      for(int a=std::max(0,b-3);a<=std::min(bins-1,b+3);++a){
+        const double rate=(yaw-theta(k-1,a))/ds;
+        const double total=previous[a]+cost+ds*1.5*rate*rate;
+        if(total<current[b]){current[b]=total;parent[k][b]=a;}
+      }
+    }
+    previous=current;
+  }
+  int b=mid;std::vector<double> profile(n+1);
+  for(int k=samples;k>=0;--k){
+    if(k%subdivisions==0)profile[k/subdivisions]=theta(k,b);
+    if(k)b=parent[k][b];
+  }
+  return profile;
 }
 }  // namespace hybrid_channel
