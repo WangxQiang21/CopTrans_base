@@ -1,6 +1,7 @@
 // Native soft-real-time integration bench. No DDS or simulation-time clock here.
 #include "fwis_control/tracking_core.hpp"
 #include "fwis_hybrid_joint/model.hpp"
+#include "../src/control_affinity.hpp"
 #include <atomic>
 #include <chrono>
 #include <cmath>
@@ -16,9 +17,16 @@ using Clock=steady_clock;
 struct Tick { long release, jitter, compute, submitted; bool valid; };
 long ns(Clock::duration d) { return duration_cast<nanoseconds>(d).count(); }
 int main(int argc,char** argv) {
-  if(argc!=4) { std::cerr<<"hybrid_deadlines VEHICLES SECONDS CSV\n"; return 2; }
+  if(argc<4) { std::cerr<<"hybrid_deadlines VEHICLES SECONDS CSV [WORKER_CPU ...]\n"; return 2; }
   const int cars=std::stoi(argv[1]), seconds=std::stoi(argv[2]);
   if((cars!=1 && cars!=3) || seconds<1 || seconds>3600) return 2;
+  if(argc!=4 && argc!=4+cars) return 2;
+  std::vector<int> worker_cpus(cars,-1);
+  for(int i=4;i<argc;++i) {
+    const int cpu=std::stoi(argv[i]);
+    if(cpu<0 || cpu>=CPU_SETSIZE) return 2;
+    worker_cpus[i-4]=cpu;
+  }
   const int ticks=seconds*25+1;
   hj::Request r;
   r.grid=std::make_shared<hj::GridSnapshot>(1200,120,.10,fwis_planning_core::Point2d{-5.,-5.},std::vector<uint8_t>(144000,0));
@@ -66,6 +74,7 @@ int main(int argc,char** argv) {
   std::vector<std::vector<Tick>> samples(cars,std::vector<Tick>(ticks));
   const auto epoch=Clock::now()+milliseconds(250);
   for(int v=0;v<cars;++v) workers.emplace_back([&,v]{
+    fc::bind_control_cpu(worker_cpus[v]);
     fc::Execution tracking(config,false);
     tracking.admit(plans[v],fc::Mode::Ackermann,1.);
     for(int k=0;k<ticks;++k){
@@ -93,7 +102,9 @@ int main(int argc,char** argv) {
     const auto& s=samples[v][k];
     file<<v+1<<','<<k<<','<<s.release<<','<<s.jitter<<','<<s.compute<<','<<s.submitted<<','<<s.valid<<'\n';
   }
-  std::cout<<"{\"completed_planner_requests\":"<<completed<<",\"certified_planner_requests\":"<<certified
+  std::cout<<"{\"worker_cpus\":[";
+  for(int v=0;v<cars;++v) std::cout<<(v?",":"")<<worker_cpus[v];
+  std::cout<<"],\"completed_planner_requests\":"<<completed<<",\"certified_planner_requests\":"<<certified
            <<",\"wall_s\":"<<duration<double>(Clock::now()-epoch).count()<<"}\n";
   return completed>0 && certified>0 && file.good()?0:6;
 }
