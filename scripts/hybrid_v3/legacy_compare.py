@@ -5,6 +5,7 @@ portfolio includes its native seed challenger. Only map/start/goal topics are
 published. The formation planner receives the same request in process.
 """
 import argparse
+import fcntl
 import json
 import math
 import os
@@ -150,7 +151,8 @@ class PreviousPortfolio:
             try:self.process.wait(timeout=8)
             except subprocess.TimeoutExpired:
                 os.killpg(self.process.pid,signal.SIGTERM); self.process.wait(timeout=5)
-        self.log.close();self.node.destroy_node();self.ros.shutdown()
+        self.log.close();self.node.destroy_node()
+        if self.ros.ok():self.ros.shutdown()
 
 
 def main():
@@ -159,6 +161,7 @@ def main():
     ap.add_argument("--profile",choices=["baseline","standard"],default="standard")
     ap.add_argument("--split",choices=["core","development","holdout"],default="holdout")
     ap.add_argument("--ids");ap.add_argument("--output",type=Path,required=True)
+    ap.add_argument("--resume",action="store_true",help="append only missing qualified requests after verifying existing request hashes")
     ap.add_argument("--timing",action="store_true",help="five warmups and thirty serial timed trials, C01 and C06")
     ap.add_argument("--cohort",type=int,default=0);ap.add_argument("--manifest",type=Path,default=REPORT/"case_manifest.json");a=ap.parse_args()
     from cases import MASTER_SEEDS
@@ -178,8 +181,21 @@ def main():
     source_sha=subprocess.check_output(["git","rev-parse","HEAD"],cwd=ROOT,text=True).strip()
     service=None
     try:
-        with a.output.open("x") as out:
+        with a.output.open("a+" if a.resume else "x+") as out:
+            fcntl.flock(out,fcntl.LOCK_EX|fcntl.LOCK_NB)
+            out.seek(0);completed=set()
+            for line in out:
+                prior=json.loads(line)
+                i=int(prior["case_id"].rsplit("/",1)[1])
+                actual,_,_=make(a.split,i,a.task,a.profile)
+                if (prior["profile"]!=a.profile or prior["task"]!=a.task or prior.get("cohort",0)!=a.cohort or
+                    prior["request_hash"]!=digest(actual)):
+                    raise ValueError("refusing to combine different legacy cohorts or configurations")
+                key=(i,prior.get("repeat",0))
+                if key in completed:raise ValueError("duplicate legacy result")
+                completed.add(key)
             for i,repeat in trials:
+                if (i,repeat) in completed:continue
                 r,_,meta=make(a.split,i,a.task,a.profile)
                 case_id=f"{a.split}/{a.task}/{i:03}"
                 if a.split=="holdout" and frozen.get(case_id)!=digest(r):

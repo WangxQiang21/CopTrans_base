@@ -10,8 +10,12 @@ class Coordinator final : public Inputs
 {
 public:
   Coordinator()
-  : Inputs("hybrid_joint_executor")
+  : Inputs("hybrid_joint_executor"),
+    release_margin_ns(std::llround(declare_parameter("release_margin_s", .20)*1e9))
   {
+    if(release_margin_ns <= 0 || release_margin_ns >= std::llround(settings.lead*1e9)) {
+      throw std::invalid_argument("release margin must fit strictly inside the configured future start window");
+    }
     permits = create_publisher<Permit>(permit_topic, 1);
     result = create_publisher<std_msgs::msg::String>("/hybrid_joint/admission", durable());
     readiness = create_publisher<std_msgs::msg::String>("/hybrid_joint/readiness", durable());
@@ -30,6 +34,7 @@ public:
   }
 
 private:
+  const int64_t release_margin_ns;
   rclcpp::Publisher<Permit>::SharedPtr permits;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr result, readiness;
   struct Proof {
@@ -169,7 +174,7 @@ private:
       }
       // Recompute the safety proof using the locally observed map, request and limits.
       auto deadline = hj::Clock::now() + std::chrono::milliseconds(
-        static_cast<int64_t>(std::clamp((ns(m.header.stamp) - now().nanoseconds()) * 1e-6 - 80., 0., 400.)));
+        static_cast<int64_t>(std::clamp((ns(m.header.stamp) - now().nanoseconds()) * 1e-6 - release_margin_ns*1e-6, 0., 400.)));
       collect_proofs();
       if (proofs.size() >= 2) throw std::runtime_error("previous_certificate_cancellation_pending");
       auto cancelled = std::make_shared<std::atomic_bool>(false);
@@ -245,7 +250,7 @@ private:
   {
     collect_proofs();
     const auto stamp = now().nanoseconds();
-    if (!key && early && stamp >= ns(early->header.stamp) - 80000000) {
+    if (!key && early && stamp >= ns(early->header.stamp) - release_margin_ns) {
       const auto id = early->plan_id;
       early.reset();
       failure(id,"request_missing_at_model_epoch");
@@ -253,7 +258,7 @@ private:
     if (!key || ended) return;
     const auto wall = hj::Clock::now();
     if (stamp < last_ros) {stop("clock_rollback");return;} last_ros = stamp;
-    if (!enabled && stamp >= ns(key->start)-80000000) {
+    if (!enabled && stamp >= ns(key->start)-release_margin_ns) {
       stop("admission_deadline");
       return;
     }

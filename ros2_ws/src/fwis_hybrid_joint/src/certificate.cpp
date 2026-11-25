@@ -464,9 +464,15 @@ Audit certify(const Request& r,const Plan& plan,Clock::time_point deadline,const
       for(std::size_t j=0;j<ph.pieces.size();++j) {
         const auto &p=ph.pieces[j];
         if(!finite_coeff(p.x)||!finite_coeff(p.y)||!finite_coeff(p.yaw)) return {false,"NONFINITE_COEFFICIENT",idx};
-        if ((ph.kind!=Kind::Motion || ph.mode==Mode::S) && (!constant(p.x)||!constant(p.y)))
+        // Stationary coordinates share a single authority over the entire
+        // phase. A succession of tiny, locally tolerated position changes
+        // would otherwise accumulate despite zero commanded body speed.
+        const auto &first=ph.pieces.front();
+        if ((ph.kind!=Kind::Motion || ph.mode==Mode::S) &&
+            (!constant(p.x)||!constant(p.y)||p.x.front()!=first.x.front()||p.y.front()!=first.y.front()))
           return {false,"STATIONARY_TRANSLATION",idx};
-        if ((ph.kind!=Kind::Motion || ph.mode!=Mode::A) && !constant(p.yaw))
+        if ((ph.kind!=Kind::Motion || ph.mode!=Mode::A) &&
+            (!constant(p.yaw)||p.yaw.front()!=first.yaw.front()))
           return {false,"STATIONARY_REFERENCE_YAW",idx};
         if (j) {
           const auto &q=ph.pieces[j-1];

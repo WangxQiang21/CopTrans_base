@@ -64,6 +64,7 @@ def make_nodes(context):
                    {"timing_limits": {**defaults["timing_limits"], **speed}})
         parameters = [vehicle, profile,
                       {"task": "single" if single else "formation", "lead_s": registry["formation"]["lead_s"],
+                       "release_margin_s": registry["formation"]["release_margin_s"],
                        "collision_margin": 0.04 if single else 0.05,
                        "cargo_footprint": cargo_footprint_parameters(cargo["size"], cargo["center_offset"])},
                       read_config(Path(config_arg)) if config_arg else {}, overrides, common]

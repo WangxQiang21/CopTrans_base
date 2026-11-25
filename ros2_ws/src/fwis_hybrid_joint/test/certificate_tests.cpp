@@ -134,6 +134,24 @@ TEST(HybridCertificate, CruisePlateauRampsAndUnrecognizedTimeLaw) {
   p.cruise_ramp_fraction=.10;
   EXPECT_EQ(h::certify(r,{{p}},h::Clock::now()+std::chrono::seconds(1)).reason,"UNKNOWN_TIME_LAW");
 }
+TEST(HybridCertificate, StationaryAndObliqueSpansCannotAccumulateUncommandedDrift) {
+  auto r=request(true);
+  auto still=stopped_at(r,straight());
+  still.kind=h::Kind::Hold;
+  for(int j=1;j<300;++j) {
+    auto piece=still.pieces.front();piece.x.fill(piece.x.front()+j*5e-9);
+    still.pieces.push_back(piece);
+  }
+  EXPECT_EQ(audit(r,{{still}}).reason,"STATIONARY_TRANSLATION");
+  auto o=straight(20.);
+  o.mode=h::Mode::O;
+  for(int j=0;j<2;++j) {
+    h::Piece part{line(3.+j,1.),line(3.,0.),line(j*5.e-9,0.)};
+    if(j==0)o.pieces.front()=part;else o.pieces.push_back(part);
+  }
+  auto prep=stopped_at(r,o);
+  EXPECT_EQ(audit(r,{{prep,o}}).reason,"STATIONARY_REFERENCE_YAW");
+}
 TEST(HybridCertificate, RequestEndpointsFreeYawAndCancellation) {
   auto r=request();
   auto p=straight();
