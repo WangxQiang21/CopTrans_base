@@ -197,6 +197,7 @@ Value run(const Value& input) {
   out["first_policy_compliant_s"]=solution.first_policy_compliant_s;
   out["trace"]=json_array(solution.trace);
   out["stage_times"]["seed_s"]=solution.seed_seconds;
+  out["stage_times"]["edit_s"]=solution.edit_seconds;
   out["stage_times"]["attempts"]=Value(Json::arrayValue);
   for(const auto& a:solution.attempts) {
     Value x;

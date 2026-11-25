@@ -95,7 +95,7 @@ struct Attempt {
   double nlp_build_s{},nlp_solve_s{},certify_s{},wall_s{};
 };
 struct Result {
-  double seed_seconds{};
+  double seed_seconds{}, edit_seconds{};
   std::vector<Attempt> attempts;
   std::optional<Plan> plan;
   std::string status, reason;

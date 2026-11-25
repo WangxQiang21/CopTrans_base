@@ -19,6 +19,8 @@ int main() {
       {0,1,4,bodies==3?-1:0,.2,-.1,.7,.45,-.8,.6,-4.},
       {0,0,2.37,0,0.,0.,.35,.25,.6,.8,0.,1,-.4,.7,.35,.25}};
     p.separations=features;p.sep_count=bodies==3?3:2;
+    HJCurvatureStation curvature[]={ {0,0,.437}, {0,1,.81} };
+    p.curvature_stations=curvature;p.curvature_station_count=2;
     p.general_chart=bodies==3;p.terminal_heading_window=bodies==3?.015:0.;
     p.offset[1][0]=-.4;p.offset[1][1]=.7;p.offset[2][0]=-.4;p.offset[2][1]=-.7;
     p.fixed_goal[0]=1;

@@ -510,6 +510,11 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
     const Seed seed=seeds[ordinal]; // appending child proposals may reallocate the queue
     auto propose=[&](std::size_t at,bool accepted){
       if(!opts.enable_edits || seed.seq.empty() || run.stop())return;
+      const auto edit_start=Clock::now();
+      struct EditTimer {
+        double& total;Clock::time_point start;
+        ~EditTimer(){total+=std::chrono::duration<double>(Clock::now()-start).count();}
+      } timer{result.edit_seconds,edit_start};
       at=std::min(at,seed.seq.size()-1);
       auto child=[&](Sequence sequence,const char* operation,int reverse=-1,bool first=false){
         if(sequence.empty() || sequence.size()>HJ_MAX_PHASES || (sequence==seed.seq && reverse==seed.reverse_from))return;
@@ -579,6 +584,7 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
       if(improving_aux)trial.end=std::min(trial.end,improve_until);
       auto graph=problem(r,seed,opts,trial);
       auto active=separators(r,graph,run);
+      std::vector<HJCurvatureStation> curvature_stations;
       graph.separations=active.data();graph.sep_count=active.size();
       char msg[512]{};
       bool solved=hj_optimize(&graph,msg,sizeof(msg));
@@ -607,13 +613,14 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
             break;
           }
           result.trace.push_back(tag+":CERTIFIED");
-          if(first || ranking.better_than(best)){result.plan=plan;best=ranking;result.first_policy_compliant_s=elapsed();}
+          if(first || ranking.better_than(best)){result.plan=plan;best=ranking;}
           break;
         }
         why=audit.reason;result.trace.push_back(tag+":"+why);
         if(audit.phase>=plan.phases.size() || plan.phases[audit.phase].kind!=Kind::Motion)break;
         failed_motion=std::count_if(plan.phases.begin(),plan.phases.begin()+audit.phase,
                                   [](const Phase& ph){return ph.kind==Kind::Motion;});
+        std::string refinement;
         if(why.find("OBB_COLLISION")!=std::string::npos && geometric_refinements<3 && !trial.stop()){
           // Use the position of the failed continuous proof, not just the
           // original collocation points. Preserve all earlier active planes.
@@ -630,17 +637,35 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
               if(std::none_of(active.begin(),active.end(),same))active.push_back(cut);
             }
           }
-          if(active.size()>before && !trial.stop()){
-            ++geometric_refinements;
-            result.trace.push_back(tag+":REFINE_WITNESS:"+std::to_string(failed_motion)+":"+std::to_string(audit.u0)+":"+std::to_string(audit.u1));
-            graph.separations=active.data();graph.sep_count=active.size();
-            graph.nlp_build_s=graph.nlp_solve_s=0.;
-            const bool converged=hj_optimize(&graph,msg,sizeof(msg));
-            metrics.nlp_build_s+=graph.nlp_build_s;metrics.nlp_solve_s+=graph.nlp_solve_s;
-            if(!converged){why=msg;result.trace.push_back(tag+":REFINEMENT_FAILED:"+why);break;}
-            plan=expand(r,graph);
-            continue;
+          if(active.size()>before)refinement="REFINE_WITNESS";
+        }else if(why=="ACKERMANN_CURVATURE" && geometric_refinements<3 && !trial.stop()){
+          // The audit returns the first unresolved interval. Constrain its midpoint
+          // and its neighboring collocation cell to cover a peak past that first crossing.
+          const int spans=graph.phase[failed_motion].spans;
+          const double station=.5*(audit.u0+audit.u1)*spans;
+          const int span=std::min(int(station),spans-1);
+          const double local=station-span;
+          const int nodes=graph.bodies==3 && spans>=3 ? 3:6;
+          const int cell=std::min(int(local*nodes),nodes-1);
+          for(double u:{local,(cell+.25)/nodes,(cell+.5)/nodes,(cell+.75)/nodes}){
+            auto already=[&](const auto& v){return v.phase==int(failed_motion) && v.span==span && std::abs(v.local-u)<1e-6;};
+            if(std::none_of(curvature_stations.begin(),curvature_stations.end(),already)){
+              curvature_stations.push_back({int(failed_motion),span,u});refinement="REFINE_CURVATURE";
+            }
           }
+        }
+        if(!refinement.empty() && !trial.stop()){
+          ++geometric_refinements;
+          result.trace.push_back(tag+":"+refinement+":"+std::to_string(failed_motion)+":"+std::to_string(audit.u0)+":"+std::to_string(audit.u1));
+          graph.separations=active.data();graph.sep_count=active.size();
+          graph.curvature_stations=curvature_stations.data();graph.curvature_station_count=curvature_stations.size();
+          graph.phase[failed_motion].tau=plan.phases[audit.phase].duration;
+          graph.nlp_build_s=graph.nlp_solve_s=0.;
+          const bool converged=hj_optimize(&graph,msg,sizeof(msg));
+          metrics.nlp_build_s+=graph.nlp_build_s;metrics.nlp_solve_s+=graph.nlp_solve_s;
+          if(!converged){why=msg;result.trace.push_back(tag+":REFINEMENT_FAILED:"+why);break;}
+          plan=expand(r,graph);
+          continue;
         }
         // The certificate distinguishes spatial violations from time-law violations.
         // Retiming preserves geometry, boundary rest and the authoritative mount identities.
@@ -660,6 +685,9 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
     result.status=unranked_incumbent || (run.stop() && best.auxiliary_blocks)?"FEASIBLE_POLICY_DEGRADED":"CERTIFIED_POLICY_COMPLIANT";
     result.reason=unranked_incumbent?"POLICY_EVALUATION_DEADLINE":!best.auxiliary_blocks?"PURE_A":locked_start||locked_goal?"ENDPOINT_CONFIGURATION":
       run.stop()?"A_SOLVE_TIMEOUT":"A_SEARCH_SPACE_EXHAUSTED";
+    // The synchronous solver and ROS adapter expose only the terminal policy
+    // decision. Earlier certified incumbents remain a separate diagnostic.
+    if(result.status=="CERTIFIED_POLICY_COMPLIANT")result.first_policy_compliant_s=elapsed();
   }
   else{result.status="NO_CERTIFIED_SOLUTION_WITHIN_BUDGET";result.reason=run.stop()?"A_SOLVE_TIMEOUT":why;}
   return result;

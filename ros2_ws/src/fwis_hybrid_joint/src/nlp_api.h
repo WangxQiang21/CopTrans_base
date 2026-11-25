@@ -13,8 +13,11 @@ struct HJSeparation {
   int other{-1};
   double other_x{},other_y{},other_half_length{},other_half_width{};
 };
+struct HJCurvatureStation {int phase,span; double local;};
 struct HJProblem {
   const HJSeparation *separations;
+  const HJCurvatureStation *curvature_stations;
+  int curvature_station_count;
   int sep_count, route_yaw_chart, general_chart;
   double terminal_heading_window;
   double nlp_build_s, nlp_solve_s;

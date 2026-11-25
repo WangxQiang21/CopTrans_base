@@ -351,6 +351,18 @@ void Problem::run(){
         }
       }
     }
+    for(int i=0;i<p.curvature_station_count;++i){
+      const auto& cut=p.curvature_stations[i];if(cut.phase!=k)continue;
+      // A moving formation shares F, but each independently oriented body
+      // has its own mount tangent, so a local shape repair constrains all of them.
+      for(int v=0;v<p.bodies;++v){
+        const auto [mx,my]=mount_jets(blocks[cut.span],cut.local,p.offset[v][0],p.offset[v][1]);
+        const SX den=mx[1]*mx[1]+my[1]*my[1]+1e-14;
+        constraint(den,1e-7,inf);
+        const SX cur=(mx[1]*my[2]-my[1]*mx[2])/(den*sqrt(den));
+        constraint(cur,-.98/p.radius,.98/p.radius);
+      }
+    }
     for(int i=0;i<p.sep_count;++i){
       const auto& plane=p.separations[i];if(plane.phase!=k)continue;
       const double at=plane.station/6.;

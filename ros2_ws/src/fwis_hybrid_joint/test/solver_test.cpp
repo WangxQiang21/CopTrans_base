@@ -43,8 +43,32 @@ TEST(NativeSolver,OneSharedClockWithOppositeMountHeadings){
 TEST(NativeSolver,CancellationAndStationaryGoal){
   auto r=request();auto stopped=hj::solve(r,deadline(),[]{return true;});
   EXPECT_FALSE(stopped.plan);EXPECT_EQ("CANCELLED",stopped.status);
+  EXPECT_EQ(0.,stopped.first_policy_compliant_s);
   r.goal=r.start;auto hold=hj::solve(r,deadline());ASSERT_TRUE(hold.plan)<<hold.reason;
   ASSERT_EQ(1u,hold.plan->phases.size());EXPECT_EQ(hj::Kind::Hold,hold.plan->phases.front().kind);
+  EXPECT_EQ(hold.first_certified_s,hold.first_policy_compliant_s);
+}
+TEST(NativeSolver,RecoversForwardAckermannAtTheLowSpeedCurvatureWitness){
+  auto r=request(true);
+  r.grid=std::make_shared<hj::GridSnapshot>(120,96,.25,fwis_planning_core::Point2d{0,0},
+                                            std::vector<std::uint8_t>(120*96));
+  r.start.reference={4.,5.6,0.};
+  r.goal.reference={5.522379369389306,5.948435141765629,.45};
+  r.goal.heading.fill(.45);r.goal.constrain_heading.fill(false);
+  r.cargo=hj::Footprint{.5,0.,2.05,2.80};
+  auto& limits=r.limits;
+  limits.speed=.16;limits.acceleration=.22;limits.lateral_acceleration=.6;
+  limits.yaw_rate=limits.spin_speed=.4;limits.yaw_acceleration=limits.spin_acceleration=.45;
+  limits.yaw_jerk=3.;limits.wheel_speed=1.;
+  auto result=hj::solve(r,deadline());ASSERT_TRUE(result.plan)<<result.reason;
+  ASSERT_TRUE(hj::certify(r,*result.plan,deadline()).executable);
+  bool repaired=false;
+  for(const auto& line:result.trace)repaired|=line.find("CONTINUOUS_A:A:1:REFINE_CURVATURE:")==0;
+  EXPECT_TRUE(repaired);
+  for(const auto& phase:result.plan->phases)if(phase.kind==hj::Kind::Motion){
+    EXPECT_EQ(phase.mode,hj::Mode::A);EXPECT_EQ(phase.gear,(hj::Gears{1,1,1}));
+  }
+  EXPECT_GE(result.first_policy_compliant_s,result.first_certified_s);
 }
 TEST(NativeSolver,NearRankTerminalAngleAndNecessaryAuxiliaryTrackOriginalContract){
   auto r=request(true);
@@ -63,6 +87,8 @@ TEST(NativeSolver,NearRankTerminalAngleAndNecessaryAuxiliaryTrackOriginalContrac
   EXPECT_TRUE(hj::certify(r,*auxiliary.plan,deadline()).executable);
   EXPECT_TRUE(std::any_of(auxiliary.plan->phases.begin(),auxiliary.plan->phases.end(),[](auto& p){
     return p.kind==hj::Kind::Motion && p.mode!=hj::Mode::A;}));
+  EXPECT_GT(auxiliary.edit_seconds,0.);
+  EXPECT_GT(auxiliary.first_policy_compliant_s,auxiliary.first_certified_s);
 }
 TEST(NativeSolver,RefinesAnInteriorObstacleAtTheContinuousWitness){
   auto r=request();
@@ -76,6 +102,7 @@ TEST(NativeSolver,RefinesAnInteriorObstacleAtTheContinuousWitness){
   hj::SolveOptions options;options.initial_sequence={hj::Mode::A};options.enable_edits=false;
   auto result=hj::solve(r,deadline(),{},options);
   ASSERT_TRUE(result.plan)<<result.reason;
+  EXPECT_EQ(0.,result.edit_seconds);
   ASSERT_TRUE(hj::certify(r,*result.plan,deadline()).executable);
   auto found=[&](const std::string& part){
     return std::find_if(result.trace.begin(),result.trace.end(),[&](auto& line){return line.find(part)!=std::string::npos;});};
