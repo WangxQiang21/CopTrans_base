@@ -16,7 +16,9 @@ sys.path.insert(0,str(Path(__file__).resolve().parent/"hybrid_v3"))
 from qualify import (LOCAL,NUMERIC,POLICY,PROFILES,REGISTRY,REPORT,ROOT,SPEC,TASKS,closed_rows,
                      archived_comparisons,collect,digest,lines,load,quant,setup_metrics,sha,xml_cases)
 from cases import indices
-from evidence_manifest import build_manifest, audit_rows, system_hashes, runtime_binaries, recorder_revision, RANKING_SOURCE
+from route_evidence import (HISTORICAL, RELEASE_FAMILIES, historical_offline, historical_pairs, matrix,
+                            measured_completion, pair, route_is_bound)
+from evidence_manifest import build_manifest, audit_rows, system_hashes, runtime_binaries, recorder_revision, solver_system_compatibility, same_solver, RANKING_SOURCE, observed_runtime_sources, runtime_sources_match, current_sources_match
 
 
 def write(path,obj):
@@ -25,21 +27,24 @@ def write(path,obj):
 
 def main():
     release="c6"
+    system_release="c7"
     cohort="c3"
     ap=argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--batch",type=Path,default=LOCAL/f"release_{release}")
-    ap.add_argument("--control",type=Path,default=LOCAL/f"control_605_{release}")
-    ap.add_argument("--gazebo",type=Path,default=LOCAL/f"gazebo_release_{release}")
-    ap.add_argument("--headless",type=Path,default=LOCAL/f"gazebo_headless_{release}")
+    ap.add_argument("--control",type=Path,default=LOCAL/f"control_605_{system_release}")
+    ap.add_argument("--gazebo",type=Path,default=LOCAL/f"gazebo_release_{system_release}")
+    ap.add_argument("--headless",type=Path,default=LOCAL/f"gazebo_headless_{system_release}")
     ap.add_argument("--legacy",type=Path,default=NUMERIC/f"legacy_{cohort}",help="paired previous-backend results for this cohort")
     ap.add_argument("--numeric",type=Path,default=NUMERIC/release)
-    ap.add_argument("--ros",type=Path,default=LOCAL/f"group_{release}")
+    ap.add_argument("--ros",type=Path,default=LOCAL/f"group_{system_release}")
     ap.add_argument("--witness",type=Path,default=LOCAL/f"witness_final_{release}")
-    ap.add_argument("--system",type=Path,default=LOCAL/f"system_{release}",help="qualified ROS snapshot")
+    ap.add_argument("--system",type=Path,default=LOCAL/f"system_{system_release}_long",help="qualified ROS snapshot")
     ap.add_argument("--native",type=Path,default=LOCAL/f"native_{release}")
     ap.add_argument("--binary",type=Path,default=LOCAL/f"binary_{release}")
     ap.add_argument("--ctest",type=Path,default=LOCAL/f"release_{release}"/"ctest")
-    ap.add_argument("--recorder",type=Path,default=LOCAL/f"recorder_stop_{release}"/"receipt.json")
+    ap.add_argument("--recorder",type=Path,default=LOCAL/f"recorder_stop_{system_release}"/"receipt.json")
+    ap.add_argument("--historical",type=Path,default=LOCAL/"historical_ros_c6"/"summary.json")
+    ap.add_argument("--prior-gazebo",type=Path,default=LOCAL/"gazebo_release_c6",help="separate short-route regression index")
     ap.add_argument("--report",type=Path,default=REPORT)
     ap.add_argument("--compact",action="store_true",help="re-evaluate from the checked-in measurements")
     args=ap.parse_args();out=args.report;out.mkdir(exist_ok=True,parents=True)
@@ -73,6 +78,10 @@ def main():
                   inputs_sha256={str(p.relative_to(ROOT)):sha(p) for p in [SPEC,REGISTRY,ROOT/RANKING_SOURCE,casefile,REPORT/"case_manifest_baseline.json"] if p.exists()},
                   default_runs=load(args.batch/"default_runs.json"),source_manifest=build_manifest(args.batch,args.witness,args.binary,args.ctest))
         data["paired_closed_loop"]=archived_comparisons(data["gazebo"],data["default_runs"])
+        data["historical_closed_loop"]=historical_pairs(data["gazebo"]+data["headless"],ROOT/"reports/runs")
+        data["historical_offline"]=historical_offline(args.historical)
+        data["short_regression"]=[{**{k:r.get(k) for k in ("run_id","task","profile","family","trial","status","reason","source_commit")},
+                                   "metadata_sha256":sha(f)} for f in sorted(args.prior_gazebo.glob("*/metadata.json")) if (r:=load(f))]
         system_identity=args.system/"source_commit"
         system_commit=system_identity.read_text().strip() if system_identity.is_file() else None
         if data.get("default_runs"):
@@ -91,6 +100,10 @@ def main():
         data["source_manifest"]["system_source_sha256"]=system_hashes(system_commit)
         data["source_manifest"]["system_release_tests"]=xml_cases(args.system/"ctest")
         data["source_manifest"]["runtime_binaries"]=runtime_binaries(args.system)
+        data["source_manifest"]["solver_system_compatibility"]=solver_system_compatibility(data["source_manifest"])
+        data["source_manifest"]["observed_runtime_sources"]=observed_runtime_sources(args.system,args.ros,args.control)
+        data["source_manifest"]["closed_loop_raw"]={r["run_id"]:{"campaign":r["campaign"],"archive":r["route"]["source_hashes"],
+                                                    "instrumentation":r["evidence_files"]} for r in data["gazebo"]+data["headless"]}
         data["source_manifest"]["recorder_revision"]=recorder_revision(args.recorder)
         data["source_manifest"]["system_snapshot"]=str(args.system.resolve())
         write(out/"measurements.json",data)
@@ -219,7 +232,7 @@ def main():
            {k:v["holdout"] for k,v in sets.items()})
     record("PLANNING_LATENCY",have_latency,timed_ok,latencies)
     control=data["control"];four=set(control)=={"1/1","3/1","3/2","3/3"}
-    count_ok=four and all(r["wall_s"]>=600 and r["valid"]==r["ticks"] and r["valid"]>=15000 and r["consecutive"]
+    count_ok=four and runtime_sources_match(data["source_manifest"],control,"load") and all(r["wall_s"]>=600 and r["valid"]==r["ticks"] and r["valid"]>=15000 and r["consecutive"]
                           and r["completed_planner_requests"]>0 and r["certified_planner_requests"]>0 for r in control.values())
     record("CONTROLLER_COMPUTE",bool(control),count_ok and all(r["p99_compute_ms"]<=.5 and r["max_compute_ms"]<=1.
            and r["max_callback_ms"]<=5 for r in control.values()),control)
@@ -227,63 +240,87 @@ def main():
     fixture_ok=all({r["fault"]:r["phase"] for r in (data["group_fixtures"].get(t) or [])} .items() >=
                    {"success":"COMPLETE","tamper":"STOPPED","missing_member":"STOPPED","stale_feedback":"STOPPED"}.items() for t in TASKS)
     extras=data["native_faults"] or {}
+    fixture_ok=fixture_ok and runtime_sources_match(data["source_manifest"],control,"dds")
     record("CONTROLLER_PARITY_FAULTS",bool(code_tests and fixture_ok),fixture_ok and code_tests.get("tracking_cpp_parity") and
            extras.get("invalid_numeric_commands")==0 and all(extras.get(k) for k in ("old_epoch_rejected","clock_rollback_stopped","late_permit_stopped")),
            dict(groups=data["group_fixtures"],extra=extras))
-    gaz=data["gazebo"];summary={};enough=True
+    gaz=data["gazebo"];headless=data.get("headless") or []
+    history=data.get("historical_closed_loop") or {}
+    refs=history.get("references",{})
+    recalculated=[pair(r,refs.get(r["family"])) for r in gaz+headless if r["family"] in HISTORICAL]
+    offline=data.get('historical_offline') or {}
+    offline_cases={(r['archive_id'],r['task'],r['profile']):r for r in offline.get('cases',[])}
+    offline_complete=all((id,t,p) in offline_cases for id in HISTORICAL.values() for t in TASKS for p in PROFILES)
+    def offline_matches(r):
+        item=offline_cases.get((r['source_run_id'],r['task'],r['profile']),{})
+        return (item.get('map_sha256')==refs[r['family']]['signature']['map_sha256'] and
+                item.get('start')==refs[r['family']]['signature']['start'] and item.get('goal')==refs[r['family']]['signature']['goal']
+                and bool(item.get('ros_contract_sha256')) and
+                (r['authority_request_sha256']==item['ros_contract_sha256'] or
+                 (not r['authority_request_sha256'] and r['status']!='passed')))
+    history_by_id={r["run_id"]:r for r in recalculated}
+    historical_ok=(recalculated==history.get("trials") and set(refs)==set(HISTORICAL) and
+                   all(r["route_matches_archive"] and offline_matches(r) for r in recalculated) and offline_complete)
+    summary={};enough=matrix(gaz,True) and historical_ok
+    def closed_ok(r):
+        t=r["task"]
+        count=1 if t=="single" else 3
+        ids=list(range(1,count+1))
+        met=r["metrics"] or {};vs=met.get("vehicles",{})
+        fault=r["fault"] or {}
+        stages=(r.get("publication_event") or {}).get("planning_stages",{})
+        policy_ok=stages.get("policy_status")=="CERTIFIED_POLICY_COMPLIANT"
+        if r["family"]=="fault":
+            good=(r["status"]=="stopped" and r["reason"]=="external_stop" and fault.get("triggered") and fault.get("moved")==ids and
+                  len(fault.get("first_zero_after_s",{}))==count and not any(fault.get("last",{}).values()))
+        else:
+            keys=set(tuple(k) for k in (r["routed_plan_keys"] or {}).values())
+            authentic=any(a.get("model_sha256")==r["model_sha256"] and (a.get("plan_id"),a.get("start_ns")) in keys
+                          for a in r["admissions"])
+            group_geometry=(t=="single" or
+                            met.get("min_vehicle_footprint_gap_m",-1)>0 and met.get("max_mount_error_m",1)<=.10 and
+                            met.get("terminal_formation_position_error_m",1)<=.10 and met.get("terminal_formation_yaw_error_deg",180)<=math.degrees(.10))
+            good=(r["status"]=="passed" and r["tracking_implementation"]=="cpp" and r["planner_source"]=="hybrid_joint" and authentic and r["plan_received"] and r["admitted"]==r["complete"]==ids and
+                  bool(r["admissions"]) and len(keys)==1 and
+                  len(vs)==count and all(v["terminal_position_error_m"]<=.10 and v["terminal_yaw_error_deg"]<=math.degrees(.1) for v in vs.values()) and
+                  group_geometry and bool(met.get("min_environment_clearance")) and
+                  all(v["m"]>0 for v in met["min_environment_clearance"].values()))
+        if r["family"] in ("multibend","necessary_aux"):
+            good=good and r.get("scene_measurements",{}).get("passed") and bool(r.get("scene_proof"))
+        if r['family'] in HISTORICAL:
+            good=good and history_by_id[r['run_id']]['route_matches_archive']
+        return bool(good and policy_ok and route_is_bound(r) and
+                    (r['family']=='fault' or measured_completion(r['route'])))
     for t in TASKS:
         for p in PROFILES:
-            subset_g=[r for r in gaz if r["task"]==t and r["profile"]==p]
             results=collections.defaultdict(list)
-            for r in subset_g:
-                count=1 if t=="single" else 3
-                ids=list(range(1,count+1))
-                met=r["metrics"] or {};vs=met.get("vehicles",{})
-                fault=r["fault"] or {}
-                stages=(r.get("publication_event") or {}).get("planning_stages",{})
-                policy_ok=stages.get("policy_status")=="CERTIFIED_POLICY_COMPLIANT"
-                if r["family"]=="fault":
-                    good=(r["status"]=="stopped" and r["reason"]=="external_stop" and fault.get("triggered") and fault.get("moved")==ids and
-                          len(fault.get("first_zero_after_s",{}))==count and not any(fault.get("last",{}).values()))
-                else:
-                    keys=set(tuple(k) for k in (r["routed_plan_keys"] or {}).values())
-                    authentic=any(a.get("model_sha256")==r["model_sha256"] and (a.get("plan_id"),a.get("start_ns")) in keys
-                                  for a in r["admissions"])
-                    group_geometry=(t=="single" or
-                                    met.get("min_vehicle_footprint_gap_m",-1)>0 and met.get("max_mount_error_m",1)<=.10 and
-                                    met.get("terminal_formation_position_error_m",1)<=.10 and met.get("terminal_formation_yaw_error_deg",180)<=math.degrees(.10))
-                    good=(r["status"]=="passed" and r["tracking_implementation"]=="cpp" and r["planner_source"]=="hybrid_joint" and authentic and r["plan_received"] and r["admitted"]==r["complete"]==ids and
-                          bool(r["admissions"]) and len(keys)==1 and
-                          len(vs)==count and all(v["terminal_position_error_m"]<=.10 and v["terminal_yaw_error_deg"]<=math.degrees(.1) for v in vs.values()) and
-                          group_geometry and bool(met.get("min_environment_clearance")) and
-                          all(v["m"]>0 for v in met["min_environment_clearance"].values()))
-                if r["family"] in ("multibend","necessary_aux"):
-                    good=good and r.get("scene_measurements",{}).get("passed") and bool(r.get("scene_proof"))
-                results[r["family"]].append((r["trial"],bool(good and policy_ok and r["gui"])))
-            summary[t+"/"+p]={f:[sum(ok for _,ok in v),len(v)] for f,v in results.items()}
-            good={f for f,v in results.items() if len({trial for trial,_ in v})==len(v)>=3 and all(ok for _,ok in v)}
-            enough &=len(good)>=8 and {"fault","long","multibend","necessary_aux"}<=good
-    headless=data.get("headless") or []
-    headless_tasks={r["task"] for r in headless if not r.get("gui",True) and r["status"]=="passed" and r["planner_source"]=="hybrid_joint" and r["admissions"]
-                    and r.get("publication_event",{}).get("planning_stages",{}).get("policy_status")=="CERTIFIED_POLICY_COMPLIANT"}
-    summary["headless_completed_tasks"]=sorted(headless_tasks)
-    record("CLOSED_LOOP",bool(gaz),enough and headless_tasks==set(TASKS),summary)
+            for r in gaz:
+                if (r['task'],r['profile'])==(t,p):
+                    results[r['family']].append(closed_ok(r))
+            summary[t+'/'+p]={f:[sum(v),len(v)] for f,v in results.items()}
+            enough &= all(all(results[f]) for f in RELEASE_FAMILIES)
+    headless_ok=matrix(headless,False) and all(closed_ok(r) for r in headless)
+    summary.update(required_gui_families=RELEASE_FAMILIES,historical_inputs_verified=historical_ok,
+                   expected_gui=96,archived_gui=len(gaz),expected_headless=4,archived_headless=len(headless),
+                   headless_complete=headless_ok)
+    record("CLOSED_LOOP",bool(gaz),enough and headless_ok,summary)
     clocks=[c for r in gaz+headless for c in r["clocks"]]
     complete_clocks=all({c.get("vehicle") for c in r["clocks"]}==
                         ({"robot1"} if r["task"]=="single" else {"robot1","robot2","robot3"})
                         for r in gaz+headless)
-    record("GAZEBO_CLOCK_SCOPE",bool(clocks),enough and complete_clocks and all(c["ros_misses"]==0 and c["stale_motion"]==0 and
+    record("GAZEBO_CLOCK_SCOPE",bool(clocks),enough and headless_ok and complete_clocks and all(c["ros_misses"]==0 and c["stale_motion"]==0 and
            c["max_callback_ms"]<=5 and c["real_time_factor"] is not None and c["matched_commands"]>0 for c in clocks),
            dict(samples=len(clocks),stale_motion=sum(c["stale_motion"] for c in clocks),ros_misses=sum(c["ros_misses"] for c in clocks),
                 matched_commands=sum(c["matched_commands"] for c in clocks),max_callback_ms=max([c["max_callback_ms"] for c in clocks],default=None)))
     admission=data["admission"] or {}
     delays_ok=all(len(admission.get(t+"/"+p,[]))>=30 and quant(admission[t+"/"+p],.95)<=ceiling for t,ceiling in
                   (("single",.2),("formation",.4)) for p in PROFILES)
-    record("DELIVERY_AND_ADMISSION",bool(admission),delays_ok,{k:dict(samples=len(v),p95=quant(v,.95)) for k,v in admission.items()})
+    record("DELIVERY_AND_ADMISSION",bool(admission),delays_ok and runtime_sources_match(data["source_manifest"],control,"dds"),{k:dict(samples=len(v),p95=quant(v,.95)) for k,v in admission.items()})
     default=data["software_defaults"];smoke=data["default_runs"] or []
     defaults_ok=default["planners"]==dict(single="hybrid_joint",multi="hybrid_joint") and default["tracking_implementation"]=="cpp"
-    record("DEFAULT_INTEGRATION",True,defaults_ok and {r["entry"] for r in smoke if r["status"]=="passed" and r["native"]}=={"single","multi","interactive"},
-           dict(test_default=default["planners"],tracker=default["tracking_implementation"],runs=smoke))
+    checkout_matches=current_sources_match(data["source_manifest"])
+    record("DEFAULT_INTEGRATION",True,checkout_matches and defaults_ok and {r["entry"] for r in smoke if r["status"]=="passed" and r["native"]}=={"single","multi","interactive"},
+           dict(test_default=default["planners"],tracker=default["tracking_implementation"],current_source_matches=checkout_matches,runs=smoke))
     hashes=data["inputs_sha256"];manifest=data["source_manifest"]
     provenance=audit_rows(rows,witness,{p:REPORT/("case_manifest.json" if p=="standard" else "case_manifest_baseline.json") for p in PROFILES},manifest)
     evidence_manifest=load(out/"manifest.json") or {}
@@ -294,9 +331,17 @@ def main():
     runtime_provenance=bool(runtime_files) and all(
         r.get("installed_binaries")==runtime_files and r.get("source_commit")==manifest["system_commit"]
         for r in gaz+headless)
-    integrity=runtime_provenance and compact_integrity and has_scalars and all((ROOT/p).exists() and sha(ROOT/p)==v for p,v in hashes.items()) and len(hashes)>=3
+    offline_provenance=(offline.get('source_commit')==manifest.get('binary_commit') and
+                        offline.get('library_sha256') in (manifest.get('solver_system_compatibility') or {}).get('solver_libraries',[]) and
+                        offline.get('binary_sha256') in manifest['binary_sha256'].values())
+    raw_index=manifest.get("closed_loop_raw",{})
+    raw_bound=bool(gaz) and len(raw_index)==len(gaz+headless) and all(
+        raw_index.get(r['run_id'])=={'campaign':r.get('campaign'),'archive':(r.get('route') or {}).get('source_hashes'),
+                                      'instrumentation':r.get('evidence_files')} for r in gaz+headless)
+    integrity=runtime_provenance and raw_bound and offline_provenance and same_solver(manifest) and compact_integrity and has_scalars and all((ROOT/p).exists() and sha(ROOT/p)==v for p,v in hashes.items()) and len(hashes)>=3
     record("REPRODUCIBLE_EVIDENCE",True,provenance["verified"] and integrity and bool(rows) and all(
-           c["status"]=="PASS" for k,c in checks.items() if k!="DEFAULT_INTEGRATION"),dict(input_hashes=hashes,source_commit=(manifest or {}).get("binary_commit"),provenance=provenance))
+           c["status"]=="PASS" for k,c in checks.items() if k!="DEFAULT_INTEGRATION"),dict(input_hashes=hashes,source_commit=(manifest or {}).get("binary_commit"),provenance=provenance,system_commit=manifest.get("system_commit"),
+           solver_system_compatibility=manifest.get("solver_system_compatibility"),closed_loop_raw_bound=raw_bound))
     if set(checks)!=set(cfg):raise ValueError("gate coverage differs from frozen specification")
     completed=all(g["status"]=="PASS" for g in checks.values())
     final={"schema":spec["schema"],"task_state":"COMPLETED" if completed else "INCOMPLETE","hardware":"HARDWARE_NOT_VERIFIED",

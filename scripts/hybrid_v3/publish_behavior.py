@@ -8,7 +8,9 @@ from pathlib import Path
 
 import numpy as np
 
-from cases import indices
+from cases import indices, LOCAL, ROOT
+from route_evidence import matrix, read_route, HISTORICAL, pair
+from evidence_manifest import runtime_binaries
 
 
 def sha(path):
@@ -144,22 +146,47 @@ def release(native_path, scene_dir):
 
 def readme_paragraph(report):
     c = report["coverage"]
-    return (f"按冻结轨迹重算了 {c['native_rows']} 条原生实验及 {c['scene_rows']} 个场景请求。"
+    text = (f"按冻结轨迹重算了 {c['native_rows']} 条原生实验及 {c['scene_rows']} 个场景请求。"
             f"已知纯 Ackermann 可行的留出任务中，{c['known_A_holdout_pure_A_success']}/{c['known_A_holdout_requests']} 个请求"
-            f"返回通过独立认证的纯 Ackermann 计划。原生各组共检出 {c['native_internal_stop_events']} 次 A 段内部停车。"
-            "逐组的辅助段位置、曲率跳变和各轮转角峰值见 [behavior.json](behavior.json)。")
+            f"返回通过独立认证的纯 Ackermann 计划。原生各组共检出 {c['native_internal_stop_events']} 次 A 段内部停车。")
+    if "gazebo_gui" in report:
+        gui,headless = report["gazebo_gui"],report["gazebo_headless"]
+        text += (f"已核对 {gui['runs']} 轮双 GUI 与 {headless['runs']} 轮无 GUI 实验，"
+                 f"按各自原生时钟记录分别发现 {gui['ros_time_misses']} 和 {headless['ros_time_misses']} 次仿真时钟误期。")
+    return text+"逐组的辅助段位置、曲率跳变和各轮转角峰值见 [behavior.json](behavior.json)。"
 
 
-def add_gazebo(report, path):
+def add_gazebo(report, path, clocks, system, *, gui=True):
     rows = read(path)["cases"]
-    families = ("straight","bend","lane_change","reverse","long","multibend","necessary_aux","fault")
-    expected = {(f,t,p,i) for f in families for t in ("single","formation")
-                for p in ("standard","baseline") for i in range(3)}
-    keys = {(r["family"],r["task"],r["profile"],r["trial"]) for r in rows}
-    if not expected.issubset(keys) or len({r["run_id"] for r in rows})!=len(rows):
-        raise ValueError(f"Final Gazebo publication still missing {len(expected-keys)} required independent trials")
-    if any(r["gui"] is not True or r["source_commit"]!=report["source_commit"] for r in rows):
-        raise ValueError("Final Gazebo evidence must use the same frozen build with both GUIs")
+    if not matrix(rows,gui):
+        raise ValueError("Gazebo publication requires every named family and exact trial once, with all failures retained")
+    system_sha=(system/"source_commit").read_text().strip()
+    binaries=runtime_binaries(system)
+    libs={h for name,h in binaries.items() if Path(name).name=="libfwis_hybrid_joint.so"}
+    if len(binaries)!=5 or libs!={report["library_sha256"]}:
+        raise ValueError("The system snapshot must contain the frozen native solver")
+    campaign, = {r["qualification_group"] for r in rows}
+    refs={name:read_route(ROOT/"reports/runs"/i) for name,i in HISTORICAL.items()}
+    for row in rows:
+        meta=read(LOCAL/campaign/row["run_id"]/"metadata.json")
+        if meta["source_commit"]!=system_sha or meta["installed_binaries"]!=binaries or row["gui"]!=gui:
+            raise ValueError("Gazebo experiment belongs to another system snapshot: "+row["run_id"])
+        route=read_route(ROOT/meta["archive"])
+        if (not route["exact_archive"] or route["status"]!=row["status"] or route["run_id"]!=row["run_id"] or
+                route["model_sha256"]!=row.get("plan_sha256")):
+            raise ValueError("Gazebo experiment archive mismatch: "+row["run_id"])
+        row["route"]=route
+        if row["family"] in HISTORICAL:
+            compared=pair({**row,"historical":meta.get("historical")},refs[row["family"]])
+            if not compared["route_matches_archive"]:
+                raise ValueError("Gazebo historical request differs: "+row["run_id"])
+            row["historical_pair"]=compared
+    audited = {r["id"]:r for k,r in clocks.items() if k.startswith(campaign+"/")}
+    if audited.keys()!={r["run_id"] for r in rows}:
+        raise ValueError(f"Native clock review and {campaign} have different experiment IDs")
+    for run in rows:
+        if any(run[k]!=audited[run["run_id"]][k] for k in ("status","gui","family","trial","profile","task")):
+            raise ValueError(f"Native clock review differs at {run['run_id']}")
     grouped = defaultdict(list)
     for row in rows:
         grouped["/".join((row["task"],row["profile"],row["family"]))].append(row)
@@ -175,6 +202,9 @@ def add_gazebo(report, path):
         odoms = [r["wheel_odometry"] for r in group if r.get("wheel_odometry")]
         models = [r["metrics"] for r in group if r.get("metrics")]
         outputs[key] = dict(runs=len(group),run_ids=[r["run_id"] for r in group],status_counts=Counter(r["status"] for r in group),
+            request_chord_m=[r["route"]["chord_m"] for r in group],measured_arc_m=[r["route"]["motion"]["arc_m"] for r in group],
+            sampled_mode_switches_by_vehicle=[r["route"]["motion"]["sampled_feedback_switches"] for r in group],
+            historical_pairs=[r["historical_pair"] for r in group if "historical_pair" in r],
             delivered_authorities=len(models), normalized_plan_modes=Counter(m["normalized_modes"] for m in models),
             plan_wheel_peak_rad=wheelmax(m["plan_peak_abs_wheel_angle_rad"] for m in models),
             odom_implied_wheel_peak_rad=wheelmax(o["odom_implied_peak_abs_wheel_angle_rad"] for o in odoms),
@@ -182,11 +212,19 @@ def add_gazebo(report, path):
                 w["implied_peak_abs_wheel_angle_rad"] if w else None for w in o["applied_twist_by_vehicle"]] for o in odoms),
             odometry_runs=len(odoms),max_odom_sample_gap_s=extrema((o["max_odom_sample_gap_s"] for o in odoms),max),
             max_body_terminal_error_m=extrema((v for g in poses for v in g["terminal_position_error_m_by_vehicle"].values()),max),
+            max_body_terminal_yaw_error_deg=extrema((v for g in poses for v in g["terminal_yaw_error_deg_by_vehicle"].values()),max),
+            max_reference_terminal_error_m=extrema((g["terminal_reference_position_error_m"] for g in poses),max),
+            max_reference_terminal_yaw_error_deg=extrema((g["terminal_reference_yaw_error_deg"] for g in poses),max),
             max_mount_error_m=extrema((g["max_mount_error_m"] for g in poses),max),
             min_body_gap_m=extrema((g["min_body_gap_m"] for g in poses),min),
             min_environment_clearance_m=extrema((v for g in poses for v in g["min_environment_clearance_m"].values()),min))
-    report["gazebo"] = dict(raw_behavior_sha256=sha(path), runs=len(rows), required_unique_trials=len(expected),
-                            wheel_angle_sensor_samples=0,groups=outputs)
+    group = "gazebo_gui" if gui else "gazebo_headless"
+    report[group] = dict(raw_behavior_sha256=sha(path), runs=len(rows), required_unique_trials=96 if gui else 4,system_commit=system_sha,library_sha256=report["library_sha256"],
+                         campaign=campaign, clock_row_sha256=hashlib.sha256(json.dumps(audited,sort_keys=True,separators=(",",":")).encode()).hexdigest(),
+                         ros_time_misses=sum(r["ros_misses"] for r in audited.values()),
+                         stale_motion=sum(r["stale_motion"] for r in audited.values()),
+                         independent_clock_flags=Counter(flag for r in audited.values() for flag in r["flags"]),
+                         wheel_angle_sensor_samples=0,groups=outputs)
 
 
 def main():
@@ -195,10 +233,17 @@ def main():
     p.add_argument("--scenes",type=Path,required=True, help="scene receipts and recomputed behavior.json")
     p.add_argument("--output",type=Path,required=True)
     p.add_argument("--gazebo",type=Path,help="behavior_metrics --gazebo-batch output after all GUI matrix trials")
+    p.add_argument("--headless",type=Path,help="behavior_metrics output for the separate four headless trials")
+    p.add_argument("--system",type=Path,default=LOCAL/"system_c7_long",help="clean system snapshot used for all Gazebo trials")
+    p.add_argument("--clock-receipts",type=Path,help="independent native-clock receipt index for both simulation scopes")
     a=p.parse_args()
     report=release(a.native,a.scenes)
-    if a.gazebo:
-        add_gazebo(report,a.gazebo)
+    if a.gazebo or a.headless:
+        if not (a.gazebo and a.headless and a.clock_receipts):
+            p.error("final simulation publication requires --gazebo, --headless and --clock-receipts")
+        clocks = read(a.clock_receipts)
+        add_gazebo(report,a.gazebo,clocks,a.system,gui=True)
+        add_gazebo(report,a.headless,clocks,a.system,gui=False)
     a.output.write_text(json.dumps(report,separators=(",",":"),sort_keys=True,allow_nan=False)+"\n")
     print(readme_paragraph(report))
 

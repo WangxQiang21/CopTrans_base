@@ -1,5 +1,6 @@
 """Identify the immutable machine runs behind the compact qualification results."""
 import re
+import hashlib
 from pathlib import Path
 
 import subprocess
@@ -22,6 +23,23 @@ def read_hash_file(path):
     return result
 
 
+def matches_source(name,expected,commit):
+    local=ROOT/name
+    if local.is_file() and sha(local)==expected:
+        return True
+    if not commit:
+        return False
+    obj=subprocess.run(["git","show",commit+":"+name],cwd=ROOT,capture_output=True)
+    return obj.returncode==0 and hashlib.sha256(obj.stdout).hexdigest()==expected
+
+
+def current_sources_match(manifest):
+    sources=manifest.get("source_sha256",{}) | manifest.get("system_source_sha256",{})
+    if verified_recorder(manifest):
+        sources[RECORDER_SOURCE]=manifest["recorder_revision"]["build_and_runtime"]["new_runner"]["sha256"]
+    return bool(sources) and all((ROOT/n).is_file() and sha(ROOT/n)==v for n,v in sources.items())
+
+
 def build_manifest(batch, witnesses, binary_dir, ctest_dir):
     binary=read_hash_file(binary_dir/"binaries.sha256")
     # Colcon adjusts the installed RUNPATH. Record the library actually resolved
@@ -34,10 +52,11 @@ def build_manifest(batch, witnesses, binary_dir, ctest_dir):
     sources=read_hash_file(binary_dir/"sources.sha256")
     inputs=[*batch.glob("*.jsonl"),*witnesses.glob("*.jsonl"),*ctest_dir.glob("*.xml")]
     binaries_verified=bool(binary) and all(Path(name).is_file() and sha(Path(name))==value for name,value in binary.items())
-    source_verified=bool(sources) and all((ROOT/name).is_file() and sha(ROOT/name)==value for name,value in sources.items())
+    commit=(ctest_dir/"source_commit").read_text().strip() if (ctest_dir/"source_commit").is_file() else None
+    source_verified=bool(sources) and all(matches_source(name,value,commit) for name,value in sources.items())
     return dict(binary_sha256=binary,source_sha256=sources,verified_at_collection=binaries_verified and source_verified,
                 raw_sha256={str(p.resolve()):sha(p) for p in sorted(inputs)},
-                binary_commit=(ctest_dir/"source_commit").read_text().strip() if (ctest_dir/"source_commit").is_file() else None)
+                binary_commit=commit)
 
 
 def system_hashes(commit):
@@ -64,6 +83,71 @@ def runtime_binaries(snapshot):
     paths+=[install/name/"lib"/lib for name,lib in (("fwis_hybrid_joint","libfwis_hybrid_joint.so"),
                                                     ("fwis_hybrid_joint_ros","libhybrid_codec.so"))]
     return {str(p.resolve()):sha(p) for p in paths if p.is_file()}
+
+
+def solver_system_compatibility(manifest):
+    """The system can change its clock path while deploying the identical certified solver."""
+    versions=(manifest.get("binary_commit"),manifest.get("system_commit"))
+    if not all(versions):
+        return {}
+    package="ros2_ws/src/fwis_hybrid_joint"
+    trees=[subprocess.check_output(["git","rev-parse",v+":"+package],cwd=ROOT,text=True).strip() for v in versions]
+    libs=[]
+    for group in ("binary_sha256","runtime_binaries"):
+        libs.append(sorted({value for name,value in manifest.get(group,{}).items() if Path(name).name=="libfwis_hybrid_joint.so"}))
+    return dict(solver_commit=versions[0],system_commit=versions[1],package=package,
+                solver_tree=trees[0],system_tree=trees[1],solver_libraries=libs[0],system_libraries=libs[1])
+
+
+def same_solver(manifest):
+    match=manifest.get("solver_system_compatibility") or {}
+    return bool(match.get("solver_commit")==manifest.get("binary_commit") and match.get("system_commit")==manifest.get("system_commit")
+                and match.get("solver_tree") and match["solver_tree"]==match.get("system_tree")
+                and len(match.get("solver_libraries",[]))==1 and match["solver_libraries"]==match.get("system_libraries"))
+
+
+def observed_runtime_sources(system, group, control):
+    """Read the installed process digests signed into the raw timing and DDS captures."""
+    observed={}
+    bench=system/"ros2_ws/build/fwis_control/hybrid_deadlines"
+    if bench.is_file():
+        actual=sha(bench)
+        observed["load"]={"build_sha256":actual,"runs":{}}
+        for n in (1,3):
+            saved=read_hash_file(control/f"{n}.binary.sha256")
+            if saved:
+                observed["load"]["runs"][str(n)]={"captured_sha256":list(saved.values()),"raw_csv_sha256":sha(control/f"{n}.csv"),
+                                                   "summary_sha256":sha(control/f"{n}.summary.json")}
+    faults=load(group/"faults.json") or {}
+    if faults.get("raw_directory"):
+        raw=Path(faults["raw_directory"])
+        before,after=(raw/n for n in ("binaries.before.sha256","binaries.after.sha256"))
+        files=read_hash_file(before)
+        verification=load(group/"verification.json") or {}
+        checked={}
+        for name,expected in faults.get("raw_file_hashes",{}).items():
+            f=raw/name
+            if not f.is_file() and verification.get("parity_directory"):
+                f=Path(verification["parity_directory"])/name
+            if f.is_file() and sha(f)==expected:
+                checked[name]=expected
+        observed["dds"]={"actual_files":files,"capture_sha256":sha(before),"after_sha256":sha(after),
+                         "recorded_sha256":faults["binary_manifest_sha256"],"complete_raw":bool(checked) and checked==faults["raw_file_hashes"],
+                         "source_commit":(raw/"source_commit").read_text().strip(),"checked_sha256":checked}
+    return observed
+
+
+def runtime_sources_match(manifest,control,kind):
+    evidence=(manifest.get("observed_runtime_sources") or {}).get(kind,{})
+    if kind=="dds":
+        return bool(evidence.get("actual_files") and evidence["actual_files"]==manifest.get("runtime_binaries") and
+                    evidence["source_commit"]==manifest.get("system_commit") and evidence["complete_raw"] and
+                    evidence["capture_sha256"]==evidence["after_sha256"]==evidence["recorded_sha256"])
+    benchmark=evidence.get("build_sha256")
+    rows=evidence.get("runs",{})
+    return bool(benchmark and set(rows)=={"1","3"} and set(control)=={"1/1","3/1","3/2","3/3"} and all(
+        row["captured_sha256"]==[benchmark] and row["raw_csv_sha256"]==control[f"{n}/1"]["csv_sha256"]
+        for n,row in rows.items()))
 
 
 def recorder_revision(path):
@@ -118,7 +202,8 @@ def audit_rows(records,witnesses,manifest_files,source):
     if source and verified_recorder(source):
         sources[RECORDER_SOURCE]=source["recorder_revision"]["build_and_runtime"]["new_runner"]["sha256"]
     for name,value in sources.items():
-        if not (ROOT/name).is_file() or sha(ROOT/name)!=value:
+        commit=source["system_commit"] if name in source.get("system_source_sha256",{}) else source["binary_commit"]
+        if not matches_source(name,value,commit):
             reasons.append("source/"+name)
     allowed=set((source or {}).get("binary_sha256",{}).values())
     seen=set()

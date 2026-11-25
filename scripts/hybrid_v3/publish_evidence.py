@@ -48,7 +48,8 @@ def representative_plans(out,batch,necessary):
 
 
 def export(out,data,batch):
-    fields=("run_id","schema","build_type","legacy_fallback_used","mode_sequence_before","certificate","stage_times",
+    fields=("campaign","source_run_id","actual_start","actual_goal","chord_m","measured_arc_m","route_signature_sha256",
+            "authority_request_sha256","planned_mode_switches","run_id","schema","build_type","legacy_fallback_used","mode_sequence_before","certificate","stage_times",
             "publish_s","publication_to_receive_s","request_to_receive_s","delivery_and_admission_wall_s","max_mount_error_m","max_terminal_position_m","start_skew_s","case_id","dataset_split","task","family","seed","profile","operation","repeat","ablation","status",
             "reason","actual_backend","exe_hash","lib_hash","source_sha","source_tree","ranking_policy_sha256","config_hash","map_hash",
             "limits_hash","request_hash","valid","first_certified_s","first_policy_compliant_s","wall_s","duration_s",
@@ -64,11 +65,16 @@ def export(out,data,batch):
             for name in ("certificate","stage_times"):
                 item[name]=json.dumps(item[name],separators=(",",":")) if item.get(name) else None
             w.writerow(item)
-        for row in data["gazebo"]:
+        for row in data["gazebo"]+data.get("headless",[]):
             metrics=row.get("metrics") or {}
             adm=(row.get("admissions") or [{}])[0]
             endpoints=[v.get("terminal_position_error_m") for v in (metrics.get("vehicles") or {}).values()]
-            w.writerow(dict(run_id=row["run_id"],task=row["task"],family=row["family"],operation="gazebo",
+            route=row["route"]
+            w.writerow(dict(campaign=row["campaign"],source_run_id=(row.get("historical") or {}).get("source_run_id"),
+                       actual_start=json.dumps(row.get("start")),actual_goal=json.dumps(row.get("goal")),chord_m=route["chord_m"],
+                       measured_arc_m=route["motion"]["arc_m"],route_signature_sha256=route["signature_sha256"],
+                       planned_mode_switches=row.get("planned_mode_switches"),authority_request_sha256=row.get("authority_request_sha256"),
+                       run_id=row["run_id"],task=row["task"],family=row["family"],operation="gazebo_gui" if row["gui"] else "gazebo_headless",
                        dataset_split="closed_loop",profile=row["profile"],repeat=row["trial"],status=row["status"],
                        reason=row["reason"],actual_backend=row["backend"],source_sha=row.get("source_sha"),build_type="Release",
                        stage_times=json.dumps(row.get("publication_event",{}).get("planning_stages",{}),separators=(",",":")),
@@ -92,5 +98,5 @@ def export(out,data,batch):
                   numeric_and_control_sources=data.get("source_manifest"),
                   raw_local=str(LOCAL),reference_run_ids=["20261125_140950_e40cIk","20261125_141134_AeDvqX","20261125_141201_TcTcHJ"],
                   compact_hashes={str(p.relative_to(out)):sha(p) for p in [out/"runs.csv",out/"measurements.json",out/"case_manifest.json",
-                      out/"case_manifest_baseline.json",out/"legacy_comparison.json",out/"behavior.json",out/"acceptance_spec.yaml",*sorted((out/"representative_plans").glob("*.json.gz"))] if p.exists()})
+                      out/"case_manifest_baseline.json",out/"historical_routes.json",out/"legacy_comparison.json",out/"behavior.json",out/"acceptance_spec.yaml",*sorted((out/"representative_plans").glob("*.json.gz"))] if p.exists()})
     (out/"manifest.json").write_text(json.dumps(manifest,indent=2,ensure_ascii=False)+"\n")

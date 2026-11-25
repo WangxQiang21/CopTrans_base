@@ -126,6 +126,7 @@ def clock_metrics(folder):
 
 
 def closed_rows(folder):
+    from route_evidence import read_route
     batch=[]
     for file in sorted(folder.glob("*/metadata.json")):
         entry=load(file); archive=ROOT/entry["archive"]
@@ -147,6 +148,19 @@ def closed_rows(folder):
                 raise ValueError("Archived authority digest mismatch for "+archive.name)
             model=json.loads(encoded)
         publish=(model or {}).get("publication_steady_ns")
+        behavior={}
+        if model and model.get("phases"):
+            from behavior_metrics import plan_metrics
+            timing=yaml.safe_load((archive/"controller_parameters.yaml").read_text())["timing"]
+            behavior=plan_metrics(model["request"],model["phases"],timing)
+        modes=list(behavior.get("normalized_modes",""))
+        entry["plan_behavior"]={k:behavior[k] for k in (
+            "pure_A","A_translation_fraction","A_length_m","O_length_m","S_angle_rad","longest_continuous_A_m",
+            "internal_stops","curvature_jump_per_vehicle_m_inv","plan_peak_abs_wheel_angle_rad") if k in behavior}
+        authority_req=(model or {}).get("request")
+        entry["authority_request_sha256"]=digest(authority_req) if authority_req else None
+        entry["motion_modes"]=modes
+        entry["planned_mode_switches"]=len(modes)-1 if modes else None
         entry.update(recorded,publish_s=(publish*1e-9-request["wall_s"] if publish and "wall_s" in request else None),
                      publication_to_receive_s=(received["wall_s"]-publish*1e-9 if publish and "wall_s" in received else None),
                      map_sha256=manifest.get("map_sha256"),scene_sha256=manifest.get("scene_sha256"),
@@ -154,7 +168,9 @@ def closed_rows(folder):
                      request_to_receive_s=(received["wall_s"]-request["wall_s"] if "wall_s" in request and "wall_s" in received else None),
                      publication_event=public,metrics=result.get("metrics"),fault=load(file.parent/"fault.json"),
                      clocks=clock_metrics(file.parent),admissions=[r for r in timed if r["event"]=="native_group_admission" and r["phase"]=="AUTHORIZED"],
-                     result_sha256=sha(archive/"result.yaml"))
+                     result_sha256=sha(archive/"result.yaml"),route=read_route(archive),campaign=folder.name,
+                     evidence_files={p.name:sha(p) for p in sorted(file.parent.iterdir()) if p.is_file() and
+                                     (p.name in ("metadata.json","fault.json") or p.name.endswith((".csv",".csv.gz",".jsonl.gz")))})
         batch.append(entry)
     return batch
 

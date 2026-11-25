@@ -277,13 +277,15 @@ def run_row(folder, plant_folder=None):
         meta = json.loads((plant_folder/"metadata.json").read_text())
         if meta["run_id"]!=folder.name or meta["status"]!=row["status"]:
             raise ValueError(f"case metadata differs from archive {folder}")
-        row.update(family=meta["family"], trial=meta["trial"], gui=meta["gui"])
+        row.update(family=meta["family"], trial=meta["trial"], gui=meta["gui"], qualification_group=plant_folder.parent.name)
     measured = result.get("metrics") or {}
     vehicles = measured.get("vehicles") or {}
     row["measured_geometry"] = dict(
         terminal_position_error_m_by_vehicle={str(i):v.get("terminal_position_error_m") for i,v in vehicles.items()},
         terminal_yaw_error_deg_by_vehicle={str(i):v.get("terminal_yaw_error_deg") for i,v in vehicles.items()},
         max_mount_error_m=measured.get("max_mount_error_m"),
+        terminal_reference_position_error_m=measured.get("terminal_formation_position_error_m",measured.get("requested_goal_position_error_m")),
+        terminal_reference_yaw_error_deg=measured.get("terminal_formation_yaw_error_deg",measured.get("requested_goal_yaw_error_deg")),
         min_body_gap_m=measured.get("min_vehicle_footprint_gap_m"),
         min_environment_clearance_m={i:g["m"] for i,g in measured.get("min_environment_clearance",{}).items()})
     model = folder/"trajectories/model.json.gz"

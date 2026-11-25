@@ -7,6 +7,48 @@ def number(x, digits=3):
     return "待测" if x is None else f"{x:.{digits}f}"
 
 
+def historical_summary(data):
+    from route_evidence import HISTORICAL
+    from collections import Counter
+    historical=data.get("historical_closed_loop") or {}
+    refs=historical.get("references") or {}
+    trials=historical.get("trials") or []
+    offline=data.get("historical_offline") or {}
+    indexed={(r["archive_id"],r["task"],r["profile"]):r for r in offline.get("cases",[])}
+    text=["### 历史长途复测",
+          "直距取实际选定的起终点，实走里程按单车里程计或三车货物参考点的连续采样累加。表内里程为米，耗时为秒，挂点误差为毫米。失败轮保留已走里程。"]
+    lines=["| 历史编号 | 地图 SHA 前八位 | 起点 → 终点（x, y, yaw） | 直距 | 旧实走 | 旧结果 |",
+           "|---|---|---|---:|---:|---|"]
+    curves=["| 历史编号 | 闭环试次 | 结果 | 实走里程 | 规划耗时 | 计划时长 | 最大挂点误差 | 计划切换 | 实测切换（各车） |",
+            "|---|---|---|---:|---:|---:|---:|---:|---:|"]
+    for family,source in HISTORICAL.items():
+        old=refs.get(family)
+        if not old: continue
+        sig=old["signature"]
+        fmt=lambda coords: "("+", ".join(number(x,3) for x in coords)+")"
+        lines.append(f"| {source} | {sig['map_sha256'][:8]} | {fmt(sig['start'])} → {fmt(sig['goal'])} | {number(old['chord_m'],2)} | {number(old['motion']['arc_m'],2)} | {old['status']} · {old['reason']} |")
+        original=(indexed.get((source,sig['task'],sig['profile'])) or {}).get('source_plan') or {}
+        old_switch="/".join(str(v) for _,v in sorted(original.get('sampled_switches_by_vehicle',{}).items())) or '待测'
+        old_mount=old.get('mount_m')
+        def counts(switches):
+            return '/'.join(str(v) for _,v in sorted(switches.items())) or '待测'
+        curves.append(f"| {source} | 历史三车 standard | {old['status']} | {number(old['motion']['arc_m'],2)} | {number(old.get('planner_wall_s'))} | {number(old.get('plan_duration_s'),2)} | {number(1000*old_mount if old_mount is not None else None,2)} | {old_switch} | {counts(old['motion']['sampled_feedback_switches'])} |")
+        for r in trials:
+            if r['family']!=family or not r['same_closed_loop_conditions']: continue
+            m=r.get('mount_m')
+            curves.append(f"| {source} | {r['run_id']} | {r['status']} · {r.get('reason')} | {number(r['observed_m'],2)} | {number(r['planning_s'])} | {number(r['duration_s'],2)} | {number(1000*m if m is not None else None,2)} | {r['planned_mode_switches'] if r.get('planned_mode_switches') is not None else '待测'} | {counts(r['sampled_feedback_switches'])} |")
+    text.append("\n".join(lines))
+    text.append("下表逐次列出同图、同起终点、同载荷几何、同物理参数和同速度档的三车运行。旧计划三列切换数按三辆车的 CDR 采样模式分别统计，新计划按共同运动阶段统计。实测切换按各车已记录的模式反馈统计，采样间隔以内的瞬时切换可能漏计。")
+    text.append("\n".join(curves))
+    if indexed:
+        bins=Counter(r['status'] for r in indexed.values())
+        text.append("冻结历史离线请求的独立审计已记录 "+str(len(indexed))+" 次，结果为 "+"、".join(f"{k} {v} 次" for k,v in sorted(bins.items()))+"。单车和 baseline 为新增复测，旧归档只提供三车 standard 原始对照。逐条 SHA、状态和失败原因见 [measurements.json](measurements.json)。")
+    prior=data.get("short_regression") or []
+    if prior:
+        text.append(f"保留此前 C6 的 {len(prior)} 个已归档 GUI 试次，其中 {sum(r['status']=='passed' for r in prior)} 次正常到达。长途验收另计 96 个 GUI 试次及 4 个无界面试次。")
+    return "\n\n".join(text)
+
+
 def write_summary(out,result,data):
     template=(REPORT/"README.md").read_text().split("## 实测与已知故障")[0]
     gates={r["id"]:r for r in result["checks"]}
@@ -49,6 +91,14 @@ def write_summary(out,result,data):
     mount=[r["metrics"]["max_mount_error_m"]*1000 for r in success if (r.get("metrics") or {}).get("max_mount_error_m") is not None]
     terminal=[v["terminal_position_error_m"]*1000 for r in success for v in r["metrics"].get("vehicles",{}).values() if v.get("terminal_position_error_m") is not None]
     sections.append(f"当前批次有 {len(g)} 轮已归档的真实 Gazebo 闭环，其中 {len(success)} 轮正常完成，{sum(r['family']=='fault' and r['reason']=='external_stop' for r in g)} 轮执行了注入停车。正常完成轮次的最大车辆终点误差为 {number(max(terminal,default=None),2)} mm，最大编队挂点误差为 {number(max(mount,default=None),2)} mm。各场景的全部试次与失败原因保存在逐轮记录中。")
+    delivered=[r["plan_behavior"] for r in g if r.get("plan_behavior")]
+    if delivered:
+        sections.append(f"该批 {len(g)} 个 GUI 请求中，{len(delivered)} 个实际发布了可供复算的权威模型，"
+                        f"{sum(m['pure_A'] for m in delivered)} 个为纯 Ackermann。最长连续 Ackermann 段为 "
+                        f"{max(m['longest_continuous_A_m'] for m in delivered):.2f} m，"
+                        f"各模型内部停车合计 {sum(m['internal_stops'] for m in delivered)} 次。")
+    if data.get("historical_closed_loop"):
+        sections.append(historical_summary(data))
     for paired in data.get("paired_closed_loop",[]):
         old=paired["reference"];matches=paired["matches"]
         if not matches: continue
