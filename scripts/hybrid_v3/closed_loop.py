@@ -16,12 +16,18 @@ import tempfile
 import time
 import uuid
 
-from cases import LOCAL, ROOT
+from cases import ROOT
 from qualification_scenes import SPECIAL_SCENES, setup, measured
 from fwis_bringup.experiment_log import collect, remaining_bytes, RUN_BUDGET
 
-# All endpoints are input fixtures, not planner tuning. Long route preserves
-# the installed factory layout and scene-defined terminal pose.
+# A named family fixes the archived operator selection, including the map revision.
+HISTORICAL_FAMILIES = {
+    "history_original": "20261125_115519_smXjHv",
+    "history_west": "20261125_120655_6xtU9x",
+    "history_heading": "20261125_004431_1tfhhn",
+    "history_outdoor": "20261125_015146_OS7Yaz",
+}
+RELEASE_FAMILIES = (*HISTORICAL_FAMILIES, "long", "multibend", "necessary_aux", "fault")
 FAMILIES = {
     "straight": (3.8, 0., 0.),
     "bend": (3.8, 1.15, .64),
@@ -32,6 +38,7 @@ FAMILIES = {
     "close_turn": (1.522379369389306,.34843514176563,.45),
     "long": None,
     **dict.fromkeys(SPECIAL_SCENES),
+    **dict.fromkeys(HISTORICAL_FAMILIES),
     "fault": (3.8,0.,0.),
 }
 
@@ -41,6 +48,9 @@ EAST_STAGING_FAMILIES = {"bend", "lane_change", "diagonal"}
 
 
 def fixture_config(family, task, profile):
+    if family in HISTORICAL_FAMILIES:
+        from historical_routes import historical_fixture
+        return historical_fixture(HISTORICAL_FAMILIES[family], task, profile)[0]
     from ranger_mini_gz.scene_geometry import local_pose
     import yaml
     task_arg = "multi" if task == "formation" else "single"
@@ -123,10 +133,18 @@ def binaries():
 
 def supervise(args, family, task, trial):
     import yaml
-    cfg=fixture_config(family,task,args.profile)
-    proof=fixture_preflight(family,task,cfg,fixture_scene(cfg,task))
+    history = None
+    source_id = args.from_run or HISTORICAL_FAMILIES.get(family)
+    if source_id:
+        from historical_routes import historical_fixture
+        cfg, scene, history = historical_fixture(source_id, task, args.profile)
+        history = {**history, "source_run_id": source_id}
+    else:
+        cfg = fixture_config(family, task, args.profile)
+        scene = fixture_scene(cfg, task)
+    proof = fixture_preflight(family, task, cfg, scene)
     cfg["experiment"]="v3_"+family
-    cfg["timeout_s"]=args.timeout if args.timeout else (890 if family in ("long","multibend") else 180)
+    cfg["timeout_s"]=args.timeout if args.timeout else (890 if source_id or family in ("long","multibend") else 180)
     cfg["gazebo_gui"]=cfg["rviz_gui"]=not args.headless
     cfg["observation_s"]=1.2 if family=="fault" else .3
     run_id=datetime.now().strftime("%Y%m%d_%H%M%S_")+uuid.uuid4().hex[:6]
@@ -138,6 +156,8 @@ def supervise(args, family, task, trial):
     own.mkdir()
     row=dict(run_id=run_id,family=family,task=task,trial=trial,profile=args.profile,
              gui=not args.headless,installed_binaries=binaries(),backend=cfg["planner_backend"],scene_proof=proof)
+    if history:
+        row["historical"] = history
     with tempfile.TemporaryDirectory(prefix="coptrans-v3-gazebo-") as parent:
         spool=Path(parent)/run_id
         for suffix in ["ros","metrics","trajectories","screenshots"]:
@@ -148,6 +168,21 @@ def supervise(args, family, task, trial):
         import ament_index_python.packages as pkg
         env["COPTRANS_TRACE_RCL_TAKE_SO"]=str(Path(pkg.get_package_prefix("fwis_control"))/"lib"/
                                               "fwis_control/libcoptrans_bridge_take_trace.so")
+        tracker_probe = env.get("COPTRANS_TRACKER_TAKE_TRACE_SO")
+        if tracker_probe:
+            import shutil
+            probe = Path(tracker_probe).resolve(strict=True)
+            tracker = Path(pkg.get_package_prefix("fwis_control")) / "lib/fwis_control/ranger_tracking_controller_cpp"
+            taskset = shutil.which("taskset")
+            if not taskset or env.get("COPTRANS_CONTROL_AFFINITY") == "off":
+                raise RuntimeError("Native clock probing requires the standard tracker CPU partition")
+            env.update(COPTRANS_TIMED_TRACKER=str(tracker), COPTRANS_ORIGINAL_TASKSET=taskset,
+                       COPTRANS_TRACKER_TAKE_TRACE_SO=str(probe))
+            env["PATH"] = str(Path(__file__).resolve().parent / "clock_probe/bin") + os.pathsep + env["PATH"]
+            row["tracker_clock_probe"] = {"library": str(probe),
+                                          "sha256": hashlib.sha256(probe.read_bytes()).hexdigest(),
+                                          "tracker_elf": str(tracker), "taskset": taskset}
+
         cfg_path=spool/"resolved_config.yaml"
         cfg_path.write_text(json.dumps(cfg))
         prefix=Path(pkg.get_package_prefix("fwis_hybrid_joint_ros"))
@@ -208,7 +243,10 @@ def supervise(args, family, task, trial):
 
 def main():
     a=argparse.ArgumentParser(description=__doc__)
-    a.add_argument("--families",default=",".join(FAMILIES)); a.add_argument("--task",choices=["single","formation","both"],default="both")
+    routes = a.add_mutually_exclusive_group()
+    routes.add_argument("--families", help="comma-separated families (default: eight release cases, six long-distance)")
+    routes.add_argument("--from-run", metavar="EXPERIMENT_ID", help="rerun a local experiment's exact map and RViz poses with the current hybrid planner")
+    a.add_argument("--task",choices=["single","formation","both"],default="both")
     a.add_argument("--profile",choices=["baseline","standard"],default="standard")
     a.add_argument("--headless",action="store_true",help="run the actual Gazebo server and DDS graph without GUI clients")
     a.add_argument("--resume",action="store_true",help="skip only completed repetition IDs from this exact executable set")
@@ -216,13 +254,27 @@ def main():
     a.add_argument("--output",type=Path,required=True);a.add_argument("--stop-on-failure",action="store_true")
     args=a.parse_args()
     args.output.mkdir(parents=True,exist_ok=True)
-    tasks=("single","formation") if args.task=="both" else (args.task,)
+    tasks=("formation","single") if args.task=="both" else (args.task,)
+    if args.from_run:
+        named = next((key for key, value in HISTORICAL_FAMILIES.items() if value == args.from_run), None)
+        families = (named or "history_retest",)
+    else:
+        families = args.families.split(",") if args.families else RELEASE_FAMILIES
+    if not args.from_run and any(family not in FAMILIES for family in families):
+        a.error("unknown fixture family")
+    if args.repetitions < 1:
+        a.error("--repetitions must be positive")
     with (ROOT/"reports/runs/.test.lock").open("a") as lock:
         fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
-        for family in args.families.split(","):
-            if family not in FAMILIES: a.error("unknown family "+family)
+        for family in families:
             for task in tasks:
-                resume_cfg=fixture_config(family,task,args.profile) if args.resume else None
+                resume_cfg = None
+                if args.resume:
+                    if args.from_run:
+                        from historical_routes import historical_fixture
+                        resume_cfg = historical_fixture(args.from_run, task, args.profile)[0]
+                    else:
+                        resume_cfg = fixture_config(family, task, args.profile)
                 for i in range(args.repetitions):
                     if (args.output/"STOP_AFTER_TRIAL").exists():
                         print("Current trial finished; yielding the simulator to the next build.",flush=True)
@@ -233,6 +285,8 @@ def main():
                         for meta in args.output.glob("*/metadata.json"):
                             entry=json.loads(meta.read_text())
                             if (entry["family"],entry["task"],entry["trial"],entry["profile"],entry.get("gui",True)) != (family,task,i,args.profile,not args.headless):
+                                continue
+                            if entry.get("historical", {}).get("source_run_id") != (args.from_run or HISTORICAL_FAMILIES.get(family)):
                                 continue
                             if entry["installed_binaries"]!=binaries_now:
                                 raise ValueError("Existing trial used other binaries; select a fresh output directory.")
