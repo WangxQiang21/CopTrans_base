@@ -803,6 +803,19 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
   // A one-block proposal has no auxiliary joins to tune. Explore it before
   // spending the remaining improvement budget on local edits of a long seed.
   std::stable_partition(seeds.begin(),seeds.end(),[](const auto& s){return s.edit=="SEED" || s.seq.size()==1;});
+  const auto straight_oblique=[](const Seed& seed){
+    return seed.seq==Sequence{Mode::O} && !seed.curved_oblique && seed.route.size()==2;
+  };
+  const auto first_curve=std::find_if(seeds.begin(),seeds.end(),[](const Seed& s){return s.curved_oblique;});
+  const auto straight=std::find_if(first_curve,seeds.end(),straight_oblique);
+  if(straight!=seeds.end())std::rotate(first_curve,straight,straight+1);
+  // Matching end attitudes can admit a straight translation. Keep time to
+  // check it after the Ackermann starts, even if a local solve stalls.
+  bool translation_boundary=opts.initial_sequence.empty() &&
+    (!r.goal.constrain_reference_yaw || std::abs(delta(r.start.reference.yaw,r.goal.reference.yaw))<1e-8);
+  for(std::size_t i=0;i<r.vehicles.size() && translation_boundary;++i)
+    translation_boundary=!r.goal.constrain_heading[i] || std::abs(delta(r.start.heading[i],r.goal.heading[i]))<1e-8;
+  const auto translation_start=deadline-(deadline-begin)/4;
   // Time laws are native initializations of the same spatial NLP. A near-wall
   // stationary point found with a cruise plateau need not be the one reached
   // with a smooth quintic clock. Both variants must pass the identical audit.
@@ -872,7 +885,12 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
   PolicyScore best{};bool unranked_incumbent=false;std::string why;
   bool repaired_channel=false;
   for(std::size_t ordinal=0;ordinal<seeds.size();++ordinal) {
-    if(!result.plan && sharp_departure && !tried_oblique_departure &&
+    auto translation=seeds.end();
+    if(!result.plan && translation_boundary)
+      translation=std::find_if(seeds.begin()+ordinal,seeds.end(),straight_oblique);
+    if(translation!=seeds.end() && Clock::now()>=translation_start){
+      std::rotate(seeds.begin()+ordinal,translation,translation+1);
+    }else if(!result.plan && sharp_departure && !tried_oblique_departure &&
        elapsed()>.36*std::chrono::duration<double>(deadline-begin).count()){
       // A direct tangent fit can fold back when the outgoing corridor is
       // behind the chosen gear. Try a stopped alignment before one continuous
@@ -980,7 +998,9 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
       // Keep time for edits after a poor local initialization.
       double slice=seed.route.size()>2?5.6:(seed.seq.size()>2?2.15:2.8);
       Run trial{std::min(deadline,Clock::now()+std::chrono::duration_cast<Clock::duration>(std::chrono::duration<double>(slice))),cancel};
-      if(improving_aux)trial.end=std::min(trial.end,improve_until);
+      if(translation!=seeds.end() && !straight_oblique(seed) && Clock::now()<translation_start)
+        trial.end=std::min(trial.end,translation_start);
+      if(result.plan && best.auxiliary_blocks)trial.end=std::min(trial.end,improve_until);
       auto graph=problem(r,seed,opts,trial);
       const bool continuous_channel=graph.count==1 && graph.phase[0].mode!=2 && graph.phase[0].spans>1;
       if(!result.plan && (continuous_channel || seed.curved_oblique || aligned_tangent)){
