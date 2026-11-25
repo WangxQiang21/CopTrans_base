@@ -24,18 +24,21 @@ def write(path,obj):
 
 
 def main():
+    release="c6"
+    cohort="c3"
     ap=argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--batch",type=Path,default=LOCAL/"release_c5")
-    ap.add_argument("--control",type=Path,default=LOCAL/"control_605_c5")
-    ap.add_argument("--gazebo",type=Path,default=LOCAL/"gazebo_release_c5")
-    ap.add_argument("--headless",type=Path,default=LOCAL/"gazebo_headless_c5")
-    ap.add_argument("--legacy",type=Path,default=NUMERIC/"legacy_c2",help="paired previous-backend results for this cohort")
-    ap.add_argument("--numeric",type=Path,default=NUMERIC/"c5")
-    ap.add_argument("--ros",type=Path,default=LOCAL/"group_c5")
-    ap.add_argument("--witness",type=Path,default=LOCAL/"witness_final_c5")
-    ap.add_argument("--system",type=Path,default=LOCAL/"system_c5",help="clean snapshot of the ROS binaries used in the Gazebo series")
-    ap.add_argument("--binary",type=Path,default=LOCAL/"binary_c5")
-    ap.add_argument("--ctest",type=Path,default=LOCAL/"release_c5"/"ctest")
+    ap.add_argument("--batch",type=Path,default=LOCAL/f"release_{release}")
+    ap.add_argument("--control",type=Path,default=LOCAL/f"control_605_{release}")
+    ap.add_argument("--gazebo",type=Path,default=LOCAL/f"gazebo_release_{release}")
+    ap.add_argument("--headless",type=Path,default=LOCAL/f"gazebo_headless_{release}")
+    ap.add_argument("--legacy",type=Path,default=NUMERIC/f"legacy_{cohort}",help="paired previous-backend results for this cohort")
+    ap.add_argument("--numeric",type=Path,default=NUMERIC/release)
+    ap.add_argument("--ros",type=Path,default=LOCAL/f"group_{release}")
+    ap.add_argument("--witness",type=Path,default=LOCAL/f"witness_final_{release}")
+    ap.add_argument("--system",type=Path,default=LOCAL/f"system_{release}",help="qualified ROS snapshot")
+    ap.add_argument("--native",type=Path,default=LOCAL/f"native_{release}")
+    ap.add_argument("--binary",type=Path,default=LOCAL/f"binary_{release}")
+    ap.add_argument("--ctest",type=Path,default=LOCAL/f"release_{release}"/"ctest")
     ap.add_argument("--report",type=Path,default=REPORT)
     ap.add_argument("--compact",action="store_true",help="re-evaluate from the checked-in measurements")
     args=ap.parse_args();out=args.report;out.mkdir(exist_ok=True,parents=True)
@@ -47,7 +50,7 @@ def main():
         models=load(args.numeric/"model.json");collision=load(args.numeric/"collision.json")
         derivatives=load(args.numeric/"derivatives.json")
         defaults=yaml.safe_load(REGISTRY.read_text())
-        native=load(LOCAL/"native_c5/runtime.json")
+        native=load(args.native/"runtime.json")
         archive=args.ros
         fixtures={t:load(archive/f"{t}.json") for t in TASKS}
         legacy={f"{t}/{p}":[[x["case_id"],x.get("request_hash"),x["evidence"].get("certified_in_budget",False)]

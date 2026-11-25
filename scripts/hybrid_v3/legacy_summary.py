@@ -152,8 +152,8 @@ def report(directory, new_batch=None):
 
 def main():
     ap=argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--directory",type=Path,default=LOCAL.parent/"hybrid_v3_numeric/legacy_c2")
-    ap.add_argument("--new-batch",type=Path,default=LOCAL/"release_c5")
+    ap.add_argument("--directory",type=Path,default=LOCAL.parent/"hybrid_v3_numeric/legacy_c3")
+    ap.add_argument("--new-batch",type=Path,default=LOCAL/"release_c6")
     ap.add_argument("--output",type=Path);a=ap.parse_args()
     text=json.dumps(report(a.directory,a.new_batch),indent=2,allow_nan=False)+"\n"
     if a.output:a.output.write_text(text)
