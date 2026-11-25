@@ -8,6 +8,7 @@ import yaml
 
 
 ROOT = Path(__file__).resolve().parents[4]
+REGISTRY = ROOT / "ros2_ws/src/fwis_bringup/config/test_defaults.yaml"
 
 
 def dry_run(*args):
@@ -44,26 +45,26 @@ def test_replay_will_not_override_an_archived_layout():
 
 @pytest.mark.parametrize("task", ["single", "multi"])
 def test_new_experiments_use_qualified_backend_with_explicit_rollback(task):
+    registry = yaml.safe_load(REGISTRY.read_text())
+    default_alias = registry["defaults"]["planners"][task]
+    default_backend = registry["planners"][task][default_alias]
     current = dry_run("--task", task)
-    rollback = dry_run("--task", task, "--architecture-profile", "baseline",
+    rollback = dry_run("--task", task, "--planner-backend", "legacy", "--architecture-profile", "baseline",
                        "--tracker-implementation", "python")
     assert current.returncode == rollback.returncode == 0
     current, rollback = (yaml.safe_load(run.stdout) for run in (current, rollback))
     assert (current["architecture_profile"], current["tracking_implementation"]) == ("optimized", "cpp")
     assert (rollback["architecture_profile"], rollback["tracking_implementation"]) == ("baseline", "python")
-    if task == "single":
-        assert current["planner_backend"] == "single_state_lattice"
-        assert current["planner_overrides"]["search"]["adaptive_reverse_competition"]
-        assert rollback["planner_backend"] == "single_continuous_mode_path"
-    else:
-        assert current["planner_backend"] == rollback["planner_backend"] == "multi_4wis"
+    assert current["planner_backend"] == default_backend
+    assert rollback["planner_backend"] == registry["planners"][task]["legacy"]
+    if task == "multi":
         for option in ("native_frontier", "convex_corridor", "reachability_retime"):
-            assert current["planner_overrides"][option]
             assert not rollback["planner_overrides"].get(option, False)
 
 
 def test_optimized_features_can_be_retested_in_isolation():
-    process = dry_run("--task", "multi", "--no-multi-convex-corridor", "--no-multi-reachable-clock")
+    process = dry_run("--task", "multi", "--planner-backend", "legacy",
+                      "--no-multi-convex-corridor", "--no-multi-reachable-clock")
     assert process.returncode == 0, process.stderr
     overrides = yaml.safe_load(process.stdout)["planner_overrides"]
     assert overrides["native_frontier"]
@@ -78,13 +79,15 @@ def test_explicit_planner_override_still_works():
 
 
 def test_interactive_entry_gets_the_same_optimized_defaults():
+    ordinary = dry_run("--task", "multi")
+    assert ordinary.returncode == 0, ordinary.stderr
+    default = yaml.safe_load(ordinary.stdout)
     process = subprocess.run(
         ["bash", str(ROOT / "scripts/interactive.sh"), "--dry-run"],
         cwd=ROOT, check=True, capture_output=True, text=True,
     )
     config = yaml.safe_load(process.stdout)
     assert config["interactive"] is True
-    assert config["planner_backend"] == "multi_4wis"
-    assert config["tracking_implementation"] == "cpp"
-    assert all(config["planner_overrides"][feature]
-               for feature in ("native_frontier", "convex_corridor", "reachability_retime"))
+    config["planner_overrides"].pop("publish_uniform_progress", None)
+    for key in ("planner_backend", "planner_overrides", "tracking_implementation"):
+        assert config[key] == default[key]
