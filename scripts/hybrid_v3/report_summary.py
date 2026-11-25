@@ -58,7 +58,8 @@ def historical_summary(data):
     incident=data.get("transport_incident") or {}
     if incident.get("origin_cause")=="host_wlo1_link_timeout_correlated_with_gazebo_transport_loss":
         text.append(f"`{incident['run_id']}` 的 Gazebo 物理里程计仍在推进，ROS 仿真时钟和反馈在 Wi-Fi 链路超时后停止送达。"
-                    "三车按控制时钟看门狗同步输出零速度。旧试次作为非预期停车归档，正式矩阵在本机回环网络上重新独立采集。"
+                    "三车的控制时钟看门狗触发并发送零速度指令。现有记录只能核验发送，无法核验 Gazebo 收到指令或实际停稳。"
+                    "旧试次作为非预期停止归档，正式矩阵在本机回环网络上重新独立采集。"
                     "宿主事件、三车时间轴和原始文件摘要见 [measurements.json](measurements.json)。")
     return "\n\n".join(text)
 
