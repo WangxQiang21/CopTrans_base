@@ -179,7 +179,10 @@ def plan_metrics(req, phases, timing, *, trace=(), attempts=None, initial_sequen
     if blocks:
         signed = [tag for tag in same if tag.rsplit(":",1)[-1]==str(blocks[0]["gear"][0])]
         same = signed or same
-    sources = sorted(set(same))
+    certified = {":".join(tag[:3]) for tag in tags if len(tag)>=4}
+    # A sole certified proposal is definitive even if expansion eliminated
+    # a physically empty S/O phase inside its original structure.
+    sources = sorted(certified if len(certified)==1 else set(same))
     first = initial_sequence or (trace[0].split(":")[1] if trace and len(trace[0].split(":"))>=3 else None)
     edits = ("INSERT_MODE", "REMOVE_BLOCK", "MERGE_SAME_MODE", "REPLACE_SUBSEQUENCE", "CHANGE_GEAR")
     edits_tried = None if attempts is None else Counter(a["proposal"].split(":")[0] for a in attempts
@@ -254,6 +257,7 @@ def scene_rows(folder, timing):
         name = folder/row["family"]/(row["task"]+"_"+row["profile"])
         req = json.loads(name.with_suffix(".request.json").read_bytes())["request"]
         result = json.loads(name.with_suffix(".result.json").read_bytes())
+        case["independently_certified"] = row.get("audit", {}).get("executable") is True
         if digest(req)!=row["request_sha256"]:
             raise ValueError(f"archive request mismatch for {name}")
         if result.get("plan"):
@@ -269,6 +273,19 @@ def run_row(folder, plant_folder=None):
     result = yaml.safe_load((folder/"result.yaml").read_text())
     row = dict(run_id=folder.name, task=cfg["scene_task"], profile=cfg["speed_profile"],
                family=cfg["experiment"], status=result["status"], source_commit=manifest.get("git_commit"))
+    if plant_folder:
+        meta = json.loads((plant_folder/"metadata.json").read_text())
+        if meta["run_id"]!=folder.name or meta["status"]!=row["status"]:
+            raise ValueError(f"case metadata differs from archive {folder}")
+        row.update(family=meta["family"], trial=meta["trial"], gui=meta["gui"])
+    measured = result.get("metrics") or {}
+    vehicles = measured.get("vehicles") or {}
+    row["measured_geometry"] = dict(
+        terminal_position_error_m_by_vehicle={str(i):v.get("terminal_position_error_m") for i,v in vehicles.items()},
+        terminal_yaw_error_deg_by_vehicle={str(i):v.get("terminal_yaw_error_deg") for i,v in vehicles.items()},
+        max_mount_error_m=measured.get("max_mount_error_m"),
+        min_body_gap_m=measured.get("min_vehicle_footprint_gap_m"),
+        min_environment_clearance_m={i:g["m"] for i,g in measured.get("min_environment_clearance",{}).items()})
     model = folder/"trajectories/model.json.gz"
     if model.exists():
         data = gzip.decompress(model.read_bytes())
@@ -299,6 +316,7 @@ def bench_rows(files, cohort, timing):
     MASTER_SEEDS["holdout"] += cohort*1000003
     try:
         cache = {}
+        metrics_cache = {}
         for path in files:
             with path.open() as stream:
                 for line in stream:
@@ -306,19 +324,24 @@ def bench_rows(files, cohort, timing):
                     if item["operation"] not in ("solve","ablation","timing"):
                         continue
                     result = item["evidence"]
-                    row = {k:item[k] for k in ("task","profile","case_id","label","repeat","ablation","operation","request_hash")}
+                    row = {k:item[k] for k in ("task","profile","case_id","label","repeat","ablation","operation","request_hash",
+                                               "dataset_split","source_sha","exe_hash","lib_hash","ranking_policy_sha256")}
                     row["status"] = result["status"]
+                    row["independently_certified"] = result.get("audit", {}).get("executable") is True
+                    key = item["request_hash"]
+                    if key not in cache:
+                        req, _, _ = make(item["dataset_split"], item["index"], item["task"], item["profile"])
+                        if digest(req)!=key:
+                            raise ValueError(f"case regeneration mismatch at {item['case_id']}")
+                        cache[key] = {k:req[k] for k in ("vehicles","limits")}
                     if result.get("plan"):
-                        key = item["request_hash"]
-                        if key not in cache:
-                            req, _, _ = make(item["dataset_split"], item["index"], item["task"], item["profile"])
-                            if digest(req)!=key:
-                                raise ValueError(f"case regeneration mismatch at {item['case_id']}")
-                            cache[key] = req
                         row["plan_sha256"] = digest(result["plan"])
-                        row["metrics"] = plan_metrics(cache[key], result["plan"], timing, trace=result["trace"],
-                                                      attempts=result.get("stage_times",{}).get("attempts"),
-                                                      initial_sequence="ASOSA" if item["ablation"] else None)
+                        attempts = result.get("stage_times",{}).get("attempts", [])
+                        identity = (key,row["plan_sha256"],tuple(result["trace"]),tuple(a["proposal"] for a in attempts),bool(item["ablation"]))
+                        if identity not in metrics_cache:
+                            metrics_cache[identity] = plan_metrics(cache[key], result["plan"], timing, trace=result["trace"],
+                                                                  attempts=attempts,initial_sequence="ASOSA" if item["ablation"] else None)
+                        row["metrics"] = metrics_cache[identity]
                     yield row
     finally:
         MASTER_SEEDS["holdout"] -= cohort*1000003
@@ -330,9 +353,16 @@ def main():
     p.add_argument("--run", type=Path, action="append", default=[], help="completed local experiment, repeatable")
     p.add_argument("--gazebo-batch", type=Path, help="closed_loop metadata folders with retained run IDs")
     p.add_argument("--jsonl", type=Path, action="append", default=[], help="raw native benchmark rows; repeatable")
+    p.add_argument("--batch", type=Path, help="directory of frozen solve, ablation and timing JSONL files")
     p.add_argument("--cohort", type=int, help="regeneration cohort required for benchmark input hashes")
     p.add_argument("--output", type=Path, required=True)
     args = p.parse_args()
+    if args.batch:
+        if args.jsonl:
+            p.error("choose --batch or explicit --jsonl inputs")
+        args.jsonl = sorted(p for p in args.batch.glob("*.jsonl") if p.name.startswith(("solve_","timing_","ablation_")))
+        if not args.jsonl:
+            p.error("no native result files in --batch")
     if not (args.scenes or args.run or args.gazebo_batch or args.jsonl) or (args.jsonl and args.cohort is None):
         p.error("select archived inputs; --jsonl requires its frozen --cohort")
     timing = yaml.safe_load(CONTROL.read_text())["timing"]
@@ -355,6 +385,7 @@ def main():
         if row.get("run_id"):
             summary["closed_loop_passed_with_pure_A_plan"] += (row["status"]=="passed" and row.get("metrics", {}).get("pure_A", False))
     report = dict(model_sample_period_max_s=SAMPLE_S, wheel_order=["front_left","front_right","rear_left","rear_right"],
+                  cohort=args.cohort, native_input_files={p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in args.jsonl},
                   wheel_units="radians; absolute plan peaks sampled at <=10ms; odometry implies rolling axes, no direct wheel feedback",
                   stop_rule="All active cars below stop_speed inside a normalized same-gear A block, lasting >= max(stable_time, two controller periods); ends excluded",
                   provenance_rule="Unique certified proposal consistent with delivered motion structure; ambiguous and unavailable sources reported as null",

@@ -29,6 +29,8 @@ class BehaviorMetrics(unittest.TestCase):
         i = np.arange(6)
         a = phase("A", i/5, .5*i*(i-1)/20)
         m = plan_metrics(BASE,[a],TIMING)
+        collapsed = plan_metrics(BASE,[a],TIMING,trace=["SEED:ASOSA:1:CERTIFIED"])
+        self.assertEqual("SEED:ASOSA:1",collapsed["winning_proposal"])
         # At s=0 the analytic curvature of (s,s^2/2) is 1/m and is maximal.
         angles = [abs(np.arctan2(x,1-y)) for x in (.247,-.247) for y in (.182,-.182)]
         np.testing.assert_allclose(m["plan_peak_abs_wheel_angle_rad"][0], angles)
