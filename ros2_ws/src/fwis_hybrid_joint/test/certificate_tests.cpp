@@ -155,6 +155,33 @@ TEST(HybridCertificate, EnforcesReversePolicyAndPreparationTargetAndWheelGeometr
   p.mode=h::Mode::S;
   EXPECT_EQ(audit(r,{{p}}).reason,"STATIONARY_TRANSLATION");
 }
+TEST(HybridCertificate, ReversePolicyCoversObliqueTractionAndStillAllowsSpin) {
+  for(bool formation:{false,true}) {
+    auto r=request(formation);
+    for(int gear:{-1,1}) {
+      auto oblique=straight(18.);
+      oblique.mode=h::Mode::O;
+      oblique.gear.fill(gear);
+      oblique.pieces.front()={line(5.,gear),{5.,5.03,5.18,5.26,5.35,5.35},line(0.,0.)};
+      auto prepare=stopped_at(r,oblique);
+      prepare.gear=oblique.gear;
+      const h::Plan plan{{prepare,oblique}};
+      r.allow_reverse=true;
+      const auto allowed=audit(r,plan);
+      ASSERT_TRUE(allowed.executable)<<allowed.reason;
+      r.allow_reverse=false;
+      const auto restricted=audit(r,plan);
+      EXPECT_EQ(restricted.executable,gear>0)<<restricted.reason;
+      if(gear<0) EXPECT_EQ(restricted.reason,"REVERSE_DISALLOWED");
+    }
+    auto spin=straight(12.);
+    spin.mode=h::Mode::S;
+    spin.heading1.fill(.5);
+    spin.pieces.front().x=line(3.,0.);
+    const auto rotated=audit(r,{{stopped_at(r,spin),spin}});
+    EXPECT_TRUE(rotated.executable)<<rotated.reason;
+  }
+}
 TEST(HybridCertificate, SpinNeedsAFeasibleWheelAngleAtRest) {
   auto r=request();
   auto s=straight(12.); s.mode=h::Mode::S;s.heading1[0]=1.;

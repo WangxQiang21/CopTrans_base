@@ -470,7 +470,8 @@ Audit certify(const Request& r,const Plan& plan,Clock::time_point deadline,const
       for (std::size_t i=0;i<n;++i) {
         if ((ph.gear[i]!=1 && ph.gear[i]!=-1) || !std::isfinite(ph.heading0[i]) || !std::isfinite(ph.heading1[i]))
           return {false,"INVALID_BODY_STATE",idx,i};
-        if (!r.allow_reverse && ph.kind==Kind::Motion && ph.mode==Mode::A && ph.gear[i]<0)
+        if (!r.allow_reverse && ph.kind==Kind::Motion &&
+            (ph.mode==Mode::A || ph.mode==Mode::O) && ph.gear[i]<0)
           return {false,"REVERSE_DISALLOWED",idx,i};
         if ((ph.kind!=Kind::Motion || ph.mode==Mode::O) && ph.heading0[i]!=ph.heading1[i])
           return {false,"STATIONARY_HEADING_CHANGE",idx,i};
