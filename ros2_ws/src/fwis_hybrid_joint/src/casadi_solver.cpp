@@ -396,6 +396,24 @@ void Problem::run(){
           if(j==0){equal(sin(h0[v]-h0[0]-shift),1e-8);constraint(cos(h0[v]-h0[0]-shift),.99,inf);}
           h[v]=h[0]+shift;entry[v]=entry[0];exit[v]=exit[0];continue;
         }
+        // F and chassis yaw are exactly constant in O. All mount jets
+        // differ only by a fixed translation, so wheel speed, steering
+        // derivatives, body acceleration and jerk are identical. Each chassis
+        // still needs its own steering angle, which depends on h0 and gear.
+        if(ph.mode==1 && v>0){
+          for(int z=0;z<=6;++z){
+            if(multi && N>=3 && z%2)continue;
+            const double station=z/6.;
+            const auto dx=trajectory_jet(blocks[j][0],station)[1];
+            const auto dy=trajectory_jet(blocks[j][1],station)[1];
+            const auto angle=atan2(ph.gear[v]*(-sin(h0[v])*dx+cos(h0[v])*dy),
+                                   ph.gear[v]*(cos(h0[v])*dx+sin(h0[v])*dy));
+            constraint(angle,-p.steer_angle,p.steer_angle);
+            if(j==0 && z==0)entry[v].fill(angle);
+            if(j+1==N && z==6)exit[v].fill(angle);
+          }
+          continue;
+        }
         for(int z=0;z<=6;++z){
           const bool large=multi && N>=3;
           if(large && z%2)continue;
@@ -419,7 +437,7 @@ void Problem::run(){
           const SX jerk=(d2*sd*sd*sd+3*d1*sd*sdd+d*sj)/(tau*tau*tau);
           constraint(jerk,-p.jerk*.95,p.jerk*.95);
           const double mass=((z==0 || z==6)?.5:1.)/(large?3.:6.);
-          cost+=smooth_scale*policy::jerk_effort_weight*(mass*tau/(N*t0))*pow(jerk/p.jerk,2);
+          cost+=(ph.mode==1?p.bodies:1)*smooth_scale*policy::jerk_effort_weight*(mass*tau/(N*t0))*pow(jerk/p.jerk,2);
           if(v==0){
             const auto rx=trajectory_jet(blocks[j][0],local),ry=trajectory_jet(blocks[j][1],local);
             cost+=smooth_scale*policy::length_weight*mass*sqrt(rx[1]*rx[1]+ry[1]*ry[1]+1e-14)/p.radius;
@@ -439,7 +457,7 @@ void Problem::run(){
             constraint(steer_velocity,-p.steer_rate*.97,p.steer_rate*.97);
             if(p.steer_acceleration>0)
               constraint(steer_acceleration,-p.steer_acceleration*.96,p.steer_acceleration*.96);
-            cost+=4*smooth_scale*policy::steering_effort_weight*mass*(tau/(N*t0))*pow(steer_velocity/p.steer_rate,2);
+            cost+=4*p.bodies*smooth_scale*policy::steering_effort_weight*mass*(tau/(N*t0))*pow(steer_velocity/p.steer_rate,2);
             if(v==0)cost+=policy::oblique_length_weight*mass*d/p.radius;
             if(j==0 && z==0) entry[v].fill(angle);
             if(j+1==N && z==6) exit[v].fill(angle);

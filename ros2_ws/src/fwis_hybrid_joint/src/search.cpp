@@ -203,7 +203,7 @@ double central_tangent(const Route& route){
 // Moving an interpolation knot keeps the entire clamped spline C4. The
 // local score steers only the initial geometry; admission always certifies
 // the original footprint and the continuous normal/steering dynamics.
-void shape_oblique_seed(const Request& r,Route& path,double entry,double exit,double yaw,
+void shape_translation_seed(const Request& r,Route& path,double entry,double exit,double yaw,
                         const double* headings,const Run& run){
   if(path.size()<3 || run.stop())return;
   CollisionKernel map(*r.grid,r.vehicles,r.cargo);
@@ -401,8 +401,7 @@ HJProblem problem(const Request& r,const Seed& seed,const SolveOptions& options,
       const double entry=ph.mode==1?std::atan2(path[1].y-path[0].y,path[1].x-path[0].x):ph.h0[0]+(sign<0?pi:0);
       const double exit=ph.mode==0 && k+1==p.count && p.fixed_goal[1]?ph.h1[0]+(sign<0?pi:0):std::atan2(b.y-a.y,b.x-a.x);
       if(seed.curved_oblique && ph.mode==1){
-        Run local{std::min(run.end,Clock::now()+std::chrono::milliseconds(180)),run.cancel};
-        shape_oblique_seed(r,path,entry,exit,psi,ph.h0,local);
+        shape_translation_seed(r,path,entry,exit,psi,ph.h0,run);
       }
       const auto smooth=hybrid_channel::fit(path,entry,exit);
       if(!smooth[0].empty())
@@ -772,6 +771,12 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
         // continuous Ackermann phase through the unobstructed route.
         Seed aligned{{Mode::S,Mode::A},sign,route,"ALIGN_TO_CHANNEL"};
         aligned.shortest_yaw=true;
+        if(sharp_departure){
+          auto smooth=aligned;
+          smooth.smooth_channel=true;
+          smooth.edit="ALIGNED_TANGENT_CHANNEL";
+          seeds.push_back(std::move(smooth));
+        }
         seeds.push_back(std::move(aligned));
       }
     }
@@ -838,6 +843,18 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
       }else seeds.insert(route,std::move(low_rotation));
     }
   }
+  if(sharp_departure && r.allow_reverse && r.cargo && opts.initial_sequence.empty()){
+    // Terminal displacement may suggest forward while the free channel at
+    // the initial footprint actually points backward. Search the opposite
+    // gear on that same channel before introducing any steering-mode switch.
+    auto base=std::find_if(seeds.begin(),seeds.end(),[](const Seed& s){return s.edit=="CHANGE_ROUTE_SEED";});
+    if(base!=seeds.end()){
+      auto opposite=*base;
+      opposite.sign=-sign;opposite.shortest_yaw=true;opposite.smooth_channel=true;
+      opposite.edit="OPPOSITE_GEAR_CHANNEL";
+      seeds.insert(seeds.begin(),std::move(opposite));
+    }
+  }
   // Near a rank transition, constrain the terminal tangent against its
   // certified angle window. The original request is always used in certify().
   if(rank_goal.exact && !locked_goal){
@@ -857,11 +874,11 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
   for(std::size_t ordinal=0;ordinal<seeds.size();++ordinal) {
     if(!result.plan && sharp_departure && !tried_oblique_departure &&
        elapsed()>.36*std::chrono::duration<double>(deadline-begin).count()){
-      // With the corridor behind the initial steering branch, permit a
-      // stationary alignment before O and independently at the join to A.
-      // Pure A retains its first attempts; do not repeatedly preempt it.
+      // A direct tangent fit can fold back when the outgoing corridor is
+      // behind the chosen gear. Try a stopped alignment before one continuous
+      // A phase; fully oblique alternatives remain available farther down.
       const auto curve=std::find_if(seeds.begin()+ordinal,seeds.end(),[](const Seed& s){
-        return s.curved_oblique && s.seq==Sequence{Mode::S,Mode::O,Mode::S,Mode::A};});
+        return s.edit=="ALIGNED_TANGENT_CHANNEL";});
       if(curve!=seeds.end())std::rotate(seeds.begin()+ordinal,curve,curve+1);
       tried_oblique_departure=true;
     }else if (!result.plan && elapsed()>.58*std::chrono::duration<double>(deadline-begin).count()) {
@@ -869,9 +886,11 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
       if(repair!=seeds.end())std::rotate(seeds.begin()+ordinal,repair,repair+1);
     }
     Seed seed=seeds[ordinal]; // appending child proposals may reallocate the queue
-    if(seed.curved_oblique){
+    const bool aligned_tangent=seed.edit=="ALIGNED_TANGENT_CHANNEL";
+    const bool opposite_tangent=seed.edit=="OPPOSITE_GEAR_CHANNEL";
+    if(seed.curved_oblique || aligned_tangent || opposite_tangent){
       const auto first=std::find_if(seed.seq.begin(),seed.seq.end(),[](Mode mode){return mode!=Mode::S;});
-      const bool starts_oblique=*first==Mode::O;
+      const bool starts_oblique=aligned_tangent || opposite_tangent || *first==Mode::O;
       auto& channel=oblique_channels[starts_oblique?0:1];
       if(!channel){
         auto fixed=r;
@@ -879,6 +898,14 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
         channel=grid_seed(fixed,run,true,seed.sign,nullptr,nullptr,true);
       }
       if(!channel->empty())seed.route=*channel;
+      if(aligned_tangent || opposite_tangent){
+        const auto& points=seed.route;
+        const auto& before=points[points.size()-2];
+        const double entry=std::atan2(points[1].y-points[0].y,points[1].x-points[0].x);
+        const double exit=std::atan2(points.back().y-before.y,points.back().x-before.x);
+        auto headings=r.start.heading;headings.fill(central_tangent(points));
+        shape_translation_seed(r,seed.route,entry,exit,r.start.reference.yaw,headings.data(),run);
+      }
     }
     auto propose=[&](std::size_t at,bool accepted){
       if(!opts.enable_edits || seed.seq.empty() || run.stop())return;
@@ -956,7 +983,7 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
       if(improving_aux)trial.end=std::min(trial.end,improve_until);
       auto graph=problem(r,seed,opts,trial);
       const bool continuous_channel=graph.count==1 && graph.phase[0].mode!=2 && graph.phase[0].spans>1;
-      if(!result.plan && (continuous_channel || seed.curved_oblique)){
+      if(!result.plan && (continuous_channel || seed.curved_oblique || aligned_tangent)){
         const auto before=Clock::now();
         Run timing{std::min(trial.end,before+std::chrono::milliseconds(300)),cancel};
         Clock::time_point first_proof;
@@ -968,13 +995,13 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
         double repair_seed_s=0.;
         if(!timed && !repaired_channel && graph.count==1 && graph.phase[0].mode==0 &&
            r.cargo && graph.bodies==3 && graph.phase[0].spans>=4 &&
-           (seed.edit=="CLEARANCE_YAW_ROUTE" || seed.edit=="MINIMUM_YAW_ROUTE")) {
+           (opposite_tangent || seed.edit=="CLEARANCE_YAW_ROUTE" || seed.edit=="MINIMUM_YAW_ROUTE")) {
           const auto repair_start=Clock::now();
           double repair_certification_s=0.;
           const auto cuts=separators(r,graph,trial);
           const bool near_cargo=std::any_of(cuts.begin(),cuts.end(),[](const auto& plane){return plane.vehicle<0;});
           if(near_cargo) {
-            repaired_channel=true;
+            if(!opposite_tangent)repaired_channel=true;
             auto stopped=[&](){return trial.stop();};
             const auto boxes=channel_repair::rectangles(*r.grid,stopped);
             // Move the cargo rotation to either side of the tight passage, then
@@ -982,11 +1009,10 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
             const int original=graph.phase[0].spans;
             const int fine=std::min(HJ_MAX_SPANS,original+4);
             struct PostureChart {int spans; double start,end;};
-            const std::array<PostureChart,3> charts{{
-              {std::min(HJ_MAX_SPANS,original+2),.5,1.},
-              {std::min(HJ_MAX_SPANS,original+3),0.,1./3},
-              {fine,1./(3*fine),1./3}
-            }};
+            std::vector<PostureChart> charts{{std::min(HJ_MAX_SPANS,original+2),.5,1.},
+              {std::min(HJ_MAX_SPANS,original+3),0.,1./3},{fine,1./(3*fine),1./3}};
+            if(opposite_tangent)charts={{original,0.,1.}};
+
             for(const auto& chart:charts) {
               if(timed || boxes.empty() || stopped())break;
               HJProblem candidate=graph;
@@ -1016,6 +1042,15 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
             unranked_incumbent=true;
             result.trace.push_back(tag+":CERTIFIED_CHANNEL_TIMING:POLICY_EVALUATION_DEADLINE");
             break;
+          }
+          if(graph.count>1){
+            // Keep the jointly feasible rest/steering-compatible duration
+            // estimate when switching from the shape preflight to Ipopt.
+            int ordinal=0;
+            for(const auto& phase:timed->phases)if(phase.kind==Kind::Motion){
+              while(ordinal<graph.count && graph.phase[ordinal].mode!=static_cast<int>(phase.mode))++ordinal;
+              if(ordinal<graph.count)graph.phase[ordinal++].tau=phase.duration;
+            }
           }
           result.plan=std::move(*timed);
           result.trace.push_back(tag+":CERTIFIED_CHANNEL_TIMING");
