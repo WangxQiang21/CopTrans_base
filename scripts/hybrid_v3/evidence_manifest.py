@@ -6,9 +6,35 @@ from pathlib import Path
 import subprocess
 
 from qualify import ROOT, POLICY, digest, sha, load
+from cases import GEOMETRY, REGISTRY, REPORT, SPEC
 
 RANKING_SOURCE="ros2_ws/src/fwis_hybrid_joint/config/policy.json"
 RECORDER_SOURCE="ros2_ws/src/fwis_bringup/scripts/run_experiment"
+CONFIG_FILES=(REGISTRY,GEOMETRY,SPEC,ROOT/RANKING_SOURCE,
+              ROOT/"ros2_ws/src/fwis_backends/multi_4wis/config/transport_formation.yaml",
+              ROOT/"ros2_ws/src/ranger_mini_gz/config/cargo_geometry.yaml")
+COMPACT_REQUIRED={"measurements.json","runs.csv","case_manifest.json","case_manifest_baseline.json",
+                  "historical_routes.json","legacy_comparison.json","behavior.json","acceptance_spec.yaml"}
+
+
+def qualification_inputs(case_manifests):
+    # Canonical keys identify the inputs in any checkout. Case bytes come from
+    # the manifests shipped with this report, including staged release reports.
+    inputs={str(p.relative_to(ROOT)):sha(p) for p in CONFIG_FILES}
+    for path in case_manifests.values():
+        inputs[str((REPORT/path.name).relative_to(ROOT))]=sha(path)
+    return inputs
+
+
+def compact_inputs_match(out, manifest, recorded, case_manifests):
+    expected=qualification_inputs(case_manifests)
+    configs={str(p.relative_to(ROOT)):expected[str(p.relative_to(ROOT))] for p in CONFIG_FILES}
+    cases={p.name:sha(p) for p in case_manifests.values()}
+    files=manifest.get("compact_hashes",{})
+    return (recorded==expected and manifest.get("config_hashes")==configs and
+            manifest.get("case_sha256")==cases and COMPACT_REQUIRED<=files.keys() and
+            all(not Path(name).is_absolute() and ".." not in Path(name).parts and
+                (out/name).is_file() and sha(out/name)==value for name,value in files.items()))
 
 
 def read_hash_file(path):
@@ -82,7 +108,9 @@ def runtime_binaries(snapshot):
         ("fwis_control","ranger_tracking_controller_cpp"))]
     paths+=[install/name/"lib"/lib for name,lib in (("fwis_hybrid_joint","libfwis_hybrid_joint.so"),
                                                     ("fwis_hybrid_joint_ros","libhybrid_codec.so"))]
-    return {str(p.resolve()):sha(p) for p in paths if p.is_file()}
+    # Keep the recorded installation path even when its build cache is relocated.
+    # Reading it still hashes the full binary at the link destination.
+    return {str(p.absolute()):sha(p) for p in paths if p.is_file()}
 
 
 def solver_system_compatibility(manifest):

@@ -5,9 +5,9 @@ import collections
 import csv
 import json
 import math
-import os
 from pathlib import Path
 import platform
+import shutil
 import subprocess
 import sys
 import yaml
@@ -18,7 +18,8 @@ from qualify import (LOCAL,NUMERIC,POLICY,PROFILES,REGISTRY,REPORT,ROOT,SPEC,TAS
 from cases import indices
 from route_evidence import (HISTORICAL, RELEASE_FAMILIES, historical_offline, historical_pairs, matrix,
                             measured_completion, pair, route_is_bound)
-from evidence_manifest import build_manifest, audit_rows, system_hashes, runtime_binaries, recorder_revision, solver_system_compatibility, same_solver, RANKING_SOURCE, observed_runtime_sources, runtime_sources_match, current_sources_match
+from evidence_manifest import build_manifest, audit_rows, system_hashes, runtime_binaries, recorder_revision, solver_system_compatibility, same_solver, observed_runtime_sources, runtime_sources_match, current_sources_match
+from evidence_manifest import qualification_inputs, compact_inputs_match
 
 
 def write(path,obj):
@@ -44,16 +45,31 @@ def main():
     ap.add_argument("--ctest",type=Path,default=LOCAL/f"release_{release}"/"ctest")
     ap.add_argument("--recorder",type=Path,default=LOCAL/f"recorder_stop_{system_release}"/"receipt.json")
     ap.add_argument("--historical",type=Path,default=LOCAL/"historical_ros_c6"/"summary.json")
+    ap.add_argument("--sealed",type=Path,help="directory of the pre-solve manifest_standard.json and manifest_baseline.json")
     ap.add_argument("--prior-gazebo",type=Path,default=LOCAL/"gazebo_release_c6",help="separate short-route regression index")
     ap.add_argument("--report",type=Path,default=REPORT)
     ap.add_argument("--compact",action="store_true",help="re-evaluate from the checked-in measurements")
     args=ap.parse_args();out=args.report;out.mkdir(exist_ok=True,parents=True)
+    if args.compact and args.sealed:
+        ap.error("--compact verifies the manifests already archived in the report")
+    if not args.compact and not any(args.batch.glob("*.jsonl")):
+        raise SystemExit(f"No raw planning runs in {args.batch}. Use --compact to verify the published measurements.")
+    if args.sealed and not all((args.sealed/f"manifest_{p}.json").is_file() for p in PROFILES):
+        ap.error("--sealed requires both speed-profile manifests")
+    if not args.compact and (out/SPEC.name).resolve()!=SPEC.resolve():
+        shutil.copyfile(SPEC,out/SPEC.name)
+    case_manifests={}
+    for profile in PROFILES:
+        name="case_manifest.json" if profile=="standard" else "case_manifest_baseline.json"
+        target=out/name
+        if not args.compact:
+            original=args.sealed/f"manifest_{profile}.json" if args.sealed else REPORT/name
+            if original.resolve()!=target.resolve():
+                shutil.copyfile(original,target)
+        case_manifests[profile]=target if target.is_file() else REPORT/name
     spec=yaml.safe_load(SPEC.read_text())
     data=load(out/"measurements.json") if args.compact else None
     if not args.compact:
-        if not any(args.batch.glob("*.jsonl")):
-            raise SystemExit(f"No raw planning runs in {args.batch}. Use --compact to verify the published measurements.")
-        casefile=REPORT/"case_manifest.json"
         stats=collect(args.batch)
         models=load(args.numeric/"model.json");collision=load(args.numeric/"collision.json")
         derivatives=load(args.numeric/"derivatives.json")
@@ -75,7 +91,7 @@ def main():
                   necessary_profiles=load(args.numeric/"necessary_corridor.json"),
                   asan_smoke=load(args.numeric/"sanitizer_summary.json"),native_faults=load(archive/"faults.json"),
                   admission=load(archive/"delivery.json"),cases=stats,witness=witness,gazebo=closed_rows(args.gazebo),headless=closed_rows(args.headless),
-                  inputs_sha256={str(p.relative_to(ROOT)):sha(p) for p in [SPEC,REGISTRY,ROOT/RANKING_SOURCE,casefile,REPORT/"case_manifest_baseline.json"] if p.exists()},
+                  inputs_sha256=qualification_inputs(case_manifests),
                   default_runs=load(args.batch/"default_runs.json"),source_manifest=build_manifest(args.batch,args.witness,args.binary,args.ctest))
         data["paired_closed_loop"]=archived_comparisons(data["gazebo"],data["default_runs"])
         data["historical_closed_loop"]=historical_pairs(data["gazebo"]+data["headless"],ROOT/"reports/runs")
@@ -322,11 +338,9 @@ def main():
     record("DEFAULT_INTEGRATION",True,checkout_matches and defaults_ok and {r["entry"] for r in smoke if r["status"]=="passed" and r["native"]}=={"single","multi","interactive"},
            dict(test_default=default["planners"],tracker=default["tracking_implementation"],current_source_matches=checkout_matches,runs=smoke))
     hashes=data["inputs_sha256"];manifest=data["source_manifest"]
-    provenance=audit_rows(rows,witness,{p:REPORT/("case_manifest.json" if p=="standard" else "case_manifest_baseline.json") for p in PROFILES},manifest)
+    provenance=audit_rows(rows,witness,case_manifests,manifest)
     evidence_manifest=load(out/"manifest.json") or {}
-    compact_hashes=evidence_manifest.get("compact_hashes",{})
-    compact_integrity=all((out/p).is_file() and sha(out/p)==v for p,v in compact_hashes.items())
-    has_scalars={"measurements.json","runs.csv"}<=set(compact_hashes)
+    compact_integrity=compact_inputs_match(out,evidence_manifest,hashes,case_manifests)
     runtime_files=(manifest or {}).get("runtime_binaries",{})
     runtime_provenance=bool(runtime_files) and all(
         r.get("installed_binaries")==runtime_files and r.get("source_commit")==manifest["system_commit"]
@@ -338,7 +352,7 @@ def main():
     raw_bound=bool(gaz) and len(raw_index)==len(gaz+headless) and all(
         raw_index.get(r['run_id'])=={'campaign':r.get('campaign'),'archive':(r.get('route') or {}).get('source_hashes'),
                                       'instrumentation':r.get('evidence_files')} for r in gaz+headless)
-    integrity=runtime_provenance and raw_bound and offline_provenance and same_solver(manifest) and compact_integrity and has_scalars and all((ROOT/p).exists() and sha(ROOT/p)==v for p,v in hashes.items()) and len(hashes)>=3
+    integrity=runtime_provenance and raw_bound and offline_provenance and same_solver(manifest) and compact_integrity
     record("REPRODUCIBLE_EVIDENCE",True,provenance["verified"] and integrity and bool(rows) and all(
            c["status"]=="PASS" for k,c in checks.items() if k!="DEFAULT_INTEGRATION"),dict(input_hashes=hashes,source_commit=(manifest or {}).get("binary_commit"),provenance=provenance,system_commit=manifest.get("system_commit"),
            solver_system_compatibility=manifest.get("solver_system_compatibility"),closed_loop_raw_bound=raw_bound))

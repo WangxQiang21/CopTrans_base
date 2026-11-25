@@ -7,9 +7,9 @@ import os
 from pathlib import Path
 import platform
 import subprocess
-from cases import ROOT,SPEC,REGISTRY,GEOMETRY,REPORT,LOCAL,POLICY,make,packed
+from cases import ROOT,LOCAL,POLICY,make,packed
 from qualify import sha
-from evidence_manifest import RANKING_SOURCE
+from evidence_manifest import CONFIG_FILES, RANKING_SOURCE
 
 
 def command(*args):
@@ -93,8 +93,8 @@ def export(out,data,batch):
                   os=platform.platform(),compiler=command("c++","--version").splitlines()[0],build_type="Release",
                   dependencies=dict(casadi="3.7.2",ROS="Humble"),policy=POLICY,ranking_policy=json.loads((ROOT/RANKING_SOURCE).read_text()),
                   threads=dict(OPENBLAS_NUM_THREADS=1,OMP_NUM_THREADS=1),scope="static_map_simulation_and_native_soft_realtime_load",
-                  config_hashes={str(p.relative_to(ROOT)):sha(p) for p in (REGISTRY,GEOMETRY,SPEC,ROOT/RANKING_SOURCE)},
-                  case_sha256={p:sha(REPORT/p) for p in ("case_manifest.json","case_manifest_baseline.json")},
+                  config_hashes={str(p.relative_to(ROOT)):sha(p) for p in CONFIG_FILES},
+                  case_sha256={p:sha(out/p) for p in ("case_manifest.json","case_manifest_baseline.json")},
                   numeric_and_control_sources=data.get("source_manifest"),
                   raw_local=str(LOCAL),reference_run_ids=["20261125_140950_e40cIk","20261125_141134_AeDvqX","20261125_141201_TcTcHJ"],
                   compact_hashes={str(p.relative_to(out)):sha(p) for p in [out/"runs.csv",out/"measurements.json",out/"case_manifest.json",
