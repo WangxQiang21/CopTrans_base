@@ -56,6 +56,10 @@ def write_summary(out,result,data):
     states={"INCOMPLETE":"尚未完成","COMPLETED":"已通过","BLOCKED":"受阻"}
     sections=[template+"## 实测与已知故障\n",
         f"本次自动验收{states[result['task_state']]}，共 {passed}/{len(gates)} 项通过。机器可读结果见 [acceptance.json](acceptance.json)。"]
+    source=data.get("source_manifest") or {}
+    if source.get("binary_commit") and source.get("system_commit"):
+        sections.append(f"本表的离线求解快照为 `{source['binary_commit'][:12]}`，Gazebo 与控制验证使用系统快照 "
+                        f"`{source['system_commit'][:12]}`。原生规划库 SHA 与逐试次身份见 [manifest.json](manifest.json)。")
     defaults=data["software_defaults"]["planners"]
     sections.append(f"当前无参入口的单车规划器为 `{defaults['single']}`，三车为 `{defaults['multi']}`，跟踪器为 `{data['software_defaults']['tracking_implementation']}`。")
     names={"single":"单车","formation":"三车"}
