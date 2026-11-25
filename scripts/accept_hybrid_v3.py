@@ -46,6 +46,8 @@ def main():
     spec=yaml.safe_load(SPEC.read_text())
     data=load(out/"measurements.json") if args.compact else None
     if not args.compact:
+        if not any(args.batch.glob("*.jsonl")):
+            raise SystemExit(f"No raw planning runs in {args.batch}. Use --compact to verify the published measurements.")
         casefile=REPORT/"case_manifest.json"
         stats=collect(args.batch)
         models=load(args.numeric/"model.json");collision=load(args.numeric/"collision.json")

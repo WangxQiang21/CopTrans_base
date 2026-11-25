@@ -9,6 +9,30 @@ import subprocess
 import sys
 
 
+RUNTIME_ARTIFACTS = {
+    "fwis_hybrid_joint": ("lib/libfwis_hybrid_joint.so",),
+    "fwis_hybrid_joint_ros": ("lib/libhybrid_codec.so", "lib/fwis_hybrid_joint_ros/hybrid_joint_planner",
+                              "lib/fwis_hybrid_joint_ros/hybrid_joint_executor"),
+    "fwis_control": ("lib/fwis_control/ranger_tracking_controller_cpp",),
+    "fwis_bringup": ("lib/fwis_bringup/run_experiment", "share/fwis_bringup/config/test_defaults.yaml",
+                     "share/fwis_bringup/launch/test.launch.py"),
+}
+
+
+def installed_fingerprint(install):
+    digest = hashlib.sha256(b"coptrans-release-install-v1\0")
+    for package, names in RUNTIME_ARTIFACTS.items():
+        prefix = install / package if (install / package).is_dir() else install
+        for name in names:
+            digest.update(f"{package}/{name}\0".encode())
+            with (prefix / name).open("rb") as handle:
+                file_digest = hashlib.sha256()
+                for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                    file_digest.update(chunk)
+            digest.update(file_digest.digest())
+    return digest.hexdigest()
+
+
 def fingerprint(root):
     sources = subprocess.check_output(
         ("git", "-C", root, "ls-files", "-z", "--cached", "--others",
@@ -38,4 +62,7 @@ def fingerprint(root):
 
 
 if __name__ == "__main__":
-    print(fingerprint(Path(sys.argv[1])))
+    if sys.argv[1:2] == ["--installed"]:
+        print(installed_fingerprint(Path(sys.argv[2])))
+    else:
+        print(fingerprint(Path(sys.argv[1])))

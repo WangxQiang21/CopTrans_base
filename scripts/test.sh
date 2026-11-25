@@ -18,7 +18,7 @@ interrupted=
 stop_remaining() {
     local attempt
     if [[ -z $launch_pid ]] || ! kill -0 -- "-$launch_pid" 2>/dev/null; then
-        return
+        return 0
     fi
     kill -TERM -- "-$launch_pid" 2>/dev/null || true
     for ((attempt=0; attempt<20; attempt++)); do
@@ -149,6 +149,22 @@ export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
 if [[ -d $root/../.coptrans-python/casadi ]]; then
     export PYTHONPATH="$root/../.coptrans-python${PYTHONPATH:+:$PYTHONPATH}"
 fi
+if [[ -z ${COPTRANS_CASADI_ROOT:-} ]]; then
+    # The CasADi wheel also installs its native CMake SDK in the package directory.
+    casadi_sdk=$(python3 - <<'PY'
+from importlib.util import find_spec
+from pathlib import Path
+
+spec = find_spec("casadi")
+locations = spec.submodule_search_locations if spec else ()
+for folder in locations or ():
+    if (Path(folder) / "cmake" / "casadi-config.cmake").is_file():
+        print(folder)
+        break
+PY
+)
+    if [[ -n $casadi_sdk ]]; then export COPTRANS_CASADI_ROOT="$casadi_sdk"; fi
+fi
 {
     printf 'ROS_DISTRO=%s\nROS_DOMAIN_ID=%s\nROS_LOCALHOST_ONLY=%s\nGZ_PARTITION=%s\n' \
         "$ROS_DISTRO" "$ROS_DOMAIN_ID" "$ROS_LOCALHOST_ONLY" "$GZ_PARTITION"
@@ -169,7 +185,7 @@ from pathlib import Path
 import sys
 run = Path(sys.argv[1])
 config = json.loads((run / "resolved_config.yaml").read_text())
-print(f"Planner {config['planner_backend']} | "
+print(f"Configured planner {config['planner_backend']} | "
       f"tracker {config.get('tracking_implementation', 'python')}/{config['controller_algorithm']} | "
       f"profile {config.get('architecture_profile', 'baseline')} | "
       f"scene {config['scenario']}/{config.get('scene_variant', 'default')}")
@@ -193,12 +209,14 @@ if [[ ${config[3]} == False ]]; then
     (
         cd -- "$workspace"
         CMAKE_BUILD_PARALLEL_LEVEL="${CMAKE_BUILD_PARALLEL_LEVEL:-2}" \
-            colcon build --packages-up-to fwis_bringup --parallel-workers 2 --install-base "$install_base"
+            colcon build --packages-up-to fwis_bringup --parallel-workers 2 --install-base "$install_base" \
+                --cmake-args -DCMAKE_BUILD_TYPE=Release
     ) 2>&1 | tee "$run_dir/build.log"
     built_digest=$(fingerprint) || fail 'Could not verify the CopTrans source fingerprint after the build.' source_fingerprint_failed
     [[ $source_digest == "$built_digest" ]] || fail 'Source changed during the build. Rerun without --no-build.' source_changed_during_build
 else
-    if [[ ! -r $source_stamp ]] || [[ $(<"$source_stamp") != "$source_digest" ]]; then
+    if [[ ! -r $source_stamp ]] || ! read -r stamped_source stamped_install stamped_mode < "$source_stamp" || \
+            [[ $stamped_source != "$source_digest" || $stamped_mode != Release || -z $stamped_install ]]; then
         fail 'The installed CopTrans build is stale or unverified. Rerun without --no-build. 请去掉 --no-build 重新运行。' overlay_source_mismatch
     fi
 fi
@@ -238,14 +256,20 @@ done
 if [[ ${config[4]} == on ]]; then
     ros2 pkg prefix rosbag2_transport >/dev/null || fail 'Recording requires rosbag2_transport.' rosbag_missing
 fi
+install_digest=$(python3 "$root/scripts/source_fingerprint.py" --installed "$install_base") || \
+    fail 'Required CopTrans runtime files are missing. Rerun without --no-build.' overlay_artifact_missing
 if [[ ${config[3]} == False ]]; then
     source_stamp_tmp=$(mktemp "$install_base/.coptrans-source.XXXXXXXX")
-    printf '%s\n' "$source_digest" > "$source_stamp_tmp"
+    printf '%s %s Release\n' "$source_digest" "$install_digest" > "$source_stamp_tmp"
     mv -f -- "$source_stamp_tmp" "$source_stamp"
     source_stamp_tmp=
+elif [[ $stamped_install != "$install_digest" ]]; then
+    fail 'Installed CopTrans runtime files have changed. Rerun without --no-build. 请去掉 --no-build 重新运行。' overlay_artifact_mismatch
 fi
-printf 'coptrans_source_sha256=%s\nCOPTRANS_INSTALL_BASE=%s\n' "$source_digest" "$install_base" >> "$run_dir/environment.txt"
-printf 'CopTrans install %s (%s)\n' "$install_base" "${source_digest:0:12}"
+printf 'coptrans_source_sha256=%s\ncoptrans_install_sha256=%s\ncoptrans_build_type=Release\nCOPTRANS_INSTALL_BASE=%s\n' \
+    "$source_digest" "$install_digest" "$install_base" >> "$run_dir/environment.txt"
+printf 'CopTrans Release install %s (source %s, runtime %s)\n' "$install_base" "${source_digest:0:12}" "${install_digest:0:12}"
+python3 "$archive_tool" collect "$run_dir" "$archive_dir"
 
 env --default-signal=INT,TERM setsid ros2 launch --noninteractive fwis_bringup test.launch.py \
     "run_config:=$run_dir/resolved_config.yaml" > >(tee "$run_dir/launch.log" 9>&-) 2>&1 9>&- &
@@ -295,6 +319,10 @@ temporary = path.with_suffix(".tmp")
 temporary.write_text(yaml.safe_dump(data, sort_keys=False))
 temporary.replace(path)
 print(f"Result {data['status']} ({data.get('reason', '')})")
+if data.get("planner_source"):
+    print("Observed planner source", data["planner_source"])
+if data.get("model_sha256"):
+    print("Received model SHA-256", data["model_sha256"])
 print(archive / path.name)
 sys.exit(code)
 PY

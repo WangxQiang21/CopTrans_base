@@ -3,13 +3,15 @@
 ## 1. 启动交互仿真
 
 ```bash
-cd /home/wq/Whut/CopTrans_base
+cd CopTrans_base
 ./scripts/interactive.sh
 ```
 
 脚本会增量构建并打开 Gazebo 和 RViz，`./run_demo.sh` 无参数时也进入同一测试。首次运行或代码变更后直接运行脚本。使用 `--no-build` 时，脚本会核对安装与源码是否一致。默认是室内厂房，西侧靠墙有一处只允许单车通过的 1.10 m 限宽口。可用 `--list-scenarios` 查看场景，加 `--scenario port_01` 切换到港口。
 
-要测试 V3 原生联合求解器，在仓库目录执行下面任意一条。启动后核对左侧面板或本轮 `experiment.json`，实际后端应显示 `formation_hybrid_joint_cpp` 或 `single_hybrid_joint_cpp`，跟踪器应显示 `cpp`。
+新机器先准备 ROS 2 Humble、Gazebo Harmonic、对应的 ROS 桥、RViz 和 Colcon。若缺少 CasADi C++ SDK，可执行 `python3 -m pip install --user --no-deps casadi==3.7.2`。已有独立 SDK 时，可先执行 `export COPTRANS_CASADI_ROOT=/实际路径/casadi`。首次启动会编译 Release；旧安装或文件校验失败时，去掉 `--no-build` 再运行。
+
+要测试 V3 原生联合求解器，在仓库目录执行下面任意一条。终端启动时显示选定的规划器、跟踪器、源码和安装指纹。三车交互求解时，RViz 左侧面板显示规划器上报的实际后端和构建编号。收到原生计划后，本轮 `experiment.json` 的 `planner_source` 为 `hybrid_joint`，`model_sha256` 标识收到的模型。源码及安装指纹可在同目录的 `environment.txt` 查询。
 
 ```bash
 ./scripts/interactive.sh --planner-backend hybrid_joint

@@ -52,4 +52,6 @@ for package_build in "$workspace/build"/*; do
     fi
 done
 python3 -m pytest -q --junitxml="$evidence/backend-tests.xml" src/fwis_backends/test
+python3 -m pytest -q --junitxml="$evidence/entry-and-qualification-tests.xml" \
+    "$root/scripts/test_public_entry.py" "$root/scripts/hybrid_v3"
 exit "$test_status"

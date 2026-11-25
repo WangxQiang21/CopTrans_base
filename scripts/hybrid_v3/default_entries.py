@@ -86,6 +86,7 @@ def collect(entry,archive):
 
 def test_entry(entry,destination):
     runs=ROOT/"reports/runs"
+    runs.mkdir(parents=True,exist_ok=True)
     before=set(p.name for p in runs.iterdir() if p.is_dir())
     command={ "single":["scripts/test.sh"],"multi":["scripts/test.sh","--task","multi"],
               "interactive":["scripts/interactive.sh"]}[entry]
