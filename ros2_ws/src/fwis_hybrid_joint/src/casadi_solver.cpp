@@ -54,6 +54,7 @@ public:
   explicit Problem(HJProblem& data, HJDerivativeAudit* audit=nullptr):p(data), audit_(audit){}
   void run();
 private:
+  std::vector<SX> continuous_axis(const HJPhase& phase, int axis, const SX& start, const SX& end);
   HJProblem& p;
   HJDerivativeAudit* audit_;
   std::vector<SX> vars, cons, outputs;
@@ -81,6 +82,109 @@ private:
     constraint(gear*(cos(h)*dx+sin(h)*dy),1e-4,inf);
   }
 };
+
+// A degree-five spline with double interior knots spans the entire C3
+// piecewise-quintic space. Knot insertion exposes the Bernstein coefficients
+// consumed by dynamics, collision constraints and the independent certificate.
+// Even an iteration-limited primal therefore has exact position/jet joins.
+std::vector<SX> Problem::continuous_axis(const HJPhase& phase, int axis, const SX& start, const SX& end) {
+  constexpr int degree = 5;
+  const int spans = phase.spans;
+  std::vector<double> knots(degree + 1, 0.);
+  for (int j = 1; j < spans; ++j) knots.insert(knots.end(), 2, j);
+  knots.insert(knots.end(), degree + 1, spans);
+  const int count = static_cast<int>(knots.size()) - degree - 1;
+  std::vector<SX> control(count);
+  control.front() = start;
+  control.back() = end;
+  DM basis = DM::zeros(count,count);
+  basis(0,0) = 1.;
+  basis(count-1,count-1) = 1.;
+  std::vector<double> samples(count);
+  samples.front() = phase.coefficient[0][axis][0];
+  samples.back() = phase.coefficient[spans-1][axis][degree];
+  for (int i = 1; i < count - 1; ++i) {
+    double station = 0;
+    for (int j = 1; j <= degree; ++j) station += knots[i+j] / degree;
+    const int span = std::min(static_cast<int>(station), spans - 1);
+    const double u = station - span;
+    std::array<double, degree+1> v;
+    std::copy_n(phase.coefficient[span][axis], degree+1, v.begin());
+    for (int order = degree; order > 0; --order)
+      for (int j = 0; j < order; ++j) v[j] += u * (v[j+1] - v[j]);
+    samples[i] = v[0];
+    std::vector<double> weights(knots.size()-1);
+    for (size_t j=0; j<weights.size(); ++j)
+      weights[j] = knots[j]<=station && station<knots[j+1] ? 1. : 0.;
+    for (int level=1; level<=degree; ++level) {
+      for (size_t j=0; j+level<weights.size(); ++j) {
+        const double left = knots[j+level]-knots[j];
+        const double right = knots[j+level+1]-knots[j+1];
+        weights[j] = (left>0 ? (station-knots[j])*weights[j]/left : 0.) +
+                     (right>0 ? (knots[j+level+1]-station)*weights[j+1]/right : 0.);
+      }
+    }
+    for (int j=0; j<count; ++j) basis(i,j) = weights[j];
+  }
+  // Interpolate the supplied spatial seed at the Greville points. Sampling a
+  // spline at those points and copying its positions as control vertices would
+  // smooth it a second time and can move an already feasible seed into a wall.
+  const auto initial = DM::solve(basis,DM(samples)).nonzeros();
+  for (int i=1; i<count-1; ++i) control[i] = variable(initial[i]);
+  for (int knot = 1; knot < spans; ++knot) {
+    for (int multiplicity = 2; multiplicity < degree; ++multiplicity) {
+      const int k = std::upper_bound(knots.begin(), knots.end(), knot) - knots.begin() - 1;
+      std::vector<SX> refined(control.size() + 1);
+      std::copy_n(control.begin(), k - degree + 1, refined.begin());
+      for (int i = k - degree + 1; i <= k - multiplicity; ++i) {
+        const double u = (knot - knots[i]) / (knots[i+degree] - knots[i]);
+        refined[i] = (1-u)*control[i-1] + u*control[i];
+      }
+      std::copy(control.begin() + k - multiplicity, control.end(), refined.begin() + k - multiplicity + 1);
+      control.swap(refined);
+      knots.insert(knots.begin() + k + 1, knot);
+    }
+  }
+  return control;
+}
+
+// Restore the affine C3 equations of an iteration-limited primal. This is the
+// orthogonal projection onto exactly the same equations used by the NLP. Keep
+// both endpoint positions and endpoint directions, then certify the resulting
+// geometry, wheel dynamics and collision envelope from scratch.
+void restore_joins(HJPhase& phase) {
+  const int spans = phase.spans;
+  if (spans < 2 || phase.mode != 0) return;
+  constexpr int difference[4][4] = {{1}, {-1,1}, {1,-2,1}, {-1,3,-3,1}};
+  constexpr int derivative_scale[] = {1,5,20,60};
+  const int rows = 4*(spans-1);
+  const int columns = 6*spans;
+  DM all = DM::zeros(rows, columns);
+  for (int join = 0; join < spans-1; ++join) {
+    for (int order = 0; order <= 3; ++order) {
+      for (int i = 0; i <= order; ++i) {
+        all(4*join+order,6*join+5-order+i) = difference[order][i];
+        all(4*join+order,6*join+6+i) = -difference[order][i];
+      }
+    }
+  }
+  const auto free = all(casadi::Slice(),casadi::Slice(2,columns-2));
+  for (int axis=0; axis<3; ++axis) {
+    std::vector<double> values;
+    for (int j=0; j<spans; ++j)
+      values.insert(values.end(), phase.coefficient[j][axis], phase.coefficient[j][axis]+6);
+    const DM errors = DM::mtimes(all, DM(values));
+    auto residual = errors.nonzeros();
+    bool needs_restoration = false;
+    for (int i=0; i<rows; ++i)
+      if (std::abs(residual[i])*derivative_scale[i%4] > 1e-8) needs_restoration = true;
+    if (!needs_restoration) continue;
+    const auto multipliers = DM::solve(DM::mtimes(free,free.T()), errors);
+    const auto correction = DM::mtimes(free.T(),multipliers).nonzeros();
+    for (int i=2; i<columns-2; ++i)
+      phase.coefficient[i/6][axis][i%6] -= correction[i-2];
+  }
+}
 
 std::array<SX,3> position(const Coordinates& coeff,const SX& s) {
   std::array<SX,3> out{};
@@ -233,6 +337,7 @@ void Problem::run(){
     }
 
     std::vector<Coordinates> blocks(N);
+    std::array<std::vector<SX>,3> channel;
     for(int j=0;j<N;++j) {
       auto& b=blocks[j];
       for(int axis=0;axis<3;++axis) {
@@ -243,6 +348,14 @@ void Problem::run(){
         }
         if(ph.mode==2 || (axis==2 && (!multi || translation_chart || ph.mode!=0))) { b[axis].fill(start);continue; }
         if(ph.mode==1){for(int i=0;i<6;++i)b[axis][i]=start+(end-start)*i/5.;continue;}
+        if(N>1 && p.general_chart){
+          if(j==0)channel[axis]=continuous_axis(ph,axis,start,end);
+          std::copy_n(channel[axis].begin()+5*j,6,b[axis].begin());
+          for(int i=1;i<=5;++i)if(j+1<N || i<5)
+            cost+=.65*pow(b[axis][i]-parameter(ph.coefficient[j][axis][i]),2);
+          for(int i=0;i<4;++i)cost+=.025*pow(b[axis][i+2]-2*b[axis][i+1]+b[axis][i],2);
+          continue;
+        }
         b[axis][0]=j?blocks[j-1][axis][5]:start;
         for(int i=1;i<=5;++i) {
           const double seed=ph.coefficient[j][axis][i];
@@ -476,6 +589,7 @@ void Problem::run(){
     for(auto& h:ph.h0) h=coefficients[o++];
     for(auto& h:ph.h1) h=coefficients[o++];
     for(int j=0;j<ph.spans;++j)for(auto& axis:ph.coefficient[j])for(double& c:axis)c=coefficients[o++];
+    if (!converged) restore_joins(ph);
   }
 }
 } // namespace

@@ -33,17 +33,25 @@ long double basis(const h::Quintic &c,long double s,int derivative) {
 Oracle oracle(const h::Phase &p,const h::Footprint &f,int i,long double u) {
   long double s=u*u*u*(10-15*u+6*u*u),sd=30*u*u*(1-u)*(1-u)/p.duration;
   if(p.cruise_ramp_fraction) {
-    const auto a=static_cast<long double>(p.cruise_ramp_fraction);
-    long double z=u<.5?u:1-u;
-    if(z<a) {
-      z/=a;
-      s=a/(1-a)*(std::pow(z,3)-std::pow(z,4)/2);
-      sd=(3*std::pow(z,2)-2*std::pow(z,3))/((1-a)*p.duration);
-    } else {
-      s=(z-a/2)/(1-a);
-      sd=1/((1-a)*p.duration);
+    // Independently integrate the analytic cubic velocity profile in long double.
+    const auto ramp=[&](long double width) {
+      const auto t=std::min(u,1-u);long double position,velocity;
+      if(t<width) {
+        const auto v=t/width;
+        position=width*(std::pow(v,3)-std::pow(v,4)/2)/(1-width);
+        velocity=(3*std::pow(v,2)-2*std::pow(v,3))/(1-width);
+      } else {
+        position=(t-width/2)/(1-width);
+        velocity=1/(1-width);
+      }
+      return std::array<long double,2>{u>.5?1-position:position,velocity/p.duration};
+    };
+    auto value=ramp(p.cruise_ramp_fraction);
+    if(p.cruise_ramp_fraction<.125){
+      const auto wide=ramp(.125L);
+      for(int j=0;j<2;++j)value[j]=(7*value[j]+wide[j])/8;
     }
-    if(u>.5)s=1-s;
+    s=value[0];sd=value[1];
   }
   const auto &piece=p.pieces.front();
   C xy(basis(piece.x,s,0),basis(piece.y,s,0)),v(basis(piece.x,s,1),basis(piece.y,s,1));
@@ -81,7 +89,7 @@ int main(int argc,char** argv){
   double poserr=0,yawerr=0,twerr=0,kerr=0,mount=0,intxy=0,inth=0;
   unsigned loops=0,integ=0,boundaries=0;
   for(int bodies:{1,3}) for(int mode=0;mode<3;++mode) for(int k=0;k<10010;++k) {
-    h::Request r;h::Phase p;p.duration=range(3,15);p.cruise_ramp_fraction=(k%2 || k>=10004)?.125:0.;p.mode=static_cast<h::Mode>(mode);
+    h::Request r;h::Phase p;p.duration=range(3,15);p.cruise_ramp_fraction=mode!=2 && (k%2 || k>=10004)?h::cruise_ramps[(k/2)%4]:0.;p.mode=static_cast<h::Mode>(mode);
     r.vehicles={{0,0,.5,.3}};
     if(bodies==3) r.vehicles={{.9,.1,.5,.3},{-.6,-.68,.5,.3},{-.55,.74,.5,.3}};
     h::Piece piece; auto x=range(-4,4),y=range(-4,4),ang=range(-pi,pi),d=range(.6,2);
@@ -97,7 +105,9 @@ int main(int argc,char** argv){
     }
     double u=range(.01,.99);
     if(k>=10000){++boundaries;
-      const double boundary_points[10]{0.,1.,1e-13,1-1e-13,.125-1e-13,.125,.125+1e-13,.875-1e-13,.875,.875+1e-13};
+      const double width=p.cruise_ramp_fraction>0?p.cruise_ramp_fraction:.125;
+      const double boundary_points[10]{0.,1.,1e-13,1-1e-13,width-1e-13,width,width+1e-13,
+                                       1-width-1e-13,1-width,1-width+1e-13};
       u=boundary_points[k-10000];}
     const auto s=h::evaluate_phase(r,p,u*p.duration);
     double dp=0,da=0,dt=0,dk=0,dm=0;

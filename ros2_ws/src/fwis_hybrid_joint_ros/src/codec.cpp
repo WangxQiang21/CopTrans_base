@@ -98,7 +98,7 @@ J phase(const hj::Phase & p)
   }
   return j;
 }
-hj::Phase decode_phase(const J & j, size_t vehicles, bool piecewise_clock)
+hj::Phase decode_phase(const J & j, size_t vehicles, unsigned clock_version)
 {
   hj::Phase p;
   for (auto key:{"kind", "mode"}) {
@@ -112,7 +112,9 @@ hj::Phase decode_phase(const J & j, size_t vehicles, bool piecewise_clock)
   }
   p.cruise_ramp_fraction = j.isMember("cruise_ramp_fraction") ? number(j["cruise_ramp_fraction"]) : 0.;
   require(p.cruise_ramp_fraction == 0. ||
-    (piecewise_clock && p.cruise_ramp_fraction == .125 && p.kind == hj::Kind::Motion && p.mode != hj::Mode::S),
+    (p.kind == hj::Kind::Motion && p.mode != hj::Mode::S &&
+     ((clock_version >= 2 && p.cruise_ramp_fraction == .125) ||
+      (clock_version == 3 && hj::supported_cruise_ramp(p.cruise_ramp_fraction)))),
     "unsupported phase clock");
   p.duration = number(j["duration"]);
   require(p.duration > 0. && p.duration <= 86400., "invalid phase time");
@@ -198,7 +200,11 @@ Envelope encode(const Context & c, const hj::Plan & p, int64_t epoch, int64_t pu
   require(c.id && epoch > 0, "invalid plan identity");
   J j;
   j["schema"] = schema;
-  j["numeric_contract"] = "bernstein5/unwrapped_yaw/phase_clock/v2";
+  const bool has_narrow_ramp = std::any_of(p.phases.begin(), p.phases.end(), [](const hj::Phase & ph) {
+      return ph.cruise_ramp_fraction > 0. && ph.cruise_ramp_fraction < .125;
+    });
+  j["numeric_contract"] = has_narrow_ramp ? "bernstein5/unwrapped_yaw/dual_ramp/v3" :
+    "bernstein5/unwrapped_yaw/phase_clock/v2";
   j["certificate_version"] = "hybrid_continuous/v1";
   j["solver_build"] = HYBRID_BUILD_DIGEST;
   j["request"] = contract(c);
@@ -231,9 +237,13 @@ Decoded decode(const Envelope & m, std::shared_ptr<const hj::GridSnapshot> grid,
   require(m.model_json.size() <= 16000000 && digest(m.model_json) == m.model_sha256, "model digest mismatch");
   auto j = parse(m.model_json);
   const auto & v = j["request"];
-  const bool piecewise_clock = j["numeric_contract"] == "bernstein5/unwrapped_yaw/phase_clock/v2";
+  const auto & contract_name = j["numeric_contract"];
+  unsigned clock_version = 0;
+  if (contract_name == "bernstein5/unwrapped_yaw/quintic_time/v1") clock_version = 1;
+  if (contract_name == "bernstein5/unwrapped_yaw/phase_clock/v2") clock_version = 2;
+  if (contract_name == "bernstein5/unwrapped_yaw/dual_ramp/v3") clock_version = 3;
   require(
-    j["schema"] == schema && (piecewise_clock || j["numeric_contract"] == "bernstein5/unwrapped_yaw/quintic_time/v1") &&
+    j["schema"] == schema && clock_version != 0 &&
     j["certificate_version"] == "hybrid_continuous/v1" && j["solver_build"] == HYBRID_BUILD_DIGEST &&
     j["epoch_ns"].isInt64() && j["epoch_ns"].asInt64() == ns(m.header.stamp), "model contract mismatch");
   require(
@@ -277,7 +287,7 @@ Decoded decode(const Envelope & m, std::shared_ptr<const hj::GridSnapshot> grid,
   require(j["phases"].isArray() && j["phases"].size() > 0 && j["phases"].size() <= 256,
     "invalid phase count");
   for (auto & p:j["phases"]) {
-    out.plan.phases.push_back(decode_phase(p, c.ids.size(), piecewise_clock));
+    out.plan.phases.push_back(decode_phase(p, c.ids.size(), clock_version));
   }
   require(hj::duration(out.plan) <= std::min(r.task_duration_cap, 86400.) + .000001, "duration cap");
   return out;

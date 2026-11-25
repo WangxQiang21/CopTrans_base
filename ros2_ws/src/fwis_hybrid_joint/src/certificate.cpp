@@ -106,7 +106,7 @@ Jet polynomial(const Quintic &coeff,double a,double b) {
 struct ClockBounds {I z1,z2,z3;};
 using GridIK=std::array<double,2>;
 constexpr Quintic progress{0,0,0,1,1,1};
-I progress_at(double u,double ramp) {
+I base_progress(double u,double ramp) {
   if(ramp>0) {
     const bool tail=u>0.5;
     const I x=tail?I(1)-I(u):I(u);
@@ -123,6 +123,11 @@ I progress_at(double u,double ramp) {
   I x=tail?I(1)-I(u):I(u);
   const auto s=x*x*x*(I(10)+x*(I(-15)+I(6)*x));
   return tail?I(1)-s:s;
+}
+I progress_at(double u,double ramp) {
+  const auto base=base_progress(u,ramp);
+  if(ramp>0 && ramp<.125)return I(.875)*base+I(.125)*base_progress(u,.125);
+  return base;
 }
 GridIK inverse_clock(double station,double ramp) {
   if (station<=0 || station>=1) return {station,station};
@@ -141,7 +146,7 @@ GridIK inverse_clock(double station,double ramp) {
   return {lower,hi};
 }
 I envelope(I a,I b) {return {std::min(a.l,b.l),std::max(a.h,b.h)};}
-ClockBounds time_derivatives(double from,double to,double ramp) {
+ClockBounds base_derivatives(double from,double to,double ramp) {
   if(ramp==0) {
     const auto law=polynomial(progress,from,to);
     return {law.c[1],I(2)*law.c[2],I(6)*law.c[3]};
@@ -166,6 +171,13 @@ ClockBounds time_derivatives(double from,double to,double ramp) {
   }
   if(to>=ramp && from<=1-ramp) add(peak,I(0),I(0));
   return out;
+}
+ClockBounds time_derivatives(double from,double to,double ramp) {
+  const auto narrow=base_derivatives(from,to,ramp);
+  if(ramp<=0 || ramp>=.125)return narrow;
+  const auto wide=base_derivatives(from,to,.125);
+  return {I(.875)*narrow.z1+I(.125)*wide.z1,I(.875)*narrow.z2+I(.125)*wide.z2,
+          I(.875)*narrow.z3+I(.125)*wide.z3};
 }
 double separation(double a,double b){return std::abs(std::remainder(a-b,2*pi));}
 bool same(double a,double b,double tol){return std::isfinite(a)&&std::isfinite(b)&&std::abs(a-b)<=tol;}
@@ -447,7 +459,9 @@ Audit certify(const Request& r,const Plan& plan,Clock::time_point deadline,const
       const auto &ph=plan.phases[idx];
       if (Clock::now()>=deadline || (cancel&&cancel())) return {false,"CERTIFICATION_BUDGET",idx};
       if (!positive(ph.duration) || ph.pieces.empty()) return {false,"INVALID_PHASE",idx};
-      if (ph.cruise_ramp_fraction!=0. && ph.cruise_ramp_fraction!=.125) return {false,"UNKNOWN_TIME_LAW",idx};
+      if (ph.cruise_ramp_fraction != 0. &&
+          (!supported_cruise_ramp(ph.cruise_ramp_fraction) || ph.kind != Kind::Motion || ph.mode == Mode::S))
+        return {false,"UNKNOWN_TIME_LAW",idx};
       if (ph.kind==Kind::Motion && ph.duration<l.min_motion_duration) return {false,"MODE_DWELL",idx};
       if (!(ph.mode==Mode::A || ph.mode==Mode::O || ph.mode==Mode::S)
           || !(ph.kind==Kind::Motion || ph.kind==Kind::Prepare || ph.kind==Kind::Hold)) return {false,"UNKNOWN_PHASE",idx};

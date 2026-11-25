@@ -1,6 +1,7 @@
 #include "fwis_hybrid_joint/model.hpp"
 #include "nlp_api.h"
 #include "clock.hpp"
+#include "channel_spline.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -27,10 +28,10 @@ struct Run {
 extern "C" int stop_nlp(void *r){return static_cast<Run*>(r)->stop();}
 using Route=std::vector<Point>;
 using Sequence=std::vector<Mode>;
-struct Seed { Sequence seq; int sign; Route route; std::string edit; int reverse_from{-1}; bool quintic{}, general{}, relaxed{}; int priority{8}; };
+struct Seed { Sequence seq; int sign; Route route; std::string edit; int reverse_from{-1}; bool quintic{}, general{}, relaxed{}; int priority{8}; bool shortest_yaw{}; std::vector<double> channel_yaw{}; };
 // Occupancy A* only proposes continuous optimization starts. Full swept footprint
 // checks (including independent vehicle headings) are performed by the certifier.
-Route grid_seed(const Request& r,const Run& run) {
+Route grid_seed(const Request& r,const Run& run,bool wide=false,int gear=1,std::vector<double>* yaw_seed=nullptr) {
   const auto& map=*r.grid;
   const int w=map.width(),h=map.height(); const double res=map.resolution();
   const auto org=map.origin();
@@ -66,6 +67,39 @@ Route grid_seed(const Request& r,const Run& run) {
   double reach=0;
   for(const auto& f:r.vehicles) reach=std::max(reach,std::hypot(f[0],f[1])+.5*std::hypot(f[2],f[3]));
   if(r.cargo){auto f=*r.cargo;reach=std::max(reach,std::hypot(f[0],f[1])+.5*std::hypot(f[2],f[3]));}
+  struct ClearanceDisk {double x,y,radius;};
+  std::vector<ClearanceDisk> cover;
+  if(wide){
+    // A small union of disks follows cargo orientation. A single enclosing
+    // circle would close legitimate three-metre corridors on all headings.
+    if(r.cargo){
+      const auto& f=*r.cargo;
+      const int nx=std::max(1,int(std::ceil(f[2]/.60))),ny=std::max(1,int(std::ceil(f[3]/.60)));
+      const double sx=f[2]/nx,sy=f[3]/ny;
+      for(int iy=0;iy<ny;++iy)for(int ix=0;ix<nx;++ix)
+        cover.push_back({f[0]+(ix+.5)*sx-f[2]/2,f[1]+(iy+.5)*sy-f[3]/2,.5*std::hypot(sx,sy)});
+    }
+    for(const auto& f:r.vehicles)cover.push_back({f[0],f[1],.5*std::hypot(f[2],f[3])});
+  }
+  auto clearance_at=[&](Point q,double yaw){
+    const double co=std::cos(yaw),si=std::sin(yaw);
+    double gap=std::numeric_limits<double>::infinity();
+    for(const auto& disk:cover){
+      const int at=cell({q.x+co*disk.x-si*disk.y,q.y+si*disk.x+co*disk.y});
+      gap=std::min(gap,(at<0?0.:clear[at]*res)-disk.radius);
+    }
+    return gap;
+  };
+  std::vector<float> gap_cache(wide?w*h:0,std::numeric_limits<float>::quiet_NaN());
+  auto body_gap=[&](int id){
+    if(std::isnan(gap_cache[id])){
+      const auto q=point(id);
+      const double ds=distance(q,start),dg=distance(q,goal),u=ds/std::max(1.e-8,ds+dg);
+      const double yaw=r.start.reference.yaw+u*u*(3.-2.*u)*delta(r.start.reference.yaw,r.goal.reference.yaw);
+      gap_cache[id]=static_cast<float>(clearance_at(q,yaw));
+    }
+    return gap_cache[id];
+  };
   bool broad_clear=true;
   const int line_n=std::max(1,int(std::ceil(distance(start,goal)/res)));
   for(int j=0;j<=line_n;++j){double u=double(j)/line_n;int id=cell({start.x+u*(goal.x-start.x),start.y+u*(goal.y-start.y)});
@@ -86,7 +120,20 @@ Route grid_seed(const Request& r,const Run& run) {
       int next=ny*w+nx;
       if(clear[next]<1 || (x && y && (clear[id+x]<1||clear[id+y*w]<1)))continue;
       double clearance=clear[next]*res;
-      double ng=g[id]+std::hypot(x,y)*res*(1+1.5*std::pow(reach/std::max(.15,clearance),3));
+      double tangent_cost=0.;
+      if(wide){
+        const auto q=point(next);
+        const double initial=distance(q,start);
+        const double gap=body_gap(next);
+        if(gap<-.025)continue;
+        tangent_cost=.65/std::pow(.3+std::max(0.,gap),2);
+        const double approach=2.5*r.limits.radius;
+        if(initial<approach){
+          const double alignment=gear*(x*std::cos(r.start.heading[0])+y*std::sin(r.start.heading[0]))/std::hypot(x,y);
+          tangent_cost+=5.*(1.-alignment)*std::pow(1.-initial/approach,2);
+        }
+      }
+      double ng=g[id]+std::hypot(x,y)*res*(1+tangent_cost+1.5*std::pow(reach/std::max(.15,clearance),3));
       if(ng+1e-9>=g[next])continue;
       g[next]=ng;parent[next]=id;
       frontier.emplace(ng+distance(point(next),point(to)),next);
@@ -105,7 +152,17 @@ Route grid_seed(const Request& r,const Run& run) {
     double f=(at-arc[j-1])/(arc[j]-arc[j-1]);
     out.push_back({rev[j-1].x+f*(rev[j].x-rev[j-1].x),rev[j-1].y+f*(rev[j].y-rev[j-1].y)});
   }
-  out.push_back(goal);return out;
+  out.push_back(goal);
+  if(wide && yaw_seed){
+    const auto last=out[out.size()-2];
+    const double entry=r.start.heading[0]+(gear<0?pi:0);
+    const double exit=r.goal.constrain_heading[0]?r.goal.heading[0]+(gear<0?pi:0):std::atan2(goal.y-last.y,goal.x-last.x);
+    const auto xy=hybrid_channel::fit(out,entry,exit);
+    if(!xy[0].empty())
+      *yaw_seed=hybrid_channel::yaw_profile(xy,r.start.reference.yaw,
+                                             delta(r.start.reference.yaw,r.goal.reference.yaw),clearance_at);
+  }
+  return out;
 }
 
 Point interpolate(const Route& r,double fraction){
@@ -121,7 +178,7 @@ Point interpolate(const Route& r,double fraction){
 // A clamped, uniform quintic B-spline initialized from the channel tangent.
 // Insert every interior knot to multiplicity five to extract exact Bernstein
 // spans. The fixed-yaw chart has C4 joins, with zero angular rate at both ends.
-std::vector<Quintic> route_orientation(const Route& path,double start,double end){
+std::vector<Quintic> route_orientation(const Route& path,double start,double end,bool shortest,const std::vector<double>& optimized){
   const int n=path.size()-1,degree=5;
   std::vector<double> knots(6,0.);for(int i=1;i<n;++i)knots.push_back(i);
   knots.insert(knots.end(),6,n);
@@ -134,7 +191,8 @@ std::vector<Quintic> route_orientation(const Route& path,double start,double end
     a[j]=a[j-1]+delta(last,current);last=current;
   }
   const double residual=delta(a.back(),end);
-  for(int j=1;j<=n;++j)a[j]+=residual*j/n;
+  for(int j=1;j<=n;++j)a[j]=shortest?start+delta(start,end)*j/n:a[j]+residual*j/n;
+  if(optimized.size()==a.size())a=optimized;
   std::vector<double> controls(n+degree);
   for(int i=0;i<n+degree;++i){
     double t=0;for(int j=1;j<=degree;++j)t+=knots[i+j]/degree;
@@ -142,19 +200,7 @@ std::vector<Quintic> route_orientation(const Route& path,double start,double end
     controls[i]=a[j]+(t-j)*(a[j+1]-a[j]);
   }
   for(int i=0;i<3;++i){controls[i]=start;controls[controls.size()-1-i]=end;}
-  for(int x=1;x<n;++x)for(int rep=1;rep<degree;++rep){
-    int k=std::upper_bound(knots.begin(),knots.end(),x)-knots.begin()-1;
-    std::vector<double> refined(controls.size()+1);
-    for(int j=0;j<=k-degree;++j)refined[j]=controls[j];
-    for(int j=k-rep;j<(int)controls.size();++j)refined[j+1]=controls[j];
-    for(int j=k-degree+1;j<=k-rep;++j){
-      double f=(x-knots[j])/(knots[j+degree]-knots[j]);
-      refined[j]=controls[j-1]+f*(controls[j]-controls[j-1]);
-    }
-    controls.swap(refined);knots.insert(knots.begin()+k+1,x);
-  }
-  std::vector<Quintic> pieces(n);for(int j=0;j<n;++j)std::copy_n(controls.begin()+5*j,6,pieces[j].begin());
-  return pieces;
+  return hybrid_channel::bezier_spans(std::move(controls),n);
 }
 HJProblem problem(const Request& r,const Seed& seed,const SolveOptions& options,Run& run) {
   const auto& l=r.limits;
@@ -200,7 +246,8 @@ HJProblem problem(const Request& r,const Seed& seed,const SolveOptions& options,
       if(ph.mode==0 && ph.gear[i]<0 && !r.allow_reverse)ph.gear[i]=1;
       if(ph.mode==2) {
         bool last=k+1==p.count;
-        const double next=last?p.goal[3+i]:std::atan2(seed.route.back().y-seed.route.front().y,seed.route.back().x-seed.route.front().x)+(seed.sign<0?pi:0);
+        const auto tangent = seed.route[1];
+        const double next=last?p.goal[3+i]:std::atan2(tangent.y-seed.route.front().y,tangent.x-seed.route.front().x)+(seed.sign<0?pi:0);
         headings[i]+=delta(headings[i],next);
       } else if(ph.mode==0) {
         const double next=k+1==p.count && p.fixed_goal[i+1]?p.goal[3+i]:travel+(ph.gear[i]<0?pi:0);
@@ -210,25 +257,32 @@ HJProblem problem(const Request& r,const Seed& seed,const SolveOptions& options,
     }
     double spin=0;for(int i=0;i<p.bodies;++i)spin=std::max(spin,std::abs(ph.h1[i]-ph.h0[i]));
     double amount=ph.mode==2?spin:length;
-    // At target speed, a cubic velocity ramp needs at least this much time
-    // for the configured acceleration and jerk. Use a cruise plateau only
-    // where both ramps fit naturally in a long translating motion.
-    const double min_ramp=std::max(1.5*l.speed/l.acceleration,std::sqrt(6*l.speed/l.jerk));
-    if(!seed.quintic && ph.mode!=2 && length>=7*l.speed*min_ramp) ph.cruise_ramp_fraction=.125;
-
-    const double peak=ph.cruise_ramp_fraction>0?1./(1-ph.cruise_ramp_fraction):1.875;
     if(moving==1 && seed.route.size()>2 && ph.mode==0){
       amount=0;for(std::size_t j=1;j<seed.route.size();++j)amount+=distance(seed.route[j-1],seed.route[j]);
     }
+    // A cubic velocity ramp reaching v requires t >= 1.5 v/a and
+    // t >= sqrt(6 v/j). For ramp fraction f, a plateau covering arc L at v
+    // gives each ramp f L / ((1-f) v) seconds. Choose the shortest that fits.
+    const double min_ramp=std::max(1.5*l.speed/l.acceleration,std::sqrt(6*l.speed/l.jerk));
+    if(!seed.quintic && ph.mode!=2){
+      for(double f:cruise_ramps){
+        if(f*amount >= (1-f)*l.speed*min_ramp){ph.cruise_ramp_fraction=f;break;}
+      }
+    }
+    const double f=ph.cruise_ramp_fraction;
+    const double peak=hybrid_clock::state(.5,f)[1];
+    const double acceleration_peak=f>0?1.5*peak/f:5.775;
+    const double jerk_peak=f>0?6*peak/(f*f):60.;
     ph.tau=std::clamp(1.15*std::max({.5,peak*amount/(ph.mode==2?l.spin_speed:l.speed),
-      std::sqrt(5.775*amount/(ph.mode==2?l.spin_acceleration:l.acceleration)),
-      std::cbrt(60*amount/(ph.mode==2?l.spin_jerk:l.jerk))}),.05,p.duration_cap);
+      std::sqrt(acceleration_peak*amount/(ph.mode==2?l.spin_acceleration:l.acceleration)),
+      std::cbrt(jerk_peak*amount/(ph.mode==2?l.spin_jerk:l.jerk))}),.05,p.duration_cap);
     Route path{start,end};if(ph.mode==0 && moving==1)path=seed.route;
     ph.spans=path.size()-1;
     for(int j=0;j<ph.spans;++j){
       const auto a=path[j],b=path[j+1];double len=distance(a,b);
       double d0=j?std::atan2(path[j+1].y-path[j-1].y,path[j+1].x-path[j-1].x):ph.h0[0]+(sign<0?pi:0);
       double d1=j+1<ph.spans?std::atan2(path[j+2].y-path[j].y,path[j+2].x-path[j].x):ph.h1[0]+(sign<0?pi:0);
+      if(seed.shortest_yaw && j+1==ph.spans && !p.fixed_goal[1])d1=std::atan2(b.y-a.y,b.x-a.x);
       for(int c=0;c<6;++c){
         double t=c/5.;
         ph.coefficient[j][0][c]=a.x+(b.x-a.x)*t;ph.coefficient[j][1][c]=a.y+(b.y-a.y)*t;
@@ -240,9 +294,18 @@ HJProblem problem(const Request& r,const Seed& seed,const SolveOptions& options,
         ph.coefficient[j][2][c]=psi+(endpsi-psi)*(j+t)/ph.spans;
       }
     }
-    if(ph.mode==0 && p.bodies==3 && moving==1 && ph.spans>1 && p.count==1 &&
+    if(seed.shortest_yaw && ph.spans>1 && ph.mode==0) {
+      const auto a=path[ph.spans-1],b=path.back();
+      const double entry=ph.h0[0]+(sign<0?pi:0);
+      const double exit=p.fixed_goal[1]?ph.h1[0]+(sign<0?pi:0):std::atan2(b.y-a.y,b.x-a.x);
+      const auto smooth=hybrid_channel::fit(path,entry,exit);
+      if(!smooth[0].empty())
+        for(int axis=0;axis<2;++axis)for(int j=0;j<ph.spans;++j)
+          std::copy(smooth[axis][j].begin(),smooth[axis][j].end(),ph.coefficient[j][axis]);
+    }
+    if(ph.mode==0 && p.bodies==3 && moving==1 && ph.spans>1 &&
        (std::abs(delta(psi,endpsi))>1e-8) && !seed.general){
-      auto yaw=route_orientation(path,psi,endpsi);
+      auto yaw=route_orientation(path,psi,endpsi,seed.shortest_yaw,seed.channel_yaw);
       for(int j=0;j<ph.spans;++j)std::copy(yaw[j].begin(),yaw[j].end(),ph.coefficient[j][2]);
       p.route_yaw_chart=1;
     }
@@ -347,7 +410,7 @@ Plan expand(const Request& r,const HJProblem& p) {
   Mode prev=Mode::A;Gears gear{1,1,1};
   for(int k=0;k<p.count;++k) {
     const auto& a=p.phase[k];
-    Phase ph; ph.mode=static_cast<Mode>(a.mode);ph.duration=a.tau;ph.cruise_ramp_fraction=a.cruise_ramp_fraction;
+    Phase ph; ph.mode=static_cast<Mode>(a.mode);ph.duration=std::max(a.tau,r.limits.min_motion_duration);ph.cruise_ramp_fraction=a.cruise_ramp_fraction;
     std::copy_n(a.h0,3,ph.heading0.begin());std::copy_n(a.h1,3,ph.heading1.begin());
     std::copy_n(a.gear,3,ph.gear.begin());
     for(int j=0;j<a.spans;++j){Piece piece;
@@ -355,6 +418,13 @@ Plan expand(const Request& r,const HJProblem& p) {
       std::copy_n(a.coefficient[j][2],6,piece.yaw.begin());ph.pieces.push_back(piece);}
     if(ph.mode==Mode::S){double turn=0;for(int v=0;v<p.bodies;++v)turn=std::max(turn,std::abs(ph.heading1[v]-ph.heading0[v]));if(turn<1e-7)continue;}
     auto first=evaluate_phase(r,ph,0.),last=evaluate_phase(r,ph,ph.duration);
+    if(ph.mode!=Mode::S && !plan.phases.empty() && plan.phases.back().mode==Mode::S){
+      auto& spin=plan.phases.back();
+      // The next motion fixes the car headings at the stationary mounts.
+      // Reconstruct the shared spin endpoint exactly on its unwrapped branch,
+      // then subject the entire rotation and both joins to continuous audit.
+      for(int i=0;i<p.bodies;++i)spin.heading1[i]+=delta(spin.heading1[i],first.bodies[i].pose.yaw);
+    }
     double range=0; bool gear_change=false;
     for(int i=0;i<p.bodies;++i){
       auto next=wheels(ph.mode,first.bodies[i],r.limits);
@@ -458,6 +528,14 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
         general.general=true;
         seeds.push_back(std::move(general));
       }
+      if(detour>r.limits.radius*.35 && (opts.initial_sequence.empty() || opts.enable_edits ||
+                                       opts.initial_sequence==Sequence{Mode::S,Mode::A})){
+        // Reorient the cars at their stationary mounts, then optimize a
+        // continuous Ackermann phase through the unobstructed route.
+        Seed aligned{{Mode::S,Mode::A},sign,route,"ALIGN_TO_CHANNEL"};
+        aligned.shortest_yaw=true;
+        seeds.push_back(std::move(aligned));
+      }
     }
     if(r.vehicles.size()==3 && route.empty() && (opts.initial_sequence.empty() || opts.enable_edits)){
       Seed general{{Mode::A},sign,direct,"GENERAL_F_YAW"};
@@ -493,6 +571,20 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
       }
     }
   }
+  // Cargo yaw can move independently of the tangents of the three mount
+  // trajectories. Give the NLP both the low-rotation and channel-following charts.
+  if(r.vehicles.size()==3 && opts.initial_sequence.empty() &&
+     std::abs(delta(r.start.reference.yaw,r.goal.reference.yaw))>1.e-8) {
+    auto route=std::find_if(seeds.begin(),seeds.end(),[](const Seed& s){return s.edit=="CHANGE_ROUTE_SEED";});
+    if(route!=seeds.end()){
+      auto low_rotation=*route;
+      auto wide=grid_seed(r,run,true,sign,&low_rotation.channel_yaw);
+      if(!wide.empty())low_rotation.route=std::move(wide);
+      low_rotation.edit="MINIMUM_YAW_ROUTE";
+      low_rotation.shortest_yaw=true;
+      seeds.insert(route,std::move(low_rotation));
+    }
+  }
   // Near a rank transition, constrain the terminal tangent against its
   // certified angle window. The original request is always used in certify().
   if(rank_goal.exact && !locked_goal){
@@ -507,6 +599,10 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
   }
   PolicyScore best{};bool unranked_incumbent=false;std::string why;
   for(std::size_t ordinal=0;ordinal<seeds.size();++ordinal) {
+    if (!result.plan && elapsed()>.58*std::chrono::duration<double>(deadline-begin).count()) {
+      auto repair=std::find_if(seeds.begin()+ordinal,seeds.end(),[](const Seed& s){return s.edit=="ALIGN_TO_CHANNEL";});
+      if(repair!=seeds.end())std::rotate(seeds.begin()+ordinal,repair,repair+1);
+    }
     const Seed seed=seeds[ordinal]; // appending child proposals may reallocate the queue
     auto propose=[&](std::size_t at,bool accepted){
       if(!opts.enable_edits || seed.seq.empty() || run.stop())return;
@@ -595,6 +691,7 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
       bool accepted=false;
       std::size_t failed_motion=0;
       int geometric_refinements=0;
+      std::set<std::pair<std::size_t,double>> tried_capped_ramps;
       for(int retry=0;retry<12 && !run.stop();++retry){
         if(plan.phases.empty() || duration(plan)>r.task_duration_cap+1e-8){why="TASK_TIME_CONSTRAINT";break;}
         const auto audit_start=Clock::now();const auto audit=certify(r,plan,deadline,cancel);
@@ -672,7 +769,26 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
         if(why.find("SPEED")==std::string::npos && why.find("ACCELERATION")==std::string::npos &&
            why.find("JERK")==std::string::npos && why.find("RATE")==std::string::npos &&
            why.find("DYNAMIC")==std::string::npos)break;
-        plan.phases[audit.phase].duration*=1.25;
+        auto& phase_duration=plan.phases[audit.phase].duration;
+        const double previous=phase_duration;
+        const double available=previous+(r.task_duration_cap-duration(plan));
+        phase_duration=std::min(previous*1.25,available);
+        // Sum all actual phases in the same order as the certificate. Round
+        // toward the feasible side only when their floating-point sum exceeds the cap.
+        while(phase_duration>previous && duration(plan)>r.task_duration_cap)
+          phase_duration=std::nextafter(phase_duration,0.);
+        if(phase_duration>previous)continue;
+        phase_duration=previous;
+        auto& ramp=plan.phases[audit.phase].cruise_ramp_fraction;
+        if(ramp==0.)break;
+        // A path can have high mount speed near one shoulder or on its
+        // plateau. At the cap, try each other supported law on the same geometry.
+        tried_capped_ramps.emplace(audit.phase,ramp);
+        const auto next=std::find_if(cruise_ramps.begin(),cruise_ramps.end(),[&](double candidate){
+          return !tried_capped_ramps.count({audit.phase,candidate});});
+        if(next==cruise_ramps.end())break;
+        ramp=*next;
+        result.trace.push_back(tag+":RETIME_AT_CAP:"+std::to_string(ramp));
       }
       propose(failed_motion,accepted);
       if(result.plan && (best.auxiliary_blocks==0 ||

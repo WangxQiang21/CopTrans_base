@@ -156,6 +156,19 @@ TEST(HybridCertificate, CruisePlateauRampsAndUnrecognizedTimeLaw) {
   p.cruise_ramp_fraction=.10;
   EXPECT_EQ(h::certify(r,{{p}},h::Clock::now()+std::chrono::seconds(1)).reason,"UNKNOWN_TIME_LAW");
 }
+TEST(HybridCertificate, EveryCruiseWidthProvesRestAndRejectsDynamicAndStationaryMisuse) {
+  auto r=request();
+  for(double width:h::cruise_ramps) {
+    auto p=straight(100.);p.cruise_ramp_fraction=width;
+    EXPECT_TRUE(audit(r,{{p}}).executable);
+    EXPECT_DOUBLE_EQ(h::evaluate_phase(r,p,0.).bodies[0].vx,0.);
+    EXPECT_DOUBLE_EQ(h::evaluate_phase(r,p,p.duration).bodies[0].vx,0.);
+    auto slow=r;slow.limits.speed=.019;
+    EXPECT_EQ(audit(slow,{{p}}).reason,"BODY_SPEED");
+    auto hold=stopped_at(r,p);hold.cruise_ramp_fraction=width;
+    EXPECT_EQ(audit(r,{{hold}}).reason,"UNKNOWN_TIME_LAW");
+  }
+}
 TEST(HybridCertificate, StationaryAndObliqueSpansCannotAccumulateUncommandedDrift) {
   auto r=request(true);
   auto still=stopped_at(r,straight());

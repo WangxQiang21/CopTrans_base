@@ -20,6 +20,12 @@ using Headings = std::array<double, 3>;
 using Gears = std::array<int, 3>;
 using Quintic = std::array<double, 6>; // Bernstein coefficients at degree 5
 struct Piece { Quintic x{}, y{}, yaw{}; }; // unwrapped formation-reference yaw
+// Shortest to longest normalized ramp of the symmetric cubic-velocity cruise law.
+inline constexpr std::array<double, 4> cruise_ramps{1./64, 1./32, 1./16, 1./8};
+inline constexpr bool supported_cruise_ramp(double width) {
+  for (double valid : cruise_ramps) if (width == valid) return true;
+  return false;
+}
 struct Phase {
   Kind kind{Kind::Motion};
   Mode mode{Mode::A};
@@ -27,7 +33,7 @@ struct Phase {
   double duration{};
   std::vector<Piece> pieces; // equal spans of normalized station
   Headings heading0{}, heading1{}; // S endpoints or O/Hold constant headings
-  double cruise_ramp_fraction{0.0}; // .125 for long A/O cruise; 0 uses the quintic clock
+  double cruise_ramp_fraction{0.0}; // 0 uses quintic time; positive supported widths are for A/O cruise
 };
 struct Boundary {
   Pose2d reference{};
