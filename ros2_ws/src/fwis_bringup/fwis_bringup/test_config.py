@@ -58,15 +58,17 @@ def parse_arguments(argv, scenarios, registry, experiments):
                         help="Select a named layout of the scenario for a new experiment")
     parser.add_argument("--planner-backend", help="Planner alias or ROS 2 backend ID")
     parser.add_argument("--controller-backend", default="auto", help="auto, pid, nonlinear_feedback")
-    parser.add_argument("--tracker-implementation", choices=("python", "cpp"), default="python")
-    parser.add_argument("--architecture-profile", choices=("baseline", "optimized"), default="baseline")
+    parser.add_argument("--tracker-implementation", choices=("python", "cpp"),
+                        default=defaults.get("tracking_implementation", "python"))
+    parser.add_argument("--architecture-profile", choices=("baseline", "optimized"),
+                        default=defaults.get("architecture_profile", "baseline"))
     parser.add_argument("--speed-profile", choices=tuple(registry["speed_profiles"]),
                         default=defaults["speed_profile"])
     parser.add_argument("--without-planning-playback", action="store_true",
                         help="Omit the formation playback node in the optimized experiment")
-    parser.add_argument("--multi-native-frontier", action="store_true")
-    parser.add_argument("--multi-convex-corridor", action="store_true")
-    parser.add_argument("--multi-reachable-clock", action="store_true")
+    parser.add_argument("--multi-native-frontier", action=argparse.BooleanOptionalAction)
+    parser.add_argument("--multi-convex-corridor", action=argparse.BooleanOptionalAction)
+    parser.add_argument("--multi-reachable-clock", action=argparse.BooleanOptionalAction)
     parser.add_argument("--interactive", action="store_true",
                         help="Choose the formation start and goal in RViz before running the closed loop")
     parser.add_argument("--formation", choices=(registry["formation"]["name"],), help="multi only")
@@ -92,8 +94,8 @@ def parse_arguments(argv, scenarios, registry, experiments):
     if args.without_planning_playback and (
             args.task != "multi" or args.architecture_profile != "optimized"):
         parser.error("--without-planning-playback requires multi and --architecture-profile optimized")
-    if args.task != "multi" and (args.multi_native_frontier or args.multi_convex_corridor
-                                or args.multi_reachable_clock):
+    if args.task != "multi" and any(flag is not None for flag in (
+            args.multi_native_frontier, args.multi_convex_corridor, args.multi_reachable_clock)):
         parser.error("multi planner options require --task multi")
     if args.interactive and (args.task != "multi" or args.architecture_profile != "optimized"
                              or args.without_planning_playback):
@@ -179,11 +181,16 @@ def resolve(argv, config_directory, scenario_directory, output):
         elif backend == "single_continuous_mode_path":
             overrides = dict(overrides, search={"adaptive_reverse_competition": True},
                              quality=dict(overrides["quality"], seed_proposal_wait_s=0.0))
-    if scene_task == "formation" and (args.multi_native_frontier or args.multi_convex_corridor):
-        overrides = dict(overrides, native_frontier=args.multi_native_frontier,
-                         convex_corridor=args.multi_convex_corridor)
-    if args.multi_reachable_clock:
-        overrides = dict(overrides, reachability_retime=True, continuous_a_refinement=False)
+    if scene_task == "formation":
+        features = (registry.get("optimized_multi_defaults", {})
+                    if args.architecture_profile == "optimized" else {})
+        flags = {"native_frontier": args.multi_native_frontier,
+                 "convex_corridor": args.multi_convex_corridor,
+                 "reachability_retime": args.multi_reachable_clock}
+        overrides.update(features)
+        overrides.update({name: value for name, value in flags.items() if value is not None})
+        if overrides.get("reachability_retime"):
+            overrides["continuous_a_refinement"] = False
     if args.interactive:
         overrides = dict(overrides, publish_uniform_progress=True)
     config = dict(mode=args.mode, task=args.task, scene_task=scene_task, scenario=args.scenario,

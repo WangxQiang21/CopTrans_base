@@ -35,7 +35,7 @@
 
 规划适配器继续持有解析状态、父边、FR01 边工厂和整条路径复审。连接器拓扑选择和高层搜索编排仍由 `uniform_v02` 的 Python 层负责。
 
-用 `--multi-native-frontier` 选择实验路径。该参数设置 `GraphSearchConfig.native_frontier=True`，加载 `fwis_multi_frontier_native` 并报告 `frontier_backend=cpp`。省略该参数恢复原 Python 搜索。缺少新绑定会给出可诊断错误。生产默认仍为 Python。
+统一测试入口的 `optimized` 配置默认加载 `fwis_multi_frontier_native` 并报告 `frontier_backend=cpp`。用 `--no-multi-native-frontier` 单独回退搜索前沿，或用 `--architecture-profile baseline` 回退整套规划配置。缺少原生绑定时会给出诊断。
 
 ### 验证与性能
 

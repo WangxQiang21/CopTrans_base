@@ -1,6 +1,6 @@
 # CopTrans C++ 轨迹跟踪器
 
-原有 `fwis_control` 包新增 `ranger_tracking_controller_cpp`。单车与三车统一测试的跟踪器实现由 `--tracker-implementation python|cpp` 选择，默认 `python`。`--controller-backend nonlinear_feedback|pid` 独立选择控制律。C++ 和 Python 都读取运行指定的跟踪器配置，基准参数来自同一份 [ranger_tracking.yaml](../../ros2_ws/src/fwis_control/config/ranger_tracking.yaml)。
+原有 `fwis_control` 包新增 `ranger_tracking_controller_cpp`。单车与三车统一测试默认使用 `cpp`，可用 `--tracker-implementation python` 回退。`--controller-backend nonlinear_feedback|pid` 独立选择控制律。两种实现共用运行指定的跟踪器配置。[ranger_tracking.yaml](../../ros2_ws/src/fwis_control/config/ranger_tracking.yaml)
 
 ## 代码和接口
 
@@ -53,7 +53,7 @@ colcon test-result --verbose
 
 合成试验的整体回调耗时均小于 5 ms，P99 低于 0.5 ms，未观测到跨越 80 ms 的周期。该合成记录的峰值包含 ROS 发布。下文在实际 Gazebo 车体插件中独立测量了纯核心、传输、消费和调度。 [单车摘要](../../reports/control_cpp/single_610s_summary.json) · [单车原始数据](../../reports/control_cpp/single_610s_timing.csv.gz) · [三车摘要](../../reports/control_cpp/three_610s_summary.json) · [三车原始数据](../../reports/control_cpp/three_610s_timing.csv.gz)
 
-实车控制状态为 `HARDWARE_NOT_VERIFIED`。当前生产默认继续使用 Python 跟踪器。
+实车控制状态为 `HARDWARE_NOT_VERIFIED`。
 
 ## 实际 Gazebo 插件的阶段计时
 

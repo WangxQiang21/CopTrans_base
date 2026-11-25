@@ -17,7 +17,7 @@ def generate_launch_description():
         "' == 'cpp' else 'ranger_tracking_controller'",
     ])
     return LaunchDescription([
-        DeclareLaunchArgument("tracker_implementation", default_value="python",
+        DeclareLaunchArgument("tracker_implementation", default_value="cpp",
                               choices=["python", "cpp"]),
         DeclareLaunchArgument("algorithm", default_value="nonlinear", choices=["nonlinear", "pid"]),
         DeclareLaunchArgument("trajectory_topic", default_value="/plan/timed_trajectory"),

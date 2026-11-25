@@ -30,9 +30,13 @@ cat "reports/runs/$id/experiment.json"
 ## 4. 自动跑固定用例
 
 ```bash
-./scripts/test.sh --task multi --scenario factory_indoor_01 --experiment short_turn \
-  --architecture-profile optimized --multi-native-frontier --multi-convex-corridor \
-  --multi-reachable-clock --tracker-implementation cpp --no-build
+./scripts/test.sh --task multi --scenario factory_indoor_01 --experiment short_turn --no-build
 ```
 
-`short_turn` 是短弯，改成 `short_straight` 测直行，改成 `full_route` 测带货全程。脚本自动发目标，终端会打印结果和日志目录。
+`short_turn` 是短弯，改成 `short_straight` 测直行，改成 `full_route` 测带货全程。脚本使用优化规划配置和 C++ 跟踪器，自动发目标并打印结果和日志目录。加 `--scene-variant critical` 测临界窄通道，加 `--scene-variant too_narrow` 测绕行。
+
+需要回退到基础规划配置和 Python 跟踪器时，运行同一测试并加上两个参数。
+
+```bash
+./scripts/test.sh --task multi --architecture-profile baseline --tracker-implementation python --no-build
+```

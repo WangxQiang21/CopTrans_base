@@ -73,6 +73,10 @@ def run(root, task, scenario, experiment, controller):
     cli_help = subprocess.run([command[0], "--help"], cwd=root, capture_output=True, text=True, check=True)
     if "--speed-profile" in cli_help.stdout:
         command.extend(("--speed-profile", "baseline"))
+    if "--architecture-profile" in cli_help.stdout:
+        command.extend(("--architecture-profile", "baseline"))
+    if "--tracker-implementation" in cli_help.stdout:
+        command.extend(("--tracker-implementation", "python"))
     environment = capture_metadata(root)
     started = monotonic_ns()
     with subprocess.Popen(command, cwd=root, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,

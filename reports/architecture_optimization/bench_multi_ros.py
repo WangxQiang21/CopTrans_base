@@ -258,7 +258,9 @@ def reconstructed_fixture():
     resolved = yaml.safe_load(subprocess.check_output([
         str(ROOT/"scripts/test.sh"), "--task", "multi", "--scenario", scene.name,
         "--experiment", "short_turn", "--speed-profile", "baseline",
-        "--architecture-profile", "optimized", "--dry-run"], cwd=ROOT, text=True))
+        "--architecture-profile", "optimized", "--no-multi-native-frontier",
+        "--no-multi-convex-corridor", "--no-multi-reachable-clock",
+        "--dry-run"], cwd=ROOT, text=True))
     params = dict(resolved["planner_overrides"], cargo_footprint=cargo_footprint_parameters(
         scene.cargo.size, scene.cargo.offset))
     cells = (100*rasterize(scene.obstacles, scene.size, scene.resolution)).astype(np.int8)

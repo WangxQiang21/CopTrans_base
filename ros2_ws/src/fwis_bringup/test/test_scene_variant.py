@@ -40,3 +40,27 @@ def test_replay_will_not_override_an_archived_layout():
     process = dry_run("--replay", "20260101_000000_replay", "--scene-variant", "critical")
     assert process.returncode != 0
     assert "uses the recorded scene layout" in process.stderr
+
+
+@pytest.mark.parametrize("task", ["single", "multi"])
+def test_new_experiments_use_qualified_backend_with_explicit_rollback(task):
+    current = dry_run("--task", task)
+    rollback = dry_run("--task", task, "--architecture-profile", "baseline",
+                       "--tracker-implementation", "python")
+    assert current.returncode == rollback.returncode == 0
+    current, rollback = (yaml.safe_load(run.stdout) for run in (current, rollback))
+    assert (current["architecture_profile"], current["tracking_implementation"]) == ("optimized", "cpp")
+    assert (rollback["architecture_profile"], rollback["tracking_implementation"]) == ("baseline", "python")
+    if task == "multi":
+        for option in ("native_frontier", "convex_corridor", "reachability_retime"):
+            assert current["planner_overrides"][option]
+            assert not rollback["planner_overrides"].get(option, False)
+
+
+def test_optimized_features_can_be_retested_in_isolation():
+    process = dry_run("--task", "multi", "--no-multi-convex-corridor", "--no-multi-reachable-clock")
+    assert process.returncode == 0, process.stderr
+    overrides = yaml.safe_load(process.stdout)["planner_overrides"]
+    assert overrides["native_frontier"]
+    assert overrides["convex_corridor"] is False
+    assert overrides["reachability_retime"] is False

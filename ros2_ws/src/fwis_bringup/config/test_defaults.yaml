@@ -14,6 +14,8 @@ defaults:
     single: continuous_mode_path
     multi: multi_4wis
   controller: nonlinear_feedback
+  tracking_implementation: cpp
+  architecture_profile: optimized
   experiment: short_turn
   speed_profile: standard
   timeout_s: 180
@@ -23,6 +25,10 @@ formation:
   implementation: uniform_v02
   lead_s: 1.25
   release_margin_s: 0.20
+optimized_multi_defaults:
+  native_frontier: true
+  convex_corridor: true
+  reachability_retime: true
 acceptance:
   terminal_position_m: 0.10
   terminal_yaw_rad: 0.10
