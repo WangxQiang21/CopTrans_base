@@ -8,10 +8,24 @@ batch=$(realpath -m "${2:?unused result directory}")
 witness=$(realpath -m "${3:?unused witness directory}")
 identity=$(realpath -m "${4:?unused identity directory}")
 cohort=${5:?frozen holdout cohort index}
+sealed=${6:-"$root/reports/acceptance/hybrid_v3/sealed_c$cohort"}
 mkdir -p "$batch" "$witness" "$identity"
 [[ ! -e $identity/binaries.sha256 ]]
 source /opt/ros/humble/setup.bash
 source "$system_dir/ros2_ws/install/setup.bash"
+# Catch changed generators, inputs or the wrong cohort before any blind solve.
+# A clean release checkout carries the identical published profile manifests.
+for profile in standard baseline; do
+    expected="$sealed/manifest_$profile.json"
+    if [[ ! -f "$expected" && $# -lt 6 ]]; then
+        expected="$root/reports/hybrid_v3/case_manifest.json"
+        if [[ "$profile" == baseline ]]; then expected="$root/reports/hybrid_v3/case_manifest_baseline.json"; fi
+    fi
+    [[ -f "$expected" ]] || { echo "Missing sealed $profile manifest: $expected" >&2; exit 2; }
+    actual="$identity/regenerated_manifest_$profile.json"
+    python3 scripts/hybrid_v3/benchmark.py manifest --cohort "$cohort" --profile "$profile" --output "$actual"
+    cmp -- "$expected" "$actual" || { echo "Changed $profile input; collection did not start" >&2; exit 2; }
+done
 pkg=$system_dir/ros2_ws/install/fwis_hybrid_joint
 commit=$(cat "$system_dir/source_commit")
 exe=$pkg/lib/fwis_hybrid_joint/hybrid_joint_case
