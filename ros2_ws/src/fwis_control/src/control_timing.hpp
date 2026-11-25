@@ -10,6 +10,7 @@
 #include <rclcpp/exceptions/exceptions.hpp>
 #include <rclcpp/timer.hpp>
 #include <sys/resource.h>
+#include <time.h>
 
 namespace fwis_control
 {
@@ -53,15 +54,23 @@ struct ThreadCounters
 
 inline ThreadCounters thread_counters() noexcept
 {
+  timespec cpu{};
   rusage usage{};
-  if (getrusage(RUSAGE_THREAD, &usage) != 0) {
+  if (clock_gettime(CLOCK_THREAD_CPUTIME_ID, &cpu) != 0 ||
+    getrusage(RUSAGE_THREAD, &usage) != 0)
+  {
     return {-1, -1, -1};
   }
-  const auto nanoseconds = [](timeval interval) -> int64_t {
-      return interval.tv_sec * 1000000000LL + interval.tv_usec * 1000LL;
-    };
-  return {nanoseconds(usage.ru_utime) + nanoseconds(usage.ru_stime),
-    usage.ru_nvcsw, usage.ru_nivcsw};
+  return {cpu.tv_sec * 1000000000LL + cpu.tv_nsec, usage.ru_nvcsw, usage.ru_nivcsw};
+}
+
+inline ThreadCounters counter_delta(const ThreadCounters & start, const ThreadCounters & end) noexcept
+{
+  if (start.cpu_ns < 0 || end.cpu_ns < 0) {
+    return {-1, -1, -1};
+  }
+  return {end.cpu_ns - start.cpu_ns, end.voluntary_switches - start.voluntary_switches,
+    end.involuntary_switches - start.involuntary_switches};
 }
 
 struct ControlTiming
@@ -69,6 +78,8 @@ struct ControlTiming
   TimerDispatch timer;
   OdometryTiming odom;
   ThreadCounters thread_at_entry;
+  ThreadCounters publish_thread;
+  ThreadCounters callback_thread;
   int64_t started_steady_ns{};
   int64_t ended_steady_ns{};
   int64_t ended_clock_ns{};

@@ -65,6 +65,12 @@ if(BUILD_TESTING)
     ENV "TRACKING_NATIVE_OBLIQUE=$<TARGET_FILE:native_oblique_replay>")
 
   ament_add_pytest_test(control_timing test/test_control_timing.py)
+  add_executable(control_affinity_tests test/control_affinity_tests.cpp)
+  target_compile_features(control_affinity_tests PRIVATE cxx_std_17)
+  target_link_libraries(control_affinity_tests Threads::Threads)
+  ament_target_dependencies(control_affinity_tests rclcpp)
+  add_test(NAME control_affinity_and_thread_counters COMMAND control_affinity_tests)
+  set_tests_properties(control_affinity_and_thread_counters PROPERTIES SKIP_RETURN_CODE 77)
   ament_add_pytest_test(tracking_core test/test_tracking_core.py
     APPEND_ENV "PYTHONPATH=${CMAKE_CURRENT_SOURCE_DIR}")
 endif()

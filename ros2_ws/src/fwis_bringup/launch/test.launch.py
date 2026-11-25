@@ -114,7 +114,10 @@ def setup(context):
                             namespace=f"robot{index}", output="screen", parameters=[parameters],
                             # Keep network transmission off the 25 Hz control thread. The
                             # qualification monitor also measures when Gazebo consumes cmd_vel.
-                            additional_env={"RMW_FASTRTPS_PUBLICATION_MODE":"ASYNCHRONOUS"} if native else {}))
+                            additional_env={
+                                "RMW_FASTRTPS_PUBLICATION_MODE": "ASYNCHRONOUS",
+                                "COPTRANS_SPLIT_TRACKER_CORE": "1" if index in control_cpus else "0",
+                            } if native else {}))
     if config["record"] == "on":
         topics = ["/clock", "/map", "/tf", "/tf_static"]
         for index in robots:

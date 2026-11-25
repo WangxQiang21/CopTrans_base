@@ -1,4 +1,5 @@
 #include "fwis_control/tracking_core.hpp"
+#include "control_affinity.hpp"
 #include "control_timing.hpp"
 #include "hybrid_tracking.hpp"
 
@@ -298,6 +299,12 @@ std_msgs::msg::String status_message(const Status & row, const std::string & alg
              << ",\"thread_cpu_ns\":" << t.thread_at_entry.cpu_ns
              << ",\"thread_voluntary_switches\":" << t.thread_at_entry.voluntary_switches
              << ",\"thread_involuntary_switches\":" << t.thread_at_entry.involuntary_switches
+             << ",\"callback_thread_cpu_ns\":" << t.callback_thread.cpu_ns
+             << ",\"callback_thread_voluntary_switches\":" << t.callback_thread.voluntary_switches
+             << ",\"callback_thread_involuntary_switches\":" << t.callback_thread.involuntary_switches
+             << ",\"publish_thread_cpu_ns\":" << t.publish_thread.cpu_ns
+             << ",\"publish_thread_voluntary_switches\":" << t.publish_thread.voluntary_switches
+             << ",\"publish_thread_involuntary_switches\":" << t.publish_thread.involuntary_switches
              << ",\"odom_stamp_ns\":" << t.odom.odom_stamp_ns
              << ",\"odom_source_realtime_ns\":" << t.odom.source_realtime_ns
              << ",\"odom_received_realtime_ns\":" << t.odom.received_realtime_ns
@@ -541,12 +548,15 @@ private:
     msg.linear.x = twist.vx;
     msg.linear.y = twist.vy;
     msg.angular.z = twist.wz;
+    ThreadCounters before_publish;
     if (timing) {
+      before_publish = thread_counters();
       timing->command_publish_steady_ns = steady_ns();
     }
     command_->publish(msg);
     if (timing) {
       timing->command_published_steady_ns = steady_ns();
+      timing->publish_thread = counter_delta(before_publish, thread_counters());
     }
     if (mode || mode_request_pending_) {
       std_msgs::msg::Int32 request;
@@ -609,6 +619,7 @@ private:
     if (timing) {
       timing->ended_clock_ns = now().nanoseconds();
       timing->ended_steady_ns = steady_ns();
+      timing->callback_thread = counter_delta(timing->thread_at_entry, thread_counters());
       timing->status_drops = status_drops_;
       row.timing = timing;
     }
@@ -781,6 +792,7 @@ void stop(int) noexcept
 int main(int argc, char ** argv)
 {
   using namespace std::chrono_literals;
+  const int control_cpu = fwis_control::reserve_control_cpu();
   rclcpp::init(argc, argv, rclcpp::InitOptions(), rclcpp::SignalHandlerOptions::None);
   std::signal(SIGINT, fwis_control::stop);
   std::signal(SIGTERM, fwis_control::stop);
@@ -795,6 +807,7 @@ int main(int argc, char ** argv)
     std::atomic<bool> control_stop{false};
     std::thread worker([&]() {
         try {
+          fwis_control::bind_control_cpu(control_cpu);
           while (rclcpp::ok() && !control_stop.load(std::memory_order_relaxed)) {
             control.spin_once(100ms);
           }
