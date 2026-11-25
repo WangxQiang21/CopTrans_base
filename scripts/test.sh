@@ -145,6 +145,7 @@ PY
 fi
 export ROS_DOMAIN_ID
 export GZ_PARTITION="coptrans_${run_dir##*/}"
+export GZ_IP="${GZ_IP:-127.0.0.1}"
 export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
 if [[ -d $root/../.coptrans-python/casadi ]]; then
     export PYTHONPATH="$root/../.coptrans-python${PYTHONPATH:+:$PYTHONPATH}"
@@ -166,8 +167,8 @@ PY
     if [[ -n $casadi_sdk ]]; then export COPTRANS_CASADI_ROOT="$casadi_sdk"; fi
 fi
 {
-    printf 'ROS_DISTRO=%s\nROS_DOMAIN_ID=%s\nROS_LOCALHOST_ONLY=%s\nGZ_PARTITION=%s\n' \
-        "$ROS_DISTRO" "$ROS_DOMAIN_ID" "$ROS_LOCALHOST_ONLY" "$GZ_PARTITION"
+    printf 'ROS_DISTRO=%s\nROS_DOMAIN_ID=%s\nROS_LOCALHOST_ONLY=%s\nGZ_PARTITION=%s\nGZ_IP=%s\n' \
+        "$ROS_DISTRO" "$ROS_DOMAIN_ID" "$ROS_LOCALHOST_ONLY" "$GZ_PARTITION" "$GZ_IP"
     printf 'git_commit='
     git -C "$root" rev-parse HEAD
     git_state=$(git -C "$root" status --porcelain)

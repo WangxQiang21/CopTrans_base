@@ -164,7 +164,8 @@ def supervise(args, family, task, trial):
             (spool/suffix).mkdir(parents=True,exist_ok=True)
         env=dict(os.environ,ROS_DOMAIN_ID=str(100+os.getpid()%13),GZ_PARTITION="v3_"+run_id,
                  COPTRANS_ARCHIVE_DIR=str(archive),ROS_LOG_DIR=str(spool/"ros"),ROS_LOCALHOST_ONLY="1",
-                 COPTRANS_TIMING_DIR=str(own),OPENBLAS_NUM_THREADS="1",OMP_NUM_THREADS="1")
+                 GZ_IP="127.0.0.1",COPTRANS_TIMING_DIR=str(own),OPENBLAS_NUM_THREADS="1",OMP_NUM_THREADS="1")
+        row["gazebo_transport_ip"]=env["GZ_IP"]
         import ament_index_python.packages as pkg
         env["COPTRANS_TRACE_RCL_TAKE_SO"]=str(Path(pkg.get_package_prefix("fwis_control"))/"lib"/
                                               "fwis_control/libcoptrans_bridge_take_trace.so")
@@ -189,7 +190,7 @@ def supervise(args, family, task, trial):
         frozen=prefix.parents[2]/"source_commit"
         installed_sha=(frozen.read_text().strip() if frozen.is_file() else
                        subprocess.check_output(["git","rev-parse","HEAD"],cwd=ROOT,text=True).strip())
-        (spool/"environment.txt").write_text(f"git_commit={installed_sha}\nROS_DOMAIN_ID={env['ROS_DOMAIN_ID']}\n")
+        (spool/"environment.txt").write_text(f"git_commit={installed_sha}\nROS_DOMAIN_ID={env['ROS_DOMAIN_ID']}\nGZ_IP={env['GZ_IP']}\n")
         row["source_commit"]=installed_sha
         (spool/"command.txt").write_text(" ".join(sys.argv)+"\n")
         collect(spool,archive)
