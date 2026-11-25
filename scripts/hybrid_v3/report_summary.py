@@ -55,6 +55,29 @@ def write_summary(out,result,data):
         if old["mount_m"] is not None and all(r["mount_m"] is not None for r in matches):
             text+=f"最大挂点误差由 {old['mount_m']*1000:.2f} mm 变为 {max(r['mount_m'] for r in matches)*1000:.2f} mm。"
         sections.append(text)
+    if success:
+        table=["| 任务及速度档 | 样本 | 初值 | 结构编辑 | NLP 构图 | NLP 求解 | 独立认证 | 模型编码 | 显示轨迹采样 | DDS 发布调用 |",
+               "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|"]
+        fields=("seed_s","edit_s","nlp_build_s","nlp_solve_s","certify_s","encode_s","sample_s","publish_call_s")
+        for task in ("single","formation"):
+            for profile in ("standard","baseline"):
+                stages=[r["publication_event"].get("planning_stages",{}) for r in success
+                        if r["task"]==task and r["profile"]==profile]
+                observed=[s for s in stages if all(k in s for k in fields)]
+                if observed:
+                    values=" | ".join(number(1000*quant([s[k] for s in observed],.95),2) for k in fields)
+                    table.append(f"| {names[task]} {profile} | {len(observed)} | {values} |")
+        if len(table)>2:
+            sections.append("正常 Gazebo 试次的分阶段墙钟 P95，单位为毫秒。构图、求解和认证按每次请求内的全部候选累积，编辑可能嵌在候选处理内。各列分别取分位数。\n\n"+"\n".join(table))
+        all_clocks=[clock for r in g for clock in r["clocks"]]
+        if all_clocks:
+            polls=[c["max_consumption_ms"] for c in all_clocks if c["max_consumption_ms"] is not None]
+            factors=[c["real_time_factor"] for c in all_clocks if c["real_time_factor"] is not None]
+            sections.append(f"真实 GUI 下共 {sum(c['ticks'] for c in all_clocks)} 个车次跟踪周期，"
+                            f"最大回调 {number(max(c['max_callback_ms'] for c in all_clocks))} ms。"
+                            f"按消息值和时间作唯一匹配的 {sum(c['matched_commands'] for c in all_clocks)} 个命令中，"
+                            f"最慢从控制节点提交到 Gazebo 消费用了 {number(max(polls,default=None))} ms。"
+                            f"各次跟踪的实时因子为 {number(min(factors,default=None))}–{number(max(factors,default=None))}。")
     real_delays=[1000*a["delivery_and_admission_wall_s"] for r in success for a in r.get("admissions",[])
                  if a.get("delivery_and_admission_wall_s") is not None]
     if real_delays:

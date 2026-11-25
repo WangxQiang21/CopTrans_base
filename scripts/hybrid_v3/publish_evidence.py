@@ -71,6 +71,7 @@ def export(out,data,batch):
             w.writerow(dict(run_id=row["run_id"],task=row["task"],family=row["family"],operation="gazebo",
                        dataset_split="closed_loop",profile=row["profile"],repeat=row["trial"],status=row["status"],
                        reason=row["reason"],actual_backend=row["backend"],source_sha=row.get("source_sha"),build_type="Release",
+                       stage_times=json.dumps(row.get("publication_event",{}).get("planning_stages",{}),separators=(",",":")),
                        schema="hybrid_joint_transport/v1",map_hash=row.get("map_sha256"),config_hash=row.get("config_sha256"),
                        legacy_fallback_used=False,publish_s=row.get("publish_s"),publication_to_receive_s=row.get("publication_to_receive_s"),request_to_receive_s=row.get("request_to_receive_s"),duration_s=row.get("plan_duration_s"),
                        delivery_and_admission_wall_s=adm.get("delivery_and_admission_wall_s"),max_mount_error_m=metrics.get("max_mount_error_m"),
@@ -91,5 +92,5 @@ def export(out,data,batch):
                   numeric_and_control_sources=data.get("source_manifest"),
                   raw_local=str(LOCAL),reference_run_ids=["20261125_140950_e40cIk","20261125_141134_AeDvqX","20261125_141201_TcTcHJ"],
                   compact_hashes={str(p.relative_to(out)):sha(p) for p in [out/"runs.csv",out/"measurements.json",out/"case_manifest.json",
-                      out/"case_manifest_baseline.json",*sorted((out/"representative_plans").glob("*.json.gz"))] if p.exists()})
+                      out/"case_manifest_baseline.json",out/"legacy_comparison.json",out/"acceptance_spec.yaml",*sorted((out/"representative_plans").glob("*.json.gz"))] if p.exists()})
     (out/"manifest.json").write_text(json.dumps(manifest,indent=2,ensure_ascii=False)+"\n")

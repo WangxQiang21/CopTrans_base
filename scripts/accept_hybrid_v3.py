@@ -236,6 +236,8 @@ def main():
                 ids=list(range(1,count+1))
                 met=r["metrics"] or {};vs=met.get("vehicles",{})
                 fault=r["fault"] or {}
+                stages=(r.get("publication_event") or {}).get("planning_stages",{})
+                policy_ok=stages.get("policy_status")=="CERTIFIED_POLICY_COMPLIANT"
                 if r["family"]=="fault":
                     good=(r["status"]=="stopped" and r["reason"]=="external_stop" and fault.get("triggered") and fault.get("moved")==ids and
                           len(fault.get("first_zero_after_s",{}))==count and not any(fault.get("last",{}).values()))
@@ -253,12 +255,13 @@ def main():
                           all(v["m"]>0 for v in met["min_environment_clearance"].values()))
                 if r["family"] in ("multibend","necessary_aux"):
                     good=good and r.get("scene_measurements",{}).get("passed") and bool(r.get("scene_proof"))
-                results[r["family"]].append((r["trial"],bool(good and r["gui"])))
+                results[r["family"]].append((r["trial"],bool(good and policy_ok and r["gui"])))
             summary[t+"/"+p]={f:[sum(ok for _,ok in v),len(v)] for f,v in results.items()}
             good={f for f,v in results.items() if len({trial for trial,_ in v})==len(v)>=3 and all(ok for _,ok in v)}
             enough &=len(good)>=8 and {"fault","long","multibend","necessary_aux"}<=good
     headless=data.get("headless") or []
-    headless_tasks={r["task"] for r in headless if not r.get("gui",True) and r["status"]=="passed" and r["planner_source"]=="hybrid_joint" and r["admissions"]}
+    headless_tasks={r["task"] for r in headless if not r.get("gui",True) and r["status"]=="passed" and r["planner_source"]=="hybrid_joint" and r["admissions"]
+                    and r.get("publication_event",{}).get("planning_stages",{}).get("policy_status")=="CERTIFIED_POLICY_COMPLIANT"}
     summary["headless_completed_tasks"]=sorted(headless_tasks)
     record("CLOSED_LOOP",bool(gaz),enough and headless_tasks==set(TASKS),summary)
     clocks=[c for r in gaz+headless for c in r["clocks"]]
