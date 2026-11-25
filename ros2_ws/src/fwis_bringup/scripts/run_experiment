@@ -104,6 +104,8 @@ class RunExperiment(Node):
         self.previous_cargo_pose = None
         self.last_ground_truth_step = {}
         self.odom, self.truth, self.modes, self.commands, self.controller_age = {}, {}, {}, {}, {}
+        self.command_received_wall = {}
+        self.decision_observation = self.final_observation = self.observation_due_wall = None
         self.initial = self.plan_keys = self.arm_stamp = self.request = None
         self.formation_plan = self.formation_routes = None
         self.cargo_plan_times = ()
@@ -348,6 +350,7 @@ class RunExperiment(Node):
             self.finish("stopped", f"robot{index}_invalid_twist")
             return
         self.commands[index] = values
+        self.command_received_wall[index] = monotonic()
         if self.plan_keys and index not in self.traced_twist and any(values):
             self.traced_twist.add(index)
             self.trace("first_nonzero_twist_received", plan_id=self.plan_keys[index][0],
@@ -656,6 +659,8 @@ class RunExperiment(Node):
             self.measure_wall = wall
         if self.result:
             self.permit(False)
+            if self.interactive and self.final_observation is None and wall >= self.observation_due_wall:
+                self.write_result()
             return
         if self.replay_mismatch:
             self.finish("failed", "replay_scene_mismatch", detail=f"现场文件与归档不一致 · {self.replay_mismatch}")
@@ -839,12 +844,26 @@ class RunExperiment(Node):
         else:
             self.finish("passed", "all_trackers_complete")
 
+    def velocity_observation(self, wall):
+        return {
+            "captured_wall_s": wall,
+            "captured_ros_s": self.now(),
+            "cmd_vel": {i: {"velocity": list(v), "received_wall_s": self.command_received_wall[i]}
+                        for i, v in self.commands.items()},
+            "odom": {i: {"velocity": list(row[3]), "source_ros_s": row[0], "received_wall_s": row[1]}
+                     for i, row in self.odom.items()},
+        }
+
     def finish(self, status, reason, *, detail=""):
         if self.result is not None:
             return
         self.get_logger().info(f"Experiment {status} ({reason})")
         if self.plan_wall is None and self.plan_started is not None:
             self.plan_wall = monotonic() - self.plan_started
+        decided = monotonic()
+        self.decision_observation = self.velocity_observation(decided)
+        observe = status == "passed" or bool(self.arm_stamp or self.plan_keys or self.moved)
+        self.observation_due_wall = decided + (self.config["observation_s"] if observe else 0.)
         self.result = {"status": status, "reason": reason, "detail": detail, "phase_at_end": self.phase}
         self.permit(False)
         if status in ("failed", "stopped", "timed_out"):
@@ -863,18 +882,32 @@ class RunExperiment(Node):
                     detail=detail + "\n按 Ctrl+C 退出，重新运行脚本开始下一轮。")
             self.write_result()
             return
-        dwell = self.config["observation_s"] if status == "passed" or (self.multi and self.arm_stamp) else 0.
-        self.end_wall = monotonic() + dwell
+        self.end_wall = self.observation_due_wall
 
     def summary(self):
         final = {i: row[1] for i, row in self.truth.items()}
         return self.metrics.summary(self.initial or {}, final, self.goals, self.config["goal"])
 
-    def write_result(self):
+    def termination_fields(self, *, closing):
+        wall = monotonic()
+        if self.final_observation is None and (closing or wall >= self.observation_due_wall):
+            self.final_observation = self.velocity_observation(wall)
+            self.final_observation["window_complete"] = wall >= self.observation_due_wall
+            decided = self.decision_observation["captured_wall_s"]
+            for topic in ("cmd_vel", "odom"):
+                self.final_observation["fresh_" + topic + "_vehicles"] = sorted(
+                    i for i, row in self.final_observation[topic].items() if row["received_wall_s"] > decided)
+        snapshot = self.final_observation or self.decision_observation
+        return {
+            "final_cmd_vel": {i: row["velocity"] for i, row in snapshot["cmd_vel"].items()},
+            "last_odom_twist": {i: row["velocity"] for i, row in snapshot["odom"].items()},
+            "termination_observation": {"decision": self.decision_observation, "due_wall_s": self.observation_due_wall,
+                                        "final": self.final_observation},
+        }
+
+    def write_result(self, *, closing=False):
         if self.result is None:
             self.finish("cancelled", "launch_shutdown_before_completion")
-            if self.interactive:
-                return
         data = dict(self.result, scenario=self.scene.name, task=self.config["task"],
                     experiment=self.config["experiment"], planner=self.config["planner_backend"],
                     planner_source=self.planner_source,
@@ -889,9 +922,8 @@ class RunExperiment(Node):
                     plan_duration_s=self.duration, routed_plan_keys=self.plan_keys,
                     planner_status=self.planner_status, controller_status=self.controller_status,
                     admitted=sorted(self.admitted), complete=sorted(self.complete),
-                    final_cmd_vel=self.commands, last_odom_twist={i: row[3] for i, row in self.odom.items()},
                     last_ground_truth_step_m=self.last_ground_truth_step,
-                    metrics=self.summary())
+                    metrics=self.summary(), **self.termination_fields(closing=closing))
         data.update(experiment_id=self.experiment_id, replay_of=self.config.get("replay_of"),
                     start=self.config["start"], goal=self.config["goal"],
                     model_sha256=getattr(self, "model_sha256", None))
@@ -925,7 +957,7 @@ def main():
         node.finish("failed", f"runtime_error:{type(error).__name__}: {error}")
         raise
     finally:
-        node.write_result()
+        node.write_result(closing=True)
         node.destroy_node()
         rclpy.try_shutdown()
 

@@ -13,6 +13,8 @@ if(BUILD_TESTING)
     APPEND_ENV "PYTHONPATH=${CMAKE_CURRENT_SOURCE_DIR}")
   ament_add_pytest_test(experiment_log test/test_experiment_log.py
     APPEND_ENV "PYTHONPATH=${CMAKE_CURRENT_SOURCE_DIR}")
+  ament_add_pytest_test(stop_observation test/test_stop_observation.py
+    APPEND_ENV "PYTHONPATH=${CMAKE_CURRENT_SOURCE_DIR}")
   ament_add_pytest_test(test_scene_variant test/test_scene_variant.py)
 endif()
 ament_package()
