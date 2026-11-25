@@ -26,12 +26,39 @@ def write_summary(out,result,data):
         pair=" / ".join(number(timing.get(key+"/"+d,{}).get("p95")) for d in ("easy","difficult"))
         table.append(f"| {names[task]} | {profile} | {core['success']}/{core['feasible']} | {m['success']}/{m['feasible']} | {m['pure_A']}/{m['A']} | {m.get('paired_legacy_success',0)}/{m['feasible']} | {pair} |")
     sections.append("\n".join(table))
+    historical=(data.get("legacy_summary") or {}).get("cohorts",{})
+    if historical:
+        lines=["旧版在完全相同的核心请求上测得的政策合规 P95 如下。每格对应 5 次预热及 30 次正式请求。门槛内成功数不足以观测 P95 时单独标出。",
+               "| 任务 | 速度档 | 简单直线（秒） | 困难多弯（秒） |","|---|---|---:|---:|"]
+        for key in sorted(historical):
+            task,profile=key.split("_")
+            timing=historical[key].get("timing",{})
+            def legacy_value(family):
+                t=timing.get(family,{})
+                if not t.get("complete"): return "待测"
+                return number(t["policy_compliant_p95_s"]) if t["policy_compliant_p95_observed"] else f"未达到（{t['certified_in_budget']}/30）"
+            lines.append(f"| {names[task]} | {profile} | {legacy_value('C01')} | {legacy_value('C06')} |")
+        sections.append(lines[0]+"\n\n"+"\n".join(lines[1:]))
     pruned=gates["MODE_PRUNING"]["measured"]
     sections.append(f"冗余辅助模式专项已从 {sum(v['pairs'] for v in pruned.values())} 个预置序列中完整删除 {sum(v['removed'] for v in pruned.values())} 个。核心集的纯 A 判定要求内部停车次数为零。必要辅助使用窄槽侧向位移上界和编队挂点满秩反例检验。")
     g=data["gazebo"];success=[r for r in g if r["status"]=="passed"]
     mount=[r["metrics"]["max_mount_error_m"]*1000 for r in success if (r.get("metrics") or {}).get("max_mount_error_m") is not None]
     terminal=[v["terminal_position_error_m"]*1000 for r in success for v in r["metrics"].get("vehicles",{}).values() if v.get("terminal_position_error_m") is not None]
     sections.append(f"当前批次有 {len(g)} 轮已归档的真实 Gazebo 闭环，其中 {len(success)} 轮正常完成，{sum(r['family']=='fault' and r['reason']=='external_stop' for r in g)} 轮执行了注入停车。正常完成轮次的最大车辆终点误差为 {number(max(terminal,default=None),2)} mm，最大编队挂点误差为 {number(max(mount,default=None),2)} mm。各场景的全部试次与失败原因保存在逐轮记录中。")
+    for paired in data.get("paired_closed_loop",[]):
+        old=paired["reference"];matches=paired["matches"]
+        if not matches: continue
+        endpoint=max(r["terminal_m"] for r in matches)
+        body=old["signature"][0]
+        text=(f"与旧版实验 `{old['run_id']}` 同地图、起终点、几何及速度档的{names[body]}实验共 {len(matches)} 轮。"
+              f"最大车辆终点位置误差由 {old['terminal_m']*1000:.2f} mm 变为 {endpoint*1000:.2f} mm（新批次最差轮次）。")
+        if old["mount_m"] is not None and all(r["mount_m"] is not None for r in matches):
+            text+=f"最大挂点误差由 {old['mount_m']*1000:.2f} mm 变为 {max(r['mount_m'] for r in matches)*1000:.2f} mm。"
+        sections.append(text)
+    real_delays=[1000*a["delivery_and_admission_wall_s"] for r in success for a in r.get("admissions",[])
+                 if a.get("delivery_and_admission_wall_s") is not None]
+    if real_delays:
+        sections.append(f"实际闭环还测得 {len(real_delays)} 个从权威模型打包到整组准入的样本，P95 {number(quant(real_delays,.95),1)} ms、最大 {number(max(real_delays),1)} ms。该数据包含模型大小与 ROS 调度的影响，单独于固定短路径基准报告。")
     if data.get("control"):
         ctrl=data["control"].values()
         sections.append(f"独立 25 Hz 负载台记录每车 {min(r['ticks'] for r in ctrl)} 至 {max(r['ticks'] for r in ctrl)} 个周期，截止违约合计 {sum(r['deadline_misses'] for r in ctrl)} 次。各车 P99 跟踪计算最大值 {number(max(r['p99_compute_ms'] for r in ctrl))} ms，最大回调 {number(max(r['max_callback_ms'] for r in ctrl))} ms。")

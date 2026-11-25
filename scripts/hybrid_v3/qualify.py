@@ -102,9 +102,17 @@ def clock_metrics(folder):
         wall_gaps=[r for r in odom_gaps if begin_ns<=r["begin_steady_ns"]<=end_ns]
         inter_rtf=[(b["timer_called_clock_ns"]-a["timer_called_clock_ns"])/(b["callback_started_steady_ns"]-a["callback_started_steady_ns"])
                    for a,b in zip(times,times[1:]) if (b["callback_started_steady_ns"]-a["callback_started_steady_ns"])>=40000000]
+        # An injected stop can allow exactly one TRACKING tick. Bracket that
+        # measured tick with its adjacent scheduled callbacks for the RTF only.
         beg,end=times[0],times[-1]
+        rtf_window="tracking"
+        if len(times)==1:
+            where=next(i for i,row in enumerate(all_timed) if row["control_timing"] is beg)
+            beg=all_timed[max(0,where-1)]["control_timing"]
+            end=all_timed[min(len(all_timed)-1,where+1)]["control_timing"]
+            rtf_window="adjacent_callbacks"
         wall=(end["callback_started_steady_ns"]-beg["callback_started_steady_ns"])*1e-9
-        items.append(dict(ticks=len(tracking),stale_motion=stale,ros_misses=sum(sum(deadline_info(t)[1:]) for t in times),
+        items.append(dict(vehicle=f.name.split("_")[0],rtf_window=rtf_window,ticks=len(tracking),stale_motion=stale,ros_misses=sum(sum(deadline_info(t)[1:]) for t in times),
                           wall_s=wall,real_time_factor=((end["timer_called_clock_ns"]-beg["timer_called_clock_ns"])*1e-9/wall if wall>0 else None),
                           max_callback_ms=max(callback_ms),p99_callback_ms=quant(callback_ms,.99),
                           max_publish_ms=max(publish_ms),p99_publish_ms=quant(publish_ms,.99),
@@ -148,6 +156,37 @@ def closed_rows(folder):
                      result_sha256=sha(archive/"result.yaml"))
         batch.append(entry)
     return batch
+
+
+
+def archived_comparisons(closed,default_runs):
+    """Pair reference experiments by physical task, map, speed and geometry."""
+    reference_ids=("20261125_140950_e40cIk","20261125_141134_AeDvqX","20261125_141201_TcTcHJ")
+    def read(run_id):
+        folder=ROOT/"reports/runs"/run_id
+        if not (folder/"result.yaml").is_file():
+            return None
+        manifest=load(folder/"experiment.json")
+        result=yaml.safe_load((folder/"result.yaml").read_text())
+        cfg=yaml.safe_load((folder/"resolved_config.yaml").read_text())
+        if result.get("status")!="passed":
+            return None
+        signature=[cfg["scene_task"],cfg["speed_profile"],manifest["scene_sha256"],manifest["map_sha256"],
+                   cfg["start"],cfg["goal"],result.get("formation_offsets_m"),cfg.get("controller_limit_overrides"),
+                   cfg.get("plant_overrides")]
+        vs=result["metrics"]["vehicles"].values()
+        return dict(run_id=run_id,signature=signature,backend=cfg["planner_backend"],result_sha256=sha(folder/"result.yaml"),
+                    planning_s=result.get("planner_wall_s"),duration_s=result.get("plan_duration_s"),
+                    terminal_m=max(v["terminal_position_error_m"] for v in vs),
+                    worst_car_rmse_m=max(v["position_rmse_m"] for v in vs),mount_m=result["metrics"].get("max_mount_error_m"))
+    ids=[r["run_id"] for r in closed if r["status"]=="passed"]+[r["run_id"] for r in default_runs or []]
+    candidates=[r for run_id in ids if (r:=read(run_id)) is not None]
+    result=[]
+    for run_id in reference_ids:
+        legacy=read(run_id)
+        if legacy is not None:
+            result.append(dict(reference=legacy,matches=[r for r in candidates if r["signature"]==legacy["signature"]]))
+    return result
 
 
 def collect(batch):

@@ -44,6 +44,9 @@ def main():
     a.add_argument("--cohort",type=int,default=0,help="new independent sealed cohort after retuning")
     a.add_argument("--executable",type=Path,default=ROOT/"ros2_ws/install/fwis_hybrid_joint/lib/fwis_hybrid_joint/hybrid_joint_case")
     a.add_argument("--output",type=Path)
+    a.add_argument("--source-commit",help="commit of the immutable native build used for this run")
+    a.add_argument("--policy-source",type=Path,default=ROOT/"ros2_ws/src/fwis_hybrid_joint/config/policy.json",
+                   help="exact policy used to compile the supplied solver")
     args=a.parse_args()
     if args.cohort<0 or args.jobs<1 or (args.action=="timing" and args.jobs!=1):
         a.error("invalid cohort or parallel timing run")
@@ -76,22 +79,27 @@ def main():
         target.write_bytes(document)
         print(f"{len(manifest['cases'])} cases; SHA-256 {identify(target)}")
         return
+    ranking_sha=identify(args.policy_source)
     splits=indices(args.split)
     ids=[int(x) for x in args.ids.split(",")] if args.ids else list(range(len(splits)))
     if args.action=="timing" and not args.ids:
         ids=[splits.index(1),splits.index(6)]
     if output.exists():
         raise SystemExit(f"Evidence already exists: {output}. Set --output to a new attempt.")
-    sources=subprocess.check_output(["git","rev-parse","HEAD"],cwd=ROOT,text=True).strip()
-    source_tree=subprocess.check_output([sys.executable,str(ROOT/"scripts/source_fingerprint.py"),str(ROOT)],text=True).strip()
+    harness_commit=subprocess.check_output(["git","rev-parse","HEAD"],cwd=ROOT,text=True).strip()
+    sources=subprocess.check_output(["git","rev-parse","--verify",(args.source_commit or "HEAD")+"^{commit}"],cwd=ROOT,text=True).strip()
+    if args.source_commit:
+        source_tree=subprocess.check_output(["git","rev-parse",sources+":ros2_ws/src"],cwd=ROOT,text=True).strip()
+    else:
+        source_tree=subprocess.check_output([sys.executable,str(ROOT/"scripts/source_fingerprint.py"),str(ROOT)],text=True).strip()
     def trial(key):
         task,i,rep,ablation=key
         r,w,meta=make(args.split,i,task,args.profile)
         budget=POLICY["budget_"+task]
-        config_hash=digest(dict(policy=POLICY,limit=r["limits"],task=task,ablation=ablation))
+        config_hash=digest(dict(policy=POLICY,ranking_sha256=ranking_sha,limits_hash=digest(r["limits"]),task=task,ablation=ablation))
         row=dict(task=task,index=i,case_id=f"{args.split}/{task}/{i:03}",dataset_split=args.split,**meta,
-                 profile=args.profile,config_hash=config_hash,map_hash=digest(r["grid"]),limits_hash=digest(r["limits"]),
-                 request_hash=digest(r),source_sha=sources,source_tree=source_tree,exe_hash=solver_sha,lib_hash=lib_sha,
+                 profile=args.profile,ranking_policy_sha256=ranking_sha,config_hash=config_hash,map_hash=digest(r["grid"]),limits_hash=digest(r["limits"]),
+                 request_hash=digest(r),source_sha=sources,source_tree=source_tree,harness_commit=harness_commit,exe_hash=solver_sha,lib_hash=lib_sha,
                  operation=args.action,repeat=rep,ablation=ablation,budget_s=budget)
         if args.action=="witness":
             if not w:

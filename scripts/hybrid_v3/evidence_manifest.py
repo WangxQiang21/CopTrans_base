@@ -4,7 +4,9 @@ from pathlib import Path
 
 import subprocess
 
-from qualify import ROOT, sha, load
+from qualify import ROOT, POLICY, digest, sha, load
+
+RANKING_SOURCE="ros2_ws/src/fwis_hybrid_joint/config/policy.json"
 
 
 def read_hash_file(path):
@@ -42,11 +44,25 @@ def system_hashes(commit):
         return {}
     scopes=("ros2_ws/src/fwis_hybrid_joint_ros","ros2_ws/src/fwis_v3_msgs/msg","ros2_ws/src/fwis_control/src",
             "ros2_ws/src/fwis_control/include","ros2_ws/src/fwis_bringup/launch/test.launch.py",
-            "ros2_ws/src/fwis_bringup/launch/plan.launch.py")
+            "ros2_ws/src/fwis_bringup/launch/plan.launch.py","ros2_ws/src/fwis_bringup/fwis_bringup",
+            "ros2_ws/src/fwis_bringup/scripts","ros2_ws/src/ranger_mini_gz/ranger_mini_gz",
+            "ros2_ws/src/ranger_mini_gz/src","ros2_ws/src/ranger_mini_gz/worlds",
+            "ros2_ws/src/ranger_mini_gz/config","ros2_ws/src/fwis_control/config")
     paths=subprocess.check_output(["git","ls-tree","-r","--name-only",commit,"--",*scopes],cwd=ROOT,text=True).splitlines()
     from hashlib import sha256
     return {name:sha256(subprocess.check_output(["git","show",commit+":"+name],cwd=ROOT)).hexdigest() for name in paths
             if "/test/" not in name and not name.endswith((".md",".rst"))}
+
+
+def runtime_binaries(snapshot):
+    install=snapshot/"ros2_ws/install"
+    paths=[install/name/"lib"/name/node for name,node in (
+        ("fwis_hybrid_joint_ros","hybrid_joint_planner"),
+        ("fwis_hybrid_joint_ros","hybrid_joint_executor"),
+        ("fwis_control","ranger_tracking_controller_cpp"))]
+    paths+=[install/name/"lib"/lib for name,lib in (("fwis_hybrid_joint","libfwis_hybrid_joint.so"),
+                                                    ("fwis_hybrid_joint_ros","libhybrid_codec.so"))]
+    return {str(p.resolve()):sha(p) for p in paths if p.is_file()}
 
 
 def audit_rows(records,witnesses,manifest_files,source):
@@ -69,6 +85,10 @@ def audit_rows(records,witnesses,manifest_files,source):
                   or row["limits_hash"]!=declared.get("limits") or row["label"]!=declared.get("label")
                   or row["family"]!=declared.get("family") or row["seed"]!=declared.get("seed")
                   or row["exe_hash"] not in allowed or row["lib_hash"] not in allowed or not row["config_hash"])
+        expected_config=digest(dict(policy=POLICY,ranking_sha256=sources.get(RANKING_SOURCE),
+                                    limits_hash=row["limits_hash"],task=row["task"],ablation=row["ablation"]))
+        mismatch |= (row.get("ranking_policy_sha256")!=sources.get(RANKING_SOURCE) or row["config_hash"]!=expected_config
+                     or row.get("source_sha")!=(source or {}).get("binary_commit"))
         if identity in seen or mismatch:
             reasons.append(str(identity))
         seen.add(identity)

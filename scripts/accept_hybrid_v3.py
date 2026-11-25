@@ -14,9 +14,9 @@ import yaml
 
 sys.path.insert(0,str(Path(__file__).resolve().parent/"hybrid_v3"))
 from qualify import (LOCAL,NUMERIC,POLICY,PROFILES,REGISTRY,REPORT,ROOT,SPEC,TASKS,closed_rows,
-                     collect,digest,lines,load,quant,setup_metrics,sha,xml_cases)
+                     archived_comparisons,collect,digest,lines,load,quant,setup_metrics,sha,xml_cases)
 from cases import indices
-from evidence_manifest import build_manifest, audit_rows, system_hashes
+from evidence_manifest import build_manifest, audit_rows, system_hashes, runtime_binaries, RANKING_SOURCE
 
 
 def write(path,obj):
@@ -25,15 +25,17 @@ def write(path,obj):
 
 def main():
     ap=argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--batch",type=Path,default=LOCAL/"release_c3")
-    ap.add_argument("--control",type=Path,default=LOCAL/"control_605_c3")
-    ap.add_argument("--gazebo",type=Path,default=LOCAL/"gazebo_release_c3")
-    ap.add_argument("--numeric",type=Path,default=NUMERIC/"c3")
-    ap.add_argument("--ros",type=Path,default=LOCAL/"group_c3")
-    ap.add_argument("--witness",type=Path,default=LOCAL/"witness_final_c3")
-    ap.add_argument("--system",type=Path,default=LOCAL/"system_c3",help="clean snapshot of the ROS binaries used in the Gazebo series")
-    ap.add_argument("--binary",type=Path,default=LOCAL/"binary_c3")
-    ap.add_argument("--ctest",type=Path,default=LOCAL/"release_c3"/"ctest")
+    ap.add_argument("--batch",type=Path,default=LOCAL/"release_c5")
+    ap.add_argument("--control",type=Path,default=LOCAL/"control_605_c5")
+    ap.add_argument("--gazebo",type=Path,default=LOCAL/"gazebo_release_c5")
+    ap.add_argument("--headless",type=Path,default=LOCAL/"gazebo_headless_c5")
+    ap.add_argument("--legacy",type=Path,default=NUMERIC/"legacy_c2",help="paired previous-backend results for this cohort")
+    ap.add_argument("--numeric",type=Path,default=NUMERIC/"c5")
+    ap.add_argument("--ros",type=Path,default=LOCAL/"group_c5")
+    ap.add_argument("--witness",type=Path,default=LOCAL/"witness_final_c5")
+    ap.add_argument("--system",type=Path,default=LOCAL/"system_c5",help="clean snapshot of the ROS binaries used in the Gazebo series")
+    ap.add_argument("--binary",type=Path,default=LOCAL/"binary_c5")
+    ap.add_argument("--ctest",type=Path,default=LOCAL/"release_c5"/"ctest")
     ap.add_argument("--report",type=Path,default=REPORT)
     ap.add_argument("--compact",action="store_true",help="re-evaluate from the checked-in measurements")
     args=ap.parse_args();out=args.report;out.mkdir(exist_ok=True,parents=True)
@@ -45,11 +47,11 @@ def main():
         models=load(args.numeric/"model.json");collision=load(args.numeric/"collision.json")
         derivatives=load(args.numeric/"derivatives.json")
         defaults=yaml.safe_load(REGISTRY.read_text())
-        native=load(LOCAL/"native_c3/runtime.json")
+        native=load(LOCAL/"native_c5/runtime.json")
         archive=args.ros
         fixtures={t:load(archive/f"{t}.json") for t in TASKS}
         legacy={f"{t}/{p}":[[x["case_id"],x.get("request_hash"),x["evidence"].get("certified_in_budget",False)]
-                for x in lines(NUMERIC/f"legacy_{t}_{p}.jsonl")] for t in TASKS for p in PROFILES}
+                for x in lines(args.legacy/f"legacy_{t}_{p}.jsonl")] for t in TASKS for p in PROFILES}
         witness={}
         for split in ("core","holdout","development","pruning"):
             for profile in PROFILES:
@@ -57,18 +59,32 @@ def main():
                     witness[r["case_id"]+"/"+profile]=[r["request_hash"],r["evidence"].get("executable",False),r.get("witness_hash")]
         ctest=xml_cases(args.ctest);san=xml_cases(args.numeric/"ASan_UBSan")
         data=dict(model=models,collision=collision,derivatives=derivatives,software_defaults=defaults["defaults"],
-                  native=native,group_fixtures=fixtures,legacy=legacy,control=setup_metrics(args.control),
+                  native=native,group_fixtures=fixtures,legacy=legacy,legacy_summary=load(args.legacy/"legacy_progress.json"),control=setup_metrics(args.control),
                   certificate_tests=xml_cases(args.numeric),ctest=ctest,san=san,necessary_aux=load(args.numeric/"necessary_aux.json"),
                   necessary_profiles=load(args.numeric/"necessary_corridor.json"),
                   asan_smoke=load(args.numeric/"sanitizer_summary.json"),native_faults=load(archive/"faults.json"),
-                  admission=load(archive/"delivery.json"),cases=stats,witness=witness,gazebo=closed_rows(args.gazebo),
-                  inputs_sha256={str(p.relative_to(ROOT)):sha(p) for p in [SPEC,REGISTRY,casefile,REPORT/"case_manifest_baseline.json"] if p.exists()},
+                  admission=load(archive/"delivery.json"),cases=stats,witness=witness,gazebo=closed_rows(args.gazebo),headless=closed_rows(args.headless),
+                  inputs_sha256={str(p.relative_to(ROOT)):sha(p) for p in [SPEC,REGISTRY,ROOT/RANKING_SOURCE,casefile,REPORT/"case_manifest_baseline.json"] if p.exists()},
                   default_runs=load(args.batch/"default_runs.json"),source_manifest=build_manifest(args.batch,args.witness,args.binary,args.ctest))
+        data["paired_closed_loop"]=archived_comparisons(data["gazebo"],data["default_runs"])
         system_identity=args.system/"source_commit"
         system_commit=system_identity.read_text().strip() if system_identity.is_file() else None
+        if data.get("default_runs"):
+            from default_entries import collect as read_entry
+            verified=[]
+            for receipt in data["default_runs"]:
+                if receipt["entry"] not in ("single","multi","interactive"):
+                    raise ValueError("Unknown default entry")
+                archive=ROOT/"reports/runs"/receipt["run_id"]
+                checked=read_entry(receipt["entry"],archive)
+                if checked!=receipt:
+                    raise ValueError("Public entry receipt differs from its observed route")
+                verified.append(checked)
+            data["default_runs"]=verified
         data["source_manifest"]["system_commit"]=system_commit
         data["source_manifest"]["system_source_sha256"]=system_hashes(system_commit)
         data["source_manifest"]["system_release_tests"]=xml_cases(args.system/"ctest")
+        data["source_manifest"]["runtime_binaries"]=runtime_binaries(args.system)
         data["source_manifest"]["system_snapshot"]=str(args.system.resolve())
         write(out/"measurements.json",data)
     if data is None:raise SystemExit("missing measurements")
@@ -234,14 +250,20 @@ def main():
                           all(v["m"]>0 for v in met["min_environment_clearance"].values()))
                 if r["family"] in ("multibend","necessary_aux"):
                     good=good and r.get("scene_measurements",{}).get("passed") and bool(r.get("scene_proof"))
-                results[r["family"]].append(bool(good))
-            summary[t+"/"+p]={f:[sum(v),len(v)] for f,v in results.items()}
-            good={f for f,v in results.items() if len(v)>=3 and all(v)}
+                results[r["family"]].append((r["trial"],bool(good and r["gui"])))
+            summary[t+"/"+p]={f:[sum(ok for _,ok in v),len(v)] for f,v in results.items()}
+            good={f for f,v in results.items() if len({trial for trial,_ in v})==len(v)>=3 and all(ok for _,ok in v)}
             enough &=len(good)>=8 and {"fault","long","multibend","necessary_aux"}<=good
-    record("CLOSED_LOOP",bool(gaz),enough,summary)
-    clocks=[c for r in gaz for c in r["clocks"]]
-    record("GAZEBO_CLOCK_SCOPE",bool(clocks),enough and all(c["ros_misses"]==0 and c["stale_motion"]==0 and
-           c["max_callback_ms"]<=5 and c["real_time_factor"] is not None for c in clocks) and sum(c["matched_commands"] for c in clocks)>0,
+    headless=data.get("headless") or []
+    headless_tasks={r["task"] for r in headless if not r.get("gui",True) and r["status"]=="passed" and r["planner_source"]=="hybrid_joint" and r["admissions"]}
+    summary["headless_completed_tasks"]=sorted(headless_tasks)
+    record("CLOSED_LOOP",bool(gaz),enough and headless_tasks==set(TASKS),summary)
+    clocks=[c for r in gaz+headless for c in r["clocks"]]
+    complete_clocks=all({c.get("vehicle") for c in r["clocks"]}==
+                        ({"robot1"} if r["task"]=="single" else {"robot1","robot2","robot3"})
+                        for r in gaz+headless)
+    record("GAZEBO_CLOCK_SCOPE",bool(clocks),enough and complete_clocks and all(c["ros_misses"]==0 and c["stale_motion"]==0 and
+           c["max_callback_ms"]<=5 and c["real_time_factor"] is not None and c["matched_commands"]>0 for c in clocks),
            dict(samples=len(clocks),stale_motion=sum(c["stale_motion"] for c in clocks),ros_misses=sum(c["ros_misses"] for c in clocks),
                 matched_commands=sum(c["matched_commands"] for c in clocks),max_callback_ms=max([c["max_callback_ms"] for c in clocks],default=None)))
     admission=data["admission"] or {}
@@ -254,7 +276,15 @@ def main():
            dict(test_default=default["planners"],tracker=default["tracking_implementation"],runs=smoke))
     hashes=data["inputs_sha256"];manifest=data["source_manifest"]
     provenance=audit_rows(rows,witness,{p:REPORT/("case_manifest.json" if p=="standard" else "case_manifest_baseline.json") for p in PROFILES},manifest)
-    integrity=all((ROOT/p).exists() and sha(ROOT/p)==v for p,v in hashes.items()) and len(hashes)>=3
+    evidence_manifest=load(out/"manifest.json") or {}
+    compact_hashes=evidence_manifest.get("compact_hashes",{})
+    compact_integrity=all((out/p).is_file() and sha(out/p)==v for p,v in compact_hashes.items())
+    has_scalars={"measurements.json","runs.csv"}<=set(compact_hashes)
+    runtime_files=(manifest or {}).get("runtime_binaries",{})
+    runtime_provenance=bool(runtime_files) and all(
+        r.get("installed_binaries")==runtime_files and r.get("source_commit")==manifest["system_commit"]
+        for r in gaz+headless)
+    integrity=runtime_provenance and compact_integrity and has_scalars and all((ROOT/p).exists() and sha(ROOT/p)==v for p,v in hashes.items()) and len(hashes)>=3
     record("REPRODUCIBLE_EVIDENCE",True,provenance["verified"] and integrity and bool(rows) and all(
            c["status"]=="PASS" for k,c in checks.items() if k!="DEFAULT_INTEGRATION"),dict(input_hashes=hashes,source_commit=(manifest or {}).get("binary_commit"),provenance=provenance))
     if set(checks)!=set(cfg):raise ValueError("gate coverage differs from frozen specification")

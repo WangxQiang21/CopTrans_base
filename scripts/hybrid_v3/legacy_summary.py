@@ -87,7 +87,7 @@ def report(directory, new_batch=None):
                         matched.append((r["evidence"]["certified_in_budget"],bool(ok)))
                     summary["paired_feasible"]=dict(total=len(matched),old_only=matched.count((True,False)),
                         new_only=matched.count((False,True)),both_pass=matched.count((True,True)),neither=matched.count((False,False)),
-                        new_raw_sha256=identity(new_path))
+                        new_raw_sha256=identity(new_path),new_source_commits=sorted({r["source_sha"] for r in fresh.values()}))
             f=directory/f"legacy_timing_{name}.jsonl"; timing={}
             if f.exists():
                 rows=list(map(json.loads,f.read_text().splitlines()))
@@ -108,6 +108,24 @@ def report(directory, new_batch=None):
                         target_hash=trials[0]["request_hash"] if trials else None,
                         complete={r["repeat"] for r in subset}==set(range(-5,30)),
                         cpus=sorted({cpu for r in subset for cpu in r["cpus"]}))
+                if new_batch:
+                    peer_path=new_batch/f"timing_core_{profile}.jsonl"
+                    if peer_path.exists():
+                        peer=[r for r in map(json.loads,peer_path.read_text().splitlines()) if r["task"]==task and r["repeat"]>=0]
+                        for family,metrics in timing.items():
+                            group=[r for r in peer if r["family"]==family]
+                            if not group or not metrics["target_hash"]:
+                                continue
+                            if any(r["request_hash"]!=metrics["target_hash"] for r in group):
+                                raise ValueError(f"Timing request mismatch at {name}/{family}")
+                            success=[r["evidence"]["first_policy_compliant_s"] for r in group if
+                                     r["evidence"].get("status")=="CERTIFIED_POLICY_COMPLIANT" and
+                                     r["evidence"].get("audit",{}).get("executable")]
+                            rank=math.ceil(.95*len(group))
+                            metrics["new_complete"]=len(group)==30 and {r["repeat"] for r in group}==set(range(30))
+                            metrics["new_certified_in_budget"]=len(success)
+                            metrics["new_policy_compliant_p95_s"]=sorted(success)[rank-1] if metrics["new_complete"] and rank<=len(success) else None
+                            metrics["new_raw_sha256"]=identity(peer_path)
                 summary.update(timing=timing,timing_raw_path=str(f),timing_raw_sha256=identity(f))
             result[name]=summary
     code=ROOT/"ros2_ws/install/fwis_backends/lib/fwis_backends"
@@ -134,8 +152,8 @@ def report(directory, new_batch=None):
 
 def main():
     ap=argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--directory",type=Path,default=LOCAL.parent/"hybrid_v3_numeric")
-    ap.add_argument("--new-batch",type=Path,default=LOCAL/"release_c1")
+    ap.add_argument("--directory",type=Path,default=LOCAL.parent/"hybrid_v3_numeric/legacy_c2")
+    ap.add_argument("--new-batch",type=Path,default=LOCAL/"release_c5")
     ap.add_argument("--output",type=Path);a=ap.parse_args()
     text=json.dumps(report(a.directory,a.new_batch),indent=2,allow_nan=False)+"\n"
     if a.output:a.output.write_text(text)

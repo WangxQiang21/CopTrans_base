@@ -101,6 +101,9 @@ def test_entry(entry,destination):
                     env_file=archives[0]/"environment.txt"
                     if env_file.is_file():
                         env=dict(line.split("=",1) for line in env_file.read_text().splitlines() if "=" in line)
+                        if not env.get("ROS_DOMAIN_ID"):
+                            time.sleep(.3)
+                            continue
                         operator=subprocess.Popen([sys.executable,__file__,"--operator",archives[0].name],
                             env=dict(os.environ,ROS_DOMAIN_ID=env["ROS_DOMAIN_ID"],ROS_LOCALHOST_ONLY="1"))
                 if operator is not None and operator.poll() is not None:
@@ -124,7 +127,7 @@ def test_entry(entry,destination):
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--operator")
-    parser.add_argument("--output",type=Path,default=LOCAL/"release_c3"/"default_runs.json")
+    parser.add_argument("--output",type=Path,default=LOCAL/"release_c5"/"default_runs.json")
     args=parser.parse_args()
     if args.operator:
         return operate(args.operator)
