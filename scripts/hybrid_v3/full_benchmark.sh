@@ -54,6 +54,10 @@ for split,total in (("core",72),("development",120)):
         if len({r["case_id"] for r in records})!=total or failures:
             raise SystemExit(f"Holdout sealed: {split}/{profile} has {len(records)}/{total} records; failures {failures}")
 PY_CHECK
+if [[ -e "$batch/KEEP_HOLDOUT_SEALED" ]]; then
+    echo "Development regression under investigation; blind holdout requests were not run." >&2
+    exit 75
+fi
 for profile in standard baseline; do run solve holdout "$profile" "$batch" 4 "${HYBRID_BENCH_CPUS:-3-6}"; done
 for profile in standard baseline; do run ablation pruning "$profile" "$batch" 3 "${HYBRID_BENCH_CPUS:-3-6}"; done
 for profile in standard baseline; do run timing core "$profile" "$batch" 1 "${HYBRID_TIMING_CPU:-2}"; done

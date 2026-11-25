@@ -15,6 +15,7 @@ find_package(OpenSSL REQUIRED)
 add_library(hybrid_codec SHARED src/codec.cpp src/request.cpp)
 target_include_directories(hybrid_codec PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<INSTALL_INTERFACE:include>)
 file(GLOB_RECURSE model_sources CONFIGURE_DEPENDS
+  "${CMAKE_CURRENT_SOURCE_DIR}/../fwis_hybrid_joint/config/policy.json"
   "${CMAKE_CURRENT_SOURCE_DIR}/../fwis_hybrid_joint/src/*.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/../fwis_hybrid_joint/src/*.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/../fwis_hybrid_joint/src/*.hpp"

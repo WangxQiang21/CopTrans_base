@@ -3,6 +3,7 @@
 import argparse
 from hashlib import sha256
 import json
+import math
 import os
 from pathlib import Path
 import signal
@@ -19,6 +20,15 @@ def operate(run_id):
     from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped
     from rclpy.qos import QoSProfile, DurabilityPolicy
     from std_msgs.msg import String
+    fixture=yaml.safe_load(subprocess.check_output(
+        [ROOT/"scripts/test.sh","--task","multi","--experiment","short_turn","--dry-run"],text=True))
+    def set_pose(msg,endpoint):
+        x,y,heading=fixture[endpoint]
+        msg.position.x=float(x)
+        msg.position.y=float(y)
+        msg.orientation.z=math.sin(heading/2)
+        msg.orientation.w=math.cos(heading/2)
+
     rclpy.init()
     node=rclpy.create_node("hybrid_v3_rviz_input_test")
     state={}
@@ -38,17 +48,13 @@ def operate(run_id):
         if phase=="waiting_start" and not started and sp.get_subscription_count():
             msg=PoseWithCovarianceStamped()
             msg.header.frame_id="map"
-            msg.pose.pose.position.x=4.
-            msg.pose.pose.position.y=5.6
-            msg.pose.pose.orientation.w=1.
+            set_pose(msg.pose.pose,"start")
             sp.publish(msg)
             started=True
         elif phase=="waiting_goal" and started and not goal and gp.get_subscription_count():
             msg=PoseStamped()
             msg.header.frame_id="map"
-            msg.pose.position.x=7.8
-            msg.pose.position.y=6.3
-            msg.pose.orientation.w=1.
+            set_pose(msg.pose,"goal")
             gp.publish(msg)
             goal=True
         elif phase in ("finished","failed"):
