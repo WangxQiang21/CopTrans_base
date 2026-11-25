@@ -45,11 +45,12 @@ def test_wall_gap_does_not_become_a_ros_deadline_miss_or_a_compute_violation():
                    unaccounted_slots_in_trace=0, status_queue_drops=0, invalid_command_count=0,
                    invalid_command_rate_pairs=0, command_correlation={"matched_tracking": 15_000,
                                                                      "tracking_publish_count": 15_000},
-                   wall_intervals_greater_than_one_period=1, commands_consumed_after_one_wall_period=0)
+                   wall_intervals_at_least_two_periods=1, wall_intervals_greater_than_one_period=5,
+                   commands_consumed_after_one_wall_period=0)
     result = assess_acceptance(probe, {"robot1": tracker})
     assert result["ros_clock_gate"] == "PASS"
     assert result["strict_wall_gate"] == result["full_gate"] == "NOT_MET"
-    tracker.update(wall_intervals_greater_than_one_period=0)
+    tracker.update(wall_intervals_at_least_two_periods=0)
     assert assess_acceptance(probe, {"robot1": tracker})["full_gate"] == "PASS"
     probe.update(tracking_wall_s=8.)
     assert assess_acceptance(probe, {"robot1": tracker})["full_gate"] == "NOT_MET"

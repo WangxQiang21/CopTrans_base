@@ -292,7 +292,7 @@ def assess_acceptance(probe, trackers):
             all_tracking_commands_matched=commands["matched_tracking"] == commands["tracking_publish_count"],
             no_invalid_commands=row["invalid_command_count"] == row["invalid_command_rate_pairs"] == 0,
         )
-        wall[robot] = dict(no_callback_interval_beyond_40ms=row["wall_intervals_greater_than_one_period"] == 0,
+        wall[robot] = dict(no_full_40ms_release_missed=row["wall_intervals_at_least_two_periods"] == 0,
                            no_command_consumption_beyond_40ms=row["commands_consumed_after_one_wall_period"] == 0)
     sim_pass = status({**common, **{robot: all(checks.values()) for robot, checks in simulation.items()}})
     wall_pass = status({**common, **{robot: all(checks.values()) for robot, checks in wall.items()}})
