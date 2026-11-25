@@ -28,10 +28,10 @@ struct Run {
 extern "C" int stop_nlp(void *r){return static_cast<Run*>(r)->stop();}
 using Route=std::vector<Point>;
 using Sequence=std::vector<Mode>;
-struct Seed { Sequence seq; int sign; Route route; std::string edit; int reverse_from{-1}; bool quintic{}, general{}, relaxed{}; int priority{8}; bool shortest_yaw{}; std::vector<double> channel_yaw{}; };
+struct Seed { Sequence seq; int sign; Route route; std::string edit; int reverse_from{-1}; bool quintic{}, general{}, relaxed{}; int priority{8}; bool shortest_yaw{},smooth_channel{}; };
 // Occupancy A* only proposes continuous optimization starts. Full swept footprint
 // checks (including independent vehicle headings) are performed by the certifier.
-Route grid_seed(const Request& r,const Run& run,bool wide=false,int gear=1,std::vector<double>* yaw_seed=nullptr) {
+Route grid_seed(const Request& r,const Run& run,bool wide=false,int gear=1) {
   const auto& map=*r.grid;
   const int w=map.width(),h=map.height(); const double res=map.resolution();
   const auto org=map.origin();
@@ -81,22 +81,19 @@ Route grid_seed(const Request& r,const Run& run,bool wide=false,int gear=1,std::
     }
     for(const auto& f:r.vehicles)cover.push_back({f[0],f[1],.5*std::hypot(f[2],f[3])});
   }
-  auto clearance_at=[&](Point q,double yaw){
-    const double co=std::cos(yaw),si=std::sin(yaw);
-    double gap=std::numeric_limits<double>::infinity();
-    for(const auto& disk:cover){
-      const int at=cell({q.x+co*disk.x-si*disk.y,q.y+si*disk.x+co*disk.y});
-      gap=std::min(gap,(at<0?0.:clear[at]*res)-disk.radius);
-    }
-    return gap;
-  };
   std::vector<float> gap_cache(wide?w*h:0,std::numeric_limits<float>::quiet_NaN());
   auto body_gap=[&](int id){
     if(std::isnan(gap_cache[id])){
       const auto q=point(id);
       const double ds=distance(q,start),dg=distance(q,goal),u=ds/std::max(1.e-8,ds+dg);
       const double yaw=r.start.reference.yaw+u*u*(3.-2.*u)*delta(r.start.reference.yaw,r.goal.reference.yaw);
-      gap_cache[id]=static_cast<float>(clearance_at(q,yaw));
+      const double co=std::cos(yaw),si=std::sin(yaw);
+      double gap=std::numeric_limits<double>::infinity();
+      for(const auto& disk:cover){
+        const int at=cell({q.x+co*disk.x-si*disk.y,q.y+si*disk.x+co*disk.y});
+        gap=std::min(gap,(at<0?0.:clear[at]*res)-disk.radius);
+      }
+      gap_cache[id]=static_cast<float>(gap);
     }
     return gap_cache[id];
   };
@@ -152,17 +149,7 @@ Route grid_seed(const Request& r,const Run& run,bool wide=false,int gear=1,std::
     double f=(at-arc[j-1])/(arc[j]-arc[j-1]);
     out.push_back({rev[j-1].x+f*(rev[j].x-rev[j-1].x),rev[j-1].y+f*(rev[j].y-rev[j-1].y)});
   }
-  out.push_back(goal);
-  if(wide && yaw_seed){
-    const auto last=out[out.size()-2];
-    const double entry=r.start.heading[0]+(gear<0?pi:0);
-    const double exit=r.goal.constrain_heading[0]?r.goal.heading[0]+(gear<0?pi:0):std::atan2(goal.y-last.y,goal.x-last.x);
-    const auto xy=hybrid_channel::fit(out,entry,exit);
-    if(!xy[0].empty())
-      *yaw_seed=hybrid_channel::yaw_profile(xy,r.start.reference.yaw,
-                                             delta(r.start.reference.yaw,r.goal.reference.yaw),clearance_at);
-  }
-  return out;
+  out.push_back(goal);return out;
 }
 
 Point interpolate(const Route& r,double fraction){
@@ -178,7 +165,7 @@ Point interpolate(const Route& r,double fraction){
 // A clamped, uniform quintic B-spline initialized from the channel tangent.
 // Insert every interior knot to multiplicity five to extract exact Bernstein
 // spans. The fixed-yaw chart has C4 joins, with zero angular rate at both ends.
-std::vector<Quintic> route_orientation(const Route& path,double start,double end,bool shortest,const std::vector<double>& optimized){
+std::vector<Quintic> route_orientation(const Route& path,double start,double end,bool shortest){
   const int n=path.size()-1,degree=5;
   std::vector<double> knots(6,0.);for(int i=1;i<n;++i)knots.push_back(i);
   knots.insert(knots.end(),6,n);
@@ -192,7 +179,6 @@ std::vector<Quintic> route_orientation(const Route& path,double start,double end
   }
   const double residual=delta(a.back(),end);
   for(int j=1;j<=n;++j)a[j]=shortest?start+delta(start,end)*j/n:a[j]+residual*j/n;
-  if(optimized.size()==a.size())a=optimized;
   std::vector<double> controls(n+degree);
   for(int i=0;i<n+degree;++i){
     double t=0;for(int j=1;j<=degree;++j)t+=knots[i+j]/degree;
@@ -282,7 +268,7 @@ HJProblem problem(const Request& r,const Seed& seed,const SolveOptions& options,
       const auto a=path[j],b=path[j+1];double len=distance(a,b);
       double d0=j?std::atan2(path[j+1].y-path[j-1].y,path[j+1].x-path[j-1].x):ph.h0[0]+(sign<0?pi:0);
       double d1=j+1<ph.spans?std::atan2(path[j+2].y-path[j].y,path[j+2].x-path[j].x):ph.h1[0]+(sign<0?pi:0);
-      if(seed.shortest_yaw && j+1==ph.spans && !p.fixed_goal[1])d1=std::atan2(b.y-a.y,b.x-a.x);
+      if(seed.smooth_channel && j+1==ph.spans && !p.fixed_goal[1])d1=std::atan2(b.y-a.y,b.x-a.x);
       for(int c=0;c<6;++c){
         double t=c/5.;
         ph.coefficient[j][0][c]=a.x+(b.x-a.x)*t;ph.coefficient[j][1][c]=a.y+(b.y-a.y)*t;
@@ -294,7 +280,7 @@ HJProblem problem(const Request& r,const Seed& seed,const SolveOptions& options,
         ph.coefficient[j][2][c]=psi+(endpsi-psi)*(j+t)/ph.spans;
       }
     }
-    if(seed.shortest_yaw && ph.spans>1 && ph.mode==0) {
+    if(seed.smooth_channel && ph.spans>1 && ph.mode==0) {
       const auto a=path[ph.spans-1],b=path.back();
       const double entry=ph.h0[0]+(sign<0?pi:0);
       const double exit=p.fixed_goal[1]?ph.h1[0]+(sign<0?pi:0):std::atan2(b.y-a.y,b.x-a.x);
@@ -305,7 +291,7 @@ HJProblem problem(const Request& r,const Seed& seed,const SolveOptions& options,
     }
     if(ph.mode==0 && p.bodies==3 && moving==1 && ph.spans>1 &&
        (std::abs(delta(psi,endpsi))>1e-8) && !seed.general){
-      auto yaw=route_orientation(path,psi,endpsi,seed.shortest_yaw,seed.channel_yaw);
+      auto yaw=route_orientation(path,psi,endpsi,seed.shortest_yaw);
       for(int j=0;j<ph.spans;++j)std::copy(yaw[j].begin(),yaw[j].end(),ph.coefficient[j][2]);
       p.route_yaw_chart=1;
     }
@@ -573,15 +559,21 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
   }
   // Cargo yaw can move independently of the tangents of the three mount
   // trajectories. Give the NLP both the low-rotation and channel-following charts.
-  if(r.vehicles.size()==3 && opts.initial_sequence.empty() &&
+  if(r.vehicles.size()==3 && r.cargo && opts.initial_sequence.empty() &&
      std::abs(delta(r.start.reference.yaw,r.goal.reference.yaw))>1.e-8) {
     auto route=std::find_if(seeds.begin(),seeds.end(),[](const Seed& s){return s.edit=="CHANGE_ROUTE_SEED";});
-    if(route!=seeds.end()){
+    if(route!=seeds.end() && route->route.size()>=4){
+      const auto cargo=*r.cargo;
+      const double arm=std::hypot(cargo[0],cargo[1])+.5*std::hypot(cargo[2],cargo[3]);
+      const bool subcell_rotation=arm*std::abs(delta(r.start.reference.yaw,r.goal.reference.yaw))<=r.grid->resolution();
       auto low_rotation=*route;
-      auto wide=grid_seed(r,run,true,sign,&low_rotation.channel_yaw);
-      if(!wide.empty())low_rotation.route=std::move(wide);
       low_rotation.edit="MINIMUM_YAW_ROUTE";
       low_rotation.shortest_yaw=true;
+      if(!subcell_rotation){
+        auto wide=grid_seed(r,run,true,sign);
+        if(!wide.empty())low_rotation.route=std::move(wide);
+        low_rotation.smooth_channel=true;
+      }
       seeds.insert(route,std::move(low_rotation));
     }
   }
