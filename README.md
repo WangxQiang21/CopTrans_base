@@ -7,7 +7,7 @@ cd CopTrans_base
 ./scripts/interactive.sh
 ```
 
-`./scripts/test.sh --task multi` 和无参数的 `./run_demo.sh` 也进入同一交互测试。脚本会增量构建并打开 Gazebo 和 RViz，等待你选定起点和终点。使用 `--no-build` 时，脚本会核对安装与源码是否一致。默认是室内厂房，西侧靠墙有一处只允许单车通过的 1.10 m 限宽口。可用 `--list-scenarios` 查看场景，加 `--scenario port_01` 切换到港口。
+`./scripts/test.sh --task multi` 和无参数的 `./run_demo.sh` 也进入同一交互测试。脚本会增量构建并打开 Gazebo 和 RViz。默认室内厂房场景包含三车集结和 CTS 运输。使用 `--no-build` 时，脚本会核对安装与源码是否一致。可用 `--list-scenarios` 查看场景，加 `--scenario port_01` 切换到港口。
 
 新机器先准备 ROS 2 Humble、Gazebo Harmonic、对应的 ROS 桥、RViz 和 Colcon。若缺少 CasADi C++ SDK，可执行 `python3 -m pip install --user --no-deps casadi==3.7.2`。已有独立 SDK 时，可先执行 `export COPTRANS_CASADI_ROOT=/实际路径/casadi`。首次启动会编译 Release；旧安装或文件校验失败时，去掉 `--no-build` 再运行。
 
@@ -15,8 +15,8 @@ cd CopTrans_base
 
 ## 2. 在 RViz 设置起点和终点
 
-1. 等待左侧「规划与执行」面板提示选择起点。点击 **2D Pose Estimate**，在地图上按住左键并拖出朝向。Gazebo 会把三辆车和货物放到选定位置。
-2. 等面板确认三车已停稳，点击 **2D Goal Pose**，在地图上拖出终点和朝向。松开鼠标后自动规划，三车通过预检后同步执行。两次点选设置的都是整个编队的位姿。
+1. 等待左侧「规划与执行」面板提示选择起点。点击 **2D Pose Estimate**，在地图上按住左键并拖出货物中心的起点和朝向。
+2. 点击 **2D Goal Pose**，拖出货物中心的终点和朝向。两点选齐后，三车从 S1–S3 驶向挂点。全部到位并停稳后开始 CTS 运输。
 3. 在「规划与执行」面板查看结果。完成或失败后窗口会保留。按 **Ctrl+C** 退出，再运行脚本开始下一轮。
 
 ## 3. 查日志或复跑
@@ -37,11 +37,7 @@ cat "reports/runs/$id/experiment.json"
 
 ## 4. 测试三车集结和 CTS 运输
 
-```bash
-./scripts/interactive.sh --scene-variant cts_assembly
-```
-
-用 RViz 点选货物中心的起点和终点。三车在两点选定后从 S1–S3 出发，全部到位并停稳后进入运输。默认自动分配挂点。加 `--dock-assignment 1,3,2` 会让 `robot1`、`robot2`、`robot3` 分别使用 1、3、2 号挂点。
+默认自动分配挂点。例如运行 `./scripts/interactive.sh --dock-assignment 1,3,2`，让 `robot1`、`robot2`、`robot3` 分别使用 1、3、2 号挂点。
 
 ```bash
 ./scripts/test.sh --planner-only                       # 五条长途离线规划

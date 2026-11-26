@@ -79,6 +79,11 @@ def operate(run_id):
     from std_msgs.msg import String
     fixture=yaml.safe_load(subprocess.check_output(
         [ROOT/"scripts/test.sh","--task","multi","--experiment","full_route","--dry-run"],text=True))
+    active = yaml.safe_load((ROOT / "reports" / "runs" / run_id / "resolved_config.yaml").read_text())
+    if active.get("assembly"):
+        cases = yaml.safe_load((ROOT / "ros2_ws/src/fwis_bringup/config/cts_long_routes.yaml").read_text())
+        fixture = {**fixture, **{key: (x, y, math.radians(heading)) for key, (x, y, heading)
+                                in cases["cases"]["CTS_S2"].items()}}
     def set_pose(msg,endpoint):
         x,y,heading=fixture[endpoint]
         msg.position.x=float(x)

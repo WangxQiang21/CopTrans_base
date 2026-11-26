@@ -233,6 +233,8 @@ def resolve(argv, config_directory, scenario_directory, output):
     scene_task = "single" if args.task == "single" else "formation"
     scene = read_config(scenario_directory / f"{args.scenario}.yaml")
     variant = args.scene_variant
+    if variant in (None, "auto") and args.interactive and alias == "hybrid_joint":
+        variant = registry["defaults"].get("interactive_scene_variants", {}).get(args.scenario, variant)
     if variant in (None, "auto"):
         variant = scene.get("default_variant", "default")
     layouts = {"default", *scene.get("obstacle_variants", {})}

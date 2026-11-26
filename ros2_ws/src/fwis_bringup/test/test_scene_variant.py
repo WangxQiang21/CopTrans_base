@@ -86,6 +86,8 @@ def test_interactive_entry_gets_the_same_optimized_defaults():
     default = yaml.safe_load(ordinary.stdout)
     assert default["interactive"] is True
     assert default["experiment"] == "interactive"
+    assert default["assembly"] is True
+    assert default["scene_variant"] == "cts_assembly"
     assert "replay_endpoints" not in default
     process = subprocess.run(
         ["bash", str(ROOT / "scripts/interactive.sh"), "--dry-run"],
