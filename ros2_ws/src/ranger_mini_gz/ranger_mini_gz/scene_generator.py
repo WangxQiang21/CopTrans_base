@@ -17,7 +17,7 @@ from ranger_mini_gz.scene_world import STYLE_COLORS, write_gui_config, write_wor
 
 
 SCENARIOS = ("factory_indoor_01", "port_01", "factory_outdoor_01", "v3_multibend", "v3_auxiliary")
-SCENE_VARIANTS = ("auto", "default", "west_single_lane", "wide", "critical", "too_narrow")
+SCENE_VARIANTS = ("auto", "default", "west_single_lane", "wide", "critical", "too_narrow", "cts_assembly")
 TASKS = ("single", "formation")
 WALL_THICKNESS = .15
 
@@ -52,6 +52,7 @@ class Scene:
     cargo: Cargo
     pinch_width: float | None
     initial_body_yaw_offsets: tuple = (0., 0., 0.)
+    assembly_starts: tuple = ()
 
     def spawn_poses(self, task):
         start = self.experiments[task]["start"]
@@ -110,8 +111,13 @@ def load_scene(name, variant=None, resolution=None, paths=None):
     obstacle_rows = raw["obstacles"]
     pinch = raw.get("pinch")
     variant_rows = raw.get("obstacle_variants", {})
+    assembly_starts = ()
     if variant in variant_rows:
-        obstacle_rows = [*obstacle_rows, *variant_rows[variant]]
+        extra = variant_rows[variant]
+        if isinstance(extra, dict):
+            assembly_starts = tuple(vector(pose, 3, "assembly start") for pose in extra["assembly_starts"])
+            extra = extra["obstacles"]
+        obstacle_rows = [*obstacle_rows, *extra]
     elif variant != "default":
         cases = raw.get("width_cases", {})
         if variant not in cases or pinch is None:
@@ -141,6 +147,8 @@ def load_scene(name, variant=None, resolution=None, paths=None):
     ids = tuple(contract["vehicle_ids"])
     if ids != (1, 2, 3) or len(offsets) != len(ids) or contract["initial_heading_policy"] != "cargo_heading":
         raise ValueError("scene launch expects three Rangers with cargo-heading initialization")
+    if assembly_starts and len(assembly_starts) != len(ids):
+        raise ValueError("assembly starts must contain one pose per vehicle in vehicle ID order")
     if not np.allclose(vehicle_size[:2], [contract["body_length_m"], contract["body_width_m"]]):
         raise ValueError("formation and vehicle footprint configurations disagree")
 
@@ -180,7 +188,7 @@ def load_scene(name, variant=None, resolution=None, paths=None):
                   obstacles, experiments, vehicle_size, ids, offsets,
                   contract["formation_id"], cargo, width,
                   vector(raw.get("initial_body_yaw_offsets", [0.] * len(ids)), len(ids),
-                         "initial_body_yaw_offsets"))
+                         "initial_body_yaw_offsets"), assembly_starts=assembly_starts)
     for task in TASKS:
         for key in ("start", "goal"):
             reference = experiments[task][key]
@@ -189,6 +197,10 @@ def load_scene(name, variant=None, resolution=None, paths=None):
                 distance, witness = clearance(polygon, scene.obstacles, scene.size)
                 if distance <= 0:
                     raise ValueError(f"{name} {task} {key}: {part} collides with {witness}")
+    for index, pose in enumerate(assembly_starts, 1):
+        gap = clearance_summary(scene, "single", [(pose, None)])["robot1"]
+        if gap["distance_m"] <= 0:
+            raise ValueError(f"{name} assembly S{index} collides with {gap['obstacle']}")
     return scene
 
 
@@ -285,6 +297,9 @@ def generate_scene(scene, directory, task, gui_template, *, audit=True):
                           "mount_height_m": scene.cargo.mount_height,
                           "mount_diameter_m": scene.cargo.mount_diameter},
                 "environment_obstacles": [obstacle.name for obstacle in scene.obstacles if obstacle.map_obstacle]}
+    if scene.assembly_starts:
+        metadata["assembly_starts"] = {f"robot{i}": list(pose) for i, pose in zip(
+            scene.vehicle_ids, scene.assembly_starts, strict=True)}
     if audit:
         metadata["clearance"] = scene_audit(scene)
     (directory / "scene_meta.yaml").write_text(yaml.safe_dump(metadata, sort_keys=False))
