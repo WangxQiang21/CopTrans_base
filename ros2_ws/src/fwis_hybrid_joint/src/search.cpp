@@ -108,19 +108,26 @@ Route grid_seed(const Request& r,const Run& run,bool wide=false,int gear=1,std::
   if(broad_clear)return {};
   std::vector<double> g(w*h,std::numeric_limits<double>::infinity());
   std::vector<int> parent(w*h,-1);
+  // The clearance penalty depends on the destination cell, regardless of
+  // which of its eight neighbours reaches it. Compute it at first use.
+  std::vector<double> clearance_penalty(w*h,-1.);
+  const auto target=point(to);
+  const double straight_step=std::hypot(1.,0.),diagonal_step=std::hypot(1.,1.);
+  const double start_cos=std::cos(r.start.heading[0]),start_sin=std::sin(r.start.heading[0]);
+  const double approach=2.5*r.limits.radius;
   using Node=std::pair<double,int>;
   std::priority_queue<Node,std::vector<Node>,std::greater<Node>> frontier;
-  g[from]=0;frontier.emplace(distance(point(from),point(to)),from);
+  g[from]=0;frontier.emplace(distance(point(from),target),from);
   while(!frontier.empty() && !run.stop()){
     auto [f,id]=frontier.top();frontier.pop();
     if(id==to)break;
-    if(f>g[id]+distance(point(id),point(to))+1.e-7)continue;
+    if(f>g[id]+distance(point(id),target)+1.e-7)continue;
     for(int y=-1;y<=1;++y) for(int x=-1;x<=1;++x){
       const int nx=id%w+x,ny=id/w+y;
       if((!x&&!y) || nx<0 || ny<0 || nx>=w || ny>=h)continue;
       int next=ny*w+nx;
       if(clear[next]<1 || (x && y && (clear[id+x]<1||clear[id+y*w]<1)))continue;
-      double clearance=clear[next]*res;
+      const double step=x && y?diagonal_step:straight_step;
       double tangent_cost=0.;
       if(wide){
         const auto q=point(next);
@@ -128,16 +135,17 @@ Route grid_seed(const Request& r,const Run& run,bool wide=false,int gear=1,std::
         const double gap=body_gap(next);
         if(gap<-.025)continue;
         tangent_cost=.65/std::pow(.3+std::max(0.,gap),2);
-        const double approach=2.5*r.limits.radius;
         if(!oblique && initial<approach){
-          const double alignment=gear*(x*std::cos(r.start.heading[0])+y*std::sin(r.start.heading[0]))/std::hypot(x,y);
+          const double alignment=gear*(x*start_cos+y*start_sin)/step;
           tangent_cost+=5.*(1.-alignment)*std::pow(1.-initial/approach,2);
         }
       }
-      double ng=g[id]+std::hypot(x,y)*res*(1+tangent_cost+1.5*std::pow(reach/std::max(.15,clearance),3));
+      auto& penalty=clearance_penalty[next];
+      if(penalty<0.)penalty=1.5*std::pow(reach/std::max(.15,clear[next]*res),3);
+      double ng=g[id]+step*res*(1+tangent_cost+penalty);
       if(ng+1e-9>=g[next])continue;
       g[next]=ng;parent[next]=id;
-      frontier.emplace(ng+distance(point(next),point(to)),next);
+      frontier.emplace(ng+distance(point(next),target),next);
     }
   }
   Route out;
@@ -1353,6 +1361,7 @@ Result solve_route(const Request& r,Clock::time_point deadline,const Cancel& can
         trial.end=std::min(trial.end,translation_start);
       if(result.plan && best.auxiliary_blocks)trial.end=std::min(trial.end,improve_until);
       auto graph=problem(r,seed,opts,trial);
+      std::optional<std::vector<HJSeparation>> seed_separators;
       const bool continuous_channel=graph.count==1 && graph.phase[0].mode!=2 && graph.phase[0].spans>1;
       if(!result.plan && (continuous_channel || seed.curved_oblique || aligned_tangent)){
         const auto before=Clock::now();
@@ -1369,7 +1378,8 @@ Result solve_route(const Request& r,Clock::time_point deadline,const Cancel& can
            (opposite_tangent || seed.edit=="CLEARANCE_YAW_ROUTE" || seed.edit=="MINIMUM_YAW_ROUTE")) {
           const auto repair_start=Clock::now();
           double repair_certification_s=0.;
-          const auto cuts=separators(r,graph,trial);
+          auto cuts=separators(r,graph,trial);
+          const bool complete=!trial.stop();
           const bool near_cargo=std::any_of(cuts.begin(),cuts.end(),[](const auto& plane){return plane.vehicle<0;});
           if(near_cargo) {
             if(!opposite_tangent)repaired_channel=true;
@@ -1399,6 +1409,9 @@ Result solve_route(const Request& r,Clock::time_point deadline,const Cancel& can
               }
             }
           }
+          // Reuse complete rows only when the posture repair kept the same
+          // spline. A shorter trial can stop before visiting all stations.
+          if(complete && !timed)seed_separators=std::move(cuts);
           repair_seed_s=std::chrono::duration<double>(Clock::now()-repair_start).count()-repair_certification_s;
           result.seed_seconds+=repair_seed_s;
         }
@@ -1461,7 +1474,7 @@ Result solve_route(const Request& r,Clock::time_point deadline,const Cancel& can
           trial.end=std::min(deadline,trial.end+local_time);
         }
       }
-      auto active=separators(r,graph,run);
+      auto active=seed_separators?std::move(*seed_separators):separators(r,graph,run);
       std::vector<HJCurvatureStation> curvature_stations;
       graph.separations=active.data();graph.sep_count=active.size();
       char msg[512]{};

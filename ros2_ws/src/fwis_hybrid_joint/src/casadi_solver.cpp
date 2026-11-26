@@ -265,26 +265,47 @@ Jet trajectory_jet(std::array<SX,6> coeff,double s) {
   }
   return out;
 }
-std::pair<Jet,Jet> mount_jets(const Coordinates& curve,double u,double ox,double oy){
-  Jet x=trajectory_jet(curve[0],u),y=trajectory_jet(curve[1],u);
-  if(ox==0 && oy==0)return {x,y};
-  const auto yaw=trajectory_jet(curve[2],u);
-  Jet rx,ry;
-  const auto c=cos(yaw[0]),s=sin(yaw[0]);
-  rx[0]=ox*c-oy*s;ry[0]=ox*s+oy*c;
-  constexpr int binom[4][4]={{1,0,0,0},{1,1,0,0},{1,2,1,0},{1,3,3,1}};
-  // d(Rr)/ds = yaw' J Rr. Repeated product differentiation uses only
-  // derivatives local to this spline span and preserves CasADi sparsity.
-  for(int k=1;k<5;++k){
-    rx[k]=0;ry[k]=0;
-    for(int l=0;l<k;++l){
-      const SX weight=binom[k-1][l]*yaw[k-l];
-      rx[k]-=weight*ry[l];ry[k]+=weight*rx[l];
+using XYJet=std::pair<Jet,Jet>;
+
+// Collocation and separating planes can consult the same curve station and
+// mount several times. Reuse the symbolic expressions at that station while
+// keeping the existing constraints and their order.
+struct StationJets {
+  StationJets(const Coordinates& curve,double local):
+    station(local),reference{trajectory_jet(curve[0],local),trajectory_jet(curve[1],local)},
+    yaw(trajectory_jet(curve[2],local)),c(cos(yaw[0])),s(sin(yaw[0])){}
+
+  const XYJet& mount(double ox,double oy){
+    if(ox==0 && oy==0)return reference;
+    for(const auto& entry:mounted)
+      if(entry.x==ox && entry.y==oy)return entry.jet;
+    Jet rx,ry;
+    rx[0]=ox*c-oy*s;ry[0]=ox*s+oy*c;
+    constexpr int binom[4][4]={{1,0,0,0},{1,1,0,0},{1,2,1,0},{1,3,3,1}};
+    // d(Rr)/ds = yaw' J Rr. Repeated product differentiation uses only
+    // derivatives local to this spline span and preserves CasADi sparsity.
+    for(int k=1;k<5;++k){
+      rx[k]=0;ry[k]=0;
+      for(int l=0;l<k;++l){
+        const SX weight=binom[k-1][l]*yaw[k-l];
+        rx[k]-=weight*ry[l];ry[k]+=weight*rx[l];
+      }
     }
+    XYJet jet=reference;
+    for(int k=0;k<5;++k){jet.first[k]+=rx[k];jet.second[k]+=ry[k];}
+    mounted.push_back({ox,oy,std::move(jet)});
+    return mounted.back().jet;
   }
-  for(int k=0;k<5;++k){x[k]+=rx[k];y[k]+=ry[k];}
-  return {x,y};
-}
+
+  double station;
+  XYJet reference;
+  Jet yaw;
+
+private:
+  struct Mount {double x,y;XYJet jet;};
+  SX c,s;
+  std::deque<Mount> mounted;
+};
 void Problem::run(){
   const auto build_start=std::chrono::steady_clock::now();
   const bool multi=p.bodies==3;
@@ -373,6 +394,13 @@ void Problem::run(){
         for(int i=0;i<4;++i) cost+=.025*pow(b[axis][i+2]-2*b[axis][i+1]+b[axis][i],2);
       }
     }
+    std::vector<std::deque<StationJets>> jets(N);
+    auto jet_at=[&](int span,double local)->StationJets&{
+      auto& points=jets[span];
+      for(auto& point:points)
+        if(point.station==local)return point;
+      return points.emplace_back(blocks[span],local);
+    };
     if(ph.mode==2) {
       for(int v=0;v<p.bodies;++v) {
         bool last_rotation=true;
@@ -404,8 +432,8 @@ void Problem::run(){
           for(int z=0;z<=6;++z){
             if(multi && N>=3 && z%2)continue;
             const double station=z/6.;
-            const auto dx=trajectory_jet(blocks[j][0],station)[1];
-            const auto dy=trajectory_jet(blocks[j][1],station)[1];
+            const auto& [xj,yj]=jet_at(j,station).reference;
+            const auto &dx=xj[1],&dy=yj[1];
             const auto angle=atan2(ph.gear[v]*(-sin(h0[v])*dx+cos(h0[v])*dy),
                                    ph.gear[v]*(cos(h0[v])*dx+sin(h0[v])*dy));
             constraint(angle,-p.steer_angle,p.steer_angle);
@@ -420,7 +448,8 @@ void Problem::run(){
           double local=z/6., station=(j+local)/N;
           const auto law=hybrid_clock::state(hybrid_clock::inverse(station,ph.cruise_ramp_fraction),ph.cruise_ramp_fraction);
           const double sd=law[1]*N,sdd=law[2]*N,sj=law[3]*N;
-          const auto mount=mount_jets(blocks[j],local,p.offset[v][0],p.offset[v][1]);
+          auto& spatial=jet_at(j,local);
+          const auto& mount=spatial.mount(p.offset[v][0],p.offset[v][1]);
           const auto& xj=mount.first; const auto& yj=mount.second;
           const auto dx=xj[1],dy=yj[1],ax=xj[2],ay=yj[2];
           const auto den=dx*dx+dy*dy+1e-14,d=sqrt(den),vel=d*sd/tau;
@@ -439,7 +468,7 @@ void Problem::run(){
           const double mass=((z==0 || z==6)?.5:1.)/(large?3.:6.);
           cost+=(ph.mode==1?p.bodies:1)*smooth_scale*policy::jerk_effort_weight*(mass*tau/(N*t0))*pow(jerk/p.jerk,2);
           if(v==0){
-            const auto rx=trajectory_jet(blocks[j][0],local),ry=trajectory_jet(blocks[j][1],local);
+            const auto& [rx,ry]=spatial.reference;
             cost+=smooth_scale*policy::length_weight*mass*sqrt(rx[1]*rx[1]+ry[1]*ry[1]+1e-14)/p.radius;
           }
           if(p.lateral_acceleration>0)constraint(vel*turning*sd/tau,-p.lateral_acceleration*.97,p.lateral_acceleration*.97);
@@ -500,7 +529,7 @@ void Problem::run(){
       // A moving formation shares F, but each independently oriented body
       // has its own mount tangent, so a local shape repair constrains all of them.
       for(int v=0;v<p.bodies;++v){
-        const auto [mx,my]=mount_jets(blocks[cut.span],cut.local,p.offset[v][0],p.offset[v][1]);
+        const auto& [mx,my]=jet_at(cut.span,cut.local).mount(p.offset[v][0],p.offset[v][1]);
         const SX den=mx[1]*mx[1]+my[1]*my[1]+1e-14;
         constraint(den,1e-7,inf);
         const SX cur=(mx[1]*my[2]-my[1]*mx[2])/(den*sqrt(den));
@@ -510,9 +539,10 @@ void Problem::run(){
     for(int i=0;i<p.sep_count;++i){
       const auto& plane=p.separations[i];if(plane.phase!=k)continue;
       const double at=plane.station/6.;
-      const auto mounted=mount_jets(blocks[plane.span],at,plane.ox,plane.oy);
+      auto& spatial=jet_at(plane.span,at);
+      const auto& mounted=spatial.mount(plane.ox,plane.oy);
       const auto mx=mounted.first[0],my=mounted.second[0];
-      SX heading=trajectory_jet(blocks[plane.span][2],at)[0];
+      SX heading=spatial.yaw[0];
       if(plane.vehicle>=0){
         if(ph.mode==0)heading=atan2(mounted.second[1],mounted.first[1]);
         else heading=h0[plane.vehicle];
@@ -535,7 +565,7 @@ void Problem::run(){
       SX forward=plane.nx*cos(heading)+plane.ny*sin(heading),side=-plane.nx*sin(heading)+plane.ny*cos(heading);
       SX gap=plane.nx*mx+plane.ny*my-parameter(plane.obstacle_support)-plane.half_length*sqrt(forward*forward+1e-12)-plane.half_width*sqrt(side*side+1e-12);
       if(plane.other>=0){
-        const auto other=mount_jets(blocks[plane.span],at,plane.other_x,plane.other_y);
+        const auto& other=spatial.mount(plane.other_x,plane.other_y);
         const SX other_heading=ph.mode==0?atan2(other.second[1],other.first[1]):h0[plane.other];
         const SX along=plane.nx*cos(other_heading)+plane.ny*sin(other_heading);
         const SX across=-plane.nx*sin(other_heading)+plane.ny*cos(other_heading);

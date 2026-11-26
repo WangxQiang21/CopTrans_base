@@ -188,7 +188,28 @@ struct Geometry
   }
   using Jets = std::array<Controls, 4>; // control, position, first and second station derivative
   Jets jets(const Controls & c)const {return {c, b[0] * c, b[1] * c, b[2] * c};}
-  void residual(const Jets & v, const Jets * direction, VectorXd & err)const
+  struct SampleRange {int begin, end, first_row;};
+  int control_rows()const {return 3 * (preferred.rows() - 2);}
+  int sample_rows(int i)const {return 14 + 4 * obstacles[i].size();}
+  SampleRange support(const Jets & direction)const
+  {
+    // An interior B-spline control only changes nearby sample derivatives.
+    // Derive the range from the actual basis values, including end tangents.
+    auto affected = [&](int i) {
+        return !direction[1].row(i).isZero(0.) || !direction[2].row(i).isZero(0.) ||
+               !direction[3].row(i).isZero(0.);
+      };
+    int begin = 0, end = samples, row = control_rows();
+    while (begin < end && !affected(begin)) {
+      row += sample_rows(begin++);
+    }
+    while (end > begin && !affected(end - 1)) {
+      --end;
+    }
+    return {begin, end, row};
+  }
+  void residual(const Jets & v, const Jets * direction, VectorXd & err,
+    const SampleRange * support = nullptr)const
   {
     const bool derivative = direction != nullptr;
     auto at = [&](int order, int i, int a) {
@@ -201,7 +222,13 @@ struct Geometry
         push(.07 * (at(0, i, a) - preferred(i, a)));
       }
     }
-    for (int i = 0; i < samples; ++i) {
+    const int begin = support ? support->begin : 0;
+    const int end = support ? support->end : samples;
+    if (support) {
+      err.segment(row, support->first_row - row).setZero();
+      row = support->first_row;
+    }
+    for (int i = begin; i < end; ++i) {
       const Tangent x = at(1, i, 0), y = at(1, i, 1), yaw = at(1, i, 2), co = cosc(yaw), si = sinc(yaw);
       const Tangent dx = at(2, i, 0), dy = at(2, i, 1), dh = at(2, i, 2), ax = at(3, i, 0), ay = at(3, i, 1),
         ah = at(3, i, 2);
@@ -240,11 +267,14 @@ struct Geometry
         }
       }
     }
+    if (support) {
+      err.tail(err.size() - row).setZero();
+    }
   }
   int rows()const
   {
-    int count = 3 * (preferred.rows() - 2) + 14 * samples;
-    for (const auto & obs : obstacles) {count += 4 * obs.size();}
+    int count = control_rows();
+    for (int i = 0; i < samples; ++i) {count += sample_rows(i);}
     return count;
   }
 };
@@ -309,11 +339,15 @@ inline bool repair(
   }
   VectorXd f(m), tmp(m);
   const auto zero = geom.controls(VectorXd::Zero(q));
-  std::vector<Geometry::Jets> seeds;
+  struct Derivative {Geometry::Jets jets; Geometry::SampleRange support;};
+  std::vector<Derivative> seeds;
+  seeds.reserve(q);
   for (int axis = 0; axis < q; ++axis) {
     VectorXd unit = VectorXd::Zero(q);
     unit[axis] = 1.;
-    seeds.push_back(geom.jets(geom.controls(unit) - zero));
+    auto direction = geom.jets(geom.controls(unit) - zero);
+    const auto support = geom.support(direction);
+    seeds.push_back({std::move(direction), support});
   }
   auto jets = geom.jets(geom.controls(v));
   MatrixXd jac(m, q);
@@ -323,7 +357,7 @@ inline bool repair(
   for (int it = 0; it < 85 && !stop(); ++it) {
     for (int j = 0; j < q; ++j) {
       if (stop()) return false;
-      geom.residual(jets, &seeds[j], tmp);
+      geom.residual(jets, &seeds[j].jets, tmp, &seeds[j].support);
       jac.col(j) = tmp;
     }
     // Compact inactive map rows before the small damped least-squares step.

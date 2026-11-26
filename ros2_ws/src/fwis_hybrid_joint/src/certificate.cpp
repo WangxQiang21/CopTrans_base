@@ -62,9 +62,10 @@ Jet operator-(const Jet &a,const Jet &b) {
 Jet scale(const Jet &a,I b) {
   Jet r; for (int k=0;k<=4;++k) r.c[k]=a.c[k]*b; return r;
 }
+template<int Order=4>
 std::pair<Jet,Jet> sin_cos(const Jet &p) {
   Jet s,c; s.c[0]=sin_bounds(p.c[0]); c.c[0]=sin_bounds(p.c[0]+I(pi/2));
-  for (int k=1;k<=4;++k) {
+  for (int k=1;k<=Order;++k) {
     for (int j=1;j<=k;++j) {
       s.c[k]=s.c[k]+I(j)*p.c[j]*c.c[k-j];
       c.c[k]=c.c[k]-I(j)*p.c[j]*s.c[k-j];
@@ -94,11 +95,13 @@ I hull(const Poly &p,int degree,double a,double b) {
   }
   return bounds;
 }
+template<int Order=4>
 Jet polynomial(const Quintic &coeff,double a,double b) {
   Poly p; for (int i=0;i!=6;++i) p[i]=I(coeff[i]);
   Jet result;
-  for (int k=0;k<=4;++k) {
+  for (int k=0;k<=Order;++k) {
     result.c[k]=hull(p,5-k,a,b);
+    if (k==Order) break;
     for (int i=0;i<5-k;++i) p[i]=I(5-k)*(p[i+1]-p[i])/I(k+1);
   }
   return result;
@@ -132,23 +135,22 @@ I progress_at(double u,double ramp) {
 GridIK inverse_clock(double station,double ramp) {
   if (station<=0 || station>=1) return {station,station};
   // Two one-sided searches preserve the bracket even if the function
-  // evaluation contains the target due to floating-point rounding.
-  double lo=0,hi=1;
+  // evaluation contains the target due to floating-point rounding. Share
+  // the enclosure whenever the bisections evaluate the same midpoint.
+  double lower_lo=0,lower_hi=1,upper_lo=0,upper_hi=1;
   for (int k=0;k<45;++k) {
-    const auto m=(lo+hi)/2;
-    if (progress_at(m,ramp).h<station) lo=m; else hi=m;
+    const auto lower_m=(lower_lo+lower_hi)/2,upper_m=(upper_lo+upper_hi)/2;
+    const auto lower_progress=progress_at(lower_m,ramp);
+    const auto upper_progress=lower_m==upper_m?lower_progress:progress_at(upper_m,ramp);
+    if (lower_progress.h<station) lower_lo=lower_m; else lower_hi=lower_m;
+    if (upper_progress.l>station) upper_hi=upper_m; else upper_lo=upper_m;
   }
-  const auto lower=lo; lo=0; hi=1;
-  for (int k=0;k<45;++k) {
-    const auto m=(lo+hi)/2;
-    if (progress_at(m,ramp).l>station) hi=m; else lo=m;
-  }
-  return {lower,hi};
+  return {lower_lo,upper_hi};
 }
 I envelope(I a,I b) {return {std::min(a.l,b.l),std::max(a.h,b.h)};}
 ClockBounds base_derivatives(double from,double to,double ramp) {
   if(ramp==0) {
-    const auto law=polynomial(progress,from,to);
+    const auto law=polynomial<3>(progress,from,to);
     return {law.c[1],I(2)*law.c[2],I(6)*law.c[3]};
   }
   const I width(ramp), peak=I(1)/(I(1)-width);
@@ -215,12 +217,12 @@ double reconstruction_padding(const Request &r,const Phase &ph,std::size_t j,dou
   const auto local=s*I(n)-I(double(j));
   const double a=std::clamp(local.l,0.,1.), b=std::clamp(local.h,0.,1.);
   const auto& c=ph.pieces[j];
-  const auto x=polynomial(c.x,a,b),y=polynomial(c.y,a,b),psi=polynomial(c.yaw,a,b);
+  const auto x=polynomial<1>(c.x,a,b),y=polynomial<1>(c.y,a,b),psi=polynomial<1>(c.yaw,a,b);
   const double displacement=up(std::hypot(magnitude(x.c[0]-I(sample.reference.x)),
       magnitude(y.c[0]-I(sample.reference.y))));
   const bool formation=r.vehicles.size()==3;
   const double refangle=formation?magnitude(psi.c[0]-I(sample.reference.yaw)):0.;
-  const auto sc=sin_cos(psi);
+  const auto sc=sin_cos<1>(psi);
   auto geometry_error=[&](const Footprint &f,double heading_error) {
     return up(up(std::hypot(f[0],f[1]))*refangle+
               up(.5*std::hypot(f[2],f[3]))*heading_error);
@@ -420,8 +422,8 @@ bool active_join(const Request &r,const Phase &ph,const Piece &left,const Piece 
   if(ph.kind!=Kind::Motion || ph.mode==Mode::S) return true;
   auto boundary_motion=[&](const Piece& p,bool last,std::size_t body) {
     const double z=last?1.:0.;
-    const auto px=polynomial(p.x,z,z),py=polynomial(p.y,z,z),angle=polynomial(p.yaw,z,z);
-    const auto sc=sin_cos(angle);
+    const auto px=polynomial<2>(p.x,z,z),py=polynomial<2>(p.y,z,z),angle=polynomial<2>(p.yaw,z,z);
+    const auto sc=sin_cos<2>(angle);
     const auto& f=r.vehicles[body];
     const auto x=px+scale(sc.second,I(f[0]))-scale(sc.first,I(f[1]));
     const auto y=py+scale(sc.first,I(f[0]))+scale(sc.second,I(f[1]));
@@ -546,9 +548,11 @@ Audit certify(const Request& r,const Plan& plan,Clock::time_point deadline,const
       }
       IntervalAudit audit{r,ph,map,deadline,cancel,idx};
       const auto count=ph.pieces.size();
+      auto left=inverse_clock(0.,ph.cruise_ramp_fraction);
       for(std::size_t j=0;j<count;++j) {
-        const auto ta=inverse_clock(double(j)/count,ph.cruise_ramp_fraction)[0],tb=inverse_clock(double(j+1)/count,ph.cruise_ramp_fraction)[1];
-        if (!audit.visit(j,0,1,ta,tb,0)) return audit.result;
+        const auto right=inverse_clock(double(j+1)/count,ph.cruise_ramp_fraction);
+        if (!audit.visit(j,0,1,left[0],right[1],0)) return audit.result;
+        left=right;
       }
       prev_end=end;
     }

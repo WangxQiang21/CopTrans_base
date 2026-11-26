@@ -44,12 +44,17 @@ TEST(ChannelRepair, ForwardJacobianMatchesResidualDifferences)
   const auto initial = g.guess();
   const auto current = g.jets(g.controls(initial));
   const auto zero = g.controls(Eigen::VectorXd::Zero(initial.size()));
-  Eigen::VectorXd actual(g.rows()), plus(g.rows()), minus(g.rows());
+  Eigen::VectorXd actual(g.rows()), local(g.rows()), plus(g.rows()), minus(g.rows());
   constexpr double step = 1.e-6;
+  bool shortened = false;
   for (int variable = 0; variable < initial.size(); ++variable) {
     const auto unit = Eigen::VectorXd::Unit(initial.size(), variable).eval();
     auto derivative = g.jets(g.controls(unit) - zero);
     g.residual(current, &derivative, actual);
+    const auto support = g.support(derivative);
+    g.residual(current, &derivative, local, &support);
+    EXPECT_TRUE((local.array() == actual.array()).all()) << "direction " << variable;
+    shortened = shortened || support.end - support.begin < samples;
     g.residual(g.jets(g.controls(initial + step * unit)), nullptr, plus);
     g.residual(g.jets(g.controls(initial - step * unit)), nullptr, minus);
     const auto expected = ((plus - minus) / (2 * step)).eval();
@@ -57,4 +62,5 @@ TEST(ChannelRepair, ForwardJacobianMatchesResidualDifferences)
                           (1. + expected.cwiseAbs().array())).maxCoeff();
     EXPECT_LT(error, 5.e-6) << "direction " << variable;
   }
+  EXPECT_TRUE(shortened);
 }
