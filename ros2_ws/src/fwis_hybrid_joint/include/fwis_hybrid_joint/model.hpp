@@ -49,6 +49,9 @@ struct Limits {
   double steer_angle{1.5707963267948966}, steer_rate{0.8}, steer_acceleration{1.5};
   double prepare_time{0.7}; // protocol lower bound, plus wheel travel as required
   double min_motion_duration{0.30}; // dwell in a moving phase, seconds
+  double cargo_center_speed{0.0}; // optional Cartesian limit at the cargo center
+  double high_steer_angle{0.3490658503988659};
+  double high_steer_speed{0.0}; // optional body speed limit above high_steer_angle
 };
 struct Request {
   std::shared_ptr<const GridSnapshot> grid;
@@ -58,6 +61,7 @@ struct Request {
   Limits limits;
   bool allow_reverse{true};
   double task_duration_cap{300.0};
+  bool align_terminal_chassis{false};
 };
 struct Plan { std::vector<Phase> phases; };
 struct Body {
@@ -107,6 +111,7 @@ struct Result {
   std::string status, reason;
   std::vector<std::string> trace;
   double first_certified_s{}, first_policy_compliant_s{};
+  std::string terminal_alignment{"not_requested"};
 };
 struct SolveOptions {
   std::vector<Mode> initial_sequence; // optional cold seed for structural ablations

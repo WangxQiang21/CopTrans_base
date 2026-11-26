@@ -22,7 +22,7 @@ from ranger_mini_gz.scene_generator import (
 
 
 def rviz_config(description, directory, scene, task, *, tracking_dashboard=False, show_corridor=False,
-                interactive=False, experiment_id=""):
+                interactive=False, assembly=False, experiment_id=""):
     vehicles = scene.spawn_poses(task)
     count = len(vehicles)
     data = yaml.safe_load((description / "rviz" / f"ranger_{count}.rviz").read_text())
@@ -41,9 +41,12 @@ def rviz_config(description, directory, scene, task, *, tracking_dashboard=False
             "Class": "rviz_default_plugins/MarkerArray", "Name": "Cargo and centre mounts",
             "Enabled": True, "Topic": {"Value": "/scene/markers", **qos},
         })
+        colors = ("36; 127; 176", "198; 103; 33", "103; 74; 153")
         paths = [(f"Vehicle {index} plan", f"/formation/path/vehicle_{index}", color)
-                 for index, color in zip(scene.vehicle_ids,
-                                         ("36; 127; 176", "198; 103; 33", "103; 74; 153"))]
+                 for index, color in zip(scene.vehicle_ids, colors)]
+        if assembly:
+            paths += [(f"Vehicle {index} assembly", f"/formation/assembly_path/vehicle_{index}", color)
+                      for index, color in zip(scene.vehicle_ids, colors)]
         if show_corridor:
             manager["Displays"].append({
                 "Class": "rviz_default_plugins/MarkerArray", "Name": "Convex corridor guide",
@@ -59,6 +62,7 @@ def rviz_config(description, directory, scene, task, *, tracking_dashboard=False
                 {"Class": "rviz_default_plugins/SetInitialPose", "Topic": {"Value": "/initialpose", **tool_qos}},
                 {"Class": "rviz_default_plugins/SetGoal", "Topic": {"Value": "/move_base_simple/goal", **tool_qos}},
             ])
+        if interactive or assembly:
             data.setdefault("Panels", []).append({"Class": "fwis_rviz_plugins/PlanningPanel", "Name": "规划与执行"})
     else:
         paths = [("Single-vehicle plan", "/plan/path", "36; 127; 176")]
@@ -105,7 +109,7 @@ def setup(context):
     body_twist = args["body_twist"] == "true"
     plant_overrides = {}
     replay_plant = None
-    show_corridor = interactive = False
+    show_corridor = interactive = assembly = False
     experiment_id = ""
     if args["experiment_file"]:
         experiment_path = Path(args["experiment_file"])
@@ -115,6 +119,7 @@ def setup(context):
         replay_plant = config.get("replay_plant")
         show_corridor = bool(config.get("planner_overrides", {}).get("convex_corridor"))
         interactive = bool(config.get("interactive"))
+        assembly = bool(config.get("assembly"))
         experiment = {key: config[key] for key in ("start", "goal", "waypoints")}
         scene = replace(scene, experiments={**scene.experiments, task: experiment})
     actions = []
@@ -126,7 +131,9 @@ def setup(context):
         actions.append(RegisterEventHandler(OnShutdown(
             on_shutdown=[OpaqueFunction(function=lambda _context: temporary.cleanup())])))
     template = paths[0] / "config" / "ranger.gui.config"
-    generate_scene(scene, directory, task, template, audit=False)
+    spawns = (dict(zip(scene.vehicle_ids, scene.assembly_starts, strict=True)) if assembly else
+              scene.spawn_poses(task))
+    generate_scene(scene, directory, task, template, audit=False, spawn_poses=spawns)
     body_settings = None
     if body_twist:
         plant_source = paths[0] / "config" / "body_twist.yaml"
@@ -161,7 +168,7 @@ def setup(context):
     if trace_library:
         preload = (trace_library, os.environ.get("LD_PRELOAD"))
         bridge_environment = {"LD_PRELOAD": os.pathsep.join(filter(None, preload))}
-    for index, placement in scene.spawn_poses(task).items():
+    for index, placement in spawns.items():
         robot = f"robot{index}"
         models, bridge, remap = model_actions(
             description, scene.name, robot, placement,
@@ -186,12 +193,12 @@ def setup(context):
         tracking_dashboard = args["tracking_dashboard"] == "true"
         hud_remaps = [
             (f"/ranger{index}/{topic}", f"/robot{index}/{topic}")
-            for index in scene.spawn_poses(task)
+            for index in spawns
             for topic in ("odom", "motion_state", "controller_status")
         ] if tracking_dashboard else []
         config = rviz_config(description, directory, scene, task,
                              tracking_dashboard=tracking_dashboard, show_corridor=show_corridor,
-                             interactive=interactive, experiment_id=experiment_id)
+                             interactive=interactive, assembly=assembly, experiment_id=experiment_id)
         simulator_process("RViz2", Node(package="rviz2", executable="rviz2",
                             arguments=["-d", str(config)], remappings=hud_remaps,
                             parameters=[{"use_sim_time": True}]))

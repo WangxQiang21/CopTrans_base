@@ -9,6 +9,7 @@ import sys
 
 import yaml
 
+from fwis_bringup.cts_cases import cargo_reference, case_poses, dock_assignment
 from fwis_bringup.experiment_log import read_config, replay_config, retest_route
 from ranger_mini_gz.scene_generator import SCENARIOS, SCENE_VARIANTS
 from ranger_mini_gz.scene_geometry import local_pose
@@ -24,6 +25,36 @@ REAL_UNAVAILABLE = (
 def cargo_footprint_parameters(size, offset):
     return dict(length_m=float(size[0]), width_m=float(size[1]),
                 offset_x_m=float(offset[0]), offset_y_m=float(offset[1]))
+
+
+def planner_limits(overrides, *, formation):
+    """Convert the planner parameters to the native request and envelope limits."""
+    vehicle = overrides.get("vehicle", {})
+    motion = overrides["timing_limits"] if formation else overrides["quality"]["limits"]
+    spin_speed = motion.get("yaw_rate_max" if formation else "omega_max", .4)
+    spin_accel = motion.get("yaw_accel_max" if formation else "alpha_max", .45)
+    spin_jerk = motion.get("yaw_jerk_max" if formation else "angular_jerk_max", 3. if formation else 1.)
+    return dict(
+        radius=motion.get("r_min_ackermann", .9) if formation else vehicle.get("r_min_ack", .9),
+        speed=motion.get("v_max", .16), acceleration=motion.get("a_max", .22),
+        jerk=motion.get("jerk_max", 2. if formation else .8),
+        lateral_acceleration=motion.get("lateral_accel_max" if formation else "lateral_a_max",
+                                        .6 if formation else 2.),
+        spin_speed=spin_speed, spin_acceleration=spin_accel, spin_jerk=spin_jerk,
+        yaw_rate=spin_speed if formation else motion.get("translation_omega_max", .4),
+        yaw_acceleration=spin_accel if formation else motion.get("translation_alpha_max", .45),
+        yaw_jerk=spin_jerk if formation else motion.get("translation_angular_jerk_max", 1.),
+        wheelbase=vehicle.get("wheelbase", .494), track=vehicle.get("track", .364),
+        wheel_speed=motion.get("wheel_speed_max", 1. if formation else 3.),
+        steer_angle=motion.get("steer_angle_max", math.pi / 2),
+        steer_rate=motion.get("steer_rate_max", .8),
+        steer_acceleration=motion.get("steer_accel_max", 1.5),
+        min_motion_duration=motion.get("min_mode_dwell_s", .30),
+        prepare_time=(motion if formation else vehicle).get("mode_switch_duration", .70),
+        cargo_center_speed=motion.get("cargo_center_speed", 0.),
+        high_steer_angle=motion.get("high_steer_angle", math.radians(20)),
+        high_steer_speed=motion.get("high_steer_speed", 0.),
+    )
 
 
 def positive_seconds(raw):
@@ -71,6 +102,10 @@ def parse_arguments(argv, scenarios, registry, experiments):
     parser.add_argument("--multi-reachable-clock", action=argparse.BooleanOptionalAction)
     parser.add_argument("--interactive", action="store_true",
                         help="Choose the formation start and goal in RViz before running the closed loop")
+    parser.add_argument("--case", help="Run a frozen CTS long-route case by ID")
+    parser.add_argument("--dock-assignment", default="auto",
+                        help="auto or the dock numbers for robot1, robot2, robot3, such as 1,3,2")
+    parser.add_argument("--headless", action="store_true", help="No Gazebo or RViz GUI, fixed runs only")
     parser.add_argument("--formation", choices=(registry["formation"]["name"],), help="multi only")
     parser.add_argument("--experiment", choices=tuple(experiments),
                         help="Run a fixed route automatically unless --interactive is also set")
@@ -90,6 +125,15 @@ def parse_arguments(argv, scenarios, registry, experiments):
     args = parser.parse_args(argv)
     if args.mode == "real":
         parser.exit(2, REAL_UNAVAILABLE + "\n")
+    try:
+        args.dock_assignment = dock_assignment(args.dock_assignment)
+    except ValueError as error:
+        parser.error(str(error))
+    if args.case and (args.task != "multi" or args.interactive or args.replay or args.retest
+                      or args.experiment not in (None, "full_route")):
+        parser.error("--case requires a new fixed --task multi run")
+    if args.case:
+        args.experiment = "full_route"
     if args.replay and args.scene_variant is not None:
         parser.error("--replay uses the recorded scene layout; --scene-variant is only for new runs")
     if args.retest and (args.interactive or args.experiment is not None or any(
@@ -111,6 +155,8 @@ def parse_arguments(argv, scenarios, registry, experiments):
                              or args.without_planning_playback):
         parser.error("Interactive runs require multi, the optimized architecture and planning playback. "
                      "For an automatic run, specify --experiment full_route without --interactive.")
+    if args.interactive and args.headless:
+        parser.error("--headless requires a fixed experiment or CTS case")
     planners = registry["planners"][args.task]
     planner_default = defaults["planners"][args.task]
     if args.architecture_profile == "baseline":
@@ -158,6 +204,10 @@ def resolve(argv, config_directory, scenario_directory, output):
         except (OSError, ValueError) as error:
             raise SystemExit(f"Replay: {error}") from None
         config["no_build"] = args.no_build
+        if args.headless:
+            if config.get("interactive"):
+                raise SystemExit("An interactive replay requires Gazebo and RViz")
+            config.update(gazebo_gui=False, rviz_gui=False)
         if args.timeout is not None:
             config["timeout_s"] = args.timeout
         write_config(output, config, args.dry_run)
@@ -172,6 +222,14 @@ def resolve(argv, config_directory, scenario_directory, output):
         args.scenario, args.scene_variant, args.experiment = route["scenario"], route["scene_variant"], "full_route"
         if args.scenario not in scenarios:
             raise SystemExit(f"Historical scenario {args.scenario!r} is unavailable")
+    case_registry = read_config(config_directory / "cts_long_routes.yaml") if args.case else None
+    if case_registry:
+        if args.case not in case_registry["cases"]:
+            raise SystemExit(f"Unknown CTS case {args.case!r}; choose from {', '.join(case_registry['cases'])}")
+        if (args.scenario != case_registry["scenario"] or
+                args.scene_variant not in (None, "auto", case_registry["scene_variant"])):
+            raise SystemExit("A CTS case requires its frozen map")
+        args.scene_variant = case_registry["scene_variant"]
     scene_task = "single" if args.task == "single" else "formation"
     scene = read_config(scenario_directory / f"{args.scenario}.yaml")
     variant = args.scene_variant
@@ -192,10 +250,19 @@ def resolve(argv, config_directory, scenario_directory, output):
         dx, dy, dyaw = experiment["goal_offset"]
         x, y, _ = local_pose(start, (dx, dy))
         goal, waypoints = [x, y, start[2] + dyaw], []
+    assembly = scene_task == "formation" and variant == "cts_assembly" and alias == "hybrid_joint"
+    if (args.case or args.dock_assignment) and not assembly:
+        raise SystemExit("CTS cases and dock assignments require cts_assembly with the native planner")
+    if case_registry:
+        centers = case_poses(case_registry["cases"][args.case])
+        cargo = read_config(scenario_directory.parent / "config/cargo_geometry.yaml")["cargo"]
+        start, goal = (cargo_reference(centers[key], cargo["center_offset"]) for key in ("start", "goal"))
+        waypoints = []
     mode = registry["formation"] if scene_task == "formation" else None
     overrides = registry["profiles"][args.task]
     speed_profile = registry["speed_profiles"][args.speed_profile]
-    speeds = speed_profile.get(args.task, {})
+    native_speed = speed_profile.get("native", {}) if alias == "hybrid_joint" else {}
+    speeds = speed_profile.get(args.task, {}) | native_speed.get(args.task, {})
     if scene_task == "single":
         quality = overrides["quality"]
         overrides = dict(overrides, quality=dict(quality, limits=quality["limits"] | speeds))
@@ -209,6 +276,8 @@ def resolve(argv, config_directory, scenario_directory, output):
             cap = task.get("task_duration_cap_by_speed_s", {}).get(args.speed_profile, cap)
         overrides = dict(overrides, speed_profile=args.speed_profile, solve_budget_s=8.0 if scene_task == "single" else 12.0,
                          task_duration_cap_s=positive_seconds(cap))
+        if scene_task == "formation" and variant == "cts_assembly":
+            overrides["align_terminal_chassis"] = True
     elif args.architecture_profile == "optimized":
         if scene_task == "formation":
             overrides = dict(overrides, reuse_terminal_certificate=True,
@@ -238,15 +307,26 @@ def resolve(argv, config_directory, scenario_directory, output):
                   coordination=mode, planner_overrides=overrides,
                   architecture_profile=args.architecture_profile,
                   speed_profile=args.speed_profile,
-                  controller_limit_overrides=speed_profile.get("controller", {}),
-                  plant_overrides=speed_profile.get("plant", {}),
+                  controller_limit_overrides=speed_profile.get("controller", {}) | native_speed.get("controller", {}),
+                  plant_overrides=speed_profile.get("plant", {}) | native_speed.get("plant", {}),
                   tracking_implementation=args.tracker_implementation,
                   planning_playback=not args.without_planning_playback,
-                  acceptance=registry["acceptance"], gazebo_gui=True, rviz_gui=True,
+                  acceptance=registry["acceptance"], gazebo_gui=not args.headless, rviz_gui=not args.headless,
                   record=args.record,
                   timeout_s=args.timeout or float(experiment.get("wall_timeout_s", registry["defaults"]["timeout_s"])),
                   no_build=args.no_build,
                   observation_s=registry["defaults"]["observation_s"], interactive=args.interactive)
+    if alias == "hybrid_joint" and scene_task == "formation" and variant == "cts_assembly":
+        single = registry["profiles"]["single"]
+        quality = single["quality"]
+        single_speeds = speed_profile.get("single", {}) | native_speed.get("single", {})
+        config["assembly_planner_overrides"] = dict(
+            single, quality=dict(quality, limits=quality["limits"] | single_speeds),
+            speed_profile=args.speed_profile, solve_budget_s=8., task_duration_cap_s=300.)
+    if assembly:
+        config.update(assembly=True, dock_assignment=args.dock_assignment)
+    if case_registry:
+        config.update(cts_case=args.case, required_map_sha256=case_registry["map_sha256"])
     config.update(route)
     write_config(output, config, args.dry_run)
 

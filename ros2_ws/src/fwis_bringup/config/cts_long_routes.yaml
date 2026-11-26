@@ -1,0 +1,10 @@
+scenario: factory_indoor_01
+scene_variant: cts_assembly
+map_sha256: fb4a8da836ee9ae1df97a5b30b8c8f813d1931d4a39a2d60a7970ed1b29318e4
+# Geometric cargo centre: x and y in metres, yaw in degrees.
+cases:
+  CTS_S1: {start: [1.95, 2.37, 43], goal: [25.96, 22.24, 0]}
+  CTS_S2: {start: [9.34, 18.60, 0], goal: [25.96, 22.24, 90]}
+  CTS_S3: {start: [4.59, 8.78, -90], goal: [25.96, 22.24, 0]}
+  CTS_S4: {start: [21.36, 4.50, 180], goal: [25.96, 22.24, 180]}
+  CTS_E_TO_S3: {start: [25.96, 22.24, 0], goal: [4.59, 8.78, -90]}

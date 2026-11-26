@@ -108,6 +108,9 @@ def setup(context):
                               hybrid_plan_topic="/formation/playback_plan" if task == "formation" else "/hybrid_joint/plan",
                               permit_topic="/hybrid_joint/execution_permit",
                               future_start_window_s=lead + .1)
+            if config.get("assembly"):
+                parameters.update(assembly_plan_topic=f"/robot{index}/assembly_plan",
+                                  assembly_permit_topic=f"/robot{index}/assembly_permit")
         tracker = {"python": "ranger_tracking_controller",
                    "cpp": "ranger_tracking_controller_cpp"}[config.get("tracking_implementation", "python")]
         prefix = None
@@ -137,6 +140,9 @@ def setup(context):
             if config.get("interactive"):
                 topics += ["/formation/interactive_status", "/formation/uniform_progress",
                            "/formation/interactive_endpoints", "/initialpose", "/move_base_simple/goal"]
+            if config.get("assembly"):
+                topics += ["/formation/spacing_error", "/formation/interactive_status"]
+                topics += [f"/robot{i}/assembly_{kind}" for i in robots for kind in ("plan", "permit")]
             topics.extend(f"/robot{index}/trajectory" for index in robots)
         else:
             topics += ["/plan/timed_trajectory", "/plan/status", "/plan/search_status"]

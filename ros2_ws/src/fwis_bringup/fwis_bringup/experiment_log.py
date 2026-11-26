@@ -121,6 +121,8 @@ def collect(spool, destination, *, final=False):
     frozen_plan = model_artifact
     if persist("trajectories/planner.cdr", essential=not has_model, compressed=True):
         frozen_plan = "trajectories/planner.cdr.gz"
+    for trace in (spool / "trajectories").glob("assembly_*.json"):
+        persist(str(trace.relative_to(spool)), compressed=True)
 
     for name in ("timing_trace.jsonl", "operator_events.jsonl", "planning_progress.jsonl", "launch.log",
                  "planner.log", "controller.log", "metrics/motion.jsonl", "metrics/fault_tail.jsonl", "build.log"):

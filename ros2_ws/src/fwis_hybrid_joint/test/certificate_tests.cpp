@@ -50,6 +50,22 @@ TEST(HybridCertificate, StraightSingleAndFormation) {
     EXPECT_TRUE(res.executable)<<res.reason;
   }
 }
+TEST(HybridCertificate,SeparateCargoCenterAndHighSteeringSpeedLimits) {
+  auto formation=request(true);
+  formation.limits.cargo_center_speed=.15;
+  EXPECT_EQ(audit(formation,{{straight()}}).reason,"CARGO_CENTER_SPEED");
+  EXPECT_TRUE(audit(formation,{{straight(30.)}}).executable);
+
+  auto vehicle=request();
+  auto oblique=straight();
+  oblique.mode=h::Mode::O;
+  oblique.pieces.front().y=line(3,2);
+  h::Plan plan{{stopped_at(vehicle,oblique),oblique}};
+  vehicle.limits.high_steer_speed=.20;
+  EXPECT_EQ(audit(vehicle,plan).reason,"HIGH_STEER_BODY_SPEED");
+  vehicle.limits.high_steer_angle=1.;
+  EXPECT_TRUE(audit(vehicle,plan).executable);
+}
 TEST(HybridCertificate, SampleAtAccumulatedPhaseBoundaryIsAtExactRest) {
   // Four phase durations from Gazebo 20261125_155710_3a0ff9 (S -> A).
   const double times[]={2.893309979854491,2.3121077424637013,2.8933099814015346,9.075133095743006};

@@ -525,6 +525,27 @@ std::array<double,4> wheels(Mode mode,const Body& b,const Limits& l) {
     else out[k++]=std::remainder(std::atan2(a,-y),pi);
   }return out;
 }
+
+Piece stationary_piece(const Pose2d& pose) {
+  Piece piece;
+  piece.x.fill(pose.x);
+  piece.y.fill(pose.y);
+  piece.yaw.fill(pose.yaw);
+  return piece;
+}
+
+Phase wheel_preparation(const Request& r,const Sample& first,const Gears& gear,double range) {
+  Phase prep;
+  prep.kind=Kind::Prepare;
+  prep.mode=first.mode;
+  prep.gear=gear;
+  prep.pieces={stationary_piece(first.reference)};
+  prep.duration=r.limits.prepare_time+.0001+
+    std::max(1.875*range/r.limits.steer_rate,std::sqrt(5.774*range/r.limits.steer_acceleration));
+  for(std::size_t i=0;i<r.vehicles.size();++i) prep.heading0[i]=prep.heading1[i]=first.bodies[i].pose.yaw;
+  return prep;
+}
+
 Plan expand(const Request& r,const HJProblem& p) {
   Plan plan;
   std::array<std::array<double,4>,3> prior{};
@@ -553,13 +574,8 @@ Plan expand(const Request& r,const HJProblem& p) {
       prior[i]=wheels(ph.mode,last.bodies[i],r.limits);
       gear_change|=gear[i]!=ph.gear[i];
     }
-    if(prev!=ph.mode || gear_change || range>1e-7){
-      Phase b;b.kind=Kind::Prepare;b.mode=ph.mode;b.gear=ph.gear;
-      b.duration=r.limits.prepare_time+.0001+std::max(1.875*range/r.limits.steer_rate,std::sqrt(5.774*range/r.limits.steer_acceleration));
-      Piece q;q.x.fill(first.reference.x);q.y.fill(first.reference.y);q.yaw.fill(first.reference.yaw);b.pieces.push_back(q);
-      for(int v=0;v<p.bodies;++v)b.heading0[v]=b.heading1[v]=first.bodies[v].pose.yaw;
-      plan.phases.push_back(b);
-    }
+    if(prev!=ph.mode || gear_change || range>1e-7)
+      plan.phases.push_back(wheel_preparation(r,first,ph.gear,range));
     plan.phases.push_back(ph);prev=ph.mode;gear=ph.gear;
   }
   return plan;
@@ -647,9 +663,166 @@ MountRank rank_at_boundary(const Request& r,const Boundary& b){
   return {std::abs(det)>1e-6,std::abs(det)>std::sqrt(cofactors2)*perturb+1e-10};
 }
 std::string name(const Sequence& seq){std::string s;for(auto m:seq)s+="AOS"[static_cast<int>(m)];return s;}
+
+// Recompute preparations at a join. Both input motions stop at the boundary,
+// but their nonzero geometric curvature can require different wheel angles.
+void append_motion(const Request& r, Plan& plan, Phase motion) {
+  const auto last=std::find_if(plan.phases.rbegin(),plan.phases.rend(),
+                              [](const Phase& p){return p.kind==Kind::Motion;});
+  const auto first=evaluate_phase(r,motion,0.);
+  const auto previous=last==plan.phases.rend()?Sample{}:evaluate_phase(r,*last,last->duration);
+  const auto previous_gear=last==plan.phases.rend()?Gears{1,1,1}:last->gear;
+  double range=0.;
+  for(std::size_t i=0;i<r.vehicles.size();++i){
+    const auto from=wheels(previous.mode,previous.bodies[i],r.limits);
+    const auto to=wheels(first.mode,first.bodies[i],r.limits);
+    for(std::size_t w=0;w<from.size();++w) range=std::max(range,std::abs(to[w]-from[w]));
+  }
+  // Adjacent same-gear A phases intentionally stop at this certified junction.
+  if(last!=plan.phases.rend() || first.mode!=Mode::A || motion.gear!=previous_gear || range>1e-7)
+    plan.phases.push_back(wheel_preparation(r,first,motion.gear,range));
+  plan.phases.push_back(std::move(motion));
 }
 
-Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,const SolveOptions& opts){
+Phase stationary_spin(const Request& r,const Sample& rest,const Headings& target) {
+  Phase spin;
+  spin.mode=Mode::S;
+  spin.pieces={stationary_piece(rest.reference)};
+  const auto& l=r.limits;
+  double turn=0.;
+  for(std::size_t i=0;i<r.vehicles.size();++i){
+    spin.heading0[i]=rest.bodies[i].pose.yaw;
+    const double angle=delta(spin.heading0[i],target[i]);
+    spin.heading1[i]=spin.heading0[i]+angle;
+    turn=std::max(turn,std::abs(angle));
+  }
+  const double wheel_radius=.5*std::hypot(l.wheelbase,l.track);
+  const double speed=std::min(l.spin_speed,l.wheel_speed/wheel_radius);
+  spin.duration=1.03*std::max({l.min_motion_duration,1.875*turn/speed,
+                std::sqrt(5.774*turn/l.spin_acceleration),std::cbrt(60.*turn/l.spin_jerk)});
+  return spin;
+}
+
+Result solve_route(const Request&,Clock::time_point,const Cancel&,const SolveOptions&,bool);
+
+std::optional<Plan> depart_and_resume(const Request& r,const Route& route,const Run& run,Result& trace) {
+  if(route.size()<3 || !r.cargo || !r.start.constrain_reference_yaw ||
+     !std::all_of(r.start.constrain_heading.begin(),r.start.constrain_heading.end(),[](bool x){return x;}))return {};
+  const double start_heading=r.start.heading.front();
+  if(std::any_of(r.start.heading.begin(),r.start.heading.end(),
+                 [&](double h){return std::abs(delta(start_heading,h))>pi/180.;}))return {};
+  const auto& start=r.start.reference;
+  const double initial_tangent=std::atan2(route[1].y-start.y,route[1].x-start.x);
+  const int primary_gear=std::cos(delta(start_heading,initial_tangent))>=0.?1:-1;
+  const auto& cargo=*r.cargo;
+  const double reach=.5*std::hypot(cargo[2],cargo[3])+std::hypot(cargo[0],cargo[1]);
+  unsigned continuations=0;
+  for(int gear:{primary_gear,-primary_gear}){
+    if(gear<0&&!r.allow_reverse)continue;
+    for(double scale:{1.35,1.0,1.75,.7}){
+      if(run.stop())return {};
+      const double length=scale*reach;
+      const Pose2d exit{start.x+gear*length*std::cos(start_heading),start.y+gear*length*std::sin(start_heading),start.yaw};
+      // Look beyond the local straight run before choosing the next travel
+      // direction. Quarter turns offer a useful seed in rectilinear aisles.
+      auto ahead=route.begin()+1;
+      double along=distance(route.front(),*ahead);
+      while(ahead+1!=route.end() && along<length+reach){
+        along+=distance(*ahead,*(ahead+1));
+        ++ahead;
+      }
+      const double aim=std::atan2(ahead->y-exit.y,ahead->x-exit.x);
+      const double turn=delta(start_heading,aim);
+      if(std::abs(turn)<pi/8.)continue;
+      const double quarter=std::round(turn/(pi/2.))*(pi/2.);
+      for(double target:{start_heading+(std::abs(quarter)>1e-9?quarter:turn),aim}){
+        if(run.stop())return {};
+        const auto started=Clock::now();
+        Phase move;
+        move.gear.fill(gear);
+        move.heading0.fill(start_heading);
+        move.heading1.fill(start_heading);
+        move.pieces={stationary_piece(start)};
+        for(std::size_t j=1;j<move.pieces[0].x.size();++j){
+          const double u=double(j)/5.;
+          move.pieces[0].x[j]=start.x+u*(exit.x-start.x);
+          move.pieces[0].y[j]=start.y+u*(exit.y-start.y);
+        }
+        const auto& l=r.limits;
+        double vmax=std::min(l.speed,l.wheel_speed);
+        if(l.cargo_center_speed>0)vmax=std::min(vmax,l.cargo_center_speed);
+        move.duration=1.03*std::max({l.min_motion_duration,1.875*length/vmax,
+                  std::sqrt(5.774*length/l.acceleration),std::cbrt(60.*length/l.jerk)});
+        Plan prefix;
+        append_motion(r,prefix,move);
+        Headings heads{target,target,target};
+        append_motion(r,prefix,stationary_spin(r,evaluate_phase(r,move,move.duration),heads));
+        const auto prefix_duration=duration(prefix);
+        if(prefix_duration>=r.task_duration_cap)continue;
+        Request entry=r;
+        entry.goal={exit,heads,true,{true,true,true}};
+        if(!certify(entry,prefix,run.end,run.cancel).executable)continue;
+        Request remainder=r;
+        remainder.start=entry.goal;
+        remainder.task_duration_cap-=prefix_duration;
+        // One recursive solve is sufficient for a candidate, with local
+        // staging disabled so no request can grow an unbounded search tree.
+        const auto end=std::min(run.end-std::chrono::milliseconds(200),
+                                Clock::now()+std::chrono::milliseconds(4200));
+        if(Clock::now()>=end)return {};
+        ++continuations;
+        const auto found=solve_route(remainder,end,run.cancel,{},false);
+        if(found.plan){
+          for(const auto& motion:found.plan->phases)
+            if(motion.kind==Kind::Motion)append_motion(r,prefix,motion);
+          const auto proof=certify(r,prefix,run.end,run.cancel);
+          trace.trace.push_back("LOCAL_DEPARTURE:ASA:"+proof.reason);
+          trace.attempts.push_back({"LOCAL_DEPARTURE:ASA",proof.reason,0.,0.,0.,
+              std::chrono::duration<double>(Clock::now()-started).count()});
+          if(proof.executable)return prefix;
+        }else{
+          trace.trace.push_back("LOCAL_DEPARTURE:ASA:"+found.reason);
+          trace.attempts.push_back({"LOCAL_DEPARTURE:ASA",found.reason,0.,0.,0.,
+              std::chrono::duration<double>(Clock::now()-started).count()});
+        }
+        // Leave time for the original global candidates if the resumed route
+        // does not solve from the first fully certified stop.
+        if(continuations>=2 || run.end-Clock::now()<std::chrono::seconds(2))return {};
+      }
+    }
+  }
+  return {};
+}
+
+std::optional<Plan> stage_backwards(const Request& r,const Route& route,const Run& run,Result& trace) {
+  if(!r.allow_reverse || !r.goal.constrain_reference_yaw)return {};
+  Request reverse=r;
+  std::swap(reverse.start,reverse.goal);
+  reverse.start.constrain_heading.fill(true);
+  Route reversed(route.rbegin(),route.rend());
+  auto found=depart_and_resume(reverse,reversed,run,trace);
+  if(!found)return {};
+  Plan plan;
+  for(auto it=found->phases.rbegin();it!=found->phases.rend();++it){
+    if(it->kind!=Kind::Motion)continue;
+    auto phase=*it;
+    std::reverse(phase.pieces.begin(),phase.pieces.end());
+    for(auto& p:phase.pieces){
+      std::reverse(p.x.begin(),p.x.end());
+      std::reverse(p.y.begin(),p.y.end());
+      std::reverse(p.yaw.begin(),p.yaw.end());
+    }
+    std::swap(phase.heading0,phase.heading1);
+    if(phase.mode!=Mode::S) for(auto& gear:phase.gear)gear=-gear;
+    append_motion(r,plan,std::move(phase));
+  }
+  const auto proof=certify(r,plan,run.end,run.cancel);
+  trace.trace.push_back("LOCAL_ARRIVAL:REVERSED:"+proof.reason);
+  return proof.executable?std::make_optional(std::move(plan)):std::nullopt;
+}
+
+Result solve_route(const Request& r,Clock::time_point deadline,const Cancel& cancel,const SolveOptions& opts,
+                   bool local_stages){
   const auto begin=Clock::now();Run run{deadline,cancel};Result result;
   auto elapsed=[&](){return std::chrono::duration<double>(Clock::now()-begin).count();};
   if(!r.grid || (r.vehicles.size()!=1 && r.vehicles.size()!=3) || !(r.task_duration_cap>=.1) ||
@@ -682,6 +855,7 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
   const int sign=r.allow_reverse && projection<0?-1:1;
   std::vector<Seed> seeds;
   bool sharp_departure=false;
+  Route staging_route;
   const auto rank_start=rank_at_boundary(r,r.start),rank_goal=rank_at_boundary(r,r.goal);
   const bool locked_start=rank_start.whole_neighborhood,locked_goal=rank_goal.whole_neighborhood;
   auto add=[&](Sequence seq,int gear,Route route,std::string edit,int reverse_from=-1){
@@ -697,6 +871,7 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
     if(opts.initial_sequence.empty())add({Mode::A},sign,direct,"CONTINUOUS_A");
     auto route=grid_seed(r,run);
     if(!route.empty()){
+      if(local_stages && r.cargo && opts.initial_sequence.empty() && route.size()>=3)staging_route=route;
       const double heading=std::atan2(route[1].y-route[0].y,route[1].x-route[0].x);
       sharp_departure=std::abs(delta(r.start.heading[0]+(sign<0?pi:0),heading))>pi/2;
       double detour=0;
@@ -887,7 +1062,37 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
   bool tried_oblique_departure=false;
   PolicyScore best{};bool unranked_incumbent=false;std::string why;
   bool repaired_channel=false;
+  bool tried_local_stage=false;
   for(std::size_t ordinal=0;ordinal<seeds.size();++ordinal) {
+    const auto total_budget=std::chrono::duration<double>(deadline-begin).count();
+    const bool departure_collision=!result.attempts.empty() &&
+      result.attempts.back().status.find("OBB_COLLISION")!=std::string::npos;
+    // The final active constraint can vary with a shortened NLP slice. A
+    // whole-route fit that already consumed a third of the budget also
+    // warrants local staging, even when curvature was the last rejection.
+    const bool slow_initial_fit=ordinal==1 && elapsed()>.32*total_budget;
+    const bool try_staging=sharp_departure?
+      ((ordinal==1 && departure_collision)||slow_initial_fit||tried_oblique_departure):
+      elapsed()>.40*total_budget;
+    if(!result.plan && !tried_local_stage && !staging_route.empty() && ordinal>0 && try_staging &&
+       deadline-Clock::now()>=std::chrono::seconds(3)){
+      tried_local_stage=true;
+      std::optional<Plan> staged;
+      if(sharp_departure){
+        staged=depart_and_resume(r,staging_route,run,result);
+        if(!staged)staged=stage_backwards(r,staging_route,run,result);
+      }else{
+        staged=stage_backwards(r,staging_route,run,result);
+        if(!staged)staged=depart_and_resume(r,staging_route,run,result);
+      }
+      if(staged){
+        result.first_certified_s=result.first_policy_compliant_s=elapsed();
+        result.plan=std::move(staged);
+        result.status="CERTIFIED_POLICY_COMPLIANT";
+        result.reason="CERTIFIED_LOCAL_STAGE";
+        return result;
+      }
+    }
     auto translation=seeds.end();
     if(!result.plan && translation_boundary)
       translation=std::find_if(seeds.begin()+ordinal,seeds.end(),straight_oblique);
@@ -1209,6 +1414,42 @@ Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,co
     if(result.status=="CERTIFIED_POLICY_COMPLIANT")result.first_policy_compliant_s=elapsed();
   }
   else{result.status="NO_CERTIFIED_SOLUTION_WITHIN_BUDGET";result.reason=run.stop()?"A_SOLVE_TIMEOUT":why;}
+  return result;
+}
+
+void align_terminal(const Request& r,const Run& run,Result& result) {
+  if(!r.align_terminal_chassis || r.vehicles.size()!=3 || !r.cargo)return;
+  if(!result.plan){result.terminal_alignment="skipped_no_plan";return;}
+  if(run.stop()){result.terminal_alignment="skipped_budget";return;}
+  const auto end=evaluate(r,*result.plan,duration(*result.plan));
+  const double yaw=end.reference.yaw;
+  const bool aligned=std::all_of(end.bodies.begin(),end.bodies.end(),
+      [&](const Body& b){return std::abs(delta(b.pose.yaw,yaw))<=pi/180.;});
+  if(aligned){result.terminal_alignment="already_aligned";return;}
+  for(std::size_t i=0;i<r.vehicles.size();++i){
+    if(r.goal.constrain_heading[i] && std::abs(delta(r.goal.heading[i],yaw))>pi/180.){
+      result.terminal_alignment="skipped_heading_constraint";return;
+    }
+  }
+  auto candidate=*result.plan;
+  append_motion(r,candidate,stationary_spin(r,end,Headings{yaw,yaw,yaw}));
+  const auto proof=certify(r,candidate,run.end,run.cancel);
+  if(proof.executable){
+    result.plan=std::move(candidate);
+    result.terminal_alignment="aligned";
+  }else{
+    result.terminal_alignment="skipped_"+proof.reason;
+  }
+}
+} // namespace
+
+Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,const SolveOptions& opts){
+  auto result=solve_route(r,deadline,cancel,opts,true);
+  align_terminal(r,Run{deadline,cancel},result);
+  if(cancel&&cancel()){
+    result.plan.reset();
+    result.status=result.reason="CANCELLED";
+  }
   return result;
 }
 } // namespace fwis_hybrid_joint

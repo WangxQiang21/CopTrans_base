@@ -9,8 +9,9 @@ import subprocess
 import numpy as np
 
 from benchmark import invoke
-from cases import ROOT, digest, limits, packed
+from cases import ROOT, digest, packed
 from closed_loop import FAMILIES, fixture_config, fixture_preflight, fixture_scene, footprint_margin
+from fwis_bringup.test_config import planner_limits
 from qualification_scenes import SPECIAL_SCENES
 from qualify import sha
 from ranger_mini_gz.scene_generator import installed_paths, read_map, write_map
@@ -30,7 +31,8 @@ def request_from_scene(scene, task, cfg, grid):
     return {
         "grid": dict(width=cells.shape[1], height=cells.shape[0], resolution=float(np.float32(meta["resolution"])),
                      origin=meta["origin"][:2], occupied_runs=np.c_[starts, ends - starts].tolist()),
-        "limits": limits(task, cfg["speed_profile"]), "allow_reverse": True,
+        "limits": planner_limits(cfg["planner_overrides"], formation=multi), "allow_reverse": True,
+        "align_terminal_chassis": cfg["planner_overrides"].get("align_terminal_chassis", False),
         "task_duration_cap": cfg["planner_overrides"]["task_duration_cap_s"],
         "vehicles": [[x, y, length, width] for x, y in offsets],
         "cargo": [*scene.cargo.offset, *(d + 2 * margin for d in scene.cargo.size[:2])] if multi else None,

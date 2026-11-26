@@ -1,6 +1,7 @@
 #pragma once
 #include "fwis_control/tracking_core.hpp"
 #include "fwis_hybrid_joint_ros/transport.hpp"
+#include <algorithm>
 #include <cmath>
 
 namespace fwis_control
@@ -13,19 +14,28 @@ inline PreparedPlan prepare_hybrid(
 {
   namespace h = fwis_hybrid_joint;
   const auto & r = model->context.request;
-  if (!vehicle_id || vehicle_id > r.vehicles.size()) {
+  const auto & ids = model->context.ids;
+  const auto vehicle = std::find(ids.begin(), ids.end(), vehicle_id);
+  if (vehicle == ids.end()) {
     throw std::invalid_argument("vehicle missing from hybrid plan");
   }
   const auto & l = r.limits;
+  const auto & tracker = config.limits;
+  const bool compatible_steering_speed = tracker.high_steer_speed <= 0. ||
+    l.speed <= tracker.high_steer_speed ||
+    (l.high_steer_speed > 0. && l.high_steer_speed <= tracker.high_steer_speed &&
+    l.high_steer_angle <= tracker.high_steer_angle && l.wheelbase == tracker.wheelbase &&
+    l.track == tracker.track);
   if (!(l.radius >= config.limits.guard_radius() && l.speed <= config.limits.max_speed &&
     l.spin_speed <= config.limits.max_yaw_rate && l.yaw_rate > 0 &&
     l.yaw_rate <= config.limits.max_yaw_rate &&
     l.acceleration <= config.limits.max_accel && l.spin_acceleration <= config.limits.max_yaw_accel &&
-    l.yaw_acceleration > 0 && l.yaw_acceleration <= config.limits.max_yaw_accel))
+    l.yaw_acceleration > 0 && l.yaw_acceleration <= config.limits.max_yaw_accel &&
+    compatible_steering_speed))
   {
     throw std::invalid_argument("model limits exceed controller envelope");
   }
-  auto reference = [model, index = vehicle_id - 1](double t) {
+  auto reference = [model, index = std::distance(ids.begin(), vehicle)](double t) {
       const auto s = h::evaluate(model->context.request, model->plan, t);
       const auto & b = s.bodies[index];
       return Reference{t, {b.pose.x, b.pose.y, b.pose.yaw}, {b.vx, b.vy, b.wz}, static_cast<Mode>(s.mode)};

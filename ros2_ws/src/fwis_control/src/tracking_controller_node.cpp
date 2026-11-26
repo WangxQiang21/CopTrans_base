@@ -99,7 +99,9 @@ Configuration load_configuration(const std::string & path)
     {"max_speed", &l.max_speed}, {"max_yaw_rate", &l.max_yaw_rate},
     {"max_accel", &l.max_accel}, {"max_yaw_accel", &l.max_yaw_accel},
     {"mechanical_radius", &l.mechanical_radius}, {"switch_radius", &l.switch_radius},
-    {"radius_margin", &l.radius_margin}, {"parallel_min_vy", &l.parallel_min_vy}});
+    {"radius_margin", &l.radius_margin}, {"parallel_min_vy", &l.parallel_min_vy},
+    {"high_steer_speed", &l.high_steer_speed}, {"high_steer_angle", &l.high_steer_angle},
+    {"wheelbase", &l.wheelbase}, {"track", &l.track}});
   auto & t = cfg.timing;
   load_fields(data["timing"], {
     {"frequency", &t.frequency}, {"state_timeout", &t.state_timeout},
@@ -376,6 +378,15 @@ public:
           if(!hybrid_grid_){deferred_model_=std::move(m);return;}
           on_model(*m);
         });
+      const auto assembly_topic = declare_parameter("assembly_plan_topic", std::string{});
+      if (!assembly_topic.empty()) {
+        assembly_model_sub_ = create_subscription<hybrid_ros::Envelope>(assembly_topic, hybrid_ros::durable(),
+          [this](hybrid_ros::Envelope::ConstSharedPtr model) {
+            if (model->formation_id != "assembly/robot" + std::to_string(vehicle_id_)) return;
+            if (!hybrid_grid_) {deferred_model_ = std::move(model); return;}
+            on_model(*model);
+          });
+      }
     } else trajectory_sub_ = create_subscription<TimedTrajectory>(
       topic, rclcpp::QoS(1).transient_local(),
       [this](const TimedTrajectory & message) {on_trajectory(message);});
@@ -389,14 +400,22 @@ public:
       control_options);
     if (!permit_topic_.empty()) {
       if(model_sub_){
-        native_permit_sub_=create_subscription<fwis_v3_msgs::msg::HybridExecutionPermit>(
-          permit_topic_,1,[this](const fwis_v3_msgs::msg::HybridExecutionPermit& msg){
+        const auto receive = [this](const fwis_v3_msgs::msg::HybridExecutionPermit& msg){
+            if (plan_ && (msg.plan_id != plan_->trajectory.plan_id ||
+                msg.model_sha256 != plan_->model_sha256)) return;
             FormationExecutionPermit copy;copy.plan_id=msg.plan_id;copy.stamp=msg.stamp;
             copy.start=msg.start;copy.enabled=msg.enabled;
             permit_=copy;
             native_permit_hash_.fill(0);
             if(msg.model_sha256.size()==64)std::copy_n(msg.model_sha256.begin(),64,native_permit_hash_.begin());
-          },control_options);
+          };
+        native_permit_sub_=create_subscription<fwis_v3_msgs::msg::HybridExecutionPermit>(
+          permit_topic_, 1, receive, control_options);
+        const auto assembly_permit = declare_parameter("assembly_permit_topic", std::string{});
+        if (!assembly_permit.empty()) {
+          assembly_permit_sub_ = create_subscription<fwis_v3_msgs::msg::HybridExecutionPermit>(
+            assembly_permit, 1, receive, control_options);
+        }
       } else permit_sub_ = create_subscription<FormationExecutionPermit>(
         permit_topic_, 1, [this](const FormationExecutionPermit & msg) {permit_ = msg;},
         control_options);
@@ -774,6 +793,8 @@ private:
   std::optional<std::pair<Mode, double>> mode_;
   std::optional<FormationExecutionPermit> permit_;
   rclcpp::Subscription<fwis_v3_msgs::msg::HybridExecutionPermit>::SharedPtr native_permit_sub_;
+  rclcpp::Subscription<fwis_v3_msgs::msg::HybridExecutionPermit>::SharedPtr assembly_permit_sub_;
+  rclcpp::Subscription<hybrid_ros::Envelope>::SharedPtr assembly_model_sub_;
   std::array<char,64> native_permit_hash_{};
   std::optional<WallClock::time_point> last_tick_wall_;
   bool mode_request_pending_{};

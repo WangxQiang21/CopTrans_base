@@ -35,7 +35,23 @@ cat "reports/runs/$id/experiment.json"
 ./scripts/test.sh --task multi --retest 20261125_115519_smXjHv
 ```
 
-## 4. 自动跑固定用例
+## 4. 测试三车集结和 CTS 运输
+
+```bash
+./scripts/interactive.sh --scene-variant cts_assembly
+```
+
+用 RViz 点选货物中心的起点和终点。三车在两点选定后从 S1–S3 出发，全部到位并停稳后进入运输。默认自动分配挂点。加 `--dock-assignment 1,3,2` 会让 `robot1`、`robot2`、`robot3` 分别使用 1、3、2 号挂点。
+
+```bash
+./scripts/test.sh --planner-only                       # 五条长途离线规划
+./scripts/test.sh --planner-only --case CTS_S3         # 指定一条离线用例
+./scripts/test.sh --task multi --case CTS_S3 --headless # Gazebo 服务端闭环
+```
+
+离线规划与闭环都会显示实验编号。闭环省略 `--headless` 会打开 Gazebo 和 RViz。一次运行一个闭环实例。用例编号为 `CTS_S1`、`CTS_S2`、`CTS_S3`、`CTS_S4` 和 `CTS_E_TO_S3`。
+
+## 5. 自动跑其他固定用例
 
 ```bash
 ./scripts/test.sh --task single --experiment full_route

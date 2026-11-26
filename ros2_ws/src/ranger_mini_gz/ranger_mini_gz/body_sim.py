@@ -24,10 +24,16 @@ class PlantSettings:
     command_timeout: float = .25
     stopped_speed: float = .010
     stopped_yaw_rate: float = .016
+    high_steer_speed: float = 0.
+    high_steer_angle: float = math.radians(20)
+    wheelbase: float = .494
+    track: float = .364
 
     def __post_init__(self):
-        if not all(math.isfinite(x) and x > 0 for x in vars(self).values()):
+        if not all(math.isfinite(x) and x > 0 for name, x in vars(self).items() if name != "high_steer_speed"):
             raise ValueError("plant settings must be finite and positive")
+        if not 0 <= self.high_steer_speed <= self.max_speed or self.high_steer_angle >= math.pi / 2:
+            raise ValueError("invalid plant steering speed envelope")
 
 
 def classify_twist(command, radius):
@@ -101,6 +107,25 @@ class Response:
         if self.mode == ACKERMANN:
             bound = abs(x) / self.settings.switch_radius
             yaw = max(-bound, min(bound, yaw))
+        steering_cap = self.settings.high_steer_speed
+        if steering_cap > 0 and self.mode != SPIN:
+            tangent = math.tan(self.settings.high_steer_angle)
+            ackermann_bound = 2 * tangent / (self.settings.wheelbase + self.settings.track * tangent)
+
+            def high_steer(twist):
+                vx, vy, wz = twist
+                if self.mode == ACKERMANN:
+                    return abs(wz) > ackermann_bound * abs(vx)
+                return abs(vy) > tangent * abs(vx)
+
+            speed, previous_speed = math.hypot(x, y), math.hypot(*previous[:2])
+            if previous_speed > steering_cap and high_steer((x, y, yaw)):
+                # Brake along the current direction before increasing steering.
+                factor = min(steering_cap, speed) / previous_speed
+                x, y, yaw = (value * factor for value in previous)
+            elif speed > steering_cap and (high_steer(previous) or high_steer((x, y, yaw))):
+                factor = steering_cap / speed
+                x, y, yaw = x * factor, y * factor, yaw * factor
         delta_linear = math.hypot(x - previous[0], y - previous[1])
         delta_yaw = abs(yaw - previous[2])
         t_linear = min(-math.expm1(-dt / self.settings.linear_tau),

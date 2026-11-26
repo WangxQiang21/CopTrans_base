@@ -31,7 +31,7 @@ const std::array<QString, track_count> names = {
   QStringLiteral("CopTransV3"), QStringLiteral("Cargo")};
 const std::array<QString, track_count> chart_names = {
   QStringLiteral("V1 位置误差"), QStringLiteral("V2 位置误差"),
-  QStringLiteral("V3 位置误差"), QStringLiteral("Cargo 位置误差")};
+  QStringLiteral("V3 位置误差"), QStringLiteral("最大车间距偏差")};
 
 void label(
   QPainter & painter, const QRectF & rect, const QString & text, const QColor & color,
@@ -94,13 +94,11 @@ void statusCard(
   const QString heading = number(value.yaw * radians_to_degrees, 1) + QStringLiteral("°");
   const QString position = QString("(%1, %2) m").arg(number(value.x), number(value.y));
   if (index == cargo_index) {
-    const QString constraint = view.constraint_metres ?
-      number(*view.constraint_metres) + " m" : (live ? QStringLiteral("—") : "0.00 m");
-    const QString error = view.error_cm ?
-      number(*view.error_cm) + " cm" : (live ? QStringLiteral("—") : "0.00 cm");
+    const QString spacing = view.spacing_error_metres ?
+      number(100 * *view.spacing_error_metres) + " cm" : QStringLiteral("—");
     fields(painter, card, value_color, {
       {"speed", speed}, {"heading", heading}, {"position", position},
-      {"constraint", constraint}, {"trackError", error}});
+      {QStringLiteral("最大间距偏差"), spacing}});
     return;
   }
   fields(painter, card, value_color, {
@@ -123,7 +121,8 @@ void errorChart(
       secondary, 11, Qt::AlignRight);
   }
   if (view.errors.empty()) {
-    const auto detail = view.feedback ? QStringLiteral("等待轨迹") : QStringLiteral("无跟踪数据");
+    const auto detail = index == cargo_index ? QStringLiteral("等待编队反馈") :
+      (view.feedback ? QStringLiteral("等待轨迹") : QStringLiteral("无跟踪数据"));
     label(painter, card.adjusted(0, 23, 0, 0), detail, secondary, 12, Qt::AlignHCenter);
     return;
   }

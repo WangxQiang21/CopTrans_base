@@ -149,7 +149,6 @@ struct ErrorHistory
   qint64 trajectory_stamp_ns = 0;
   std::deque<QPointF> points;
   QString phase;
-  double last_error_stamp = 0;
 };
 
 struct Telemetry
@@ -162,7 +161,8 @@ struct Telemetry
   };
 
   std::array<Track, track_count> tracks;
-  std::optional<QPointF> constraint;  // (stamp, metres)
+  std::optional<double> chart_start;
+  std::optional<QPointF> spacing;  // (stamp, metres)
 };
 
 bool fresh(double now, double stamp)
@@ -191,7 +191,18 @@ std::optional<Feedback> readOdometry(const nav_msgs::msg::Odometry & message)
   return Feedback{stamp, p.x, p.y, yaw, twist.linear.x, twist.linear.y, twist.angular.z};
 }
 
-void recordError(const std::string & message, ErrorHistory & history)
+void appendError(ErrorHistory & history, double elapsed, double centimetres, bool final = false)
+{
+  if (!std::isfinite(elapsed) || elapsed < 0 || !std::isfinite(centimetres)) {return;}
+  if (!history.points.empty()) {
+    const double dt = elapsed - history.points.back().x();
+    if (dt <= 0 || (dt < sample_period - 1e-6 && !final)) {return;}
+  }
+  history.points.emplace_back(elapsed, centimetres);
+  if (history.points.size() > max_chart_samples) {history.points.pop_front();}
+}
+
+void recordError(const std::string & message, ErrorHistory & history, std::optional<double> & chart_start)
 {
   const auto row = QJsonDocument::fromJson(QByteArray::fromStdString(message)).object();
   const auto plan = row.value("plan_id");
@@ -205,12 +216,11 @@ void recordError(const std::string & message, ErrorHistory & history)
   const double plan_id = plan.toDouble();
   const qint64 trajectory_stamp_ns = trajectory.toVariant().toLongLong();
   const double now = stamp.toDouble();
-  const double elapsed = now - 1e-9 * trajectory_stamp_ns;
   const auto phase = row.value("phase").toString();
   const auto error = row.value("body_error").toArray();
 
   if (history.plan_id != plan_id || history.trajectory_stamp_ns != trajectory_stamp_ns) {
-    history = ErrorHistory{};
+    history.phase.clear();
     history.plan_id = plan_id;
     history.trajectory_stamp_ns = trajectory_stamp_ns;
   }
@@ -218,26 +228,15 @@ void recordError(const std::string & message, ErrorHistory & history)
     return;
   }
   history.phase = phase;
-  if (phase == "STOPPED" || !std::isfinite(elapsed) || elapsed < 0 ||
+  const double epoch = 1e-9 * trajectory_stamp_ns;
+  if (phase == "STOPPED" || trajectory_stamp_ns <= 0 || now < epoch ||
     error.size() < 2 || !error.at(0).isDouble() || !error.at(1).isDouble())
   {
     return;
   }
-  const double cm = 100 * std::hypot(error.at(0).toDouble(), error.at(1).toDouble());
-  if (!std::isfinite(cm)) {
-    return;
-  }
-  if (!history.points.empty()) {
-    const double dt = elapsed - history.points.back().x();
-    if (dt <= 0 || (dt < sample_period - 1e-6 && phase != "COMPLETE")) {
-      return;
-    }
-  }
-  history.points.emplace_back(elapsed, cm);
-  history.last_error_stamp = now;
-  if (history.points.size() > max_chart_samples) {
-    history.points.pop_front();
-  }
+  if (!chart_start) {chart_start = epoch;}
+  appendError(history, now - *chart_start,
+    100 * std::hypot(error.at(0).toDouble(), error.at(1).toDouble()), phase == "COMPLETE");
 }
 
 Dashboard snapshot(const Telemetry & data, double now)
@@ -256,15 +255,8 @@ Dashboard snapshot(const Telemetry & data, double now)
     view.errors = source.history.points;
   }
   auto & cargo = dashboard[cargo_index];
-  const auto & history = data.tracks[cargo_index].history;
-  if (cargo.feedback && data.constraint && fresh(now, data.constraint->x())) {
-    cargo.constraint_metres = data.constraint->y();
-  }
-  if (cargo.feedback && !cargo.errors.empty() &&
-    (history.phase == "COMPLETE" ||
-    (history.phase != "STOPPED" && fresh(now, history.last_error_stamp))))
-  {
-    cargo.error_cm = cargo.errors.back().y();
+  if (cargo.feedback && data.spacing && fresh(now, data.spacing->x())) {
+    cargo.spacing_error_metres = data.spacing->y();
   }
   return dashboard;
 }
@@ -333,13 +325,13 @@ protected:
         [this, index](nav_msgs::msg::Odometry::ConstSharedPtr msg) {
           telemetry_.tracks[index].odom = readOdometry(*msg);
         }, options));
-      // Keep the beginning of the trace while RViz loads the vehicle meshes.
-      subscriptions_.push_back(node->create_subscription<std_msgs::msg::String>(
-        prefix + "/controller_status", status_queue_depth,
-        [this, index](std_msgs::msg::String::ConstSharedPtr msg) {
-          recordError(msg->data, telemetry_.tracks[index].history);
-        }, options));
       if (index != cargo_index) {
+        // Keep the beginning of the trace while RViz loads the vehicle meshes.
+        subscriptions_.push_back(node->create_subscription<std_msgs::msg::String>(
+          prefix + "/controller_status", status_queue_depth,
+          [this, index](std_msgs::msg::String::ConstSharedPtr msg) {
+            recordError(msg->data, telemetry_.tracks[index].history, telemetry_.chart_start);
+          }, options));
         subscriptions_.push_back(node->create_subscription<std_msgs::msg::Int32>(
           prefix + "/motion_state", sensor_qos,
           [this, index](std_msgs::msg::Int32::ConstSharedPtr msg) {
@@ -353,12 +345,16 @@ protected:
       }
     }
     subscriptions_.push_back(node->create_subscription<std_msgs::msg::Float64>(
-      "/cargo/constraint_error", sensor_qos,
+      "/formation/spacing_error", sensor_qos,
       [this](std_msgs::msg::Float64::ConstSharedPtr msg) {
         if (std::isfinite(msg->data) && msg->data >= 0) {
-          telemetry_.constraint = QPointF(clock_->now().seconds(), msg->data);
+          const double now = clock_->now().seconds();
+          if (!telemetry_.chart_start) {telemetry_.chart_start = now;}
+          telemetry_.spacing = QPointF(now, msg->data);
+          appendError(telemetry_.tracks[cargo_index].history, now - *telemetry_.chart_start,
+            msg->data * 100);
         } else {
-          telemetry_.constraint.reset();
+          telemetry_.spacing.reset();
         }
       }, options));
     next_update_ = {};

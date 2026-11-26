@@ -60,7 +60,10 @@ private:
     j["speed_profile"] = settings.profile;
     j["reason"] = reason;
     j["wall_time_s"] = seconds;
-    if (!stages.isNull()) {j["planning_stages"] = stages;}
+    if (!stages.isNull()) {
+      j["planning_stages"] = stages;
+      j["terminal_alignment"] = stages["terminal_alignment"];
+    }
     state->publish(message(json(j)));
   }
   void progress_message(uint32_t id, const char * stage, const std::string & reason = "")
@@ -131,6 +134,7 @@ private:
     Json::Value stages;
     stages["policy_status"] = r.status;
     stages["policy_reason"] = r.reason;
+    stages["terminal_alignment"] = r.terminal_alignment;
     stages["first_certified_s"] = r.first_certified_s;
     if (r.status == "CERTIFIED_POLICY_COMPLIANT") {
       stages["first_policy_compliant_s"] = r.first_policy_compliant_s;

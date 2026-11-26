@@ -276,7 +276,7 @@ def read_map(yaml_path):
     return metadata, np.where(np.flipud(raw) == 0, 100, 0).astype(np.int8)
 
 
-def generate_scene(scene, directory, task, gui_template, *, audit=True):
+def generate_scene(scene, directory, task, gui_template, *, audit=True, spawn_poses=None):
     if task not in TASKS:
         raise ValueError(f"unsupported task {task!r}")
     directory.mkdir(parents=True, exist_ok=True)
@@ -287,10 +287,11 @@ def generate_scene(scene, directory, task, gui_template, *, audit=True):
     if task == "formation":
         write_world(scene, directory / "world_single.sdf", "single")
     write_gui_config(scene, gui_template, directory / "gui.config")
+    spawns = scene.spawn_poses(task) if spawn_poses is None else spawn_poses
     metadata = {"scenario": scene.name, "variant": scene.variant, "task": task, "frame": "map",
                 "size_m": list(scene.size), "map_origin": [0., 0., 0.], "maps": maps,
                 "pinch_width_m": None if scene.pinch_width is None else round(scene.pinch_width, 6),
-                "spawn_poses": {f"robot{i}": list(pose) for i, pose in scene.spawn_poses(task).items()},
+                "spawn_poses": {f"robot{i}": list(pose) for i, pose in spawns.items()},
                 "experiments": scene.experiments, "formation_offsets_m": scene.offsets,
                 "cargo": {"id": scene.cargo.name, "size_m": scene.cargo.size, "offset_m": scene.cargo.offset,
                           "bottom_m": scene.cargo.bottom, "opacity": scene.cargo.opacity,

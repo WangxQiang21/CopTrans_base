@@ -22,6 +22,10 @@ const std::pair<const char *, LimitMember> limit_fields[] = {
   {"wheel_speed", &hj::Limits::wheel_speed}, {"steer_angle", &hj::Limits::steer_angle},
   {"steer_rate", &hj::Limits::steer_rate},
   {"steer_acceleration", &hj::Limits::steer_acceleration}, {"prepare_time", &hj::Limits::prepare_time}, {"min_motion_duration", &hj::Limits::min_motion_duration}};
+const std::pair<const char *, LimitMember> supplementary_limit_fields[] = {
+  {"cargo_center_speed", &hj::Limits::cargo_center_speed},
+  {"high_steer_angle", &hj::Limits::high_steer_angle},
+  {"high_steer_speed", &hj::Limits::high_steer_speed}};
 void require(bool condition, const char * reason)
 {
   if (!condition) {
@@ -188,6 +192,9 @@ J contract(const Context & c)
   for (auto [name, member]:limit_fields) {
     j["limits"][name] = r.limits.*member;
   }
+  for (auto [name, member]:supplementary_limit_fields) {
+    j["limits"][name] = r.limits.*member;
+  }
   return j;
 }
 Envelope encode(const Context & c,const hj::Plan & p,int64_t epoch)
@@ -268,8 +275,13 @@ Decoded decode(const Envelope & m, std::shared_ptr<const hj::GridSnapshot> grid,
     v["vehicle_ids"].isArray() && (v["vehicle_ids"].size() == 1 || v["vehicle_ids"].size() == 3) &&
     v["vehicles"].isArray() && v["vehicles"].size() == v["vehicle_ids"].size(), "invalid vehicles");
   for (unsigned i = 0; i < v["vehicle_ids"].size(); ++i) {
-    require(v["vehicle_ids"][i].isUInt() && v["vehicle_ids"][i].asUInt() == i + 1, "unknown vehicle");
-    c.ids.push_back(i + 1);
+    const auto & field = v["vehicle_ids"][i];
+    require(field.isUInt(), "unknown vehicle");
+    const auto id = field.asUInt();
+    const bool assembly_route = v["vehicle_ids"].size() == 1 && id >= 1 && id <= 3 &&
+      c.formation_id == "assembly/robot" + std::to_string(id);
+    require(id == i + 1 || assembly_route, "unknown vehicle");
+    c.ids.push_back(id);
     r.vehicles.push_back(fixed<double, 4>(v["vehicles"][i]));
   }
   if (!v["cargo"].isNull()) {
@@ -283,6 +295,11 @@ Decoded decode(const Envelope & m, std::shared_ptr<const hj::GridSnapshot> grid,
   r.task_duration_cap = number(v["task_duration_cap"]);
   for (auto [name, member]:limit_fields) {
     r.limits.*member = number(v["limits"][name]);
+  }
+  for (auto [name, member]:supplementary_limit_fields) {
+    if (v["limits"].isMember(name)) {
+      r.limits.*member = number(v["limits"][name]);
+    }
   }
   require(j["phases"].isArray() && j["phases"].size() > 0 && j["phases"].size() <= 256,
     "invalid phase count");

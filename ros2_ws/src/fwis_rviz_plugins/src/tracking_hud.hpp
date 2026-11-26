@@ -34,8 +34,7 @@ struct TrackView
   QString mode;
   std::deque<QPointF> errors;
   QString phase;
-  std::optional<double> constraint_metres;
-  std::optional<double> error_cm;
+  std::optional<double> spacing_error_metres;
 };
 
 using Dashboard = std::array<TrackView, track_count>;

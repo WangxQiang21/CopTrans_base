@@ -95,7 +95,12 @@ void Limits::validate() const
 {
   require_positive({
     max_speed, max_yaw_rate, max_accel, max_yaw_accel, mechanical_radius,
-    switch_radius, radius_margin, parallel_min_vy});
+    switch_radius, radius_margin, parallel_min_vy, high_steer_angle, wheelbase, track});
+  if (!std::isfinite(high_steer_speed) || high_steer_speed < 0. || high_steer_speed > max_speed ||
+    high_steer_angle >= std::acos(0.))
+  {
+    throw std::invalid_argument("invalid steering speed envelope");
+  }
   if (parallel_min_vy >= max_speed / 2.) {
     throw std::invalid_argument("parallel_min_vy must be well below max_speed");
   }
@@ -251,6 +256,33 @@ SafetyFilter::Result SafetyFilter::apply(
     }
   }
 
+  const double steering_cap = limits_.high_steer_speed;
+  if (steering_cap > 0. && mode != Mode::Spin) {
+    const double tangent = std::tan(limits_.high_steer_angle);
+    const double ackermann_bound = 2. * tangent / (limits_.wheelbase + limits_.track * tangent);
+    const auto high_steer = [&](Twist twist) {
+        return mode == Mode::Ackermann ? std::abs(twist.wz) > ackermann_bound * std::abs(twist.vx) :
+          std::abs(twist.vy) > tangent * std::abs(twist.vx);
+      };
+    const double current_speed = std::hypot(previous_.vx, previous_.vy);
+    const double target_speed = std::hypot(vx, vy);
+    if (current_speed > steering_cap && high_steer({vx, vy, wz})) {
+      // Brake along the current direction before increasing steering.
+      const double factor = std::min(steering_cap, target_speed) / current_speed;
+      vx = previous_.vx * factor;
+      vy = previous_.vy * factor;
+      wz = previous_.wz * factor;
+      reasons.add("high_steer_speed");
+    } else if (target_speed > steering_cap &&
+      (high_steer(previous_) || high_steer({vx, vy, wz})))
+    {
+      const double factor = steering_cap / target_speed;
+      vx *= factor;
+      vy *= factor;
+      wz *= factor;
+      reasons.add("high_steer_speed");
+    }
+  }
   const double linear_delta = std::hypot(vx - previous_.vx, vy - previous_.vy);
   const double angular_delta = std::abs(wz - previous_.wz);
   const double linear_fraction =

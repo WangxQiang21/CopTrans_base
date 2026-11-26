@@ -67,6 +67,31 @@ TEST(NativeSolver,CancellationAndStationaryGoal){
   ASSERT_EQ(1u,hold.plan->phases.size());EXPECT_EQ(hj::Kind::Hold,hold.plan->phases.front().kind);
   EXPECT_EQ(hold.first_certified_s,hold.first_policy_compliant_s);
 }
+TEST(NativeSolver,TerminalAlignmentKeepsCargoStationaryAndRetainsSafeFallback){
+  auto r=request(true);
+  const auto yaw=std::acos(-1.)/2.;
+  r.start.heading.fill(yaw);
+  r.goal=r.start;
+  r.goal.constrain_heading.fill(false);
+  r.align_terminal_chassis=true;
+  auto aligned=hj::solve(r,deadline());
+  ASSERT_TRUE(aligned.plan)<<aligned.reason;
+  ASSERT_EQ(aligned.terminal_alignment,"aligned");
+  EXPECT_TRUE(hj::certify(r,*aligned.plan,deadline()).executable);
+  const auto final=hj::evaluate(r,*aligned.plan,hj::duration(*aligned.plan));
+  EXPECT_EQ(final.reference.x,r.start.reference.x);
+  EXPECT_EQ(final.reference.y,r.start.reference.y);
+  EXPECT_EQ(final.reference.yaw,r.start.reference.yaw);
+  for(const auto& body:final.bodies) EXPECT_NEAR(body.pose.yaw,r.start.reference.yaw,1e-9);
+
+  r.limits.steer_angle=.4;
+  auto skipped=hj::solve(r,deadline());
+  ASSERT_TRUE(skipped.plan)<<skipped.reason;
+  EXPECT_EQ(skipped.terminal_alignment,"skipped_SPIN_WHEEL_ANGLE");
+  ASSERT_EQ(skipped.plan->phases.size(),1u);
+  EXPECT_EQ(skipped.plan->phases.front().kind,hj::Kind::Hold);
+  EXPECT_TRUE(hj::certify(r,*skipped.plan,deadline()).executable);
+}
 TEST(NativeSolver,RecoversForwardAckermannAtTheLowSpeedCurvatureWitness){
   auto r=request(true);
   r.grid=std::make_shared<hj::GridSnapshot>(120,96,.25,fwis_planning_core::Point2d{0,0},

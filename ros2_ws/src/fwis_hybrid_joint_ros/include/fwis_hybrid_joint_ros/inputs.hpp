@@ -115,6 +115,7 @@ private:
       row["ready"]=ready;
       row["clock_ns"]=Json::Int64(stamp);
       row["map_sha256"]=grid ? grid->hash() : "";
+      row["solver_build"]=build_digest();
       readiness->publish(message(json(row)));
       last_report=wall;
       sent_ready=ready;

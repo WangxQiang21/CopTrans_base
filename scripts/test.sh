@@ -2,6 +2,10 @@
 set -e -o pipefail
 
 root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+if [[ ${1:-} == --planner-only ]]; then
+    shift
+    exec "$root/scripts/cts_plan_only.sh" "$@"
+fi
 workspace="$root/ros2_ws"
 install_base=$(realpath -m -- "${COPTRANS_INSTALL_BASE:-$workspace/install}")
 source_stamp="$install_base/.coptrans-source.sha256"
@@ -79,7 +83,7 @@ mapfile -t config < <(python3 - "$temporary" <<'PY'
 import json, sys
 with open(sys.argv[1]) as handle:
     config = json.load(handle)
-for key in ("task", "scenario", "planner", "no_build", "record", "experiment"):
+for key in ("task", "scenario", "planner", "no_build", "record", "experiment", "gazebo_gui", "rviz_gui"):
     print(config[key])
 PY
 )
@@ -116,7 +120,9 @@ fail() {
 }
 
 [[ -r /opt/ros/humble/setup.bash ]] || fail 'ROS 2 Humble setup is missing.' ros_setup_missing
-[[ -n ${DISPLAY:-} || -n ${WAYLAND_DISPLAY:-} ]] || fail 'Gazebo and RViz2 require a graphical display.' display_missing
+if [[ ${config[6]} == True || ${config[7]} == True ]]; then
+    [[ -n ${DISPLAY:-} || -n ${WAYLAND_DISPLAY:-} ]] || fail 'Gazebo and RViz2 require a graphical display.' display_missing
+fi
 command -v gz >/dev/null || fail 'Gazebo Harmonic command gz is missing.' gazebo_missing
 gazebo_version=$(gz sim --versions) || fail 'Gazebo Sim could not report its version.' gazebo_missing
 [[ $gazebo_version =~ (^|[[:space:]])8\. ]] || fail 'Gazebo Sim 8 (Harmonic) is required.' gazebo_version_mismatch

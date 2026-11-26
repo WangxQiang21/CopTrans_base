@@ -79,8 +79,8 @@ profiles:
       yaw_accel_max: 0.45
       mode_switch_duration: 0.70
 
-# Standard is for the kinematic Gazebo experiments. The tracker and plant
-# caps stay below the manual's 0.75 m/s derating for steering above 20 degrees.
+# Native simulation uses the open-road limit and a separate steering derating.
+# The lower legacy caps are retained for controller/backend comparisons.
 speed_profiles:
   baseline: {}
   standard:
@@ -88,3 +88,8 @@ speed_profiles:
     multi: {v_max: 0.50, a_max: 0.36}
     controller: {max_speed: 0.72, max_accel: 0.60}
     plant: {max_speed: 0.72}
+    native:
+      single: {target_v: 1.50, v_max: 1.50, high_steer_speed: 0.72}
+      multi: {v_max: 0.90, cargo_center_speed: 0.80, high_steer_speed: 0.72}
+      controller: {max_speed: 1.50, high_steer_speed: 0.75}
+      plant: {max_speed: 1.50, high_steer_speed: 0.75}

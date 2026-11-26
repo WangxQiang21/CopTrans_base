@@ -11,6 +11,7 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
+#include <QStringList>
 #include <QTimer>
 #include <QVBoxLayout>
 
@@ -31,6 +32,12 @@ QString phaseName(const QString & phase)
   if (phase == "waiting_start") {return QStringLiteral("选择编队起点");}
   if (phase == "placing") {return QStringLiteral("同步 Gazebo 起点");}
   if (phase == "waiting_goal") {return QStringLiteral("选择编队终点");}
+  if (phase == "assembly_planning") {return QStringLiteral("集结规划");}
+  if (phase == "assembly_executing") {return QStringLiteral("三车驶向挂点");}
+  if (phase == "docking") {return QStringLiteral("核对挂点与停车反馈");}
+  if (phase == "transport_planning") {return QStringLiteral("CTS 运输规划");}
+  if (phase == "transport_executing") {return QStringLiteral("CTS 运输中");}
+  if (phase == "terminal_alignment") {return QStringLiteral("终点车身对齐");}
   if (phase == "planning") {return QStringLiteral("规划中");}
   if (phase == "verification") {return QStringLiteral("验证轨迹模型");}
   if (phase == "arming") {return QStringLiteral("等待三车准入");}
@@ -83,6 +90,7 @@ public:
     identity_ = makeLabel(layout);
     progress_ = makeLabel(layout);
     timing_ = makeLabel(layout);
+    stage_times_ = makeLabel(layout);
     admission_ = makeLabel(layout);
     details_ = makeLabel(layout);
     layout->addStretch(1);
@@ -172,7 +180,10 @@ private:
     if (outcome == "success") {solver = QStringLiteral("已认证");}
     if (outcome == "degraded") {solver = QStringLiteral("已认证 · 模式偏好降级");}
     if (outcome == "failed") {solver = QStringLiteral("失败");}
-    if (outcome == "running") {solver = stageName(progress.value("stage").toString());}
+    if (outcome == "running") {
+      solver = phase == "assembly_planning" ? QStringLiteral("分配挂点与协调避碰") :
+        stageName(progress.value("stage").toString());
+    }
     solving_->setText(QStringLiteral("求解  %1").arg(solver));
 
     const auto backend = progress.value("actual_backend").toString();
@@ -197,9 +208,23 @@ private:
     }
     timing_->setText(elapsed >= 0.0 ? QStringLiteral("求解耗时  %1 s").arg(elapsed, 0, 'f', 3) :
       QStringLiteral("求解耗时  —"));
+    const auto assembly_elapsed = state.value("assembly_elapsed_s");
+    const auto transport_elapsed = state.value("transport_elapsed_s");
+    QStringList durations;
+    if (assembly_elapsed.isDouble()) {
+      durations << QStringLiteral("集结 %1 s").arg(assembly_elapsed.toDouble(), 0, 'f', 2);
+    }
+    if (transport_elapsed.isDouble()) {
+      durations << QStringLiteral("运输 %1 s").arg(transport_elapsed.toDouble(), 0, 'f', 2);
+    }
+    stage_times_->setVisible(!durations.isEmpty());
+    stage_times_->setText(durations.join(QStringLiteral(" · ")));
 
     const int count = state.value("vehicle_count").toInt(3);
-    admission_->setText(QStringLiteral("准入 %1/%2 · 完成 %3/%2")
+    const auto docked = state.value("docked");
+    admission_->setText(docked.isDouble() && (phase.startsWith("assembly_") || phase == "docking") ?
+      QStringLiteral("到位 %1/%2").arg(docked.toInt()).arg(count) :
+      QStringLiteral("准入 %1/%2 · 完成 %3/%2")
       .arg(state.value("admitted").toInt()).arg(count).arg(state.value("complete").toInt()));
     const auto reason = state.value("reason").toString();
     const auto detail = state.value("detail").toString(QStringLiteral(
@@ -215,6 +240,7 @@ private:
   QLabel * identity_;
   QLabel * progress_;
   QLabel * timing_;
+  QLabel * stage_times_;
   QLabel * admission_;
   QLabel * details_;
   std::shared_ptr<Telemetry> state_ = std::make_shared<Telemetry>();

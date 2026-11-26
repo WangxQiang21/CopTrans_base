@@ -51,9 +51,13 @@ Settings::Settings(rclcpp::Node & n)
   l.steer_angle = motion("steer_angle_max", "steer_angle_max", M_PI_2);
   l.steer_rate = motion("steer_rate_max", "steer_rate_max", .8);
   l.steer_acceleration = motion("steer_accel_max", "steer_accel_max", 1.5);
+  l.cargo_center_speed = motion("cargo_center_speed", "cargo_center_speed", 0.);
+  l.high_steer_angle = motion("high_steer_angle", "high_steer_angle", .3490658503988659);
+  l.high_steer_speed = motion("high_steer_speed", "high_steer_speed", 0.);
   l.min_motion_duration = motion("min_mode_dwell_s", "min_mode_dwell_s", .30);
   l.prepare_time = number(multi ? "timing_limits.mode_switch_duration" : "vehicle.mode_switch_duration", .70);
   if (multi) {
+    base.align_terminal_chassis = n.declare_parameter("align_terminal_chassis", false);
     base.cargo = hj::Footprint{number("cargo_footprint.offset_x_m", .5), number(
         "cargo_footprint.offset_y_m",
         0.),

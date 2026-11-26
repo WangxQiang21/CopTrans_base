@@ -290,14 +290,19 @@ bool IntervalAudit::visit(std::size_t piece,double a,double b,double ta,double t
     const auto speedF=up(std::hypot(magnitude(x.c[1]*z.z1),magnitude(y.c[1]*z.z1)));
     double corner_rate=0;
 
+    const auto &l=r.limits;
     const bool formation=r.vehicles.size()==3;
     const auto sc=sin_cos(psi);
     if (r.cargo) {
       const auto &f=*r.cargo;
       const auto reach=up(std::hypot(f[0],f[1])+.5*std::hypot(f[2],f[3]));
       corner_rate=up(speedF+reach*magnitude(psi.c[1]*z.z1));
+      if(l.cargo_center_speed>0 && ph.kind==Kind::Motion && ph.mode!=Mode::S){
+        const auto cx=x+scale(sc.second,I(f[0]))-scale(sc.first,I(f[1]));
+        const auto cy=y+scale(sc.first,I(f[0]))+scale(sc.second,I(f[1]));
+        below(root(square(cx.c[1])+square(cy.c[1]))*z.z1,l.cargo_center_speed,"CARGO_CENTER_SPEED",0);
+      }
     }
-    const auto &l=r.limits;
     for (std::size_t i=0;i<r.vehicles.size();++i) {
       const auto& f=r.vehicles[i];
       const auto mx=formation?x+scale(sc.second,I(f[0]))-scale(sc.first,I(f[1])):x;
@@ -346,7 +351,10 @@ bool IntervalAudit::visit(std::size_t piece,double a,double b,double ta,double t
           for (double wx:{l.wheelbase/2,-l.wheelbase/2}) for (double wy:{l.track/2,-l.track/2}) {
             const auto forward=I(1)-I(wy)*k,side=I(wx)*k;
             if (forward.l<=0) throw CheckFailure{"WHEEL_FORWARD_SINGULARITY",i};
-            below(I(up(std::atan2(magnitude(side),forward.l))),l.steer_angle,"WHEEL_ANGLE",i);
+            const auto steer=up(std::atan2(magnitude(side),forward.l));
+            below(I(steer),l.steer_angle,"WHEEL_ANGLE",i);
+            if(l.high_steer_speed>0 && steer>l.high_steer_angle)
+              below(speed,l.high_steer_speed,"HIGH_STEER_BODY_SPEED",i);
             const auto denom=square(forward)+square(side);
             const auto angle_k=I(wx)/denom;
             const auto ddenom=I(2)*(I(-wy)*forward+I(wx)*side);
@@ -362,6 +370,8 @@ bool IntervalAudit::visit(std::size_t piece,double a,double b,double ta,double t
           const double span=up(magnitude(h1)*(b-a));
           // Mid-angle plus arc variation is conservative, including at zero speed.
           if (std::abs(midangle)+span>l.steer_angle+2e-13) throw CheckFailure{"OBLIQUE_ANGLE",i};
+          if(l.high_steer_speed>0 && std::abs(midangle)+span>l.high_steer_angle)
+            below(speed,l.high_steer_speed,"HIGH_STEER_BODY_SPEED",i);
           below(tangent_w,l.steer_rate,"STEER_RATE",i);
           below(h2*z1sq+h1*z.z2,l.steer_acceleration,"STEER_ACCELERATION",i);
           below(speed,l.wheel_speed,"WHEEL_SPEED",i);
@@ -446,6 +456,9 @@ Audit certify(const Request& r,const Plan& plan,Clock::time_point deadline,const
     l.spin_acceleration,l.spin_jerk,l.yaw_rate,l.wheelbase,l.track,l.wheel_speed,l.steer_angle,
     l.steer_rate,l.steer_acceleration,l.prepare_time}) if (!positive(v)) return {false,"INVALID_LIMITS"};
   if (!std::isfinite(l.min_motion_duration)||l.min_motion_duration<0||
+      !std::isfinite(l.cargo_center_speed)||l.cargo_center_speed<0||
+      !std::isfinite(l.high_steer_speed)||l.high_steer_speed<0||
+      !positive(l.high_steer_angle)||
       !std::isfinite(l.yaw_acceleration)||l.yaw_acceleration<0||!std::isfinite(l.yaw_jerk)||l.yaw_jerk<0)
     return {false,"INVALID_LIMITS"};
   try {

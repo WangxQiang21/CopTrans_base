@@ -51,6 +51,7 @@ hj::Request request(const Value& v) {
   r.start=boundary(v["start"]); r.goal=boundary(v["goal"]);
   r.allow_reverse=v["allow_reverse"].asBool();
   r.task_duration_cap=v["task_duration_cap"].asDouble();
+  r.align_terminal_chassis=v.get("align_terminal_chassis",false).asBool();
   const auto& l=v["limits"];
 #define READ_LIMIT(field) r.limits.field=l[#field].asDouble()
   READ_LIMIT(radius); READ_LIMIT(speed); READ_LIMIT(acceleration); READ_LIMIT(jerk);
@@ -59,6 +60,9 @@ hj::Request request(const Value& v) {
   READ_LIMIT(wheelbase); READ_LIMIT(track); READ_LIMIT(wheel_speed); READ_LIMIT(steer_angle);
   READ_LIMIT(steer_rate); READ_LIMIT(steer_acceleration); READ_LIMIT(prepare_time);
   if (l.isMember("min_motion_duration")) READ_LIMIT(min_motion_duration);
+  if (l.isMember("cargo_center_speed")) READ_LIMIT(cargo_center_speed);
+  if (l.isMember("high_steer_angle")) READ_LIMIT(high_steer_angle);
+  if (l.isMember("high_steer_speed")) READ_LIMIT(high_steer_speed);
 #undef READ_LIMIT
   return r;
 }
@@ -193,6 +197,7 @@ Value run(const Value& input) {
   auto wall=std::chrono::duration<double>(hj::Clock::now()-begin).count();
   out["wall_s"]=wall; out["deadline_overrun_s"]=std::max(0.,wall-budget);
   out["status"]=solution.status; out["reason"]=solution.reason;
+  out["terminal_alignment"]=solution.terminal_alignment;
   out["first_certified_s"]=solution.first_certified_s;
   out["first_policy_compliant_s"]=solution.first_policy_compliant_s;
   out["trace"]=json_array(solution.trace);

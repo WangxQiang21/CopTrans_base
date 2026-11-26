@@ -42,3 +42,21 @@ def test_manual_adapter_selects_parallel_and_keeps_mode_at_zero():
     for index in range(27, 50):
         model.update(index*.02, .02, ZERO, None)
     assert model.mode == OBLIQUE and model.velocity == ZERO
+
+
+def test_large_oblique_turn_brakes_before_crossing_the_steering_limit():
+    settings = PlantSettings(max_speed=1.5, high_steer_speed=.75)
+    model = Response(settings, managed=True)
+    model.mode = OBLIQUE
+    dt = .02
+    for step in range(600):
+        command = (.25, 1.35, 0.) if 200 <= step < 400 else (1.49, .10, 0.)
+        old_x, old_y, _ = model.velocity
+        x, y, _ = model.update(step * dt, dt, command, None)
+        speed = math.hypot(x, y)
+        steering = math.atan2(abs(y), abs(x))
+        assert speed <= settings.max_speed + 1e-9
+        assert steering <= settings.high_steer_angle + 1e-9 or speed <= settings.high_steer_speed + 1e-9
+        assert math.hypot(x - old_x, y - old_y) <= settings.max_accel * dt + 1e-9
+        if step in (199, 599):
+            assert speed > 1.4

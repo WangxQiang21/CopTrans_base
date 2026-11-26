@@ -6,6 +6,7 @@ from bisect import bisect_right
 from dataclasses import replace
 from functools import partial
 from hashlib import sha256
+from itertools import combinations
 import json
 from math import cos, degrees, dist, hypot, isfinite, sin
 import os
@@ -29,6 +30,7 @@ from visualization_msgs.msg import MarkerArray
 import yaml
 
 from fwis_bringup.experiment_log import collect
+from fwis_bringup.cts_cases import cargo_reference
 from fwis_bringup.experiment_telemetry import ControllerLog, TREND_S
 from fwis_bringup.formation_route import PERMIT_TOPIC, fit_reference, make_routes, pose_matches, pose_tuple
 from fwis_bringup.interactive_formation import FormationPlacement, endpoint_markers
@@ -64,6 +66,17 @@ class RunExperiment(Node):
         self.experiment_id = self.directory.name
         self.config = read_config(path)
         self.interactive = self.config.get("interactive", False)
+        self.assembly = None
+        self.assembly_attached = False
+        self.assembly_elapsed_s = None
+        self.docked = 0
+        self.transport_plan_id = 1
+        self.terminal_alignment = "not_requested"
+        self.alignment_start_s = None
+        self.in_terminal_alignment = False
+        self.max_spacing_error = 0.
+        self.max_cargo_speed = 0.
+        self.ui_enabled = self.interactive or self.config.get("assembly", False)
         paths = installed_paths()
         self.task = self.config["scene_task"]
         self.multi = self.task == "formation"
@@ -86,11 +99,13 @@ class RunExperiment(Node):
         experiment = {key: tuple(self.config[key]) for key in ("start", "goal", "waypoints")}
         self.scene = replace(scene, experiments={**scene.experiments, self.task: experiment})
         self.spawns = self.scene.spawn_poses(self.task)
+        if self.config.get("assembly"):
+            self.spawns = dict(zip(scene.vehicle_ids, scene.assembly_starts, strict=True))
         self.contract = read_config(paths[2] / "config" / "multi_4wis" / "transport_formation.yaml")
         self.timing = load(self.declare_parameter("controller_config", "").value).timing
         map_metadata, cells = read_map(self.directory / "scene" / "map.yaml")
         self.replay_mismatch = next((name for name, key in (("map.pgm", "replay_map_sha256"),
-                                    ("scene_meta.yaml", "replay_scene_sha256"))
+                                    ("map.pgm", "required_map_sha256"), ("scene_meta.yaml", "replay_scene_sha256"))
                                     if self.config.get(key) and sha256(
                                         (self.directory / "scene" / name).read_bytes()).hexdigest()
                                     != self.config[key]), None)
@@ -122,6 +137,9 @@ class RunExperiment(Node):
         self.traced_twist = set()
         self.metrics = RunMetrics(self.directory, self.scene, self.task,
                                   motion_log_period=TREND_S if self.archive else 0.)
+        if self.config.get("assembly"):
+            from fwis_bringup.assembly_execution import AssemblyExecution
+            self.assembly = AssemblyExecution(self, (map_metadata, cells))
         self.planner_log = (self.directory / "planner.log").open("w", buffering=1)
         self.controller_log = ControllerLog(self.directory, compact=self.archive is not None)
 
@@ -149,6 +167,7 @@ class RunExperiment(Node):
             self.permit_pub = None if self.native else self.create_publisher(FormationExecutionPermit, PERMIT_TOPIC, 1)
             self.cargo_pub = self.create_publisher(Odometry, "/cargo/odom", 5)
             self.mount_pub = self.create_publisher(Float64, "/cargo/constraint_error", 5)
+            self.spacing_pub = self.create_publisher(Float64, "/formation/spacing_error", 5)
             self.cargo_status_pub = self.create_publisher(String, "/cargo/controller_status", 30)
         else:
             self.start_pub = self.create_publisher(PoseStamped, "/start_pose", 10)
@@ -157,7 +176,7 @@ class RunExperiment(Node):
                 self.create_subscription(FormationPlaybackPlan, "/hybrid_joint/plan", self.on_native_single, DURABLE)
             else:
                 self.create_subscription(TimedTrajectory, "/plan/timed_trajectory", self.on_single, DURABLE)
-        if self.interactive:
+        if self.ui_enabled:
             margin = self.config.get("replay_planner", self.config["planner_overrides"]).get("collision_margin", .05)
             self.placement = FormationPlacement(self.scene, cells, margin)
             self.pending_start = self.pending_goal = self.selected_start = self.placing = None
@@ -169,21 +188,26 @@ class RunExperiment(Node):
             self.progress_log = (self.directory / "planning_progress.jsonl").open("w", buffering=1)
             self.ui_pub = self.create_publisher(String, "/formation/interactive_status", DURABLE)
             self.endpoints_pub = self.create_publisher(MarkerArray, "/formation/interactive_endpoints", DURABLE)
-            self.create_subscription(PoseWithCovarianceStamped, "/initialpose", self.select_start, 5)
-            self.create_subscription(PoseStamped, "/move_base_simple/goal", self.select_goal, 5)
+            if self.interactive:
+                self.create_subscription(PoseWithCovarianceStamped, "/initialpose", self.select_start, 5)
+                self.create_subscription(PoseStamped, "/move_base_simple/goal", self.select_goal, 5)
             progress_qos = QoSProfile(depth=10, durability=DurabilityPolicy.TRANSIENT_LOCAL)
             self.create_subscription(String, "/formation/uniform_progress", self.on_progress, progress_qos)
             self.ui("loading", detail="正在等待 Gazebo、地图和规划器")
         self.create_timer(.04, self.tick, clock=Clock(clock_type=ClockType.STEADY_TIME))
 
     def ui(self, phase, *, reason="", detail=""):
-        if not self.interactive or not rclpy.ok():
+        if not self.ui_enabled or not rclpy.ok():
             return
+        assembly = self.assembly and not self.assembly_attached
+        admitted, complete = (self.assembly.admitted, self.assembly.complete) if assembly else (self.admitted, self.complete)
         document = {"phase": phase, "reason": reason, "detail": detail, "experiment_id": self.experiment_id,
                     "plan_id": self.request.plan_id if self.request else 0,
                     "solver_outcome": self.solver_outcome, "solver_elapsed_s": self.solver_elapsed_s,
-                    "admitted": len(self.admitted), "complete": len(self.complete),
-                    "vehicle_count": len(self.spawns)}
+                    "admitted": len(admitted), "complete": len(complete),
+                    "vehicle_count": len(self.spawns), "docked": self.docked,
+                    "assembly_elapsed_s": self.assembly_elapsed_s, "transport_elapsed_s": self.solver_elapsed_s,
+                    "terminal_alignment": self.terminal_alignment}
         self.ui_pub.publish(String(data=json.dumps(document, ensure_ascii=False, allow_nan=False)))
         self.log_operator("panel_status", phase=phase, reason=reason, detail=detail)
 
@@ -195,9 +219,11 @@ class RunExperiment(Node):
         self.progress_log.write(message.data + "\n")
 
     def show_endpoints(self):
-        self.endpoints_pub.publish(endpoint_markers(
-            self.pending_start or self.selected_start or (self.placing[0] if self.placing else None),
-            self.pending_goal, self.get_clock().now().to_msg()))
+        start = self.pending_start or self.selected_start or (self.placing[0] if self.placing else None)
+        goal = self.pending_goal
+        if self.assembly:
+            start, goal = (local_pose(value, self.scene.cargo.offset) if value else None for value in (start, goal))
+        self.endpoints_pub.publish(endpoint_markers(start, goal, self.get_clock().now().to_msg()))
 
     def selection_open(self):
         return self.result is None and self.execution_started_wall is None
@@ -213,12 +239,21 @@ class RunExperiment(Node):
             self.ui("waiting_start", reason="起点无效", detail="请选择 map 坐标系中的有限位姿")
             return
         target = pose_tuple(pose)
+        if self.assembly:
+            target = cargo_reference(target, self.scene.cargo.offset)
         self.pending_start = self.selected_start = self.pending_goal = None
         obstacle = self.placement.obstruction(target)
         if obstacle:
             self.placing = None
             self.show_endpoints()
             self.ui("waiting_start", reason="起点不可用", detail=obstacle)
+            return
+        if self.assembly:
+            self.selected_start = target
+            self.previous_cargo_pose = None
+            self.publish_cargo_feedback(self.now(), target)
+            self.show_endpoints()
+            self.ui("waiting_goal", detail="货物已就位，设置运输终点后才开始集结")
             return
         self.pending_start = target
         self.show_endpoints()
@@ -238,7 +273,16 @@ class RunExperiment(Node):
             self.show_endpoints()
             self.ui("waiting_goal", reason="终点无效", detail="请选择 map 坐标系中的有限位姿")
             return
-        self.pending_goal = pose_tuple(pose)
+        target = pose_tuple(pose)
+        if self.assembly:
+            target = cargo_reference(target, self.scene.cargo.offset)
+            obstruction = self.placement.obstruction(target)
+            if obstruction:
+                self.pending_goal = None
+                self.show_endpoints()
+                self.ui("waiting_goal", reason="终点不可用", detail=obstruction)
+                return
+        self.pending_goal = target
         self.show_endpoints()
         self.ui("placing" if self.selected_start is None else "waiting_goal",
                 detail="已收到终点，等待三车起点同步并确认停稳")
@@ -249,6 +293,17 @@ class RunExperiment(Node):
                    and not any(self.commands[i]) for i in self.spawns)
 
     def tick_selection(self, now, wall, stale):
+        if self.assembly:
+            if self.selected_start is None or self.pending_goal is None or stale or not self.planner_ready():
+                return
+            if not self.fleet_stopped():
+                return
+            self.execution_started_wall = wall
+            self.config.update(start=self.selected_start, goal=self.pending_goal)
+            endpoints = {key: list(self.config[key]) for key in ("start", "goal")}
+            (self.directory / "selected_endpoints.yaml").write_text(yaml.safe_dump(endpoints, sort_keys=False))
+            self.assembly.begin()
+            return
         if self.pending_start is not None and not stale and self.fleet_stopped():
             reference, self.pending_start = self.pending_start, None
             self.placing = None
@@ -295,6 +350,8 @@ class RunExperiment(Node):
         self.initialize_planner()
 
     def select_archived_endpoints(self, endpoints):
+        if self.assembly:
+            endpoints = {key: local_pose(pose, self.scene.cargo.offset) for key, pose in endpoints.items()}
         start = self.stamped_pose(endpoints["start"])
         initial = PoseWithCovarianceStamped(header=start.header)
         initial.pose.pose = start.pose
@@ -398,6 +455,27 @@ class RunExperiment(Node):
         self.request_after = monotonic() + .50
         self.phase = "initializing_planner"
 
+    def enter_transport(self, assembly, plan_id):
+        offsets = tuple(assembly["offsets"][i] for i in self.spawns)
+        self.scene = replace(self.scene, offsets=offsets)
+        self.metrics.scene = self.scene
+        self.initial = {i: self.truth[i][1] for i in self.spawns}
+        self.reference = fit_reference(offsets, [self.initial[i] for i in self.spawns])
+        if (dist(self.reference[:2], self.config["start"][:2]) > .06
+                or abs(wrap(self.reference[2] - self.config["start"][2])) > .10):
+            self.finish("stopped", "assembly_cargo_pose_residual")
+            return
+        self.native_mount_starts = {
+            i: (*local_pose(self.reference, offset)[:2], self.odom[i][2][2])
+            for i, offset in zip(self.spawns, offsets, strict=True)
+        }
+        self.assembly_attached = True
+        self.transport_plan_id = plan_id
+        self.request_after = monotonic()
+        self.phase = "initializing_planner"
+        self.trace("assembly_docked", assignment=assembly["assignment"], transport_plan_id=plan_id)
+        self.ui("transport_planning", detail="三车已对准挂点并停稳，开始 CTS 联合规划")
+
     def publish_goal(self):
         goal = self.stamped_pose(self.config["goal"])
         self.plan_started = monotonic()
@@ -406,7 +484,7 @@ class RunExperiment(Node):
             self.trace("request_publish")
             self.goal_pub.publish(goal)
             return
-        self.request = FormationPlanRequest(header=goal.header, plan_id=1,
+        self.request = FormationPlanRequest(header=goal.header, plan_id=self.transport_plan_id,
                                             formation_id=self.scene.formation_id,
                                             allow_reverse=self.contract["allow_reverse"])
         self.request.formation_start = pose2d(self.reference)
@@ -414,13 +492,14 @@ class RunExperiment(Node):
         for index, offset in zip(self.spawns, self.scene.offsets, strict=True):
             self.request.vehicles.append(FormationVehicleSpec(
                 vehicle_id=index, goal_heading_free=self.contract["goal_heading_free"],
-                offset_in_formation=Point(x=offset[0], y=offset[1]), start_center=pose2d(self.initial[index]),
+                offset_in_formation=Point(x=offset[0], y=offset[1]),
+                start_center=pose2d(self.native_mount_starts[index] if self.assembly else self.initial[index]),
                 goal_center=pose2d(local_pose(self.config["goal"], offset)),
                 body_length_m=self.scene.vehicle_size[0], body_width_m=self.scene.vehicle_size[1]))
         self.trace("request_publish")
-        if self.interactive:
+        if self.ui_enabled:
             self.solver_outcome = "running"
-            self.ui("planning", detail="正在求解联合 A/O/S 轨迹")
+            self.ui("transport_planning" if self.assembly else "planning", detail="正在求解联合 A/O/S 轨迹")
         self.goal_pub.publish(self.request)
 
     def on_single(self, msg):
@@ -471,7 +550,7 @@ class RunExperiment(Node):
         self.phase = "running"
         self.admitted.update(self.spawns)
         self.trace("permit_enabled", start_ns=event["start_ns"])
-        self.ui("running", detail="三车已通过 C++ 联合准入，按同一时刻起步")
+        self.ui("transport_executing" if self.assembly else "running", detail="三车已通过 C++ 联合准入，按同一时刻起步")
 
     def on_formation(self, msg):
         if (self.phase not in ("planning", "waiting_for_plan_validation", "arming", "running")
@@ -495,6 +574,10 @@ class RunExperiment(Node):
             self.arm_stamp = msg.header.stamp
             self.model_sha256 = msg.model_sha256
             self.formation_plan = msg
+            if self.assembly:
+                phases = json.loads(msg.model_json)["phases"]
+                if phases[-1]["mode"] == int(Mode.SPIN) and len(phases) >= 2:
+                    self.alignment_start_s = sum(p["duration"] for p in phases[:-2])
             self.cargo_plan_times = tuple(stamp_ns(point) for point in msg.trajectory.times_from_start)
             projections = {
                 track.vehicle_id: TimedTrajectory(header=msg.header, plan_id=msg.plan_id, points=[
@@ -572,13 +655,15 @@ class RunExperiment(Node):
                 self.trace("planner_publication_status_received",
                            planning_stages=status.get("planning_stages", {}),
                            envelope_verification_wall_s=status.get("envelope_verification_wall_s"))
-                if self.interactive and self.result is None:
+                if self.ui_enabled and self.result is None:
+                    self.terminal_alignment = status.get("terminal_alignment", "not_requested")
                     degraded = status.get("planning_stages", {}).get("policy_status") == "FEASIBLE_POLICY_DEGRADED"
                     self.solver_outcome = "degraded" if degraded else "success"
                     self.solver_elapsed_s = ((status.get("wall_time_s") or 0.)
                                              + (status.get("envelope_verification_wall_s") or 0.))
                     phase = self.phase if self.phase in ("arming", "running") else "verification"
-                    self.ui(phase, detail="规划与模型信封认证通过")
+                    self.ui("transport_planning" if self.assembly and phase != "running" else phase,
+                            detail="规划与模型信封认证通过")
             self.planner_status[topic] = {k: status[k] for k in (
                 "plan_id", "node_state", "status", "code", "reason", "detail", "trajectory_published",
                 "first_failure_layer", "duration_s") if k in status}
@@ -586,7 +671,7 @@ class RunExperiment(Node):
                     and status.get("plan_id") == self.request.plan_id
                     and (status.get("node_state") in ("FAILED", "REJECTED")
                          or status.get("status") in ("REJECTED", "FAILED", "INVALID"))):
-                if self.interactive:
+                if self.ui_enabled:
                     self.solver_outcome = "failed"
                     self.solver_elapsed_s = status.get("wall_time_s")
                 self.finish("stopped" if self.plan_keys else "failed",
@@ -615,6 +700,8 @@ class RunExperiment(Node):
 
     def on_controller(self, index, msg):
         row = json.loads(msg.data)
+        if self.assembly and not self.assembly_attached:
+            self.assembly.on_controller(index, row)
         if self.archive is None or self.result is None:
             self.controller_log.record(index, row, monotonic())
         key = (row.get("plan_id"), row.get("trajectory_stamp_ns"))
@@ -661,6 +748,8 @@ class RunExperiment(Node):
             self.measure_wall = wall
         if self.result:
             self.permit(False)
+            if self.assembly and not self.assembly_attached:
+                self.assembly.permit(False)
             if self.interactive and self.final_observation is None and wall >= self.observation_due_wall:
                 self.write_result()
             return
@@ -681,15 +770,19 @@ class RunExperiment(Node):
         elif self.phase == "waiting_for_planner":
             if (not stale and (self.start_pub is None or self.start_pub.get_subscription_count() >= 1)
                     and self.goal_subscribers_ready()):
-                if not self.interactive:
+                if self.assembly and not self.interactive and self.fleet_stopped():
+                    self.assembly.begin()
+                elif not self.interactive and not self.assembly:
                     self.initialize_planner()
-                elif self.planner_ready():
+                elif self.interactive and self.planner_ready():
                     self.phase = "interactive_selection"
                     self.ui("waiting_start", detail="用 2D Pose Estimate 设置编队起点")
                     if self.config.get("replay_endpoints"):
                         self.select_archived_endpoints(self.config["replay_endpoints"])
         elif self.phase == "interactive_selection":
             self.tick_selection(now, wall, stale)
+        elif self.assembly and (self.phase.startswith("assembly_") or self.phase == "docking"):
+            self.assembly.tick(now, wall, stale)
         elif self.phase == "initializing_planner":
             if not stale and wall >= self.request_after and self.planner_ready():
                 self.publish_goal()
@@ -737,6 +830,11 @@ class RunExperiment(Node):
             self.finish("stopped", f"robot{stale[0]}_stale_or_invalid_feedback")
             return
         if self.native:
+            if (self.assembly and self.alignment_start_s is not None and not self.in_terminal_alignment
+                    and self.terminal_alignment == "aligned" and self.phase == "running"
+                    and now >= stamp_ns(self.arm_stamp) / NSEC + self.alignment_start_s):
+                self.in_terminal_alignment = True
+                self.ui("terminal_alignment", detail="货物位姿保持，三车安全原地对齐")
             if self.complete == self.spawns.keys():
                 self.check_result()
             return
@@ -761,6 +859,8 @@ class RunExperiment(Node):
             self.permit(True)
 
     def measurement(self, stamp, *, record=True):
+        if self.assembly and not self.assembly_attached:
+            return
         poses = {i: self.truth[i][1] for i in self.spawns}
         if record:
             if self.previous_measurement is not None:
@@ -777,6 +877,10 @@ class RunExperiment(Node):
             mount = max(dist(poses[i][:2], local_pose(reference, offset)[:2])
                         for i, offset in zip(self.spawns, self.scene.offsets, strict=True))
             self.mount_pub.publish(Float64(data=mount))
+            spacing = max(abs(dist(poses[i][:2], poses[j][:2]) - dist(a, b))
+                          for (i, a), (j, b) in combinations(zip(self.spawns, self.scene.offsets, strict=True), 2))
+            self.max_spacing_error = max(self.max_spacing_error, spacing)
+            self.spacing_pub.publish(Float64(data=spacing))
 
     def publish_cargo_feedback(self, stamp, reference):
         stamp_nsec = round(stamp * NSEC)
@@ -787,13 +891,15 @@ class RunExperiment(Node):
         cargo = Odometry(header=msg.header, child_frame_id="cargo/base_link")
         cargo.pose.pose = msg.pose
         pose = Pose(*reference)
+        center = Pose(*local_pose(reference, self.scene.cargo.offset))
         if self.previous_cargo_pose is not None:
             previous_stamp, previous_pose = self.previous_cargo_pose
             if stamp > previous_stamp:
-                twist = between(previous_pose, pose, stamp - previous_stamp)
+                twist = between(previous_pose, center, stamp - previous_stamp)
                 cargo.twist.twist.linear.x, cargo.twist.twist.linear.y = twist.vx, twist.vy
                 cargo.twist.twist.angular.z = twist.wz
-        self.previous_cargo_pose = stamp, pose
+                self.max_cargo_speed = max(self.max_cargo_speed, hypot(twist.vx, twist.vy))
+        self.previous_cargo_pose = stamp, center
         self.cargo_pub.publish(cargo)
 
         if self.arm_stamp is None or self.phase != "running":
@@ -864,16 +970,19 @@ class RunExperiment(Node):
             self.plan_wall = monotonic() - self.plan_started
         decided = monotonic()
         self.decision_observation = self.velocity_observation(decided)
-        observe = status == "passed" or bool(self.arm_stamp or self.plan_keys or self.moved)
+        observe = status == "passed" or bool(self.arm_stamp or self.plan_keys or self.moved
+                                             or (self.assembly and self.assembly.epoch))
         self.observation_due_wall = decided + (self.config["observation_s"] if observe else 0.)
         self.result = {"status": status, "reason": reason, "detail": detail, "phase_at_end": self.phase}
         self.permit(False)
+        if self.assembly:
+            self.assembly.permit(False)
         if status in ("failed", "stopped", "timed_out"):
             if self.native_cancel and rclpy.ok():
                 self.native_cancel.publish(String(data=reason))
             self.controller_log.save_fault_tail(monotonic())
         self.trace("finish", result=status, reason=reason)
-        if self.interactive:
+        if self.ui_enabled:
             if self.solver_outcome == "running":
                 self.solver_outcome = "failed"
             if self.solver_elapsed_s is None:
@@ -882,13 +991,18 @@ class RunExperiment(Node):
                 detail = "三车已完成并停车" if status == "passed" else "三车执行停车"
             self.ui("finished" if status == "passed" else "failed", reason="" if status == "passed" else reason,
                     detail=detail + "\n按 Ctrl+C 退出，重新运行脚本开始下一轮。")
-            self.write_result()
-            return
+            if self.interactive:
+                self.write_result()
+                return
         self.end_wall = self.observation_due_wall
 
     def summary(self):
         final = {i: row[1] for i, row in self.truth.items()}
-        return self.metrics.summary(self.initial or {}, final, self.goals, self.config["goal"])
+        summary = self.metrics.summary(self.initial or {}, final, self.goals, self.config["goal"])
+        if self.multi:
+            summary.update(max_pairwise_spacing_error_m=self.max_spacing_error,
+                           maximum_cargo_center_speed_mps=self.max_cargo_speed)
+        return summary
 
     def termination_fields(self, *, closing):
         wall = monotonic()
@@ -929,6 +1043,16 @@ class RunExperiment(Node):
         data.update(experiment_id=self.experiment_id, replay_of=self.config.get("replay_of"),
                     start=self.config["start"], goal=self.config["goal"],
                     model_sha256=getattr(self, "model_sha256", None))
+        if self.assembly:
+            assembly = self.assembly.run or {}
+            data.update(assembly_status=assembly.get("status"), cts_case=self.config.get("cts_case"),
+                        dock_assignment=assembly.get("assignment"), docked=self.docked,
+                        assembly_elapsed_s=self.assembly_elapsed_s,
+                        assembly_duration_s=assembly.get("duration_s"),
+                        assembly_min_measured_pair_gap_m=self.assembly.min_measured_gap,
+                        terminal_alignment=self.terminal_alignment,
+                        cargo_centers={key: list(local_pose(self.config[key], self.scene.cargo.offset))
+                                       for key in ("start", "goal")})
         if self.interactive:
             data.update(interactive=True, selected_start=self.selected_start, selected_goal=self.pending_goal,
                         start=self.selected_start or self.last_selected_start,
@@ -960,6 +1084,8 @@ def main():
         raise
     finally:
         node.write_result(closing=True)
+        if node.assembly:
+            node.assembly.close()
         node.destroy_node()
         rclpy.try_shutdown()
 

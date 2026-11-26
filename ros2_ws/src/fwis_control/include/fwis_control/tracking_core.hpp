@@ -76,6 +76,8 @@ struct Limits
   double max_speed{.28}, max_yaw_rate{.55}, max_accel{.45}, max_yaw_accel{.70};
   double mechanical_radius{.810}, switch_radius{.47644}, radius_margin{.02};
   double parallel_min_vy{.00001};
+  double high_steer_speed{0.}, high_steer_angle{.3490658503988659};
+  double wheelbase{.494}, track{.364};
   double guard_radius() const noexcept;
   void validate() const;
 };
