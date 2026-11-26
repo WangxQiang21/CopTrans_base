@@ -15,10 +15,17 @@ class Limits:
     switch_radius: float = .47644
     radius_margin: float = .02
     parallel_min_vy: float = .00001
+    high_steer_speed: float = 0.
+    high_steer_angle: float = .3490658503988659
+    wheelbase: float = .494
+    track: float = .364
 
     def __post_init__(self):
-        if not all(math.isfinite(value) and value > 0 for value in vars(self).values()):
+        if not all(math.isfinite(value) and value > 0
+                   for name, value in vars(self).items() if name != "high_steer_speed"):
             raise ValueError("velocity limits, radii and margins must be finite and positive")
+        if not 0 <= self.high_steer_speed <= self.max_speed or self.high_steer_angle >= math.pi / 2:
+            raise ValueError("invalid steering speed envelope")
         if self.parallel_min_vy >= self.max_speed / 2:
             raise ValueError("parallel_min_vy must be well below max_speed")
 
@@ -110,6 +117,27 @@ class SafetyFilter:
             if prev.vy * vy < 0 and not (continuous_oblique and forward_progress):
                 vx = vy = 0.0
                 reasons.append("oblique_reversal_through_zero")
+
+        steering_cap = self.limits.high_steer_speed
+        if steering_cap > 0 and mode != Mode.SPIN:
+            tangent = math.tan(self.limits.high_steer_angle)
+            ackermann_bound = 2 * tangent / (self.limits.wheelbase + self.limits.track * tangent)
+
+            def high_steer(x, y, yaw):
+                if mode == Mode.ACKERMANN:
+                    return abs(yaw) > ackermann_bound * abs(x)
+                return abs(y) > tangent * abs(x)
+
+            target_speed = math.hypot(vx, vy)
+            if prev.speed > steering_cap and high_steer(vx, vy, wz):
+                # Brake in the previous direction before increasing steering.
+                factor = min(steering_cap, target_speed) / prev.speed
+                vx, vy, wz = prev.vx * factor, prev.vy * factor, prev.wz * factor
+                reasons.append("high_steer_speed")
+            elif target_speed > steering_cap and (high_steer(*prev.values()) or high_steer(vx, vy, wz)):
+                factor = steering_cap / target_speed
+                vx, vy, wz = vx * factor, vy * factor, wz * factor
+                reasons.append("high_steer_speed")
 
         desired = Twist(vx, vy, wz)
         linear_delta = math.hypot(vx - prev.vx, vy - prev.vy)
