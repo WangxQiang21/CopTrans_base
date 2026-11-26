@@ -310,8 +310,12 @@ def publish(cfg, work, ref):
     recompute(ROOT,cfg,compact,stage,True)
     clone=work/"candidate"
     candidate_checkout(ROOT,clone,base)
-    (clone/REGISTRY).write_text(promoted_text((clone/REGISTRY).read_text()))
-    commit(clone,[REGISTRY],"Use certified hybrid planners for default simulations")
+    registry=clone/REGISTRY
+    original=registry.read_text()
+    promoted=promoted_text(original)
+    if promoted!=original:
+        registry.write_text(promoted)
+        commit(clone,[REGISTRY],"Use certified hybrid planners for default simulations")
     relay_archives(clone,cfg)
     run_smoke(clone,stage/"batch/default_runs.json",cfg["system"])
     relocation=relink_default_objects(clone,cfg["system"])

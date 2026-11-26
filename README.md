@@ -11,12 +11,12 @@ cd CopTrans_base
 
 新机器先准备 ROS 2 Humble、Gazebo Harmonic、对应的 ROS 桥、RViz 和 Colcon。若缺少 CasADi C++ SDK，可执行 `python3 -m pip install --user --no-deps casadi==3.7.2`。已有独立 SDK 时，可先执行 `export COPTRANS_CASADI_ROOT=/实际路径/casadi`。首次启动会编译 Release；旧安装或文件校验失败时，去掉 `--no-build` 再运行。
 
-要测试 V3 原生联合求解器，在仓库目录执行下面任意一条。终端启动时显示选定的规划器、跟踪器、源码和安装指纹。三车交互求解时，RViz 左侧面板显示规划器上报的实际后端和构建编号。收到原生计划后，本轮 `experiment.json` 的 `planner_source` 为 `hybrid_joint`，`model_sha256` 标识收到的模型。源码及安装指纹可在同目录的 `environment.txt` 查询。
+单车、三车和 RViz 交互仿真默认使用 V3 C++ 联合规划器和 C++ 跟踪器。终端启动时显示所用的规划器、跟踪器和版本。接收计划后，`experiment.json` 的 `planner_source` 为 `hybrid_joint`。源码及安装指纹可在同目录的 `environment.txt` 查询。
 
 ```bash
-./scripts/interactive.sh --planner-backend hybrid_joint
-./scripts/test.sh --task single --planner-backend hybrid_joint --experiment full_route
-./scripts/test.sh --task multi --planner-backend hybrid_joint --experiment full_route
+./scripts/test.sh --task single
+./scripts/test.sh --task multi
+./scripts/interactive.sh
 ```
 
 ## 2. 在 RViz 设置起点和终点
@@ -35,10 +35,10 @@ cat "reports/runs/$id/experiment.json"
 ./scripts/interactive.sh --replay "$id" --no-build
 ```
 
-`experiment.json` 可查起终点、结果、失败原因和轨迹文件位置。`--replay` 使用归档的规划器和参数，适合复现旧问题。要用 V3 测同一张地图、同一组 RViz 起终点和朝向，执行下面的命令；新日志的 `retest_of` 会记录原实验编号。
+`experiment.json` 可查起终点、结果、失败原因和轨迹文件位置。`--replay` 使用归档的规划器和参数，适合复现旧问题。`--retest` 用当前默认规划器复跑同一张地图和同一组 RViz 起终点及朝向，新日志的 `retest_of` 会记录原实验编号。
 
 ```bash
-./scripts/test.sh --task multi --planner-backend hybrid_joint --retest 20261125_115519_smXjHv
+./scripts/test.sh --task multi --retest 20261125_115519_smXjHv
 ```
 
 ## 4. 自动跑固定用例
@@ -52,8 +52,8 @@ cat "reports/runs/$id/experiment.json"
 
 `short_turn` 是短弯，改成 `short_straight` 测直行，改成 `full_route` 测全程。加 `--scene-variant critical` 测临界窄通道，加 `--scene-variant too_narrow` 测绕行。
 
-需要回退到基础规划配置和 Python 跟踪器时，运行同一测试并加上两个参数。
+需要回退到旧规划器和 Python 跟踪器时，显式选择旧后端。
 
 ```bash
-./scripts/test.sh --task multi --architecture-profile baseline --tracker-implementation python --no-build
+./scripts/test.sh --task multi --planner-backend legacy --architecture-profile baseline --tracker-implementation python --no-build
 ```

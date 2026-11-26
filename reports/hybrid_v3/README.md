@@ -6,7 +6,7 @@
 
 新版通过一次三车 Gazebo 长途复验。与 `20261125_115519_smXjHv` 使用相同地图、起终点、载荷和速度档，实走 27.79 m，规划时间从 6.06 s 降至 1.74 s，每车切换从 3 次降至 0 次，最大挂点误差从 12.88 mm 降至 0.09 mm。[闭环结果](../runs/20261126_012635_ixqyqR/result.yaml)
 
-按要求停止整套矩阵重跑，回环网络批次停在 36/100 轮，默认入口仍待正式验收。曲线斜行的舵角恰好达到 ±90° 时，连续证书仍可能保守拒绝合法轨迹。[边界复现](../acceptance/hybrid_v3/core_quality_c9/signed_oblique_review/README.md)
+按要求停止整套矩阵重跑，回环网络批次停在 36/100 轮。单车、三车和 RViz 交互入口已按要求将修复版设为本地仿真的默认规划器，完整验收仍暂停。曲线斜行的舵角恰好达到 ±90° 时，连续证书仍可能保守拒绝合法轨迹。[边界复现](../acceptance/hybrid_v3/core_quality_c9/signed_oblique_review/README.md)
 
 ## 2026-11-26 闭环验收进度
 
@@ -109,7 +109,7 @@ python3 scripts/hybrid_v3/closed_loop.py --from-run 20261125_115519_smXjHv --tas
 
 本表的离线求解快照为 `c09357a32cea`，Gazebo 与控制验证使用系统快照 `a3f5c3581715`。原生规划库 SHA 与逐试次身份见 [manifest.json](manifest.json)。
 
-当前无参入口的单车规划器为 `state_lattice`，三车为 `multi_4wis`，跟踪器为 `cpp`。
+该批验收时，默认单车规划器为 `state_lattice`，三车为 `multi_4wis`，跟踪器为 `cpp`。
 
 | 任务 | 速度档 | 核心可行通过 | 留出可行通过 | 留出纯 A | 旧版同限制可行通过 | 易 / 难规划 P95（秒） |
 |---|---|---:|---:|---:|---:|---:|
