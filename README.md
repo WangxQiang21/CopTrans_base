@@ -1,67 +1,111 @@
-# CopTrans 仿真使用方法
+# CopTrans 测试方法
 
-## 1. 启动交互仿真
+在终端进入仓库。下面的命令都从这个目录执行。
 
 ```bash
-cd CopTrans_base
+cd /home/wq/Whut/CopTrans_base
+```
+
+## 1. 跑默认 CTS 测试集
+
+一次跑完 7 条离线用例。离线测试只运行规划和轨迹认证，无需启动 Gazebo 或 RViz。
+
+```bash
+./scripts/test.sh --planner-only
+```
+
+用 `--case` 选一条。用例编号区分大小写，`--planner-only` 放在第一个参数。
+
+```bash
+./scripts/test.sh --planner-only --case CTS_S3
+```
+
+一条命令测多条时，重复写 `--case`。
+
+```bash
+./scripts/test.sh --planner-only --case CTS_S3 --case CTS_E_TO_S3
+```
+
+| 用例编号 | 离线测试内容 |
+| --- | --- |
+| `CTS_S1` | 三车集结规划和 CTS_S1 到 CTS_E 的运输规划 |
+| `CTS_S2` | 三车集结规划和 CTS_S2 到 CTS_E 的运输规划 |
+| `CTS_S3` | 三车集结规划和 CTS_S3 到 CTS_E 的运输规划 |
+| `CTS_S4` | 三车集结规划和 CTS_S4 到 CTS_E 的运输规划 |
+| `CTS_E_TO_S3` | 三车集结规划和 CTS_E 到 CTS_S3 的反向路线 |
+| `20261126_161917_u046w8` | 用归档的挂点和实测停靠位姿复测运输规划 |
+| `20261126_162144_qqdYea` | 用归档的挂点和实测停靠位姿复测运输规划 |
+
+每条用例的货物起点、终点和航向见 [CTS 用例配置](ros2_ws/src/fwis_bringup/config/cts_long_routes.yaml)。只想从已挂载状态测试运输规划时，加 `--transport-only`。
+
+终端最后会打印 `Offline results` 和 `summary.json` 的路径。每条用例的 `status` 为 `passed` 表示通过，`reason` 可查结果原因，`transport_s` 是运输求解耗时，`transport_duration_s` 是计划行驶时长。进入运输求解后，规划结果和认证记录保存在同目录的 `用例编号/transport.json.gz`。
+
+## 2. 在 Gazebo 和 RViz 跑指定用例
+
+把 `CTS_S3` 换成上表中任一编号。脚本打开 Gazebo 和 RViz，载入用例的固定起终点，自动执行三车集结、运输规划和闭环跟踪。
+
+```bash
+./scripts/test.sh --task multi --case CTS_S3
+```
+
+需要后台运行闭环时，加 `--headless` 关闭 Gazebo 和 RViz 的图形窗口。
+
+```bash
+./scripts/test.sh --task multi --case CTS_S3 --headless
+```
+
+每次启动一条闭环，等当前进程退出后再跑下一条。闭环结果在终端 `Run directory` 指向的目录中，打开 `result.yaml` 看结果、失败原因、规划耗时和最大挂点误差。默认自动分配挂点。加 `--dock-assignment 1,3,2` 可让 `robot1`、`robot2`、`robot3` 分别使用 1、3、2 号挂点。
+
+默认使用当前 V3 C++ 联合规划器，闭环使用 C++ 跟踪器。首次测试或更新代码后直接运行上述命令。已构建且源码一致时可加 `--no-build`。如果提示安装过期或校验失败，去掉 `--no-build` 再运行。
+
+## 3. 在 RViz 手动选择起点和终点
+
+```bash
 ./scripts/interactive.sh
 ```
 
-`./scripts/test.sh --task multi` 和无参数的 `./run_demo.sh` 也进入同一交互测试。脚本会增量构建并打开 Gazebo 和 RViz。默认室内厂房场景包含三车集结和 CTS 运输。使用 `--no-build` 时，脚本会核对安装与源码是否一致。可用 `--list-scenarios` 查看场景，加 `--scenario port_01` 切换到港口。
+`./scripts/test.sh --task multi` 和无参数的 `./run_demo.sh` 也会进入交互测试。可用 `./scripts/test.sh --list-scenarios` 查看场景，加 `--scenario port_01` 切换到港口。
 
-新机器先准备 ROS 2 Humble、Gazebo Harmonic、对应的 ROS 桥、RViz 和 Colcon。若缺少 CasADi C++ SDK，可执行 `python3 -m pip install --user --no-deps casadi==3.7.2`。已有独立 SDK 时，可先执行 `export COPTRANS_CASADI_ROOT=/实际路径/casadi`。首次启动会编译 Release；旧安装或文件校验失败时，去掉 `--no-build` 再运行。
+1. 等「规划与执行」面板提示选择起点。点击 **2D Pose Estimate**，在地图上按住左键拖出货物中心的起点和朝向。
+2. 点击 **2D Goal Pose**，拖出货物中心的终点和朝向。两点选齐后，三车开始集结，全部到位停稳后进入 CTS 运输。
+3. 在面板查看结果。按 **Ctrl+C** 关闭，再运行脚本开始下一轮。
 
-单车、三车和 RViz 交互仿真默认使用 V3 C++ 联合规划器和 C++ 跟踪器。终端启动时显示所用的规划器、跟踪器和版本。接收计划后，`experiment.json` 的 `planner_source` 为 `hybrid_joint`。源码及安装指纹可在同目录的 `environment.txt` 查询。
+## 4. 查日志和复跑
 
-## 2. 在 RViz 设置起点和终点
-
-1. 等待左侧「规划与执行」面板提示选择起点。点击 **2D Pose Estimate**，在地图上按住左键并拖出货物中心的起点和朝向。
-2. 点击 **2D Goal Pose**，拖出货物中心的终点和朝向。两点选齐后，三车从 S1–S3 驶向挂点。全部到位并停稳后开始 CTS 运输。
-3. 在「规划与执行」面板查看结果。完成或失败后窗口会保留。按 **Ctrl+C** 退出，再运行脚本开始下一轮。
-
-## 3. 查日志或复跑
-
-RViz 右下角和终端都会显示实验编号。交互模式也可在「规划与执行」面板点 **复制编号**。反馈问题时附上编号和看到的现象。每轮日志自动保存在本地 `reports/runs/实验编号/`。
+终端和 RViz 会显示实验编号，交互模式的「规划与执行」面板可以复制编号。日志保存在本地 `reports/runs/实验编号/`。`experiment.json` 记录起终点、结果和轨迹文件位置，`environment.txt` 记录源码及安装指纹。反馈问题时附上实验编号和现象。
 
 ```bash
-id=20261125_000000_aB1cDe  # 换成面板上的实验编号
+id=20261126_161917_u046w8  # 换成本机已有的实验编号
 cat "reports/runs/$id/experiment.json"
-./scripts/interactive.sh --replay "$id" --no-build
 ```
 
-`experiment.json` 可查起终点、结果、失败原因和轨迹文件位置。`--replay` 使用归档的规划器和参数，适合复现旧问题。`--retest` 用当前默认规划器复跑同一张地图和同一组 RViz 起终点及朝向，新日志的 `retest_of` 会记录原实验编号。
+使用原实验归档的规划器和参数复现。
 
 ```bash
-./scripts/test.sh --task multi --retest 20261125_115519_smXjHv
+./scripts/test.sh --task multi --replay "$id"
 ```
 
-## 4. 测试三车集结和 CTS 运输
-
-默认自动分配挂点。例如运行 `./scripts/interactive.sh --dock-assignment 1,3,2`，让 `robot1`、`robot2`、`robot3` 分别使用 1、3、2 号挂点。
+使用当前默认规划器复测同一张地图及原起终点和朝向。
 
 ```bash
-./scripts/test.sh --planner-only                       # 运行全部 CTS 离线用例
-./scripts/test.sh --planner-only --case CTS_S3         # 指定一条离线用例
-./scripts/test.sh --task multi --case CTS_S3 --headless # Gazebo 服务端闭环
+./scripts/test.sh --task multi --retest "$id"
 ```
 
-离线规划与闭环都会显示实验编号。闭环省略 `--headless` 会打开 Gazebo 和 RViz。一次运行一个闭环实例。
-
-离线测试包含 `CTS_S1`、`CTS_S2`、`CTS_S3`、`CTS_S4`、`CTS_E_TO_S3` 五条完整流程，以及 `20261126_161917_u046w8`、`20261126_162144_qqdYea` 两条运输失败回归。用 `--case` 加编号可以单独复测。失败回归默认用归档的挂点和实测停靠位姿进入运输求解。
-
-## 5. 自动跑其他固定用例
+## 5. 其他固定用例
 
 ```bash
 ./scripts/test.sh --task single --experiment full_route
 ./scripts/test.sh --task multi --experiment full_route
 ```
 
-加 `--experiment full_route` 后会使用预设起终点自动跑完全程。无参数时默认自动跑单车厂房全程。终端会显示本轮实际加载的规划器、跟踪器和版本。
+`short_turn` 测短弯，`short_straight` 测直行，`full_route` 测预设全程。单车可省略 `--experiment full_route`。加 `--scene-variant critical` 测临界窄通道，加 `--scene-variant too_narrow` 测绕行。
 
-`short_turn` 是短弯，改成 `short_straight` 测直行，改成 `full_route` 测全程。加 `--scene-variant critical` 测临界窄通道，加 `--scene-variant too_narrow` 测绕行。
-
-需要回退到旧规划器和 Python 跟踪器时，显式选择旧后端。
+回退到旧规划器和 Python 跟踪器。
 
 ```bash
-./scripts/test.sh --task multi --experiment full_route --planner-backend legacy --architecture-profile baseline --tracker-implementation python --no-build
+./scripts/test.sh --task multi --experiment full_route --planner-backend legacy --architecture-profile baseline --tracker-implementation python
 ```
+
+## 6. 首次配置环境
+
+新机器先准备 ROS 2 Humble 和 Colcon。闭环测试还需要 Gazebo Harmonic、对应的 ROS 桥和 RViz。缺少 CasADi C++ SDK 时可执行 `python3 -m pip install --user --no-deps casadi==3.7.2`。已有独立 SDK 时，先设置 `COPTRANS_CASADI_ROOT` 为实际的 SDK 目录。首次运行脚本会编译 Release。
