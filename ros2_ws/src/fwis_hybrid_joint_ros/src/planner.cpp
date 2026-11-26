@@ -66,7 +66,9 @@ private:
     }
     state->publish(message(json(j)));
   }
-  void progress_message(uint32_t id, const char * stage, const std::string & reason = "")
+  void progress_message(
+    uint32_t id, const char * stage, const std::string & reason = "",
+    const hj::Result * result = nullptr)
   {
     if (!progress) {return;}
     const auto wall = hj::Clock::now();
@@ -81,6 +83,17 @@ private:
     j["reason"] = reason;
     j["wall_time_s"] = std::chrono::duration<double>(wall - started).count();
     j["budget_s"] = settings.budget;
+    if (result) {
+      Json::Value attempts(Json::arrayValue);
+      for (const auto & attempt : result->attempts) {
+        Json::Value item;
+        item["proposal"] = attempt.proposal;
+        item["status"] = attempt.status;
+        item["wall_s"] = attempt.wall_s;
+        attempts.append(std::move(item));
+      }
+      j["attempts"] = std::move(attempts);
+    }
     progress->publish(message(json(j)));
     last_progress = wall;
   }
@@ -202,6 +215,11 @@ private:
         if (!obsolete) {
           if (result.plan) {
             publish(result);
+          } else if (settings.multi) {
+            const auto reason = result.status + " " + result.reason;
+            progress_message(current->context.id, "failed", reason, &result);
+            const double wall_s = std::chrono::duration<double>(hj::Clock::now() - started).count();
+            formation_status(current->context.id, "FAILED", reason, wall_s);
           } else {
             failure(current->context.id, result.status + " " + result.reason);
           }

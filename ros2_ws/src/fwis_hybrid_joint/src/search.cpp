@@ -703,23 +703,59 @@ Phase stationary_spin(const Request& r,const Sample& rest,const Headings& target
   return spin;
 }
 
+Phase straight_motion(const Request& r,const Pose2d& from,const Pose2d& to,int gear) {
+  Phase move;
+  const double dx=to.x-from.x,dy=to.y-from.y,length=std::hypot(dx,dy);
+  const double heading=std::atan2(gear*dy,gear*dx);
+  move.gear.fill(gear);
+  move.heading0.fill(heading);
+  move.heading1.fill(heading);
+  move.pieces={stationary_piece(from)};
+  for(std::size_t j=1;j<move.pieces[0].x.size();++j){
+    const double u=double(j)/double(move.pieces[0].x.size()-1);
+    move.pieces[0].x[j]=from.x+u*dx;
+    move.pieces[0].y[j]=from.y+u*dy;
+  }
+  const auto& l=r.limits;
+  double vmax=std::min(l.speed,l.wheel_speed);
+  if(l.cargo_center_speed>0.)vmax=std::min(vmax,l.cargo_center_speed);
+  move.duration=1.03*std::max({l.min_motion_duration,1.875*length/vmax,
+               std::sqrt(5.774*length/l.acceleration),std::cbrt(60.*length/l.jerk)});
+  return move;
+}
+
 Result solve_route(const Request&,Clock::time_point,const Cancel&,const SolveOptions&,bool);
 
-std::optional<Plan> depart_and_resume(const Request& r,const Route& route,const Run& run,Result& trace) {
+constexpr double endpoint_heading_window=pi/180.;
+
+std::optional<Plan> depart_and_resume(const Request& r,const Route& route,const Run& run,Result& trace,
+                                      bool short_straight=false) {
   if(route.size()<3 || !r.cargo || !r.start.constrain_reference_yaw ||
      !std::all_of(r.start.constrain_heading.begin(),r.start.constrain_heading.end(),[](bool x){return x;}))return {};
-  const double start_heading=r.start.heading.front();
-  if(std::any_of(r.start.heading.begin(),r.start.heading.end(),
-                 [&](double h){return std::abs(delta(start_heading,h))>pi/180.;}))return {};
+  const double anchor=r.start.heading.front();
+  double lower=-endpoint_heading_window,upper=endpoint_heading_window,cos_sum=0.,sin_sum=0.;
+  // Intersect the existing endpoint tolerance windows on the same yaw chart.
+  for(double heading:r.start.heading){
+    const double offset=delta(anchor,heading);
+    lower=std::max(lower,offset-endpoint_heading_window);
+    upper=std::min(upper,offset+endpoint_heading_window);
+    cos_sum+=std::cos(offset);
+    sin_sum+=std::sin(offset);
+  }
+  if(lower>upper)return {};
+  const double start_heading=anchor+std::clamp(std::atan2(sin_sum,cos_sum),lower,upper);
   const auto& start=r.start.reference;
   const double initial_tangent=std::atan2(route[1].y-start.y,route[1].x-start.x);
   const int primary_gear=std::cos(delta(start_heading,initial_tangent))>=0.?1:-1;
   const auto& cargo=*r.cargo;
   const double reach=.5*std::hypot(cargo[2],cargo[3])+std::hypot(cargo[0],cargo[1]);
+  if(short_straight && std::abs(delta(start_heading,initial_tangent+(primary_gear<0?pi:0.)))>=pi/8.)return {};
+  const std::initializer_list<double> straight_lengths{.45,.36}, spin_lengths{1.35,1.,1.75,.7};
+  const auto lengths=short_straight?straight_lengths:spin_lengths;
   unsigned continuations=0;
   for(int gear:{primary_gear,-primary_gear}){
     if(gear<0&&!r.allow_reverse)continue;
-    for(double scale:{1.35,1.0,1.75,.7}){
+    for(double scale:lengths){
       if(run.stop())return {};
       const double length=scale*reach;
       const Pose2d exit{start.x+gear*length*std::cos(start_heading),start.y+gear*length*std::sin(start_heading),start.yaw};
@@ -733,30 +769,23 @@ std::optional<Plan> depart_and_resume(const Request& r,const Route& route,const 
       }
       const double aim=std::atan2(ahead->y-exit.y,ahead->x-exit.x);
       const double turn=delta(start_heading,aim);
-      if(std::abs(turn)<pi/8.)continue;
+      if(!short_straight && std::abs(turn)<pi/8.)continue;
       const double quarter=std::round(turn/(pi/2.))*(pi/2.);
-      for(double target:{start_heading+(std::abs(quarter)>1e-9?quarter:turn),aim}){
+      const double preferred=short_straight?start_heading:
+        start_heading+(std::abs(quarter)>1e-9?quarter:turn);
+      const auto move=straight_motion(r,start,exit,gear);
+      const std::array<double,2> targets{preferred,aim};
+      for(std::size_t i=0;i<(short_straight?1:targets.size());++i){
         if(run.stop())return {};
         const auto started=Clock::now();
-        Phase move;
-        move.gear.fill(gear);
-        move.heading0.fill(start_heading);
-        move.heading1.fill(start_heading);
-        move.pieces={stationary_piece(start)};
-        for(std::size_t j=1;j<move.pieces[0].x.size();++j){
-          const double u=double(j)/5.;
-          move.pieces[0].x[j]=start.x+u*(exit.x-start.x);
-          move.pieces[0].y[j]=start.y+u*(exit.y-start.y);
-        }
-        const auto& l=r.limits;
-        double vmax=std::min(l.speed,l.wheel_speed);
-        if(l.cargo_center_speed>0)vmax=std::min(vmax,l.cargo_center_speed);
-        move.duration=1.03*std::max({l.min_motion_duration,1.875*length/vmax,
-                  std::sqrt(5.774*length/l.acceleration),std::cbrt(60.*length/l.jerk)});
+        const double target=targets[i];
         Plan prefix;
         append_motion(r,prefix,move);
         Headings heads{target,target,target};
-        append_motion(r,prefix,stationary_spin(r,evaluate_phase(r,move,move.duration),heads));
+        const bool spin=std::abs(delta(start_heading,target))>1e-9;
+        if(spin)
+          append_motion(r,prefix,stationary_spin(r,evaluate_phase(r,move,move.duration),heads));
+        const std::string tag=spin?"LOCAL_DEPARTURE:ASA":"LOCAL_DEPARTURE:AA";
         const auto prefix_duration=duration(prefix);
         if(prefix_duration>=r.task_duration_cap)continue;
         Request entry=r;
@@ -767,8 +796,8 @@ std::optional<Plan> depart_and_resume(const Request& r,const Route& route,const 
         remainder.task_duration_cap-=prefix_duration;
         // One recursive solve is sufficient for a candidate, with local
         // staging disabled so no request can grow an unbounded search tree.
-        const auto end=std::min(run.end-std::chrono::milliseconds(200),
-                                Clock::now()+std::chrono::milliseconds(4200));
+        const auto slice=std::chrono::milliseconds(short_straight?3000:4200);
+        const auto end=std::min(run.end-std::chrono::milliseconds(200),Clock::now()+slice);
         if(Clock::now()>=end)return {};
         ++continuations;
         const auto found=solve_route(remainder,end,run.cancel,{},false);
@@ -776,19 +805,72 @@ std::optional<Plan> depart_and_resume(const Request& r,const Route& route,const 
           for(const auto& motion:found.plan->phases)
             if(motion.kind==Kind::Motion)append_motion(r,prefix,motion);
           const auto proof=certify(r,prefix,run.end,run.cancel);
-          trace.trace.push_back("LOCAL_DEPARTURE:ASA:"+proof.reason);
-          trace.attempts.push_back({"LOCAL_DEPARTURE:ASA",proof.reason,0.,0.,0.,
+          trace.trace.push_back(tag+":"+proof.reason);
+          trace.attempts.push_back({tag,proof.reason,0.,0.,0.,
               std::chrono::duration<double>(Clock::now()-started).count()});
           if(proof.executable)return prefix;
         }else{
-          trace.trace.push_back("LOCAL_DEPARTURE:ASA:"+found.reason);
-          trace.attempts.push_back({"LOCAL_DEPARTURE:ASA",found.reason,0.,0.,0.,
+          trace.trace.push_back(tag+":"+found.reason);
+          trace.attempts.push_back({tag,found.reason,0.,0.,0.,
               std::chrono::duration<double>(Clock::now()-started).count()});
         }
         // Leave time for the original global candidates if the resumed route
         // does not solve from the first fully certified stop.
         if(continuations>=2 || run.end-Clock::now()<std::chrono::seconds(2))return {};
       }
+    }
+  }
+  return {};
+}
+
+// Find a stopped approach state outside a constrained goal area. The cargo
+// attains its requested yaw on the main segment and holds it through the gate.
+std::optional<Plan> approach_from_channel(const Request& r,const Route& route,const Run& run,Result& trace){
+  if(!r.cargo || !r.goal.constrain_reference_yaw || route.size()<3 ||
+     std::any_of(r.goal.constrain_heading.begin(),r.goal.constrain_heading.end(),[](bool fixed){return fixed;}))return {};
+  const auto target=r.goal.reference;
+  const auto previous=route[route.size()-2];
+  const double tangent=std::atan2(target.y-previous.y,target.x-previous.x);
+  constexpr double octant=pi/4.;
+  const double grid_angle=std::round(tangent/octant)*octant;
+  const std::array<double,9> headings{grid_angle,tangent,grid_angle+octant,grid_angle-octant,
+    grid_angle+2*octant,grid_angle-2*octant,grid_angle+3*octant,grid_angle-3*octant,grid_angle+pi};
+  const auto& cargo=*r.cargo;
+  const double reach=.5*std::hypot(cargo[2],cargo[3])+std::hypot(cargo[0],cargo[1]);
+  unsigned continuations=0;
+  for(std::size_t i=0;i<headings.size();++i){
+    const double heading=headings[i];
+    if(i==1 && std::abs(delta(grid_angle,tangent))<1e-9)continue;
+    for(double separation:{1.75,1.5,2.}){
+      if(run.stop())return {};
+      const auto began=Clock::now();
+      const Pose2d entry{target.x-separation*reach*std::cos(heading),
+                        target.y-separation*reach*std::sin(heading),target.yaw};
+      const auto tail=straight_motion(r,entry,target,1);
+      Request last=r;
+      last.start={entry,tail.heading0,true,{true,true,true}};
+      Plan approach{{tail}};
+      if(!certify(last,approach,run.end,run.cancel).executable)continue;
+      Request first=r;
+      first.goal=last.start;
+      first.task_duration_cap-=tail.duration;
+      const auto end=std::min(run.end-std::chrono::milliseconds(230),Clock::now()+std::chrono::milliseconds(3200));
+      if(first.task_duration_cap<=.1 || end-Clock::now()<std::chrono::milliseconds(700))return {};
+      ++continuations;
+      auto found=solve_route(first,end,run.cancel,{},false);
+      auto status=found.reason;
+      bool certified=false;
+      if(found.plan){
+        append_motion(r,*found.plan,tail);
+        const auto proof=certify(r,*found.plan,run.end,run.cancel);
+        status=proof.reason;
+        certified=proof.executable;
+      }
+      trace.trace.push_back("LOCAL_ARRIVAL:STRAIGHT:"+status);
+      trace.attempts.push_back({"LOCAL_ARRIVAL:STRAIGHT",status,0.,0.,0.,
+                                std::chrono::duration<double>(Clock::now()-began).count()});
+      if(certified)return std::move(found.plan);
+      if(continuations>=2)return {};
     }
   }
   return {};
@@ -1063,17 +1145,28 @@ Result solve_route(const Request& r,Clock::time_point deadline,const Cancel& can
   PolicyScore best{};bool unranked_incumbent=false;std::string why;
   bool repaired_channel=false;
   bool tried_local_stage=false;
+  const bool large_cargo_turn=r.goal.constrain_reference_yaw &&
+    std::abs(delta(r.start.reference.yaw,r.goal.reference.yaw))>=pi/4.;
+  std::array<double,3> heading_offsets;
+  std::transform(r.start.heading.begin(),r.start.heading.end(),heading_offsets.begin(),
+    [&](double h){return delta(r.start.heading.front(),h);});
+  const auto [lo,hi]=std::minmax_element(heading_offsets.begin(),heading_offsets.end());
+  const bool dispersed_start=*hi-*lo>endpoint_heading_window && *hi-*lo<=2*endpoint_heading_window;
   for(std::size_t ordinal=0;ordinal<seeds.size();++ordinal) {
     const auto total_budget=std::chrono::duration<double>(deadline-begin).count();
-    const bool departure_collision=!result.attempts.empty() &&
-      result.attempts.back().status.find("OBB_COLLISION")!=std::string::npos;
+    const auto rejection=result.attempts.empty()?std::string{}:result.attempts.back().status;
+    const bool departure_collision=rejection.find("OBB_COLLISION")!=std::string::npos;
+    const bool departure_rejection=rejection=="START_ENDPOINT" || rejection=="STEER_RATE" ||
+      rejection=="STEER_ACCELERATION" || rejection=="ACKERMANN_CURVATURE";
     // The final active constraint can vary with a shortened NLP slice. A
     // whole-route fit that already consumed a third of the budget also
     // warrants local staging, even when curvature was the last rejection.
     const bool slow_initial_fit=ordinal==1 && elapsed()>.32*total_budget;
-    const bool try_staging=sharp_departure?
+    const bool early_staging=ordinal==1 && large_cargo_turn &&
+      (dispersed_start || departure_rejection || departure_collision);
+    const bool try_staging=early_staging || (sharp_departure?
       ((ordinal==1 && departure_collision)||slow_initial_fit||tried_oblique_departure):
-      elapsed()>.40*total_budget;
+      elapsed()>.40*total_budget);
     if(!result.plan && !tried_local_stage && !staging_route.empty() && ordinal>0 && try_staging &&
        deadline-Clock::now()>=std::chrono::seconds(3)){
       tried_local_stage=true;
@@ -1081,8 +1174,21 @@ Result solve_route(const Request& r,Clock::time_point deadline,const Cancel& can
       if(sharp_departure){
         staged=depart_and_resume(r,staging_route,run,result);
         if(!staged)staged=stage_backwards(r,staging_route,run,result);
+      }else if(large_cargo_turn && sign>0){
+        if(dispersed_start || departure_rejection){
+          // Route the known boundary mismatch independently of the last NLP
+          // rejection, which can change with solver rounding or CPU time.
+          const Run departure{std::min(deadline,Clock::now()+
+            std::chrono::milliseconds(dispersed_start?5900:3250)),cancel};
+          staged=depart_and_resume(r,staging_route,departure,result,true);
+          if(!staged)staged=approach_from_channel(r,staging_route,run,result);
+        }else{
+          staged=approach_from_channel(r,staging_route,run,result);
+          if(!staged)staged=depart_and_resume(r,staging_route,run,result);
+        }
       }else{
         staged=stage_backwards(r,staging_route,run,result);
+        if(!staged && large_cargo_turn)staged=approach_from_channel(r,staging_route,run,result);
         if(!staged)staged=depart_and_resume(r,staging_route,run,result);
       }
       if(staged){

@@ -496,7 +496,10 @@ class RunExperiment(Node):
                 start_center=pose2d(self.native_mount_starts[index] if self.assembly else self.initial[index]),
                 goal_center=pose2d(local_pose(self.config["goal"], offset)),
                 body_length_m=self.scene.vehicle_size[0], body_width_m=self.scene.vehicle_size[1]))
-        self.trace("request_publish")
+        self.trace("request_publish", formation_start=self.reference, formation_goal=self.config["goal"],
+                   vehicles=[{"id": v.vehicle_id, "offset": (v.offset_in_formation.x, v.offset_in_formation.y),
+                              "start_heading": v.start_center.theta, "goal_heading_free": v.goal_heading_free}
+                             for v in self.request.vehicles])
         if self.ui_enabled:
             self.solver_outcome = "running"
             self.ui("transport_planning" if self.assembly else "planning", detail="正在求解联合 A/O/S 轨迹")
