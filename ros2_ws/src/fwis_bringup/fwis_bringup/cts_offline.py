@@ -8,6 +8,7 @@ from pathlib import Path
 import subprocess
 
 from fwis_bringup.assembly_plan import encode_grid, native_call, native_executable, plan_assembly
+from fwis_bringup.formation_route import fit_reference
 from fwis_bringup.test_config import planner_limits, read_config
 from ranger_mini_gz.scene_generator import load_scene, read_map, write_map
 from ranger_mini_gz.scene_geometry import local_pose
@@ -48,7 +49,17 @@ def run_case(config, scene, grid, executable, directory, *, transport_only=False
     directory.mkdir()
     assignment = config["dock_assignment"]
     fixed = dict(zip(scene.vehicle_ids, assignment, strict=True)) if assignment else None
-    if transport_only:
+    recorded = config.get("archived_docking")
+    if recorded and (assignment is None or assignment == recorded["assignment"]):
+        assignments = dict(zip(scene.vehicle_ids, recorded["assignment"], strict=True))
+        docks = dict(zip(scene.vehicle_ids, recorded["observed_poses"], strict=True))
+        offsets = {i: scene.offsets[slot - 1] for i, slot in assignments.items()}
+        reference = fit_reference(tuple(offsets.values()), tuple(docks.values()))
+        # The failed ROS request itself was not archived. Reconstruct its
+        # reference and headings from the measured poses at handoff.
+        assembled = dict(status="archived_docking", reference=reference, offsets=offsets,
+                         assignment=assignments, docks=docks, source_experiment=config["cts_case"])
+    elif transport_only:
         assignment = fixed or dict(zip(scene.vehicle_ids, range(1, 4), strict=True))
         offsets = {index: scene.offsets[slot - 1] for index, slot in assignment.items()}
         assembled = dict(status="not_run", reference=config["start"], offsets=offsets,
@@ -61,7 +72,7 @@ def run_case(config, scene, grid, executable, directory, *, transport_only=False
     row = dict(case=config["cts_case"], status="failed", assembly_status=assembled["status"],
                assembly_s=assembled.get("wall_s"), dock_assignment=assembled.get("assignment"),
                assembly_duration_s=assembled.get("duration_s"))
-    if not transport_only and assembled["status"] != "passed":
+    if assembled["status"] == "failed":
         return dict(row, reason=assembled["reason"])
     request = formation_request(config, scene, grid, assembled)
     solve_budget = config["planner_overrides"]["solve_budget_s"]
@@ -83,7 +94,7 @@ def main():
     cli = argparse.ArgumentParser(description=__doc__)
     cli.add_argument("--root", required=True, type=Path)
     cli.add_argument("--output", type=Path, required=True)
-    cli.add_argument("--case", action="append", help="default runs all five case IDs")
+    cli.add_argument("--case", action="append", help="default runs all listed CTS cases")
     cli.add_argument("--dock-assignment", default="auto")
     cli.add_argument("--speed-profile", choices=("standard", "baseline"), default="standard")
     cli.add_argument("--transport-only", action="store_true", help="test the native transport planner from an already docked state")

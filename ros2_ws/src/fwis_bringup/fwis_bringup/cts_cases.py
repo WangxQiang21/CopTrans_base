@@ -7,7 +7,11 @@ from ranger_mini_gz.scene_geometry import local_pose
 
 def case_poses(case):
     """Convert the user's geometric cargo centre poses to radians."""
-    return {key: (x, y, radians(yaw)) for key, (x, y, yaw) in case.items()}
+    poses = {}
+    for key in ("start", "goal"):
+        x, y, yaw = case[key]
+        poses[key] = (x, y, radians(yaw))
+    return poses
 
 
 def cargo_reference(center, offset):

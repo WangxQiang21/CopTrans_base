@@ -189,10 +189,14 @@ private:
     const auto backend = progress.value("actual_backend").toString();
     identity_->setVisible(!backend.isEmpty());
     if (!backend.isEmpty()) {
-      identity_->setText(QStringLiteral("%1 · %2\n%3 · 构建 %4 · 旧算法回退 %5")
+      auto label = QStringLiteral("%1 · %2\n%3 · 构建 %4")
         .arg(backend, progress.value("speed_profile").toString(),
-             progress.value("model_schema").toString(), progress.value("solver_build").toString().left(10),
-             progress.value("legacy_fallback_used").toBool() ? QStringLiteral("已使用") : QStringLiteral("关闭")));
+             progress.value("model_schema").toString(), progress.value("solver_build").toString().left(10));
+      const auto fallback = progress.value("legacy_fallback_used");
+      if (fallback.isBool()) {
+        label += fallback.toBool() ? QStringLiteral("\n已回退至旧算法") : QStringLiteral("\n未回退");
+      }
+      identity_->setText(label);
     }
     const auto expanded = progress.value("expansions");
     progress_->setVisible(expanded.isDouble());

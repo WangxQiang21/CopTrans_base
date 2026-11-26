@@ -256,7 +256,8 @@ def resolve(argv, config_directory, scenario_directory, output):
     if (args.case or args.dock_assignment) and not assembly:
         raise SystemExit("CTS cases and dock assignments require cts_assembly with the native planner")
     if case_registry:
-        centers = case_poses(case_registry["cases"][args.case])
+        selected_case = case_registry["cases"][args.case]
+        centers = case_poses(selected_case)
         cargo = read_config(scenario_directory.parent / "config/cargo_geometry.yaml")["cargo"]
         start, goal = (cargo_reference(centers[key], cargo["center_offset"]) for key in ("start", "goal"))
         waypoints = []
@@ -329,6 +330,8 @@ def resolve(argv, config_directory, scenario_directory, output):
         config.update(assembly=True, dock_assignment=args.dock_assignment)
     if case_registry:
         config.update(cts_case=args.case, required_map_sha256=case_registry["map_sha256"])
+        if "archived_docking" in selected_case:
+            config["archived_docking"] = selected_case["archived_docking"]
     config.update(route)
     write_config(output, config, args.dry_run)
 

@@ -40,12 +40,14 @@ cat "reports/runs/$id/experiment.json"
 默认自动分配挂点。例如运行 `./scripts/interactive.sh --dock-assignment 1,3,2`，让 `robot1`、`robot2`、`robot3` 分别使用 1、3、2 号挂点。
 
 ```bash
-./scripts/test.sh --planner-only                       # 五条长途离线规划
+./scripts/test.sh --planner-only                       # 运行全部 CTS 离线用例
 ./scripts/test.sh --planner-only --case CTS_S3         # 指定一条离线用例
 ./scripts/test.sh --task multi --case CTS_S3 --headless # Gazebo 服务端闭环
 ```
 
-离线规划与闭环都会显示实验编号。闭环省略 `--headless` 会打开 Gazebo 和 RViz。一次运行一个闭环实例。用例编号为 `CTS_S1`、`CTS_S2`、`CTS_S3`、`CTS_S4` 和 `CTS_E_TO_S3`。
+离线规划与闭环都会显示实验编号。闭环省略 `--headless` 会打开 Gazebo 和 RViz。一次运行一个闭环实例。
+
+离线测试包含 `CTS_S1`、`CTS_S2`、`CTS_S3`、`CTS_S4`、`CTS_E_TO_S3` 五条完整流程，以及 `20261126_161917_u046w8`、`20261126_162144_qqdYea` 两条运输失败回归。用 `--case` 加编号可以单独复测。失败回归默认用归档的挂点和实测停靠位姿进入运输求解。
 
 ## 5. 自动跑其他固定用例
 
