@@ -724,9 +724,22 @@ Phase straight_motion(const Request& r,const Pose2d& from,const Pose2d& to,int g
   return move;
 }
 
-Result solve_route(const Request&,Clock::time_point,const Cancel&,const SolveOptions&,bool);
+enum class SolvePass { Full, Continuation, Arrival };
+Result solve_route(const Request&,Clock::time_point,const Cancel&,const SolveOptions&,SolvePass);
 
 constexpr double endpoint_heading_window=pi/180.;
+
+void record_stage(Result& trace,const Result& continuation,const std::string& tag,
+                  const std::string& status,Clock::time_point started,double certificate_s){
+  Attempt attempt{tag,status,0.,0.,certificate_s,std::chrono::duration<double>(Clock::now()-started).count()};
+  for(const auto& child:continuation.attempts){
+    attempt.nlp_build_s+=child.nlp_build_s;
+    attempt.nlp_solve_s+=child.nlp_solve_s;
+    attempt.certify_s+=child.certify_s;
+  }
+  trace.attempts.push_back(std::move(attempt));
+  trace.trace.push_back(tag+":"+status);
+}
 
 std::optional<Plan> depart_and_resume(const Request& r,const Route& route,const Run& run,Result& trace,
                                       bool short_straight=false) {
@@ -790,7 +803,9 @@ std::optional<Plan> depart_and_resume(const Request& r,const Route& route,const 
         if(prefix_duration>=r.task_duration_cap)continue;
         Request entry=r;
         entry.goal={exit,heads,true,{true,true,true}};
+        auto audit_start=Clock::now();
         if(!certify(entry,prefix,run.end,run.cancel).executable)continue;
+        double audit_s=std::chrono::duration<double>(Clock::now()-audit_start).count();
         Request remainder=r;
         remainder.start=entry.goal;
         remainder.task_duration_cap-=prefix_duration;
@@ -800,19 +815,17 @@ std::optional<Plan> depart_and_resume(const Request& r,const Route& route,const 
         const auto end=std::min(run.end-std::chrono::milliseconds(200),Clock::now()+slice);
         if(Clock::now()>=end)return {};
         ++continuations;
-        const auto found=solve_route(remainder,end,run.cancel,{},false);
+        const auto found=solve_route(remainder,end,run.cancel,{},SolvePass::Continuation);
         if(found.plan){
           for(const auto& motion:found.plan->phases)
             if(motion.kind==Kind::Motion)append_motion(r,prefix,motion);
+          audit_start=Clock::now();
           const auto proof=certify(r,prefix,run.end,run.cancel);
-          trace.trace.push_back(tag+":"+proof.reason);
-          trace.attempts.push_back({tag,proof.reason,0.,0.,0.,
-              std::chrono::duration<double>(Clock::now()-started).count()});
+          audit_s+=std::chrono::duration<double>(Clock::now()-audit_start).count();
+          record_stage(trace,found,tag,proof.reason,started,audit_s);
           if(proof.executable)return prefix;
         }else{
-          trace.trace.push_back(tag+":"+found.reason);
-          trace.attempts.push_back({tag,found.reason,0.,0.,0.,
-              std::chrono::duration<double>(Clock::now()-started).count()});
+          record_stage(trace,found,tag,found.reason,started,audit_s);
         }
         // Leave time for the original global candidates if the resumed route
         // does not solve from the first fully certified stop.
@@ -825,7 +838,8 @@ std::optional<Plan> depart_and_resume(const Request& r,const Route& route,const 
 
 // Find a stopped approach state outside a constrained goal area. The cargo
 // attains its requested yaw on the main segment and holds it through the gate.
-std::optional<Plan> approach_from_channel(const Request& r,const Route& route,const Run& run,Result& trace){
+std::optional<Plan> approach_from_channel(const Request& r,const Route& route,const Run& run,Result& trace,
+                                          SolvePass pass=SolvePass::Continuation){
   if(!r.cargo || !r.goal.constrain_reference_yaw || route.size()<3 ||
      std::any_of(r.goal.constrain_heading.begin(),r.goal.constrain_heading.end(),[](bool fixed){return fixed;}))return {};
   const auto target=r.goal.reference;
@@ -850,25 +864,27 @@ std::optional<Plan> approach_from_channel(const Request& r,const Route& route,co
       Request last=r;
       last.start={entry,tail.heading0,true,{true,true,true}};
       Plan approach{{tail}};
+      auto audit_start=Clock::now();
       if(!certify(last,approach,run.end,run.cancel).executable)continue;
+      double audit_s=std::chrono::duration<double>(Clock::now()-audit_start).count();
       Request first=r;
       first.goal=last.start;
       first.task_duration_cap-=tail.duration;
       const auto end=std::min(run.end-std::chrono::milliseconds(230),Clock::now()+std::chrono::milliseconds(3200));
       if(first.task_duration_cap<=.1 || end-Clock::now()<std::chrono::milliseconds(700))return {};
       ++continuations;
-      auto found=solve_route(first,end,run.cancel,{},false);
+      auto found=solve_route(first,end,run.cancel,{},pass);
       auto status=found.reason;
       bool certified=false;
       if(found.plan){
         append_motion(r,*found.plan,tail);
+        audit_start=Clock::now();
         const auto proof=certify(r,*found.plan,run.end,run.cancel);
+        audit_s+=std::chrono::duration<double>(Clock::now()-audit_start).count();
         status=proof.reason;
         certified=proof.executable;
       }
-      trace.trace.push_back("LOCAL_ARRIVAL:STRAIGHT:"+status);
-      trace.attempts.push_back({"LOCAL_ARRIVAL:STRAIGHT",status,0.,0.,0.,
-                                std::chrono::duration<double>(Clock::now()-began).count()});
+      record_stage(trace,found,"LOCAL_ARRIVAL:STRAIGHT",status,began,audit_s);
       if(certified)return std::move(found.plan);
       if(continuations>=2)return {};
     }
@@ -904,7 +920,7 @@ std::optional<Plan> stage_backwards(const Request& r,const Route& route,const Ru
 }
 
 Result solve_route(const Request& r,Clock::time_point deadline,const Cancel& cancel,const SolveOptions& opts,
-                   bool local_stages){
+                   SolvePass pass){
   const auto begin=Clock::now();Run run{deadline,cancel};Result result;
   auto elapsed=[&](){return std::chrono::duration<double>(Clock::now()-begin).count();};
   if(!r.grid || (r.vehicles.size()!=1 && r.vehicles.size()!=3) || !(r.task_duration_cap>=.1) ||
@@ -953,7 +969,7 @@ Result solve_route(const Request& r,Clock::time_point deadline,const Cancel& can
     if(opts.initial_sequence.empty())add({Mode::A},sign,direct,"CONTINUOUS_A");
     auto route=grid_seed(r,run);
     if(!route.empty()){
-      if(local_stages && r.cargo && opts.initial_sequence.empty() && route.size()>=3)staging_route=route;
+      if(pass==SolvePass::Full && r.cargo && opts.initial_sequence.empty() && route.size()>=3)staging_route=route;
       const double heading=std::atan2(route[1].y-route[0].y,route[1].x-route[0].x);
       sharp_departure=std::abs(delta(r.start.heading[0]+(sign<0?pi:0),heading))>pi/2;
       double detour=0;
@@ -1152,6 +1168,21 @@ Result solve_route(const Request& r,Clock::time_point deadline,const Cancel& can
     [&](double h){return delta(r.start.heading.front(),h);});
   const auto [lo,hi]=std::minmax_element(heading_offsets.begin(),heading_offsets.end());
   const bool dispersed_start=*hi-*lo>endpoint_heading_window && *hi-*lo<=2*endpoint_heading_window;
+  const auto early_stage_slice=std::min((deadline-begin)/3,
+    std::chrono::duration_cast<Clock::duration>(std::chrono::milliseconds(3500)));
+  bool lateral_arrival=false;
+  if(!staging_route.empty()){
+    const auto before=staging_route[staging_route.size()-2];
+    const auto goal=staging_route.back();
+    const double tangent=std::atan2(goal.y-before.y,goal.x-before.x);
+    lateral_arrival=std::abs(std::cos(delta(r.goal.reference.yaw,tangent)))<.75;
+  }
+  auto accept_stage=[&](Plan staged){
+    result.first_certified_s=result.first_policy_compliant_s=elapsed();
+    result.plan=std::move(staged);
+    result.status="CERTIFIED_POLICY_COMPLIANT";
+    result.reason="CERTIFIED_LOCAL_STAGE";
+  };
   for(std::size_t ordinal=0;ordinal<seeds.size();++ordinal) {
     const auto total_budget=std::chrono::duration<double>(deadline-begin).count();
     const auto rejection=result.attempts.empty()?std::string{}:result.attempts.back().status;
@@ -1192,10 +1223,7 @@ Result solve_route(const Request& r,Clock::time_point deadline,const Cancel& can
         if(!staged)staged=depart_and_resume(r,staging_route,run,result);
       }
       if(staged){
-        result.first_certified_s=result.first_policy_compliant_s=elapsed();
-        result.plan=std::move(staged);
-        result.status="CERTIFIED_POLICY_COMPLIANT";
-        result.reason="CERTIFIED_LOCAL_STAGE";
+        accept_stage(std::move(*staged));
         return result;
       }
     }
@@ -1303,9 +1331,18 @@ Result solve_route(const Request& r,Clock::time_point deadline,const Cancel& can
     try{
       if(seed.seq.empty())continue;
       const auto tag=seed.edit+":"+name(seed.seq)+":"+std::to_string(seed.sign);
-      result.attempts.push_back({tag,"REJECTED"});auto& metrics=result.attempts.back();
+      Attempt metrics{tag,"REJECTED"};
       const auto started=Clock::now();
-      struct Finish{Attempt& a;Clock::time_point start;~Finish(){a.wall_s=std::chrono::duration<double>(Clock::now()-start).count();}} finish{metrics,started};
+      struct Finish {
+        std::vector<Attempt>& attempts;
+        Attempt& a;
+        Clock::time_point start;
+        double staging_s{};
+        ~Finish(){
+          a.wall_s=std::chrono::duration<double>(Clock::now()-start).count()-staging_s;
+          attempts.push_back(std::move(a));
+        }
+      } finish{result.attempts,metrics,started};
       if((seed.seq.front()==Mode::A && locked_start) || (seed.seq.back()==Mode::A && locked_goal)){
         why="ENDPOINT_MOUNT_TANGENT_RANK";result.trace.push_back(tag+":"+why);propose(locked_start?0:seed.seq.size()-1,false);continue;
       }
@@ -1388,7 +1425,40 @@ Result solve_route(const Request& r,Clock::time_point deadline,const Cancel& can
           }
           result.plan=std::move(*timed);
           result.trace.push_back(tag+":CERTIFIED_CHANNEL_TIMING");
+          // A local arrival still has to be joined and audited with its
+          // straight tail. Preserve the feasible pure-A lead-in for that
+          // proof instead of polishing it with a full NLP first.
+          if(pass==SolvePass::Arrival && !best.auxiliary_blocks){
+            metrics.status="CERTIFIED";
+            break;
+          }
           trial.end=std::min(trial.end,Clock::now()+std::chrono::milliseconds(1600));
+        }
+      }
+      // A fast continuous certificate retains priority. If it fails at a
+      // constrained boundary, try the applicable local stage before spending
+      // the whole-route NLP budget rebuilding collision and curvature cuts.
+      if(ordinal==0 && !result.plan && !staging_route.empty() && large_cargo_turn &&
+         seed.seq==Sequence{Mode::A} && (sharp_departure || sign<0 || dispersed_start || lateral_arrival)){
+        const auto staged_begin=Clock::now();
+        const auto early_end=std::min(deadline-std::chrono::seconds(2),staged_begin+early_stage_slice);
+        if(early_end-staged_begin>=std::chrono::seconds(1)){
+          const Run early{early_end,cancel};
+          std::optional<Plan> staged;
+          if(sharp_departure)staged=depart_and_resume(r,staging_route,early,result);
+          else if(sign<0)staged=stage_backwards(r,staging_route,early,result);
+          else if(dispersed_start)staged=depart_and_resume(r,staging_route,early,result,true);
+          else staged=approach_from_channel(r,staging_route,early,result,SolvePass::Arrival);
+          const auto local_time=Clock::now()-staged_begin;
+          finish.staging_s=std::chrono::duration<double>(local_time).count();
+          if(staged){
+            metrics.status="DEFERRED_TO_CERTIFIED_STAGE";
+            accept_stage(std::move(*staged));
+            break;
+          }
+          // The speculative stage has a separate budget. Give the original
+          // candidate its remaining slice, still under the caller's deadline.
+          trial.end=std::min(deadline,trial.end+local_time);
         }
       }
       auto active=separators(r,graph,run);
@@ -1512,6 +1582,7 @@ Result solve_route(const Request& r,Clock::time_point deadline,const Cancel& can
   }
   if(cancel&&cancel()){result.plan.reset();result.status="CANCELLED";result.reason=result.status;}
   else if(result.plan){
+    if(result.reason=="CERTIFIED_LOCAL_STAGE")return result;
     result.status=unranked_incumbent || (run.stop() && best.auxiliary_blocks)?"FEASIBLE_POLICY_DEGRADED":"CERTIFIED_POLICY_COMPLIANT";
     result.reason=unranked_incumbent?"POLICY_EVALUATION_DEADLINE":!best.auxiliary_blocks?"PURE_A":locked_start||locked_goal?"ENDPOINT_CONFIGURATION":
       run.stop()?"A_SOLVE_TIMEOUT":"A_SEARCH_SPACE_EXHAUSTED";
@@ -1550,7 +1621,7 @@ void align_terminal(const Request& r,const Run& run,Result& result) {
 } // namespace
 
 Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,const SolveOptions& opts){
-  auto result=solve_route(r,deadline,cancel,opts,true);
+  auto result=solve_route(r,deadline,cancel,opts,SolvePass::Full);
   align_terminal(r,Run{deadline,cancel},result);
   if(cancel&&cancel()){
     result.plan.reset();
