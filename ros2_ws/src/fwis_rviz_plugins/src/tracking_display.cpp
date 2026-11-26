@@ -28,6 +28,7 @@
 #include "rviz_common/display.hpp"
 #include "rviz_common/display_context.hpp"
 #include "rviz_common/properties/bool_property.hpp"
+#include "rviz_common/properties/string_property.hpp"
 #include "rviz_common/render_panel.hpp"
 #include "rviz_common/ros_integration/ros_node_abstraction_iface.hpp"
 #include "rviz_common/view_manager.hpp"
@@ -275,8 +276,12 @@ class TrackingDisplay final : public rviz_common::Display
 public:
   TrackingDisplay()
   : show_cargo_marker_(new rviz_common::properties::BoolProperty(
-        "Show Cargo Marker", true, "Draw the default cargo geometry from /cargo/odom.", this))
-  {}
+        "Show Cargo Marker", true, "Draw the default cargo geometry from /cargo/odom.", this)),
+    experiment_id_(new rviz_common::properties::StringProperty(
+        "Experiment ID", "", "Experiment log directory name set by the launch file.", this))
+  {
+    experiment_id_->setReadOnly(true);
+  }
 
   void reset() override
   {
@@ -393,9 +398,11 @@ protected:
     const auto dashboard = snapshot(telemetry_, clock_->now().seconds());
     updateCargoMarker(show_cargo_marker_->getBool() ? dashboard[cargo_index].feedback : std::nullopt);
     if (size.width() >= 180 && size.height() >= 150) {
-      const double scale = dashboardScale(size.width(), size.height(), window->devicePixelRatio());
+      const QString experiment_id = experiment_id_->getString();
+      const double scale = dashboardScale(
+        size.width(), size.height(), window->devicePixelRatio(), !experiment_id.isEmpty());
       status_strip_->draw(drawStatusCards(dashboard, size.width(), scale), 0);
-      const auto charts = drawErrorCharts(dashboard, size.width(), scale);
+      const auto charts = drawErrorCharts(dashboard, size.width(), scale, experiment_id);
       chart_strip_->draw(charts, size.height() - charts.height());
     } else {
       status_strip_->hide();
@@ -441,6 +448,7 @@ private:
   std::unique_ptr<OverlayStrip> status_strip_;
   std::unique_ptr<OverlayStrip> chart_strip_;
   rviz_common::properties::BoolProperty * show_cargo_marker_;
+  rviz_common::properties::StringProperty * experiment_id_;
   std::unique_ptr<rviz_default_plugins::displays::MarkerCommon> cargo_marker_;
   std::optional<double> last_cargo_stamp_;
   QSize viewport_size_;

@@ -259,7 +259,8 @@ def run_smoke(clone, output, snapshot):
     env["CMAKE_CXX_COMPILER_LAUNCHER"]=str(configure_source_location(clone,snapshot))
     for task in ("single","multi"):
         for arch in ("optimized","baseline"):
-            cmd=[clone/"scripts/test.sh","--dry-run","--task",task,"--architecture-profile",arch]
+            cmd=[clone/"scripts/test.sh","--dry-run","--task",task,"--architecture-profile",arch,
+                 "--experiment","full_route"]
             for override in ([],["--planner-backend","legacy"]):
                 resolved = yaml.safe_load(subprocess.check_output([*cmd,*override],cwd=clone,env=env,text=True))
                 expected = ("single" if task=="single" else "formation")+"_hybrid_joint_cpp"

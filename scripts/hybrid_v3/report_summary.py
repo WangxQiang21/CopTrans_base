@@ -192,9 +192,9 @@ def release_instructions(defaults):
 
 ```bash
 ./scripts/test.sh{select}
-./scripts/test.sh --task multi{select}
+./scripts/test.sh --task multi --experiment full_route{select}
 ./scripts/interactive.sh{select}
-./scripts/test.sh --task multi --planner-backend legacy
+./scripts/test.sh --task multi --experiment full_route --planner-backend legacy
 ```
 
 交互仿真用 RViz 的 **2D Pose Estimate** 和 **2D Goal Pose** 设置起终点。单车与编队的原生后端分别为 `single_hybrid_joint_cpp` 和 `formation_hybrid_joint_cpp`。默认速度档为 standard，低速测试可加 `--speed-profile baseline`。本机 `reports/runs/<实验编号>/` 保存实际端点、结果、权威轨迹、运行环境及安装指纹。

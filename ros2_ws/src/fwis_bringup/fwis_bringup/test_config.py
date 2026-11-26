@@ -49,8 +49,8 @@ def parse_arguments(argv, scenarios, registry, experiments):
     defaults = registry["defaults"]
     parser = argparse.ArgumentParser(
         prog="scripts/test.sh", allow_abbrev=False,
-        description="Run CopTrans in Gazebo and RViz2. Both GUIs run in every simulation.",
-        epilog="Example: ./scripts/test.sh --task multi --formation wedge --dry-run")
+        description="Run CopTrans in Gazebo and RViz2. Multi-vehicle runs wait for RViz endpoints by default.",
+        epilog="For an automatic formation run, use ./scripts/test.sh --task multi --experiment full_route")
     parser.add_argument("--mode", choices=("sim", "real"), default="sim")
     parser.add_argument("--task", choices=("single", "multi"), default="single")
     parser.add_argument("--scenario", choices=scenarios, default=scenarios[0])
@@ -72,7 +72,8 @@ def parse_arguments(argv, scenarios, registry, experiments):
     parser.add_argument("--interactive", action="store_true",
                         help="Choose the formation start and goal in RViz before running the closed loop")
     parser.add_argument("--formation", choices=(registry["formation"]["name"],), help="multi only")
-    parser.add_argument("--experiment", choices=tuple(experiments), default=defaults["experiment"])
+    parser.add_argument("--experiment", choices=tuple(experiments),
+                        help="Run a fixed route automatically unless --interactive is also set")
     parser.add_argument("--record", choices=("on", "off"), default="off",
                         help="Capture an extra topic bag. Compact local experiment logs are always saved.")
     history = parser.add_mutually_exclusive_group()
@@ -91,8 +92,13 @@ def parse_arguments(argv, scenarios, registry, experiments):
         parser.exit(2, REAL_UNAVAILABLE + "\n")
     if args.replay and args.scene_variant is not None:
         parser.error("--replay uses the recorded scene layout; --scene-variant is only for new runs")
-    if args.retest and (args.interactive or any(arg.split("=", 1)[0] in ("--scenario", "--scene-variant", "--experiment") for arg in argv)):
+    if args.retest and (args.interactive or args.experiment is not None or any(
+            arg.split("=", 1)[0] in ("--scenario", "--scene-variant") for arg in argv)):
         parser.error("--retest already specifies the map and both selected poses")
+    if args.experiment is None:
+        if args.task == "multi" and not (args.replay or args.retest):
+            args.interactive = True
+        args.experiment = defaults["experiment"]
     if args.task == "single" and args.formation:
         parser.error("--formation applies only to --task multi")
     if args.without_planning_playback and (
@@ -103,7 +109,8 @@ def parse_arguments(argv, scenarios, registry, experiments):
         parser.error("multi planner options require --task multi")
     if args.interactive and (args.task != "multi" or args.architecture_profile != "optimized"
                              or args.without_planning_playback):
-        parser.error("--interactive requires multi, the optimized architecture and planning playback")
+        parser.error("Interactive runs require multi, the optimized architecture and planning playback. "
+                     "For an automatic run, specify --experiment full_route without --interactive.")
     planners = registry["planners"][args.task]
     planner_default = defaults["planners"][args.task]
     if args.architecture_profile == "baseline":

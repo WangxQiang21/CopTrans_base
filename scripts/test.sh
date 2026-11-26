@@ -79,7 +79,7 @@ mapfile -t config < <(python3 - "$temporary" <<'PY'
 import json, sys
 with open(sys.argv[1]) as handle:
     config = json.load(handle)
-for key in ("task", "scenario", "planner", "no_build", "record"):
+for key in ("task", "scenario", "planner", "no_build", "record", "experiment"):
     print(config[key])
 PY
 )
@@ -106,6 +106,7 @@ mkdir -p -- "$run_dir"/{metrics,trajectories,screenshots,ros}
 cp -- "$temporary" "$run_dir/resolved_config.yaml"
 python3 "$archive_tool" collect "$run_dir" "$archive_dir"
 printf 'Experiment ID %s\n' "${archive_dir##*/}"
+printf 'Experiment mode %s\n' "${config[5]}"
 printf 'Run directory %s\n' "$archive_dir"
 
 fail() {

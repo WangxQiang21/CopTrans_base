@@ -6,6 +6,7 @@
 #include <utility>
 
 #include <QFont>
+#include <QFontMetrics>
 #include <QPainter>
 #include <QPainterPath>
 
@@ -18,6 +19,7 @@ constexpr int margin = 12;
 constexpr int gap = 10;
 constexpr int status_height = 166;
 constexpr int chart_height = 137;
+constexpr int experiment_footer_height = 27;
 constexpr double radians_to_degrees = 57.29577951308232;
 const QColor primary("#f3f6fa");
 const QColor secondary("#aebbc9");
@@ -175,9 +177,13 @@ void errorChart(
 
 QImage drawRow(
   const Dashboard & dashboard, int width, double scale, int height,
-  void (*draw)(QPainter &, const QRectF &, const TrackView &, std::size_t))
+  void (*draw)(QPainter &, const QRectF &, const TrackView &, std::size_t),
+  const QString & experiment_id = {})
 {
-  QImage image(width, std::ceil((height + margin) * scale), QImage::Format_RGBA8888_Premultiplied);
+  const int footer_height = experiment_id.isEmpty() ? 0 : experiment_footer_height;
+  QImage image(
+    width, std::ceil((height + footer_height + margin) * scale),
+    QImage::Format_RGBA8888_Premultiplied);
   image.fill(Qt::transparent);
   QPainter painter(&image);
   painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
@@ -187,6 +193,24 @@ QImage drawRow(
     const double x = margin + index * (card_width + gap);
     const double y = height == status_height ? margin : 0;
     draw(painter, QRectF(x, y, card_width, height), dashboard[index], index);
+  }
+  if (!experiment_id.isEmpty()) {
+    constexpr int font_size = 12;
+    constexpr int padding = 10;
+    QFont font = painter.font();
+    font.setPixelSize(font_size);
+    font.setBold(false);
+    const QFontMetrics metrics(font);
+    const QString text = metrics.elidedText(
+      QStringLiteral("实验编号  %1").arg(experiment_id), Qt::ElideRight,
+      width / scale - 2 * (margin + padding));
+    const double badge_width = metrics.horizontalAdvance(text) + 2 * padding;
+    const QRectF badge(
+      width / scale - margin - badge_width, height + 5, badge_width, footer_height - 5);
+    painter.setPen(QPen(QColor("#657281"), 1));
+    painter.setBrush(QColor(19, 27, 36, 233));
+    painter.drawRoundedRect(badge, 5, 5);
+    label(painter, badge.adjusted(padding, 0, -padding, 0), text, primary, font_size);
   }
   painter.end();
   return image;
@@ -199,12 +223,13 @@ QColor cargoColor()
   return QColor("#6cd9c4");
 }
 
-double dashboardScale(int width, int height, double pixel_ratio)
+double dashboardScale(int width, int height, double pixel_ratio, bool show_experiment_id)
 {
   // Keep four columns readable and leave at least half the height for the 3D scene.
   constexpr int natural_width = 4 * 185 + 2 * margin + 3 * gap;
-  return std::min({pixel_ratio, width / double(natural_width),
-      height / double(2 * (status_height + chart_height + 2 * margin))});
+  const int natural_height = status_height + chart_height + 2 * margin +
+    (show_experiment_id ? experiment_footer_height : 0);
+  return std::min({pixel_ratio, width / double(natural_width), height / double(2 * natural_height)});
 }
 
 QImage drawStatusCards(const Dashboard & dashboard, int width, double scale)
@@ -212,9 +237,10 @@ QImage drawStatusCards(const Dashboard & dashboard, int width, double scale)
   return drawRow(dashboard, width, scale, status_height, statusCard);
 }
 
-QImage drawErrorCharts(const Dashboard & dashboard, int width, double scale)
+QImage drawErrorCharts(
+  const Dashboard & dashboard, int width, double scale, const QString & experiment_id)
 {
-  return drawRow(dashboard, width, scale, chart_height, errorChart);
+  return drawRow(dashboard, width, scale, chart_height, errorChart, experiment_id);
 }
 
 }  // namespace fwis_rviz_plugins

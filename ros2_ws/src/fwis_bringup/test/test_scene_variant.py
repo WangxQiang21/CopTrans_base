@@ -28,7 +28,9 @@ def dry_run(*args):
 def test_variant_is_part_of_resolved_experiment(args, variant):
     process = dry_run("--task", "multi", "--experiment", "full_route", *args)
     assert process.returncode == 0, process.stderr
-    assert yaml.safe_load(process.stdout)["scene_variant"] == variant
+    config = yaml.safe_load(process.stdout)
+    assert config["scene_variant"] == variant
+    assert config["interactive"] is False
 
 
 def test_layout_from_another_scenario_is_rejected():
@@ -49,8 +51,8 @@ def test_new_experiments_use_qualified_backend_with_explicit_rollback(task):
     default_alias = registry["defaults"]["planners"][task]
     default_backend = registry["planners"][task][default_alias]
     current = dry_run("--task", task)
-    rollback = dry_run("--task", task, "--planner-backend", "legacy", "--architecture-profile", "baseline",
-                       "--tracker-implementation", "python")
+    rollback = dry_run("--task", task, "--experiment", "full_route", "--planner-backend", "legacy",
+                       "--architecture-profile", "baseline", "--tracker-implementation", "python")
     assert current.returncode == rollback.returncode == 0
     current, rollback = (yaml.safe_load(run.stdout) for run in (current, rollback))
     assert (current["architecture_profile"], current["tracking_implementation"]) == ("optimized", "cpp")
@@ -82,6 +84,9 @@ def test_interactive_entry_gets_the_same_optimized_defaults():
     ordinary = dry_run("--task", "multi")
     assert ordinary.returncode == 0, ordinary.stderr
     default = yaml.safe_load(ordinary.stdout)
+    assert default["interactive"] is True
+    assert default["experiment"] == "interactive"
+    assert "replay_endpoints" not in default
     process = subprocess.run(
         ["bash", str(ROOT / "scripts/interactive.sh"), "--dry-run"],
         cwd=ROOT, check=True, capture_output=True, text=True,

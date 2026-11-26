@@ -7,17 +7,11 @@ cd CopTrans_base
 ./scripts/interactive.sh
 ```
 
-脚本会增量构建并打开 Gazebo 和 RViz，`./run_demo.sh` 无参数时也进入同一测试。首次运行或代码变更后直接运行脚本。使用 `--no-build` 时，脚本会核对安装与源码是否一致。默认是室内厂房，西侧靠墙有一处只允许单车通过的 1.10 m 限宽口。可用 `--list-scenarios` 查看场景，加 `--scenario port_01` 切换到港口。
+`./scripts/test.sh --task multi` 和无参数的 `./run_demo.sh` 也进入同一交互测试。脚本会增量构建并打开 Gazebo 和 RViz，等待你选定起点和终点。使用 `--no-build` 时，脚本会核对安装与源码是否一致。默认是室内厂房，西侧靠墙有一处只允许单车通过的 1.10 m 限宽口。可用 `--list-scenarios` 查看场景，加 `--scenario port_01` 切换到港口。
 
 新机器先准备 ROS 2 Humble、Gazebo Harmonic、对应的 ROS 桥、RViz 和 Colcon。若缺少 CasADi C++ SDK，可执行 `python3 -m pip install --user --no-deps casadi==3.7.2`。已有独立 SDK 时，可先执行 `export COPTRANS_CASADI_ROOT=/实际路径/casadi`。首次启动会编译 Release；旧安装或文件校验失败时，去掉 `--no-build` 再运行。
 
 单车、三车和 RViz 交互仿真默认使用 V3 C++ 联合规划器和 C++ 跟踪器。终端启动时显示所用的规划器、跟踪器和版本。接收计划后，`experiment.json` 的 `planner_source` 为 `hybrid_joint`。源码及安装指纹可在同目录的 `environment.txt` 查询。
-
-```bash
-./scripts/test.sh --task single
-./scripts/test.sh --task multi
-./scripts/interactive.sh
-```
 
 ## 2. 在 RViz 设置起点和终点
 
@@ -27,7 +21,7 @@ cd CopTrans_base
 
 ## 3. 查日志或复跑
 
-在面板点 **复制编号**。反馈问题时附上编号和看到的现象。每轮日志自动保存在本地 `reports/runs/实验编号/`。
+RViz 右下角和终端都会显示实验编号。交互模式也可在「规划与执行」面板点 **复制编号**。反馈问题时附上编号和看到的现象。每轮日志自动保存在本地 `reports/runs/实验编号/`。
 
 ```bash
 id=20261125_000000_aB1cDe  # 换成面板上的实验编号
@@ -44,16 +38,16 @@ cat "reports/runs/$id/experiment.json"
 ## 4. 自动跑固定用例
 
 ```bash
-./scripts/test.sh
-./scripts/test.sh --task multi --scenario factory_indoor_01 --experiment full_route --no-build
+./scripts/test.sh --task single --experiment full_route
+./scripts/test.sh --task multi --experiment full_route
 ```
 
-无参数默认跑单车厂房全程，加 `--task multi` 跑三车全程。终端会显示本轮实际加载的规划器、跟踪器和版本。
+加 `--experiment full_route` 后会使用预设起终点自动跑完全程。无参数时默认自动跑单车厂房全程。终端会显示本轮实际加载的规划器、跟踪器和版本。
 
 `short_turn` 是短弯，改成 `short_straight` 测直行，改成 `full_route` 测全程。加 `--scene-variant critical` 测临界窄通道，加 `--scene-variant too_narrow` 测绕行。
 
 需要回退到旧规划器和 Python 跟踪器时，显式选择旧后端。
 
 ```bash
-./scripts/test.sh --task multi --planner-backend legacy --architecture-profile baseline --tracker-implementation python --no-build
+./scripts/test.sh --task multi --experiment full_route --planner-backend legacy --architecture-profile baseline --tracker-implementation python --no-build
 ```

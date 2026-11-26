@@ -19,16 +19,26 @@ sys.path.insert(0, str(ROOT/"scripts"))
 from source_fingerprint import RUNTIME_ARTIFACTS, receipt_fingerprint
 
 
+ENTRY_FLAGS = {
+    "single": [],
+    "multi": ["--task", "multi", "--experiment", "full_route"],
+    "interactive": ["--task", "multi", "--interactive", "--experiment", "full_route"],
+}
+
+
 def observed_install(entry, archive):
     env_file = archive / "environment.txt"
     command_file = archive / "command.txt"
     env = dict(line.split("=", 1) for line in env_file.read_text().splitlines() if "=" in line)
     argv = shlex.split(command_file.read_text())
-    flags = {"single": [], "multi": ["--task", "multi"],
-             "interactive": ["--task", "multi", "--interactive", "--experiment", "full_route"]}
+    accepted_flags = [ENTRY_FLAGS[entry]]
+    if entry == "multi":
+        # Older automatic runs used this command before the interactive default.
+        # collect() also verifies the resolved run was automatic.
+        accepted_flags.append(["--task", "multi"])
     artifacts = json.loads(env.get("coptrans_installed_files", "{}"))
     digests = {f"{pkg}/{name}" for pkg, names in RUNTIME_ARTIFACTS.items() for name in names}
-    valid = bool(argv and Path(argv[0]).parts[-2:] == ("scripts","test.sh") and argv[1:] == flags[entry]
+    valid = bool(argv and Path(argv[0]).parts[-2:] == ("scripts","test.sh") and argv[1:] in accepted_flags
                  and env.get("coptrans_build_type") == "Release" and set(artifacts) == digests
                  and all(re.fullmatch("[0-9a-f]{64}", v) for v in artifacts.values())
                  and receipt_fingerprint(artifacts) == env.get("coptrans_install_sha256")
@@ -144,12 +154,14 @@ def test_entry(entry,destination):
     runs=ROOT/"reports/runs"
     runs.mkdir(parents=True,exist_ok=True)
     before=set(p.name for p in runs.iterdir() if p.is_dir())
-    command={ "single":["scripts/test.sh"],"multi":["scripts/test.sh","--task","multi"],
-              "interactive":["scripts/interactive.sh"]}[entry]
+    command = (["scripts/interactive.sh"] if entry == "interactive" else
+               ["scripts/test.sh", *ENTRY_FLAGS[entry]])
     resolved=yaml.safe_load(subprocess.check_output([*command,"--dry-run"],text=True,cwd=ROOT))
     expected=("single" if entry=="single" else "formation")+"_hybrid_joint_cpp"
     if resolved["planner_backend"]!=expected:
         raise ValueError(f"{entry}: default resolves to {resolved['planner_backend']}")
+    if resolved["interactive"] != (entry == "interactive"):
+        raise ValueError(f"{entry}: unexpected interactive mode")
     log=destination/(entry+".log")
     with log.open("w") as stream:
         proc=subprocess.Popen(command,cwd=ROOT,start_new_session=True,stdout=stream,stderr=subprocess.STDOUT)

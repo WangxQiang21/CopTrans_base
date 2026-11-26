@@ -48,10 +48,16 @@ def test_runtime_binds_actual_command_and_five_elfs(tmp_path):
     (tmp_path/"environment.txt").write_text("".join(f"{k}={v}\n" for k,v in environment.items()))
     command=tmp_path/"command.txt"
     entries=[]
-    for name,flags in (("single",[]),("multi",["--task","multi"]),("interactive",["--task","multi","--interactive","--experiment","full_route"])):
+    for name, flags in (
+        ("single", []),
+        ("multi", ["--task", "multi", "--experiment", "full_route"]),
+        ("interactive", ["--task", "multi", "--interactive", "--experiment", "full_route"]),
+    ):
         command.write_text(shlex.join(["/tmp/staged project/scripts/test.sh",*flags]))
         entries.append(dict(entry=name,native=True,install=observed_install(name,tmp_path)))
     assert matches_qualified_runtime(entries,runtime)
+    command.write_text("scripts/test.sh --task multi")
+    assert observed_install("multi", tmp_path)["valid"]
     command.write_text("scripts/test.sh --planner-backend hybrid_joint")
     assert not observed_install("single",tmp_path)["valid"]
     changed=dict(runtime)

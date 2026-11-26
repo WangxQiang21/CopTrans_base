@@ -22,7 +22,7 @@ from ranger_mini_gz.scene_generator import (
 
 
 def rviz_config(description, directory, scene, task, *, tracking_dashboard=False, show_corridor=False,
-                interactive=False):
+                interactive=False, experiment_id=""):
     vehicles = scene.spawn_poses(task)
     count = len(vehicles)
     data = yaml.safe_load((description / "rviz" / f"ranger_{count}.rviz").read_text())
@@ -78,7 +78,7 @@ def rviz_config(description, directory, scene, task, *, tracking_dashboard=False
             })
         manager["Displays"].append({
             "Class": "fwis_rviz_plugins/TrackingHUD", "Name": "Tracking dashboard",
-            "Enabled": True, "Show Cargo Marker": False,
+            "Enabled": True, "Show Cargo Marker": False, "Experiment ID": experiment_id,
         })
     w, h = scene.size
     x, y, _yaw = scene.experiments[task]["start"]
@@ -106,8 +106,11 @@ def setup(context):
     plant_overrides = {}
     replay_plant = None
     show_corridor = interactive = False
+    experiment_id = ""
     if args["experiment_file"]:
-        config = read_config(Path(args["experiment_file"]))
+        experiment_path = Path(args["experiment_file"])
+        config = read_config(experiment_path)
+        experiment_id = experiment_path.parent.name
         plant_overrides = config.get("plant_overrides", {})
         replay_plant = config.get("replay_plant")
         show_corridor = bool(config.get("planner_overrides", {}).get("convex_corridor"))
@@ -188,7 +191,7 @@ def setup(context):
         ] if tracking_dashboard else []
         config = rviz_config(description, directory, scene, task,
                              tracking_dashboard=tracking_dashboard, show_corridor=show_corridor,
-                             interactive=interactive)
+                             interactive=interactive, experiment_id=experiment_id)
         simulator_process("RViz2", Node(package="rviz2", executable="rviz2",
                             arguments=["-d", str(config)], remappings=hud_remaps,
                             parameters=[{"use_sim_time": True}]))
