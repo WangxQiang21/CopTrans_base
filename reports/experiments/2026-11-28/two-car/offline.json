@@ -1,0 +1,918 @@
+{
+  "mountain_return_study": {
+    "experiment_id": "20261128_sbend_r65_w430",
+    "settings": {
+      "base": "blade_mountain_hard",
+      "mountain_bend": "return",
+      "width_m": 4.3,
+      "taper_length_m": 6.0,
+      "centerline_min_radius_m": 6.5,
+      "intermediate_tangent_length_m": 2.0,
+      "blade_length_m": 15.375,
+      "support_spacing_m": 10.0,
+      "map_resolution_m": 0.05,
+      "required_clearance_m": 0.16,
+      "start": [
+        18.0,
+        12.0,
+        0.0
+      ],
+      "goal": [
+        18.0,
+        48.0,
+        3.141592653589793
+      ],
+      "map_sha256": {
+        "map.pgm": "6dcc5610bd07685b75ad6fa4e609fc0fd991b888be5e844c0310e560676ca6fb",
+        "map.yaml": "898c723da0c24faffaaf3bc5ade9655701d1ba4e4e2ec9cabc07213f50ee95f8",
+        "map_0025.pgm": "d2dd2e9e7ef95dd3c8fdfb3518a3497617fb586ec58b2e840b662c8d4dc09d48",
+        "map_0025.yaml": "2fcec41844a29f9b5a69039b2f2b9db1a9f42f63149ce5aef4fb1f692cd5b9cf"
+      }
+    },
+    "road_sha256": "90d19dc502927caad77db900502956dec57557a8c4b9f1e64ab413c4cf685bd2",
+    "outcome": "纯 Ackermann 可全程前进通过，按确认的标准淘汰。 通过的斜移候选侧向位移不足 1 m。",
+    "candidates": {
+      "全程前进 · 纯 Ackermann": {
+        "candidate": "F",
+        "certified": true,
+        "report": {
+          "certified": true,
+          "resolutions": {
+            "0.05": {
+              "passed": true,
+              "reason": "certified",
+              "samples": 14948,
+              "gate_visits": [],
+              "gates_required": 0,
+              "clearance_margin_m": 0.16,
+              "mount_tolerance_m": 1e-06,
+              "nominal_mount_spacing_m": 10.0,
+              "max_mount_error_m": 0.0,
+              "max_continuous_mount_error_bound_m": 0.0,
+              "max_mount_spacing_error_m": 0.0,
+              "min_road_clearance_m": 0.23731519523173003,
+              "min_grid_clearance_m": 0.1869089794445362,
+              "swept_road_clearance_lower_bound_m": 0.23040500147892845,
+              "swept_grid_clearance_lower_bound_m": 0.1803965093983749
+            },
+            "0.025": {
+              "passed": true,
+              "reason": "certified",
+              "samples": 14948,
+              "gate_visits": [],
+              "gates_required": 0,
+              "clearance_margin_m": 0.16,
+              "mount_tolerance_m": 1e-06,
+              "nominal_mount_spacing_m": 10.0,
+              "max_mount_error_m": 0.0,
+              "max_continuous_mount_error_bound_m": 0.0,
+              "max_mount_spacing_error_m": 0.0,
+              "min_road_clearance_m": 0.23731519523173003,
+              "min_grid_clearance_m": 0.21231519523173148,
+              "swept_road_clearance_lower_bound_m": 0.23040500147892845,
+              "swept_grid_clearance_lower_bound_m": 0.20540500147892987
+            }
+          },
+          "local_closest": {
+            "index": 10455,
+            "body": "blade",
+            "gap_m": 0.1869089794445362,
+            "sample_covered": true,
+            "body_point_xy": [
+              71.705235635884,
+              44.08683563555674
+            ],
+            "wall_xy": [
+              71.7,
+              43.900000000000006
+            ],
+            "blade_longitudinal_coordinate_m": -6.999999999999993,
+            "cargo_pose": [
+              65.8557370358028,
+              47.95799387665824,
+              2.621168976597406
+            ]
+          },
+          "mode_sequence": [
+            "Ackermann"
+          ],
+          "switches": 0,
+          "gear_changes_per_car": [
+            0,
+            0
+          ],
+          "reverse_distance_per_car_m": [
+            0.0,
+            0.0
+          ],
+          "chassis_travel_m": [
+            214.16576513176352,
+            213.597595121501
+          ],
+          "maximum_mount_spacing_error_m": 1.5987211554602254e-14,
+          "maximum_rollout_node_defect": 8.477201163259451e-10,
+          "splice_error": [
+            7.891145514804521e-10,
+            5.48794787391671e-10,
+            1.0147171991548021e-10,
+            1.5649703755116207e-11,
+            4.497735517361434e-12
+          ],
+          "connectors": [],
+          "max_command_curvature_per_m": 0.3585379425213689,
+          "solve_wall_s": 9.241492920031305,
+          "solver_iterations": [
+            {
+              "solver_status": "Solve_Succeeded",
+              "slack_m": -9.999899790225192e-09,
+              "sample_distance_m": 0.2123553412911292,
+              "shooting_defect": 1.483257960899209e-11
+            }
+          ]
+        },
+        "reverse_maneuvers": [
+          0,
+          0
+        ],
+        "shifts": [],
+        "total_cargo_shift_m": 0,
+        "total_absolute_cargo_lateral_m": 0,
+        "total_absolute_chassis_lateral_m": [
+          0,
+          0
+        ]
+      },
+      "允许倒车 · 纯 Ackermann": {
+        "candidate": "R.30+R.46+R.64",
+        "certified": true,
+        "report": {
+          "certified": true,
+          "resolutions": {
+            "0.05": {
+              "passed": true,
+              "reason": "certified",
+              "samples": 15053,
+              "gate_visits": [],
+              "gates_required": 0,
+              "clearance_margin_m": 0.16,
+              "mount_tolerance_m": 1e-06,
+              "nominal_mount_spacing_m": 10.0,
+              "max_mount_error_m": 0.0,
+              "max_continuous_mount_error_bound_m": 0.0,
+              "max_mount_spacing_error_m": 0.0,
+              "min_road_clearance_m": 0.24458607821460582,
+              "min_grid_clearance_m": 0.181976822433893,
+              "swept_road_clearance_lower_bound_m": 0.23812769018377578,
+              "swept_grid_clearance_lower_bound_m": 0.1756305946590978
+            },
+            "0.025": {
+              "passed": true,
+              "reason": "certified",
+              "samples": 15053,
+              "gate_visits": [],
+              "gates_required": 0,
+              "clearance_margin_m": 0.16,
+              "mount_tolerance_m": 1e-06,
+              "nominal_mount_spacing_m": 10.0,
+              "max_mount_error_m": 0.0,
+              "max_continuous_mount_error_bound_m": 0.0,
+              "max_mount_spacing_error_m": 0.0,
+              "min_road_clearance_m": 0.24458607821460582,
+              "min_grid_clearance_m": 0.20964677729333311,
+              "swept_road_clearance_lower_bound_m": 0.23812769018377578,
+              "swept_grid_clearance_lower_bound_m": 0.20316212390187705
+            }
+          },
+          "local_closest": {
+            "index": 10322,
+            "body": "blade",
+            "gap_m": 0.181976822433893,
+            "sample_covered": true,
+            "body_point_xy": [
+              59.86281747741911,
+              51.092785786029026
+            ],
+            "wall_xy": [
+              59.75,
+              50.95
+            ],
+            "blade_longitudinal_coordinate_m": 8.374999999999996,
+            "cargo_pose": [
+              67.39328021766941,
+              47.425582366841354,
+              2.673488923078244
+            ]
+          },
+          "mode_sequence": [
+            "Ackermann"
+          ],
+          "switches": 0,
+          "gear_changes_per_car": [
+            6,
+            6
+          ],
+          "reverse_distance_per_car_m": [
+            0.5724900846842962,
+            0.5559502943340573
+          ],
+          "chassis_travel_m": [
+            215.25496714164316,
+            214.68113924457953
+          ],
+          "maximum_mount_spacing_error_m": 1.5987211554602254e-14,
+          "maximum_rollout_node_defect": 5.674095859831141e-09,
+          "splice_error": [
+            1.5557688470835274e-09,
+            5.674095859831141e-09,
+            2.8803670559796046e-10,
+            2.1903412417145773e-10,
+            2.16311413225867e-10
+          ],
+          "connectors": [],
+          "max_command_curvature_per_m": 0.32829912803476485,
+          "solve_wall_s": 3.2491547020035796,
+          "solver_iterations": [
+            {
+              "solver_status": "Solve_Succeeded",
+              "slack_m": -9.999899840326934e-09,
+              "sample_distance_m": 0.2212873279506823,
+              "shooting_defect": 2.823261624484985e-10
+            }
+          ]
+        },
+        "reverse_maneuvers": [
+          3,
+          3
+        ],
+        "shifts": [],
+        "total_cargo_shift_m": 0,
+        "total_absolute_cargo_lateral_m": 0,
+        "total_absolute_chassis_lateral_m": [
+          0,
+          0
+        ]
+      },
+      "多模式 · 带斜移候选": {
+        "candidate": "O.39+O.55",
+        "certified": true,
+        "report": {
+          "certified": true,
+          "resolutions": {
+            "0.05": {
+              "passed": true,
+              "reason": "certified",
+              "samples": 14937,
+              "gate_visits": [],
+              "gates_required": 0,
+              "clearance_margin_m": 0.16,
+              "mount_tolerance_m": 1e-06,
+              "nominal_mount_spacing_m": 10.0,
+              "max_mount_error_m": 0.0,
+              "max_continuous_mount_error_bound_m": 0.0,
+              "max_mount_spacing_error_m": 0.0,
+              "min_road_clearance_m": 0.238957377673277,
+              "min_grid_clearance_m": 0.1789459414453701,
+              "swept_road_clearance_lower_bound_m": 0.23255415739560853,
+              "swept_grid_clearance_lower_bound_m": 0.17209326456908897
+            },
+            "0.025": {
+              "passed": true,
+              "reason": "certified",
+              "samples": 14937,
+              "gate_visits": [],
+              "gates_required": 0,
+              "clearance_margin_m": 0.16,
+              "mount_tolerance_m": 1e-06,
+              "nominal_mount_spacing_m": 10.0,
+              "max_mount_error_m": 0.0,
+              "max_continuous_mount_error_bound_m": 0.0,
+              "max_mount_spacing_error_m": 0.0,
+              "min_road_clearance_m": 0.238957377673277,
+              "min_grid_clearance_m": 0.20704508182300663,
+              "swept_road_clearance_lower_bound_m": 0.23255415739560853,
+              "swept_grid_clearance_lower_bound_m": 0.2001924049467255
+            }
+          },
+          "local_closest": {
+            "index": 11113,
+            "body": "blade",
+            "gap_m": 0.1789459414453701,
+            "sample_covered": true,
+            "body_point_xy": [
+              66.80097574405414,
+              48.55095018720529
+            ],
+            "wall_xy": [
+              66.9,
+              48.7
+            ],
+            "blade_longitudinal_coordinate_m": -6.555997094566979,
+            "cargo_pose": [
+              60.912254398348956,
+              51.46838435197608,
+              2.6122623701841565
+            ]
+          },
+          "mode_sequence": [
+            "Ackermann",
+            "Oblique",
+            "Ackermann",
+            "Oblique",
+            "Ackermann"
+          ],
+          "switches": 4,
+          "gear_changes_per_car": [
+            0,
+            0
+          ],
+          "reverse_distance_per_car_m": [
+            0.0,
+            0.0
+          ],
+          "chassis_travel_m": [
+            214.21920838034455,
+            213.55493982204257
+          ],
+          "maximum_mount_spacing_error_m": 1.5987211554602254e-14,
+          "maximum_rollout_node_defect": 8.770207671204844e-09,
+          "splice_error": [
+            4.662084052142745e-10,
+            8.770207671204844e-09,
+            8.133151929712312e-10,
+            4.4873349480667457e-10,
+            5.169273897820403e-10
+          ],
+          "connectors": [
+            {
+              "mode": "Oblique",
+              "xy": [
+                66.77702235913432,
+                47.70186835126043
+              ],
+              "end_xy": [
+                66.54574678068515,
+                47.747957570724466
+              ],
+              "chassis_yaw_change_deg": [
+                0.0,
+                0.0
+              ],
+              "body_frame_displacement_m": [
+                [
+                  0.23572162377612302,
+                  -0.00692281894540394
+                ],
+                [
+                  0.22057249493441283,
+                  0.08342891474909256
+                ]
+              ],
+              "cargo_yaw_change_rad": 0.0
+            },
+            {
+              "mode": "Oblique",
+              "xy": [
+                60.912254398348956,
+                51.46838435197608
+              ],
+              "end_xy": [
+                60.557153936147934,
+                51.47180407266273
+              ],
+              "chassis_yaw_change_deg": [
+                0.0,
+                0.0
+              ],
+              "body_frame_displacement_m": [
+                [
+                  0.2596746515376842,
+                  0.24223358168044493
+                ],
+                [
+                  0.35099685723867563,
+                  0.05393736138825574
+                ]
+              ],
+              "cargo_yaw_change_rad": 0.0
+            }
+          ],
+          "max_command_curvature_per_m": 0.3346606112462099,
+          "solve_wall_s": 3.486061117029749,
+          "solver_iterations": [
+            {
+              "solver_status": "Solve_Succeeded",
+              "slack_m": -9.999898985099747e-09,
+              "sample_distance_m": 0.21486936988173028,
+              "shooting_defect": 8.876170909388748e-10
+            }
+          ]
+        },
+        "reverse_maneuvers": [
+          0,
+          0
+        ],
+        "shifts": [
+          {
+            "from_xy_m": [
+              66.77702235913432,
+              47.70186835126043
+            ],
+            "to_xy_m": [
+              66.54574678068515,
+              47.747957570724466
+            ],
+            "cargo_travel_m": 0.23582325868710008,
+            "cargo_lateral_m": 0.06860649623989976,
+            "chassis_lateral_m": [
+              -0.00692281894540394,
+              0.08342891474909256
+            ]
+          },
+          {
+            "from_xy_m": [
+              60.912254398348956,
+              51.46838435197608
+            ],
+            "to_xy_m": [
+              60.557153936147934,
+              51.47180407266273
+            ],
+            "cargo_travel_m": 0.35511692827145613,
+            "cargo_lateral_m": 0.17635817665046202,
+            "chassis_lateral_m": [
+              0.24223358168044493,
+              0.05393736138825574
+            ]
+          }
+        ],
+        "total_cargo_shift_m": 0.5909401869585562,
+        "total_absolute_cargo_lateral_m": 0.24496467289036178,
+        "total_absolute_chassis_lateral_m": [
+          0.24915640062584887,
+          0.1373662761373483
+        ]
+      }
+    }
+  },
+  "cross_width_certification": {
+    "experiment_id": "20261128_sbend_threshold",
+    "origin_width_m": 4.108,
+    "target_width_m": 4.105,
+    "certified": true,
+    "resolutions": {
+      "0.05": {
+        "passed": true,
+        "reason": "certified",
+        "samples": 14948,
+        "gate_visits": [],
+        "gates_required": 0,
+        "clearance_margin_m": 0.16,
+        "mount_tolerance_m": 1e-06,
+        "nominal_mount_spacing_m": 10.0,
+        "max_mount_error_m": 0.0,
+        "max_continuous_mount_error_bound_m": 0.0,
+        "max_mount_spacing_error_m": 0.0,
+        "min_road_clearance_m": 0.22320313098205025,
+        "min_grid_clearance_m": 0.16161782623581172,
+        "swept_road_clearance_lower_bound_m": 0.21804223896424,
+        "swept_grid_clearance_lower_bound_m": 0.16000497574802622
+      },
+      "0.025": {
+        "passed": true,
+        "reason": "certified",
+        "samples": 14948,
+        "gate_visits": [],
+        "gates_required": 0,
+        "clearance_margin_m": 0.16,
+        "mount_tolerance_m": 1e-06,
+        "nominal_mount_spacing_m": 10.0,
+        "max_mount_error_m": 0.0,
+        "max_continuous_mount_error_bound_m": 0.0,
+        "max_mount_spacing_error_m": 0.0,
+        "min_road_clearance_m": 0.22320313098205025,
+        "min_grid_clearance_m": 0.19195555451984325,
+        "swept_road_clearance_lower_bound_m": 0.21718962354011867,
+        "swept_grid_clearance_lower_bound_m": 0.18593137320487635
+      }
+    },
+    "local_closest": {
+      "index": 10305,
+      "body": "blade",
+      "gap_m": 0.16161782623581172,
+      "sample_covered": true,
+      "body_point_xy": [
+        59.74769893151245,
+        51.27874486606664
+      ],
+      "wall_xy": [
+        59.650000000000006,
+        51.150000000000006
+      ],
+      "blade_longitudinal_coordinate_m": 8.374999999999996,
+      "cargo_pose": [
+        67.24909316717313,
+        47.55244180254688,
+        2.665625710979427
+      ]
+    },
+    "mode_sequence": [
+      "Ackermann"
+    ],
+    "switches": 0,
+    "gear_changes_per_car": [
+      0,
+      0
+    ],
+    "reverse_distance_per_car_m": [
+      0.0,
+      0.0
+    ],
+    "chassis_travel_m": [
+      214.16180720777535,
+      213.56332330342047
+    ],
+    "maximum_mount_spacing_error_m": 1.5987211554602254e-14,
+    "maximum_rollout_node_defect": 5.1146280100056174e-08,
+    "splice_error": [
+      3.139704318755321e-08,
+      4.627511174248866e-08,
+      2.0551296220361337e-08,
+      2.217425354444913e-09,
+      2.258150999523423e-09
+    ],
+    "connectors": [],
+    "max_command_curvature_per_m": 0.3562504333637948,
+    "solve_wall_s": 0,
+    "solver_iterations": []
+  },
+  "street_first_bend_width_6_10_m": {
+    "pure": {
+      "certified": true,
+      "resolutions": {
+        "0.05": {
+          "passed": true,
+          "reason": "certified",
+          "samples": 6054,
+          "gate_visits": [],
+          "gates_required": 0,
+          "clearance_margin_m": 0.06,
+          "mount_tolerance_m": 1e-06,
+          "nominal_mount_spacing_m": 10.0,
+          "max_mount_error_m": 0.0,
+          "max_continuous_mount_error_bound_m": 0.0,
+          "max_mount_spacing_error_m": 0.0,
+          "min_road_clearance_m": 0.10430659871859983,
+          "min_grid_clearance_m": 0.0689622691957551,
+          "swept_road_clearance_lower_bound_m": 0.09702288500932159,
+          "swept_grid_clearance_lower_bound_m": 0.061678555486476855
+        },
+        "0.025": {
+          "passed": true,
+          "reason": "certified",
+          "samples": 6054,
+          "gate_visits": [],
+          "gates_required": 0,
+          "clearance_margin_m": 0.06,
+          "mount_tolerance_m": 1e-06,
+          "nominal_mount_spacing_m": 10.0,
+          "max_mount_error_m": 0.0,
+          "max_continuous_mount_error_bound_m": 0.0,
+          "max_mount_spacing_error_m": 0.0,
+          "min_road_clearance_m": 0.10430659871859983,
+          "min_grid_clearance_m": 0.08618637280135245,
+          "swept_road_clearance_lower_bound_m": 0.09702288500932159,
+          "swept_grid_clearance_lower_bound_m": 0.07305371588114962
+        }
+      },
+      "local_closest": {
+        "index": 2387,
+        "body": "blade",
+        "gap_m": 0.0689622691957551,
+        "sample_covered": true,
+        "body_point_xy": [
+          41.04753165978857,
+          24.950034653104662
+        ],
+        "wall_xy": [
+          41.0,
+          25.0
+        ],
+        "blade_longitudinal_coordinate_m": 0.5977400525472458,
+        "cargo_pose": [
+          40.85625493211183,
+          24.2946886752659,
+          0.7826240935677267
+        ]
+      },
+      "mode_sequence": [
+        "Ackermann"
+      ],
+      "switches": 0,
+      "gear_changes_per_car": [
+        0,
+        0
+      ],
+      "reverse_distance_per_car_m": [
+        0.0,
+        0.0
+      ],
+      "chassis_travel_m": [
+        77.90660233122847,
+        76.73596814781084
+      ],
+      "maximum_mount_spacing_error_m": 1.0658141036401503e-14,
+      "maximum_rollout_node_defect": 3.2015066153689986e-09,
+      "splice_error": [
+        2.3172788132796995e-09,
+        3.2015066153689986e-09,
+        3.4125702264020674e-10,
+        5.480618181508135e-10,
+        1.0126277594224575e-10
+      ],
+      "connectors": [],
+      "max_command_curvature_per_m": 0.47532198865795555,
+      "solve_wall_s": 23.577702959999442,
+      "solver_iterations": [
+        {
+          "solver_status": "Solve_Succeeded",
+          "slack_m": 0.05655567689913265,
+          "sample_distance_m": 0.10804789615593911,
+          "shooting_defect": 5.977263128897903e-10
+        },
+        {
+          "solver_status": "Solve_Succeeded",
+          "slack_m": 0.05770930308605398,
+          "sample_distance_m": 0.11110941882492512,
+          "shooting_defect": 4.6541603904159956e-11
+        },
+        {
+          "solver_status": "Solve_Succeeded",
+          "slack_m": 0.05775756225393706,
+          "sample_distance_m": 0.11249663259271661,
+          "shooting_defect": 2.9100349907551504e-10
+        },
+        {
+          "solver_status": "Solve_Succeeded",
+          "slack_m": 0.05574379947579705,
+          "sample_distance_m": 0.10786840295904096,
+          "shooting_defect": 1.3289636058289034e-09
+        }
+      ]
+    },
+    "mixed": {
+      "certified": true,
+      "resolutions": {
+        "0.05": {
+          "passed": true,
+          "reason": "certified",
+          "samples": 6059,
+          "gate_visits": [],
+          "gates_required": 0,
+          "clearance_margin_m": 0.06,
+          "mount_tolerance_m": 1e-06,
+          "nominal_mount_spacing_m": 10.0,
+          "max_mount_error_m": 0.0,
+          "max_continuous_mount_error_bound_m": 0.0,
+          "max_mount_spacing_error_m": 0.0,
+          "min_road_clearance_m": 0.0992218255937679,
+          "min_grid_clearance_m": 0.06387728770178304,
+          "swept_road_clearance_lower_bound_m": 0.09535416497820214,
+          "swept_grid_clearance_lower_bound_m": 0.060033272077778504
+        },
+        "0.025": {
+          "passed": true,
+          "reason": "certified",
+          "samples": 6059,
+          "gate_visits": [],
+          "gates_required": 0,
+          "clearance_margin_m": 0.06,
+          "mount_tolerance_m": 1e-06,
+          "nominal_mount_spacing_m": 10.0,
+          "max_mount_error_m": 0.0,
+          "max_continuous_mount_error_bound_m": 0.0,
+          "max_mount_spacing_error_m": 0.0,
+          "min_road_clearance_m": 0.0992218255937679,
+          "min_grid_clearance_m": 0.08109721920631693,
+          "swept_road_clearance_lower_bound_m": 0.09191561788326921,
+          "swept_grid_clearance_lower_bound_m": 0.07305371588114962
+        }
+      },
+      "local_closest": {
+        "index": 2394,
+        "body": "blade",
+        "gap_m": 0.06387728770178304,
+        "sample_covered": true,
+        "body_point_xy": [
+          41.04403786094104,
+          24.953729332316527
+        ],
+        "wall_xy": [
+          41.0,
+          25.0
+        ],
+        "blade_longitudinal_coordinate_m": 0.5962207739227341,
+        "cargo_pose": [
+          40.85401744420401,
+          24.299385650590505,
+          0.7828613999960264
+        ]
+      },
+      "mode_sequence": [
+        "Ackermann",
+        "Oblique",
+        "Ackermann"
+      ],
+      "switches": 2,
+      "gear_changes_per_car": [
+        0,
+        0
+      ],
+      "reverse_distance_per_car_m": [
+        0.0,
+        0.0
+      ],
+      "chassis_travel_m": [
+        77.91618912509628,
+        76.71125629554763
+      ],
+      "maximum_mount_spacing_error_m": 1.0658141036401503e-14,
+      "maximum_rollout_node_defect": 1.4778234458390216e-07,
+      "splice_error": [
+        3.291582828524042e-08,
+        1.261990263401458e-07,
+        1.7741585311981112e-08,
+        8.98256735659686e-09,
+        2.107345720148146e-08
+      ],
+      "connectors": [
+        {
+          "mode": "Oblique",
+          "xy": [
+            38.876086607389134,
+            23.0793793988694
+          ],
+          "end_xy": [
+            39.17229601029977,
+            23.2330408050353
+          ],
+          "chassis_yaw_change_deg": [
+            0.0,
+            0.0
+          ],
+          "body_frame_displacement_m": [
+            [
+              0.29450896445404134,
+              0.15689585072195142
+            ],
+            [
+              0.30307850176632495,
+              -0.1396254270705605
+            ]
+          ],
+          "cargo_yaw_change_rad": 0.0
+        }
+      ],
+      "max_command_curvature_per_m": 0.443588391467757,
+      "solve_wall_s": 18.314839067985304,
+      "solver_iterations": [
+        {
+          "solver_status": "Solve_Succeeded",
+          "slack_m": 0.05761509131064583,
+          "sample_distance_m": 0.1122430616596691,
+          "shooting_defect": 6.181721801112872e-13
+        },
+        {
+          "solver_status": "Solve_Succeeded",
+          "slack_m": 0.05770549152526447,
+          "sample_distance_m": 0.1101183331169894,
+          "shooting_defect": 7.324471029690471e-10
+        },
+        {
+          "solver_status": "Solve_Succeeded",
+          "slack_m": 0.05764190204031283,
+          "sample_distance_m": 0.11219428498176243,
+          "shooting_defect": 1.49281870198692e-09
+        },
+        {
+          "solver_status": "Solve_Succeeded",
+          "slack_m": 0.05215184931108085,
+          "sample_distance_m": 0.10255663839304127,
+          "shooting_defect": 8.776772641994057e-10
+        }
+      ]
+    },
+    "reversing": {
+      "certified": true,
+      "resolutions": {
+        "0.05": {
+          "passed": true,
+          "reason": "certified",
+          "samples": 6133,
+          "gate_visits": [],
+          "gates_required": 0,
+          "clearance_margin_m": 0.06,
+          "mount_tolerance_m": 1e-06,
+          "nominal_mount_spacing_m": 10.0,
+          "max_mount_error_m": 0.0,
+          "max_continuous_mount_error_bound_m": 0.0,
+          "max_mount_spacing_error_m": 0.0,
+          "min_road_clearance_m": 0.10077512735811671,
+          "min_grid_clearance_m": 0.06543081221957159,
+          "swept_road_clearance_lower_bound_m": 0.09537507977207317,
+          "swept_grid_clearance_lower_bound_m": 0.0600314744204313
+        },
+        "0.025": {
+          "passed": true,
+          "reason": "certified",
+          "samples": 6133,
+          "gate_visits": [],
+          "gates_required": 0,
+          "clearance_margin_m": 0.06,
+          "mount_tolerance_m": 1e-06,
+          "nominal_mount_spacing_m": 10.0,
+          "max_mount_error_m": 0.0,
+          "max_continuous_mount_error_bound_m": 0.0,
+          "max_mount_spacing_error_m": 0.0,
+          "min_road_clearance_m": 0.10077512735811671,
+          "min_grid_clearance_m": 0.08265271078461918,
+          "swept_road_clearance_lower_bound_m": 0.0934959669584291,
+          "swept_grid_clearance_lower_bound_m": 0.07305371588114962
+        }
+      },
+      "local_closest": {
+        "index": 2426,
+        "body": "blade",
+        "gap_m": 0.06543081221957159,
+        "sample_covered": true,
+        "body_point_xy": [
+          41.04509686031167,
+          24.952592570437304
+        ],
+        "wall_xy": [
+          41.0,
+          25.0
+        ],
+        "blade_longitudinal_coordinate_m": 0.5979449838671337,
+        "cargo_pose": [
+          40.85366093328506,
+          24.29710843073973,
+          0.7826077948381748
+        ]
+      },
+      "mode_sequence": [
+        "Ackermann"
+      ],
+      "switches": 0,
+      "gear_changes_per_car": [
+        4,
+        4
+      ],
+      "reverse_distance_per_car_m": [
+        0.3808343673133933,
+        0.36295160221767603
+      ],
+      "chassis_travel_m": [
+        78.67174690850513,
+        77.44640297739178
+      ],
+      "maximum_mount_spacing_error_m": 1.0658141036401503e-14,
+      "maximum_rollout_node_defect": 3.551237561794096e-07,
+      "splice_error": [
+        2.959581948402956e-07,
+        3.424810088858976e-07,
+        3.761845190908275e-08,
+        3.821953420413138e-08,
+        6.713904809885207e-08
+      ],
+      "connectors": [],
+      "max_command_curvature_per_m": 0.5380970006502023,
+      "solve_wall_s": 11.441557716985699,
+      "solver_iterations": [
+        {
+          "solver_status": "Solve_Succeeded",
+          "slack_m": 0.05761509131064527,
+          "sample_distance_m": 0.1122430616596691,
+          "shooting_defect": 4.0241339427371514e-10
+        },
+        {
+          "solver_status": "Solve_Succeeded",
+          "slack_m": 0.05770549152526555,
+          "sample_distance_m": 0.11211202013906672,
+          "shooting_defect": 3.2573943542502093e-13
+        },
+        {
+          "solver_status": "Solve_Succeeded",
+          "slack_m": 0.057641902040316995,
+          "sample_distance_m": 0.1121386052071689,
+          "shooting_defect": 1.8663640077853927e-11
+        },
+        {
+          "solver_status": "Solve_Succeeded",
+          "slack_m": 0.05324863390060204,
+          "sample_distance_m": 0.10380158435512313,
+          "shooting_defect": 1.1451634085446472e-10
+        }
+      ]
+    }
+  }
+}
