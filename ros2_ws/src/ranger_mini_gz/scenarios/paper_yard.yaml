@@ -1,0 +1,60 @@
+name: paper_yard
+default_variant: paper_cts
+size: [44.0, 32.0]
+resolution: 0.05
+boundary_height: 0.70
+ground_color: [0.42, 0.43, 0.42]
+camera:
+  eye: [22.0, -15.0, 46.0]
+  target: [22.0, 16.0, 0.4]
+obstacles:
+  - {id: south_stacks_1, pose: [11.2, 1.325, 0.9, 0], size: [9.8, 2.35, 1.8], style: steel}
+  - {id: south_stacks_2, pose: [21.8, 1.325, 0.9, 0], size: [11.0, 2.35, 1.8], style: steel}
+  - {id: south_stacks_3, pose: [32.05, 1.325, 0.9, 0], size: [9.1, 2.35, 1.8], style: steel}
+  - {id: low_west_shed, pose: [5.075, 8.4, 0.9, 0], size: [9.85, 4.6, 1.8], style: production}
+  - {id: low_stock_w, pose: [15.75, 8.4, 0.9, 0], size: [9.3, 4.6, 1.8], style: steel}
+  - {id: low_stock_mid, pose: [24.075, 8.4, 0.9, 0], size: [6.85, 4.6, 1.8], style: steel}
+  - {id: low_stock_gate, pose: [29.15, 9.15, 0.9, 0], size: [3.3, 6.1, 1.8], style: steel}
+  - {id: low_stock_e, pose: [32.9, 8.4, 0.9, 0], size: [4.2, 4.6, 1.8], style: steel}
+  - {id: central_west, pose: [10.1, 16.95, 0.9, 0], size: [7.0, 4.3, 1.8], style: steel}
+  - {id: central_west_bay, pose: [14.8, 16.95, 0.9, 0], size: [2.4, 4.3, 1.8], style: steel}
+  - {id: central_west_end, pose: [16.5, 16.95, 0.9, 0], size: [1.0, 4.3, 1.8], style: steel}
+  - {id: central_gate, pose: [18.15, 16.125, 0.9, 0], size: [2.3, 5.95, 1.8], style: steel}
+  - {id: central_gate_w, pose: [20.4, 16.95, 0.9, 0], size: [2.2, 4.3, 1.8], style: steel}
+  - {id: central_gate_e, pose: [28.225, 16.95, 0.9, 0], size: [8.25, 4.3, 1.8], style: steel}
+  - {id: central_east_shed, pose: [38.225, 16.95, 0.9, 0], size: [11.25, 4.3, 1.8], style: production}
+  - {id: central_loading_bay, pose: [15.05, 19.925, 0.9, 0], size: [3.5, 1.65, 1.8], style: steel}
+  - {id: north_storage_w, pose: [3.875, 25.5, 0.9, 0], size: [7.45, 5.2, 1.8], style: steel}
+  - {id: north_storage_mid, pose: [14.925, 26.325, 0.9, 0], size: [3.25, 3.55, 1.8], style: steel}
+  - {id: north_storage_e, pose: [24.6, 25.5, 0.9, 0], size: [6.2, 5.2, 1.8], style: steel}
+  - {id: north_ramp, pose: [28.85, 25.3, 0.9, 0], size: [2.3, 5.6, 1.8], style: steel}
+  - {id: north_storage_end, pose: [32.0, 25.5, 0.9, 0], size: [4.0, 5.2, 1.8], style: steel}
+  - {id: north_stock_1, pose: [11.5, 31.675, 0.9, 0], size: [12.0, 0.35, 1.8], style: steel}
+  - {id: north_stock_2, pose: [25.775, 31.675, 0.9, 0], size: [16.05, 0.35, 1.8], style: steel}
+  - {id: west_services, pose: [0.8, 16.7, 0.9, 0], size: [1.3, 3.4, 1.8], style: steel}
+  - {id: south_bevel, type: polygon, pose: [36.425, 8.3917, 1.0, 0], vertices: [[-1.425, -2.2917], [0.125, -2.2917], [1.325, -1.0917], [1.325, 1.0583], [0.075, 2.3083], [-1.425, 2.3083]], height: 2.0, style: steel}
+  - {id: north_bevel, type: polygon, pose: [35.3917, 25.5083, 1.0, 0], vertices: [[-1.3917, -2.6083], [0.1083, -2.6083], [1.2583, -1.4583], [1.2583, 1.4917], [0.1583, 2.5917], [-1.3917, 2.5917]], height: 2.0, style: steel}
+  - {id: central_angled_west, type: polygon, pose: [11.4, 19.65, 1.0, 0], vertices: [[-3.8, -0.55], [1.9, -0.55], [1.9, 1.1]], height: 2.0, style: steel}
+  - {id: central_angled_east, type: polygon, pose: [18.3667, 19.65, 1.0, 0], vertices: [[-1.5667, -0.55], [3.1333, -0.55], [-1.5667, 1.1]], height: 2.0, style: steel}
+  - {id: north_angled_west, type: polygon, pose: [10.45, 25.9125, 1.0, 0], vertices: [[-2.85, -3.0125], [2.85, -1.3625], [2.85, 2.1875], [-2.85, 2.1875]], height: 2.0, style: steel}
+  - {id: north_angled_east, type: polygon, pose: [19.6, 25.8325, 1.0, 0], vertices: [[-1.9, -1.6025], [1.9, -2.9325], [1.9, 2.2675], [-1.9, 2.2675]], height: 2.0, style: steel}
+obstacle_variants:
+  default:
+    - {id: east_services, pose: [43.2, 6.525, 0.9, 0], size: [1.3, 3.85, 1.8], style: steel}
+    - {id: east_service_pad, pose: [42.975, 24.275, 0.9, 0], size: [1.75, 3.25, 1.8], style: steel}
+  paper_cts:
+    assembly_starts:
+      - [2.80, 12.40, 0.0]
+      - [34.00, 29.80, 3.141592653589793]
+      - [39.60, 3.20, 1.5707963267948966]
+    obstacles:
+      # The east-side additions absorb the two smaller service obstacles.
+      - {id: obs1, pose: [42.125, 25.525, 0.90, 0], size: [3.450, 12.650, 1.80], style: steel}
+      # Keep the S2 cargo footprint and its planning margin clear at x=40.60 m.
+      - {id: obs2, pose: [43.025, 7.475, 0.90, 0], size: [1.650, 14.650, 1.80], style: steel}
+experiments:
+  single: {start: [3.40, 3.70, 1.5707963267948966], goal: [3.10, 30.15, 3.141592653589793]}
+  formation:
+    # Scene experiments use the formation reference. Frozen cases use the cargo centre.
+    start: [3.40, 3.20, 1.5707963267948966]
+    goal: [3.60, 30.15, 3.141592653589793]

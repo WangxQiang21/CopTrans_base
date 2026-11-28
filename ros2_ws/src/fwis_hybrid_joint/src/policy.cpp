@@ -75,7 +75,7 @@ PolicyScore score_policy(const Request& r,const Plan& plan,Clock::time_point dea
     }
     const int intervals=policy::intervals_per_piece*static_cast<int>(ph.pieces.size());
     const double dt=ph.duration/intervals;
-    double length=0.,spin=0.;
+    double length=0.,spin=0.,reference_turn=0.;
     for(std::size_t v=0;v<count;++v)if(ph.mode==Mode::S)spin+=std::abs(ph.heading1[v]-ph.heading0[v]);
     auto left=evaluate_phase(r,ph,0.);
     for(int j=0;j<intervals;++j){
@@ -85,6 +85,8 @@ PolicyScore score_policy(const Request& r,const Plan& plan,Clock::time_point dea
       // feed-forward. Differences never cross a mode or prepare boundary.
       length+=std::hypot(mid.reference.x-left.reference.x,mid.reference.y-left.reference.y)+
               std::hypot(right.reference.x-mid.reference.x,right.reference.y-mid.reference.y);
+      if(ph.mode==Mode::A && count==3)
+        reference_turn+=std::abs(mid.reference.yaw-left.reference.yaw)+std::abs(right.reference.yaw-mid.reference.yaw);
       out.clearance_effort+=dt/t0*clearance_penalty(map,mid,count);
       for(std::size_t v=0;v<count;++v){
         const auto a=wheel_angles(ph.mode,left.bodies[v],l),b=wheel_angles(ph.mode,right.bodies[v],l);
@@ -98,7 +100,10 @@ PolicyScore score_policy(const Request& r,const Plan& plan,Clock::time_point dea
     out.reference_length+=length;
     if(ph.mode==Mode::O)out.oblique_length+=length;
     out.spin_angle+=spin;
-    if(length<=policy::zero_motion_tolerance && spin<=policy::zero_motion_tolerance)continue;
+    // A fixed-reference Ackermann turn moves all mounts. It separates
+    // auxiliary blocks even when F contributes no translational length.
+    if(length<=policy::zero_motion_tolerance && spin<=policy::zero_motion_tolerance &&
+       reference_turn<=policy::zero_motion_tolerance)continue;
     const bool same=last_mode==ph.mode && std::equal(last_gear.begin(),last_gear.begin()+count,ph.gear.begin());
     if(ph.mode!=Mode::A && !same)++out.auxiliary_blocks;
     last_mode=ph.mode;last_gear=ph.gear;

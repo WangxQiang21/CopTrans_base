@@ -1,0 +1,86 @@
+name: blade_roundabout_01
+size:
+- 80
+- 80
+resolution: 0.05
+comparison_resolution: 0.025
+start:
+- 15
+- 40
+- 0
+goal:
+- 40
+- 65
+- 1.5707963267948966
+key_pose:
+- 40
+- 29.6
+- 0.0
+camera:
+  key_supports: {eye: [39.8, 18.1, 1.8], target: [40.68, 29.6, 0.55], hfov: 1.34}
+  eye:
+  - 40
+  - 13
+  - 88
+  target:
+  - 40
+  - 40
+  - 0
+road:
+  geometry_file: blade_roundabout_01.geojson
+  center:
+  - 40
+  - 40
+  island_radius: 8
+  outer_radius: 14.5
+  annulus_width: 6.5
+  approach_width: 8
+  east_west_rectangle:
+  - 4
+  - 36
+  - 76
+  - 44
+  north_south_rectangle:
+  - 36
+  - 4
+  - 44
+  - 76
+  west_flare_vertices:
+  - - 16
+    - 36
+  - - 27
+    - 33
+  - - 27
+    - 47
+  - - 16
+    - 44
+  other_flare_rotations_deg:
+  - 90
+  - 180
+  - 270
+  ordered_midpoint_gates:
+  - x:
+    - 37
+    - 43
+    y:
+    - 27
+    - 31
+  - x:
+    - 49
+    - 53
+    y:
+    - 37
+    - 43
+  direction: counterclockwise west -> south -> east -> north; unchanged from v1
+buildings:
+  min_footprint_setback_m: 0.6
+  height_options_m: [5.5, 6.5, 7.5]
+  width_m: 4.8
+  depth_m: 6.4
+  gap_m: 2.4
+  # Southwest frontage, repeated in each quadrant.
+  rotations_deg: [0, 90, 180, 270]
+  rows:
+    - [17, 35.38, 4.5, 35.38]
+    - [35.38, 4.5, 35.38, 17]
+    - [34, 24.6, 24.6, 34]

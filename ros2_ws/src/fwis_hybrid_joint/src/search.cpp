@@ -3,6 +3,7 @@
 #include "clock.hpp"
 #include "channel_spline.hpp"
 #include "channel_repair.hpp"
+#include "search_internal.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -14,25 +15,16 @@
 #include <tuple>
 
 namespace fwis_hybrid_joint {
-namespace {
-using Point=fwis_planning_core::Point2d;
+namespace search_detail {
 using fwis_planning_core::CollisionKernel;
 using fwis_planning_core::CollisionReason;
-constexpr double pi=3.14159265358979323846;
-double delta(double a,double b){return std::remainder(b-a,2*pi);}
-double distance(Point a,Point b){return std::hypot(a.x-b.x,a.y-b.y);}
-struct Run {
-  Clock::time_point end;
-  const Cancel& cancel;
-  bool stop()const{return Clock::now()>=end || (cancel && cancel());}
-};
 extern "C" int stop_nlp(void *r){return static_cast<Run*>(r)->stop();}
-using Route=std::vector<Point>;
 using Sequence=std::vector<Mode>;
 struct Seed { Sequence seq; int sign; Route route; std::string edit; int reverse_from{-1}; bool quintic{}, general{}, relaxed{}; int priority{8}; bool shortest_yaw{}, smooth_channel{}; std::vector<double> channel_yaw{}; bool curved_oblique{}; double switch_station{.5}; };
 // Occupancy A* only proposes continuous optimization starts. Full swept footprint
 // checks (including independent vehicle headings) are performed by the certifier.
-Route grid_seed(const Request& r,const Run& run,bool wide=false,int gear=1,std::vector<double>* yaw_seed=nullptr,const Route* fallback=nullptr,bool oblique=false) {
+Route grid_seed(const Request& r,const Run& run,bool wide=false,int gear=1,std::vector<double>* yaw_seed=nullptr,
+                const Route* fallback=nullptr,bool oblique=false,bool narrow_single=false) {
   const auto& map=*r.grid;
   const int w=map.width(),h=map.height(); const double res=map.resolution();
   const auto org=map.origin();
@@ -113,6 +105,8 @@ Route grid_seed(const Request& r,const Run& run,bool wide=false,int gear=1,std::
   std::vector<double> clearance_penalty(w*h,-1.);
   const auto target=point(to);
   const double straight_step=std::hypot(1.,0.),diagonal_step=std::hypot(1.,1.);
+  const double cell_min=narrow_single?std::max(1.,r.vehicles.front()[3]/(2.*res)+1.):1.;
+  const double clearance_weight=narrow_single?.03:1.5;
   const double start_cos=std::cos(r.start.heading[0]),start_sin=std::sin(r.start.heading[0]);
   const double approach=2.5*r.limits.radius;
   using Node=std::pair<double,int>;
@@ -126,7 +120,7 @@ Route grid_seed(const Request& r,const Run& run,bool wide=false,int gear=1,std::
       const int nx=id%w+x,ny=id/w+y;
       if((!x&&!y) || nx<0 || ny<0 || nx>=w || ny>=h)continue;
       int next=ny*w+nx;
-      if(clear[next]<1 || (x && y && (clear[id+x]<1||clear[id+y*w]<1)))continue;
+      if(clear[next]<cell_min || (x && y && (clear[id+x]<cell_min||clear[id+y*w]<cell_min)))continue;
       const double step=x && y?diagonal_step:straight_step;
       double tangent_cost=0.;
       if(wide){
@@ -141,7 +135,7 @@ Route grid_seed(const Request& r,const Run& run,bool wide=false,int gear=1,std::
         }
       }
       auto& penalty=clearance_penalty[next];
-      if(penalty<0.)penalty=1.5*std::pow(reach/std::max(.15,clear[next]*res),3);
+      if(penalty<0.)penalty=clearance_weight*std::pow(reach/std::max(.15,clear[next]*res),3);
       double ng=g[id]+step*res*(1+tangent_cost+penalty);
       if(ng+1e-9>=g[next])continue;
       g[next]=ng;parent[next]=id;
@@ -158,6 +152,7 @@ Route grid_seed(const Request& r,const Run& run,bool wide=false,int gear=1,std::
     Route rev{goal};
     for(int v=parent[to];v!=from && v>=0;v=parent[v])rev.push_back(point(v));
     rev.push_back(start);std::reverse(rev.begin(),rev.end());
+    if(narrow_single)return rev;
     std::vector<double> arc{0};for(std::size_t i=1;i<rev.size();++i)arc.push_back(arc.back()+distance(rev[i-1],rev[i]));
     const int spans=std::clamp(int(std::ceil(arc.back()/(oblique?1.75:4.0))),2,HJ_MAX_SPANS);
     out.push_back(start);
@@ -732,7 +727,7 @@ Phase straight_motion(const Request& r,const Pose2d& from,const Pose2d& to,int g
   return move;
 }
 
-enum class SolvePass { Full, Continuation, Arrival };
+enum class SolvePass { Full, Continuation, Arrival, Docking };
 Result solve_route(const Request&,Clock::time_point,const Cancel&,const SolveOptions&,SolvePass);
 
 constexpr double endpoint_heading_window=pi/180.;
@@ -962,6 +957,9 @@ Result solve_route(const Request& r,Clock::time_point deadline,const Cancel& can
   std::vector<Seed> seeds;
   bool sharp_departure=false;
   Route staging_route;
+  Route single_guide;
+  std::optional<Plan> single_incumbent;
+  auto single_polish_end=deadline;
   const auto rank_start=rank_at_boundary(r,r.start),rank_goal=rank_at_boundary(r,r.goal);
   const bool locked_start=rank_start.whole_neighborhood,locked_goal=rank_goal.whole_neighborhood;
   auto add=[&](Sequence seq,int gear,Route route,std::string edit,int reverse_from=-1){
@@ -976,6 +974,8 @@ Result solve_route(const Request& r,Clock::time_point deadline,const Cancel& can
   if(d>1e-7 || (r.vehicles.size()==3 && std::abs(delta(r.start.reference.yaw,r.goal.reference.yaw))>1e-7)) {
     if(opts.initial_sequence.empty())add({Mode::A},sign,direct,"CONTINUOUS_A");
     auto route=grid_seed(r,run);
+    if(r.vehicles.size()==1 && !r.cargo && opts.initial_sequence.empty() && opts.enable_edits)
+      single_guide=route.empty()?direct:route;
     if(!route.empty()){
       if(pass==SolvePass::Full && r.cargo && opts.initial_sequence.empty() && route.size()>=3)staging_route=route;
       const double heading=std::atan2(route[1].y-route[0].y,route[1].x-route[0].x);
@@ -995,6 +995,48 @@ Result solve_route(const Request& r,Clock::time_point deadline,const Cancel& can
         // Extend the requested terminal tangent backwards on each feasible
         // turning branch, then seed one unconstrained continuous A phase.
         if(std::abs(angle)>pi/3){
+          if(d>8.*r.limits.radius && !single_guide.empty() && !run.stop()){
+            // An acute arrival on a long obstacle route can consume most of the
+            // budget in the full-route NLP. Try a certified Ackermann connection
+            // first. The dense, width-filtered guide retains short aisle bends.
+            const auto now=Clock::now();
+            const auto corridor_deadline=deadline-(deadline-begin)/4;
+            const Run first{std::min({corridor_deadline,now+(deadline-begin)/12,
+                                      now+std::chrono::milliseconds(450)}),cancel};
+            auto candidate=single_corridor_cruise(r,single_guide,first);
+            std::string chart="RESAMPLED";
+            if(!candidate && !run.stop()){
+              const auto alternate=Clock::now();
+              const Run dense{std::min(corridor_deadline,alternate+
+                std::chrono::milliseconds(1150)),cancel};
+              const auto guide=grid_seed(r,dense,false,sign,nullptr,nullptr,false,true);
+              candidate=single_corridor_cruise(r,guide,dense);
+              chart="CLEARANCE";
+            }
+            result.attempts.push_back({"SINGLE_CORRIDOR",candidate?"CERTIFIED":"NO_CERTIFIED_CONNECTION",
+              0.,0.,0.,std::chrono::duration<double>(Clock::now()-now).count()});
+            if(candidate){
+              result.first_certified_s=elapsed();
+              result.trace.push_back("CERTIFIED_SINGLE_CORRIDOR:"+chart);
+              const auto motion_phases=std::count_if(candidate->phases.begin(),candidate->phases.end(),
+                [](const Phase& phase){return phase.kind==Kind::Motion;});
+              if(motion_phases==1 && pass!=SolvePass::Docking){
+                result.seed_seconds=std::chrono::duration<double>(now-begin).count();
+                result.plan=std::move(candidate);
+                result.status="CERTIFIED_POLICY_COMPLIANT";
+                result.reason="PURE_A";
+                result.first_policy_compliant_s=result.first_certified_s;
+                return result;
+              }
+              // Keep the corridor route while comparing the regular terminal
+              // fit. Even a single motion phase can execute more slowly
+              // when its steering peaks stretch the whole time law.
+              single_incumbent=std::move(candidate);
+              if(pass!=SolvePass::Docking)
+                single_polish_end=std::min(deadline,Clock::now()+std::min((deadline-begin)/4,
+                  std::chrono::duration_cast<Clock::duration>(std::chrono::milliseconds(2000))));
+            }
+          }
           std::vector<Seed> turns;
           for(double rotation:{angle,angle-std::copysign(2*pi,angle)}){
             if(std::abs(rotation)>1.55*pi)continue;
@@ -1005,8 +1047,10 @@ Result solve_route(const Request& r,Clock::time_point deadline,const Cancel& can
             };
             const auto incoming=arc(0.);
             auto intermediate=r;intermediate.goal.reference={incoming.x,incoming.y,approach};
-            auto channel=grid_seed(intermediate,run,true,sign);
-            if(channel.empty())channel=grid_seed(intermediate,run);
+            const Run terminal{single_polish_end,cancel};
+            if(terminal.stop())break;
+            auto channel=grid_seed(intermediate,terminal,true,sign);
+            if(channel.empty() && !terminal.stop())channel=grid_seed(intermediate,terminal);
             if(channel.empty())channel={route.front(),incoming};
             for(int k=1;k<=8;++k)channel.push_back(arc(k/8.));
             double length=0;for(std::size_t j=1;j<channel.size();++j)length+=distance(channel[j-1],channel[j]);
@@ -1176,8 +1220,13 @@ Result solve_route(const Request& r,Clock::time_point deadline,const Cancel& can
     [&](double h){return delta(r.start.heading.front(),h);});
   const auto [lo,hi]=std::minmax_element(heading_offsets.begin(),heading_offsets.end());
   const bool dispersed_start=*hi-*lo>endpoint_heading_window && *hi-*lo<=2*endpoint_heading_window;
-  const auto early_stage_slice=std::min((deadline-begin)/3,
-    std::chrono::duration_cast<Clock::duration>(std::chrono::milliseconds(3500)));
+  // A short Ackermann departure/arrival often solves a one-bend channel.
+  // Reserve the rest of the deadline for an actual multi-posture search.
+  double channel_length=0.;
+  for(std::size_t j=1;j<staging_route.size();++j)channel_length+=distance(staging_route[j-1],staging_route[j]);
+  const bool winding_channel=channel_length>1.65*d;
+  const auto early_stage_slice=std::min((deadline-begin)/4,
+    std::chrono::duration_cast<Clock::duration>(std::chrono::milliseconds(2400)));
   bool lateral_arrival=false;
   if(!staging_route.empty()){
     const auto before=staging_route[staging_route.size()-2];
@@ -1191,7 +1240,66 @@ Result solve_route(const Request& r,Clock::time_point deadline,const Cancel& can
     result.status="CERTIFIED_POLICY_COMPLIANT";
     result.reason="CERTIFIED_LOCAL_STAGE";
   };
+  bool tried_formation_channel=false;
+  auto try_formation_channel=[&](){
+    if(tried_formation_channel || result.plan || staging_route.empty() || !opts.enable_edits ||
+       !opts.initial_sequence.empty() || r.vehicles.size()!=3 || run.stop())return false;
+    tried_formation_channel=true;
+    Clock::time_point first_proof{};
+    auto mixed=search_formation_channel(r,run,result,first_proof);
+    if(!mixed)return false;
+    // The per-seed NLP loop used to terminate on this first corridor
+    // certificate, skipping alternate Ackermann charts already generated for
+    // the same request. Test their continuous fits within the caller's budget.
+    const auto refine_start=Clock::now();
+    Run refine{std::min(refine_start+(deadline-refine_start)/2,
+                        refine_start+std::chrono::milliseconds(300)),cancel};
+    bool continuous=false;
+    const bool uses_aux=std::any_of(mixed->phases.begin(),mixed->phases.end(),
+      [](const Phase& ph){return ph.kind==Kind::Motion && ph.mode!=Mode::A;});
+    if(uses_aux && !locked_start && !locked_goal){
+      for(const Seed& seed:seeds){
+        if(refine.stop())break;
+        if(seed.seq!=Sequence{Mode::A} || seed.route.size()<3)continue;
+        try{
+          auto graph=problem(r,seed,opts,refine);
+          Clock::time_point proof;
+          if(auto cruise=retime_channel(r,graph,refine,proof)){
+            if(r.align_terminal_chassis){
+              Result arrival;arrival.plan=*cruise;
+              align_terminal(r,refine,arrival);
+              if(arrival.terminal_alignment!="aligned" && arrival.terminal_alignment!="already_aligned")continue;
+            }
+            mixed=std::move(cruise);continuous=true;
+            result.trace.push_back("CERTIFIED_ACKERMANN_ALTERNATIVE:"+seed.edit);
+            break;
+          }
+        }catch(const std::domain_error&){/* A singular tangent rejects only this chart. */}
+      }
+      result.attempts.push_back({"ALTERNATE_ACKERMANN_CHARTS",continuous?"CERTIFIED":"RETAINED_CHANNEL",
+        0.,0.,0.,std::chrono::duration<double>(Clock::now()-refine_start).count()});
+    }
+    result.plan=std::move(*mixed);
+    result.first_certified_s=std::chrono::duration<double>(first_proof-begin).count();
+    result.first_policy_compliant_s=elapsed();
+    result.status="CERTIFIED_POLICY_COMPLIANT";
+    result.reason=continuous?"PURE_A":"CERTIFIED_MULTIMODE_CHANNEL";
+    return true;
+  };
   for(std::size_t ordinal=0;ordinal<seeds.size();++ordinal) {
+    if(ordinal==1 && !single_incumbent && !result.plan && !single_guide.empty() && !run.stop()){
+      const auto now=Clock::now();
+      const Run cruise{std::min(deadline,now+(deadline-begin)/4),cancel};
+      single_incumbent=single_cruise(r,single_guide,cruise);
+      if(single_incumbent){
+        result.first_certified_s=elapsed();
+        result.trace.push_back("CERTIFIED_ACKERMANN_TANGENT_GRAPH");
+        // Give the original pure-A family time to improve the feasible guide.
+        single_polish_end=std::min(deadline-(deadline-begin)/8,Clock::now()+(deadline-begin)/4);
+      }
+    }
+    if(single_incumbent && Clock::now()>=single_polish_end)break;
+    if(ordinal==1 && try_formation_channel())break;
     const auto total_budget=std::chrono::duration<double>(deadline-begin).count();
     const auto rejection=result.attempts.empty()?std::string{}:result.attempts.back().status;
     const bool departure_collision=rejection.find("OBB_COLLISION")!=std::string::npos;
@@ -1254,6 +1362,10 @@ Result solve_route(const Request& r,Clock::time_point deadline,const Cancel& can
       if(repair!=seeds.end())std::rotate(seeds.begin()+ordinal,repair,repair+1);
     }
     Seed seed=seeds[ordinal]; // appending child proposals may reallocate the queue
+    // No auxiliary mode can improve the policy class of the certified A
+    // incumbent. Avoid spending its remaining return margin on a mixed NLP.
+    if(single_incumbent && std::any_of(seed.seq.begin(),seed.seq.end(),[](Mode m){return m!=Mode::A;}))
+      continue;
     const bool aligned_tangent=seed.edit=="ALIGNED_TANGENT_CHANNEL";
     const bool opposite_tangent=seed.edit=="OPPOSITE_GEAR_CHANNEL";
     if(seed.curved_oblique || aligned_tangent || opposite_tangent){
@@ -1357,6 +1469,7 @@ Result solve_route(const Request& r,Clock::time_point deadline,const Cancel& can
       // Keep time for edits after a poor local initialization.
       double slice=seed.route.size()>2?5.6:(seed.seq.size()>2?2.15:2.8);
       Run trial{std::min(deadline,Clock::now()+std::chrono::duration_cast<Clock::duration>(std::chrono::duration<double>(slice))),cancel};
+      if(single_incumbent)trial.end=std::min(trial.end,single_polish_end);
       if(translation!=seeds.end() && !straight_oblique(seed) && Clock::now()<translation_start)
         trial.end=std::min(trial.end,translation_start);
       if(result.plan && best.auxiliary_blocks)trial.end=std::min(trial.end,improve_until);
@@ -1418,7 +1531,8 @@ Result solve_route(const Request& r,Clock::time_point deadline,const Cancel& can
         metrics.certify_s+=std::chrono::duration<double>(Clock::now()-before).count()-repair_seed_s;
         if(!timed && !timing_status.empty())result.trace.push_back(tag+":INITIAL_CHANNEL:"+timing_status);
         if(timed){
-          result.first_certified_s=std::chrono::duration<double>(first_proof-begin).count();
+          if(!single_incumbent)
+            result.first_certified_s=std::chrono::duration<double>(first_proof-begin).count();
           try{best=score_policy(r,*timed,deadline,cancel);}
           catch(const std::runtime_error&){
             if(!run.stop())throw;
@@ -1451,7 +1565,7 @@ Result solve_route(const Request& r,Clock::time_point deadline,const Cancel& can
       // A fast continuous certificate retains priority. If it fails at a
       // constrained boundary, try the applicable local stage before spending
       // the whole-route NLP budget rebuilding collision and curvature cuts.
-      if(ordinal==0 && !result.plan && !staging_route.empty() && large_cargo_turn &&
+      if(ordinal==0 && !result.plan && !staging_route.empty() && !winding_channel && large_cargo_turn &&
          seed.seq==Sequence{Mode::A} && (sharp_departure || sign<0 || dispersed_start || lateral_arrival)){
         const auto staged_begin=Clock::now();
         const auto early_end=std::min(deadline-std::chrono::seconds(2),staged_begin+early_stage_slice);
@@ -1463,7 +1577,7 @@ Result solve_route(const Request& r,Clock::time_point deadline,const Cancel& can
           else if(dispersed_start)staged=depart_and_resume(r,staging_route,early,result,true);
           else staged=approach_from_channel(r,staging_route,early,result,SolvePass::Arrival);
           const auto local_time=Clock::now()-staged_begin;
-          finish.staging_s=std::chrono::duration<double>(local_time).count();
+          finish.staging_s+=std::chrono::duration<double>(local_time).count();
           if(staged){
             metrics.status="DEFERRED_TO_CERTIFIED_STAGE";
             accept_stage(std::move(*staged));
@@ -1473,6 +1587,12 @@ Result solve_route(const Request& r,Clock::time_point deadline,const Cancel& can
           // candidate its remaining slice, still under the caller's deadline.
           trial.end=std::min(deadline,trial.end+local_time);
         }
+      }
+      if(ordinal==0){
+        const auto before=Clock::now();
+        const bool found=try_formation_channel();
+        finish.staging_s+=std::chrono::duration<double>(Clock::now()-before).count();
+        if(found){metrics.status="DEFERRED_TO_FORMATION_CHANNEL";break;}
       }
       auto active=seed_separators?std::move(*seed_separators):separators(r,graph,run);
       std::vector<HJCurvatureStation> curvature_stations;
@@ -1495,7 +1615,7 @@ Result solve_route(const Request& r,Clock::time_point deadline,const Cancel& can
         if(audit.executable) {
           accepted=true;
           const bool first=!result.plan;
-          if(first)result.first_certified_s=elapsed();
+          if(first && !single_incumbent)result.first_certified_s=elapsed();
           PolicyScore ranking;
           try{ranking=score_policy(r,plan,deadline,cancel);}
           catch(const std::runtime_error&){
@@ -1593,9 +1713,18 @@ Result solve_route(const Request& r,Clock::time_point deadline,const Cancel& can
       if(result.plan && elapsed()-result.first_certified_s>.75) break;
     }catch(const std::exception& e){why=e.what();result.trace.push_back(why);propose(0,false);}
   }
+  if(single_incumbent){
+    // Native and tangent-graph plans have passed the same original request.
+    // Compare actual execution time only within the pure Ackermann class.
+    if(!result.plan || best.auxiliary_blocks || duration(*single_incumbent)<duration(*result.plan)){
+      result.plan=std::move(single_incumbent);
+      unranked_incumbent=false;
+      best.auxiliary_blocks=0;
+    }
+  }
   if(cancel&&cancel()){result.plan.reset();result.status="CANCELLED";result.reason=result.status;}
   else if(result.plan){
-    if(result.reason=="CERTIFIED_LOCAL_STAGE")return result;
+    if(result.reason=="CERTIFIED_LOCAL_STAGE" || result.reason=="CERTIFIED_MULTIMODE_CHANNEL")return result;
     result.status=unranked_incumbent || (run.stop() && best.auxiliary_blocks)?"FEASIBLE_POLICY_DEGRADED":"CERTIFIED_POLICY_COMPLIANT";
     result.reason=unranked_incumbent?"POLICY_EVALUATION_DEADLINE":!best.auxiliary_blocks?"PURE_A":locked_start||locked_goal?"ENDPOINT_CONFIGURATION":
       run.stop()?"A_SOLVE_TIMEOUT":"A_SEARCH_SPACE_EXHAUSTED";
@@ -1634,12 +1763,84 @@ void align_terminal(const Request& r,const Run& run,Result& result) {
 } // namespace
 
 Result solve(const Request& r,Clock::time_point deadline,const Cancel& cancel,const SolveOptions& opts){
-  auto result=solve_route(r,deadline,cancel,opts,SolvePass::Full);
-  align_terminal(r,Run{deadline,cancel},result);
+  auto result=search_detail::solve_route(r,deadline,cancel,opts,search_detail::SolvePass::Full);
+  search_detail::align_terminal(r,search_detail::Run{deadline,cancel},result);
   if(cancel&&cancel()){
     result.plan.reset();
     result.status=result.reason="CANCELLED";
   }
   return result;
+}
+
+Result solve_docking(const Request& request,Clock::time_point deadline){
+  using namespace search_detail;
+  const auto begin=Clock::now();
+  const auto budget=deadline-begin;
+  if(request.vehicles.size()!=1 || request.cargo || !request.grid ||
+     (!request.goal.constrain_heading[0] && !request.goal.constrain_reference_yaw))
+    return solve(request,deadline);
+
+  auto forward=request;
+  forward.allow_reverse=false;
+  auto position_only=forward;
+  position_only.goal.constrain_heading.fill(false);
+  position_only.goal.constrain_reference_yaw=false;
+  const double heading=request.goal.constrain_heading[0]?
+    request.goal.heading.front():request.goal.reference.yaw;
+  auto forward_motion=[](const Result& result){
+    return result.plan && std::all_of(result.plan->phases.begin(),result.plan->phases.end(),
+      [](const Phase& phase){
+        return phase.kind!=Kind::Motion || (phase.mode==Mode::A && phase.gear.front()==1);
+      });
+  };
+
+  // First find a route to the mount position with a natural arrival tangent.
+  // Then restore the requested yaw and reverify the sweep of the final spin.
+  auto approach=solve(position_only,begin+budget*7/20);
+  if(forward_motion(approach)){
+    try {
+      const auto end=evaluate(request,*approach.plan,duration(*approach.plan));
+      if(std::abs(delta(end.bodies.front().pose.yaw,heading))>endpoint_heading_window)
+        append_motion(request,*approach.plan,stationary_spin(request,end,{heading,0.,0.}));
+      const auto proof=certify(request,*approach.plan,begin+budget*2/5);
+      if(proof.executable){
+        approach.reason="CERTIFIED_FORWARD_DOCK_APPROACH";
+        approach.trace.push_back("DOCK_APPROACH: "+proof.reason);
+      }else{
+        approach.plan.reset();
+      }
+    } catch(const std::domain_error&) {approach.plan.reset();}
+  }else{
+    approach.plan.reset();
+  }
+
+  // Keep the forward analytic solution when it can make the same approach
+  // without an alignment stop or a longer loop around the slot.
+  auto direct=solve(forward,begin+budget*3/5);
+  if(forward_motion(direct) && (!approach.plan || duration(*direct.plan)<=duration(*approach.plan)+2.))
+    approach=std::move(direct);
+  if(approach.plan){
+    const Cancel no_cancel;
+    const Run narrow{std::min(begin+budget*3/4,Clock::now()+std::chrono::milliseconds(360)),no_cancel};
+    const auto guide=grid_seed(request,narrow,false,1,nullptr,nullptr,false,true);
+    double guide_length=0.;
+    for(std::size_t i=1;i<guide.size();++i)guide_length+=distance(guide[i-1],guide[i]);
+    if(guide_length>0. && !narrow.stop()){
+      try {
+        const auto current=score_policy(request,*approach.plan,narrow.end);
+        if(guide_length+request.limits.radius<current.reference_length){
+          if(auto alternative=single_narrow_docking(request,guide,narrow)){
+            approach.plan=std::move(alternative);
+            approach.reason="CERTIFIED_SHORT_DOCK_CHANNEL";
+            approach.trace.push_back("SHORT_DOCK_CHANNEL: CERTIFIED");
+          }
+        }
+      } catch(const std::runtime_error&) {
+        if(!narrow.stop())throw;
+      }
+    }
+    return approach;
+  }
+  return solve_route(request,deadline,{},SolveOptions{},SolvePass::Docking);
 }
 } // namespace fwis_hybrid_joint

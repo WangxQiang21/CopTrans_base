@@ -196,6 +196,18 @@ TEST(NativeSolver,RemovesBlocksAfterAnActualMixedProposal){
   EXPECT_NE(result.trace.end(),std::find(result.trace.begin(),result.trace.end(),"REPLACE_SUBSEQUENCE:A:1:CERTIFIED"));
 }
 
+TEST(NativeSolver,MovingMountsOnAFixedReferenceSeparateObliqueBlocks){
+  auto r=request(true);
+  hj::Piece line;line.x={0.,.2,.4,.6,.8,1.};line.y.fill(0.);line.yaw.fill(0.);
+  hj::Phase crab;crab.mode=hj::Mode::O;crab.duration=10.;crab.pieces={line};
+  hj::Piece turn;turn.x.fill(1.);turn.y.fill(0.);turn.yaw={0.,.1,.2,.3,.4,.5};
+  hj::Phase pivot;pivot.mode=hj::Mode::A;pivot.duration=10.;pivot.pieces={turn};
+  auto tail=crab;for(auto& x:tail.pieces[0].x)x+=1.;tail.pieces[0].yaw.fill(.5);
+  const auto cost=hj::score_policy(r,{{crab,pivot,tail}},deadline());
+  EXPECT_EQ(cost.auxiliary_blocks,2);
+  EXPECT_NEAR(cost.oblique_length,2.,1e-10);
+}
+
 TEST(NativeSolver,ArchiveCostUsesAllMountsNormalizesBlocksAndMeasuresComfort){
   auto r=request(true);
   hj::Piece q;q.x.fill(0.);q.y.fill(0.);q.yaw.fill(0.);

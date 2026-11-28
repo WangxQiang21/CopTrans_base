@@ -1052,6 +1052,7 @@ class RunExperiment(Node):
                         dock_assignment=assembly.get("assignment"), docked=self.docked,
                         assembly_elapsed_s=self.assembly_elapsed_s,
                         assembly_duration_s=assembly.get("duration_s"),
+                        assembly_vehicle_timing_s=self.assembly.vehicle_timing,
                         assembly_min_measured_pair_gap_m=self.assembly.min_measured_gap,
                         terminal_alignment=self.terminal_alignment,
                         cargo_centers={key: list(local_pose(self.config[key], self.scene.cargo.offset))

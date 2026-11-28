@@ -1,7 +1,7 @@
 """Plan and certify the approach to three stationary cargo mounts."""
 
 from concurrent.futures import ThreadPoolExecutor
-from itertools import combinations, permutations, product
+from itertools import combinations, groupby, permutations, product
 import json
 from math import atan2, cos, hypot, isfinite, sin
 import os
@@ -13,6 +13,10 @@ import numpy as np
 import yaml
 
 from ranger_mini_gz.scene_geometry import Obstacle, local_pose, rasterize
+
+_LENGTH_NODES, _LENGTH_WEIGHTS = np.polynomial.legendre.leggauss(8)
+_LENGTH_NODES = (_LENGTH_NODES + 1) / 2
+_LENGTH_WEIGHTS /= 2
 
 
 def single_model(profile, speed=None):
@@ -92,6 +96,19 @@ def _bernstein(values, station):
 
 def _difference(values):
     return [(len(values) - 1) * (b - a) for a, b in zip(values, values[1:])]
+
+
+def track_length(plan):
+    """Arc length of the centre curve, independent of its clock and gear."""
+    total = 0.
+    for phase in plan:
+        if phase["kind"] != "motion" or phase["mode"] == "S":
+            continue
+        for x, y, _yaw in phase["pieces"]:
+            dx, dy = _difference(x), _difference(y)
+            total += sum(weight * hypot(_bernstein(dx, u), _bernstein(dy, u))
+                         for u, weight in zip(_LENGTH_NODES, _LENGTH_WEIGHTS))
+    return float(total)
 
 
 def _ramp(u, width):
@@ -216,6 +233,8 @@ def pair_clearance(first, second, shape):
 
 def _schedule(tracks, shape, pair_cache, time_limit=float("inf")):
     ids = sorted(tracks)
+    priority = sorted(ids, key=lambda i: (tracks[i].get("length_m", float("inf")), i))
+    weights = {i: .5 ** rank for rank, i in enumerate(priority)}
 
     def check(first, second, delta):
         if first > second:
@@ -228,6 +247,7 @@ def _schedule(tracks, shape, pair_cache, time_limit=float("inf")):
         return pair_cache[key]
 
     best = None
+    best_score = None
     rejected = []
     for order in permutations(ids):
         delays = {}
@@ -236,7 +256,7 @@ def _schedule(tracks, shape, pair_cache, time_limit=float("inf")):
             latest = max(previous_ends, default=0.)
             candidates = {0., *previous_ends, *(float(s) for s in range(int(latest) + 1))}
             for delay in sorted(candidates):
-                if delay + tracks[i]["duration_s"] >= time_limit:
+                if delay + tracks[i]["duration_s"] > time_limit + 1e-9:
                     break
                 if delay + tracks[i]["duration_s"] > tracks[i]["request"]["task_duration_cap"]:
                     break
@@ -253,12 +273,20 @@ def _schedule(tracks, shape, pair_cache, time_limit=float("inf")):
         if len(delays) != len(ids):
             continue
         horizon = max(delay + tracks[i]["duration_s"] for i, delay in delays.items())
+        # Charge both the time until all are docked and time spent waiting
+        # at spawn. The closer approaches get the highest waiting cost.
+        waiting = sum(weights[i] * delay for i, delay in delays.items())
+        score = (round(horizon + waiting, 9), round(horizon, 9), sum(delays.values()))
+        if best_score is not None and score >= best_score:
+            continue
         gaps = [
             dict(first=i, second=j, **check(i, j, delays[j] - delays[i]))
             for i, j in combinations(ids, 2)
         ]
-        best = dict(duration_s=horizon, delays=delays, pair_checks=gaps)
-        time_limit = horizon
+        best = dict(duration_s=horizon, delays=delays, pair_checks=gaps,
+                    priority=priority, weighted_wait_s=waiting)
+        best_score = score
+        time_limit = min(time_limit, score[0])
         if all(delay == 0 for delay in delays.values()):
             break
     return best, rejected
@@ -267,6 +295,39 @@ def _schedule(tracks, shape, pair_cache, time_limit=float("inf")):
 def _boundary(pose):
     return dict(reference=pose, heading=[pose[2], 0., 0.], constrain_reference_yaw=True,
                 constrain_heading=[True, False, False])
+
+
+def _retime_approach(executable, request, plan):
+    """Use a compact, certified acceleration ramp on long assembly motions."""
+    phases = [p for p in plan if p["kind"] == "motion" and p["mode"] != "S"]
+    if not phases or phases[0]["mode"] != "A" or phases[0]["duration"] < 24.:
+        return plan
+    first = phases[0]
+    if 0. < first.get("cruise_ramp_fraction", 0.) <= 1 / 32:
+        return plan
+    station, _ = _ramp(0.08, first.get("cruise_ramp_fraction", 0.))
+    index = next(i for i, phase in enumerate(plan) if phase is first)
+    # The onset test also handles an imported trajectory which already had
+    # a compact ramp. Keep the speed/jerk/clearance decision in the native audit.
+    for ramp in (1 / 32, 1 / 16, 1 / 8):
+        earlier, _ = _ramp(0.08, ramp)
+        if ramp < .125:
+            shoulder, _ = _ramp(0.08, .125)
+            earlier = .875 * earlier + .125 * shoulder
+        if earlier <= station + 1e-9:
+            continue
+        tested = [*plan]
+        audited = None
+        for scale in (1., .78, .61):
+            tested[index] = dict(first, cruise_ramp_fraction=ramp, duration=scale * first["duration"])
+            if not native_call(executable, "certify", request, .35, plan=tested).get("executable"):
+                if audited is not None:
+                    return audited
+                break
+            audited = list(tested)
+        if audited is not None:
+            return audited
+    return plan
 
 
 def _guide_track(guide, executable, request, budget):
@@ -344,70 +405,92 @@ def plan_assembly(scene, grid, cargo_pose, *, fixed=None, starts=None, profile="
         for i, slot in (tuple(fixed.items()) if fixed is not None else product(ids, slots))
     }
 
-    def solve(key):
-        request = requests[key]
-        result = native_call(executable, "solve", request, budget)
+    def solve(key, request=None, *, solve_budget=budget, retry_general=True):
+        request = requests[key] if request is None else request
+        result = native_call(executable, "docking", request, solve_budget)
+        docking_timeout = result.get("status") == "NO_CERTIFIED_SOLUTION_WITHIN_BUDGET"
+        if docking_timeout and retry_general:
+            # The forward-first search reserves only part of its deadline
+            # for general motion. Give that search its normal full budget
+            # before accepting a stop-and-turn guide through a long aisle.
+            result = native_call(executable, "solve", request, solve_budget)
         plan = result.get("plan")
         entry = dict(vehicle=key[0], dock=key[1], status=result.get("status"), reason=result.get("reason"),
-                     wall_s=result.get("wall_s"), modes=(result.get("metrics") or {}).get("mode_sequence"))
+                     wall_s=result.get("wall_s"), modes=(result.get("metrics") or {}).get("mode_sequence"),
+                     docking_timeout=docking_timeout)
         track = None
-        if plan:
+        if plan and sum(p["duration"] for p in plan) <= duration_cap:
             audit = native_call(executable, "certify", request, 4., plan=plan)
             entry["certificate"] = audit
             if audit.get("executable") is True:
+                compact = _retime_approach(executable, request, plan)
+                entry["retimed_start"] = compact is not plan
+                plan = compact
                 track = dict(plan=plan, request=request, duration_s=sum(p["duration"] for p in plan),
                              start=starts[key[0]], goal=slots[key[1]], source="native")
         return key, entry, track
 
-    with ThreadPoolExecutor(max_workers=3) as pool:
-        results = list(pool.map(solve, requests))
-    tracks = {key: track for key, _, track in results if track is not None}
-    evidence = [entry for _, entry, _ in results]
-    if len(tracks) < len(requests):
-        from fwis_bringup.assembly_guide import DockingGuide
+    from fwis_bringup.assembly_guide import DockingGuide
 
-        guide = DockingGuide(grid, (length + 2 * margin, width + 2 * margin))
-        for key, entry, track in results:
-            if track is not None:
-                continue
-            track, audits = _guide_track(guide, executable, requests[key], budget)
-            entry["guided_candidates"] = audits
-            if track is not None:
-                tracks[key] = track
     assignments = [tuple(fixed[i] for i in ids)] if fixed is not None else list(permutations(slots))
-    pair_cache = {}
-    best = None
-    conflicts = []
+    resolution = base_request["grid"]["resolution"]
+    tracks, evidence, conflicts, pair_cache = {}, [], [], {}
+    guide = best = best_score = None
+    nearest_certified_band = None
+    # Offsets of less than one chassis length do not justify a slower
+    # certified assembly. Preserve the nearest feasible distance as a bound.
+    distance_slack = int(length / resolution)
     shape = (length + 2 * max(margin, .08), width + 2 * max(margin, .08))
 
-    def consider(assignment, candidate, *, alternate=False):
-        nonlocal best
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        for key, entry, track in pool.map(solve, sorted(requests)):
+            evidence.append(entry)
+            if track is None:
+                if guide is None:
+                    guide = DockingGuide(grid, (length + 2 * margin, width + 2 * margin))
+                track, entry["guided_candidates"] = _guide_track(guide, executable, requests[key], budget)
+            if track is not None and track["duration_s"] <= duration_cap:
+                track["length_m"] = track_length(track["plan"])
+                entry["length_m"] = track["length_m"]
+                tracks[key] = track
 
-        schedule, rejected = _schedule(candidate, shape, pair_cache, best["duration_s"] if best else float("inf"))
+    nearest = {i: min(((track["length_m"], slot) for (j, slot), track in tracks.items() if i == j),
+                      default=None) for i in ids}
+
+    def consider(assignment, candidate):
+        nonlocal best, best_score
+        # Collision certificates are calculated on each candidate schedule,
+        # including the footprints of vehicles waiting or already docked.
+        pair_cache.clear()
+        schedule, rejected = _schedule(candidate, shape, pair_cache)
         if schedule is None:
-            if not alternate:
-                conflicts.append(dict(assignment=assignment, conflicts=rejected))
-            return False
-        best = dict(
-            schedule, assignment=dict(zip(ids, assignment)), docks={i: slots[slot] for i, slot in zip(ids, assignment)},
-            offsets={i: scene.offsets[slot - 1] for i, slot in zip(ids, assignment)},
-            tracks={i: dict(track, delay_s=schedule["delays"][i]) for i, track in candidate.items()},
+            return rejected
+        network_lengths = {i: tracks[i, slot]["length_m"] for i, slot in zip(ids, assignment)}
+        extra = max(network_lengths[i] - nearest[i][0] for i in ids)
+        chosen_lengths = {i: candidate[i]["length_m"] for i in ids}
+        cost = dict(
+            distance_m=chosen_lengths, total_distance_m=sum(chosen_lengths.values()),
+            max_extra_distance_m=max(chosen_lengths[i] - nearest[i][0] for i in ids),
+            nearest_feasible={i: nearest[i][1] for i in ids},
         )
-        return True
+        score = (round(schedule["duration_s"] + schedule["weighted_wait_s"], 9),
+                 round(schedule["duration_s"], 9), int(extra / resolution + 1e-7),
+                 cost["total_distance_m"])
+        if best_score is None or score < best_score:
+            best_score = score
+            best = dict(
+                schedule, assignment=dict(zip(ids, assignment)), assignment_cost=cost,
+                docks={i: slots[slot] for i, slot in zip(ids, assignment)},
+                offsets={i: scene.offsets[slot - 1] for i, slot in zip(ids, assignment)},
+                tracks={i: dict(track, delay_s=schedule["delays"][i]) for i, track in candidate.items()},
+            )
+        return None
 
-    for assignment in assignments:
-        if all((i, slot) in tracks for i, slot in zip(ids, assignment)):
-            consider(assignment, {i: tracks[i, slot] for i, slot in zip(ids, assignment)})
-    if best is None and conflicts:
-        from fwis_bringup.assembly_guide import DockingGuide
-
-        # Temporal offsets cannot clear a path blocked by a robot that has
-        # already docked. Generate alternative approaches with the other
-        # docking footprints reserved, then certify on the unchanged map
-        # and check all moving/waiting/parked vehicle pairs again.
-        for conflict in conflicts:
+    def try_reserved_approaches(rejected_assignments):
+        # If an already docked vehicle blocks an approach for the closest
+        # group, try a different path before assigning a more distant mount.
+        for assignment in rejected_assignments:
             pair_cache.clear()
-            assignment = conflict["assignment"]
             assigned = dict(zip(ids, assignment))
             base = [tracks[i, assigned[i]] for i in ids]
             options = [[track] for track in base]
@@ -419,14 +502,71 @@ def plan_assembly(scene, grid, cargo_pose, *, fixed=None, starts=None, profile="
                 evidence.append(dict(vehicle=i, dock=assigned[i], status="parking_reservation",
                                      reserved_docks=[assigned[j] for j in ids if j != i], guided_candidates=audits))
                 if track is not None:
-                    options[index].append(track)
+                    track["length_m"] = track_length(track["plan"])
+                    # The controller receives and audits the original occupancy map.
+                    options[index].append(dict(track, request=requests[i, assigned[i]]))
                 alternatives = sorted(product(*options), key=lambda group: max(t["duration_s"] for t in group))
                 for group in alternatives:
                     if group[index] is not base[index]:
-                        consider(assignment, dict(zip(ids, group)), alternate=True)
-            if best is not None:
-                break
-    common = dict(reference=reference, wall_s=monotonic() - started, evidence=evidence, conflicts=conflicts)
+                        consider(assignment, dict(zip(ids, group)))
+
+    def distance_band(assignment):
+        extra = max(tracks[i, slot]["length_m"] - nearest[i][0] for i, slot in zip(ids, assignment))
+        return int(extra / resolution + 1e-7)
+
+    def repair_nearest_schedule():
+        near = best["priority"][0]
+        if best["delays"][near] == 0.:
+            return
+        # Two individually valid approaches can both be needed to remove
+        # the same wait. Search them in parallel with one budget per car,
+        # then certify each combination against the incumbent schedule.
+        cars = [i for i in ids if i != near]
+        base = best["tracks"]
+        slots_by_car = best["assignment"]
+        assignment = tuple(slots_by_car[i] for i in ids)
+        reserved = _parking_reservations(grid, [best["docks"][near]], shape)
+        occupied = encode_grid(reserved)
+
+        def approach(car):
+            key = (car, slots_by_car[car])
+            return solve(key, dict(requests[key], grid=occupied),
+                         solve_budget=.3 * budget, retry_general=False)
+
+        choices = {car: [base[car]] for car in cars}
+        with ThreadPoolExecutor(max_workers=len(cars)) as pool:
+            for key, entry, alternative in pool.map(approach, cars):
+                car = key[0]
+                evidence.append(dict(entry, reserved_docks=[slots_by_car[near]]))
+                if alternative is None:
+                    continue
+                alternative["length_m"] = track_length(alternative["plan"])
+                if alternative["length_m"] <= base[car]["length_m"] + length:
+                    alternative["request"] = requests[key]
+                    choices[car].append(alternative)
+        for routes in product(*(choices[car] for car in cars)):
+            if any(track is not base[car] for car, track in zip(cars, routes)):
+                consider(assignment, {**base, **dict(zip(cars, routes))})
+
+    reachable = [assignment for assignment in assignments if all(key in tracks for key in zip(ids, assignment))]
+    for extra_band, band in groupby(sorted(reachable, key=distance_band), distance_band):
+        if nearest_certified_band is not None and extra_band > nearest_certified_band + distance_slack:
+            break
+        rejected_assignments = []
+        for assignment in band:
+            candidates = {i: tracks[i, slot] for i, slot in zip(ids, assignment)}
+            rejected = consider(assignment, candidates)
+            if rejected is not None:
+                conflicts.append(dict(assignment=assignment, conflicts=rejected))
+                rejected_assignments.append(assignment)
+        if best is None:
+            try_reserved_approaches(rejected_assignments)
+        if best is not None and nearest_certified_band is None:
+            nearest_certified_band = extra_band
+            repair_nearest_schedule()
+    common = dict(reference=reference, wall_s=monotonic() - started, evidence=evidence, conflicts=conflicts,
+                  assignment_policy="specified" if fixed else "nearest_feasible_path_minimax",
+                  assignment_distance_resolution_m=resolution)
     if best is None:
         reason = "assembly_schedule_conflict" if conflicts else "assembly_dock_assignment_unreachable"
         return dict(common, status="failed", reason=reason)

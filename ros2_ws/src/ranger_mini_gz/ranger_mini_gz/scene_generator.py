@@ -1,10 +1,11 @@
 """Generate a Gazebo world and ROS static map from one scene description."""
 
 import argparse
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 import hashlib
 import json
 import math
+import os
 from pathlib import Path
 
 import numpy as np
@@ -16,8 +17,11 @@ from ranger_mini_gz.scene_geometry import (
 from ranger_mini_gz.scene_world import STYLE_COLORS, write_gui_config, write_world
 
 
-SCENARIOS = ("factory_indoor_01", "port_01", "factory_outdoor_01", "v3_multibend", "v3_auxiliary")
-SCENE_VARIANTS = ("auto", "default", "west_single_lane", "wide", "critical", "too_narrow", "cts_assembly")
+SCENARIOS = ("factory_indoor_01", "port_01", "factory_outdoor_01", "v3_multibend", "v3_auxiliary", "paper_yard")
+BLADE_SCENES = ("blade_mountain_01", "blade_right_angle_01", "blade_roundabout_01")
+BLADE_HARD_SCENES = ("blade_mountain_hard", "blade_right_angle_hard", "blade_roundabout_hard")
+ALL_BLADE_SCENES = (*BLADE_SCENES, *BLADE_HARD_SCENES)
+SCENE_VARIANTS = ("auto", "default", "west_single_lane", "wide", "critical", "too_narrow", "cts_assembly", "paper_cts")
 TASKS = ("single", "formation")
 WALL_THICKNESS = .15
 
@@ -31,6 +35,7 @@ class Cargo:
     mount_height: float
     mount_diameter: float
     opacity: float
+    outline: tuple = ()
 
 
 @dataclass(frozen=True)
@@ -53,6 +58,7 @@ class Scene:
     pinch_width: float | None
     initial_body_yaw_offsets: tuple = (0., 0., 0.)
     assembly_starts: tuple = ()
+    blade_site: object = None
 
     def spawn_poses(self, task):
         start = self.experiments[task]["start"]
@@ -93,12 +99,17 @@ def boundary_rows(size, height):
 
 
 def load_scene(name, variant=None, resolution=None, paths=None):
-    if name not in SCENARIOS:
+    if name not in (*SCENARIOS, *ALL_BLADE_SCENES):
         raise ValueError(f"unknown scene {name!r}")
     sim, common, backends = paths or installed_paths()
     raw = read_yaml(sim / "scenarios" / f"{name}.yaml")
     if raw["name"] != name:
         raise ValueError("scene name differs from its filename")
+    if name in ALL_BLADE_SCENES:
+        from ranger_mini_gz.blade_geometry import load_pair
+        if variant not in (None, "auto", "default"):
+            raise ValueError(f"variant {variant!r} is not available for {name}")
+        return load_pair(raw, sim, common, resolution)
     size = positive(vector(raw["size"], 2, "scene size"), "scene size")
     primary = map_resolution(size, raw["resolution"] if resolution is None else resolution)
     comparison = raw.get("comparison_resolution")
@@ -116,7 +127,7 @@ def load_scene(name, variant=None, resolution=None, paths=None):
         extra = variant_rows[variant]
         if isinstance(extra, dict):
             assembly_starts = tuple(vector(pose, 3, "assembly start") for pose in extra["assembly_starts"])
-            extra = extra["obstacles"]
+            extra = [*extra["obstacles"], *extra.get("additional_obstacles", ())]
         obstacle_rows = [*obstacle_rows, *extra]
     elif variant != "default":
         cases = raw.get("width_cases", {})
@@ -204,6 +215,19 @@ def load_scene(name, variant=None, resolution=None, paths=None):
     return scene
 
 
+def with_trial_road(scene, road_path):
+    """Use the certified road polygon for a blade experiment."""
+    if road_path is None:
+        return scene
+    import shapely as sg
+
+    road = sg.from_geojson(road_path.read_text())
+    if (scene.blade_site is None or road.geom_type != "Polygon" or road.is_empty
+            or not road.is_valid or not sg.box(0., 0., *scene.size).covers(road)):
+        raise ValueError("invalid archived blade road")
+    return replace(scene, blade_site=replace(scene.blade_site, road=road))
+
+
 def model_footprints(scene, task, reference, vehicle_poses=None):
     ranger = rectangle(*scene.vehicle_size[:2])
     if task == "single":
@@ -213,7 +237,10 @@ def model_footprints(scene, task, reference, vehicle_poses=None):
         vehicle_poses = [local_pose(reference, offset) for offset in scene.offsets]
     for index, body in zip(scene.vehicle_ids, vehicle_poses, strict=True):
         yield f"robot{index}", transform(ranger, body)
-    yield "cargo", transform(rectangle(*scene.cargo.size[:2]), local_pose(reference, scene.cargo.offset))
+    if scene.cargo.outline:
+        yield "cargo", transform(scene.cargo.outline, reference)
+    else:
+        yield "cargo", transform(rectangle(*scene.cargo.size[:2]), local_pose(reference, scene.cargo.offset))
 
 
 def clearance_summary(scene, task, references):
@@ -221,7 +248,14 @@ def clearance_summary(scene, task, references):
     results = {}
     for reference, vehicles in references:
         for name, polygon in model_footprints(scene, task, reference, vehicles):
-            distance, obstacle = clearance(polygon, scene.obstacles, scene.size)
+            if scene.blade_site is None:
+                distance, obstacle = clearance(polygon, scene.obstacles, scene.size)
+            else:
+                from shapely import Polygon
+                body = Polygon(polygon)
+                road = scene.blade_site.road
+                distance = road.boundary.distance(body) if road.covers(body) else 0.
+                obstacle = "road_boundary"
             if name not in results or distance < results[name]["distance_m"]:
                 results[name] = {"distance_m": distance, "obstacle": obstacle,
                                  "reference": [round(value, 5) for value in reference]}
@@ -230,6 +264,22 @@ def clearance_summary(scene, task, references):
 
 def scene_audit(scene):
     report = {}
+    if scene.blade_site is not None:
+        from ranger_mini_gz.blade_geometry import local_footprint, mountain_witness, street_witness, world_footprint
+        road = scene.blade_site.road
+        envelope = local_footprint(scene)
+        for key, pose in scene.experiments["blade_pair"].items():
+            if key == "ordered_gates":
+                continue
+            footprint = world_footprint(envelope, pose)
+            report[key] = dict(bodies=clearance_summary(scene, "blade_pair", [(pose, None)]),
+                               arbitrary_chassis_yaw_gap_m=road.boundary.distance(footprint),
+                               inside_road=bool(road.covers(footprint)))
+        if scene.blade_site.centreline is not None and not scene.blade_site.config.get("tight_bends"):
+            report["mountain_witness"] = mountain_witness(scene)
+        if "geometric_reference" in scene.blade_site.config:
+            report["street_witness"] = street_witness(scene)
+        return report
     for task in TASKS:
         report[task] = {
             key: clearance_summary(scene, task, [(scene.experiments[task][key], None)])
@@ -252,7 +302,8 @@ def scene_audit(scene):
 
 
 def write_map(scene, directory, stem, resolution):
-    grid = rasterize(scene.obstacles, scene.size, resolution)
+    grid = (scene.blade_site.occupied(scene.size, resolution) if scene.blade_site is not None
+            else rasterize(scene.obstacles, scene.size, resolution))
     height, width = grid.shape
     image = np.where(np.flipud(grid), 0, 254).astype(np.uint8)
     pgm = f"P5\n{width} {height}\n255\n".encode() + image.tobytes()
@@ -276,17 +327,29 @@ def read_map(yaml_path):
     return metadata, np.where(np.flipud(raw) == 0, 100, 0).astype(np.int8)
 
 
-def generate_scene(scene, directory, task, gui_template, *, audit=True, spawn_poses=None):
-    if task not in TASKS:
+def generate_scene(scene, directory, task, gui_template, *, audit=True, spawn_poses=None, placement="start",
+                   blade_plant=None, blade_body_yaws=None, blade_real_time_factor=1.):
+    if task not in scene.experiments:
         raise ValueError(f"unsupported task {task!r}")
+    if task != "blade_pair" and placement != "start":
+        raise ValueError("static placement is only available for blade scenes")
+    if placement not in scene.experiments[task]:
+        raise ValueError(f"placement {placement!r} is not available for {scene.name}")
+    if blade_plant is not None:
+        if task != "blade_pair" or not Path(blade_plant).is_file() or not math.isfinite(blade_real_time_factor) or blade_real_time_factor <= 0.:
+            raise ValueError("blade simulation requires a blade scene, plant configuration and positive real-time factor")
     directory.mkdir(parents=True, exist_ok=True)
     maps = {"map": write_map(scene, directory, "map", scene.resolution)}
     if scene.comparison_resolution is not None and scene.comparison_resolution != scene.resolution:
         maps["map_0025"] = write_map(scene, directory, "map_0025", scene.comparison_resolution)
-    write_world(scene, directory / "world.sdf", task)
+    payload_pose = scene.experiments[task][placement]
+    world_checks = write_world(scene, directory / "world.sdf", task, placement=payload_pose,
+                               blade_plant=blade_plant, blade_body_yaws=blade_body_yaws,
+                               blade_real_time_factor=blade_real_time_factor)
     if task == "formation":
         write_world(scene, directory / "world_single.sdf", "single")
-    write_gui_config(scene, gui_template, directory / "gui.config")
+    if task != "blade_pair":
+        write_gui_config(scene, gui_template, directory / "gui.config")
     spawns = scene.spawn_poses(task) if spawn_poses is None else spawn_poses
     metadata = {"scenario": scene.name, "variant": scene.variant, "task": task, "frame": "map",
                 "size_m": list(scene.size), "map_origin": [0., 0., 0.], "maps": maps,
@@ -301,6 +364,22 @@ def generate_scene(scene, directory, task, gui_template, *, audit=True, spawn_po
     if scene.assembly_starts:
         metadata["assembly_starts"] = {f"robot{i}": list(pose) for i, pose in zip(
             scene.vehicle_ids, scene.assembly_starts, strict=True)}
+    if task == "blade_pair":
+        from ranger_mini_gz.blade_world import camera_views
+        cameras = camera_views(scene, placement)
+        for view, camera in cameras.items():
+            filename = "gui.config" if view == "overview" else f"gui_{view}.config"
+            write_gui_config(scene, gui_template, directory / filename, **camera)
+        headings = [payload_pose[2]]*2 if blade_body_yaws is None else blade_body_yaws
+        metadata.update(placement=placement, payload_pose=list(payload_pose), static_placement=blade_plant is None,
+                        cameras=cameras,
+                        environment_geometry=world_checks,
+                        spawn_poses={f"robot{i}": [*local_pose(payload_pose, o)[:2], float(yaw)]
+                                     for i, o, yaw in zip(scene.vehicle_ids, scene.offsets, headings, strict=True)})
+        metadata["environment_obstacles"] = [*world_checks]
+        if scene.blade_site.island is not None:
+            metadata["environment_obstacles"].append("central_island")
+        metadata["cargo"]["outline_xy_m"] = list(map(list, scene.cargo.outline))
     if audit:
         metadata["clearance"] = scene_audit(scene)
     (directory / "scene_meta.yaml").write_text(yaml.safe_dump(metadata, sort_keys=False))
@@ -308,6 +387,9 @@ def generate_scene(scene, directory, task, gui_template, *, audit=True, spawn_po
     files = [item for name in files for item in ((name + ".pgm", name + ".yaml") if name in maps else (name,))]
     if task == "formation":
         files.append("world_single.sdf")
+    if task == "blade_pair":
+        files += ["gui_top.config", "gui_detail.config", "gui_supports.config",
+                  *(p.relative_to(directory).as_posix() for p in sorted((directory / "assets").iterdir()) if p.is_file())]
     manifest = {name: hashlib.sha256((directory / name).read_bytes()).hexdigest() for name in files}
     (directory / "manifest.yaml").write_text(yaml.safe_dump({"schema": 1, "sha256": manifest}, sort_keys=False))
     return metadata
@@ -315,17 +397,45 @@ def generate_scene(scene, directory, task, gui_template, *, audit=True, spawn_po
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("scenario", choices=SCENARIOS)
+    parser.add_argument("scenario", choices=(*SCENARIOS, *ALL_BLADE_SCENES))
     parser.add_argument("output", type=Path)
     parser.add_argument("--variant", choices=SCENE_VARIANTS, default="auto")
     parser.add_argument("--resolution", type=float)
-    parser.add_argument("--task", choices=TASKS, default="formation")
+    parser.add_argument("--task", choices=(*TASKS, "blade_pair"))
+    parser.add_argument("--placement", choices=("start", "goal", "key_pose", "second_bend"), default="start")
+    parser.add_argument("--view", choices=("overview", "top", "detail", "supports"), default="overview")
+    parser.add_argument("--scene-package-dir", type=Path, help=argparse.SUPPRESS)
+    parser.add_argument("--gazebo", dest="gazebo", action="store_true")
+    parser.add_argument("--generate-only", dest="gazebo", action="store_false")
+    parser.set_defaults(gazebo=False)
     args = parser.parse_args()
     paths = installed_paths()
+    if args.scene_package_dir is not None:
+        paths = (args.scene_package_dir, *paths[1:])
     scene = load_scene(args.scenario, args.variant, args.resolution, paths)
-    metadata = generate_scene(scene, args.output, args.task, paths[0] / "config" / "ranger.gui.config")
+    task = args.task or ("blade_pair" if scene.blade_site is not None else "formation")
+    if task not in scene.experiments:
+        parser.error(f"task {task!r} is not available for {args.scenario}")
+    if args.placement not in scene.experiments[task]:
+        parser.error(f"placement {args.placement!r} is not available for {args.scenario}")
+    if args.view != "overview" and task != "blade_pair":
+        parser.error("the selected view requires a blade scene")
+    metadata = generate_scene(scene, args.output, task, paths[0] / "config" / "ranger.gui.config",
+                              placement=args.placement)
     print(json.dumps({"scenario": metadata["scenario"], "variant": metadata["variant"],
-                      "output": str(args.output.resolve()), "maps": metadata["maps"]}, ensure_ascii=False))
+                      "output": str(args.output.resolve()), "maps": metadata["maps"]}, ensure_ascii=False), flush=True)
+    if args.gazebo:
+        from ament_index_python.packages import get_package_share_directory
+        directory = args.output.resolve()
+        share = Path(get_package_share_directory("ranger_mini_description")).parent
+        config = "gui.config" if args.view == "overview" else f"gui_{args.view}.config"
+        resources = os.pathsep.join(filter(None, (str(directory), str(share), os.environ.get("GZ_SIM_RESOURCE_PATH"))))
+        env = dict(os.environ, GZ_SIM_RESOURCE_PATH=resources)
+        command = ["gz", "sim", "-r", "--gui-config", str(directory / config)]
+        if task == "blade_pair":
+            env.setdefault("GZ_PARTITION", f"coptrans_blade_{os.getpid()}")
+            print("正在打开 Gazebo。首次加载车辆网格可能需要数秒。", flush=True)
+        os.execvpe("gz", [*command, str(directory / "world.sdf")], env)
 
 
 if __name__ == "__main__":

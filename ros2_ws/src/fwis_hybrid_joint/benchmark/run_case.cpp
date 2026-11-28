@@ -1,6 +1,7 @@
 // Offline test adapter. In solve mode the input has no witness, label or case identity.
 #include "fwis_hybrid_joint/model.hpp"
 #include "../src/clock.hpp"
+#include "../src/rigid_polygon.hpp"
 #include <json/json.h>
 #include <algorithm>
 #include <cmath>
@@ -33,11 +34,11 @@ hj::Boundary boundary(const Value& v) {
   for (unsigned i=0;i<3;++i) b.constrain_heading[i]=v["constrain_heading"][i].asBool();
   return b;
 }
-hj::Request request(const Value& v) {
+hj::Request request(const Value& v, bool footprint_only) {
   hj::Request r;
   auto& g=v["grid"];
   unsigned n=g["width"].asUInt(), m=g["height"].asUInt();
-  if (!n || !m || n>4096 || m>4096) throw std::invalid_argument("invalid map size");
+  if (!n || !m || n>8192 || m>8192) throw std::invalid_argument("invalid map size");
   std::vector<uint8_t> cells(n*m,0);
   for (auto& run:g["occupied_runs"]) {
     unsigned start=run[0].asUInt(), count=run[1].asUInt();
@@ -48,6 +49,7 @@ hj::Request request(const Value& v) {
     fwis_planning_core::Point2d{g["origin"][0].asDouble(),g["origin"][1].asDouble()},std::move(cells));
   for (auto& car:v["vehicles"]) r.vehicles.push_back(array<double,4>(car));
   if (!v["cargo"].isNull()) r.cargo=array<double,4>(v["cargo"]);
+  if (footprint_only) return r;
   r.start=boundary(v["start"]); r.goal=boundary(v["goal"]);
   r.allow_reverse=v["allow_reverse"].asBool();
   r.task_duration_cap=v["task_duration_cap"].asDouble();
@@ -65,6 +67,51 @@ hj::Request request(const Value& v) {
   if (l.isMember("high_steer_speed")) READ_LIMIT(high_steer_speed);
 #undef READ_LIMIT
   return r;
+}
+hj::CargoPolygon cargo_polygon(const Value& v) {
+  if (!v.isNull() && (!v.isArray() || v.size()<3 || v.size()>256))
+    throw std::invalid_argument("cargo_polygon requires 3 to 256 ordered vertices");
+  hj::CargoPolygon out;
+  for (const auto& vertex:v) {
+    const auto p=array<double,2>(vertex);
+    out.push_back({p[0],p[1]});
+  }
+  return out;
+}
+Value check_footprint(const hj::Request& r,const hj::CargoPolygon& polygon,const Value& input) {
+  const auto count=r.vehicles.size();
+  if (count<1 || count>hj::Headings{}.size())
+    throw std::invalid_argument("expected one to three vehicles");
+  const auto& poses=input["poses"];
+  if (!poses.isArray() || poses.empty())
+    throw std::invalid_argument("expected non-empty footprint poses");
+  const hj::FormationCollision map(r,polygon);
+  Value out;
+  const double default_padding=input.get("padding_m",0.).asDouble();
+  for (Json::ArrayIndex i=0; i<poses.size(); ++i) {
+    const auto& p=poses[i];
+    const auto columns=3+count;
+    if (!p.isArray() || (p.size()!=columns && p.size()!=columns+1))
+      throw std::invalid_argument("expected x, y, yaw, one heading per vehicle and optional padding");
+    for (const auto& v:p) if (!v.isNumeric() || !std::isfinite(v.asDouble()))
+      throw std::invalid_argument("footprint poses require finite coordinates");
+    hj::Headings head{};
+    for (Json::ArrayIndex j=0; j<count; ++j) head[j]=p[3+j].asDouble();
+    const double padding=p.size()==columns ? default_padding : p[Json::ArrayIndex(columns)].asDouble();
+    const auto hit=map.check({p[0].asDouble(),p[1].asDouble(),p[2].asDouble()},head.data(),count,padding);
+    if (hit.reason!=fwis_planning_core::CollisionReason::clear) {
+      out["status"]="collision";
+      out["reason"]=map.reason(hit.reason);
+      out["samples_checked"]=i+1;
+      out["sample_index"]=i;
+      out["vehicle"]=Json::UInt64(hit.first);
+      return out;
+    }
+  }
+  out["status"]="clear";
+  out["reason"]="ALL_FOOTPRINTS_CLEAR";
+  out["samples_checked"]=poses.size();
+  return out;
 }
 char letter(hj::Mode m) { return m==hj::Mode::A?'A':m==hj::Mode::O?'O':'S'; }
 hj::Mode mode(char c) {
@@ -179,13 +226,18 @@ Value diagnostics(const hj::Request& r,const hj::Plan& p) {
 }
 Value run(const Value& input) {
   auto begin=hj::Clock::now();
-  auto r=request(input["request"]);
+  const auto operation=input["operation"].asString();
+  auto r=request(input["request"],operation=="check_footprint");
+  const auto polygon=cargo_polygon(input["request"]["cargo_polygon"]);
+  if (operation=="check_footprint") return check_footprint(r,polygon,input);
   const double budget=input["budget_s"].asDouble();
   auto deadline=begin+std::chrono::duration_cast<hj::Clock::duration>(std::chrono::duration<double>(budget));
   Value out;
-  if (input["operation"].asString()=="certify")
-    return audit(hj::certify(r,plan(input["plan"]),deadline));
-  if (input["operation"].asString()!="solve" || input.isMember("plan"))
+  if (operation=="certify")
+    return audit(hj::certify_polygon(r,plan(input["plan"]),polygon,deadline));
+  if (!polygon.empty())
+    throw std::invalid_argument("cargo_polygon is supported by certify and check_footprint");
+  if ((operation!="solve" && operation!="docking") || input.isMember("plan"))
     throw std::invalid_argument("unrecognized or non-blind solve");
   hj::SolveOptions options;
   const auto& opt=input["options"];
@@ -193,7 +245,7 @@ Value run(const Value& input) {
     for (char c:opt["sequence"].asString()) options.initial_sequence.push_back(mode(c));
     options.enable_edits=opt["enable_edits"].asBool(); options.movable_switches=opt["movable_switches"].asBool();
   }
-  auto solution=hj::solve(r,deadline,{},options);
+  auto solution=operation=="docking"?hj::solve_docking(r,deadline):hj::solve(r,deadline,{},options);
   auto wall=std::chrono::duration<double>(hj::Clock::now()-begin).count();
   out["wall_s"]=wall; out["deadline_overrun_s"]=std::max(0.,wall-budget);
   out["status"]=solution.status; out["reason"]=solution.reason;

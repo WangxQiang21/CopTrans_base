@@ -1,0 +1,93 @@
+name: blade_mountain_01
+size:
+- 128
+- 64
+resolution: 0.05
+comparison_resolution: 0.025
+start:
+- 18
+- 12
+- 0
+goal:
+- 18
+- 48
+- 3.141592653589793
+key_pose:
+- 118
+- 39
+- 1.5707963267948966
+camera:
+  key_supports: {eye: [121.8, 39.7, 1.35], target: [118.0, 39.65, 0.48], hfov: 2.30}
+  eye:
+  - 63
+  - -12
+  - 103
+  target:
+  - 63
+  - 31
+  - 0
+road:
+  width_m: 6.5
+  surface_z_m: 0
+  centerline_primitives:
+  - type: line
+    start:
+    - 4
+    - 12
+    end:
+    - 30
+    - 12
+  - type: arc
+    center:
+    - 30
+    - 30
+    radius: 18
+    start_angle_deg: -90
+    sweep_deg: 60
+  - type: arc
+    center:
+    - 61.17691453623979
+    - 12
+    radius: 18
+    start_angle_deg: 150
+    sweep_deg: -60
+  - type: line
+    start:
+    - 61.17691453623979
+    - 30
+    end:
+    - 110
+    - 30
+  - type: arc
+    center:
+    - 110
+    - 39
+    radius: 9
+    start_angle_deg: -90
+    sweep_deg: 180
+  - type: line
+    start:
+    - 110
+    - 48
+    end:
+    - 4
+    - 48
+  s_inner_outer_radii_m:
+  - 14.75
+  - 21.25
+  hairpin_inner_outer_radii_m:
+  - 5.75
+  - 12.25
+terrain:
+  near_road_cut_height_m:
+  - 2
+  - 4
+  ridge_height_m:
+  - 8
+  - 14
+  background_peak_height_m:
+  - 16
+  - 22
+  min_rock_xy_setback_from_road_m: 0.4
+  outer_guardrail_height_m: 0.8
+  min_guardrail_xy_setback_from_road_m: 0.25

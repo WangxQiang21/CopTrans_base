@@ -26,7 +26,7 @@ double duration(const Plan& p) {
 }
 Sample evaluate_phase(const Request& r,const Phase& p,double t) {
   if (!(p.duration>0) || !std::isfinite(t) || p.pieces.empty() ||
-      (r.vehicles.size()!=1 && r.vehicles.size()!=3))
+      r.vehicles.empty() || r.vehicles.size()>Sample{}.bodies.size())
     throw std::invalid_argument("invalid hybrid phase or vehicle count");
   const double u=std::clamp(t/p.duration,0.,1.);
   const auto law=hybrid_clock::state(u,p.cruise_ramp_fraction);

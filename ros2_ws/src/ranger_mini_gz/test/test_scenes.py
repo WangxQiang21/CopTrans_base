@@ -109,3 +109,62 @@ def test_pinch_width_and_sampled_wedge_clearance(variant, width, minimum):
         assert all(report["formation"][f"robot{i}"]["distance_m"] > 0 for i in (1, 2, 3))
     else:
         assert report["formation"]["cargo"]["obstacle"] == "cabinet_pinchoff"
+
+
+def test_dual_blade_sweep_and_mounts_use_continuous_geometry():
+    pytest.importorskip("shapely", minversion="2.1")
+    from ranger_mini_gz.blade_certify import BladeCertifier
+
+    scene = load_scene("blade_right_angle_01", paths=paths())
+    experiment = scene.experiments["blade_pair"]
+    waypoints = [experiment[p] if isinstance(p, str) else p
+                 for p in scene.blade_site.config["geometric_reference"]]
+    trajectory = np.array(tuple(interpolate(waypoints)))
+    headings = np.repeat(trajectory[:, 2:], 2, axis=1)
+    checker = BladeCertifier(scene)
+    reference = checker.certify(trajectory, headings)
+    assert reference["passed"]
+    assert reference["swept_grid_clearance_lower_bound_m"] > .35
+
+    endpoints = [0, len(trajectory) - 1]
+    assert checker.check_poses(trajectory[endpoints], headings[endpoints]).all()
+    shortcut = checker.certify(trajectory[endpoints], headings[endpoints])
+    assert shortcut["reason"] == "swept_clearance_not_certified"
+
+    centers = checker.mount_centers(trajectory)
+    centers[len(centers) // 2, 1, 1] += .025
+    measured = checker.certify(trajectory, headings, vehicle_centers=centers, mount_tolerance_m=.005)
+    assert measured["reason"] == "mount_alignment"
+    assert measured["max_mount_error_m"] == pytest.approx(.025)
+
+    occupied = scene.blade_site.occupied(scene.size, scene.resolution)
+    x, y, _ = trajectory[0]
+    occupied[int(y / scene.resolution), int(x / scene.resolution)] = True
+    raster_check = BladeCertifier(scene, occupied).certify(trajectory, headings)
+    assert raster_check["reason"] == "grid_sample_clearance"
+    assert raster_check["first_failure"]["body"] == "blade"
+
+
+def test_tighter_blade_scenes_keep_endpoints_and_use_the_shared_rviz_layout(tmp_path):
+    pytest.importorskip("shapely", minversion="2.1")
+    from ament_index_python.packages import get_package_share_directory
+    from ranger_mini_gz.rviz_layout import rviz_config
+    from ranger_mini_gz.scene_generator import BLADE_HARD_SCENES, BLADE_SCENES, read_yaml
+
+    for original, tightened in zip(BLADE_SCENES, BLADE_HARD_SCENES):
+        baseline, narrow = (load_scene(name, paths=paths()) for name in (original, tightened))
+        assert narrow.cargo.outline == baseline.cargo.outline
+        assert narrow.offsets == baseline.offsets
+        for pose in ("start", "goal"):
+            assert narrow.experiments["blade_pair"][pose] == baseline.experiments["blade_pair"][pose]
+
+    description = Path(get_package_share_directory("ranger_mini_description"))
+    filename = rviz_config(description, tmp_path, narrow, "blade_pair", tracking_dashboard=True, experiment_id="test")
+    layout = read_yaml(filename)
+    assert any(panel["Class"] == "fwis_rviz_plugins/PlanningPanel" for panel in layout["Panels"])
+    displays = layout["Visualization Manager"]["Displays"]
+    models = [d["TF Prefix"] for d in displays if d["Class"] == "rviz_default_plugins/RobotModel"]
+    assert models == ["robot1", "robot2"]
+    dashboard, = (d for d in displays if d["Class"] == "fwis_rviz_plugins/TrackingHUD")
+    assert dashboard["Vehicle Count"] == 2
+    assert dashboard["Experiment ID"] == "test"

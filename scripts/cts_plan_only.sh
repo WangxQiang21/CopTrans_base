@@ -6,7 +6,7 @@ workspace="$root/ros2_ws"
 install_base=$(realpath -m -- "${COPTRANS_INSTALL_BASE:-$workspace/install}")
 if [[ ${1:-} == --help || ${1:-} == -h ]]; then
     cat <<'EOF'
-Usage: ./scripts/test.sh --planner-only [--case CTS_S3] [--dock-assignment auto|1,3,2]
+Usage: ./scripts/test.sh --planner-only [--suite historical|paper] [--case CTS_S3] [--dock-assignment auto|1,3,2]
        [--speed-profile standard|baseline] [--transport-only] [--no-build]
 
 Run the frozen CTS cases with the native solver, without Gazebo or RViz.

@@ -1,0 +1,245 @@
+scenario: blade_mountain_01
+variant: default
+task: blade_pair
+frame: map
+size_m:
+- 128.0
+- 64.0
+map_origin:
+- 0.0
+- 0.0
+- 0.0
+maps:
+  map:
+    resolution: 0.05
+    width: 2560
+    height: 1280
+    occupied_cells: 2644497
+    raster_tolerance_m: 0.07071067811865477
+  map_0025:
+    resolution: 0.025
+    width: 5120
+    height: 2560
+    occupied_cells: 10559298
+    raster_tolerance_m: 0.03535533905932738
+pinch_width_m: null
+spawn_poses:
+  robot1:
+  - 118.0
+  - 34.0
+  - 1.5707963267948966
+  robot2:
+  - 118.0
+  - 44.0
+  - 1.5707963267948966
+experiments:
+  blade_pair:
+    start:
+    - 18.0
+    - 12.0
+    - 0.0
+    goal:
+    - 18.0
+    - 48.0
+    - 3.141592653589793
+    key_pose:
+    - 118.0
+    - 39.0
+    - 1.5707963267948966
+    ordered_gates: []
+formation_offsets_m:
+- - -5.0
+  - 0.0
+- - 5.0
+  - 0.0
+cargo:
+  id: wind_turbine_blade
+  size_m:
+  - 15.375
+  - 1.2345000000000002
+  - 0.18
+  offset_m:
+  - 0.6875
+  - -0.12725000000000003
+  bottom_m: 0.58
+  opacity: 1.0
+  mount_height_m: 0.24199999999999994
+  mount_diameter_m: 0.14
+  outline_xy_m:
+  - - -7.0
+    - 0.45
+  - - -6.65
+    - 0.45
+  - - -5.95
+    - 0.49
+  - - -4.4
+    - 0.48
+  - - -3.4
+    - 0.4185
+  - - 7.35
+    - 0.18
+  - - 8.05
+    - 0.125
+  - - 8.375
+    - 0.125
+  - - 8.375
+    - -0.235
+  - - 8.05
+    - -0.235
+  - - 7.35
+    - -0.34
+  - - -3.4
+    - -0.7445
+  - - -4.4
+    - -0.66
+  - - -5.95
+    - -0.49
+  - - -6.65
+    - -0.45
+  - - -7.0
+    - -0.45
+environment_obstacles:
+- rock_massif
+- outer_guardrail
+placement: key_pose
+payload_pose:
+- 118.0
+- 39.0
+- 1.5707963267948966
+static_placement: true
+cameras:
+  overview:
+    eye:
+    - 63
+    - -12
+    - 103
+    target:
+    - 63
+    - 31
+    - 0
+    hfov: 1.32
+  top:
+    eye:
+    - 64.0
+    - 32.0
+    - 108.8
+    target:
+    - 64.0
+    - 32.0
+    - 0.0
+    hfov: 1.32
+  detail:
+    eye:
+    - 120.0
+    - 31.0
+    - 24.0
+    target:
+    - 118.0
+    - 39.0
+    - 0.3
+    hfov: 1.18
+  supports:
+    eye:
+    - 121.8
+    - 39.7
+    - 1.35
+    target:
+    - 118.0
+    - 39.65
+    - 0.48
+    hfov: 2.3
+environment_geometry:
+  rock_massif:
+    minimum_xy_setback_m: 0.40387829256978597
+    required_m: 0.4
+    exported_triangles: 43077
+    visual_equals_collision: true
+  outer_guardrail:
+    minimum_xy_setback_m: 0.27257405831358705
+    required_m: 0.25
+    exported_triangles: 18095
+    visual_equals_collision: true
+clearance:
+  start:
+    bodies:
+      robot1:
+        distance_m: 3.0
+        obstacle: road_boundary
+        reference:
+        - 18.0
+        - 12.0
+        - 0.0
+      robot2:
+        distance_m: 3.0
+        obstacle: road_boundary
+        reference:
+        - 18.0
+        - 12.0
+        - 0.0
+      cargo:
+        distance_m: 2.505499999999999
+        obstacle: road_boundary
+        reference:
+        - 18.0
+        - 12.0
+        - 0.0
+    arbitrary_chassis_yaw_gap_m: 2.505499999999999
+    inside_road: true
+  goal:
+    bodies:
+      robot1:
+        distance_m: 3.0
+        obstacle: road_boundary
+        reference:
+        - 18.0
+        - 48.0
+        - 3.14159
+      robot2:
+        distance_m: 3.0
+        obstacle: road_boundary
+        reference:
+        - 18.0
+        - 48.0
+        - 3.14159
+      cargo:
+        distance_m: 2.5054999999999974
+        obstacle: road_boundary
+        reference:
+        - 18.0
+        - 48.0
+        - 3.14159
+    arbitrary_chassis_yaw_gap_m: 2.5054999999999974
+    inside_road: true
+  key_pose:
+    bodies:
+      robot1:
+        distance_m: 2.4067842060874973
+        obstacle: road_boundary
+        reference:
+        - 118.0
+        - 39.0
+        - 1.5708
+      robot2:
+        distance_m: 2.4067842060875013
+        obstacle: road_boundary
+        reference:
+        - 118.0
+        - 39.0
+        - 1.5708
+      cargo:
+        distance_m: 0.5045267207235329
+        obstacle: road_boundary
+        reference:
+        - 118.0
+        - 39.0
+        - 1.5708
+    arbitrary_chassis_yaw_gap_m: 0.5045267207235329
+    inside_road: true
+  mountain_witness:
+    kind: rigid_geometry_witness
+    samples: 4327
+    invalid_samples: 0
+    sampled_min_clearance_m: 0.5045045524122085
+    inter_sample_motion_bound_m: 0.05116420905932602
+    conservative_lower_bound_m: 0.3816296652342277
+    centerline_length_m: 246.79648277428694

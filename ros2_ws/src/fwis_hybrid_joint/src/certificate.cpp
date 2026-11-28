@@ -1,4 +1,5 @@
 #include "fwis_hybrid_joint/model.hpp"
+#include "rigid_polygon.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -212,7 +213,7 @@ I signed_arc_rate(I tx,I ty,I ax,I ay,I norm2) {return (tx*ay-ty*ax)/norm2;}
 // its reference rotation and atan2 at vehicle tangents. Inflating footprints
 // covers the rounding error and also the motion on either half interval.
 double reconstruction_padding(const Request &r,const Phase &ph,std::size_t j,double t,
-    const Sample &sample) {
+    const Sample &sample,double polygon_radius) {
   const auto n=double(ph.pieces.size()); const auto s=progress_at(t,ph.cruise_ramp_fraction);
   const auto local=s*I(n)-I(double(j));
   const double a=std::clamp(local.l,0.,1.), b=std::clamp(local.h,0.,1.);
@@ -220,14 +221,15 @@ double reconstruction_padding(const Request &r,const Phase &ph,std::size_t j,dou
   const auto x=polynomial<1>(c.x,a,b),y=polynomial<1>(c.y,a,b),psi=polynomial<1>(c.yaw,a,b);
   const double displacement=up(std::hypot(magnitude(x.c[0]-I(sample.reference.x)),
       magnitude(y.c[0]-I(sample.reference.y))));
-  const bool formation=r.vehicles.size()==3;
+  const bool formation=r.vehicles.size()>1;
   const double refangle=formation?magnitude(psi.c[0]-I(sample.reference.yaw)):0.;
   const auto sc=sin_cos<1>(psi);
   auto geometry_error=[&](const Footprint &f,double heading_error) {
     return up(up(std::hypot(f[0],f[1]))*refangle+
               up(.5*std::hypot(f[2],f[3]))*heading_error);
   };
-  double angular=r.cargo?geometry_error(*r.cargo,refangle):0.;
+  double angular=polygon_radius>0 ? up(polygon_radius*refangle) :
+    r.cargo?geometry_error(*r.cargo,refangle):0.;
   for(std::size_t i=0;i<r.vehicles.size();++i) {
     const auto &f=r.vehicles[i]; const auto heading=sample.bodies[i].pose.yaw;
     double err=0;
@@ -251,12 +253,13 @@ double reconstruction_padding(const Request &r,const Phase &ph,std::size_t j,dou
     std::abs(sample.reference.x)+std::abs(sample.reference.y);
   for(const auto &f:r.vehicles) for(double v:f) scale+=std::abs(v);
   if(r.cargo) for(double v:*r.cargo) scale+=std::abs(v);
+  scale+=polygon_radius;
   return up(displacement+angular+128*std::numeric_limits<double>::epsilon()*scale);
 }
 struct IntervalAudit {
   const Request &r;
   const Phase &ph;
-  const fwis_planning_core::CollisionKernel &map;
+  const FormationCollision &map;
   Clock::time_point deadline;
   const Cancel &cancel;
   std::size_t index;
@@ -278,7 +281,7 @@ bool IntervalAudit::visit(std::size_t piece,double a,double b,double ta,double t
   for (std::size_t i=0;i<r.vehicles.size();++i) head[i]=point.bodies[i].pose.yaw;
   const auto exact=map.check(point.reference,head,r.vehicles.size());
   if(exact.reason!=fwis_planning_core::CollisionReason::clear) {
-    fail(fwis_planning_core::reason_name(exact.reason),exact.first,normalized(a),normalized(b));
+    fail(map.reason(exact.reason),exact.first,normalized(a),normalized(b));
     return false;
   }
   CheckFailure uncertainty{"CERTIFICATION_INCONCLUSIVE",0};
@@ -293,11 +296,12 @@ bool IntervalAudit::visit(std::size_t piece,double a,double b,double ta,double t
     double corner_rate=0;
 
     const auto &l=r.limits;
-    const bool formation=r.vehicles.size()==3;
+    const bool formation=r.vehicles.size()>1;
     const auto sc=sin_cos(psi);
     if (r.cargo) {
       const auto &f=*r.cargo;
-      const auto reach=up(std::hypot(f[0],f[1])+.5*std::hypot(f[2],f[3]));
+      const auto reach=up(map.polygon_radius()>0 ? map.polygon_radius() :
+        std::hypot(f[0],f[1])+.5*std::hypot(f[2],f[3]));
       corner_rate=up(speedF+reach*magnitude(psi.c[1]*z.z1));
       if(l.cargo_center_speed>0 && ph.kind==Kind::Motion && ph.mode!=Mode::S){
         const auto cx=x+scale(sc.second,I(f[0]))-scale(sc.first,I(f[1]));
@@ -382,7 +386,7 @@ bool IntervalAudit::visit(std::size_t piece,double a,double b,double ta,double t
       const double rho=up(.5*std::hypot(f[2],f[3]));
       corner_rate=std::max(corner_rate,up(magnitude(speed)+rho*magnitude(omega)));
     }
-    const double eval_bound=reconstruction_padding(r,ph,piece,tm,point);
+    const double eval_bound=reconstruction_padding(r,ph,piece,tm,point,map.polygon_radius());
     const double pad=up(corner_rate*up((tb-ta)*ph.duration/2)+eval_bound);
     const auto sweep=map.check(point.reference,head,r.vehicles.size(),pad);
     if (sweep.reason==fwis_planning_core::CollisionReason::clear) return true;
@@ -448,10 +452,11 @@ bool constant(const Quintic &p) {
 }
 } // namespace
 
-Audit certify(const Request& r,const Plan& plan,Clock::time_point deadline,const Cancel& cancel) {
+Audit certify_polygon(const Request& r,const Plan& plan,const CargoPolygon& polygon,
+                      Clock::time_point deadline,const Cancel& cancel) {
   const auto n=r.vehicles.size();
-  if (!r.grid || (n!=1 && n!=3) || (n==3 && !r.cargo) ||
-      (n==1 && (r.cargo || r.vehicles[0][0]!=0 || r.vehicles[0][1]!=0)) ||
+  if (!r.grid || n<1 || n>Sample{}.bodies.size() || (n>1 && !r.cargo) ||
+      (n==1 && (r.cargo || !polygon.empty() || r.vehicles[0][0]!=0 || r.vehicles[0][1]!=0)) ||
       !positive(r.task_duration_cap) || plan.phases.empty()) return {false,"INVALID_REQUEST_OR_EMPTY_PLAN"};
   const auto &l=r.limits;
   for (double v:{l.radius,l.speed,l.acceleration,l.jerk,l.lateral_acceleration,l.spin_speed,
@@ -464,7 +469,7 @@ Audit certify(const Request& r,const Plan& plan,Clock::time_point deadline,const
       !std::isfinite(l.yaw_acceleration)||l.yaw_acceleration<0||!std::isfinite(l.yaw_jerk)||l.yaw_jerk<0)
     return {false,"INVALID_LIMITS"};
   try {
-    const fwis_planning_core::CollisionKernel map(*r.grid,r.vehicles,r.cargo);
+    const FormationCollision map(r,polygon);
     double total=0,prepare=0;
     Sample prev_end,last_motion;
     last_motion.mode=Mode::A;
@@ -527,7 +532,7 @@ Audit certify(const Request& r,const Plan& plan,Clock::time_point deadline,const
         for(std::size_t i=0;i<n;++i) h[i]=s.bodies[i].pose.yaw;
         const auto hit=map.check(s.reference,h,n);
         if (hit.reason!=fwis_planning_core::CollisionReason::clear)
-          return {false,fwis_planning_core::reason_name(hit.reason),idx,hit.first};
+          return {false,map.reason(hit.reason),idx,hit.first};
       }
       if(ph.kind==Kind::Prepare) {
         if (idx+1==plan.phases.size() || plan.phases[idx+1].kind!=Kind::Motion ||
@@ -558,5 +563,8 @@ Audit certify(const Request& r,const Plan& plan,Clock::time_point deadline,const
     }
     return {true,"CERTIFIED"};
   } catch(const std::exception &e) {return {false,e.what()};}
+}
+Audit certify(const Request& r,const Plan& plan,Clock::time_point deadline,const Cancel& cancel) {
+  return certify_polygon(r,plan,{},deadline,cancel);
 }
 } // namespace fwis_hybrid_joint

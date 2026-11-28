@@ -1,4 +1,5 @@
 #include "../src/channel_repair.hpp"
+#include "../src/formation_lattice.hpp"
 #include <gtest/gtest.h>
 
 namespace hj = fwis_hybrid_joint;
@@ -63,4 +64,42 @@ TEST(ChannelRepair, ForwardJacobianMatchesResidualDifferences)
     EXPECT_LT(error, 5.e-6) << "direction " << variable;
   }
   EXPECT_TRUE(shortened);
+}
+
+TEST(FormationLattice, TurnsTheCargoBeforeAnOffsetGateAndRejectsAClosedGate)
+{
+  hj::Request r;
+  r.vehicles = {{0., -1., .838, .6}, {1., 0., .838, .6}, {0., 1., .838, .6}};
+  r.cargo = hj::Footprint{.5, 0., 2.05, 2.8};
+  r.start.reference = {3.13, 4.26, 0.};
+  r.goal.reference = {18.62, 10.38, 0.};
+  const auto stop = []{return false;};
+  for (const int gap_cells : {24, 19}) {
+    std::vector<std::uint8_t> cells(220 * 160);
+    for (int y = 0; y < 160; ++y) {
+      if (y >= 65 && y < 65 + gap_cells) continue;
+      for (int x = 102; x < 112; ++x) cells[y * 220 + x] = 1;
+    }
+    r.grid = std::make_shared<hj::GridSnapshot>(220, 160, .1,
+      fwis_planning_core::Point2d{0., 0.}, std::move(cells));
+    const auto boxes = channel::rectangles(*r.grid, stop);
+    const auto path = hj::formation_channel(r, boxes, 4, .20, stop);
+    if (gap_cells == 19) {
+      EXPECT_TRUE(path.empty());
+      continue;
+    }
+    ASSERT_GE(path.size(), 4u);
+    EXPECT_DOUBLE_EQ(path.front().x, r.start.reference.x);
+    EXPECT_DOUBLE_EQ(path.back().y, r.goal.reference.y);
+    bool turned = false;
+    for (size_t i = 1; i < path.size(); ++i) {
+      if (std::abs(path[i].yaw - path[i-1].yaw) > 1.e-8) {
+        EXPECT_NEAR(path[i].x, path[i-1].x, 1.e-8);
+        EXPECT_NEAR(path[i].y, path[i-1].y, 1.e-8);
+        turned = true;
+      }
+    }
+    EXPECT_TRUE(turned);
+    EXPECT_TRUE(hj::formation_channel(r, boxes, 4, .20, []{return true;}).empty());
+  }
 }

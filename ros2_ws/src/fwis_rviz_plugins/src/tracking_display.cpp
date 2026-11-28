@@ -28,6 +28,7 @@
 #include "rviz_common/display.hpp"
 #include "rviz_common/display_context.hpp"
 #include "rviz_common/properties/bool_property.hpp"
+#include "rviz_common/properties/int_property.hpp"
 #include "rviz_common/properties/string_property.hpp"
 #include "rviz_common/render_panel.hpp"
 #include "rviz_common/ros_integration/ros_node_abstraction_iface.hpp"
@@ -270,9 +271,13 @@ public:
   : show_cargo_marker_(new rviz_common::properties::BoolProperty(
         "Show Cargo Marker", true, "Draw the default cargo geometry from /cargo/odom.", this)),
     experiment_id_(new rviz_common::properties::StringProperty(
-        "Experiment ID", "", "Experiment log directory name set by the launch file.", this))
+        "Experiment ID", "", "Experiment log directory name set by the launch file.", this)),
+    vehicle_count_(new rviz_common::properties::IntProperty(
+        "Vehicle Count", static_cast<int>(cargo_index), "Number of vehicle status cards and error plots.", this))
   {
     experiment_id_->setReadOnly(true);
+    vehicle_count_->setMin(1);
+    vehicle_count_->setMax(static_cast<int>(cargo_index));
   }
 
   void reset() override
@@ -395,10 +400,11 @@ protected:
     updateCargoMarker(show_cargo_marker_->getBool() ? dashboard[cargo_index].feedback : std::nullopt);
     if (size.width() >= 180 && size.height() >= 150) {
       const QString experiment_id = experiment_id_->getString();
+      const auto vehicles = static_cast<std::size_t>(vehicle_count_->getInt());
       const double scale = dashboardScale(
-        size.width(), size.height(), window->devicePixelRatio(), !experiment_id.isEmpty());
-      status_strip_->draw(drawStatusCards(dashboard, size.width(), scale), 0);
-      const auto charts = drawErrorCharts(dashboard, size.width(), scale, experiment_id);
+        size.width(), size.height(), window->devicePixelRatio(), !experiment_id.isEmpty(), vehicles);
+      status_strip_->draw(drawStatusCards(dashboard, size.width(), scale, vehicles), 0);
+      const auto charts = drawErrorCharts(dashboard, size.width(), scale, experiment_id, vehicles);
       chart_strip_->draw(charts, size.height() - charts.height());
     } else {
       status_strip_->hide();
@@ -445,6 +451,7 @@ private:
   std::unique_ptr<OverlayStrip> chart_strip_;
   rviz_common::properties::BoolProperty * show_cargo_marker_;
   rviz_common::properties::StringProperty * experiment_id_;
+  rviz_common::properties::IntProperty * vehicle_count_;
   std::unique_ptr<rviz_default_plugins::displays::MarkerCommon> cargo_marker_;
   std::optional<double> last_cargo_stamp_;
   QSize viewport_size_;

@@ -9,7 +9,7 @@ import sys
 
 import yaml
 
-from fwis_bringup.cts_cases import cargo_reference, case_poses, dock_assignment
+from fwis_bringup.cts_cases import cargo_reference, case_poses, dock_assignment, load_cases
 from fwis_bringup.experiment_log import read_config, replay_config, retest_route
 from ranger_mini_gz.scene_generator import SCENARIOS, SCENE_VARIANTS
 from ranger_mini_gz.scene_geometry import local_pose
@@ -84,7 +84,7 @@ def parse_arguments(argv, scenarios, registry, experiments):
         epilog="For an automatic formation run, use ./scripts/test.sh --task multi --experiment full_route")
     parser.add_argument("--mode", choices=("sim", "real"), default="sim")
     parser.add_argument("--task", choices=("single", "multi"), default="single")
-    parser.add_argument("--scenario", choices=scenarios, default=scenarios[0])
+    parser.add_argument("--scenario", choices=scenarios)
     parser.add_argument("--scene-variant", choices=SCENE_VARIANTS,
                         help="Select a named layout of the scenario for a new experiment")
     parser.add_argument("--planner-backend", help="Planner alias or ROS 2 backend ID")
@@ -222,14 +222,17 @@ def resolve(argv, config_directory, scenario_directory, output):
         args.scenario, args.scene_variant, args.experiment = route["scenario"], route["scene_variant"], "full_route"
         if args.scenario not in scenarios:
             raise SystemExit(f"Historical scenario {args.scenario!r} is unavailable")
-    case_registry = read_config(config_directory / "cts_long_routes.yaml") if args.case else None
-    if case_registry:
-        if args.case not in case_registry["cases"]:
-            raise SystemExit(f"Unknown CTS case {args.case!r}; choose from {', '.join(case_registry['cases'])}")
-        if (args.scenario != case_registry["scenario"] or
-                args.scene_variant not in (None, "auto", case_registry["scene_variant"])):
+    selected_case = None
+    if args.case:
+        cases = load_cases(config_directory)
+        if args.case not in cases:
+            raise SystemExit(f"Unknown CTS case {args.case!r}; choose from {', '.join(cases)}")
+        selected_case = cases[args.case]
+        if (args.scenario not in (None, selected_case["scenario"]) or
+                args.scene_variant not in (None, "auto", selected_case["scene_variant"])):
             raise SystemExit("A CTS case requires its frozen map")
-        args.scene_variant = case_registry["scene_variant"]
+        args.scenario, args.scene_variant = selected_case["scenario"], selected_case["scene_variant"]
+    args.scenario = args.scenario or scenarios[0]
     scene_task = "single" if args.task == "single" else "formation"
     scene = read_config(scenario_directory / f"{args.scenario}.yaml")
     variant = args.scene_variant
@@ -252,11 +255,12 @@ def resolve(argv, config_directory, scenario_directory, output):
         dx, dy, dyaw = experiment["goal_offset"]
         x, y, _ = local_pose(start, (dx, dy))
         goal, waypoints = [x, y, start[2] + dyaw], []
-    assembly = scene_task == "formation" and variant == "cts_assembly" and alias == "hybrid_joint"
+    layout = scene.get("obstacle_variants", {}).get(variant)
+    assembly = (scene_task == "formation" and alias == "hybrid_joint" and
+                isinstance(layout, dict) and bool(layout.get("assembly_starts")))
     if (args.case or args.dock_assignment) and not assembly:
-        raise SystemExit("CTS cases and dock assignments require cts_assembly with the native planner")
-    if case_registry:
-        selected_case = case_registry["cases"][args.case]
+        raise SystemExit("CTS cases and dock assignments require an assembly layout and the native planner")
+    if selected_case:
         centers = case_poses(selected_case)
         cargo = read_config(scenario_directory.parent / "config/cargo_geometry.yaml")["cargo"]
         start, goal = (cargo_reference(centers[key], cargo["center_offset"]) for key in ("start", "goal"))
@@ -279,7 +283,7 @@ def resolve(argv, config_directory, scenario_directory, output):
             cap = task.get("task_duration_cap_by_speed_s", {}).get(args.speed_profile, cap)
         overrides = dict(overrides, speed_profile=args.speed_profile, solve_budget_s=8.0 if scene_task == "single" else 12.0,
                          task_duration_cap_s=positive_seconds(cap))
-        if scene_task == "formation" and variant == "cts_assembly":
+        if assembly:
             overrides["align_terminal_chassis"] = True
     elif args.architecture_profile == "optimized":
         if scene_task == "formation":
@@ -319,17 +323,16 @@ def resolve(argv, config_directory, scenario_directory, output):
                   timeout_s=args.timeout or float(experiment.get("wall_timeout_s", registry["defaults"]["timeout_s"])),
                   no_build=args.no_build,
                   observation_s=registry["defaults"]["observation_s"], interactive=args.interactive)
-    if alias == "hybrid_joint" and scene_task == "formation" and variant == "cts_assembly":
+    if assembly:
         single = registry["profiles"]["single"]
         quality = single["quality"]
         single_speeds = speed_profile.get("single", {}) | native_speed.get("single", {})
         config["assembly_planner_overrides"] = dict(
             single, quality=dict(quality, limits=quality["limits"] | single_speeds),
             speed_profile=args.speed_profile, solve_budget_s=8., task_duration_cap_s=300.)
-    if assembly:
         config.update(assembly=True, dock_assignment=args.dock_assignment)
-    if case_registry:
-        config.update(cts_case=args.case, required_map_sha256=case_registry["map_sha256"])
+    if selected_case:
+        config.update(cts_case=args.case, required_map_sha256=selected_case["map_sha256"])
         if "archived_docking" in selected_case:
             config["archived_docking"] = selected_case["archived_docking"]
     config.update(route)

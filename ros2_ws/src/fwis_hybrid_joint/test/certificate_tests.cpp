@@ -50,6 +50,30 @@ TEST(HybridCertificate, StraightSingleAndFormation) {
     EXPECT_TRUE(res.executable)<<res.reason;
   }
 }
+TEST(HybridCertificate, DualPolygonRejectsBladeContactAndKeepsConcaveCutouts) {
+  std::vector<std::uint8_t> cells(100*100);
+  // In the cargo AABB near the goal, but outside the tapered upper-right side.
+  cells[30*100+43]=100;
+  const h::CargoPolygon outline{{-1.,-.25},{1.,-.25},{1.,.25},{0.,.25},{0.,1.},{-1.,1.}};
+  const h::Plan plan{{straight()}};
+  auto with_polygon=[&](const auto& occupancy,const auto& cargo){
+    auto r=request(false,occupancy);
+    r.vehicles={{-.75,0,.5,.3},{.75,0,.5,.3}};
+    r.cargo=h::Footprint{0.,.375,2.,1.25};
+    const auto begin=h::evaluate_phase(r,plan.phases[0],0.);
+    const auto end=h::evaluate_phase(r,plan.phases[0],plan.phases[0].duration);
+    EXPECT_NEAR(begin.bodies[1].pose.x-begin.bodies[0].pose.x,1.5,1e-12);
+    boundary(r.start,begin,r.vehicles.size());
+    boundary(r.goal,end,r.vehicles.size());
+    return h::certify_polygon(r,plan,cargo,h::Clock::now()+std::chrono::seconds(2));
+  };
+  const auto exact=with_polygon(cells,outline);
+  EXPECT_TRUE(exact.executable)<<exact.reason;
+  EXPECT_EQ(with_polygon(cells,h::CargoPolygon{}).reason,"CARGO_OBB_COLLISION");
+  cells[24*100+36]=100;
+  const auto blocked=with_polygon(cells,outline);
+  EXPECT_EQ(blocked.reason,"CARGO_POLYGON_COLLISION");
+}
 TEST(HybridCertificate,SeparateCargoCenterAndHighSteeringSpeedLimits) {
   auto formation=request(true);
   formation.limits.cargo_center_speed=.15;

@@ -16,87 +16,10 @@ import yaml
 
 from fwis_bringup.experiment_log import read_config
 from ranger_mini_gz.model_launch import body_bridges, model_actions
+from ranger_mini_gz.rviz_layout import rviz_config
 from ranger_mini_gz.scene_generator import (
     SCENARIOS, SCENE_VARIANTS, TASKS, generate_scene, installed_paths, load_scene,
 )
-
-
-def rviz_config(description, directory, scene, task, *, tracking_dashboard=False, show_corridor=False,
-                interactive=False, assembly=False, experiment_id=""):
-    vehicles = scene.spawn_poses(task)
-    count = len(vehicles)
-    data = yaml.safe_load((description / "rviz" / f"ranger_{count}.rviz").read_text())
-    manager = data["Visualization Manager"]
-    manager["Global Options"]["Fixed Frame"] = "map"
-    manager["Displays"] = [display for display in manager["Displays"]
-                           if display["Class"] != "rviz_default_plugins/Grid"]
-    qos = {"Durability Policy": "Transient Local", "Reliability Policy": "Reliable",
-           "History Policy": "Keep Last", "Depth": 1}
-    manager["Displays"].insert(0, {
-        "Class": "rviz_default_plugins/Map", "Name": "Planning map", "Enabled": True,
-        "Topic": {"Value": "/map", **qos}, "Alpha": .80,
-    })
-    if task == "formation":
-        manager["Displays"].append({
-            "Class": "rviz_default_plugins/MarkerArray", "Name": "Cargo and centre mounts",
-            "Enabled": True, "Topic": {"Value": "/scene/markers", **qos},
-        })
-        colors = ("36; 127; 176", "198; 103; 33", "103; 74; 153")
-        paths = [(f"Vehicle {index} plan", f"/formation/path/vehicle_{index}", color)
-                 for index, color in zip(scene.vehicle_ids, colors)]
-        if assembly:
-            paths += [(f"Vehicle {index} assembly", f"/formation/assembly_path/vehicle_{index}", color)
-                      for index, color in zip(scene.vehicle_ids, colors)]
-        if show_corridor:
-            manager["Displays"].append({
-                "Class": "rviz_default_plugins/MarkerArray", "Name": "Convex corridor guide",
-                "Enabled": True, "Topic": {"Value": "/formation/convex_corridor_guide", **qos},
-            })
-        if interactive:
-            manager["Displays"].append({
-                "Class": "rviz_default_plugins/MarkerArray", "Name": "编队起终点",
-                "Enabled": True, "Topic": {"Value": "/formation/interactive_endpoints", **qos},
-            })
-            tool_qos = {**qos, "Durability Policy": "Volatile"}
-            manager.setdefault("Tools", []).extend([
-                {"Class": "rviz_default_plugins/SetInitialPose", "Topic": {"Value": "/initialpose", **tool_qos}},
-                {"Class": "rviz_default_plugins/SetGoal", "Topic": {"Value": "/move_base_simple/goal", **tool_qos}},
-            ])
-        if interactive or assembly:
-            data.setdefault("Panels", []).append({"Class": "fwis_rviz_plugins/PlanningPanel", "Name": "规划与执行"})
-    else:
-        paths = [("Single-vehicle plan", "/plan/path", "36; 127; 176")]
-    for name, topic, color in paths:
-        manager["Displays"].append({
-            "Class": "rviz_default_plugins/Path", "Name": name, "Enabled": True,
-            "Topic": {"Value": topic, **qos}, "Color": color, "Alpha": 1.0,
-            "Line Style": "Billboards", "Line Width": .055,
-            "Offset": {"X": 0, "Y": 0, "Z": .39},
-        })
-    if tracking_dashboard:
-        for index in vehicles:
-            manager["Displays"].append({
-                "Class": "rviz_default_plugins/Axes", "Name": f"Vehicle {index} control frame",
-                "Enabled": True, "Reference Frame": f"robot{index}/base_link",
-                "Length": .43, "Radius": .014,
-            })
-        manager["Displays"].append({
-            "Class": "fwis_rviz_plugins/TrackingHUD", "Name": "Tracking dashboard",
-            "Enabled": True, "Show Cargo Marker": False, "Experiment ID": experiment_id,
-        })
-    w, h = scene.size
-    x, y, _yaw = scene.experiments[task]["start"]
-    manager["Views"] = {
-        "Current": {"Class": "rviz_default_plugins/TopDownOrtho", "X": w / 2, "Y": h / 2,
-                    "Scale": min(650 / w, 590 / h)},
-        "Saved": [{"Class": "rviz_default_plugins/Orbit", "Name": "Loading bay",
-                   "Target Frame": "<Fixed Frame>", "Yaw": 3.45, "Pitch": .62, "Distance": 5.3,
-                   "Focal Point": {"X": x + .5, "Y": y, "Z": .33}}],
-    }
-    data["Window Geometry"] = {"Width": 1190, "Height": 805}
-    path = directory / "scene.rviz"
-    path.write_text(yaml.safe_dump(data, sort_keys=False))
-    return path
 
 
 def setup(context):
@@ -110,6 +33,7 @@ def setup(context):
     plant_overrides = {}
     replay_plant = None
     show_corridor = interactive = assembly = False
+    show_cargo_trace = True
     experiment_id = ""
     if args["experiment_file"]:
         experiment_path = Path(args["experiment_file"])
@@ -118,6 +42,7 @@ def setup(context):
         plant_overrides = config.get("plant_overrides", {})
         replay_plant = config.get("replay_plant")
         show_corridor = bool(config.get("planner_overrides", {}).get("convex_corridor"))
+        show_cargo_trace = config.get("planner_backend") == "formation_hybrid_joint_cpp"
         interactive = bool(config.get("interactive"))
         assembly = bool(config.get("assembly"))
         experiment = {key: config[key] for key in ("start", "goal", "waypoints")}
@@ -198,6 +123,7 @@ def setup(context):
         ] if tracking_dashboard else []
         config = rviz_config(description, directory, scene, task,
                              tracking_dashboard=tracking_dashboard, show_corridor=show_corridor,
+                             show_cargo_trace=show_cargo_trace,
                              interactive=interactive, assembly=assembly, experiment_id=experiment_id)
         simulator_process("RViz2", Node(package="rviz2", executable="rviz2",
                             arguments=["-d", str(config)], remappings=hud_remaps,

@@ -40,9 +40,11 @@ struct TrackView
 using Dashboard = std::array<TrackView, track_count>;
 
 QColor cargoColor();
-double dashboardScale(int width, int height, double pixel_ratio, bool show_experiment_id);
-QImage drawStatusCards(const Dashboard & dashboard, int width, double scale);
+double dashboardScale(
+  int width, int height, double pixel_ratio, bool show_experiment_id, std::size_t vehicles);
+QImage drawStatusCards(const Dashboard & dashboard, int width, double scale, std::size_t vehicles);
 QImage drawErrorCharts(
-  const Dashboard & dashboard, int width, double scale, const QString & experiment_id);
+  const Dashboard & dashboard, int width, double scale, const QString & experiment_id,
+  std::size_t vehicles);
 
 }  // namespace fwis_rviz_plugins

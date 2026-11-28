@@ -4,7 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 from hashlib import sha256
 from itertools import combinations
 import json
-from math import cos, dist, sin
+from math import cos, dist, hypot, sin
 from time import monotonic
 
 from builtin_interfaces.msg import Time
@@ -22,6 +22,7 @@ NSEC = 1_000_000_000
 DURABLE = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
 MODES = {"A": 0, "O": 1, "S": 2}
 KINDS = {"motion": 0, "prepare": 1, "hold": 2}
+START_TRANSLATION_MPS = .05
 
 
 def stamp(ns):
@@ -97,6 +98,7 @@ class AssemblyExecution:
         self.last_status = {}
         self.docked_since = None
         self.min_measured_gap = None
+        self.vehicle_timing = {}
 
     def begin(self):
         owner = self.node
@@ -131,6 +133,12 @@ class AssemblyExecution:
             self.admitted.add(index)
         elif phase == "COMPLETE":
             self.complete.add(index)
+            timing = self.vehicle_timing[index]
+            if "controller_complete_s" not in timing:
+                complete = row["stamp"] - self.epoch / NSEC
+                timing["controller_complete_s"] = complete
+                self.node.trace("assembly_vehicle_complete", plan_id=self.plan_id,
+                                vehicle_id=index, elapsed_s=complete)
         elif phase in ("STOPPED", "REJECTED", "STALE_TRAJECTORY", "EXPIRED") or kind == "admission":
             self.fault = f"robot{index}: " + (",".join(row.get("reasons", ())) or str(phase))
 
@@ -170,6 +178,11 @@ class AssemblyExecution:
             self.paths[index].publish(paths)
         stamp_ns = owner.get_clock().now().nanoseconds
         self.epoch = stamp_ns + round(owner.config["coordination"]["lead_s"] * NSEC)
+        self.vehicle_timing = {
+            index: {"scheduled_release_s": track["delay_s"],
+                    "scheduled_complete_s": track["delay_s"] + track["duration_s"]}
+            for index, track in self.run["tracks"].items()
+        }
         models = {index: envelope(track, index, self.plan_id, stamp_ns, self.epoch, map_digest, build)
                   for index, track in self.run["tracks"].items()}
         self.hashes = {index: model.model_sha256 for index, model in models.items()}
@@ -191,6 +204,30 @@ class AssemblyExecution:
         self.stopping_started = monotonic()
         owner.phase = "assembly_stopping"
         owner.ui("assembly_executing", reason=reason, detail="停车后从反馈位姿重新规划")
+
+    def observe_vehicle_timing(self):
+        owner = self.node
+        for index, timing in self.vehicle_timing.items():
+            stamp_s, _, pose, velocity = owner.odom[index]
+            elapsed = stamp_s - self.epoch / NSEC
+            if elapsed < 0.:
+                continue
+            if ("first_translation_s" not in timing and
+                    hypot(*velocity[:2]) >= START_TRANSLATION_MPS):
+                timing["first_translation_s"] = elapsed
+                owner.trace("assembly_vehicle_first_translation", plan_id=self.plan_id,
+                            vehicle_id=index, elapsed_s=elapsed,
+                            speed_mps=hypot(*velocity[:2]))
+            if index in self.complete and "docked_s" not in timing:
+                target = self.run["docks"][index]
+                if (dist(pose[:2], target[:2]) <= .06 and
+                        dist(owner.truth[index][1][:2], target[:2]) <= .06 and
+                        abs(wrap(owner.truth[index][1][2]-target[2])) <= .10 and
+                        hypot(*velocity[:2]) <= owner.timing.stop_speed and
+                        abs(velocity[2]) <= owner.timing.stop_yaw_rate):
+                    timing["docked_s"] = elapsed
+                    owner.trace("assembly_vehicle_docked", plan_id=self.plan_id,
+                                vehicle_id=index, elapsed_s=elapsed)
 
     def tick(self, now, wall, stale):
         owner = self.node
@@ -241,6 +278,7 @@ class AssemblyExecution:
             if gap < .04:
                 self.recover("assembly_vehicle_clearance_guard")
                 return
+            self.observe_vehicle_timing()
             self.permit(True)
             if wall - self.last_ui_wall >= 1.:
                 self.last_ui_wall = wall
@@ -266,6 +304,7 @@ class AssemblyExecution:
                     return
             return
         if phase == "docking":
+            self.observe_vehicle_timing()
             self.permit(False)
             targets = self.run["docks"]
             owner.docked = sum(

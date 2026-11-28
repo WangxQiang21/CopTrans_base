@@ -280,7 +280,7 @@ struct Geometry
 };
 inline bool repair(
   const Request & r, HJProblem & g, const std::vector<Box> & boxes, int n, double lo, double hi,
-  const std::function<bool()> & stop)
+  const std::function<bool()> & stop, bool use_channel_yaw = false)
 {
   const auto & ph = g.phase[0];
   const int nc = n + 5, samples = n * 18 + 1;
@@ -301,7 +301,7 @@ inline bool repair(
     const double t = std::clamp((u - lo) / (hi - lo), 0., 1.);
     target(i, 0) = pt[0];
     target(i, 1) = pt[1];
-    target(i, 2) = p0.yaw + turn * (t * t * (3 - 2 * t));
+    target(i, 2) = use_channel_yaw ? pt[2] : p0.yaw + turn * (t * t * (3 - 2 * t));
     geom.spacing += std::hypot(pt[0] - prev[0], pt[1] - prev[1]) / n;
     prev = pt;
   }

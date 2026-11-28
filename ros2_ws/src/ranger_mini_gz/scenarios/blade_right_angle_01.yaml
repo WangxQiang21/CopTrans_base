@@ -1,0 +1,42 @@
+name: blade_right_angle_01
+size: [64, 64]
+resolution: 0.05
+comparison_resolution: 0.025
+start: [17, 22, 0]
+goal: [17, 50, 3.141592653589793]
+key_pose: [40.7, 24.4, 0.7853981633974483]
+second_bend: [41.6, 46.7, 2.356194490192345]
+geometric_reference:
+  - start
+  - [38, 22, 0]
+  - key_pose
+  - [44, 29, 1.5707963267948966]
+  - [44, 44, 1.5707963267948966]
+  - second_bend
+  - [37, 50, 3.141592653589793]
+  - goal
+camera:
+  eye: [31, 9, 75]
+  target: [30, 34, 0]
+  key_supports: {eye: [46.9, 18.35, 2.1], target: [41.12, 24.82, 0.54], hfov: 1.62}
+  second_bend_supports: {eye: [47.65, 52.9, 2.1], target: [41.18, 47.12, 0.54], hfov: 1.62}
+road:
+  width: 7.5
+  rectangles:
+    - [4, 18.25, 47.75, 25.75]
+    - [40.25, 18.25, 47.75, 53.75]
+    - [4, 46.25, 47.75, 53.75]
+buildings:
+  min_footprint_setback_m: 0.35
+  height_options_m: [5.5, 6.5, 7.5]
+  width_m: 5.8
+  depth_m: 6.4
+  gap_m: 3.0
+  # Directed facades. Lot depth extends to the left of each segment.
+  rows:
+    - [39.9, 17.9, 6, 17.9]
+    - [6, 26.1, 32.5, 26.1]
+    - [39.9, 26.1, 39.9, 45.9]
+    - [32.5, 45.9, 6, 45.9]
+    - [6, 54.1, 39.9, 54.1]
+    - [48.1, 52, 48.1, 20]

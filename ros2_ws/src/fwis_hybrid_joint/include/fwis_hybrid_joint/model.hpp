@@ -13,6 +13,7 @@ namespace fwis_hybrid_joint {
 using fwis_planning_core::Pose2d;
 using fwis_planning_core::GridSnapshot;
 using fwis_planning_core::Footprint;
+using CargoPolygon = std::vector<fwis_planning_core::Point2d>;
 using Clock = std::chrono::steady_clock;
 enum class Mode { A, O, S };
 enum class Kind { Motion, Prepare, Hold };
@@ -55,7 +56,7 @@ struct Limits {
 };
 struct Request {
   std::shared_ptr<const GridSnapshot> grid;
-  std::vector<Footprint> vehicles; // size 1 at offset (0,0), or size 3
+  std::vector<Footprint> vehicles; // size 1 at offset (0,0), or 2–3 rigidly positioned mounts
   std::optional<Footprint> cargo;
   Boundary start, goal;
   Limits limits;
@@ -90,6 +91,10 @@ struct Audit {
 };
 using Cancel = std::function<bool()>;
 Audit certify(const Request&, const Plan&, Clock::time_point deadline, const Cancel& cancel = {});
+// The supplied local outline replaces the rectangular cargo in map queries.
+// Rectangular metadata still locates the cargo centre for the speed limit.
+Audit certify_polygon(const Request&, const Plan&, const CargoPolygon&, Clock::time_point deadline,
+                      const Cancel& cancel = {});
 // Dimensionless policy costs for a separately certified model. Soft clearance
 // and effort are deterministic quadratures, never collision/safety tests.
 struct PolicyScore {
@@ -120,4 +125,7 @@ struct SolveOptions {
 };
 Result solve(const Request&, Clock::time_point deadline, const Cancel& cancel = {},
              const SolveOptions& options = {});
+// Single vehicle driving to a stationary cargo mount. The complete path,
+// including final chassis alignment, is certified against the input request.
+Result solve_docking(const Request&, Clock::time_point deadline);
 } // namespace fwis_hybrid_joint

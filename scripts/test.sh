@@ -2,6 +2,63 @@
 set -e -o pipefail
 
 root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+if [[ ${1:-} == --blade-bends ]]; then
+    shift
+    export OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1
+    exec python3 "$root/scripts/blade_bends/run.py" "$@"
+fi
+if [[ ${1:-} == --blade-plan || ${1:-} == --blade-run ]]; then
+    command=${1#--blade-}
+    shift
+    source /opt/ros/humble/setup.bash
+    overlay="$root/ros2_ws/install"
+    if [[ ! -r "$overlay/setup.bash" ||
+          ! -d "$overlay/ranger_mini_description/share/ranger_mini_description/meshes/painted" ||
+          ! -r "$overlay/ranger_mini_gz/share/ranger_mini_gz/config/ranger.gui.config" ]]; then
+        (cd "$root/ros2_ws" && colcon build --packages-up-to ranger_mini_gz --cmake-args -DCMAKE_BUILD_TYPE=Release)
+    fi
+    source "$overlay/setup.bash"
+    source_pkg="$root/ros2_ws/src/ranger_mini_gz"
+    export PYTHONPATH="$source_pkg${PYTHONPATH:+:$PYTHONPATH}"
+    exec python3 -m ranger_mini_gz.blade_experiment --archive "$root/reports/runs" \
+        --scene-package-dir "$source_pkg" "$command" "$@"
+fi
+if [[ ${1:-} == --scene-only ]]; then
+    shift
+    scene=${1:?Choose a blade scene name}
+    shift
+    case "$scene" in
+        blade_mountain_01|blade_right_angle_01|blade_roundabout_01|blade_mountain_hard|blade_right_angle_hard|blade_roundabout_hard) ;;
+        *) echo "Unknown two-vehicle scene: $scene" >&2; exit 2 ;;
+    esac
+    source /opt/ros/humble/setup.bash
+    overlay="$root/ros2_ws/install"
+    mkdir -p "$root/reports/runs"
+    exec 8>"$root/reports/runs/.$scene.lock"
+    flock -n 8 || { echo "This blade scene is already in use." >&2; exit 2; }
+    show_scene=true
+    for arg in "$@"; do
+        case "$arg" in --generate-only) show_scene=false ;; --gazebo) show_scene=true ;; esac
+    done
+    if [[ $show_scene == true ]]; then
+        exec 9>"$root/reports/runs/.test.lock"
+        flock -n 9 || { echo "A CopTrans simulation is already running." >&2; exit 2; }
+    fi
+    source_pkg="$root/ros2_ws/src/ranger_mini_gz"
+    if [[ ! -r "$overlay/setup.bash" ||
+          ! -d "$overlay/ranger_mini_description/share/ranger_mini_description/meshes/painted" ||
+          ! -r "$overlay/ranger_mini_gz/share/ranger_mini_gz/config/ranger.gui.config" ]]; then
+        (
+            flock 7
+            cd "$root/ros2_ws"
+            colcon build --packages-up-to ranger_mini_gz --cmake-args -DCMAKE_BUILD_TYPE=Release
+        ) 7>"$root/reports/runs/.blade-build.lock"
+    fi
+    source "$overlay/setup.bash"
+    export PYTHONPATH="$source_pkg${PYTHONPATH:+:$PYTHONPATH}"
+    exec python3 -m ranger_mini_gz.scene_generator "$scene" "$root/ros2_ws/generated/scenes/$scene" \
+        --scene-package-dir "$source_pkg" --task blade_pair --gazebo "$@"
+fi
 if [[ ${1:-} == --planner-only ]]; then
     shift
     exec "$root/scripts/cts_plan_only.sh" "$@"

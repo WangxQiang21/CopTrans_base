@@ -1,4 +1,5 @@
 #include "fwis_hybrid_joint_ros/inputs.hpp"
+#include "cargo_footprint_trace.hpp"
 #include <nav_msgs/msg/path.hpp>
 #include <atomic>
 #include <future>
@@ -18,6 +19,27 @@ public:
         "/formation/uniform_progress", rclcpp::QoS(
           10).transient_local());
       job = create_publisher<std_msgs::msg::String>("/formation/job_state", durable());
+      cargo_trace = create_publisher<visualization_msgs::msg::MarkerArray>(cargo_trace_topic, durable());
+      reset_cargo_trace();
+      interactive_endpoints = create_subscription<visualization_msgs::msg::MarkerArray>(
+        "/formation/interactive_endpoints", durable(),
+        [this](const visualization_msgs::msg::MarkerArray & endpoints) {
+          // A retained RViz selection from before the plan is still valid.
+          if (cargo_trace_stamp && !endpoints.markers.empty() &&
+            ns(endpoints.markers.front().header.stamp) >= *cargo_trace_stamp)
+          {
+            reset_cargo_trace();
+          }
+        });
+      cargo_trace_stop = create_subscription<std_msgs::msg::String>(
+        "/hybrid_joint/cancel", 1,
+        [this](const std_msgs::msg::String &) {stop_cargo_trace();});
+      rcl_jump_threshold_t rewind{};
+      rewind.min_backward.nanoseconds = -1;
+      // Clock callbacks can enter while the ROS clock's mutex is held.
+      // The planner timer publishes the delete in its own callback.
+      cargo_trace_rewind = get_clock()->create_jump_callback(
+        nullptr, [this](const rcl_time_jump_t &) {cargo_trace_clock_reset.store(true);}, rewind);
     } else {
       state = create_publisher<std_msgs::msg::String>("/plan/status", durable());
       search = create_publisher<std_msgs::msg::String>("/plan/search_status", durable());
@@ -42,6 +64,13 @@ private:
   rclcpp::Publisher<Envelope>::SharedPtr output;
   rclcpp::Publisher<Timed>::SharedPtr single;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr state, search, job, progress;
+  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr cargo_trace;
+  rclcpp::Subscription<visualization_msgs::msg::MarkerArray>::SharedPtr interactive_endpoints;
+  rclcpp::Subscription<std_msgs::msg::String>::SharedPtr cargo_trace_stop;
+  std::optional<int64_t> cargo_trace_stamp;
+  bool cargo_trace_cancelled{};
+  std::atomic<bool> cargo_trace_clock_reset{false};
+  rclcpp::JumpHandler::SharedPtr cargo_trace_rewind;
   hj::Clock::time_point started, last_progress;
   std::vector<rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr> paths;
   rclcpp::TimerBase::SharedPtr timer;
@@ -109,7 +138,25 @@ private:
     j["map_frame_id"] = "map";
     job->publish(message(json(j)));
   }
-  void invalidate() override {cancel.store(true);obsolete = true;pending.reset();}
+  void reset_cargo_trace()
+  {
+    cargo_trace_stamp.reset();
+    if (cargo_trace) {
+      cargo_trace->publish(clear_cargo_trace());
+    }
+  }
+  void stop_cargo_trace()
+  {
+    cargo_trace_cancelled = true;
+    reset_cargo_trace();
+  }
+  void invalidate() override
+  {
+    cancel.store(true);
+    obsolete = true;
+    pending.reset();
+    reset_cargo_trace();
+  }
   void failure(uint32_t id, const std::string & reason) override
   {
     if (settings.multi) {
@@ -121,6 +168,7 @@ private:
   }
   void requested(Context c, Specs s) override
   {
+    cargo_trace_cancelled = false;
     if (settings.multi) {formation_status(c.id, "SOLVING", "");} else {
       single_status("search_pending id=" + std::to_string(c.id));
     }
@@ -181,6 +229,14 @@ private:
       paths[i]->publish(path);
     }
     if (settings.multi) {
+      if (!cargo_trace_cancelled && c.request.cargo) {
+        try {
+          cargo_trace->publish(cargo_trace_markers(envelope.trajectory.formation_poses, *c.request.cargo));
+          cargo_trace_stamp = publication_ros_ns;
+        } catch (const std::exception & e) {
+          RCLCPP_WARN(get_logger(), "Could not display cargo footprint trace: %s", e.what());
+        }
+      }
       formation_status(c.id, "PUBLISHED", r.status, std::chrono::duration<double>(submitted - started).count(), stages);
       progress_message(c.id, r.status == "FEASIBLE_POLICY_DEGRADED" ? "policy_degraded" : "certified", r.reason);
       return;
@@ -203,6 +259,9 @@ private:
   }
   void poll()
   {
+    if (cargo_trace_clock_reset.exchange(false)) {
+      stop_cargo_trace();
+    }
     if (worker.valid()) {
       if (worker.wait_for(std::chrono::seconds(0)) != std::future_status::ready) {
         if (!obsolete && hj::Clock::now() - last_progress > std::chrono::milliseconds(250)) {

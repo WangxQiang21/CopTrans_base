@@ -175,7 +175,7 @@ void errorChart(
 }
 
 QImage drawRow(
-  const Dashboard & dashboard, int width, double scale, int height,
+  const Dashboard & dashboard, int width, double scale, int height, std::size_t vehicles,
   void (*draw)(QPainter &, const QRectF &, const TrackView &, std::size_t),
   const QString & experiment_id = {})
 {
@@ -187,9 +187,11 @@ QImage drawRow(
   QPainter painter(&image);
   painter.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
   painter.scale(scale, scale);
-  const double card_width = (width / scale - 2 * margin - (track_count - 1) * gap) / track_count;
-  for (std::size_t index = 0; index < track_count; ++index) {
-    const double x = margin + index * (card_width + gap);
+  const auto columns = vehicles + 1;
+  const double card_width = (width / scale - 2 * margin - vehicles * gap) / columns;
+  for (std::size_t column = 0; column < columns; ++column) {
+    const auto index = column == vehicles ? cargo_index : column;
+    const double x = margin + column * (card_width + gap);
     const double y = height == status_height ? margin : 0;
     draw(painter, QRectF(x, y, card_width, height), dashboard[index], index);
   }
@@ -222,24 +224,26 @@ QColor cargoColor()
   return QColor("#6cd9c4");
 }
 
-double dashboardScale(int width, int height, double pixel_ratio, bool show_experiment_id)
+double dashboardScale(
+  int width, int height, double pixel_ratio, bool show_experiment_id, std::size_t vehicles)
 {
-  // Keep four columns readable and leave at least half the height for the 3D scene.
-  constexpr int natural_width = 4 * 185 + 2 * margin + 3 * gap;
+  // Keep the visible columns readable and leave half the height for the 3D scene.
+  const auto natural_width = (vehicles + 1) * 185 + 2 * margin + vehicles * gap;
   const int natural_height = status_height + chart_height + 2 * margin +
     (show_experiment_id ? experiment_footer_height : 0);
   return std::min({pixel_ratio, width / double(natural_width), height / double(2 * natural_height)});
 }
 
-QImage drawStatusCards(const Dashboard & dashboard, int width, double scale)
+QImage drawStatusCards(const Dashboard & dashboard, int width, double scale, std::size_t vehicles)
 {
-  return drawRow(dashboard, width, scale, status_height, statusCard);
+  return drawRow(dashboard, width, scale, status_height, vehicles, statusCard);
 }
 
 QImage drawErrorCharts(
-  const Dashboard & dashboard, int width, double scale, const QString & experiment_id)
+  const Dashboard & dashboard, int width, double scale, const QString & experiment_id,
+  std::size_t vehicles)
 {
-  return drawRow(dashboard, width, scale, chart_height, errorChart, experiment_id);
+  return drawRow(dashboard, width, scale, chart_height, vehicles, errorChart, experiment_id);
 }
 
 }  // namespace fwis_rviz_plugins

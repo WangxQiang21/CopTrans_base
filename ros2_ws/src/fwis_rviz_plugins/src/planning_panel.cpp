@@ -13,6 +13,7 @@
 #include <QPushButton>
 #include <QStringList>
 #include <QTimer>
+#include <QToolTip>
 #include <QVBoxLayout>
 
 #include <pluginlib/class_list_macros.hpp>
@@ -27,20 +28,24 @@ namespace fwis_rviz_plugins
 namespace
 {
 
-QString phaseName(const QString & phase)
+QString phaseName(const QString & phase, int vehicle_count)
 {
   if (phase == "waiting_start") {return QStringLiteral("选择编队起点");}
   if (phase == "placing") {return QStringLiteral("同步 Gazebo 起点");}
   if (phase == "waiting_goal") {return QStringLiteral("选择编队终点");}
   if (phase == "assembly_planning") {return QStringLiteral("集结规划");}
-  if (phase == "assembly_executing") {return QStringLiteral("三车驶向挂点");}
+  if (phase == "assembly_executing") {
+    return vehicle_count == 3 ? QStringLiteral("三车驶向挂点") : QStringLiteral("车辆驶向挂点");
+  }
   if (phase == "docking") {return QStringLiteral("核对挂点与停车反馈");}
   if (phase == "transport_planning") {return QStringLiteral("CTS 运输规划");}
   if (phase == "transport_executing") {return QStringLiteral("CTS 运输中");}
   if (phase == "terminal_alignment") {return QStringLiteral("终点车身对齐");}
   if (phase == "planning") {return QStringLiteral("规划中");}
   if (phase == "verification") {return QStringLiteral("验证轨迹模型");}
-  if (phase == "arming") {return QStringLiteral("等待三车准入");}
+  if (phase == "arming") {
+    return vehicle_count == 3 ? QStringLiteral("等待三车准入") : QStringLiteral("等待车辆准入");
+  }
   if (phase == "running") {return QStringLiteral("编队执行中");}
   if (phase == "finished") {return QStringLiteral("闭环完成");}
   if (phase == "failed") {return QStringLiteral("试验失败");}
@@ -75,11 +80,15 @@ public:
     experiment_label_->setTextFormat(Qt::PlainText);
     experiment_label_->setTextInteractionFlags(Qt::TextSelectableByMouse);
     identity->addWidget(experiment_label_, 1);
-    copy_id_ = new QPushButton(QStringLiteral("复制编号"));
+    copy_id_ = new QPushButton(QStringLiteral("复制实验编号"));
+    copy_id_->setFont(experiment_label_->font());
+    copy_id_->setToolTip(QStringLiteral("将当前实验编号复制到剪贴板"));
     identity->addWidget(copy_id_);
     layout->addLayout(identity);
     connect(copy_id_, &QPushButton::clicked, this, [this]() {
       QApplication::clipboard()->setText(experiment_id_);
+      QToolTip::showText(copy_id_->mapToGlobal(copy_id_->rect().bottomLeft()),
+        QStringLiteral("已复制实验编号"), copy_id_);
     });
     title_ = makeLabel(layout);
     QFont title_font = title_->font();
@@ -172,7 +181,8 @@ private:
       QStringLiteral("实验编号\n%1").arg(experiment_id_));
     copy_id_->setEnabled(!experiment_id_.isEmpty());
     if (progress.value("plan_id") != state.value("plan_id")) {progress = {};}
-    title_->setText(phaseName(phase));
+    const int count = state.value("vehicle_count").toInt(3);
+    title_->setText(phaseName(phase, count));
     title_->setStyleSheet(phase == "failed" ? "color: #c94f41;" :
       (phase == "finished" ? "color: #25825c;" : ""));
 
@@ -224,7 +234,6 @@ private:
     stage_times_->setVisible(!durations.isEmpty());
     stage_times_->setText(durations.join(QStringLiteral(" · ")));
 
-    const int count = state.value("vehicle_count").toInt(3);
     const auto docked = state.value("docked");
     admission_->setText(docked.isDouble() && (phase.startsWith("assembly_") || phase == "docking") ?
       QStringLiteral("到位 %1/%2").arg(docked.toInt()).arg(count) :

@@ -217,12 +217,13 @@ def cargo_model(world, scene):
               pose(rx, ry, -cargo.mount_height / 2), (.72, .75, .77))
 
 
-def write_world(scene, path, task):
+def write_world(scene, path, task, *, placement=None, blade_plant=None, blade_body_yaws=None,
+                blade_real_time_factor=1.):
     sdf = ET.Element("sdf", version="1.9")
     world = item(sdf, "world", name=scene.name)
     physics = item(world, "physics", name="default", type="ignored")
     item(physics, "max_step_size", "0.002")
-    item(physics, "real_time_factor", "1")
+    item(physics, "real_time_factor", str(blade_real_time_factor) if blade_plant else "1")
     for filename, system in (("physics", "Physics"), ("user-commands", "UserCommands"),
                              ("scene-broadcaster", "SceneBroadcaster")):
         item(world, "plugin", filename=f"gz-sim-{filename}-system", name=f"gz::sim::systems::{system}")
@@ -235,7 +236,14 @@ def write_world(scene, path, task):
     item(light, "cast_shadows", "true")
     item(light, "diffuse", (.84, .83, .78, 1))
     item(light, "specular", (.35, .35, .35, 1))
-    item(light, "direction", (-.5, .29, -.82))
+    item(light, "direction", (-.24, .12, -.96) if task == "blade_pair" else (-.5, .29, -.82))
+    if task == "blade_pair":
+        from ranger_mini_gz.blade_world import write_blade_environment
+        item(light, "visualize", "false")
+        checks = write_blade_environment(world, scene, path.parent, placement, blade_plant, blade_body_yaws)
+        ET.indent(sdf, space="  ")
+        ET.ElementTree(sdf).write(path, encoding="utf-8", xml_declaration=True)
+        return checks
     w, h = scene.size
     ground = static_link(world, "ground", pose(w / 2, h / 2, -.075))
     shape(ground, "surface_collision", "box", (w, h, .15))
@@ -249,16 +257,21 @@ def write_world(scene, path, task):
     ET.ElementTree(sdf).write(path, encoding="utf-8", xml_declaration=True)
 
 
-def write_gui_config(scene, template, path):
-    camera_delta = np.array(scene.camera_target) - scene.camera_eye
-    yaw = math.atan2(camera_delta[1], camera_delta[0])
+def write_gui_config(scene, template, path, *, eye=None, target=None, hfov=None):
+    eye = scene.camera_eye if eye is None else eye
+    target = scene.camera_target if target is None else target
+    camera_delta = np.array(target) - eye
+    yaw = math.atan2(camera_delta[1], camera_delta[0]) if any(camera_delta[:2]) else math.pi / 2
     pitch = math.atan2(-camera_delta[2], math.hypot(*camera_delta[:2]))
     content = Path(template).read_text().split("?>", 1)[-1]
     root = ET.fromstring("<gui>" + content + "</gui>")
     root.find("window/width").text = "1260"
     root.find("window/height").text = "820"
     root.find("plugin[@filename='MinimalScene']/camera_pose").text = numbers(
-        (*scene.camera_eye, 0, pitch, yaw))
+        (*eye, 0, pitch, yaw))
+    if hfov is not None:
+        # MinimalScene accepts degrees; the SDF camera sensors accept radians.
+        item(root.find("plugin[@filename='MinimalScene']"), "horizontal_fov", (math.degrees(hfov),))
     for plugin in root.findall("plugin[@filename='EntityTree']"):
         root.remove(plugin)
     ET.indent(root, space="  ")
